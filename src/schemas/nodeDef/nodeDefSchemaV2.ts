@@ -214,6 +214,15 @@ const zVideoEditInputSpec = zBaseInputOptions.extend({
   default: zVideoEditValue.optional()
 })
 
+const zResolutionPreviewInputSpec = zBaseInputOptions.extend({
+  type: z.literal('RESOLUTION_PREVIEW'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  ratio_widget: z.string().optional(),
+  megapixels_widget: z.string().optional(),
+  multiple_widget: z.string().optional()
+})
+
 const zCustomInputSpec = zBaseInputOptions.extend({
   type: z.string(),
   name: z.string(),
@@ -239,6 +248,7 @@ const zInputSpec = z.union([
   zCurveInputSpec,
   zRangeInputSpec,
   zVideoEditInputSpec,
+  zResolutionPreviewInputSpec,
   zCustomInputSpec
 ])
 
@@ -288,6 +298,9 @@ export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
 export type VideoEditInputSpec = z.infer<typeof zVideoEditInputSpec>
+export type ResolutionPreviewInputSpec = z.infer<
+  typeof zResolutionPreviewInputSpec
+>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
 
 export type InputSpec = z.infer<typeof zInputSpec>
@@ -328,4 +341,10 @@ export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
   return inputSpec.type === 'CHART'
+}
+
+export const isResolutionPreviewInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ResolutionPreviewInputSpec => {
+  return inputSpec.type === 'RESOLUTION_PREVIEW'
 }

@@ -23,6 +23,7 @@ import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -192,6 +193,60 @@ const TEAM_SUBSCRIBED_RESPONSE = {
   effective_at: '2026-07-21T00:00:00Z'
 } satisfies SubscribeResponse
 
+const TEAM_ANNUAL_PLAN = {
+  slug: 'team_per_credit_annual',
+  tier: 'TEAM',
+  duration: 'ANNUAL',
+  price_cents: 756_000,
+  credits_cents: 1_772_400,
+  max_seats: 100,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 756_000,
+    total_credits_cents: 1_772_400
+  }
+} satisfies Plan
+
+const TEAM_MONTHLY_PLAN = {
+  slug: 'team_per_credit_monthly',
+  tier: 'TEAM',
+  duration: 'MONTHLY',
+  price_cents: 39_000,
+  credits_cents: 84_400,
+  max_seats: 100,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 39_000,
+    total_credits_cents: 84_400
+  }
+} satisfies Plan
+
+const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 756_000,
+  cost_next_period_cents: 756_000,
+  credits_today_cents: 1_772_400,
+  credits_next_period_cents: 1_772_400,
+  new_plan: TEAM_ANNUAL_PLAN
+} satisfies PreviewSubscribeResponse
+
+const NEW_TEAM_MONTHLY_SUBSCRIPTION = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 39_000,
+  cost_next_period_cents: 39_000,
+  credits_today_cents: 84_400,
+  credits_next_period_cents: 84_400,
+  new_plan: TEAM_MONTHLY_PLAN
+} satisfies PreviewSubscribeResponse
+
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
   transition_type: 'new_subscription',
@@ -341,7 +396,10 @@ async function setupCloudApp(
     settings: BOOT_SETTINGS
   })
   await mockGraphBootExtras(page)
-  await mockBilling(page)
+  await mockBilling(page, {
+    workspaceId: ws.id,
+    billingCapabilities: createWorkspaceBillingCapabilities(ws)
+  })
   await mockWorkspace(page, ws, members)
   await bootCloud(page)
 }
@@ -707,6 +765,9 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
     )
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_TEAM_ANNUAL_SUBSCRIPTION))
+    )
     await page.route('**/api/billing/subscribe', (route) => {
       subscribeRequests.push(route.request())
       return route.fulfill(jsonRoute(TEAM_SUBSCRIBED_RESPONSE))
@@ -753,6 +814,10 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     ])
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(TEAM_CATALOG_PLANS))
+    )
+
+    await page.route('**/api/billing/preview-subscribe', (route) =>
+      route.fulfill(jsonRoute(NEW_TEAM_MONTHLY_SUBSCRIPTION))
     )
 
     await page.goto(`${APP_URL}/?pricing=team&stop=team_400&cycle=monthly`)

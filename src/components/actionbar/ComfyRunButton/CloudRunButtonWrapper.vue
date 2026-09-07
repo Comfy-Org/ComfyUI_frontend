@@ -1,6 +1,8 @@
 <template>
   <ComfyQueueButton
-    v-if="!showsSubscribeToRunPrompt || paymentRecoveryLock"
+    v-if="
+      !showsSubscribeToRunPrompt || paymentRecoveryLock || isSalesManagedPlan
+    "
     :payment-recovery-lock="paymentRecoveryLock"
     @payment-recovery-click="showPaymentRecoveryDialog"
   />
@@ -15,6 +17,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscriptionPausedDialog from '@/platform/workspace/components/SubscriptionPausedDialog.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -24,10 +27,17 @@ const DIALOG_KEY = 'subscription-paused'
 const {
   showsSubscribeToRunPrompt,
   billingStatus,
+  subscription,
   manageSubscription,
   fetchStatus,
   fetchBalance
 } = useBillingContext()
+
+// A sales-managed plan has no self-serve checkout to upsell into; the run
+// button stays a run button and lapsed access routes through sales.
+const isSalesManagedPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
 const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
 const dialogService = useDialogService()

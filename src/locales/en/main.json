@@ -1,6 +1,7 @@
 {
   "g": {
     "shortcutSuffix": " ({shortcut})",
+    "megapixelsValue": "{count} MP",
     "user": "User",
     "you": "You",
     "currentUser": "Current user",
@@ -1291,6 +1292,7 @@
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
     "loadFailed": "Failed to load layers",
+    "needsTwoImages": "The layer editor needs at least two output images",
     "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
     "selectTool": "Select",
     "handTool": "Hand",
@@ -2127,8 +2129,8 @@
     "dismiss": "Dismiss"
   },
   "loadWorkflowWarning": {
-    "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
-    "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
+    "newerVersionRequired": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
+    "newerVersionRequiredGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
     "coreNodesFromVersion": "Core nodes from version {version}:",
     "unknownVersion": "unknown"
   },
@@ -2237,7 +2239,9 @@
       "deleteRecording": "Delete Recording",
       "videoRecordingTooltip": "Video recording of the scene [mp4]",
       "switchProjection": "Switch projection",
-      "originalMaterialOnly": "Original material only"
+      "originalMaterialOnly": "Original material only",
+      "customUp": "Custom up",
+      "naturalUp": "Natural up"
     },
     "materialModes": {
       "normal": "Normal",
@@ -2868,6 +2872,9 @@
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
+    "unknownTierName": "Current plan",
+    "salesManagedRunBlockedTitle": "Plan inactive",
+    "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
     "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
@@ -3114,6 +3121,7 @@
       "quoteStale": "Your quote changed. Review the updated amount and try again.",
       "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",
       "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
+      "renewsAtAmount": "Renews at {amount}. Cancel anytime.",
       "discountComposition": "Discounts",
       "discount": {
         "plan": "Plan discount",
@@ -3179,7 +3187,8 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
         "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss"
+        "dismiss": "Dismiss",
+        "upgradeBody": "Upgrade your plan to add credits and continue generating."
       },
       "ending": {
         "title": "Your team plan ends on {date}",

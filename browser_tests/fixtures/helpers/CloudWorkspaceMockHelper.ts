@@ -1,5 +1,8 @@
 import type { Locator, Page, Route } from '@playwright/test'
-import type { BillingStatusResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilities,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
 import type {
   Member,
@@ -7,6 +10,7 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -73,9 +77,15 @@ export class CloudWorkspaceMockHelper {
   async setup(
     members: Member[] = DEFAULT_TEAM_MEMBERS,
     activeWorkspace: WorkspaceWithRole = TEAM_WORKSPACE,
-    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS
+    billingStatus: BillingStatusResponse = TEAM_BILLING_STATUS,
+    capabilityOverrides: Partial<BillingCapabilities> = {}
   ): Promise<MemberMockState> {
-    const state = await this.mockBoot(members, activeWorkspace, billingStatus)
+    const state = await this.mockBoot(
+      members,
+      activeWorkspace,
+      billingStatus,
+      capabilityOverrides
+    )
     await new CloudAuthHelper(this.page).mockAuth()
     await this.page.addInitScript((workspaceId) => {
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
@@ -87,7 +97,8 @@ export class CloudWorkspaceMockHelper {
   private async mockBoot(
     members: Member[],
     activeWorkspace: WorkspaceWithRole,
-    billingStatus: BillingStatusResponse
+    billingStatus: BillingStatusResponse,
+    capabilityOverrides: Partial<BillingCapabilities> = {}
   ): Promise<MemberMockState> {
     const state: MemberMockState = {
       members: members.map((m) => ({ ...m })),
@@ -163,6 +174,17 @@ export class CloudWorkspaceMockHelper {
     await page.route('**/api/billing/status', (r) =>
       r.fulfill(jsonRoute(billingStatus))
     )
+    await page.route('**/api/billing/capabilities', (r) => {
+      if (r.request().method() !== 'GET') return r.fallback()
+      return r.fulfill(
+        jsonRoute(
+          createWorkspaceBillingCapabilities(
+            activeWorkspace,
+            capabilityOverrides
+          )
+        )
+      )
+    })
     await page.route('**/api/billing/payment-portal', (r) =>
       r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
     )

@@ -10,6 +10,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
@@ -103,7 +104,8 @@ export function usePricingTableUrlLoader() {
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
   const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions } = useWorkspaceUI()
+  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
+  const { initialize: initializeCapabilities } = useBillingCapabilities()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
   async function loadPricingTableFromUrl() {
@@ -139,6 +141,11 @@ export function usePricingTableUrlLoader() {
     if (typeof param !== 'string' || !param) return
 
     if (!permissions.value.canManageSubscription) return
+
+    // The loader can run before the capability snapshot resolves; a
+    // sales-managed workspace must not see the table through that gap.
+    await initializeCapabilities()
+    if (!canOpenPricingSurface.value) return
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,

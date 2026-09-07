@@ -527,7 +527,7 @@ export function createWebGLCompositor(): Compositor {
         if (canvas !== c) return
         contextLost = true
         if (disposed) return
-        console.warn('[pentrado] WebGL context lost — recreating')
+        console.warn('[LayerEditor] WebGL context lost — recreating')
         queueMicrotask(() => {
           if (recover()) onRestored?.()
         })

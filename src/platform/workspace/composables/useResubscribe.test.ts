@@ -7,6 +7,8 @@ import { useResubscribe } from './useResubscribe'
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
   canManageSubscriptionLifecycle: true,
+  canReactivate: true,
+  canReactivatePlan: true,
   resubscribe: vi.fn(),
   toastAdd: vi.fn(),
   trackResubscribeClicked: vi.fn(),
@@ -27,6 +29,18 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canReactivate: {
+      get value() {
+        return state.canReactivate
+      }
+    }
+  })
+}))
+
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: {
@@ -34,6 +48,11 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
         return {
           canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
         }
+      }
+    },
+    canReactivatePlan: {
+      get value() {
+        return state.canReactivatePlan
       }
     }
   })
@@ -69,12 +88,16 @@ describe('useResubscribe', () => {
   beforeEach(() => {
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
+    state.canReactivatePlan = true
     state.resubscribe.mockResolvedValue(undefined)
   })
 
   it('does not resubscribe after the workspace role loses permission', async () => {
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
+    state.canReactivatePlan = false
 
     await handleResubscribe()
 
@@ -82,6 +105,45 @@ describe('useResubscribe', () => {
     expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
+  })
+
+  it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    state.canReactivatePlan = false
+    const { handleResubscribe, isResubscribing } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).not.toHaveBeenCalled()
+    expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(state.toastAdd).not.toHaveBeenCalled()
+    expect(isResubscribing.value).toBe(false)
+  })
+
+  it('resubscribes when the policy permits it, whatever the raw capability says', async () => {
+    // The legacy rail resolves can_reactivate false while the workspace may
+    // still reactivate; this composable must follow the derived policy. Which
+    // rail produces which value is covered in useWorkspaceUI.test.ts.
+    state.canReactivate = false
+    state.canReactivatePlan = true
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).toHaveBeenCalled()
+  })
+
+  it('refuses whenever the policy denies it', async () => {
+    // Behaviour change: the old gate short-circuited on the legacy rail and ran
+    // no membership check, so a denial there never reached this branch.
+    state.canReactivate = false
+    state.canReactivatePlan = false
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).not.toHaveBeenCalled()
   })
 
   it('fires a started event before resubscribe resolves', async () => {
@@ -100,6 +162,9 @@ describe('useResubscribe', () => {
   it('does not report checkout launch as terminal legacy success', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false
+    // This case is about telemetry staging, not the gate; the workspace is
+    // permitted to reactivate so the flow reaches the checkout launch.
+    state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
 
     await handleResubscribe()

@@ -1,6 +1,7 @@
 import type {
   AcceptInviteResponse,
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -44,6 +45,7 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
+import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -114,6 +116,7 @@ export type { BillingStatus }
 export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
+export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -148,6 +151,7 @@ const workspaceApiClient = axios.create({
 
 // acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
 attachUnifiedRemintInterceptor(workspaceApiClient)
+attachCapabilityRevisionInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getWorkspaceAuthHeaderOrThrow()
@@ -443,6 +447,26 @@ export const workspaceApi = {
         workspaceApiUrl('/billing/balance'),
         { headers }
       )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get billing capabilities for the current workspace
+   * GET /api/billing/capabilities
+   */
+  async getBillingCapabilities(
+    signal?: AbortSignal
+  ): Promise<BillingCapabilitiesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.get<BillingCapabilitiesResponse>(
+          workspaceApiUrl('/billing/capabilities'),
+          { headers, timeout: 10_000, signal }
+        )
       return response.data
     } catch (err) {
       handleAxiosError(err)

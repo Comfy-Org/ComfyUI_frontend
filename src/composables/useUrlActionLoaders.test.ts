@@ -14,12 +14,14 @@ const mocks = vi.hoisted(() => ({
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
   loadTopUp: vi.fn(async () => undefined),
+  loadSettings: vi.fn(),
   loadPaymentReturn: vi.fn(async () => undefined),
   resumePendingPricingFlow: vi.fn(async () => undefined),
   useInvite: vi.fn(),
   useCreateWorkspace: vi.fn(),
   usePricingTable: vi.fn(),
   useTopUp: vi.fn(),
+  useSettings: vi.fn(),
   usePaymentReturn: vi.fn(),
   useSubscriptionDialog: vi.fn()
 }))
@@ -34,6 +36,9 @@ mocks.usePricingTable.mockImplementation(() => ({
 }))
 mocks.useTopUp.mockImplementation(() => ({
   loadTopUpFromUrl: mocks.loadTopUp
+}))
+mocks.useSettings.mockImplementation(() => ({
+  loadSettingsFromUrl: mocks.loadSettings
 }))
 mocks.usePaymentReturn.mockImplementation(() => ({
   loadPaymentReturnFromUrl: mocks.loadPaymentReturn
@@ -54,6 +59,9 @@ vi.mock(
 )
 vi.mock('@/platform/cloud/subscription/composables/useTopUpUrlLoader', () => ({
   useTopUpUrlLoader: mocks.useTopUp
+}))
+vi.mock('@/platform/settings/composables/useSettingsUrlLoader', () => ({
+  useSettingsUrlLoader: mocks.useSettings
 }))
 vi.mock(
   '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader',
@@ -79,6 +87,9 @@ describe('useUrlActionLoaders', () => {
     mocks.useTopUp.mockImplementation(() => ({
       loadTopUpFromUrl: mocks.loadTopUp
     }))
+    mocks.useSettings.mockImplementation(() => ({
+      loadSettingsFromUrl: mocks.loadSettings
+    }))
     mocks.usePaymentReturn.mockImplementation(() => ({
       loadPaymentReturnFromUrl: mocks.loadPaymentReturn
     }))
@@ -97,12 +108,14 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.usePricingTable).not.toHaveBeenCalled()
     expect(mocks.useTopUp).not.toHaveBeenCalled()
+    expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
     expect(mocks.useSubscriptionDialog).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).not.toHaveBeenCalled()
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
+    expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
     expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
   })
@@ -115,6 +128,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
   })
 
@@ -155,6 +169,18 @@ describe('useUrlActionLoaders', () => {
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
+    expect(mocks.loadSettings).toHaveBeenCalledOnce()
+    expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+  })
+
+  it('isolates a settings-loader failure so it does not abort the boot chain', async () => {
+    mocks.loadSettings.mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await expect(runUrlActionLoaders()).resolves.toBeUndefined()
+
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
     expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
   })

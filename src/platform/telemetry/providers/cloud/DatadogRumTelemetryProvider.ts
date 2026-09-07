@@ -3,7 +3,9 @@ import { datadogRum } from '@datadog/browser-rum'
 import type {
   BillingTelemetryEvent,
   ExecutionOutcomeMetadata,
+  ImageLoadFailureMetadata,
   TelemetryProvider,
+  UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata
 } from '../../types'
 import {
@@ -20,6 +22,19 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
       metadata
     )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    datadogRum.addAction(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
   trackBillingEvent(event: BillingTelemetryEvent): void {
