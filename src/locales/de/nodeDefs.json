@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Blocksparse Attention über comfy_kitchen: Jeder Query-Block berücksichtigt exakt eine ausgewählte Teilmenge von Key-Blöcken, wodurch der Rechenaufwand für Attention sinkt. Der relative Geschwindigkeitsgewinn steigt mit der Sequenzlänge, da kurze Sequenzen mit dichter Attention meist schneller sind. Außerhalb des aktiven Zeitplans, bei dense_blocks und unter min_tokens verwendet das Modell das aktive Attention-Backend des dichten Modells.",
+    "display_name": "Blocksparse Attention",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Transformer-Blöcke, die immer dicht ausgeführt werden, z. B. '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Nach diesem Punkt des Zeitplans dicht."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Zusätzliche Tokens mit den höchsten Scores, die jeder Query-Block über seine ausgewählten Blöcke hinaus berücksichtigt. Für mehr Attention-Zeit näher an dicht; 256 empfohlen, 0 deaktiviert. Für VSA ignoriert."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Kürzere Sequenzen bleiben dicht."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Wie exakte Key-Blöcke ausgewählt werden. Sol-Attn: adaptiver Schwellenwert pro Head/Block. top-k (SLA): festes keep_percent überall, nur mit trainierten Weights empfohlen. VSA (FastVideo): Cube-Tiling und grober Branch von FastH3-VSA, erfordert dafür trainierte Weights."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Nur MiniMax-H3. exact_kv: Jede Query berücksichtigt die gepackten Text-/Audio-/Referenzzeilen exakt (~3 % Kosten). exact_kv_and_rows: Führt zusätzlich die Target-Audio-Query-Zeilen dicht aus (hält generiertes Audio intakt)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Vor diesem Punkt des Zeitplans dicht."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Entfernt mit Bria Objekte oder Bereiche, die durch eine mask markiert sind, aus einem Bild.",
     "display_name": "Bria-Radierer",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "Sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "Konvertiert sRGB (Rec.709), HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Verwendet einen SDR-Weißpunkt von 203 Nit und ein HLG-Referenzdisplay mit 1000 Nit. Die Einengung führt für überschüssige Luminanz im gesamten Batch ein Tone-Mapping durch und komprimiert Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben Device und Datentyp des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
+    "display_name": "Bildfarbraum konvertieren",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Speicher-Node auf denselben Farbraum ein."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Farbraum der Eingabepixel."
       }
     },
     "outputs": {
