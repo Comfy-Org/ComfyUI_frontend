@@ -10,7 +10,7 @@ import type {
 } from '../../config/auth-sign-in-state'
 import { authSignInTransition } from '../../config/auth-sign-in-state'
 import { requestedReturnPath } from '../../config/workshop-return'
-import type { WorkshopSessionUser } from '../../config/workshop-session'
+import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
