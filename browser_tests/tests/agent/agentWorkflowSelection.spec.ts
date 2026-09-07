@@ -11,6 +11,101 @@ test.describe(
   'Explicit Agent workflow selection',
   { tag: ['@cloud', '@ui'] },
   () => {
+    test('navigates and removes staged workflow chips while retaining the draft and target', async ({
+      page,
+      workflowSelection
+    }, testInfo) => {
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      const panel = page.locator('#agent-panel-root')
+      const targetPicker = panel.getByRole('button', {
+        name: enMessages.agent.switchWorkflow
+      })
+      await targetPicker.click()
+      await page
+        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+      await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await targetPicker.click()
+      await page
+        .getByRole('menuitemradio', {
+          name: 'Unsaved Workflow (2)',
+          exact: true
+        })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
+      workflowSelection.finishSave(true)
+      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+
+      const composer = panel.getByRole('textbox', { includeHidden: true })
+      await composer.fill('@')
+      await panel
+        .getByRole('menuitem', {
+          name: enMessages.agent.workflows,
+          exact: true
+        })
+        .click()
+      await panel
+        .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
+        .click()
+      await composer.fill('Use this workflow as inspiration')
+      const chip = panel.getByTestId('workflow-reference-chip')
+      const open = chip.getByRole('button', {
+        name: 'Open Unsaved Workflow',
+        exact: true
+      })
+      const remove = chip.getByRole('button', {
+        name: 'Remove Unsaved Workflow reference'
+      })
+      await expect(remove).toHaveCSS('opacity', '0')
+      await open.hover()
+      await expect(remove).toHaveCSS('opacity', '1')
+      const chipBox = await open.boundingBox()
+      const removeBox = await remove.boundingBox()
+      expect(chipBox).not.toBeNull()
+      expect(removeBox).not.toBeNull()
+      expect(removeBox!.y).toBeLessThan(chipBox!.y)
+      expect(removeBox!.x + removeBox!.width).toBeGreaterThan(
+        chipBox!.x + chipBox!.width
+      )
+      await testInfo.attach('workflow-chip-hover', {
+        body: await panel.screenshot({
+          path: testInfo.outputPath('workflow-chip-hover.png')
+        }),
+        contentType: 'image/png'
+      })
+      await open.click()
+      await expect(
+        page.locator('.workflow-tabs .p-togglebutton-checked')
+      ).toHaveText('Unsaved Workflow')
+      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      await expect(composer).toHaveValue('Use this workflow as inspiration')
+      await expect(chip).toBeVisible()
+      expect(workflowSelection.postedMessages).toHaveLength(0)
+
+      await composer.click()
+      await composer.press('Shift+Tab')
+      await expect(remove).toBeFocused()
+      await expect(remove).toHaveCSS('opacity', '1')
+      await remove.press('Enter')
+      await expect(chip).toHaveCount(0)
+      await expect(composer).toHaveValue('Use this workflow as inspiration')
+      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      await expect(
+        page.locator('.workflow-tabs .p-togglebutton-checked')
+      ).toHaveText('Unsaved Workflow')
+      expect(workflowSelection.postedMessages).toHaveLength(0)
+    })
+
     test('explains disabled node references until the selected workflow is visible', async ({
       page,
       workflowSelection

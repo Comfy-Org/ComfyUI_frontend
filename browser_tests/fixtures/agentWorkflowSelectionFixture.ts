@@ -51,7 +51,7 @@ export const workflowSelectionTest = base.extend<{
       if (!success)
         return route.fulfill({ status: 500, body: 'Save unavailable' })
       workflows.push({
-        id: 'a81718a4-02ae-41e6-ae85-c33b7bb880f6',
+        id: `a81718a4-02ae-41e6-ae85-${String(workflows.length + 1).padStart(12, '0')}`,
         name: path.slice('workflows/'.length, -'.json'.length)
       })
       return route.fulfill(

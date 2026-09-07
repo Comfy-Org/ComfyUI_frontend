@@ -3384,6 +3384,108 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
   })
 
+  it.for(['open', 'closed'])(
+    'navigates to a staged reference in an %s tab without changing the target or draft',
+    async (tabState) => {
+      const current = makeTab('wf-cloud-current')
+      const reference = addTab('workflows/reference.json')
+      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      const bodies = mockMessagesEndpoint('wf-cloud-current')
+      setupNodeSelectionCanvas()
+      renderWithSelectedTarget()
+      useAgentPanelStore().isOpen = true
+      await openMentionPicker()
+      await userEvent.click(await screen.findByText('KSampler'))
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'reference' })
+      )
+      await userEvent.type(textbox, 'Keep this draft')
+      if (tabState === 'closed')
+        hostStores.workflow.openTabPaths.delete(reference.path)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open reference' })
+      )
+      await vi.waitFor(() =>
+        expect(hostStores.workflow.activeWorkflow).toBe(reference)
+      )
+      expect(hostStores.workflow.openTabPaths.has(reference.path)).toBe(true)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+      expect(textbox).toHaveValue('Keep this draft')
+      expect(
+        screen.getByRole('button', { name: 'Open reference' })
+      ).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+      ).toBeVisible()
+      expect(bodies).toHaveLength(0)
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove reference reference' })
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Open reference' })
+      ).toBeNull()
+      expect(hostStores.workflow.activeWorkflow).toBe(reference)
+      expect(workflowService.openWorkflow).toHaveBeenCalledOnce()
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() => expect(bodies).toHaveLength(1))
+      expect(bodies[0]).toMatchObject({
+        content: 'Keep this draft',
+        workflow_id: 'wf-cloud-current',
+        selection: { node_ids: ['12'] },
+        workflow_references: []
+      })
+    }
+  )
+
+  it.for(['false', 'throw'])(
+    'keeps a staged reference and warns when navigation returns %s',
+    async (failure) => {
+      const current = makeTab('wf-cloud-current')
+      const reference = addTab('workflows/reference.json')
+      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      const bodies = mockMessagesEndpoint('wf-cloud-current')
+      renderWithSelectedTarget()
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'reference' })
+      )
+      await userEvent.type(textbox, 'Keep this draft')
+      if (failure === 'false')
+        workflowService.openWorkflow.mockResolvedValueOnce(false)
+      else
+        workflowService.openWorkflow.mockRejectedValueOnce(
+          new Error('Cannot open')
+        )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open reference' })
+      )
+      await vi.waitFor(() =>
+        expect(useToastStore().messagesToAdd).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              detail: i18n.global.t('agent.targetNavigationUnavailable')
+            })
+          ])
+        )
+      )
+      expect(hostStores.workflow.activeWorkflow).toBe(current)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+      expect(textbox).toHaveValue('Keep this draft')
+      expect(
+        screen.getByRole('button', { name: 'Open reference' })
+      ).toBeVisible()
+      expect(bodies).toHaveLength(0)
+    }
+  )
+
   it('syncs and opens a closed workflow from a sent reference chip without changing the Agent target', async () => {
     const current = makeTab('wf-cloud-current')
     const reference = addTab('workflows/reference.json')

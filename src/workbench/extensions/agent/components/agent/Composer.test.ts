@@ -728,6 +728,59 @@ describe('Composer', () => {
     ])
   })
 
+  it.for(['pointer', 'keyboard'])(
+    'opens a staged workflow with %s without consuming the draft',
+    async (interaction) => {
+      const { emitted } = mount({
+        workflowReferences: [{ id: 'wf-1', name: 'Water world' }],
+        selectionTags: [{ id: '5', title: 'KSampler' }]
+      })
+      const textarea = screen.getByRole('textbox')
+      await userEvent.type(textarea, 'Keep this prompt')
+      const chip = screen.getByRole('button', { name: 'Open Water world' })
+      if (interaction === 'pointer') await userEvent.click(chip)
+      else {
+        chip.focus()
+        await userEvent.keyboard('{Enter}')
+      }
+
+      expect(emitted().openReferenceWorkflow).toEqual([['wf-1', 'Water world']])
+      expect(emitted().removeWorkflowReference).toBeUndefined()
+      expect(emitted().send).toBeUndefined()
+      expect(textarea).toHaveValue('Keep this prompt')
+      expect(screen.getByTestId('composer-node-section')).toHaveTextContent(
+        'KSampler'
+      )
+    }
+  )
+
+  it.for(['pointer', 'keyboard'])(
+    'removes only the chosen workflow with %s without navigating',
+    async (interaction) => {
+      const { emitted } = mount({
+        workflowReferences: [
+          { id: 'wf-1', name: 'Water world' },
+          { id: 'wf-2', name: 'Portrait lighting' }
+        ]
+      })
+      const textarea = screen.getByRole('textbox')
+      await userEvent.type(textarea, 'Keep this prompt')
+      const remove = screen.getByRole('button', {
+        name: 'Remove Water world reference'
+      })
+      if (interaction === 'pointer') await userEvent.click(remove)
+      else {
+        remove.focus()
+        await userEvent.keyboard(' ')
+      }
+
+      expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
+      expect(emitted().openReferenceWorkflow).toBeUndefined()
+      expect(emitted().send).toBeUndefined()
+      expect(textarea).toHaveValue('Keep this prompt')
+    }
+  )
+
   it('removes the workflow reference before the text caret with Backspace', async () => {
     const { emitted } = mount(
       {},
@@ -743,21 +796,8 @@ describe('Composer', () => {
     const workflowChips = within(inlineInput).getAllByTestId(
       'workflow-reference-chip'
     )
-    expect(workflowChips[0]).toHaveClass(
-      'bg-primary-background/30',
-      'ring-1',
-      'ring-inset',
-      'ring-primary-background/30',
-      'text-primary-background-hover',
-      'rounded-sm',
-      'text-xs/[15px]',
-      'font-normal'
-    )
-    expect(workflowChips[0]).not.toHaveClass('h-5', 'h-7', 'font-medium')
+    expect(workflowChips).toHaveLength(2)
     expect(inlineInput).toContainElement(screen.getByRole('textbox'))
-    expect(
-      within(inlineInput).queryByRole('button', { name: /workflow reference/ })
-    ).toBeNull()
 
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
     await userEvent.type(textarea, 'keep me')
@@ -823,6 +863,33 @@ describe('Composer', () => {
     )
     expect(inlineInput).not.toContainElement(
       screen.getByRole('img', { name: 'cat.png' })
+    )
+  })
+
+  it('keeps uploaded attachments when navigating from a staged workflow', async () => {
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const onOpenReferenceWorkflow = vi.fn()
+    const Host = defineComponent({
+      setup: () => () =>
+        h(Composer, {
+          ref: composer,
+          workflowReferences: [{ id: 'wf-1', name: 'Water world' }],
+          onOpenReferenceWorkflow
+        })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png'
+    })
+    await nextTick()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open Water world' })
+    )
+    expect(onOpenReferenceWorkflow).toHaveBeenCalledWith('wf-1', 'Water world')
+    expect(screen.getByTestId('composer-asset-section')).toHaveTextContent(
+      'cat.png'
     )
   })
 
