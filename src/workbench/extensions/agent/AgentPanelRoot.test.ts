@@ -3279,7 +3279,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('does not include ordinary open tabs in turn context', async () => {
+  it('sends ordinary open tabs without selecting them as references', async () => {
     makeTab()
     addTab('workflows/side.json')
     const bodies = mockMessagesEndpoint('wf-cloud-current', [
@@ -3291,8 +3291,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-cloud-current',
-      open_tabs: [{ workflow_id: 'wf-cloud-current', name: 'current' }],
-      current_tab: 'wf-cloud-current'
+      open_tabs: [
+        { workflow_id: 'wf-cloud-current', name: 'current' },
+        { workflow_id: 'wf-cloud-side', name: 'side' }
+      ],
+      workflow_references: []
     })
   })
 
@@ -3428,7 +3431,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('omits a backgrounded tab whose binding was persisted before a reload', async () => {
+  it('includes a backgrounded tab whose binding was persisted before a reload', async () => {
     localStorage.setItem(
       'Comfy.Agent.WorkflowTabBindings',
       JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
@@ -3440,12 +3443,15 @@ describe('AgentPanelRoot workflow binding', () => {
     await renderAndSend('first message')
 
     expect(bodies[0]).toMatchObject({
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }],
-      current_tab: 'wf-42'
+      open_tabs: [
+        { workflow_id: 'wf-42', name: 'current' },
+        { workflow_id: 'wf-old', name: 'mountain' }
+      ],
+      workflow_references: []
     })
   })
 
-  it('sends the target first followed only by explicitly selected workflow references', async () => {
+  it('sends explicit references separately from the complete editor snapshot', async () => {
     makeTab('wf-42')
     const referenced = addTab('workflows/reference.json')
     const ordinary = addTab('workflows/ordinary.json')
@@ -3463,12 +3469,14 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      current_tab: 'wf-42',
       open_tabs: [
         { workflow_id: 'wf-42', name: 'current' },
-        { workflow_id: 'wf-reference', name: 'reference' }
-      ]
+        { workflow_id: 'wf-reference', name: 'reference' },
+        { workflow_id: 'wf-ordinary', name: 'ordinary' }
+      ],
+      workflow_references: [{ workflow_id: 'wf-reference', name: 'reference' }]
     })
+    expect(bodies[0]).not.toHaveProperty('current_tab')
   })
 
   it('skips the draft on first send from an unbound empty tab', async () => {

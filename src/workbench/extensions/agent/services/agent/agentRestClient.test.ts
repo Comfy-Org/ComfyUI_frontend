@@ -52,6 +52,26 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
   })
 
+  it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
+    'serializes explicit workflow references independently of open tabs: %j',
+    async (workflowReferences) => {
+      respond(jsonResponse(202, turnAccepted))
+      const input = {
+        content: 'compare',
+        workflowId: 'target',
+        tabs: { open_tabs: [{ workflow_id: 'ordinary', name: 'Ordinary' }] },
+        workflowReferences
+      }
+      await makeClient().postMessage('new', input)
+      const body = JSON.parse(lastCall().init.body as string)
+      expect(body.open_tabs).toEqual(input.tabs.open_tabs)
+      expect(body.workflow_id).toBe('target')
+      if (workflowReferences === undefined)
+        expect(body).not.toHaveProperty('workflow_references')
+      else expect(body.workflow_references).toEqual(workflowReferences)
+    }
+  )
+
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
     await makeClient().getMessages('t7')

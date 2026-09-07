@@ -693,7 +693,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
-  it('(h3) keeps workflow references in the local turn without inventing a wire field', async () => {
+  it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     const references = [{ id: 'wf-context', name: 'Context workflow' }]
@@ -703,6 +703,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
       content: 'compare this',
+      workflowReferences: [
+        { workflow_id: 'wf-context', name: 'Context workflow' }
+      ],
       selection: undefined,
       attachments: undefined
     })
