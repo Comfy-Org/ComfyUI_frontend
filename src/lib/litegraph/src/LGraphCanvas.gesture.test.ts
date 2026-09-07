@@ -366,6 +366,20 @@ describe('LGraphCanvas pointer gestures', () => {
         'emit.group-double-click'
       ])
     })
+
+    it('press sets selected_group; a node press leaves it untouched', () => {
+      gesture.click(G_TITLE)
+      expect(canvas.selected_group).toBe(group)
+
+      gesture.click(A_BODY)
+      expect(canvas.selected_group).toBe(group)
+
+      gesture.click(EMPTY)
+      expect(canvas.selected_group).toBeNull()
+
+      gesture.drag(G_TITLE, FAR)
+      expect(canvas.selected_group).toBeNull()
+    })
   })
 
   describe('group resize handle', () => {
