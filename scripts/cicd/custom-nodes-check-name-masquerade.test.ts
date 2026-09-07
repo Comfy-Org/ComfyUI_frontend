@@ -250,6 +250,10 @@ const proofRowsFor = (context: Context): string[] =>
 
 const ORDINARY_SHARD = '4/5'
 
+// The rows the suite greps by a proof-specific regex rather than by the
+// caller's `grep`.
+const PROOF_ROWS_WITH_OWN_REGEX = ['1', '2', '3', '9', '15']
+
 // One non-default value per dispatch input. Every one of these changes WHAT is
 // tested, so every one has to change the rendered name.
 const OVERRIDE_CASES: [string, Record<string, Value>][] = [
@@ -412,23 +416,50 @@ describe('custom-node check-run names cannot masquerade as the ref grade', () =>
     )
   })
 
-  it('feeds the gate and the summary the filter that actually ran', () => {
-    // The name suppresses the caller's `grep` under `record_interactions`; if
-    // the gate still read the raw input, two identically-named dispatches would
-    // enforce different exact-count gating.
+  it('feeds every GREP_FILTER consumer the filter that actually ran', () => {
+    // The name suppresses the caller's `grep` under `record_interactions`, and
+    // a proof row greps its own regex, so a consumer that rendered the raw
+    // input would gate and report a filter that never ran. Asserting the
+    // rendered value per context rather than one identical source line leaves
+    // a consumer free to differ, as long as what it renders is still true.
     const source = readFileSync(WORKFLOW_PATH, 'utf8')
-    const effectiveFilter =
-      "${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}"
+    const grep = 'VideoHelperSuite'
 
-    const grepAssignments = [...source.matchAll(/^\s*GREP_FILTER:.*$/gm)].map(
-      ([line]) => line.trim()
-    )
+    const grepAssignments = [
+      ...source.matchAll(/^\s*GREP_FILTER:\s*(\S.*)$/gm)
+    ].map(([, value]) => value.trim().replace(/^"(.*)"$/, '$1'))
 
-    expect(grepAssignments.length).toBeGreaterThanOrEqual(3)
+    expect(grepAssignments.length).toBeGreaterThan(0)
+
     for (const assignment of grepAssignments) {
-      expect(assignment, 'a GREP_FILTER consumer reads the raw input').toBe(
-        `GREP_FILTER: ${effectiveFilter}`
-      )
+      expect(
+        renderName(assignment, dispatchContext({ grep }, { proof_row: '0' })),
+        'a clean dispatch loses the caller grep'
+      ).toBe(grep)
+
+      expect(
+        renderName(
+          assignment,
+          dispatchContext(
+            { grep, record_interactions: true },
+            { proof_row: '0' }
+          )
+        ),
+        'a consumer reads the raw input under record_interactions'
+      ).toBe('interaction profiles')
+
+      for (const proofRow of PROOF_ROWS_WITH_OWN_REGEX) {
+        const rendered = renderName(
+          assignment,
+          dispatchContext({ grep }, { proof_row: proofRow })
+        )
+
+        expect(rendered, `proof row ${proofRow} reports no filter`).not.toBe('')
+        expect(
+          rendered,
+          `proof row ${proofRow} reports the caller grep`
+        ).not.toBe(grep)
+      }
     }
   })
 
