@@ -23,9 +23,9 @@ interface Props {
 
 const { page } = Astro.props
 
-const { locale, url } = pageContext(
+const { locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const routes = getRoutes(locale)
@@ -47,7 +47,7 @@ const breadcrumbs = crumbs.map((crumb) =>
 // Organization / WebSite / WebPage / BreadcrumbList come from BaseLayout.
 const faqPage = page.faq
   ? faqPageNode(
-      url,
+      canonicalUrl,
       page.faq.items.map((item) => ({
         question: item.question[locale] || item.question.en,
         answer: faqAnswerPlainText(item.answer[locale] || item.answer.en),

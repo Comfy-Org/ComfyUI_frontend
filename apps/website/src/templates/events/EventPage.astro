@@ -32,9 +32,9 @@ interface Props {
 
 const { event } = Astro.props
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 
@@ -48,8 +48,8 @@ const videoJsonLd: JsonLdNode | undefined =
   isPast && event.recordingVideoId && event.media
     ? videoObjectNode({
         siteUrl,
-        id: jsonLdId(url, 'video'),
-        pageUrl: url,
+        id: jsonLdId(canonicalUrl, 'video'),
+        pageUrl: canonicalUrl,
         name: title,
         description,
         thumbnailUrl: event.media.src,
@@ -64,7 +64,7 @@ const videoJsonLd: JsonLdNode | undefined =
 
 const eventJsonLd: JsonLdNode | undefined = isPast
   ? undefined
-  : eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: url, locale })
+  : eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: canonicalUrl, locale })
 
 const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
 

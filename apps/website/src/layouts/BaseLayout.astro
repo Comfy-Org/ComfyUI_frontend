@@ -67,7 +67,8 @@ const { siteUrl, locale, url } = pageContext(
 // and catastrophic for a translated one: it would have told Google the English
 // page is the original for every Chinese page on the site.
 const canonicalURL = new URL(canonicalPath(new URL(url).pathname, locale), url)
-const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const shouldNoindex =
+  noindex || isNoindexPathname(Astro.originPathname)
 const alternates = shouldNoindex
   ? []
   : // `locale` comes from Astro.currentLocale, which is the ONLY thing that
@@ -89,7 +90,7 @@ const bannerVisible =
     currentLocale: locale,
     currentSection: 'sitewide',
     now: new Date(),
-  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.originPathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
 const gtmId = 'GTM-NP9JM6K7'

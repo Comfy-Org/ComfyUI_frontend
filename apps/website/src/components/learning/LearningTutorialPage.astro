@@ -27,20 +27,20 @@ interface Props {
 
 const { tutorial } = Astro.props
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 
 const title = tutorial.title[locale] || tutorial.title.en
 const description = tutorialDescription(tutorial, locale)
-const videoId = jsonLdId(url, 'video')
+const videoId = jsonLdId(canonicalUrl, 'video')
 
 const video: JsonLdNode = videoObjectNode({
   siteUrl,
   id: videoId,
-  pageUrl: url,
+  pageUrl: canonicalUrl,
   name: title,
   description,
   thumbnailUrl: tutorial.poster,
