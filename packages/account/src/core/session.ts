@@ -34,6 +34,13 @@ const CredentialResponseSchema = z.object({
   permissions: z.array(z.string())
 })
 
+const CachedCredentialSchema = CredentialResponseSchema.omit({
+  expires_at: true
+}).extend({
+  expiresAt: z.number(),
+  uid: z.string()
+})
+
 export interface AccountCredential {
   readonly token: string
   /** ms since epoch */
@@ -125,7 +132,7 @@ export interface IdentityPort<TUser extends AccountUser = AccountUser> {
 
 /**
  * Raw string storage for the credential cache. Hosts wrap their medium —
- * sessionStorage today, a cookie-backed session tomorrow. Each client
+ * per-tab browser storage today, a cookie-backed session tomorrow. Each client
  * instance sees only its own storage: signing out in one tab leaves another
  * tab's session live until the server revokes it and the next remint 401s.
  */
@@ -201,15 +208,358 @@ const DEFAULT_FRESH_MARGIN_MS = 5 * 60 * 1000
 const DEFAULT_MINT_TIMEOUT_MS = 15_000
 
 export function isCredentialFresh(
-  _session: AccountCredential,
-  _now: number,
-  _freshMarginMs: number = DEFAULT_FRESH_MARGIN_MS
+  session: AccountCredential,
+  now: number,
+  freshMarginMs: number = DEFAULT_FRESH_MARGIN_MS
 ): boolean {
-  throw new Error('unimplemented')
+  return session.expiresAt - now > freshMarginMs
+}
+
+/**
+ * The status→code mapping from `requestToken`: 401/403/404 are permanent
+ * failures with their own codes; everything else — 5xx, network failure,
+ * abort, unparseable body — collapses to TOKEN_EXCHANGE_FAILED, matching
+ * production's default branch.
+ */
+function codeForResponse(status: number): SessionErrorCode {
+  if (status === 401) return 'INVALID_FIREBASE_TOKEN'
+  if (status === 403) return 'ACCESS_DENIED'
+  if (status === 404) return 'WORKSPACE_NOT_FOUND'
+  return 'TOKEN_EXCHANGE_FAILED'
+}
+
+function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) {
+    return Promise.reject(new DOMException('Aborted', 'AbortError'))
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new DOMException('Aborted', 'AbortError'))
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort)
+        resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(error)
+      }
+    )
+  })
 }
 
 export function createSessionClient<TUser extends AccountUser = AccountUser>(
-  _clientOptions: SessionClientOptions
+  clientOptions: SessionClientOptions
 ): SessionClient<TUser> {
-  throw new Error('unimplemented')
+  const {
+    exchangeUrl,
+    storage,
+    freshMarginMs = DEFAULT_FRESH_MARGIN_MS
+  } = clientOptions
+
+  let currentUser: TUser | null = null
+  let credential: AccountCredential | undefined
+  let failure: SessionFailure | undefined
+  let detachCurrent: (() => void) | undefined
+  /**
+   * Bumped on every identity event so a mint can tell "the listener has not
+   * settled yet" (the legitimate popup path) from "an identity event
+   * happened while I was in flight" (must invalidate).
+   */
+  let identityEpoch = 0
+  const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
+
+  let inFlight: Promise<SessionResult> | undefined
+  let inFlightUid: string | undefined
+  let inFlightForced = false
+
+  function getSnapshot(): SessionSnapshot<TUser> {
+    if (!currentUser) {
+      return { phase: 'signed-out', user: null, session: undefined }
+    }
+    if (credential) {
+      return { phase: 'authenticated', user: currentUser, session: credential }
+    }
+    if (failure) {
+      return { phase: 'error', user: currentUser, session: undefined, failure }
+    }
+    return { phase: 'minting', user: currentUser, session: undefined }
+  }
+
+  function publish(): void {
+    const snapshot = getSnapshot()
+    listeners.forEach((listener) => listener(snapshot))
+  }
+
+  function safeRead(): string | null {
+    try {
+      return storage.read()
+    } catch {
+      return null
+    }
+  }
+
+  function safeWrite(value: string): void {
+    try {
+      storage.write(value)
+    } catch {
+      void 0
+    }
+  }
+
+  function safeClear(): void {
+    try {
+      storage.clear()
+    } catch {
+      void 0
+    }
+  }
+
+  function readCached(uid: string): AccountCredential | undefined {
+    const raw = safeRead()
+    if (raw === null) return undefined
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return undefined
+    }
+    const result = CachedCredentialSchema.safeParse(parsed)
+    if (!result.success || result.data.uid !== uid) return undefined
+    return {
+      token: result.data.token,
+      expiresAt: result.data.expiresAt,
+      uid: result.data.uid,
+      workspace: result.data.workspace,
+      role: result.data.role,
+      permissions: result.data.permissions
+    }
+  }
+
+  /**
+   * Pure network + parse: the schema, the status→code mapping, and the
+   * malformed-body handling match `requestToken`. The AbortSignal/timeout
+   * plumbing is this package's addition — production's callers are
+   * timer-scheduled, these are user-cancelable.
+   */
+  async function mint(
+    user: AccountUser,
+    options: SessionRequestOptions
+  ): Promise<SessionResult> {
+    const {
+      fetchImpl = clientOptions.fetchImpl ?? globalThis.fetch,
+      signal = clientOptions.signal,
+      timeoutMs = clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS
+    } = options
+
+    if (signal?.aborted) {
+      return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    }
+
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    signal?.addEventListener('abort', abort, { once: true })
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+    let response: Response
+    try {
+      const idToken = await abortable(user.getIdToken(), controller.signal)
+      response = await fetchImpl(exchangeUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        // Empty body: the backend resolves the personal workspace.
+        body: JSON.stringify({}),
+        signal: controller.signal
+      })
+    } catch {
+      return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    } finally {
+      clearTimeout(timeout)
+      signal?.removeEventListener('abort', abort)
+    }
+
+    if (!response.ok) {
+      return {
+        status: 'error',
+        code: codeForResponse(response.status),
+        httpStatus: response.status
+      }
+    }
+
+    let rawBody: unknown
+    try {
+      rawBody = await response.json()
+    } catch {
+      return {
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        httpStatus: response.status
+      }
+    }
+
+    const parseResult = CredentialResponseSchema.safeParse(rawBody)
+    if (!parseResult.success) {
+      return {
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        httpStatus: response.status
+      }
+    }
+    // Date.parse can yield NaN on a schema-valid string, so the expiry gets
+    // its own check after the schema, as in production.
+    const expiresAt = Date.parse(parseResult.data.expires_at)
+    if (Number.isNaN(expiresAt)) {
+      return {
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        httpStatus: response.status
+      }
+    }
+
+    const session: AccountCredential = {
+      token: parseResult.data.token,
+      expiresAt,
+      uid: user.uid,
+      workspace: parseResult.data.workspace,
+      role: parseResult.data.role,
+      permissions: parseResult.data.permissions
+    }
+    safeWrite(
+      JSON.stringify({ ...session, expires_at: parseResult.data.expires_at })
+    )
+    return { status: 'ok', session }
+  }
+
+  /**
+   * Later callers for the same uid reuse one in-flight mint. A forced mint
+   * reuses an in-flight mint only when that one is also forced, so a 401
+   * retry never resolves to a non-forced mint still holding the stale token.
+   */
+  function sharedMint(
+    user: AccountUser,
+    options: SessionRequestOptions,
+    forced: boolean
+  ): Promise<SessionResult> {
+    if (
+      inFlight !== undefined &&
+      inFlightUid === user.uid &&
+      (!forced || inFlightForced)
+    ) {
+      return inFlight
+    }
+    inFlightUid = user.uid
+    inFlightForced = forced
+    const running = mint(user, options).finally(() => {
+      if (inFlight !== running) return
+      inFlight = undefined
+      inFlightUid = undefined
+      inFlightForced = false
+    })
+    inFlight = running
+    return running
+  }
+
+  function ensureCore(
+    user: AccountUser,
+    options: SessionRequestOptions
+  ): Promise<SessionResult> {
+    const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
+    const cached = readCached(user.uid)
+    if (cached && isCredentialFresh(cached, now, freshMarginMs)) {
+      return Promise.resolve({ status: 'ok', session: cached })
+    }
+    return sharedMint(user, options, false)
+  }
+
+  function remintCore(
+    user: AccountUser,
+    options: SessionRequestOptions
+  ): Promise<SessionResult> {
+    safeClear()
+    return sharedMint(user, options, true)
+  }
+
+  async function refreshWith(
+    core: (
+      user: AccountUser,
+      options: SessionRequestOptions
+    ) => Promise<SessionResult>,
+    requestedUser?: AccountUser,
+    options: SessionRequestOptions = {}
+  ): Promise<SessionResult | undefined> {
+    const user = requestedUser ?? currentUser
+    if (!user) return undefined
+
+    const startEpoch = identityEpoch
+    const result = await core(user, options)
+    if (
+      currentUser?.uid !== user.uid &&
+      (identityEpoch !== startEpoch || !requestedUser || currentUser !== null)
+    ) {
+      return undefined
+    }
+    if (result.status === 'ok') {
+      credential = result.session
+      failure = undefined
+    } else {
+      credential = undefined
+      failure = result
+    }
+    publish()
+    return result
+  }
+
+  return {
+    attachIdentity(identity) {
+      detachCurrent?.()
+      let active = true
+      const unsubscribe = identity.onUserChanged((next) => {
+        if (!active) return
+        identityEpoch += 1
+        currentUser = next
+        credential = undefined
+        failure = undefined
+        if (!next) {
+          safeClear()
+          publish()
+          return
+        }
+        publish()
+        void refreshWith(ensureCore, next)
+      })
+      const detach = () => {
+        if (!active) return
+        active = false
+        detachCurrent = undefined
+        unsubscribe()
+        currentUser = null
+        credential = undefined
+        failure = undefined
+        publish()
+      }
+      detachCurrent = detach
+      return detach
+    },
+    getSnapshot,
+    subscribe(listener) {
+      listeners.add(listener)
+      listener(getSnapshot())
+      return () => listeners.delete(listener)
+    },
+    getToken() {
+      return credential !== undefined && currentUser?.uid === credential.uid
+        ? credential.token
+        : undefined
+    },
+    ensureFresh: (requestedUser, options) =>
+      refreshWith(ensureCore, requestedUser, options),
+    remint: (requestedUser, options) =>
+      refreshWith(remintCore, requestedUser, options),
+    clearCache() {
+      safeClear()
+    }
+  }
 }
