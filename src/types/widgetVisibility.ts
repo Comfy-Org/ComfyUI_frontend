@@ -1,5 +1,6 @@
 /**
- * Widget visibility as a data-oriented component (ADR 0003/0008).
+ * Widget visibility as a data-oriented component (ADR-ECS-0008,
+ * ADR-ECS-WIDGETS-0023).
  *
  * Static, registration-time policy lives in {@link WidgetSurfaces}: one tier
  * per rendering surface. Dynamic, runtime state lives in
