@@ -47,7 +47,7 @@ const BARE_AGGREGATE_NAME = 'E2E Custom Nodes Test'
 /* A small evaluator for the GitHub expression subset these names use.        */
 /* -------------------------------------------------------------------------- */
 
-type Value = string | boolean | number | null
+type Value = string | boolean | number | null | Value[]
 
 interface Context {
   inputs: Record<string, Value>
@@ -240,13 +240,20 @@ const dispatchContext = (
 // The matrix expansion is itself input-dependent, so derive it rather than
 // hardcoding it: `detection_proof_row` reaches the matrix job's name through
 // `matrix.proof_row`, not directly.
+const asList = (value: Value): string[] => {
+  if (!Array.isArray(value)) {
+    throw new Error(`expected a list, got ${String(value)}`)
+  }
+  return value.map(String)
+}
+
 const proofRowsFor = (context: Context): string[] =>
-  (
+  asList(
     evaluate(
       proofRowExpression.replace(/^\s*\$\{\{|\}\}\s*$/g, '').trim(),
       context
-    ) as unknown as string[]
-  ).map(String)
+    )
+  )
 
 const ORDINARY_SHARD = '4/5'
 
