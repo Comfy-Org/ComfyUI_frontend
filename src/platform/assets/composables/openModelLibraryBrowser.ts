@@ -19,7 +19,11 @@ export async function openModelLibraryBrowser(): Promise<void> {
     onAssetSelected: (asset) => {
       const error = startModelNodeDragFromAsset(asset, 'asset_browser')
       if (error) {
-        reportError(error, { errorType: 'model_node_creation_failure' })
+        reportError(new Error(error.message), {
+          errorType: 'model_node_creation_failure',
+          tags: { code: error.code },
+          context: { assetId: error.assetId, details: error.details }
+        })
         toastStore.add({
           severity: 'error',
           summary: t('g.error'),
