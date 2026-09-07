@@ -2,6 +2,9 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import {
@@ -10,6 +13,8 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { MovingOutputLink } from '@/lib/litegraph/src/canvas/MovingOutputLink'
+import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import { toRerouteId } from '@/types/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
@@ -20,6 +25,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvas2DContext,
+  createMockCanvasPointerEvent,
   createTestCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -36,8 +42,10 @@ describe('link presentation transfer across recreation flows', () => {
     const target = createTestNode(rootGraph, ['number'])
     const link = origin.connect(0, target, 0)
     if (!link) throw new Error('Failed to connect interior test link')
-    link.hidden = true
-    link.label = 'Interior'
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), link.id, {
+      hidden: true,
+      label: 'Interior'
+    })
 
     const { subgraph, node: subgraphNode } = rootGraph.convertToSubgraph(
       new Set<Positionable>([origin, target])
@@ -48,14 +56,23 @@ describe('link presentation transfer across recreation flows', () => {
         candidate.origin_id !== SUBGRAPH_INPUT_ID &&
         candidate.target_id !== SUBGRAPH_OUTPUT_ID
     )
-    expect(interior?.hidden).toBe(true)
-    expect(interior?.label).toBe('Interior')
+    if (!interior) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(subgraph),
+        interior.id
+      )
+    ).toEqual({ hidden: true, label: 'Interior' })
 
     rootGraph.unpackSubgraph(subgraphNode)
 
     const [unpacked] = [...rootGraph.links.values()]
-    expect(unpacked?.hidden).toBe(true)
-    expect(unpacked?.label).toBe('Interior')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        unpacked.id
+      )
+    ).toEqual({ hidden: true, label: 'Interior' })
   })
 
   it('carries boundary presentation onto the parent link and back through unpack', () => {
@@ -67,8 +84,10 @@ describe('link presentation transfer across recreation flows', () => {
     const boundary = exterior.connect(0, origin, 0)
     if (!boundary) throw new Error('Failed to connect boundary test link')
     origin.connect(0, target, 0)
-    boundary.hidden = true
-    boundary.label = 'Boundary'
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), boundary.id, {
+      hidden: true,
+      label: 'Boundary'
+    })
 
     const { node: subgraphNode } = rootGraph.convertToSubgraph(
       new Set<Positionable>([origin, target])
@@ -77,16 +96,26 @@ describe('link presentation transfer across recreation flows', () => {
     const parentBoundary = [...rootGraph.links.values()].find(
       (candidate) => candidate.origin_id === exterior.id
     )
-    expect(parentBoundary?.hidden).toBe(true)
-    expect(parentBoundary?.label).toBe('Boundary')
+    if (!parentBoundary) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        parentBoundary.id
+      )
+    ).toEqual({ hidden: true, label: 'Boundary' })
 
     rootGraph.unpackSubgraph(subgraphNode)
 
     const merged = [...rootGraph.links.values()].find(
       (candidate) => candidate.origin_id === exterior.id
     )
-    expect(merged?.hidden).toBe(true)
-    expect(merged?.label).toBe('Boundary')
+    if (!merged) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        merged.id
+      )
+    ).toEqual({ hidden: true, label: 'Boundary' })
   })
 
   it('preserves presentation through clipboard copy and paste', () => {
@@ -95,8 +124,10 @@ describe('link presentation transfer across recreation flows', () => {
     const target = createTestNode(rootGraph, ['number'])
     const link = origin.connect(0, target, 0)
     if (!link) throw new Error('Failed to connect clipboard test link')
-    link.hidden = true
-    link.label = 'Copied'
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), link.id, {
+      hidden: true,
+      label: 'Copied'
+    })
     const canvas = createTestCanvas(
       rootGraph,
       createMockCanvas2DContext({
@@ -114,8 +145,12 @@ describe('link presentation transfer across recreation flows', () => {
     const pasted = [...links.values()][0]
     expect(pasted).toBeDefined()
     expect(pasted.id).not.toBe(link.id)
-    expect(pasted.hidden).toBe(true)
-    expect(pasted.label).toBe('Copied')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        pasted.id
+      )
+    ).toEqual({ hidden: true, label: 'Copied' })
   })
 
   it('keeps presentation when a subgraph-input boundary link is retargeted', () => {
@@ -134,8 +169,10 @@ describe('link presentation transfer across recreation flows', () => {
       (candidate) => candidate.origin_id === SUBGRAPH_INPUT_ID
     )
     if (!boundary) throw new Error('Interior boundary link was not found')
-    boundary.hidden = true
-    boundary.label = 'Boundary'
+    useLinkPresentationStore().patch(graphScopeOf(subgraph), boundary.id, {
+      hidden: true,
+      label: 'Boundary'
+    })
     const other = createTestNode(subgraph, ['number'])
 
     const moving = new ToInputFromIoNodeLink(
@@ -154,8 +191,13 @@ describe('link presentation transfer across recreation flows', () => {
         candidate.origin_id === SUBGRAPH_INPUT_ID &&
         candidate.target_id === other.id
     )
-    expect(retargeted?.hidden).toBe(true)
-    expect(retargeted?.label).toBe('Boundary')
+    if (!retargeted) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(subgraph),
+        retargeted.id
+      )
+    ).toEqual({ hidden: true, label: 'Boundary' })
   })
 
   it('moves fan-out presentation onto the merged boundary only when unambiguous', () => {
@@ -167,14 +209,22 @@ describe('link presentation transfer across recreation flows', () => {
     const hiddenLink = exterior.connect(0, first, 0)
     if (!hiddenLink) throw new Error('Failed to connect fan-out test link')
     exterior.connect(0, second, 0)
-    hiddenLink.hidden = true
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), hiddenLink.id, {
+      hidden: true
+    })
 
     rootGraph.convertToSubgraph(new Set<Positionable>([first, second]))
 
     const boundary = [...rootGraph.links.values()].find(
       (candidate) => candidate.origin_id === exterior.id
     )
-    expect(boundary?.hidden).toBe(false)
+    if (!boundary) throw new Error('Expected merged boundary link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        boundary.id
+      )
+    ).toBeUndefined()
   })
 
   it('moves uniform fan-out presentation onto the merged boundary', () => {
@@ -188,18 +238,73 @@ describe('link presentation transfer across recreation flows', () => {
     if (!firstLink || !secondLink) {
       throw new Error('Failed to connect fan-out test links')
     }
-    firstLink.hidden = true
-    firstLink.label = 'Shared'
-    secondLink.hidden = true
-    secondLink.label = 'Shared'
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), firstLink.id, {
+      hidden: true,
+      label: 'Shared'
+    })
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), secondLink.id, {
+      hidden: true,
+      label: 'Shared'
+    })
 
-    rootGraph.convertToSubgraph(new Set<Positionable>([first, second]))
+    const { node: host } = rootGraph.convertToSubgraph(
+      new Set<Positionable>([first, second])
+    )
 
     const boundary = [...rootGraph.links.values()].find(
       (candidate) => candidate.origin_id === exterior.id
     )
-    expect(boundary?.hidden).toBe(true)
-    expect(boundary?.label).toBe('Shared')
+    if (!boundary) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        boundary.id
+      )
+    ).toEqual({ hidden: true, label: 'Shared' })
+
+    rootGraph.unpackSubgraph(host)
+
+    expect([...rootGraph.links.values()]).toHaveLength(2)
+    for (const link of rootGraph.links.values()) {
+      expect(
+        useLinkPresentationStore().getPresentation(
+          graphScopeOf(rootGraph),
+          link.id
+        )
+      ).toEqual({ hidden: true, label: 'Shared' })
+    }
+  })
+
+  it('preserves a subgraph input presentation across a nested conversion', () => {
+    const root = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(root))
+    const exterior = createTestNode(root, [], ['number'])
+    const first = createTestNode(root, ['number'], ['number'])
+    const second = createTestNode(root, ['number'])
+    exterior.connect(0, first, 0)
+    first.connect(0, second, 0)
+    const { subgraph } = root.convertToSubgraph(
+      new Set<Positionable>([first, second])
+    )
+    const boundary = [...subgraph.links.values()].find(
+      (link) => link.origin_id === SUBGRAPH_INPUT_ID
+    )
+    if (!boundary) throw new Error('Expected subgraph input link')
+    const store = useLinkPresentationStore()
+    const scope = graphScopeOf(subgraph)
+    store.patch(scope, boundary.id, { hidden: true, label: 'Nested' })
+
+    const { node: host } = subgraph.convertToSubgraph(new Set(subgraph.nodes))
+
+    const replacement = [...subgraph.links.values()].find(
+      (link) =>
+        link.origin_id === SUBGRAPH_INPUT_ID && link.target_id === host.id
+    )
+    if (!replacement) throw new Error('Expected nested boundary link')
+    expect(store.getPresentation(scope, replacement.id)).toEqual({
+      hidden: true,
+      label: 'Nested'
+    })
   })
 
   it('keeps presentation when the input end is moved to another node', () => {
@@ -209,15 +314,63 @@ describe('link presentation transfer across recreation flows', () => {
     const other = createTestNode(rootGraph, ['number'])
     const link = origin.connect(0, target, 0)
     if (!link) throw new Error('Failed to connect moving test link')
-    link.hidden = true
-    link.label = 'Moved'
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), link.id, {
+      hidden: true,
+      label: 'Moved'
+    })
 
     const moving = new MovingInputLink(rootGraph, link)
     const events = new CustomEventTarget<LinkConnectorEventMap>()
     const newLink = moving.connectToInput(other, other.inputs[0], events)
 
-    expect(newLink?.hidden).toBe(true)
-    expect(newLink?.label).toBe('Moved')
+    if (!newLink) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        newLink.id
+      )
+    ).toEqual({ hidden: true, label: 'Moved' })
+  })
+
+  it('carries presentation to every target when an input drag fans out through a reroute', () => {
+    const graph = createTestRootGraph()
+    const origin = createTestNode(graph, [], ['number'])
+    const oldTarget = createTestNode(graph, ['number'])
+    const otherOrigin = createTestNode(graph, [], ['number'])
+    const first = createTestNode(graph, ['number'])
+    const second = createTestNode(graph, ['number'])
+    const original = origin.connect(0, oldTarget, 0)
+    const firstLink = otherOrigin.connect(0, first, 0)
+    const secondLink = otherOrigin.connect(0, second, 0)
+    if (!original || !firstLink || !secondLink)
+      throw new Error('Expected connected test links')
+    const reroute = graph.setReroute({
+      id: toRerouteId(1),
+      pos: [100, 100],
+      linkIds: [firstLink.id, secondLink.id]
+    })
+    if (!reroute) throw new Error('Expected test reroute')
+    firstLink.parentId = reroute.id
+    secondLink.parentId = reroute.id
+    const store = useLinkPresentationStore()
+    const scope = graphScopeOf(graph)
+    store.patch(scope, original.id, { hidden: true, label: 'Fan out' })
+    const connector = new LinkConnector(() => {})
+    onTestFinished(() => connector.reset(true))
+
+    connector.moveInputLink(graph, oldTarget, oldTarget.inputs[0])
+    connector.dropOnReroute(reroute, createMockCanvasPointerEvent(100, 100))
+
+    for (const target of [first, second]) {
+      const link = target.getInputLink(0)
+      if (!link) throw new Error('Expected retargeted link')
+      expect(link.origin_id).toBe(origin.id)
+      expect(store.getPresentation(scope, link.id)).toEqual({
+        hidden: true,
+        label: 'Fan out'
+      })
+    }
+    expect(store.getPresentation(scope, original.id)).toBeUndefined()
   })
 
   it('keeps presentation when the output end is moved to another node', () => {
@@ -227,14 +380,21 @@ describe('link presentation transfer across recreation flows', () => {
     const target = createTestNode(rootGraph, ['number'])
     const link = origin.connect(0, target, 0)
     if (!link) throw new Error('Failed to connect moving test link')
-    link.hidden = true
-    link.label = 'Rehomed'
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), link.id, {
+      hidden: true,
+      label: 'Rehomed'
+    })
 
     const moving = new MovingOutputLink(rootGraph, link)
     const events = new CustomEventTarget<LinkConnectorEventMap>()
     const newLink = moving.connectToOutput(other, other.outputs[0], events)
 
-    expect(newLink?.hidden).toBe(true)
-    expect(newLink?.label).toBe('Rehomed')
+    if (!newLink) throw new Error('Expected transferred link')
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        newLink.id
+      )
+    ).toEqual({ hidden: true, label: 'Rehomed' })
   })
 })

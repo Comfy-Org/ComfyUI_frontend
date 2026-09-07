@@ -3,6 +3,7 @@ import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -17,6 +18,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -36,7 +38,7 @@ import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { LLink, slotFloatingLinks, transferLinkPresentation } from './LLink'
+import { LLink, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
   inputLinkId,
@@ -4023,8 +4025,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (const { link: linkId } of item.inputs) {
           if (linkId == null) continue
 
-          const link = this.graph?.links.get(linkId)?.asSerialisable()
-          if (link) serialisable.links.push(link)
+          const graph = this.graph
+          const link = graph?.links.get(linkId)
+          if (graph && link) {
+            serialisable.links.push({
+              ...link.asSerialisable(),
+              ...useLinkPresentationStore().getPresentation(
+                graphScopeOf(graph),
+                linkId
+              )
+            })
+          }
         }
 
         // Find all unique referenced subgraphs
@@ -4261,7 +4272,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           afterRerouteId
         )
         if (link) {
-          transferLinkPresentation(info, link)
+          transferLinkPresentation(graphScopeOf(graph), info, link.id)
           links.set(toLinkId(info.id), link)
         }
       }
