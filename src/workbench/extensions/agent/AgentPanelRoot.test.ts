@@ -4199,6 +4199,97 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeNull()
     expect(focusNodeInstance).not.toHaveBeenCalled()
   })
+  it('blocks graph node references until the visible workflow is selected', async () => {
+    const target = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    setupNodeSelectionCanvas()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentPanelStore().isOpen = true
+    const action = screen.getByRole('button', { name: 'add nodes from graph,' })
+    expect(action).toHaveAttribute('aria-disabled', 'true')
+    expect(action).toHaveAccessibleDescription('Please select a workflow first')
+    await userEvent.click(action)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+
+    useAgentPanelStore().selectedWorkflow = fromPartial<ComfyWorkflow>(target)
+    await nextTick()
+    expect(action).not.toHaveAttribute('aria-disabled', 'true')
+    await userEvent.click(action)
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
+
+    hostStores.workflow.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(action).toHaveAttribute('aria-disabled', 'true')
+    expect(action).toHaveAccessibleDescription(
+      'Switch to current to add nodes.'
+    )
+    await userEvent.click(action)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    hostStores.workflow.activeWorkflow = target
+    await nextTick()
+    expect(action).not.toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('clears old node references when selecting another workflow with the same node id', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    const bodies = mockMessagesEndpoint('wf-other')
+    setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    expect(
+      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
+    ).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
+    ).toBeNull()
+    await sendFromComposer('edit the other workflow')
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-other' })
+    expect(bodies[0]).not.toHaveProperty('selection')
+  })
+
+  it('keeps staged target nodes separate from a different viewed workflow restore', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    hostStores.workflow.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+    const nodeSelection = useAgentNodeSelectionStore()
+    nodeSelection.beginWorkflowLoad()
+    nodeSelection.restoreNodeIds(['9'])
+    state.selectedItems.add(state.nodes[0])
+    hostStores.canvas.updateSelectedItems()
+    await nextTick()
+    expect(nodeSelection.isLoadingWorkflow).toBe(false)
+    expect(
+      screen.queryByRole('button', { name: 'Remove VAE Decode #9 reference' })
+    ).toBeNull()
+    await sendFromComposer('edit the selected workflow')
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-42',
+      selection: { node_ids: ['12'] }
+    })
+  })
+
   it('does not resend a canvas selection after its chip was consumed', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-42')

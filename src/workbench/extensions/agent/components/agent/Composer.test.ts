@@ -54,6 +54,59 @@ describe('Composer', () => {
     setActivePinia(createPinia())
   })
 
+  it('blocks all node entry points and explains why while workflow references remain available', async () => {
+    const reason = 'Please select a workflow first'
+    const props = {
+      nodeReferenceDisabledReason: reason,
+      getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
+    }
+    const { emitted } = mount(props)
+    const inline = screen.getByRole('button', { name: 'add nodes from graph,' })
+    expect(inline).toHaveAttribute('aria-disabled', 'true')
+    expect(inline).toHaveAccessibleDescription(reason)
+    await userEvent.click(inline)
+    expect(emitted().selectNodes).toBeUndefined()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    const plusNodes = screen.getByRole('menuitem', { name: 'Nodes' })
+    expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+    expect(plusNodes).toHaveAccessibleDescription(reason)
+    await userEvent.click(plusNodes)
+    expect(emitted().selectNodes).toBeUndefined()
+    await userEvent.keyboard('{Escape}')
+
+    const input = screen.getByRole('textbox')
+    await userEvent.type(input, '@')
+    const nodes = screen.getByRole('menuitem', { name: 'Nodes' })
+    expect(nodes).toHaveAttribute('aria-disabled', 'true')
+    expect(nodes).toHaveAccessibleDescription(reason)
+    await userEvent.keyboard('{Enter}')
+    expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+    await userEvent.keyboard('{ArrowDown}{Enter}')
+    expect(screen.getByRole('menuitem', { name: 'Back' })).toBeVisible()
+    expect(emitted().requestWorkflowReferences).toHaveLength(1)
+    expect(emitted().mentionPick).toBeUndefined()
+  })
+
+  it('invalidates an open Nodes submenu when the viewed workflow becomes ineligible', async () => {
+    const { rerender, emitted } = mount({
+      getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
+    })
+    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.keyboard('{Enter}')
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+    await rerender({
+      nodeReferenceDisabledReason: 'Switch to Portrait to add nodes.'
+    })
+    expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().mentionPick).toBeUndefined()
+  })
+
   it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
