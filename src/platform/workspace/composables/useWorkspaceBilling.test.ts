@@ -281,6 +281,29 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
+    it('maps a scheduled plan change into subscription info', async () => {
+      const scheduledChange = {
+        plan_slug: 'team-annual',
+        effective_at: '2026-06-01T00:00:00Z',
+        team_credit_stop: {
+          id: 'team_2500',
+          credits_monthly: 527_500,
+          stop_usd: 2500
+        }
+      }
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        scheduled_change: scheduledChange
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.scheduledChange).toEqual(
+        scheduledChange
+      )
+    })
+
     it('recovers a pending subscription operation from billing status', async () => {
       const actionUrl = 'https://invoice.stripe.com/sensitive-token'
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({

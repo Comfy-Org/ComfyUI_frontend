@@ -150,6 +150,13 @@ describe('deriveBillingBanner', () => {
     )
   })
 
+  it('keeps recovery notices ahead of a scheduled change', () => {
+    expect(derive({ ...paused, hasScheduledChange: true })).toBe('paused')
+    expect(derive({ ...paymentFailed, hasScheduledChange: true })).toBe(
+      'paymentFailed'
+    )
+  })
+
   it('prefers the ending banner when the plan is cancelled, not changing', () => {
     expect(
       derive({
