@@ -1213,18 +1213,18 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Assets.UseAssetAPI',
-    name: 'Use Asset API for model library',
+    name: 'Use Asset API for model library (deprecated)',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
     defaultValue: isCloud ? true : false,
-    experimental: true
+    deprecated: true
   },
   {
     id: 'Comfy.ModelLibrary.UseAssetBrowser',
     name: 'Use the asset browser for the model library',
     type: 'hidden',
     tooltip:
-      'When enabled alongside the asset API, the model library opens the asset browser. Otherwise it opens the sidebar tree.',
+      'When the backend supports assets, the model library opens the asset browser instead of the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },

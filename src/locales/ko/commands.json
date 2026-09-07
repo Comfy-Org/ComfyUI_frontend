@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "서브그래프 검색 별칭 설정"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "실험적: AssetAPI 활성화"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "캔버스 성능"
   },

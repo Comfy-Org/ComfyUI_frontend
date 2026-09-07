@@ -78,6 +78,7 @@ import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/Electr
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelNodeDragFromAsset'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -94,9 +95,8 @@ const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
 const toastStore = useToastStore()
 const { t } = useI18n()
-const usesAssetApi = computed(() =>
-  settingStore.get('Comfy.Assets.UseAssetAPI')
-)
+const { flags } = useFeatureFlags()
+const usesAssetApi = computed(() => flags.assetsEnabled)
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')

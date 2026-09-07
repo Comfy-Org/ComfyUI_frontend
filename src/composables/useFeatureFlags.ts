@@ -292,6 +292,11 @@ export function useFeatureFlags() {
         false
       )
     },
+    /**
+     * The `isCloud` short-circuit means "cloud backends always support
+     * assets" and avoids the WS `feature_flags` handshake race at boot. It is
+     * a boot shortcut, not a semantic cloud gate — do not read it as one.
+     */
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     }

@@ -6,7 +6,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -279,7 +279,7 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
-  const settingStore = useSettingStore()
+  const { flags } = useFeatureFlags()
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -308,12 +308,12 @@ export const useModelStore = defineStore('models', () => {
   )
 
   /**
-   * Whether model contents come from the asset API. Named to avoid confusion
-   * with assetService.isAssetAPIEnabled(), which is cloud-gated and governs
-   * the asset browser surfaces, not this store's data source.
+   * Whether model contents come from the asset API. Follows the backend
+   * assets capability flag; assetService.isWidgetAssetPickerEnabled()
+   * separately hard-gates widget surfaces to cloud.
    */
   function usesAssetApi(): boolean {
-    return settingStore.get('Comfy.Assets.UseAssetAPI')
+    return flags.assetsEnabled
   }
 
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
@@ -535,7 +535,24 @@ export const useModelStore = defineStore('models', () => {
     unsubscribeModelsScanned()
   })
 
-  const { flags } = useFeatureFlags()
+  /**
+   * The WS `feature_flags` handshake can land after createGetModelsFunc()
+   * already captured its data-source choice at store-init time, so a flag
+   * flip after boot must force a reload to switch the sidebar's source.
+   *
+   * One handshake carrying both `assetsEnabled` and `supportsModelTypeTags`
+   * fires both watchers, issuing two concurrent reloadModels() calls. That is
+   * safe by design: prepareModelFolders()'s request-id discipline makes the
+   * stale response a no-op, so no debouncing is needed here.
+   */
+  watch(
+    () => flags.assetsEnabled,
+    () => {
+      reloadModels().catch((error) => {
+        reportError(error, { errorType: 'model_library_capability_reload' })
+      })
+    }
+  )
 
   watch(
     () => flags.supportsModelTypeTags,
