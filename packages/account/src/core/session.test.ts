@@ -619,6 +619,64 @@ describe('sign-in state ownership', () => {
   })
 })
 
+describe('storage writes after identity changes', () => {
+  it('never writes a credential minted before an external sign-out', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const late = client.remint(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    identity.fire(null)
+    expect(storage.raw()).toBeNull()
+    release(jsonResponse(200, mintBody({ token: 'stale-after-signout' })))
+
+    expect(await late).toBeUndefined()
+    expect(
+      storage.raw(),
+      'the in-memory guard is not enough; a late mint must not resurrect a signed-out session in storage'
+    ).toBeNull()
+  })
+
+  it('never writes a credential minted before a detach', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    const detach = client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const late = client.remint(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    detach()
+    client.clearCache()
+    release(jsonResponse(200, mintBody({ token: 'stale-after-detach' })))
+    await late
+
+    expect(
+      storage.raw(),
+      'a mint that outlives its attachment must not repopulate the cache the host cleared'
+    ).toBeNull()
+  })
+})
+
 describe('storage resilience', () => {
   it('degrades a throwing storage read to a cache miss', async () => {
     const fetchImpl = okFetch()
