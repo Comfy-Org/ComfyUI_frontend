@@ -198,3 +198,4 @@ void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')
 bootstrapTracer.milestone('app-mounted')
+bootstrapTracer.armWatchdog()

@@ -24,7 +24,8 @@
  * finishes. `complete()` is therefore called from the single place that owns
  * that transition (`GraphCanvas`'s onMounted `finally`), so the trace covers
  * the extension and object-info phases that run inside `ComfyApp.setup()` and
- * so a startup that threw still reports.
+ * so a startup that threw still reports. A startup that never gets there is
+ * reported by `armWatchdog()`, armed from `main.ts` once the app is mounted.
  *
  * Usage:
  *   import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -32,9 +33,17 @@
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
 import { useTelemetry } from '@/platform/telemetry'
+import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
 import { perfMark, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
+
+/**
+ * Startup past this is abnormal by any reading — the slowest healthy cloud
+ * load profiled is ~5 s, and the reports that prompted this instrumentation
+ * were minutes.
+ */
+const BOOTSTRAP_WATCHDOG_MS = 30_000
 
 /** All known startup phase names. Extending this list is the only change
  *  required to add a new tracked phase. */
@@ -64,6 +73,7 @@ class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
+  private _watchdog: ReturnType<typeof setTimeout> | undefined
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -138,15 +148,40 @@ class BootstrapTracer {
   complete(outcome: 'completed' | 'failed' = 'completed'): void {
     if (this._completed) return
     this._completed = true
+    clearTimeout(this._watchdog)
+    for (const phase of [...this._spans.keys()]) this._stopPhase(phase)
+    this._report(outcome)
+  }
+
+  /**
+   * Report startup as still running if it has not completed by `deadlineMs`.
+   *
+   * A session that hangs never reaches `complete()`, so without this the loads
+   * users actually report — the ones that spin for minutes — are the only ones
+   * that produce no data at all. The watchdog row does not end the trace: the
+   * terminal row still follows if startup eventually finishes.
+   */
+  armWatchdog(deadlineMs = BOOTSTRAP_WATCHDOG_MS): void {
+    clearTimeout(this._watchdog)
+    this._watchdog = setTimeout(() => {
+      if (this._completed) return
+      this._report('timed_out', [...this._spans.keys()])
+    }, deadlineMs)
+  }
+
+  private _report(
+    outcome: BootstrapCompleteMetadata['outcome'],
+    pending?: BootstrapPhase[]
+  ): void {
     try {
-      for (const phase of [...this._spans.keys()]) this._stopPhase(phase)
       const totalMs = Math.round(performance.now())
       const rows = this.summary()
       useTelemetry()?.trackBootstrapComplete({
         total_ms: totalMs,
         outcome,
         phase_count: rows.length,
-        phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs]))
+        phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
+        ...(pending?.length ? { pending } : {})
       })
       this._logSummary(rows, totalMs)
     } catch {

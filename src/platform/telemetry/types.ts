@@ -106,20 +106,29 @@ export interface ImageLoadFailureMetadata {
 
 /**
  * One row per session describing how long startup took and where the time
- * went. `total_ms` is measured from navigation start to the moment the loading
- * screen comes down, so it is directly comparable to what a user experiences
- * and can be percentiled across sessions without joining per-phase events.
+ * went. `total_ms` is measured from navigation start, so it is directly
+ * comparable to what a user experiences and can be percentiled across sessions
+ * without joining per-phase events.
  *
- * `outcome` distinguishes a startup that completed from one that threw partway
- * through; without it the slow and broken sessions are the ones missing from
- * the data, which biases every percentile fast.
+ * `outcome` keeps the bad sessions in the data:
+ * - `completed` — the loading screen came down normally.
+ * - `failed` — startup threw; the loading screen came down anyway.
+ * - `timed_out` — startup was still running at the watchdog deadline. Emitted
+ *   *in addition to* whichever terminal row eventually follows, so a load that
+ *   hangs is counted even when it never finishes. `pending` names the phases
+ *   still open, which is where the session is stuck.
+ *
+ * Without the `timed_out` row the sessions users complain about are precisely
+ * the ones absent from the data.
  */
 export interface BootstrapCompleteMetadata {
   total_ms: number
-  outcome: 'completed' | 'failed'
+  outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
   /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
   phases: Record<string, number>
+  /** Phases still running when this row was emitted. Only set for `timed_out`. */
+  pending?: string[]
 }
 
 /**

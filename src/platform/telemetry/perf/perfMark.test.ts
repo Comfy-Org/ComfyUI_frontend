@@ -128,4 +128,45 @@ describe('bootstrapTracer', () => {
 
     expect(trackBootstrapComplete).toHaveBeenCalledOnce()
   })
+
+  it('reports a startup still running at the watchdog deadline', async () => {
+    const tracer = await freshTracer()
+
+    await tracer.settle('startup/remote-config', () => Promise.resolve())
+    tracer.startPhase('auth-gate/user-store')
+    tracer.armWatchdog(30_000)
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    const metadata = trackBootstrapComplete.mock
+      .calls[0][0] as BootstrapCompleteMetadata
+    expect(metadata.outcome).toBe('timed_out')
+    expect(metadata.pending).toEqual(['auth-gate/user-store'])
+    expect(Object.keys(metadata.phases)).toEqual(['startup/remote-config'])
+  })
+
+  it('still reports the terminal row after a watchdog row', async () => {
+    const tracer = await freshTracer()
+
+    tracer.startPhase('auth-gate/user-store')
+    tracer.armWatchdog(30_000)
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.complete()
+
+    expect(trackBootstrapComplete).toHaveBeenCalledTimes(2)
+    expect(
+      trackBootstrapComplete.mock.calls.map(
+        ([m]) => (m as BootstrapCompleteMetadata).outcome
+      )
+    ).toEqual(['timed_out', 'completed'])
+  })
+
+  it('does not report a watchdog row once startup has completed', async () => {
+    const tracer = await freshTracer()
+
+    tracer.armWatchdog(30_000)
+    tracer.complete()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(trackBootstrapComplete).toHaveBeenCalledOnce()
+  })
 })
