@@ -294,7 +294,7 @@
       />
 
       <Button
-        v-if="captureMode && !quoteReady"
+        v-if="captureMode && !quoteReady && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -308,7 +308,7 @@
       </Button>
 
       <Button
-        v-if="savedMethods?.length"
+        v-if="savedMethods?.length && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -322,7 +322,7 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length"
+        v-if="!usePaymentElement && !savedMethods?.length && !parkedCheckoutRecovery"
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"

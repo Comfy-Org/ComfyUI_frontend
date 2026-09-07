@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
+  BillingStatus,
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -216,7 +217,7 @@ const {
       }
     },
     mockSubscription: { value: null as { isCancelled: boolean } | null },
-    mockBillingStatus: { value: null as string | null }
+    mockBillingStatus: { value: null as BillingStatus | null }
   }
 })
 

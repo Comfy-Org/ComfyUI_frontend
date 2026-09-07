@@ -364,6 +364,20 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
+  it('hides the standard subscribe action during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', parkedCheckoutRecovery: true },
+      global: globalOptions
+    })
+
+    // Both emit addCreditCard; rendering them together offers the same action twice.
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
   it('retries the subscribe from the parked-checkout prompt', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator', parkedCheckoutRecovery: true },
