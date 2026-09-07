@@ -13,7 +13,7 @@ const mockCreateInterpolator = vi.hoisted(() =>
   })
 )
 
-vi.mock('@/components/curve/curveUtils', () => ({
+vi.mock(import('@/components/curve/curveUtils'), () => ({
   createInterpolator: mockCreateInterpolator
 }))
 

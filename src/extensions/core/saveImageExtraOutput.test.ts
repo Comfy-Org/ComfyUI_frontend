@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -62,8 +60,6 @@ async function createNodeWithFilenamePrefix(
 
 describe('Comfy.SaveImageExtraOutput', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const graph = new LGraph()
     const sampler = new LGraphNode('Sampler')
     sampler.properties['Node name for S&R'] = 'Sampler'
