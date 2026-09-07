@@ -258,7 +258,10 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   <DropdownMenuItemIndicator
                     class="flex size-4 items-center justify-center"
                   >
-                    <span class="icon-[lucide--check] size-4" />
+                    <span
+                      aria-hidden="true"
+                      class="icon-[comfy--comfy-c] size-2.5 text-brand-yellow"
+                    />
                   </DropdownMenuItemIndicator>
                 </span>
               </DropdownMenuRadioItem>

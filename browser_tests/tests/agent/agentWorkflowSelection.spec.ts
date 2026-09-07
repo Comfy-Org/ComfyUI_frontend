@@ -158,6 +158,26 @@ test.describe(
         contentType: 'image/png'
       })
 
+      await panel
+        .getByRole('button', { name: enMessages.agent.switchWorkflow })
+        .click()
+      const checkedTarget = page.getByRole('menuitemradio', { checked: true })
+      await expect(checkedTarget).toHaveText('Unsaved Workflow')
+      await expect(
+        page
+          .getByRole('group', { name: enMessages.agent.currentTab })
+          .getByRole('menuitemradio')
+      ).not.toBeChecked()
+      await testInfo.attach('agent-target-picker', {
+        body: await page.getByRole('menu').screenshot({
+          path: testInfo.outputPath('agent-target-picker.png')
+        }),
+        contentType: 'image/png'
+      })
+      await page
+        .getByPlaceholder(enMessages.agent.searchWorkflows)
+        .press('Escape')
+
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(targetMarker).toBeVisible()
       await page
