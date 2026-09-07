@@ -17,6 +17,18 @@ const SHARED_COPY: ReadonlyArray<readonly [string, string]> = [
   ['auth.signIn.error.popupBlocked', AUTH_ERROR_MESSAGES['auth/popup-blocked']],
   ['auth.signIn.error.blocked', AUTH_ERROR_MESSAGES['signupBlocked']],
   ['auth.signIn.error.generic', AUTH_ERROR_MESSAGES['generic']],
+  [
+    'auth.signIn.error.invalidCredentials',
+    AUTH_ERROR_MESSAGES['auth/invalid-credential']
+  ],
+  [
+    'auth.signIn.error.emailInUse',
+    AUTH_ERROR_MESSAGES['auth/email-already-in-use']
+  ],
+  [
+    'auth.signIn.error.tooManyRequests',
+    AUTH_ERROR_MESSAGES['auth/too-many-requests']
+  ],
   ['auth.signIn.signedInHeading', SESSION_SUCCESS_MESSAGES.signedInHeading],
   ['auth.signIn.signedInAs', SESSION_SUCCESS_MESSAGES.signedInAs]
 ]
