@@ -147,12 +147,28 @@ export interface SessionRequestOptions {
   readonly now?: () => number
   readonly signal?: AbortSignal
   readonly timeoutMs?: number
+  /** Mint for this workspace instead of the server-resolved personal one. */
+  readonly workspaceId?: string
+}
+
+/**
+ * Opt-in proactive refresh, mirroring the cloud store's scheduled-refresh
+ * semantics (its buffer, retry base, and retry cap are the defaults): arm at
+ * expiry minus the buffer, retry transient failures with doubling backoff,
+ * stop on sign-out, detach, or a permanent failure. Hosts whose consumers
+ * read the token synchronously need this; valid-on-read hosts do not.
+ */
+export interface RefreshSchedulerOptions {
+  readonly bufferMs?: number
+  readonly retryBaseMs?: number
+  readonly maxRetries?: number
 }
 
 export interface SessionClientOptions extends SessionRequestOptions {
   readonly exchangeUrl: string
   readonly storage: CredentialStorage
   readonly freshMarginMs?: number
+  readonly refreshScheduler?: RefreshSchedulerOptions
 }
 
 export type SessionSnapshot<TUser extends AccountUser = AccountUser> =

@@ -328,6 +328,84 @@ describe('ensureFresh', () => {
     ).toBe('uid-2')
   })
 
+  it('threads workspace_id into the mint body when a workspace is requested', async () => {
+    const fetchImpl = okFetch()
+    const { client } = makeClient({ fetchImpl })
+
+    await client.ensureFresh(testUser(), { workspaceId: 'ws-9' })
+
+    const [, init] = fetchImpl.mock.calls[0]
+    expect(
+      init?.body,
+      'the workspace mint body must match requestToken: workspace_id or empty'
+    ).toBe(JSON.stringify({ workspace_id: 'ws-9' }))
+  })
+
+  it('never serves a cached personal credential for an explicit workspace request', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        200,
+        mintBody({ workspace: { id: 'ws-9', name: 'Team', type: 'team' } })
+      )
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(storage)
+
+    const result = await client.ensureFresh(testUser(), {
+      workspaceId: 'ws-9'
+    })
+
+    expect(
+      fetchImpl,
+      'a personal credential authorizes the wrong workspace'
+    ).toHaveBeenCalledOnce()
+    expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
+  })
+
+  it('serves a fresh cached credential for its own workspace without a network call', async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(storage, {
+      workspace: { id: 'ws-9', name: 'Team', type: 'team' }
+    })
+
+    const result = await client.ensureFresh(testUser(), {
+      workspaceId: 'ws-9'
+    })
+
+    expect(fetchImpl).not.toHaveBeenCalled()
+    expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
+  })
+
+  it('never shares an in-flight mint across different workspace targets', async () => {
+    let releaseFirst!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(
+          200,
+          mintBody({ workspace: { id: 'ws-9', name: 'Team', type: 'team' } })
+        )
+      )
+    const { client } = makeClient({ fetchImpl })
+    const user = testUser()
+
+    const personal = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const team = client.ensureFresh(user, { workspaceId: 'ws-9' })
+    releaseFirst(jsonResponse(200, mintBody()))
+    const [, teamResult] = await Promise.all([personal, team])
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(
+      teamResult?.status === 'ok' && teamResult.session.workspace.id,
+      'a workspace mint joining a personal mint would hand back the wrong scope'
+    ).toBe('ws-9')
+  })
+
   it('resolves an expired-cache read with the NEW token when the mint lands after the call', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
@@ -457,6 +535,33 @@ describe('isPermanentSessionError', () => {
       expect(isPermanentSessionError(code)).toBe(permanent)
     }
   )
+})
+
+describe('re-mint observability', () => {
+  it('publishes a fresh authenticated snapshot on every re-mint', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, mintBody({ token: `jwt-${(minted += 1)}` }))
+    )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const seenTokens: string[] = []
+    client.subscribe((snapshot) => {
+      if (snapshot.phase === 'authenticated') {
+        seenTokens.push(snapshot.session.token)
+      }
+    })
+
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('jwt-1'))
+    await client.remint()
+
+    expect(
+      seenTokens,
+      'a host hook rotating cookies on re-mint needs a guaranteed snapshot per new token'
+    ).toEqual(['jwt-1', 'jwt-2'])
+  })
 })
 
 describe('sign-in state ownership', () => {

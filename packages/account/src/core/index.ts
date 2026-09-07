@@ -3,6 +3,7 @@ export type {
   AccountUser,
   CredentialStorage,
   IdentityPort,
+  RefreshSchedulerOptions,
   SessionClient,
   SessionClientOptions,
   SessionErrorCode,
