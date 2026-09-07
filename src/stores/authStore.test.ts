@@ -43,6 +43,12 @@ const { mockResetSocket } = vi.hoisted(() => ({
   mockResetSocket: vi.fn()
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 const mockTeamWorkspaceStore = vi.hoisted(() => ({
   activeWorkspaceId: null as string | null,
   resetForIdentityChange: vi.fn()
@@ -1024,6 +1030,34 @@ describe('useAuthStore', () => {
 
       // The just-created user is deleted so the email is freed for retry.
       expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports an orphaning rollback failure to telemetry', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockUser.delete.mockRejectedValue(new Error('delete down'))
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      expect(mockUser.delete).toHaveBeenCalledTimes(2)
+      expect(
+        mockReportError,
+        'a silently orphaned account bricks every retry with email-already-in-use and nobody learns'
+      ).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'auth_signup_rollback_failed'
+      })
     })
 
     it('does not delete the user on a successful registration', async () => {
