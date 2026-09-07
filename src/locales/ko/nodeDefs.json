@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "comfy_kitchen을 통한 블록 희소 어텐션: 각 쿼리 블록이 선택된 키 블록 하위 집합에 정확히 어텐션하여 어텐션 연산량을 줄입니다. 짧은 시퀀스는 일반적으로 밀집 방식이 더 빠르므로, 시퀀스 길이가 길수록 상대적인 속도 향상도 커집니다. 활성 스케줄 범위 밖, dense_blocks 및 min_tokens 미만에서는 모델이 활성 밀집 모델 어텐션 백엔드를 사용합니다.",
+    "display_name": "블록 희소 어텐션",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "항상 밀집 방식으로 실행되는 Transformer 블록입니다. 예: '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "스케줄의 이 지점 이후 밀집 방식으로 처리합니다."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "각 쿼리 블록이 선택된 블록 외에 어텐션하는 추가 상위 점수 토큰 수입니다. 값이 클수록 밀집 방식에 가까워져 어텐션 시간이 늘어납니다. 256을 권장하며, 0은 비활성화합니다. VSA에서는 무시됩니다."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "이보다 짧은 시퀀스는 밀집 방식으로 유지됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "정확한 키 블록을 선택하는 방식입니다. Sol-Attn: 헤드/블록별 적응형 임계값. top-k (SLA): 모든 위치에서 고정된 keep_percent를 사용하며, 학습된 가중치에서만 권장됩니다. VSA (FastVideo): FastH3-VSA의 큐브 타일링 및 거친 분기를 사용하며, 이를 위해 학습된 가중치가 필요합니다."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 전용입니다. exact_kv: 모든 쿼리가 패킹된 텍스트/오디오/참조 행에 정확히 어텐션합니다(약 3% 비용). exact_kv_and_rows: 여기에 대상 오디오 쿼리 행을 밀집 방식으로 추가 실행하여 생성된 오디오를 그대로 유지합니다."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "스케줄의 이 지점 전까지 밀집 방식으로 처리합니다."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria를 사용하여 이미지에서 mask로 윤곽 지정된 객체 또는 영역을 제거합니다.",
     "display_name": "Bria 지우개",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "시그마"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ)를 변환합니다. 203니트 SDR 화이트와 1000니트 HLG 기준 디스플레이를 사용합니다. 축소 시 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 장치 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "display_name": "이미지 색 공간 변환",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "입력 픽셀의 색 공간입니다."
       }
     },
     "outputs": {

@@ -69,7 +69,6 @@ browser_tests/tests/_recording-session.spec.ts
 browser_tests/tests/_recorded-code.txt
 browser_tests/**/*.raw.spec.ts
 
-.env
 
 dist.zip
 
@@ -114,3 +113,4 @@ matrix-proof/
 
 # Agent telemetry working files
 /telemetry/
+config.bat

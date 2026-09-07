@@ -137,7 +137,7 @@ const acceptTypes = computed(() => {
   // that can handle a wide range of formats
   switch (props.assetKind) {
     case 'image':
-      return 'image/*'
+      return 'image/*,.exr'
     case 'video':
       return 'video/*'
     case 'audio':
