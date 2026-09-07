@@ -35,6 +35,7 @@
  */
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
 import { perfMark, perfPoint } from './perfMark'
@@ -198,7 +199,11 @@ export class BootstrapTracer {
           .then(({ DatadogRumTelemetryProvider }) => {
             new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
           })
-          .catch(() => {})
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'bootstrap_telemetry_fallback_failure'
+            })
+          })
       }
       this._logSummary(rows, totalMs)
     } catch {
