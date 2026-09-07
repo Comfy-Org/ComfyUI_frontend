@@ -322,7 +322,9 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length && !parkedCheckoutRecovery"
+        v-if="
+          !usePaymentElement && !savedMethods?.length && !parkedCheckoutRecovery
+        "
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
