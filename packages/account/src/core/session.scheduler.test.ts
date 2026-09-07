@@ -287,6 +287,58 @@ describe('opt-in refresh scheduler', () => {
     ).toBe(JSON.stringify({ workspace_id: 'ws-team' }))
   })
 
+  it('never lets a stale scheduled refresh revert a workspace switch', async () => {
+    let releaseScheduled!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-personal'))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseScheduled = resolve))
+      )
+      .mockImplementationOnce(
+        async () =>
+          new Response(
+            JSON.stringify({
+              token: 'jwt-team',
+              permissions: ['workspace:read'],
+              expires_at: new Date(
+                Date.now() + NINETY_MINUTES_MS
+              ).toISOString(),
+              workspace: { id: 'ws-team', name: 'Team', type: 'team' },
+              role: 'member'
+            }),
+            { status: 200 }
+          )
+      )
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-personal')
+    })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    const switched = await client.remint(user, { workspaceId: 'ws-team' })
+    expect(switched?.status).toBe('ok')
+
+    releaseScheduled(mintResponse('jwt-stale-personal'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      client.getToken(),
+      'a scheduled personal refresh resolving after a workspace switch must not silently revert it'
+    ).toBe('jwt-team')
+    const snapshot = client.getSnapshot()
+    expect(
+      snapshot.phase === 'authenticated' && snapshot.session.workspace.id
+    ).toBe('ws-team')
+  })
+
   it('arms nothing without the opt-in', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
     const client = makeClient({ fetchImpl, refreshScheduler: undefined })

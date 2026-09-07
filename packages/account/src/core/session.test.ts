@@ -434,6 +434,46 @@ describe('ensureFresh', () => {
     ).toBe('ws-9')
   })
 
+  it('never lets a slower personal mint commit over a completed workspace switch', async () => {
+    let releasePersonal!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releasePersonal = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(
+          200,
+          mintBody({
+            token: 'team-jwt',
+            workspace: { id: 'ws-9', name: 'Team', type: 'team' }
+          })
+        )
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+
+    const personal = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const team = await client.remint(user, { workspaceId: 'ws-9' })
+    expect(team?.status === 'ok' && team.session.token).toBe('team-jwt')
+
+    releasePersonal(jsonResponse(200, mintBody({ token: 'personal-jwt' })))
+    const superseded = await personal
+
+    expect(
+      client.getToken(),
+      'a slower personal mint resolving after a workspace switch must not silently revert it'
+    ).toBe('team-jwt')
+    expect(
+      superseded,
+      'a superseded mint resolves undefined, like one outlived by an identity change'
+    ).toBeUndefined()
+  })
+
   it('resolves an expired-cache read with the NEW token when the mint lands after the call', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
