@@ -162,21 +162,30 @@ const translations = {
     en: 'Back to Workshop',
     'zh-CN': '返回 Workshop'
   },
-  'auth.signIn.error.popupDismissed': {
-    en: 'The sign-in window closed before finishing. Try again.',
-    'zh-CN': '登录窗口在完成前被关闭，请重试。'
+  'auth.signIn.error.popupClosed': {
+    en: 'The sign-in window closed before sign-in finished. Please try again.',
+    'zh-CN': '登录完成前登录窗口已关闭。请重试。'
+  },
+  'auth.signIn.error.popupCancelled': {
+    en: 'Another sign-in window was already open, so this one was cancelled. Please try again.',
+    'zh-CN': '另一个登录窗口已打开，因此此窗口已取消。请重试。'
+  },
+  'auth.signIn.error.popupBlocked': {
+    en: 'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
+    'zh-CN': '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。'
   },
   'auth.signIn.error.domain': {
     en: 'Sign-in is not available on this address yet.',
     'zh-CN': '当前地址暂不支持登录。'
   },
   'auth.signIn.error.blocked': {
-    en: 'Sign-ups are temporarily unavailable. Please try again later.',
-    'zh-CN': '注册暂时不可用，请稍后再试。'
+    en: "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org.",
+    'zh-CN':
+      '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。'
   },
   'auth.signIn.error.generic': {
-    en: 'Sign-in failed. Please try again.',
-    'zh-CN': '登录失败，请重试。'
+    en: 'Something went wrong while signing you in. Please try again.',
+    'zh-CN': '登录时出现问题，请重试。'
   },
   'auth.signIn.error.provisioning': {
     en: 'You are signed in, but account setup did not finish. Please try again shortly.',
@@ -8592,7 +8601,7 @@ export function t(key: TranslationKey, locale: Locale = 'en'): string {
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
 
-export function hasKey(key: string): boolean {
+export function hasKey(key: string): key is TranslationKey {
   return key in translations
 }
 
