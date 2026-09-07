@@ -274,6 +274,20 @@ watch(
 
 const cloudWorkflowIndex = ref<WorkflowReference[]>([])
 const workflowReferences = ref<WorkflowReference[]>([])
+let composerRevision = 0
+watch(
+  () =>
+    JSON.stringify([
+      composerStore.draft,
+      composerStore.attachments,
+      workflowReferences.value,
+      selectionTags.value
+    ]),
+  () => {
+    ++composerRevision
+  },
+  { flush: 'sync' }
+)
 let cloudWorkflowRefreshGeneration = 0
 
 const cloudIdsByName = computed(() => {
@@ -929,10 +943,14 @@ async function onSend(
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
   })
-  const sent = await sendMessage(text, attachments, nodeTags, references)
+  const sending = sendMessage(text, attachments, nodeTags, references)
+  await nextTick()
+  const submittedRevision = composerRevision
+  const sent = await sending
   if (
     sent ||
     generation !== composerContextGeneration ||
+    submittedRevision !== composerRevision ||
     composerStore.draft.length > 0 ||
     composerStore.attachments.length > 0 ||
     workflowReferences.value.length > 0 ||
