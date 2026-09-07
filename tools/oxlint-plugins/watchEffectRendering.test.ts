@@ -19,7 +19,7 @@ const ruleTester = new RuleTester({
 
 ruleTester.run(
   'no-render-in-watch-effect',
-  noRenderInWatchEffect as unknown as Rule,
+  fromAny<Rule, unknown>(noRenderInWatchEffect),
   {
     valid: [
       {
