@@ -4,6 +4,12 @@ import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import type { AccountUser, SessionErrorCode } from '@comfyorg/account/core'
+import {
+  createSessionClient,
+  isPermanentSessionError
+} from '@comfyorg/account/core'
+
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
@@ -134,14 +140,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   let inFlightSwitchPromise: Promise<void> | null = null
   let recoveryCooldownUntil = 0
   let scheduledRefreshRetryCount = 0
-  // The unified lifecycle keeps its own timer + request-id so it never shares
-  // mutable state with the legacy switchWorkspace/refreshToken machinery.
-  let unifiedRefreshTimerId: ReturnType<typeof setTimeout> | null = null
-  let unifiedRefreshRetryCount = 0
 
   // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
   let refreshRequestId = 0
-  let unifiedRefreshRequestId = 0
 
   // Getters
   const isAuthenticated = computed(
@@ -700,23 +701,21 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
   //
-  // A parallel mint/refresh lifecycle that writes to `unifiedToken`. The legacy
-  // refresh machinery above remains isolated behind its feature flag.
-  //
-  // TODO(unified): call forgetRevokedActiveWorkspace on
-  // ACCESS_DENIED/WORKSPACE_NOT_FOUND here too, with the PR-3 consumer flip.
+  // The mint/refresh machinery is delegated to @comfyorg/account's session
+  // client (its scheduler runs the proactive chain; reactive 401 re-mints
+  // recover API traffic, and the proactive chain keeps cookie-authenticated
+  // <img>/media loads alive past the session cookie expiry, FE-1595). This
+  // store keeps the host policies: telemetry, toasts, cookie rotation, the
+  // issued-token grace map, and teardown.
 
   // Mint body the unified session re-mints against: `{}` = personal (resolved
   // server-side from the Firebase identity), `{ workspace_id }` = explicit.
   type UnifiedMintBody = Record<string, never> | { workspace_id: string }
-  interface InFlightUnifiedMint {
-    ownerUid: string | null
-    targetKey: string
-    promise: Promise<boolean>
-  }
 
   let unifiedTarget: UnifiedMintBody | null = null
-  let inFlightUnifiedMint: InFlightUnifiedMint | null = null
+  let unifiedScheduledRetryCount = 0
+  let unifiedPermanentFailureSurfaced = false
+  let detachUnifiedIdentity: (() => void) | undefined
 
   function personalWorkspaceTarget(): UnifiedMintBody {
     return {}
@@ -730,47 +729,167 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return 'workspace_id' in target ? target.workspace_id : 'personal'
   }
 
-  function stopUnifiedRefreshTimer(): void {
-    if (unifiedRefreshTimerId !== null) {
-      clearTimeout(unifiedRefreshTimerId)
-      unifiedRefreshTimerId = null
+  function unifiedWorkspaceIdFor(target: UnifiedMintBody): string | undefined {
+    return 'workspace_id' in target ? target.workspace_id : undefined
+  }
+
+  function unifiedErrorMessageKey(code: SessionErrorCode): string {
+    switch (code) {
+      case 'ACCESS_DENIED':
+        return 'workspaceAuth.errors.accessDenied'
+      case 'WORKSPACE_NOT_FOUND':
+        return 'workspaceAuth.errors.workspaceNotFound'
+      case 'INVALID_FIREBASE_TOKEN':
+        return 'workspaceAuth.errors.invalidFirebaseToken'
+      case 'NOT_AUTHENTICATED':
+        return 'workspaceAuth.errors.notAuthenticated'
+      case 'TOKEN_EXCHANGE_FAILED':
+        return 'workspaceAuth.errors.tokenExchangeFailed'
     }
   }
 
-  function scheduleUnifiedRefresh(expiresAt: number): void {
-    stopUnifiedRefreshTimer()
-    unifiedRefreshRetryCount = 0
-    const now = Date.now()
-    const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
-    const delay = Math.max(0, refreshAt - now)
-
-    unifiedRefreshTimerId = setTimeout(() => {
-      unifiedRefreshTimerId = null
-      void refreshUnified()
-    }, delay)
+  function unifiedSelectionInvalid(code: SessionErrorCode): boolean {
+    return code === 'ACCESS_DENIED' || code === 'WORKSPACE_NOT_FOUND'
   }
 
-  /**
-   * Re-arms the proactive unified refresh after a transient failure, with
-   * bounded exponential backoff. Without this the proactive chain dies on a
-   * single network blip: reactive 401 re-mints recover API traffic, but
-   * cookie-authenticated <img>/media loads have no 401-retry path of their own
-   * and stay broken once the session cookie expires (FE-1595). Reuses
-   * `unifiedRefreshTimerId` so clearing the unified context cancels a pending
-   * retry.
-   */
-  function scheduleUnifiedRefreshRetry(): boolean {
-    if (unifiedRefreshRetryCount >= MAX_SCHEDULED_REFRESH_RETRIES) {
-      return false
+  function accountUserFor(user: { uid: string }): AccountUser {
+    return {
+      uid: user.uid,
+      getIdToken: async () => {
+        // Owner gone or changed mid-flight (Firebase re-initializing) is a
+        // transient condition the scheduler retries silently; a signed-in
+        // owner whose token read comes back empty is NOT_AUTHENTICATED,
+        // exactly as requestToken maps it.
+        const owner = useAuthStore().currentUser
+        if (!owner || owner.uid !== user.uid) {
+          throw new WorkspaceAuthError('Unified mint owner changed mid-flight')
+        }
+        const token = await useAuthStore().getIdToken()
+        if (!token) {
+          throw new WorkspaceAuthError(
+            t('workspaceAuth.errors.notAuthenticated'),
+            'NOT_AUTHENTICATED'
+          )
+        }
+        return token
+      }
     }
-    const delay = UNIFIED_REFRESH_RETRY_BASE_MS * 2 ** unifiedRefreshRetryCount
-    unifiedRefreshRetryCount += 1
-    stopUnifiedRefreshTimer()
-    unifiedRefreshTimerId = setTimeout(() => {
-      unifiedRefreshTimerId = null
-      void refreshUnified()
-    }, delay)
-    return true
+  }
+
+  // Guard the toast on a one-shot flag reset by the next successful mint, so
+  // concurrent permanent failures across the proactive + reactive paths alarm
+  // the user once, not once per caller.
+  function surfaceUnifiedPermanentFailure(code: SessionErrorCode): void {
+    if (unifiedPermanentFailureSurfaced) return
+    unifiedPermanentFailureSurfaced = true
+    surfacePermanentAuthError(
+      new WorkspaceAuthError(t(unifiedErrorMessageKey(code)), code)
+    )
+  }
+
+  function handleScheduledRefreshOutcome(
+    outcome: UnifiedAuthRefreshOutcome
+  ): void {
+    if (outcome === 'succeeded') {
+      unifiedScheduledRetryCount = 0
+      // Only re-mints rotate the session cookie; the initial login mint and
+      // workspace switches establish it themselves.
+      useAuthStore().notifyTokenRefreshed()
+      trackUnifiedRefresh('succeeded')
+      return
+    }
+    if (outcome === 'retry_scheduled') {
+      unifiedScheduledRetryCount += 1
+      trackUnifiedRefresh('retry_scheduled')
+      console.warn('Unified token refresh failed; retrying shortly')
+      return
+    }
+    if (outcome === 'retries_exhausted') {
+      trackUnifiedRefresh('retries_exhausted')
+      console.warn(
+        'Unified token refresh failed; retries exhausted, awaiting a reactive re-mint'
+      )
+      return
+    }
+    trackUnifiedRefresh('permanent_failure')
+    const snapshot = unifiedSessionClient.getSnapshot()
+    const code =
+      snapshot.phase === 'error'
+        ? snapshot.failure.code
+        : 'TOKEN_EXCHANGE_FAILED'
+    surfaceUnifiedPermanentFailure(code)
+    endWorkspaceSession(
+      unifiedSelectionInvalid(code)
+        ? (currentWorkspace.value?.id ?? undefined)
+        : undefined
+    )
+  }
+
+  const unifiedSessionClient = createSessionClient({
+    exchangeUrl: workspaceApiUrl('/auth/token'),
+    // In-memory only: a persisted JWT can outlive its server expiry, so a
+    // reload re-mints instead of rehydrating.
+    storage: {
+      read: () => null,
+      write: () => undefined,
+      clear: () => undefined
+    },
+    refreshScheduler: {
+      bufferMs: TOKEN_REFRESH_BUFFER_MS,
+      retryBaseMs: UNIFIED_REFRESH_RETRY_BASE_MS,
+      maxRetries: MAX_SCHEDULED_REFRESH_RETRIES,
+      onScheduledOutcome: handleScheduledRefreshOutcome
+    }
+  })
+
+  unifiedSessionClient.subscribe((snapshot) => {
+    if (snapshot.phase === 'authenticated') {
+      const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
+      unifiedTarget = target
+      unifiedToken.value = snapshot.session.token
+      unifiedTokenOwnerUid.value = snapshot.session.uid
+      unifiedPermanentFailureSurfaced = false
+      currentWorkspace.value = {
+        ...snapshot.session.workspace,
+        role: snapshot.session.role
+      }
+      persistWorkspaceIdentity(currentWorkspace.value)
+      issuedUnifiedTokenContexts.set(snapshot.session.token, {
+        ownerUid: snapshot.session.uid,
+        targetKey: unifiedTargetKey(target),
+        expiresAt: snapshot.session.expiresAt
+      })
+      pruneExpiredUnifiedTokenContexts(Date.now())
+      return
+    }
+    unifiedToken.value = null
+    unifiedTokenOwnerUid.value = null
+  })
+
+  let deliverUnifiedIdentity: ((user: AccountUser | null) => void) | undefined
+
+  // The authStore's own auth-state listener drives this store (mintAtLogin,
+  // clearWorkspaceContext), so identity reaches the client as a push from
+  // those same entry points rather than a reactive watch.
+  function syncUnifiedIdentity(): void {
+    if (detachUnifiedIdentity === undefined) {
+      detachUnifiedIdentity = unifiedSessionClient.attachIdentity(
+        {
+          onUserChanged: (callback) => {
+            deliverUnifiedIdentity = callback
+            return () => {
+              deliverUnifiedIdentity = undefined
+            }
+          }
+        },
+        { autoMint: false }
+      )
+    }
+    const user = useAuthStore().currentUser
+    const clientUser = unifiedSessionClient.getSnapshot().user
+    if ((user?.uid ?? null) !== (clientUser?.uid ?? null)) {
+      deliverUnifiedIdentity?.(user ? accountUserFor(user) : null)
+    }
   }
 
   function pruneExpiredUnifiedTokenContexts(now: number): void {
@@ -782,77 +901,13 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function clearUnifiedContext(): void {
-    unifiedRefreshRequestId++
-    stopUnifiedRefreshTimer()
-    unifiedRefreshRetryCount = 0
-    unifiedToken.value = null
-    unifiedTokenOwnerUid.value = null
+    unifiedScheduledRetryCount = 0
+    unifiedPermanentFailureSurfaced = false
     issuedUnifiedTokenContexts.clear()
     unifiedTarget = null
-    inFlightUnifiedMint = null
-  }
-
-  async function performUnifiedMint(
-    target: UnifiedMintBody,
-    capturedOwnerUid: string | null
-  ): Promise<boolean> {
-    const capturedRequestId = ++unifiedRefreshRequestId
-    const workspaceId =
-      'workspace_id' in target ? target.workspace_id : undefined
-
-    let mintedToken: MintedToken
-    try {
-      mintedToken = await requestToken(workspaceId)
-    } catch (err) {
-      if (
-        capturedRequestId !== unifiedRefreshRequestId ||
-        capturedOwnerUid === null ||
-        !isCurrentUser(capturedOwnerUid)
-      ) {
-        return false
-      }
-      throw err
-    }
-
-    if (
-      capturedRequestId !== unifiedRefreshRequestId ||
-      !isCurrentUser(mintedToken.ownerUid)
-    ) {
-      return false
-    }
-
-    currentWorkspace.value = mintedToken.workspace
-    persistWorkspaceIdentity(mintedToken.workspace)
-    unifiedToken.value = mintedToken.token
-    unifiedTokenOwnerUid.value = mintedToken.ownerUid
-    issuedUnifiedTokenContexts.set(mintedToken.token, {
-      ownerUid: mintedToken.ownerUid,
-      targetKey: unifiedTargetKey(target),
-      expiresAt: mintedToken.expiresAt
-    })
-    pruneExpiredUnifiedTokenContexts(Date.now())
-    unifiedTarget = target
-    scheduleUnifiedRefresh(mintedToken.expiresAt)
-    return true
-  }
-
-  function mintUnified(target: UnifiedMintBody): Promise<boolean> {
-    const ownerUid = currentUserUid()
-    const targetKey = unifiedTargetKey(target)
-    if (
-      inFlightUnifiedMint?.ownerUid === ownerUid &&
-      inFlightUnifiedMint.targetKey === targetKey
-    ) {
-      return inFlightUnifiedMint.promise
-    }
-
-    const promise = performUnifiedMint(target, ownerUid).finally(() => {
-      if (inFlightUnifiedMint?.promise === promise) {
-        inFlightUnifiedMint = null
-      }
-    })
-    inFlightUnifiedMint = { ownerUid, targetKey, promise }
-    return promise
+    // Fails closed through the client: drops its credential, cancels
+    // scheduled work, and blocks in-flight mints from committing.
+    unifiedSessionClient.invalidate()
   }
 
   async function switchUnifiedWorkspace(workspaceId: string): Promise<void> {
@@ -860,70 +915,33 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().ensureSessionCookie()
-    if (!(await mintUnified({ workspace_id: workspaceId }))) {
-      throw new Error('Workspace identity changed during switch')
+    const authUser = useAuthStore().currentUser
+    if (!authUser) {
+      throw new WorkspaceAuthError('Workspace identity changed during switch')
+    }
+    syncUnifiedIdentity()
+    unifiedTarget = { workspace_id: workspaceId }
+    const result = await unifiedSessionClient.remint(accountUserFor(authUser), {
+      workspaceId
+    })
+    if (result?.status === 'error') {
+      throw new WorkspaceAuthError(
+        t(unifiedErrorMessageKey(result.code)),
+        result.code
+      )
+    }
+    if (result === undefined) {
+      throw new WorkspaceAuthError('Workspace identity changed during switch')
     }
   }
 
   function trackUnifiedRefresh(outcome: UnifiedAuthRefreshOutcome): void {
     useTelemetry()?.trackUnifiedAuthRefresh({
       outcome,
-      ...(outcome !== 'succeeded' && { retry_count: unifiedRefreshRetryCount })
+      ...(outcome !== 'succeeded' && {
+        retry_count: unifiedScheduledRetryCount
+      })
     })
-  }
-
-  async function refreshUnified(): Promise<void> {
-    if (!flags.unifiedCloudAuthEnabled) {
-      return
-    }
-    const target = currentUnifiedTarget()
-    if (!target) {
-      return
-    }
-
-    try {
-      const minted = await mintUnified(target)
-      // Only re-mints rotate the session cookie; the initial login mint and
-      // workspace switches establish it themselves. A stale (discarded)
-      // re-mint does not rotate either.
-      if (minted) {
-        useAuthStore().notifyTokenRefreshed()
-        trackUnifiedRefresh('succeeded')
-      } else if (unifiedRefreshTimerId === null) {
-        // A mint failure while the owner uid is momentarily null (Firebase
-        // re-initializing post-wake) resolves false instead of throwing. Only
-        // a false with no armed timer is a dead chain: a superseding mint has
-        // already scheduled its own refresh.
-        trackUnifiedRefresh(
-          scheduleUnifiedRefreshRetry()
-            ? 'retry_scheduled'
-            : 'retries_exhausted'
-        )
-      }
-    } catch (err) {
-      // Guard the toast on a live token so concurrent permanent failures across
-      // the proactive + reactive paths alarm the user once, not once per caller.
-      if (isPermanentAuthError(err)) {
-        trackUnifiedRefresh('permanent_failure')
-        if (getUnifiedToken()) surfacePermanentAuthError(err)
-        endWorkspaceSession(
-          isWorkspaceSelectionInvalid(err)
-            ? (currentWorkspace.value?.id ?? undefined)
-            : undefined
-        )
-      } else {
-        const retryScheduled = scheduleUnifiedRefreshRetry()
-        trackUnifiedRefresh(
-          retryScheduled ? 'retry_scheduled' : 'retries_exhausted'
-        )
-        console.warn(
-          retryScheduled
-            ? 'Unified token refresh failed; retrying shortly:'
-            : 'Unified token refresh failed; retries exhausted, awaiting a reactive re-mint:',
-          err
-        )
-      }
-    }
   }
 
   const mintAtLogin = async (): Promise<boolean> => {
@@ -933,16 +951,31 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (getUnifiedToken()) {
       return true
     }
-    try {
-      return await mintUnified(personalWorkspaceTarget())
-    } catch (err) {
-      if (isPermanentAuthError(err)) {
-        surfacePermanentAuthError(err)
+    const authUser = useAuthStore().currentUser
+    if (!authUser) {
+      return false
+    }
+    syncUnifiedIdentity()
+    const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
+    unifiedTarget = target
+    const result = await unifiedSessionClient.ensureFresh(
+      accountUserFor(authUser),
+      { workspaceId: unifiedWorkspaceIdFor(target) }
+    )
+    if (result?.status === 'ok') {
+      return true
+    }
+    if (result?.status === 'error') {
+      if (isPermanentSessionError(result.code)) {
+        surfaceUnifiedPermanentFailure(result.code)
       } else {
-        console.warn('Unified login mint failed:', err)
+        console.warn('Unified login mint failed:', result.code)
       }
       return false
     }
+    // An undefined result means another identity event superseded this
+    // call; the login succeeded iff a token was committed for it.
+    return getUnifiedToken() !== undefined
   }
 
   const remintUnifiedOnce = async (
@@ -965,26 +998,28 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return null
     }
     if (expectedToken !== currentToken) return currentToken
-    try {
-      const minted = await mintUnified(target)
-      if (!minted) return null
+    const authUser = useAuthStore().currentUser
+    if (!authUser) return null
+    syncUnifiedIdentity()
+    const result = await unifiedSessionClient.remint(accountUserFor(authUser), {
+      workspaceId: unifiedWorkspaceIdFor(target),
+      preserveCredentialOnTransientFailure: true
+    })
+    if (result?.status === 'ok') {
       useAuthStore().notifyTokenRefreshed()
       return getUnifiedToken() ?? null
-    } catch (err) {
-      // Mirror refreshUnified: a permanent failure tears down the session;
-      // guard the toast on a live token so a concurrent burst surfaces it once.
-      if (isPermanentAuthError(err)) {
-        if (getUnifiedToken()) surfacePermanentAuthError(err)
-        endWorkspaceSession(
-          isWorkspaceSelectionInvalid(err)
-            ? (currentWorkspace.value?.id ?? undefined)
-            : undefined
-        )
-      } else {
-        console.warn('Unified reactive re-mint failed:', err)
-      }
-      return null
     }
+    if (result?.status === 'error' && isPermanentSessionError(result.code)) {
+      surfaceUnifiedPermanentFailure(result.code)
+      endWorkspaceSession(
+        unifiedSelectionInvalid(result.code)
+          ? (currentWorkspace.value?.id ?? undefined)
+          : undefined
+      )
+    } else if (result?.status === 'error') {
+      console.warn('Unified reactive re-mint failed:', result.code)
+    }
+    return null
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
