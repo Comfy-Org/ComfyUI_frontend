@@ -356,6 +356,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     }
 
+    const startEpoch = identityEpoch
     const controller = new AbortController()
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
@@ -428,9 +429,17 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         role: parseResult.data.role,
         permissions: parseResult.data.permissions
       }
-      safeWrite(
-        JSON.stringify({ ...session, expires_at: parseResult.data.expires_at })
-      )
+      // The cache write consults the identity epoch like the in-memory
+      // commit does: a mint outliving a sign-out or detach must not
+      // resurrect the session in persistent storage.
+      if (identityEpoch === startEpoch) {
+        safeWrite(
+          JSON.stringify({
+            ...session,
+            expires_at: parseResult.data.expires_at
+          })
+        )
+      }
       return { status: 'ok', session }
     } finally {
       clearTimeout(timeout)
@@ -538,6 +547,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       const detach = () => {
         if (!active) return
         active = false
+        identityEpoch += 1
         detachCurrent = undefined
         unsubscribe()
         currentUser = null
