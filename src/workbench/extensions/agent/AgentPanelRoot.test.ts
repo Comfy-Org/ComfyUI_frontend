@@ -3384,6 +3384,47 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeInTheDocument()
   })
 
+  it.for(['binding', 'index'])(
+    'opens a reference resolved by %s without refreshing workflow lists',
+    async (identitySource) => {
+      const current = makeTab('wf-cloud-current')
+      const reference = addTab('workflows/reference.json')
+      if (identitySource === 'binding')
+        useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      mockMessagesEndpoint(
+        'wf-cloud-current',
+        identitySource === 'index'
+          ? [{ id: 'wf-reference', name: 'reference' }]
+          : []
+      )
+      renderWithSelectedTarget()
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'reference' })
+      )
+      await userEvent.type(textbox, 'Keep this draft')
+      const workflowLookups = () =>
+        vi
+          .mocked(fetch)
+          .mock.calls.filter(([url]) => String(url).includes('/workflows'))
+          .length
+      const lookupsBeforeNavigation = workflowLookups()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open reference' })
+      )
+      await vi.waitFor(() =>
+        expect(hostStores.workflow.activeWorkflow?.path).toBe(reference.path)
+      )
+      expect(hostStores.workflow.syncWorkflows).not.toHaveBeenCalled()
+      expect(workflowLookups()).toBe(lookupsBeforeNavigation)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+      expect(textbox).toHaveValue('Keep this draft')
+    }
+  )
+
   it.for(['open', 'closed'])(
     'navigates to a staged reference in an %s tab without changing the target or draft',
     async (tabState) => {
