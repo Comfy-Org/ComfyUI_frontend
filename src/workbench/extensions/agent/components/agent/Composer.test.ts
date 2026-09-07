@@ -50,6 +50,7 @@ function mount(
 
 describe('Composer', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setActivePinia(createPinia())
   })
 

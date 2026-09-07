@@ -43,6 +43,7 @@ const tabs = [
 let pinia: Pinia
 
 beforeEach(() => {
+  vi.useRealTimers()
   pinia = createPinia()
   setActivePinia(pinia)
 })

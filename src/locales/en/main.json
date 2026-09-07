@@ -1,6 +1,7 @@
 {
   "g": {
     "shortcutSuffix": " ({shortcut})",
+    "megapixelsValue": "{count} MP",
     "user": "User",
     "you": "You",
     "currentUser": "Current user",
@@ -1933,6 +1934,7 @@
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
+    "comfy cloud": "comfy cloud",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
