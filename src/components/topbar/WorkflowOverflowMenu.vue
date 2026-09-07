@@ -15,7 +15,15 @@
       :model="menuItems"
       :popup="true"
       class="max-h-[40vh] overflow-auto"
-    />
+    >
+      <template #item="{ item, props: itemProps }">
+        <a v-bind="itemProps.action">
+          <i v-if="item.icon" v-bind="itemProps.icon" />
+          <WorkflowAgentTargetIndicator :workflow-path="item.workflowPath" />
+          <span v-bind="itemProps.label">{{ item.label }}</span>
+        </a>
+      </template>
+    </Menu>
   </div>
 </template>
 
@@ -24,6 +32,7 @@ import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
@@ -38,6 +47,7 @@ const workflowService = useWorkflowService()
 const menuItems = computed(() =>
   props.workflows.map((workflow: ComfyWorkflow) => ({
     label: workflow.filename,
+    workflowPath: workflow.path,
     icon:
       props.activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
     command: () => {

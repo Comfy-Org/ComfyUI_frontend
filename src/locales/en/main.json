@@ -5151,6 +5151,7 @@
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",
     "alpha": "ALPHA",
+    "targetForThisChat": "Agent target for this chat",
     "newChat": "New chat",
     "newChatTitle": "Untitled",
     "maximize": "Maximize panel",

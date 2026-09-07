@@ -114,13 +114,97 @@ test.describe(
       await expect(composer).toHaveValue('Find a workflow for skin upscaling')
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
+      const editorTabs = page.getByTestId('workflow-tab')
+      const targetTab = editorTabs
+        .filter({ hasText: 'Unsaved Workflow' })
+        .first()
+      const targetMarker = targetTab.getByRole('img', {
+        name: enMessages.agent.targetForThisChat
+      })
+      await expect(targetMarker).toBeVisible()
+      await targetMarker.hover()
+      await expect(page.getByRole('tooltip')).toHaveText(
+        enMessages.agent.targetForThisChat
+      )
+      await expect(
+        targetTab.getByRole('button', { name: enMessages.g.close })
+      ).toBeVisible()
+      await expect(targetMarker).toBeVisible()
+      await targetTab.getByRole('button', { name: enMessages.g.close }).hover()
+      await expect(page.getByRole('tooltip')).toHaveCount(0)
+      await testInfo.attach('agent-target-active', {
+        body: await page.getByTestId('topbar-workflow-tabs').screenshot({
+          path: testInfo.outputPath('agent-target-active.png')
+        }),
+        contentType: 'image/png'
+      })
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(editorTabs).toHaveCount(2)
+      await expect(
+        editorTabs.last().getByRole('img', {
+          name: enMessages.agent.targetForThisChat
+        })
+      ).toHaveCount(0)
+      await expect(targetMarker).toBeVisible()
+      await testInfo.attach('agent-target-background', {
+        body: await page.getByTestId('topbar-workflow-tabs').screenshot({
+          path: testInfo.outputPath('agent-target-background.png')
+        }),
+        contentType: 'image/png'
+      })
+
       await panel.getByRole('button', { name: enMessages.g.close }).click()
+      await expect(targetMarker).toBeVisible()
       await page
         .getByRole('button', { name: enMessages.agent.askComfyAgent })
         .click()
       await expect(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
       ).toHaveText('Unsaved Workflow')
+
+      for (let index = 0; index < 8; index++) {
+        await page
+          .getByRole('button', {
+            name: enMessages.sideToolbar.newBlankWorkflow,
+            exact: true
+          })
+          .click()
+      }
+      await page
+        .getByRole('button', { name: enMessages.g.moreWorkflows })
+        .click()
+      const targetMenuItem = page.getByRole('menuitem', {
+        name: 'Unsaved Workflow',
+        exact: true
+      })
+      await expect(
+        targetMenuItem.getByRole('img', {
+          name: enMessages.agent.targetForThisChat
+        })
+      ).toBeVisible()
+      await testInfo.attach('agent-target-overflow', {
+        body: await page.getByRole('menu').screenshot({
+          path: testInfo.outputPath('agent-target-overflow.png')
+        }),
+        contentType: 'image/png'
+      })
+      await targetMenuItem.click()
+      await expect(targetMarker).toBeVisible()
+      await expect(
+        page.locator('.workflow-tabs .p-togglebutton-checked')
+      ).toHaveText('Unsaved Workflow')
+      await panel
+        .getByRole('button', { name: enMessages.agent.newChat })
+        .click()
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
+      ).toHaveText('Unsaved Workflow')
+      await expect(targetMarker).toBeVisible()
     })
 
     test('keeps the failed selection open and allows retry without a naming dialog', async ({
