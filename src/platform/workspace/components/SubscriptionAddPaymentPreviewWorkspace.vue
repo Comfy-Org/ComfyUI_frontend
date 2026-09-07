@@ -249,6 +249,25 @@
         }}
       </div>
 
+      <div v-if="parkedCheckoutRecovery" class="flex flex-col gap-2">
+        <div
+          role="alert"
+          class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+        >
+          {{ $t('subscription.preview.parkedCheckoutDetail') }}
+        </div>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="isLoading"
+          :disabled="interactionLocked"
+          @click="$emit('addCreditCard')"
+        >
+          {{ $t('subscription.preview.completePayment') }}
+        </Button>
+      </div>
+
       <Button
         v-if="actionUrl && authenticationState !== 'failed_retryable'"
         variant="inverted"
@@ -364,6 +383,9 @@ interface Props {
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
   reconciliationOperationId?: string | null
+  /** Subscribe landed on a checkout already waiting for a card; only another
+   *  subscribe can re-issue its payment link. */
+  parkedCheckoutRecovery?: boolean
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
@@ -386,6 +408,7 @@ const {
   authenticationState = null,
   authenticationError = null,
   reconciliationOperationId = null,
+  parkedCheckoutRecovery = false,
   usePaymentElement = false,
   savedMethods = null,
   quoteIsCurrent = false,

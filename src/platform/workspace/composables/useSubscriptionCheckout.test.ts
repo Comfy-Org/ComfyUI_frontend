@@ -176,7 +176,8 @@ const {
   mockPermissions,
   mockCanReactivatePlan,
   mockCapabilities,
-  mockSubscription
+  mockSubscription,
+  mockBillingStatus
 } = vi.hoisted(() => {
   return {
     mockSubscribe: vi.fn(),
@@ -214,7 +215,8 @@ const {
         canDowngradeToPersonal: true
       }
     },
-    mockSubscription: { value: null as { isCancelled: boolean } | null }
+    mockSubscription: { value: null as { isCancelled: boolean } | null },
+    mockBillingStatus: { value: null as string | null }
   }
 })
 
@@ -252,6 +254,11 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     subscription: {
       get value() {
         return mockSubscription.value
+      }
+    },
+    billingStatus: {
+      get value() {
+        return mockBillingStatus.value
       }
     }
   })
@@ -455,6 +462,7 @@ describe('useSubscriptionCheckout', () => {
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockIsTeamPlan.value = false
+    mockBillingStatus.value = null
     mockOpen.mockReturnValue({})
     mockGetBillingStatus.mockResolvedValue({ billing_status: 'paid' })
     mockGetPaymentPortalUrl.mockResolvedValue({
@@ -3109,6 +3117,90 @@ describe('useSubscriptionCheckout', () => {
         })
       )
       openSpy.mockRestore()
+    })
+
+    it('offers payment recovery instead of polling a parked checkout', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockBillingStatus.value = 'awaiting_payment_method'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('offers payment recovery when a parked checkout returns no payment URL', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockBillingStatus.value = 'awaiting_payment_method'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-parked-no-url'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('keeps polling a pending payment that is not parked', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockBillingStatus.value = 'paid'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-live'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(false)
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-live',
+        'subscription',
+        expect.any(Object)
+      )
+    })
+
+    it('clears the payment recovery prompt on the next attempt', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockBillingStatus.value = 'awaiting_payment_method'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+
+      await checkout.handleAddCreditCard()
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-parked',
+        payment_method_url: 'https://stripe.com/pay'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(false)
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-parked',
+        'subscription',
+        expect.any(Object),
+        'https://stripe.com/pay'
+      )
     })
 
     it('advances to success once the async payment operation succeeds', async () => {

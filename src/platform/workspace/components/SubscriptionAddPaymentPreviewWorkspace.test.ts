@@ -364,6 +364,23 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
+  it('retries the subscribe from the parked-checkout prompt', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', parkedCheckoutRecovery: true },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'subscription.preview.parkedCheckoutDetail'
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completePayment'
+      })
+    )
+    expect(emitted().addCreditCard).toBeTruthy()
+  })
+
   it('reports failed verification without offering to resume it', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {

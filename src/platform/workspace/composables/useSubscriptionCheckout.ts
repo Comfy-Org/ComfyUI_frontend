@@ -135,7 +135,8 @@ export function useSubscriptionCheckout(
     fetchStatus,
     isTeamPlan,
     resubscribe,
-    subscription
+    subscription,
+    billingStatus
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
@@ -157,6 +158,7 @@ export function useSubscriptionCheckout(
   const selectedSavedPaymentMethodId = ref<string | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
+  const parkedCheckoutRecovery = ref(false)
   let teamPreviewRequestId = 0
   let promotionPreviewRequestId = 0
   let checkoutMutationLocked = false
@@ -900,6 +902,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
+    parkedCheckoutRecovery.value = false
   }
 
   function handleBackToPricing() {
@@ -1195,6 +1198,7 @@ export function useSubscriptionCheckout(
     context: SubscriptionOutcomeContext,
     shouldTrackSubscriptionSuccess = true
   ): Promise<void> {
+    parkedCheckoutRecovery.value = false
     if (!response) {
       trackSubscriptionFailure(context, undefined, 'missing_checkout_response')
       return
@@ -1238,6 +1242,16 @@ export function useSubscriptionCheckout(
         })
       }
       checkoutStep.value = 'success'
+      return
+    }
+
+    // No payment link while already parked on a card means the operation
+    // cannot advance until checkout completes, so polling it only expires.
+    if (
+      !response.payment_method_url &&
+      billingStatus.value === 'awaiting_payment_method'
+    ) {
+      parkedCheckoutRecovery.value = true
       return
     }
 
@@ -1558,6 +1572,7 @@ export function useSubscriptionCheckout(
     authenticationState,
     authenticationError,
     reconciliationOperationId,
+    parkedCheckoutRecovery,
     isPolling,
     isTeamCheckout,
     previewVariant,
