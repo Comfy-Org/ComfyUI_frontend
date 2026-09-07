@@ -623,9 +623,9 @@ defineExpose({
             @click.stop="emit('removeWorkflowReference', workflow.id)"
           >
             <span
-              class="bg-agent-surface hover:bg-agent-surface-hover flex size-4 items-center justify-center rounded-full ring-1 ring-border-default"
+              class="bg-agent-surface hover:bg-agent-surface-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default"
             >
-              <span class="icon-[lucide--x] size-3" />
+              <span class="icon-[lucide--x] size-2" />
             </span>
           </button>
         </span>
