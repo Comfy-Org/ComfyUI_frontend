@@ -87,6 +87,22 @@ describe('Toaster', () => {
     expect(screen.getByText('Second')).toBeInTheDocument()
   })
 
+  it('does not prevent the default Escape behavior', async () => {
+    renderToaster()
+
+    useToast().info('Ready')
+    await nextTick()
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    })
+    window.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
   it('dismisses a notification from its close button', async () => {
     const user = userEvent.setup()
     renderToaster()
