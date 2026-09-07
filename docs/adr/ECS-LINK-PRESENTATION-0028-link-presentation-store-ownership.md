@@ -8,99 +8,60 @@ Proposed
 
 ## Context
 
-Hideable links introduce durable per-link presentation state: whether a link's
-curve is replaced by endpoint badges (`hidden`) and the text those badges show
-(`label`). The state must survive save/load and undo, appear in subgraph
-`definitions`, and ride the workflow JSON so a workflow round-trips through
-released clients unchanged.
+Hideable links add two durable presentation fields: `hidden` replaces the
+curve with endpoint badges, and `label` sets their text. These fields must
+survive save, load, and undo; appear in subgraph definitions; and round-trip
+through workflow JSON.
 
-[ADR-ECS-0008](ECS-0008-entity-component-system.md) places new cross-cutting entity
-state in a dedicated graph-scoped store as plain component data rather than on
-entity classes, and `LLink` is already a compatibility shell over the link
-topology store. Three homes were considered:
+[ADR-ECS-0008](ECS-0008-entity-component-system.md) requires new entity state
+to use plain data in a dedicated store. Existing object accessors preserve
+legacy extension APIs; they are not precedent for adding new fields to
+`LLink`.
 
-- **Fields on `LLink`.** Rejected: an owned field beside a store-backed shell
-  creates a second authority for the same entity, which the ECS model exists
-  to eliminate.
-- **Widening `extra.linkExtensions`.** Rejected: released clients validate
-  those entries against a schema that requires `parentId`. A hidden link with
-  no reroute would fail that validation and reject the whole workflow.
-- **The CRDT layout store.** Rejected: presentation belongs to the workflow
-  document rather than the layout document, and persisting it is not the
-  layout store's concern.
+Two existing stores are unsuitable:
+
+- `extra.linkExtensions` requires `parentId`, so released clients would reject
+  presentation for a link without a reroute.
+- The CRDT layout store owns the layout document, not workflow presentation.
 
 ## Decision
 
-1. `linkPresentationStore` is the single runtime authority for `hidden` and
-   `label`. Mirroring the link topology store, each root graph holds entries
-   keyed by `LinkId` alongside an index of ids per owning graph, so ownership
-   checks stay keyed by link id while owner-scoped queries never scan an
-   unrelated graph's entries. An entry exists only for a link with non-default
-   presentation, so the store's contents are exactly the set that serializes.
+1. `linkPresentationStore` owns `hidden` and `label`. Each root graph has a
+   sparse map keyed by `LinkId` and an index of IDs by owning graph. Default
+   presentation has no entry.
 
 2. Ownership follows
-   [ADR-ECS-IDENTITY-0016](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md)
-   value-map semantics: the first writing graph owns an entry, another owner
-   can neither overwrite nor take it, and reads are owner-scoped exactly as
-   writes are.
+   [ADR-ECS-IDENTITY-0016](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md).
+   The first writing graph owns an entry. Other owners cannot read, overwrite,
+   or take it.
 
-3. `LLink` gains no persistent field. `hidden` and `label` are accessors
-   delegating to the store through the link's registered graph scope. A link
-   registered in no scope buffers writes in a pending slot; registration
-   flushes that buffer into the store and unregistration moves the entry back
-   onto the link, so presentation follows the link object across ownership
-   transfers.
+3. Consumers address presentation through `GraphScope` and `LinkId`. `LLink`
+   does not expose presentation accessors. Serialization and loading adapters
+   translate between store state and workflow data at the format boundary.
 
-4. The wire format is `extra.linkPresentation`
-   (`Record<linkId, { hidden?, label? }>`) for schema 0.4, and optional
-   `hidden`/`label` fields on serialized link objects for schema 1 and
-   subgraph definitions. `extra.linkExtensions` is unchanged. `extra` is wire
-   format only: the generated key is removed after configure.
+4. Schema 0.4 stores presentation in `extra.linkPresentation` as
+   `Record<linkId, { hidden?, label? }>`. Schema 1 and subgraph definitions use
+   optional `hidden` and `label` fields on serialized links. Configure removes
+   the generated schema 0.4 key from `extra`.
 
-5. A flow that recreates a link rather than transferring the object carries
-   presentation across the old-to-new mapping. Where one link becomes several,
-   every resulting link receives the presentation. Where several links merge
-   into one, the merged link receives presentation only when all sources
-   agree; disagreement yields the default rather than an arbitrary winner.
-   Removing a link's topology removes its presentation in the same operation.
+5. Link recreation transfers presentation through the old-to-new ID mapping.
+   A split copies it to every resulting link. A merge keeps it only when all
+   source links agree. Removing link topology also removes its presentation.
 
-6. Mutation goes through validated store actions carrying graph scope and
-   mutation provenance. Presentation mutation is not expressed as a
-   serializable command because the current command boundary covers durable
-   entity geometry. Extending command coverage to non-layout entity stores
-   requires a separate architecture decision; this PR does not establish one.
+6. Hover state and badge geometry are transient derived data. They do not
+   belong in this store or in workflow serialization.
 
-7. Hover-reveal state and badge geometry are outside this store. Reveal is
-   per-owner, reference-counted, and scoped to a root graph; badge rows are
-   derived render data recomputed from presentation and layout. Neither
-   serializes.
+This store follows the current non-layout mutation model documented in
+[ADR-ECS-0008](ECS-0008-entity-component-system.md). Extending serializable
+commands beyond layout requires a separate decision.
 
 ## Consequences
 
-**Positive**
-
-- Renderers, serialization, and UI affordances read one reactive source, and
-  the root-graph bucket is the query surface for hidden links.
-- The wire format is independent of the store's internal shape, and a workflow
-  with no hidden links serializes exactly as it did before the feature.
-- A link that loses a registration collision cannot write presentation onto
-  the incumbent's id.
-
-**Negative**
-
-- Every link-recreation path must carry presentation explicitly. A path that
-  omits it resets presentation to defaults silently rather than failing, so
-  each such flow needs its own regression test.
-- A visible link's canonical state is the absence of an entry: `hidden` reads
-  `false`, and `hidden: false` is never stored or serialized.
-- `hidden` and `label` become live accessors on `LLink`, so an extension that
-  used those names as inert expando properties would now write durable state.
-  A survey of published ComfyUI extensions (2026-08) found no reader or writer
-  of either name, and the accessors are non-enumerable prototype members, so
-  `JSON.stringify(link)` and `for..in` output are unchanged. The behavioral
-  change still warrants a release note.
-- The owner index is a second structure to keep consistent with the entry map.
-  A missed update does not corrupt presentation, but it can attribute a link
-  to a graph that no longer owns it, so every removal path must maintain both.
-- Badge geometry and text are recomputed each frame rather than cached, so
-  cost grows with the number of hidden links on screen.
+- The wire format does not depend on the store's internal shape. Workflows with
+  default presentation serialize as they did before this feature.
+- Every link-recreation path must transfer presentation explicitly. Omitting
+  that step silently restores the defaults, so each path needs a regression
+  test.
+- New presentation behavior does not expand the `LLink` compatibility API.
+- The owner index must remain consistent with the entry map on every removal
+  path.

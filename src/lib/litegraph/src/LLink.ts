@@ -5,14 +5,7 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import {
-  isDefaultLinkPresentation,
-  useLinkPresentationStore
-} from '@/stores/linkPresentationStore'
-import type {
-  LinkPresentation,
-  LinkPresentationPatch
-} from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -276,46 +269,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _dragging?: boolean
 
-  /** Buffered presentation writes for a link not registered in a graph scope. */
-  _pendingPresentation?: LinkPresentation
-
-  get hidden(): boolean {
-    return this.presentation?.hidden ?? false
-  }
-
-  set hidden(value: boolean | undefined) {
-    this.writePresentation({ hidden: value || undefined })
-  }
-
-  get label(): string | undefined {
-    return this.presentation?.label
-  }
-
-  set label(value: string | undefined) {
-    this.writePresentation({ label: value || undefined })
-  }
-
-  private get presentation(): Readonly<LinkPresentation> | undefined {
-    const scope = this._graphScope
-    if (!scope) return this._pendingPresentation
-    return useLinkPresentationStore().getPresentation(scope, this.id)
-  }
-
-  private writePresentation(partial: LinkPresentationPatch): void {
-    const scope = this._graphScope
-    if (scope) {
-      useLinkPresentationStore().patch(scope, this.id, partial)
-      return
-    }
-    const pending = { ...this._pendingPresentation, ...partial }
-    this._pendingPresentation = isDefaultLinkPresentation(
-      pending.hidden,
-      pending.label
-    )
-      ? undefined
-      : pending
-  }
-
   private _color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
@@ -390,7 +343,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @returns A new LLink
    */
   static create(data: SerialisableLLink): LLink {
-    const link = new LLink(
+    return new LLink(
       toLinkId(data.id),
       data.type,
       data.origin_id,
@@ -399,9 +352,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       data.target_slot,
       data.parentId === undefined ? undefined : toRerouteId(data.parentId)
     )
-    link.hidden = data.hidden
-    link.label = data.label
-    return link
   }
 
   /**
@@ -557,7 +507,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     }
   }
 
-  configure(o: LLink | SerialisableLLink | SerialisedLLinkArray): void {
+  configure(o: LLink | SerialisedLLinkArray) {
     if (Array.isArray(o)) {
       this.id = toLinkId(o[0])
       this.updateEndpoints({
@@ -567,9 +517,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
         targetSlot: o[4]
       })
       this.type = o[5]
-      this.hidden = undefined
-      this.label = undefined
-    } else if (o instanceof LLink) {
+    } else {
       this.id = o.id
       this.type = o.type
       this.updateEndpoints({
@@ -579,19 +527,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
         targetSlot: o.target_slot
       })
       this.parentId = o.parentId
-      this.hidden = o.hidden
-      this.label = o.label
-    } else {
-      this.id = toLinkId(o.id)
-      this.type = o.type
-      this.origin_id = toNodeId(o.origin_id)
-      this.origin_slot = o.origin_slot
-      this.target_id = toNodeId(o.target_id)
-      this.target_slot = o.target_slot
-      this.parentId =
-        o.parentId === undefined ? undefined : toRerouteId(o.parentId)
-      this.hidden = o.hidden
-      this.label = o.label
     }
   }
 
@@ -716,8 +651,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       type: this.type
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
-    if (this.hidden) copy.hidden = true
-    if (this.label !== undefined) copy.label = this.label
     return copy
   }
 }
@@ -787,11 +720,7 @@ export function replaceLinkTopology(
   if (!registered) return false
   if (incumbent) {
     if (incumbent._graphScope) {
-      const pending = useLinkPresentationStore().take(
-        incumbent._graphScope,
-        incumbent.id
-      )
-      if (pending) incumbent._pendingPresentation = pending
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
     }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
@@ -808,11 +737,6 @@ function adoptLinkTopology(
   link._state = registered
   link._graphScope = scope
   linkByTopology.set(toRaw(registered), link)
-  const pending = link._pendingPresentation
-  if (pending) {
-    link._pendingPresentation = undefined
-    useLinkPresentationStore().patch(scope, link.id, pending)
-  }
 }
 
 /**
@@ -823,11 +747,11 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  const pending = useLinkPresentationStore().take(link._graphScope, link.id)
-  useLinkStore().deleteLink(link._graphScope, link._state)
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
-  if (pending) link._pendingPresentation = pending
 }
 
 /**

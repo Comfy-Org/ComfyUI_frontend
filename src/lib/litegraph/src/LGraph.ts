@@ -26,18 +26,15 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import {
-  compactLinkPresentation,
-  useLinkPresentationStore
-} from '@/stores/linkPresentationStore'
-import type { LinkPresentation } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
@@ -2719,10 +2716,14 @@ export class LGraph
         .map((link) => ({ id: link.id, parentId: link.parentId }))
     }
 
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
     const linkPresentation = Object.fromEntries(
       linkArray.flatMap((link) => {
-        const compacted = compactLinkPresentation(link.hidden, link.label)
-        return compacted ? [[String(link.id), compacted] as const] : []
+        const presentation = presentationStore.getPresentation(scope, link.id)
+        return presentation
+          ? [[String(link.id), { ...presentation }] as const]
+          : []
       })
     )
     if (Object.keys(linkPresentation).length) {
@@ -2923,10 +2924,9 @@ export class LGraph
         for (const [linkId, presentation] of Object.entries(
           extra?.linkPresentation ?? {}
         )) {
-          const link = this.links.get(toLinkId(Number(linkId)))
-          if (!link) continue
-          link.hidden = presentation.hidden
-          link.label = presentation.label
+          const id = parseLinkId(linkId)
+          if (id === undefined || !this.links.has(id)) continue
+          useLinkPresentationStore().patch(graphScopeOf(this), id, presentation)
         }
 
         // Reroutes
@@ -2964,7 +2964,13 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            if (this._addLink(link)) addedLinkIds.push(link.id)
+            if (this._addLink(link)) {
+              addedLinkIds.push(link.id)
+              useLinkPresentationStore().patch(graphScopeOf(this), link.id, {
+                hidden: linkData.hidden,
+                label: linkData.label
+              })
+            }
           }
         }
 
@@ -3123,7 +3129,13 @@ export class LGraph
           ) {
             floatingLink.id = toLinkId(-1)
           }
-          this.addFloatingLink(floatingLink)
+          if (this.addFloatingLink(floatingLink)) {
+            useLinkPresentationStore().patch(
+              graphScopeOf(this),
+              floatingLink.id,
+              { hidden: linkData.hidden, label: linkData.label }
+            )
+          }
         }
       }
 
