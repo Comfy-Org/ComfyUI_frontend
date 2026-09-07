@@ -723,7 +723,10 @@ async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
       workflowStore.syncWorkflows()
     ])
     const target = storedWorkflowFor(workflowId)
-    if (target === null) {
+    if (
+      target === null ||
+      (await workflowService.openWorkflow(target)) === false
+    ) {
       toast.add({
         severity: 'warn',
         detail: t('agent.targetNavigationUnavailable'),
@@ -732,7 +735,6 @@ async function onOpenReferenceWorkflow(workflowId: string): Promise<void> {
       return
     }
     bindingStore.bind(workflowId, target.path)
-    await workflowService.openWorkflow(target)
   } catch {
     toast.add({
       severity: 'warn',

@@ -371,6 +371,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @workflow-reference-pick="emit('workflowReferencePick', $event)"
             @request-workflow-references="emit('requestWorkflowReferences')"
             @remove-workflow-reference="emit('removeWorkflowReference', $event)"
+            @open-reference-workflow="
+              (workflowId, workflowName) =>
+                emit('openReferenceWorkflow', workflowId, workflowName)
+            "
             @workflow-target-required="onWorkflowTargetRequired"
           >
             <template #header>

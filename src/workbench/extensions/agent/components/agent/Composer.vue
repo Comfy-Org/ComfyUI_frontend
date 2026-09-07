@@ -70,6 +70,7 @@ const emit = defineEmits<{
   workflowReferencePick: [workflow: WorkflowReference]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
   workflowTargetRequired: []
 }>()
 const { t } = useI18n()
@@ -602,10 +603,31 @@ defineExpose({
           v-for="workflow in workflowReferences"
           :key="workflow.id"
           data-testid="workflow-reference-chip"
-          class="inline-flex max-w-full items-center rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
+          class="group/workflow relative inline-flex max-w-full"
         >
-          <span class="mr-1 icon-[comfy--workflow] size-3.5 shrink-0" />
-          <span class="max-w-40 truncate">{{ workflow.name }}</span>
+          <button
+            type="button"
+            :aria-label="t('agent.openWorkflowTab', { name: workflow.name })"
+            class="inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            @click="emit('openReferenceWorkflow', workflow.id, workflow.name)"
+          >
+            <span class="icon-[comfy--workflow] size-3.5 shrink-0" />
+            <span class="max-w-40 truncate">{{ workflow.name }}</span>
+          </button>
+          <button
+            type="button"
+            :aria-label="
+              t('agent.removeWorkflowReference', { name: workflow.name })
+            "
+            class="text-agent-fg pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100"
+            @click.stop="emit('removeWorkflowReference', workflow.id)"
+          >
+            <span
+              class="bg-agent-surface hover:bg-agent-surface-hover flex size-4 items-center justify-center rounded-full ring-1 ring-border-default"
+            >
+              <span class="icon-[lucide--x] size-3" />
+            </span>
+          </button>
         </span>
 
         <div class="relative min-h-7 min-w-32 flex-1">

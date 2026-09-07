@@ -3410,7 +3410,7 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', { name: 'Open reference' })
       )
       await vi.waitFor(() =>
-        expect(hostStores.workflow.activeWorkflow).toBe(reference)
+        expect(hostStores.workflow.activeWorkflow?.path).toBe(reference.path)
       )
       expect(hostStores.workflow.openTabPaths.has(reference.path)).toBe(true)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
@@ -3429,7 +3429,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         screen.queryByRole('button', { name: 'Open reference' })
       ).toBeNull()
-      expect(hostStores.workflow.activeWorkflow).toBe(reference)
+      expect(hostStores.workflow.activeWorkflow?.path).toBe(reference.path)
       expect(workflowService.openWorkflow).toHaveBeenCalledOnce()
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
@@ -3476,7 +3476,7 @@ describe('AgentPanelRoot workflow binding', () => {
           ])
         )
       )
-      expect(hostStores.workflow.activeWorkflow).toBe(current)
+      expect(hostStores.workflow.activeWorkflow?.path).toBe(current.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
       expect(textbox).toHaveValue('Keep this draft')
       expect(
