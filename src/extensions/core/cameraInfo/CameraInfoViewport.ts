@@ -332,13 +332,13 @@ export class CameraInfoViewport {
     const targets = this.pickableTargetsFor(this.overlay.getState().mode)
     if (targets.length === 0) return null
     this.updatePointer(position)
-    return pickHandleAtPointer<DragHandleType>(
+    return pickHandleAtPointer(
       this.raycaster,
       this.pointer,
       this.viewport.cameraManager.activeCamera,
       targets,
       this.canvas
-    )
+    ) as DragHandleType | null
   }
 
   private setHoveredHandle(type: DragHandleType | null): void {

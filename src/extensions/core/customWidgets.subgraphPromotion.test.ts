@@ -173,7 +173,7 @@ describe('CustomCombo index widget after subgraph promotion', () => {
       findWidget(comboNode, 'choice')!.value = 'two'
 
       const { output } = await graphToPrompt(rootGraph)
-      const promptInputs = output[`${comboNode.id}`].inputs
+      const promptInputs = output[comboNode.id].inputs
 
       // "two" is index 1 of ["one", "two", "three"].
       expect(promptInputs.index).toBe(1)

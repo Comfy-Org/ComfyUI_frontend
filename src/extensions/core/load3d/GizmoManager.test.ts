@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
@@ -67,9 +68,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls', () => {
 })
 
 function makeMockOrbitControls() {
-  return { enabled: true } as unknown as InstanceType<
-    typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-  >
+  return { enabled: true } as unknown as OrbitControls
 }
 
 describe('GizmoManager', () => {

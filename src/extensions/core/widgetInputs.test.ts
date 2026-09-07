@@ -141,7 +141,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it.each([
+  it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
   ])('restores an explicit $label value', ({ value }) => {
@@ -287,8 +287,7 @@ describe('PrimitiveNode', () => {
 
     primitive.onAfterGraphConfigured()
     expect(primitive.widgets).toBeUndefined()
-    reroute.inputs[0].widget![GET_CONFIG] =
-      target.inputs[0].widget?.[GET_CONFIG]
+    reroute.inputs[0].widget[GET_CONFIG] = target.inputs[0].widget?.[GET_CONFIG]
     primitive.recreateWidget()
 
     expect(primitive.widgets?.[0].value).toBe(222)
@@ -462,7 +461,7 @@ describe('convertToInput', () => {
 describe('setWidgetConfig', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    widgetInputsExtension.registerCustomNodes?.(app)
+    void widgetInputsExtension.registerCustomNodes?.(app)
   })
 
   /** A primitive feeding a widget-backed input, as reroute/paste leave it. */
@@ -553,7 +552,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
       node.onGraphConfigured?.()
 
       expect(original).toHaveBeenCalled()
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual([
         'INT',
         { min: 0, max: 8 }
       ])
@@ -583,10 +582,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
-        'INT',
-        { max: 50 }
-      ])
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual(['INT', { max: 50 }])
     })
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
@@ -598,13 +594,13 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]).toBeUndefined()
+      expect(node.inputs[0].widget[GET_CONFIG]).toBeUndefined()
     })
   })
 
   describe('onInputDblClick', () => {
     beforeEach(() => {
-      widgetInputsExtension.registerCustomNodes?.(app)
+      void widgetInputsExtension.registerCustomNodes?.(app)
     })
 
     async function targetIn(graph: LGraph) {

@@ -646,7 +646,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
     const node = makePreview3DNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    preview3DExt.onNodeOutputsUpdated!({
+    preview3DExt.onNodeOutputsUpdated({
       '7': { result: ['sub\\nested\\mesh.glb', { position: [1, 2, 3] }] }
     } as never)
 
@@ -667,7 +667,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
     const node = makePreview3DNode()
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    preview3DExt.onNodeOutputsUpdated!({
+    preview3DExt.onNodeOutputsUpdated({
       '7': { result: [undefined] }
     } as never)
 
@@ -679,7 +679,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
     const { preview3DExt } = await loadExtensionsFresh()
     getNodeByLocatorIdMock.mockReturnValue(null)
 
-    preview3DExt.onNodeOutputsUpdated!({
+    preview3DExt.onNodeOutputsUpdated({
       '7': { result: ['mesh.glb'] }
     } as never)
 
@@ -691,7 +691,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
     const node = makePreview3DNode({ comfyClass: 'Load3D' })
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    preview3DExt.onNodeOutputsUpdated!({
+    preview3DExt.onNodeOutputsUpdated({
       '7': { result: ['mesh.glb'] }
     } as never)
 
@@ -706,7 +706,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
     })
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    preview3DExt.onNodeOutputsUpdated!({
+    preview3DExt.onNodeOutputsUpdated({
       '7': {
         result: ['mesh.glb', { position: [9, 9, 9] }, 'new-bg.png']
       }
@@ -729,7 +729,7 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    save3DAdvancedExt.onNodeOutputsUpdated!({
+    save3DAdvancedExt.onNodeOutputsUpdated({
       '7': { result: ['3d\\ComfyUI_00001.glb'] }
     } as never)
 
@@ -746,7 +746,7 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Preview3DAdvanced' })
     getNodeByLocatorIdMock.mockReturnValue(node)
 
-    save3DAdvancedExt.onNodeOutputsUpdated!({
+    save3DAdvancedExt.onNodeOutputsUpdated({
       '7': { result: ['mesh.glb'] }
     } as never)
 

@@ -623,14 +623,7 @@ function makeSceneManager(
   const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
-  const manager = new SceneManager(
-    view,
-    () => camera,
-    vi.fn() as unknown as () => InstanceType<
-      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-    >,
-    eventManager
-  )
+  const manager = new SceneManager(view, () => camera, vi.fn(), eventManager)
   return { manager, renderer, view, camera, eventManager }
 }
 

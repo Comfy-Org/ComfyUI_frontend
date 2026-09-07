@@ -33,7 +33,7 @@ vi.mock('three/examples/jsm/helpers/ViewHelper', () => {
       public camera: THREE.Camera,
       public domElement: HTMLElement
     ) {
-      viewHelperInstances.push(this as unknown as MockViewHelperInstance)
+      viewHelperInstances.push(this)
     }
   }
   return { ViewHelper }

@@ -1,5 +1,5 @@
 import { FBXExporter } from '@comfyorg/fbx-exporter-three'
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
@@ -57,7 +57,6 @@ export class ModelExporter {
     originalURL?: string | null
   ): Promise<void> {
     if (originalURL && ModelExporter.canUseDirectURL(originalURL, 'glb')) {
-      console.log('Using direct URL download for GLB')
       return ModelExporter.downloadFromURL(originalURL, filename)
     }
 
@@ -97,7 +96,6 @@ export class ModelExporter {
     originalURL?: string | null
   ): Promise<void> {
     if (originalURL && ModelExporter.canUseDirectURL(originalURL, 'obj')) {
-      console.log('Using direct URL download for OBJ')
       return ModelExporter.downloadFromURL(originalURL, filename)
     }
 
@@ -161,7 +159,6 @@ export class ModelExporter {
     originalURL?: string | null
   ): Promise<void> {
     if (originalURL && ModelExporter.canUseDirectURL(originalURL, 'stl')) {
-      console.log('Using direct URL download for STL')
       return ModelExporter.downloadFromURL(originalURL, filename)
     }
 
