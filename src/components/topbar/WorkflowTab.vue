@@ -4,7 +4,12 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2"
+        :class="
+          cn(
+            'workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2',
+            isAgentTarget && 'bg-brand-yellow/10 hover:bg-brand-yellow/15'
+          )
+        "
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -129,6 +134,7 @@ import {
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
@@ -215,6 +221,14 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
 }
 
 const tabActivity = useWorkflowTabActivityStore()
+const agentPanelStore = useAgentPanelStore()
+
+const isAgentTarget = computed(
+  () =>
+    agentPanelStore.enabled &&
+    agentPanelStore.selectedWorkflow?.path ===
+      props.workflowOption.workflow.path
+)
 
 const isAgentEditing = computed(
   () => tabActivity.editingTabPath === props.workflowOption.workflow.path
