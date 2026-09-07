@@ -13,6 +13,10 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({ openWorkflows: [] })
+}))
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))

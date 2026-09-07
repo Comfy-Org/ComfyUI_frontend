@@ -238,51 +238,68 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // A send that starts with no origin tab must stay that way: `null` is not
     // "resolve the active tab", or re-attaching during prepare() reattributes
     // the turn to the tab selected afterwards.
+    const generation = loadGeneration
+    const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
-    if (workflow?.prepare)
-      await Promise.race([
-        workflow.prepare().catch(() => undefined),
-        new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
-      ])
-    const wfContext = workflow?.current(origin)
-    const tabs = workflow?.tabs?.(origin)
-    async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.(origin)
-      // An unsaved tab now yields a context carrying only its tabPath, so a
-      // merely-defined wfContext no longer implies the tab has a workflow the
-      // thread could own. An existing thread takes a draft only from a tab
-      // with a real workflow id; otherwise an unbound scratch tab would leak
-      // its canvas into someone else's thread.
-      const shouldSendDraft =
-        draft !== undefined &&
-        (threadId === 'new' || wfContext?.id !== undefined)
-      const input = {
-        content: text,
-        tabs,
-        workflowReferences: (workflowReferences ?? [])
-          .filter((reference) => reference.id !== wfContext?.id)
-          .map((reference) => ({
-            workflow_id: reference.id,
-            name: reference.name
-          })),
-        selection:
-          tags !== undefined && tags.length > 0
-            ? { node_ids: tags.map((tag) => tag.id) }
-            : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref),
-        ...(shouldSendDraft ? { draft } : {})
-      }
-      return rest.postMessage(
-        threadId,
-        wfContext?.id !== undefined
-          ? { ...input, workflowId: wfContext.id }
-          : input
-      )
-    }
     try {
-      const ack = await postTurn(conversationStore.threadId ?? 'new')
+      if (workflow?.prepare)
+        await Promise.race([
+          workflow.prepare().catch(() => undefined),
+          new Promise<void>((resolve) =>
+            setTimeout(resolve, PREPARE_TIMEOUT_MS)
+          )
+        ])
+      if (generation !== loadGeneration) return false
+      const wfContext = workflow?.current(origin)
+      if (
+        originContext?.id !== undefined &&
+        wfContext?.id !== originContext.id
+      ) {
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          i18n.global.t('agent.targetNavigationUnavailable')
+        )
+        return false
+      }
+      const tabs = workflow?.tabs?.(origin)
+      async function postTurn(threadId: string) {
+        const draft = workflow?.draft?.(origin)
+        // An unsaved tab now yields a context carrying only its tabPath, so a
+        // merely-defined wfContext no longer implies the tab has a workflow the
+        // thread could own. An existing thread takes a draft only from a tab
+        // with a real workflow id; otherwise an unbound scratch tab would leak
+        // its canvas into someone else's thread.
+        const shouldSendDraft =
+          draft !== undefined &&
+          (threadId === 'new' || wfContext?.id !== undefined)
+        const input = {
+          content: text,
+          tabs,
+          workflowReferences: (workflowReferences ?? [])
+            .filter((reference) => reference.id !== wfContext?.id)
+            .map((reference) => ({
+              workflow_id: reference.id,
+              name: reference.name
+            })),
+          selection:
+            tags !== undefined && tags.length > 0
+              ? { node_ids: tags.map((tag) => tag.id) }
+              : undefined,
+          attachments: attachments?.map((attachment) => attachment.ref),
+          ...(shouldSendDraft ? { draft } : {})
+        }
+        return rest.postMessage(
+          threadId,
+          wfContext?.id !== undefined
+            ? { ...input, workflowId: wfContext.id }
+            : input
+        )
+      }
+      const ack = await postTurn(threadAtSend)
+      if (generation !== loadGeneration) return false
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
@@ -317,6 +334,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      if (generation !== loadGeneration) return false
       const message =
         error instanceof AgentApiError
           ? error.message

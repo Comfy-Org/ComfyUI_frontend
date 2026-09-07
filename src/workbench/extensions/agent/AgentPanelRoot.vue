@@ -87,6 +87,7 @@ import type {
 } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
   isCrdtDebugEnabled,
@@ -117,6 +118,8 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
+const composerStore = useAgentComposerStore()
+let composerContextGeneration = 0
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
@@ -837,6 +840,7 @@ async function onAgentActiveTab(
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  ++composerContextGeneration
   ++targetSelectionGeneration
   mintPortWiring.detach()
   exitNodeSelectionMode()
@@ -883,6 +887,7 @@ watch(threadId, (id) => history.setActive(id), { immediate: true })
 void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
+  ++composerContextGeneration
   ++targetSelectionGeneration
   selectedTarget.value = null
   exitNodeSelectionMode()
@@ -914,12 +919,17 @@ const coachStep: CoachStep = {
   body: t('agent.coachBody')
 }
 
-function onSend(
+async function onSend(
   text: string,
   attachments: ComposerAttachment[],
   references: WorkflowReference[] = []
-): void {
-  if (selectingTarget.value || selectedTarget.value === null) return
+): Promise<void> {
+  if (selectingTarget.value || selectedTarget.value === null || isSending.value)
+    return
+  const generation = composerContextGeneration
+  const target = selectedTarget.value
+  const draft = composerStore.draft
+  const sentAttachments = [...attachments]
   exitNodeSelectionMode()
   const nodeTags =
     nodeReferenceWorkflow === selectedTarget.value
@@ -931,7 +941,22 @@ function onSend(
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
   })
-  void sendMessage(text, attachments, nodeTags, references)
+  const sent = await sendMessage(text, attachments, nodeTags, references)
+  if (
+    sent ||
+    generation !== composerContextGeneration ||
+    composerStore.draft.length > 0 ||
+    composerStore.attachments.length > 0 ||
+    workflowReferences.value.length > 0 ||
+    selectionTags.value.length > 0
+  )
+    return
+  composerStore.draft = draft
+  composerStore.attachments = sentAttachments
+  workflowReferences.value = references.filter(
+    ({ id }) => id !== editableWorkflowId.value
+  )
+  if (selectedTarget.value === target) replaceSelectionTags(nodeTags)
 }
 
 function onStop(): void {
@@ -953,6 +978,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(): void {
+  ++composerContextGeneration
   ++targetSelectionGeneration
   exitNodeSelectionMode()
   workflowReferences.value = []
