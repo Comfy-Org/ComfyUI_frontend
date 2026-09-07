@@ -585,6 +585,34 @@ describe('sign-in state ownership', () => {
     ).toBe('popup-jwt')
   })
 
+  it('exposes a popup mint through the snapshot only once the identity port delivers the user', async () => {
+    const fetchImpl = okFetch('popup-jwt')
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result?.status).toBe('ok')
+    expect(
+      client.getSnapshot().phase,
+      'the snapshot user belongs to the identity port, which has not fired yet'
+    ).toBe('signed-out')
+    expect(client.getToken()).toBeUndefined()
+
+    identity.fire(user)
+
+    await vi.waitFor(() => {
+      expect(client.getSnapshot().phase).toBe('authenticated')
+    })
+    expect(client.getToken()).toBe('popup-jwt')
+    expect(
+      fetchImpl,
+      'the listener settles from the cached popup credential, not a second mint'
+    ).toHaveBeenCalledOnce()
+  })
+
   it('ignores a stale detach from a superseded attachIdentity call', async () => {
     const { client } = makeClient({ fetchImpl: okFetch('jwt-b') })
     const identityA = manualIdentity()

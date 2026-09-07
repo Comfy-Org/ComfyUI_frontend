@@ -191,6 +191,11 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
    * than `freshMarginMs` of validity, minting inside the call when the
    * cache cannot promise that. Resolves undefined when nobody is signed in
    * or when the identity changed while the mint was in flight.
+   *
+   * An explicit-user call made before the identity port has ever fired
+   * (the popup path) resolves with the result, and the credential is
+   * cached — but the snapshot and getToken() stay signed-out until the
+   * port delivers that user, since the snapshot's user is the port's.
    */
   ensureFresh: (
     requestedUser?: AccountUser,
