@@ -1066,6 +1066,9 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
       firebase:
         specifier: 'catalog:'
         version: 11.10.0

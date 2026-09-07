@@ -18,6 +18,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "firebase": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
