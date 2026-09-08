@@ -90,11 +90,14 @@ describe('the shipped Zod schemas enforce the same contract', () => {
     ).toEqual({ key: CONSENT_KEY, value: true })
     expect(zGlobalSettingKey.parse(CONSENT_KEY)).toBe(CONSENT_KEY)
 
+    // `satisfies` contextually types the literal, so `value` stays `true`
+    // instead of widening to `boolean`, and the fixture breaks if the
+    // generated type drifts.
     const stored = {
       key: CONSENT_KEY,
       value: true,
       updated_at: '2026-09-08T00:00:00Z'
-    }
+    } satisfies GlobalSetting
     expect(zGlobalSetting.parse(stored)).toEqual(stored)
   })
 
