@@ -70,8 +70,8 @@ const tags = model.capabilities.map((capability) => ({
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <div class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
-    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
+  <div class="mx-auto max-w-10xl px-6 py-8 lg:px-8 lg:py-10">
+    <nav aria-label="Breadcrumb" class="mb-4 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
       <ol class="flex flex-wrap items-center gap-2">
         <li>
           <a href={routes.home} class="hover:text-primary-warm-white">
@@ -88,66 +88,68 @@ const tags = model.capabilities.map((capability) => ({
         <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
       </ol>
     </nav>
-    <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
-      <div class="flex flex-col justify-center gap-6 pr-8 lg:pr-10">
-        <div class="flex max-w-2xl flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-3">
-          <p
-            class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
-          >
-            {model.provider ?? t('workshop.card.partnerNode')}
-          </p>
-          {model.modality && (
-            <a
-              href={`${routes.workshop}${catalogSearch({ modalities: [model.modality] })}`}
-              class={pillClass}
+    <header class="mb-8 sm:mx-8 lg:mx-10" data-testid="model-hero">
+      <div class="flex flex-col gap-4 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
+        <div class="flex max-w-2xl flex-col gap-2">
+          <div class="flex flex-wrap items-center gap-3">
+            <p
+              class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
             >
-              {modalityLabel[model.modality]}
-            </a>
-          )}
+              {model.provider ?? t('workshop.card.partnerNode')}
+            </p>
+            {model.modality && (
+              <a
+                href={`${routes.workshop}${catalogSearch({ modalities: [model.modality] })}`}
+                class={pillClass}
+              >
+                {modalityLabel[model.modality]}
+              </a>
+            )}
+          </div>
+
+          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
+            <SplitReveal text={model.name} client:load />
+          </h1>
         </div>
 
-        <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
-          <SplitReveal text={model.name} client:load />
-        </h1>
+        <div class="flex flex-col gap-3 lg:items-end">
+          <p
+            class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
+            data-testid="model-price"
+          >
+            {
+              price ? (
+                <>
+                  <span class="text-lg font-bold text-primary-warm-white">{price}</span>
+                  {t('workshop.model.perRun')}
+                </>
+              ) : (
+                t('workshop.card.priceOnPage')
+              )
+            }
+          </p>
 
-        <p
-          class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
-          data-testid="model-price"
-        >
-          {
-            price ? (
-              <>
-                <span class="text-lg font-bold text-primary-warm-white">{price}</span>
-                {t('workshop.model.perRun')}
-              </>
-            ) : (
-              t('workshop.card.priceOnPage')
-            )
-          }
-        </p>
-
-        <ModelStatus
-          status={model.status}
-          variant="banner"
-          successor={successor ? { name: successor.name, href: successor.href } : undefined}
-          client:load
-        />
-
-        <ul class="mt-2 flex flex-wrap items-center gap-2" data-testid="model-tags">
-          {tags.map((tag) => (
-            <li>
-              <a
-                href={`${routes.workshop}${tag.search}`}
-                class="inline-flex h-8 items-center rounded-full bg-transparency-white-t8 px-4 text-sm text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-              >
-                {tag.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+          <ul class="flex flex-wrap items-center gap-2 lg:justify-end" data-testid="model-tags">
+            {tags.map((tag) => (
+              <li>
+                <a
+                  href={`${routes.workshop}${tag.search}`}
+                  class="inline-flex h-8 items-center rounded-full bg-transparency-white-t8 px-4 text-sm text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                >
+                  {tag.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
+
+      <ModelStatus
+        status={model.status}
+        variant="banner"
+        successor={successor ? { name: successor.name, href: successor.href } : undefined}
+        client:load
+      />
     </header>
 
     <div class="sm:px-8 lg:px-10">

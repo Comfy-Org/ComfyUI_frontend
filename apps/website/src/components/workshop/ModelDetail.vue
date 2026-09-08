@@ -336,7 +336,7 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 lg:col-span-5"
+        class="bg-transparency-white-t4 flex flex-col rounded-2xl border border-transparency-white-t8 lg:col-span-5"
         data-testid="playground-input"
       >
         <header
@@ -355,8 +355,10 @@ function useInCode() {
           />
         </div>
 
+        <!-- Run follows the form down the page, so a long list of inputs never
+          pushes it past the bottom of a laptop screen. -->
         <div
-          class="mt-auto flex flex-col gap-2 border-t border-transparency-white-t8 p-3"
+          class="bg-page/85 sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-3 backdrop-blur-sm"
         >
           <Button
             v-if="isRunning"

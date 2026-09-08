@@ -1,4 +1,7 @@
 const MODEL_TO_LOGO: Record<string, string> = {
+  Anthropic: 'anthropic',
+  Claude: 'anthropic',
+  OpenRouter: 'openrouter',
   Grok: 'grok',
   OpenAI: 'openai',
   'GPT-Image': 'openai',

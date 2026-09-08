@@ -25,10 +25,13 @@ const {
 
 const values = defineModel<FormValues>({ required: true })
 
-// Prompts and uploads stay on top; the remaining knobs pair up, toggles fold
-// away. The catalogue lists each release as its own model, so the node's own
-// model picker would be a second, contradictory way to choose one: it is drawn
-// only where hiding it would leave the visitor an empty panel.
+// Prompts and uploads stay on top, then a few settings, and the long tail folds
+// away so the form and its Run button fit a laptop screen. The catalogue lists
+// each release as its own model, so the node's own model picker would be a
+// second, contradictory way to choose one: it is drawn only where hiding it
+// would leave the visitor an empty panel.
+const SETTINGS_SHOWN = 3
+
 const groups = computed(() => {
   const withoutPicker = schema.filter((field) => field.name !== 'model')
   const shown = withoutPicker.length > 0 ? withoutPicker : schema
@@ -38,10 +41,14 @@ const groups = computed(() => {
     -1
   )
   const rest = shown.slice(lastPrimary + 1)
+  const knobs = rest.filter((field) => field.kind !== 'toggle')
   return {
     primary: shown.slice(0, lastPrimary + 1),
-    settings: rest.filter((field) => field.kind !== 'toggle'),
-    advanced: rest.filter((field) => field.kind === 'toggle')
+    settings: knobs.slice(0, SETTINGS_SHOWN),
+    advanced: [
+      ...knobs.slice(SETTINGS_SHOWN),
+      ...rest.filter((field) => field.kind === 'toggle')
+    ]
   }
 })
 </script>
