@@ -3,6 +3,10 @@ import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import {
+  getAgreedLinkPresentation,
+  transferLinkPresentation
+} from '@/core/graph/transferLinkPresentation'
+import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
@@ -26,13 +30,15 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
@@ -235,6 +241,7 @@ export interface GraphRemoveOptions {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
+  linkPresentation?: Record<string, LinkPresentation>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -365,15 +372,20 @@ function walkSegment(
 function serialiseOwnedTopology(owner: LGraph) {
   const scope = graphScopeOf(owner)
   const topologies = [...useLinkStore().graphTopologies(scope)]
-  const serialiseLink = (link: (typeof topologies)[number]) => ({
-    id: link.id,
-    origin_id: serializeNodeId(link.originNodeId),
-    origin_slot: link.originSlot,
-    target_id: serializeNodeId(link.targetNodeId),
-    target_slot: link.targetSlot,
-    type: link.type,
-    ...(link.parentId !== undefined && { parentId: link.parentId })
-  })
+  const presentationStore = useLinkPresentationStore()
+  const serialiseLink = (link: (typeof topologies)[number]) => {
+    const presentation = presentationStore.getPresentation(scope, link.id)
+    return {
+      id: link.id,
+      origin_id: serializeNodeId(link.originNodeId),
+      origin_slot: link.originSlot,
+      target_id: serializeNodeId(link.targetNodeId),
+      target_slot: link.targetSlot,
+      type: link.type,
+      ...(link.parentId !== undefined && { parentId: link.parentId }),
+      ...presentation
+    }
+  }
   const links = topologies.filter((link) => !isFloatingTopology(link))
   const floatingLinks = topologies.filter(isFloatingTopology)
   const reroutes = [...owner.reroutes.values()].map((reroute) =>
@@ -779,6 +791,7 @@ export class LGraph
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
+      useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
@@ -2143,6 +2156,14 @@ export class LGraph
     } = getBoundaryLinks(this, items)
     const { nodes, reroutes, groups } = splitPositionables(items)
 
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const presentations = new Map(
+      [...internalLinks, ...boundaryInputLinks, ...boundaryOutputLinks].map(
+        (link) => [link.id, presentationStore.getPresentation(scope, link.id)]
+      )
+    )
+
     const boundingRect = createBounds(items)
     if (!boundingRect)
       throw new Error('Failed to create bounding rect for subgraph')
@@ -2169,6 +2190,19 @@ export class LGraph
       links,
       externalReroutes
     )
+    const outputPresentations = outputs.map(({ linkIds = [] }) =>
+      getAgreedLinkPresentation(
+        linkIds.map((id) => presentations.get(toLinkId(id)))
+      )
+    )
+
+    for (const link of links) {
+      const presentation =
+        link.target_id === SUBGRAPH_OUTPUT_ID
+          ? outputPresentations[link.target_slot]
+          : presentations.get(toLinkId(link.id))
+      Object.assign(link, presentation)
+    }
 
     // Prepare subgraph data
     const data = {
@@ -2280,6 +2314,12 @@ export class LGraph
       const [firstResolved, ...others] = connections
       const { output, outputNode, link, subgraphInput } = firstResolved
 
+      const presentation = getAgreedLinkPresentation(
+        connections.map(({ link: groupedLink }) =>
+          presentations.get(groupedLink.id)
+        )
+      )
+
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
@@ -2288,11 +2328,12 @@ export class LGraph
           targetSlot: i - 1
         })
         if (subgraphInput instanceof SubgraphInput) {
-          subgraphInput.connect(
+          const boundaryLink = subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
             subgraphNode,
             link.parentId
           )
+          transferLinkPresentation(scope, presentation, boundaryLink?.id)
         } else {
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
@@ -2312,7 +2353,13 @@ export class LGraph
       }
 
       const input = subgraphNode.inputs[i - 1]
-      outputNode.connectSlots(output, subgraphNode, input, link.parentId)
+      const boundaryLink = outputNode.connectSlots(
+        output,
+        subgraphNode,
+        input,
+        link.parentId
+      )
+      transferLinkPresentation(scope, presentation, boundaryLink?.id)
     }
 
     // Group matching links
@@ -2327,10 +2374,15 @@ export class LGraph
         // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
           if (subgraphOutput instanceof SubgraphOutput) {
-            subgraphOutput.connect(
+            const boundaryLink = subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
               subgraphNode,
               link.parentId
+            )
+            transferLinkPresentation(
+              scope,
+              presentations.get(link.id),
+              boundaryLink?.id
             )
           } else {
             throw new TypeError('Subgraph input node is not a SubgraphInput')
@@ -2347,7 +2399,17 @@ export class LGraph
         }
 
         const output = subgraphNode.outputs[i - 1]
-        subgraphNode.connectSlots(output, inputNode, input, link.parentId)
+        const boundaryLink = subgraphNode.connectSlots(
+          output,
+          inputNode,
+          input,
+          link.parentId
+        )
+        transferLinkPresentation(
+          scope,
+          presentations.get(link.id),
+          boundaryLink?.id
+        )
       }
     }
 
@@ -2453,7 +2515,10 @@ export class LGraph
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
-    const newLinks: {
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const subgraphScope = graphScopeOf(subgraphNode.subgraph)
+    const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
       tid: NodeId
@@ -2462,8 +2527,12 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
-    }[] = []
+    })[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
+      const presentation = presentationStore.getPresentation(
+        subgraphScope,
+        link.id
+      )
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? inputLink(this, subgraphNode.id, link.origin_slot)
@@ -2486,6 +2555,10 @@ export class LGraph
           subgraphNode.id,
           link.target_slot
         )) {
+          const outerPresentation = presentationStore.getPresentation(
+            scope,
+            sublink.id
+          )
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2494,7 +2567,8 @@ export class LGraph
             id: link.id,
             iparent: link.parentId,
             eparent: sublink.parentId,
-            externalFirst: true
+            externalFirst: true,
+            ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
         }
@@ -2508,6 +2582,12 @@ export class LGraph
         console.error('Missing Link ID when unpacking')
         continue
       }
+      const outerPresentation = outerLink
+        ? presentationStore.getPresentation(scope, outerLink.id)
+        : undefined
+      const restoredPresentation = outerLink
+        ? getAgreedLinkPresentation([presentation, outerPresentation])
+        : presentation
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2516,7 +2596,8 @@ export class LGraph
         id: link.id,
         iparent: link.parentId,
         eparent: externalParentId,
-        externalFirst: false
+        externalFirst: false,
+        ...restoredPresentation
       })
     }
     this.remove(subgraphNode)
@@ -2585,6 +2666,7 @@ export class LGraph
         console.error('Failed to create link')
         continue
       }
+      transferLinkPresentation(scope, newLink, created.id)
       //This is a little unwieldy since Map.has isn't a type guard
       const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)
@@ -2703,8 +2785,22 @@ export class LGraph
     if (reroutes?.length) {
       // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
-        .filter((x) => x.parentId !== undefined)
-        .map((x) => ({ id: x.id, parentId: x.parentId }))
+        .filter((link) => link.parentId !== undefined)
+        .map((link) => ({ id: link.id, parentId: link.parentId }))
+    }
+
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const linkPresentation = Object.fromEntries(
+      linkArray.flatMap((link) => {
+        const presentation = presentationStore.getPresentation(scope, link.id)
+        return presentation
+          ? [[String(link.id), { ...presentation }] as const]
+          : []
+      })
+    )
+    if (Object.keys(linkPresentation).length) {
+      extra.linkPresentation = linkPresentation
     }
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
@@ -2809,6 +2905,7 @@ export class LGraph
 
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
+    delete this.extra.linkPresentation
   }
 
   /**
@@ -2855,6 +2952,7 @@ export class LGraph
         const topologyScope = graphScopeOf(this)
         if (this.isRootGraph) {
           useLinkStore().clearGraph(topologyScope.rootGraphId)
+          useLinkPresentationStore().clearGraph(topologyScope.rootGraphId)
           useRerouteStore().clearGraph(topologyScope.rootGraphId)
           useNodeDataStore().clearGraph(this.id)
           useWidgetValueStore().clearGraph(this.id)
@@ -2862,6 +2960,7 @@ export class LGraph
           layoutStore.clearGraph(this.id)
         } else {
           useLinkStore().clearOwner(topologyScope)
+          useLinkPresentationStore().clearOwner(topologyScope)
           useRerouteStore().clearOwner(topologyScope)
           useNodeDataStore().clearOwner(topologyScope)
         }
@@ -2893,6 +2992,14 @@ export class LGraph
             const link = this.links.get(linkEx.id)
             if (link) link.parentId = linkEx.parentId
           }
+        }
+
+        for (const [linkId, presentation] of Object.entries(
+          extra?.linkPresentation ?? {}
+        )) {
+          const id = parseLinkId(linkId)
+          if (id === undefined || !this.links.has(id)) continue
+          useLinkPresentationStore().patch(graphScopeOf(this), id, presentation)
         }
 
         // Reroutes
@@ -2930,7 +3037,13 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            if (this._addLink(link)) addedLinkIds.push(link.id)
+            if (this._addLink(link)) {
+              addedLinkIds.push(link.id)
+              useLinkPresentationStore().patch(graphScopeOf(this), link.id, {
+                hidden: linkData.hidden,
+                label: linkData.label
+              })
+            }
           }
         }
 
@@ -3089,7 +3202,13 @@ export class LGraph
           ) {
             floatingLink.id = toLinkId(-1)
           }
-          this.addFloatingLink(floatingLink)
+          if (this.addFloatingLink(floatingLink)) {
+            useLinkPresentationStore().patch(
+              graphScopeOf(this),
+              floatingLink.id,
+              { hidden: linkData.hidden, label: linkData.label }
+            )
+          }
         }
       }
 

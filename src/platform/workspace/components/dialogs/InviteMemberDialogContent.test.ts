@@ -102,6 +102,7 @@ function inviteButton() {
 
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     mockFetchPendingInvites.mockResolvedValue([])
     mockFetchStatus.mockResolvedValue(undefined)
     mockMaxSeats.value = 73

@@ -47,6 +47,7 @@
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
             :workspace-name="workspaceName"
+            :subscription-tier="tier"
           />
           <span class="truncate text-sm text-base-foreground">
             {{ workspaceName }}

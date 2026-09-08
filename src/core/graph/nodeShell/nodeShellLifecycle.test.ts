@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -10,8 +10,39 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+describe('node shell registration', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('remints a colliding node id and warns with both ids', () => {
+    const graph = new LGraph()
+    const first = new LGraphNode('first')
+    graph.add(first)
+    const duplicate = new LGraphNode('duplicate')
+    duplicate.id = first.id
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    graph.add(duplicate)
+
+    expect(duplicate.id).not.toBe(first.id)
+    expect(graph.getNodeById(first.id)).toBe(first)
+    expect(graph.getNodeById(duplicate.id)).toBe(duplicate)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor(graph.id, graph.id)
+        .map(({ id }) => id)
+    ).toEqual([first.id, duplicate.id])
+    expect(warn).toHaveBeenCalledOnce()
+    expect(warn.mock.calls[0][0]).toContain(`Node id ${first.id} `)
+    expect(warn.mock.calls[0][0]).toContain(`reminted as ${duplicate.id}`)
+    expect(warn.mock.calls[0][0]).toContain(`root graph ${graph.rootGraph.id}`)
+  })
+})
 
 describe('node shell teardown', () => {
   beforeEach(() => {

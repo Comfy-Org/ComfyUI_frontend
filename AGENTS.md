@@ -10,6 +10,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
 - `docs/guidance/storybook.md` — Storybook story patterns
 - `docs/guidance/design-standards.md` — Figma design-standards references
+- `docs/guidance/performance-incident-runbook.md` — staged evidence-gathering procedure for frame drops, input latency, long tasks, and unexpected redraws
 
 ## Project Structure & Module Organization
 
