@@ -37,6 +37,7 @@ export function useNodeResize(
   const resizeStartSize = ref<Size | null>(null)
   const resizeStartPosition = ref<Point | null>(null)
   const resizeCorner = ref<CompassCorners>('SE')
+  const activePointerId = ref<number | null>(null)
 
   // Snap-to-grid functionality
   const { shouldSnap, applySnapToPosition, applySnapToSize } = useNodeSnap()
@@ -46,6 +47,7 @@ export function useNodeResize(
 
   const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
     event.stopPropagation()
+    if (isResizing.value) return
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
@@ -94,6 +96,7 @@ export function useNodeResize(
     // Mark as resizing to prevent drag from activating
     layoutStore.isResizingVueNodes.value = true
     isResizing.value = true
+    activePointerId.value = event.pointerId
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
     resizeStartSize.value = startSize
     resizeStartPosition.value = startPosition
@@ -101,6 +104,7 @@ export function useNodeResize(
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (
+        moveEvent.pointerId !== activePointerId.value ||
         !isResizing.value ||
         !resizeStartPointer.value ||
         !resizeStartSize.value ||
@@ -216,23 +220,22 @@ export function useNodeResize(
     }
 
     const cleanup = () => {
-      if (!isResizing.value) return
-      isResizing.value = false
-      layoutStore.isResizingVueNodes.value = false
-      resizeStartPointer.value = null
-      resizeStartSize.value = null
-      resizeStartPosition.value = null
-
-      // Stop tracking shift key state
       stopShiftSync()
-
       stopMoveListen()
       stopUpListen()
       stopCancelListen()
+
+      if (!isResizing.value) return
+      isResizing.value = false
+      layoutStore.isResizingVueNodes.value = false
+      activePointerId.value = null
+      resizeStartPointer.value = null
+      resizeStartSize.value = null
+      resizeStartPosition.value = null
     }
 
     const handlePointerUp = (upEvent: PointerEvent) => {
-      if (isResizing.value) {
+      if (isResizing.value && upEvent.pointerId === activePointerId.value) {
         try {
           target.releasePointerCapture(upEvent.pointerId)
         } catch {
@@ -242,9 +245,16 @@ export function useNodeResize(
       }
     }
 
+    const handlePointerCancel = (cancelEvent: PointerEvent) => {
+      if (cancelEvent.pointerId === activePointerId.value) cleanup()
+    }
+
     const stopMoveListen = useEventListener('pointermove', handlePointerMove)
     const stopUpListen = useEventListener('pointerup', handlePointerUp)
-    const stopCancelListen = useEventListener('pointercancel', cleanup)
+    const stopCancelListen = useEventListener(
+      'pointercancel',
+      handlePointerCancel
+    )
   }
 
   return {
