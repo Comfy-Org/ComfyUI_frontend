@@ -1,0 +1,12 @@
+{
+  "en": [],
+  "zh-CN": ["enterprise.meta.title", "enterprise.managedBuilds.meta.title"],
+  "ja": [
+    "cli.faq.6.a",
+    "events.page.title",
+    "fdct.meta.title",
+    "enterprise.meta.title",
+    "enterprise.managedBuilds.meta.title",
+    "cloudNodesLaunch.models.nodeCount"
+  ]
+}
