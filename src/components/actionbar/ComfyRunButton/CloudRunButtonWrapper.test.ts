@@ -309,6 +309,7 @@ describe('CloudRunButtonWrapper', () => {
     )
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     expect(dialogOptions.props.canManage).toBe(true)
+    expect(dialogOptions.props.status).toBe('paused')
 
     await dialogOptions.props.onUpdatePayment()
     expect(state.closeDialog).toHaveBeenCalledWith({
@@ -448,11 +449,63 @@ describe('CloudRunButtonWrapper', () => {
 
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     expect(dialogOptions.props.canManage).toBe(false)
+    expect(dialogOptions.props.status).toBe('paused')
     dialogOptions.props.onClose()
     expect(state.closeDialog).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).not.toHaveBeenCalled()
+  })
+
+  it('opens payment recovery for a payment-failed owner', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'payment_failed'
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent(
+      'Update payment to run'
+    )
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+
+    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
+    expect(dialogOptions.props.canManage).toBe(true)
+    expect(dialogOptions.props.status).toBe('payment_failed')
+  })
+
+  it('keeps Run locked with owner guidance for a payment-failed member', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'payment_failed'
+    state.canManageSubscription = false
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+
+    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
+    expect(dialogOptions.props.canManage).toBe(false)
+    expect(dialogOptions.props.status).toBe('payment_failed')
+  })
+
+  it('does not fall back to Subscribe to Run for payment failure when recovery flag is disabled', () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'payment_failed'
+    state.v1PaymentRecovery = false
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent(
+      'Update payment to run'
+    )
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
   })
 
   it('keeps generic inactive behavior when payment recovery is disabled', () => {
