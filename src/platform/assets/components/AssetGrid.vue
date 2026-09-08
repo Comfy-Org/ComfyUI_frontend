@@ -13,18 +13,6 @@
         class="icon-[lucide--loader] size-12 animate-spin text-muted-foreground"
       />
     </div>
-    <div
-      v-else-if="assets.length === 0"
-      class="flex h-full flex-col items-center justify-center py-16 text-muted-foreground select-none"
-    >
-      <i class="mb-4 icon-[lucide--search] size-10" />
-      <h3 class="mb-2 text-lg font-medium">
-        {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
-      </h3>
-      <p class="text-center text-sm whitespace-pre-wrap">
-        {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
-      </p>
-    </div>
     <VirtualGrid
       v-else
       :items="assetsWithKey"
@@ -43,6 +31,19 @@
           @deleted="$emit('assetDeleted', $event)"
           @show-info="$emit('assetShowInfo', $event)"
         />
+      </template>
+      <template #placeholder>
+        <div
+          class="flex h-full flex-col items-center justify-center py-16 text-muted-foreground select-none"
+        >
+          <i class="mb-4 icon-[lucide--search] size-10" />
+          <h3 class="mb-2 text-lg font-medium">
+            {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
+          </h3>
+          <p class="text-center text-sm whitespace-pre-wrap">
+            {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
+          </p>
+        </div>
       </template>
     </VirtualGrid>
   </div>
