@@ -316,7 +316,18 @@ const structuredData = shouldNoindex
           return
         }
         event.loader = async () => {
-          window.location.assign(event.to.href)
+          // Back and forward have already moved the history position, and a
+          // replace was asked not to add one. Only a push should create an
+          // entry — assign() for all three would pile up entries and leave the
+          // back button walking forwards.
+          const keepsHistoryPosition =
+            event.navigationType === 'traverse' ||
+            event.navigationType === 'replace'
+          if (keepsHistoryPosition) {
+            window.location.replace(event.to.href)
+          } else {
+            window.location.assign(event.to.href)
+          }
           // The browser is leaving; never resolve, so nothing swaps first.
           await new Promise(() => {})
         }

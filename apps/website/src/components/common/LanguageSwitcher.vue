@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { LOCALES, isLocale } from '../../config/locales'
 import type { Locale } from '../../config/locales'
 import { t } from '../../i18n/translations'
@@ -53,9 +55,12 @@ const hasChoice = languages.length > 1
           :lang="language.code"
           :aria-current="language.code === locale ? 'true' : undefined"
           :class="
-            language.code === locale
-              ? 'text-sm underline underline-offset-4'
-              : 'text-sm hover:underline hover:underline-offset-4'
+            cn(
+              'text-sm',
+              language.code === locale
+                ? 'underline underline-offset-4'
+                : 'hover:underline hover:underline-offset-4'
+            )
           "
         >
           {{ language.label }}
