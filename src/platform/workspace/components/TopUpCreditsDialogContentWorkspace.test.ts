@@ -23,6 +23,14 @@ const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockRetryPaymentAuthentication = vi.fn()
+const mockDismissOperation = vi.fn((opId: string) => {
+  if (mockBillingOperationState.topupActionOperation?.value?.opId === opId) {
+    mockBillingOperationState.topupActionOperation.value = undefined
+  }
+  if (mockBillingOperationState.isAddingCredits) {
+    mockBillingOperationState.isAddingCredits.value = false
+  }
+})
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
@@ -92,7 +100,8 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
         return mockBillingOperationState.topupActionOperation?.value
       },
       startOperation: mockStartOperation,
-      retryPaymentAuthentication: mockRetryPaymentAuthentication
+      retryPaymentAuthentication: mockRetryPaymentAuthentication,
+      dismissOperation: mockDismissOperation
     })
   }
 })
@@ -449,27 +458,89 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('retries failed payment authentication', async () => {
+  it('enters verification once permission resolves after an operation already exists', async () => {
+    setCanTopUp(false)
+    setTopupActionOperation({
+      opId: 'op-action',
+      status: 'pending',
+      actionUrl: 'https://verify.example/sensitive-token'
+    })
+
+    renderDialog()
+    expect(screen.getByText('Select amount')).toBeInTheDocument()
+
+    setCanTopUp(true)
+    await nextTick()
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
+  })
+
+  it('resumes a live challenge in page', async () => {
     renderDialog()
 
     setIsAddingCredits(true)
     setTopupActionOperation({
-      opId: 'op-retry',
+      opId: 'op-resume',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'requires_action',
+      canRetryAuthentication: true
+    })
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-resume')
+  })
+
+  it('reports a failed challenge without offering to resume it', async () => {
+    renderDialog()
+
+    setTopupActionOperation({
+      opId: 'op-failed',
       status: 'pending',
       actionUrl: null,
       authenticationState: 'failed_retryable',
-      errorMessage: 'Your bank rejected the verification.',
-      canRetryAuthentication: true
+      errorMessage: 'Your bank rejected the verification.'
     })
     await nextTick()
 
     expect(
       screen.getByText('Your bank rejected the verification.')
     ).toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Retry verification' })
-    )
-    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-retry')
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
+    expect(mockRetryPaymentAuthentication).not.toHaveBeenCalled()
+  })
+
+  it('lets the customer start over after a failed challenge', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await nextTick()
+
+    setTopupActionOperation({
+      opId: 'op-1',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'failed_retryable',
+      errorMessage: 'Your bank rejected the verification.'
+    })
+    await nextTick()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+    await nextTick()
+
+    expect(mockDismissOperation).toHaveBeenCalledWith('op-1')
+    expect(
+      screen.queryByText('Your bank rejected the verification.')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
   it('keeps a top-up locked when reconciliation needs support', () => {

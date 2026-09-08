@@ -9,8 +9,8 @@ import { toError } from '@/utils/errorUtil'
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
-   * `error_type` Sentry tag and the `error_type` RUM context field, so the
-   * same query works against either console.
+   * native RUM `error.type`, the `error_type` Sentry tag, and the legacy
+   * `error_type` RUM context field.
    */
   errorType: string
   tags?: Record<string, string | number | boolean | undefined>
@@ -73,7 +73,12 @@ function dispatch(
   }
   if (datadogLive) {
     try {
-      datadogRum.addError(error, {
+      const datadogError = Object.assign(
+        new Error(error.message, { cause: error.cause }),
+        error,
+        { name: errorType, stack: error.stack }
+      )
+      datadogRum.addError(datadogError, {
         ...context,
         ...tags,
         error_type: errorType,

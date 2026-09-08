@@ -178,7 +178,7 @@ describe('TurnstileWidget', () => {
   it('resets the widget on a challenge error to fetch a fresh challenge', async () => {
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     renderWidget()
     await flush()
@@ -201,7 +201,7 @@ describe('TurnstileWidget', () => {
   it('reset() clears the token model and resets the rendered widget', async () => {
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     const { emitted, getCurrentInstance } = renderWidgetWithExpose()
     await flush()
@@ -220,7 +220,7 @@ describe('TurnstileWidget', () => {
   it('reset() clears a stale error so it does not linger over a fresh challenge', async () => {
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     const { container, getCurrentInstance } = renderWidgetWithExpose()
     await flush()
@@ -251,7 +251,7 @@ describe('TurnstileWidget', () => {
   it('removes the widget on unmount when one was rendered', async () => {
     const { api } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     const { unmount } = renderWidget()
     await flush()
@@ -337,7 +337,7 @@ describe('TurnstileWidget', () => {
     it('resets the widget to fetch a fresh challenge on token expiry', async () => {
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
-      window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+      window.turnstile = api
 
       renderWidget()
       await flush()
@@ -352,7 +352,7 @@ describe('TurnstileWidget', () => {
     it('falls back if a post-solve expiry is not followed by a fresh token within the load timeout', async () => {
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
-      window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+      window.turnstile = api
 
       const { emitted } = renderWidget()
       await vi.advanceTimersByTimeAsync(0)

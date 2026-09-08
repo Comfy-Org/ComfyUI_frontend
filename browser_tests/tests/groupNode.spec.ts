@@ -15,13 +15,13 @@ test.describe('Group node migration', { tag: '@node' }, () => {
     await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
 
     const state = await comfyPage.page.evaluate(() => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       return {
         groupNodeInstances: graph.nodes.filter((n) =>
-          String(n.type).startsWith('workflow>')
+          n.type.startsWith('workflow>')
         ).length,
         subgraphCount: graph.subgraphs.size,
-        hasGroupNodesExtra: !!graph.extra?.groupNodes
+        hasGroupNodesExtra: !!graph.extra.groupNodes
       }
     })
 

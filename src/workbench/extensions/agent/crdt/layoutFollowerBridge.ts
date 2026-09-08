@@ -151,7 +151,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * socket — so consumers rebind their observers to the new doc rather than
    * staying attached to the destroyed one. Re-subscribing to the SAME
    * workflow keeps the doc: that is the same-lineage catch-up path
-   * (ADR-0024), where the state vector makes the delta cheap.
+   * (ADR-GRAPH-DOCUMENT-0024), where the state vector makes the delta cheap.
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
@@ -244,12 +244,18 @@ export class LayoutFollowerBridge extends EventTarget {
     // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
-    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq)
+    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
+      this.dispatchEvent(
+        new CustomEvent('doc_stale', {
+          detail: { workflowId: update.workflowId, seq: update.seq }
+        })
+      )
       return
+    }
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
+    // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
     //
     // Before the first applied update the detector is armed from the ack seq
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
@@ -257,6 +263,15 @@ export class LayoutFollowerBridge extends EventTarget {
     // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
     const baseline = this.lastSeq ?? this.ackSeq
     if (baseline !== null && update.seq > baseline + 1) {
+      this.dispatchEvent(
+        new CustomEvent('doc_gap', {
+          detail: {
+            workflowId: update.workflowId,
+            expected: baseline + 1,
+            received: update.seq
+          }
+        })
+      )
       this.resubscribe()
       return
     }

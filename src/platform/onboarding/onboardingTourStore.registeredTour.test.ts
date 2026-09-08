@@ -193,29 +193,21 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
       'skipped',
       expect.objectContaining({ skip_reason: 'trigger_lost' })
     )
+    holds.value = true
     await expect(
       store.startTour('firstRun'),
       'the context went, not the user, so the tour is still owed'
     ).resolves.toBe(true)
   })
 
-  it('starts a tour whose context is already unmet, and ends it only on losing it', async () => {
+  it('refuses to start a tour whose context is already unmet', async () => {
     const holds = ref(false)
     registerTour('firstRun', () => Promise.resolve([step('run')]), holds)
     const store = mountStore()
 
-    await expect(
-      store.startTour('firstRun'),
-      'startTour decides whether a tour may begin; holds only ends one'
-    ).resolves.toBe(true)
-    await nextTick()
-    expect(store.activeTour).toBe('firstRun')
-
-    holds.value = true
-    await nextTick()
-    holds.value = false
-    await nextTick()
+    await expect(store.startTour('firstRun')).resolves.toBe(false)
     expect(store.activeTour).toBeNull()
+    expect(stages()).not.toContain('started')
   })
 
   it('ends the tour as completed once its last step is advanced past', async () => {

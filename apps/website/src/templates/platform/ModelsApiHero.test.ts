@@ -11,11 +11,14 @@ describe('ModelsApiHero', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.products.models.title', 'en')
+        name: t('platform.modelsHero.heading', 'en')
       })
     ).toBeTruthy()
+    expect(screen.getByText(/state-of-the-art models for image/)).toBeTruthy()
     expect(
       screen.getAllByText('comfy.models.run', { exact: false }).length
     ).toBeGreaterThan(0)
+    expect(screen.queryByText(t('nav.badgeComingSoon', 'en'))).toBeNull()
+    expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
 })

@@ -42,7 +42,7 @@ export interface NodeKind<T extends NodeBase = NodeBase> {
 const registry = new Map<string, NodeKind>()
 
 export function registerNodeKind<T extends NodeBase>(kind: NodeKind<T>): void {
-  registry.set(kind.kind, kind as unknown as NodeKind)
+  registry.set(kind.kind, kind)
 }
 
 export function getNodeKind(kind: string): NodeKind {

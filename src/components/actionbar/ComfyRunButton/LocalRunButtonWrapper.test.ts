@@ -8,7 +8,7 @@ import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 type PartnerNode = { nodeName: string; displayName: string }
 
 const gateState = vi.hoisted(() => ({
-  gate: { value: 'none' as 'sign-in' | 'none' },
+  gate: { value: 'none' },
   partnerNodes: { value: [] as PartnerNode[] }
 }))
 

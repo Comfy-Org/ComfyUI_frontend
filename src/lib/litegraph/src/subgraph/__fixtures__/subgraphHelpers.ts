@@ -48,7 +48,7 @@ class FixtureStringConcatenateNode extends LGraphNode {
 }
 
 export function cleanupComplexPromotionFixtureNodeType(): void {
-  if (!LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]) return
+  if (!(FIXTURE_STRING_CONCAT_TYPE in LiteGraph.registered_node_types)) return
   LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
 }
 
@@ -405,12 +405,8 @@ export function setupComplexPromotionFixture(): {
     throw new Error('Expected fixture to contain subgraph instance node id 21')
 
   const graph = createTestRootGraph()
-  const subgraph = graph.createSubgraph(subgraphData as ExportedSubgraph)
-  const hostNode = new SubgraphNode(
-    graph,
-    subgraph,
-    hostNodeData as ExportedSubgraphInstance
-  )
+  const subgraph = graph.createSubgraph(subgraphData)
+  const hostNode = new SubgraphNode(graph, subgraph, hostNodeData)
   graph.add(hostNode)
 
   return {

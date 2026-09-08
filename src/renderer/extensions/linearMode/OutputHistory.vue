@@ -219,7 +219,7 @@ watch(
   }
 )
 
-useInfiniteScroll(outputsRef, outputs.loadMore, {
+useInfiniteScroll(outputsRef, () => outputs.loadMore(), {
   canLoadMore: () => toValue(outputs.hasMore)
 })
 

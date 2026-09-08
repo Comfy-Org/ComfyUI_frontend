@@ -6,6 +6,8 @@ import { toRaw } from 'vue'
 import { setAssertReporter } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -36,7 +38,14 @@ describe('node shell state', () => {
   }
 
   it('starts unregistered and unowned', () => {
-    const state = createNodeShellState('Node', 'some/type', undefined)
+    const node = new LGraphNode('Node')
+    const state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'some/type',
+      undefined
+    )
 
     expect(state.id).toBe(UNASSIGNED_NODE_ID)
     expect(state.graphId).toBe(zeroUuid)
@@ -44,10 +53,37 @@ describe('node shell state', () => {
   })
 
   it('falls back to a placeholder title and an empty type', () => {
-    const state = createNodeShellState('', undefined, undefined)
+    const node = new LGraphNode('Node')
+    const state = createNodeShellState(
+      node,
+      createInputSlotView,
+      '',
+      undefined,
+      undefined
+    )
 
     expect(state.title).toBe('Unnamed')
     expect(state.type).toBe('')
+  })
+
+  it('rehydrates plain input-slot writes for any NodeState producer, not just the LGraphNode constructor', () => {
+    const node = new LGraphNode('Node')
+    const state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'some/type',
+      undefined
+    )
+
+    state.inputs.push({
+      name: 'in',
+      type: 'INT',
+      link: null,
+      boundingRect: new Float64Array(4)
+    })
+
+    expect(state.inputs[0]).toBeInstanceOf(NodeInputSlot)
   })
 
   it('buckets by root graph and partitions by owning graph', () => {
@@ -124,7 +160,13 @@ describe('node registration invariants', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Node')
     graph.add(node)
-    node._state = createNodeShellState('Node', 'test', undefined)
+    node._state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'test',
+      undefined
+    )
 
     expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
     expect(node._graphScope).toBeUndefined()
@@ -137,7 +179,13 @@ describe('node registration invariants', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Node')
     graph.add(node)
-    node._state = createNodeShellState('Node', 'test', undefined)
+    node._state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'test',
+      undefined
+    )
 
     unregisterNodeState(node)
 

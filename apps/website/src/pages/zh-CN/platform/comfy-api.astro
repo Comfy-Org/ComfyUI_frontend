@@ -14,9 +14,13 @@ import { t } from '../../../i18n/translations'
   description={t('platform.products.serverless.description', 'zh-CN')}
 >
   <ServerlessHero locale="zh-CN" client:load />
+  <ServerlessHowItWorksSection locale="zh-CN" client:visible />
   <ServerlessDeploySection locale="zh-CN" client:visible />
   <ServerlessScaleSection locale="zh-CN" client:visible />
-  <ServerlessHowItWorksSection locale="zh-CN" client:visible />
-  <ClosingCtaSection locale="zh-CN" client:visible />
+  <ClosingCtaSection
+    locale="zh-CN"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    client:visible
+  />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
 </BaseLayout>

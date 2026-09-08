@@ -248,9 +248,8 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         if (!graph || !('inputNode' in graph))
           throw new Error('Expected to be in subgraph')
 
-        const input = graph.inputs?.[0]
-        if (!input?.labelPos)
-          throw new Error('Could not get label position for testing')
+        const input = graph.inputs.at(0)
+        if (!input) throw new Error('Could not get input for testing')
 
         const leftClickEvent = {
           canvasX: input.labelPos[0],
@@ -261,16 +260,14 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         } as Parameters<typeof graph.inputNode.onPointerDown>[0]
 
         const inputNode = graph.inputNode
-        if (inputNode?.onPointerDown) {
-          inputNode.onPointerDown(
-            leftClickEvent,
-            app.canvas.pointer,
-            app.canvas.linkConnector
-          )
+        inputNode.onPointerDown(
+          leftClickEvent,
+          app.canvas.pointer,
+          app.canvas.linkConnector
+        )
 
-          if (app.canvas.pointer.onDoubleClick) {
-            app.canvas.pointer.onDoubleClick(leftClickEvent)
-          }
+        if (app.canvas.pointer.onDoubleClick) {
+          app.canvas.pointer.onDoubleClick(leftClickEvent)
         }
       })
 
@@ -329,7 +326,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
           comfyPage.page.evaluate(() => {
             const graph = window.app!.canvas.graph
             if (!graph || !('inputNode' in graph)) return null
-            return graph.inputs?.[0]?.label || null
+            return graph.inputs.at(0)?.label || null
           })
         )
         .toBe(RENAMED_SLOT_NAME)
@@ -536,7 +533,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const initialLabel = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph
         if (!graph || !('inputNode' in graph)) return null
-        const textInput = graph.inputs?.find(
+        const textInput = graph.inputs.find(
           (input: { type: string }) => input.type === 'STRING'
         )
         return textInput?.label || textInput?.name || null
@@ -595,7 +592,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
       await comfyPage.page.evaluate(
         (wf) =>
-          window.app!.loadGraphData(wf as ComfyWorkflowJSON, true, true, null, {
+          window.app!.loadGraphData(wf, true, true, null, {
             openSource: 'template'
           }),
         workflow
@@ -608,15 +605,14 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         .poll(() =>
           comfyPage.page.evaluate(
             () =>
-              window.app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
-                .length
+              window.app!.graph._nodes.filter((n) => n.isSubgraphNode()).length
           )
         )
         .toBeGreaterThan(0)
 
       const nodeIds = await comfyPage.page.evaluate(() =>
         window
-          .app!.graph._nodes.filter((n) => !!n.isSubgraphNode?.())
+          .app!.graph._nodes.filter((n) => n.isSubgraphNode())
           .map((n) => String(n.id))
       )
 

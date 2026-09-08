@@ -127,7 +127,7 @@ describe('legacy slot link additions', () => {
     const [id] = output.links!
 
     output.links = []
-    output.links!.push(id)
+    output.links.push(id)
 
     expect(source.isOutputConnected(0)).toBe(false)
     expect(target.isInputConnected(0)).toBe(false)
