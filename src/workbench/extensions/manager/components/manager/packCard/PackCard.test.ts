@@ -2,36 +2,18 @@ import { createTestingPinia } from '@pinia/testing'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import type {
   MergedNodePack,
   RegistryPack
 } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-const translateMock = vi.hoisted(() =>
-  vi.fn((key: string, choice?: number) =>
-    typeof choice === 'number' ? `${key}-${choice}` : key
-  )
-)
-const dateMock = vi.hoisted(() => vi.fn(() => '2024. 1. 1.'))
 const storageMap = vi.hoisted(() => new Map<string, unknown>())
-
-// Mock dependencies
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: vi.fn(() => ({
-    d: dateMock,
-    t: translateMock
-  })),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: translateMock,
-      te: vi.fn(() => true)
-    }
-  }))
-}))
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/stores/comfyManagerStore'),
@@ -89,10 +71,16 @@ describe('PackCard', () => {
     nodePack: MergedNodePack | RegistryPack
     isSelected?: boolean
   }) {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
+
     return render(PackCard, {
       props,
       global: {
-        plugins: [createTestingPinia({ stubActions: false })],
+        plugins: [createTestingPinia({ stubActions: false }), i18n],
         components: {
           ProgressSpinner
         },
@@ -100,9 +88,6 @@ describe('PackCard', () => {
           PackBanner: true,
           PackVersionBadge: true,
           PackCardFooter: true
-        },
-        mocks: {
-          $t: vi.fn((key: string) => key)
         }
       }
     })
@@ -130,7 +115,7 @@ describe('PackCard', () => {
     it('should render date correctly', () => {
       renderComponent({ nodePack: mockNodePack })
 
-      expect(screen.getByText('2024. 1. 1.')).toBeInTheDocument()
+      expect(screen.getByText('Jan 1, 2024')).toBeInTheDocument()
     })
 
     it('should apply selected ring when isSelected is true', () => {
@@ -213,8 +198,7 @@ describe('PackCard', () => {
 
       renderComponent({ nodePack: packWithNodes })
 
-      expect(screen.getByText('g.nodesCount-1')).toBeInTheDocument()
-      expect(translateMock).toHaveBeenCalledWith('g.nodesCount', 1)
+      expect(screen.getByText('1 node')).toBeInTheDocument()
     })
   })
 

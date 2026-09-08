@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -47,17 +49,6 @@ vi.mock(import('@/composables/useServerLogs'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
-}))
-
 interface EnabledDisabledTestCase {
   desc: string
   installed: Record<string, ManagerPackInstalled>
@@ -80,6 +71,7 @@ describe('useComfyManagerStore', () => {
   }
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     mockManagerService = {
       isLoading: ref(false),
       error: ref(null),
