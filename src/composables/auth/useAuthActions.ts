@@ -4,7 +4,8 @@ import { ref } from 'vue'
 
 import {
   classifyAuthError,
-  isFirebaseAuthErrorLike
+  isFirebaseAuthErrorLike,
+  severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -68,19 +69,14 @@ export const useAuthActions = () => {
         summary: t('g.error'),
         detail: t('auth.errors.signupBlocked')
       })
-    } else if (classification.kind === 'popup-dismissed') {
+    } else if (
+      classification.kind === 'popup-dismissed' ||
+      classification.kind === 'auth'
+    ) {
+      const severity = severityForAuthError(classification)
       toastStore.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: st(
-          `auth.errors.${classification.code}`,
-          t('auth.errors.generic')
-        )
-      })
-    } else if (classification.kind === 'auth') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
+        severity,
+        summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
         detail: st(
           `auth.errors.${classification.code}`,
           t('auth.errors.generic')
