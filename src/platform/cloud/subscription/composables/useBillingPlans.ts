@@ -42,7 +42,8 @@ export function useBillingPlans() {
           },
           context: {
             has_cached_plans: hasCachedPlans,
-            has_team_credit_stops: teamCreditStops.value !== null
+            has_team_credit_stops:
+              (teamCreditStops.value?.stops.length ?? 0) > 0
           },
           level: hasCachedPlans ? 'warning' : 'error'
         })

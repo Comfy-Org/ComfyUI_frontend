@@ -149,7 +149,14 @@ describe('useBillingPlans', () => {
         plans: [buildPlan()],
         team_credit_stops: {
           default_stop_index: 0,
-          stops: []
+          stops: [
+            {
+              id: 'team_700',
+              credits: 147700,
+              monthly: { list_price_cents: 70000, price_cents: 66500 },
+              yearly: { list_price_cents: 70000, price_cents: 63000 }
+            }
+          ]
         }
       })
       const useBillingPlans = await importUseBillingPlans()
