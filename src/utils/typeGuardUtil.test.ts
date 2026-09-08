@@ -1,7 +1,8 @@
+import { CanceledError } from 'axios'
 import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isSubgraphIoNode } from '@/utils/typeGuardUtil'
+import { isAbortError, isSubgraphIoNode } from '@/utils/typeGuardUtil'
 
 type NodeConstructor = { comfyClass?: string }
 
@@ -10,6 +11,24 @@ function createMockNode(nodeConstructor?: NodeConstructor): LGraphNode {
 }
 
 describe('typeGuardUtil', () => {
+  describe('isAbortError', () => {
+    it('should identify a native AbortError', () => {
+      expect(isAbortError(new DOMException('aborted', 'AbortError'))).toBe(true)
+    })
+
+    it('should identify an axios CanceledError', () => {
+      expect(isAbortError(new CanceledError())).toBe(true)
+    })
+
+    it('should reject other errors', () => {
+      expect(isAbortError(new Error('boom'))).toBe(false)
+      expect(isAbortError(new DOMException('nope', 'NotFoundError'))).toBe(
+        false
+      )
+      expect(isAbortError(null)).toBe(false)
+    })
+  })
+
   describe('isSubgraphIoNode', () => {
     it('should identify SubgraphInputNode as IO node', () => {
       const node = createMockNode({ comfyClass: 'SubgraphInputNode' })

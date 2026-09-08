@@ -19,6 +19,15 @@
         {{ node }}
       </div>
     </template>
+    <template v-else-if="fetchFailed">
+      <NoResultsPlaceholder
+        icon="pi pi-exclamation-circle"
+        :title="$t('manager.nodesFetchFailed')"
+        :message="$t('manager.nodesFetchFailedDescription')"
+        :button-label="$t('manager.retry')"
+        @action="retryFetch"
+      />
+    </template>
     <template v-else>
       <NoResultsPlaceholder
         :title="$t('manager.noNodesFound')"
@@ -29,9 +38,8 @@
 </template>
 
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, shallowRef, useId } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, useId, watch } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -50,31 +58,61 @@ const { nodePack, nodeNames } = defineProps<{
 const { getNodeDefs } = useComfyRegistryStore()
 
 const isLoading = ref(false)
+const fetchFailed = ref(false)
 const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
 
-const fetchNodeDefs = async () => {
-  getNodeDefs.cancel()
-  isLoading.value = true
-
+const nodeDefsParams = computed(() => {
   const { id: packId } = nodePack
   const version = nodePack.latest_version?.version
+  if (!packId || !version) return null
+  return { packId, version, page: 1, limit: 256 }
+})
 
-  if (!packId || !version) {
+const packIdentity = computed(() => {
+  const params = nodeDefsParams.value
+  return params && `${params.packId}@${params.version}`
+})
+
+let inFlightParams: NonNullable<typeof nodeDefsParams.value> | null = null
+// Overlapping fetches for one pack share a params identity, so only an id
+// distinguishes a superseded response from the current one.
+let latestRequestId = 0
+
+const fetchNodeDefs = async () => {
+  if (inFlightParams) getNodeDefs.cancel(inFlightParams)
+
+  const requestId = ++latestRequestId
+  const params = nodeDefsParams.value
+  inFlightParams = params
+  fetchFailed.value = false
+
+  if (!params) {
     registryNodeDefs.value = null
-  } else {
-    const response = await getNodeDefs.call({
-      packId,
-      version,
-      page: 1,
-      limit: 256
-    })
-    registryNodeDefs.value = response?.comfy_nodes ?? null
+    isLoading.value = false
+    return
   }
 
+  isLoading.value = true
+  const response = await getNodeDefs.call(params)
+  if (requestId !== latestRequestId) return
+
+  inFlightParams = null
+  fetchFailed.value = response == null
+  registryNodeDefs.value = response ? (response.comfy_nodes ?? []) : null
   isLoading.value = false
 }
 
-whenever(() => nodePack, fetchNodeDefs, { immediate: true, deep: true })
+const retryFetch = async () => {
+  const params = nodeDefsParams.value
+  if (params) getNodeDefs.clear(params)
+  await fetchNodeDefs()
+}
+
+watch(packIdentity, fetchNodeDefs, { immediate: true })
+
+onUnmounted(() => {
+  if (inFlightParams) getNodeDefs.cancel(inFlightParams)
+})
 
 const toFrontendNodeDef = (nodeDef: components['schemas']['ComfyNode']) => {
   try {
