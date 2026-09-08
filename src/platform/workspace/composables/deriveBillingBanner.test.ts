@@ -41,8 +41,14 @@ describe('deriveBillingBanner', () => {
     expect(derive({})).toBeNull()
   })
 
-  it('shows no banner outside a team plan', () => {
+  it('keeps team billing-control notices out of personal plans', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
+  })
+
+  it('shows payment failed to personal workspace owners', () => {
+    expect(derive({ ...paymentFailed, isTeamPlan: false })).toBe(
+      'paymentFailed'
+    )
   })
 
   it('hides existing notices when billing control is rolled back', () => {
