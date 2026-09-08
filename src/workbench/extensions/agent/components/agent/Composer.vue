@@ -514,11 +514,11 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
-          <Tooltip
-            :config="buildTooltipConfig(t('agent.addToPrompt'))"
-            side="top"
-          >
-            <DropdownMenuTrigger as-child>
+          <DropdownMenuTrigger as-child>
+            <Tooltip
+              :config="buildTooltipConfig(t('agent.addToPrompt'))"
+              side="top"
+            >
               <Button
                 variant="muted-textonly"
                 size="icon"
@@ -526,8 +526,8 @@ defineExpose({
               >
                 <span class="icon-[lucide--plus] size-4" />
               </Button>
-            </DropdownMenuTrigger>
-          </Tooltip>
+            </Tooltip>
+          </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent
               side="top"

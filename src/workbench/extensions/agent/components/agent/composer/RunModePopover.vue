@@ -114,8 +114,8 @@ const options: {
 
 <template>
   <Popover :open @update:open="onOpenChange">
-    <Tooltip :config="buildTooltipConfig(triggerTooltip)" side="top">
-      <PopoverTrigger as-child>
+    <PopoverTrigger as-child>
+      <Tooltip :config="buildTooltipConfig(triggerTooltip)" side="top">
         <Button
           variant="muted-textonly"
           size="md"
@@ -127,8 +127,8 @@ const options: {
             class="icon-[lucide--chevron-down] size-4"
           />
         </Button>
-      </PopoverTrigger>
-    </Tooltip>
+      </Tooltip>
+    </PopoverTrigger>
     <PopoverContent
       side="top"
       align="end"

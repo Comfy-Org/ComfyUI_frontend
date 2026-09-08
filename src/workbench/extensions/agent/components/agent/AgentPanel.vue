@@ -303,11 +303,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             }}</span>
           </Button>
           <DropdownMenuRoot v-if="sessionId">
-            <Tooltip
-              :config="buildTooltipConfig(t('agent.chatOptions'))"
-              side="bottom"
-            >
-              <DropdownMenuTrigger as-child>
+            <DropdownMenuTrigger as-child>
+              <Tooltip
+                :config="buildTooltipConfig(t('agent.chatOptions'))"
+                side="bottom"
+              >
                 <Button
                   variant="muted-textonly"
                   size="icon-sm"
@@ -316,8 +316,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 >
                   <span class="icon-[lucide--chevron-down] size-3" />
                 </Button>
-              </DropdownMenuTrigger>
-            </Tooltip>
+              </Tooltip>
+            </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
                 side="bottom"
