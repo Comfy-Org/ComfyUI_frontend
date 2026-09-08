@@ -4,13 +4,13 @@ import { nextTick, ref } from 'vue'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string) => {
     const translations: Record<string, string> = {
       'assetBrowser.allModels': 'All Models',
@@ -25,7 +25,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get supportsModelTypeTags() {

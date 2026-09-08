@@ -21,7 +21,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 let mockQueryParams: Record<string, string | string[] | undefined> = {}
 const mockRouterReplace = vi.fn()
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: vi.fn(() => ({
     query: mockQueryParams
   })),
@@ -31,7 +31,7 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -39,8 +39,8 @@ vi.mock(
 const mockLoadTemplates = vi.fn(async () => true)
 const mockLoadWorkflowTemplate = vi.fn(async () => true)
 
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
     useTemplateWorkflows: () => ({
       loadTemplates: mockLoadTemplates,
@@ -51,14 +51,18 @@ vi.mock(
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
   })
-}))
+)
 
 // Mock i18n
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key: string, params?: unknown) => {
       if (key === 'g.error') return 'Error'
@@ -76,9 +80,13 @@ const mockCanvasStore = {
   linearMode: false
 }
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    useCanvasStore: () => mockCanvasStore
+  })
+)
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {

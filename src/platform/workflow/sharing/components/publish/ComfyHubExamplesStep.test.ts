@@ -6,7 +6,7 @@ import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTyp
 
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
 
-vi.mock('@atlaskit/pragmatic-drag-and-drop/element/adapter', () => ({
+vi.mock(import('@atlaskit/pragmatic-drag-and-drop/element/adapter'), () => ({
   draggable: vi.fn(() => vi.fn()),
   dropTargetForElements: vi.fn(() => vi.fn()),
   monitorForElements: vi.fn(() => vi.fn())

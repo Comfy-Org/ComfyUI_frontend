@@ -21,11 +21,15 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
 
-vi.mock('@/services/litegraphService', () => ({
+  () => ({
+    useCanvasStore: () => ({})
+  })
+)
+
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 

@@ -8,15 +8,15 @@ async function flushPromises() {
 }
 
 // Mock the store
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: vi.fn()
   })
 )
 
 // Mock the API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((path) => `mock-file-url${path}`),
     apiURL: vi.fn((path) => `mock-api-url${path}`)
@@ -33,14 +33,14 @@ const { mockLoadedWorkflow } = vi.hoisted(
   })
 )
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn(() => Promise.resolve(mockLoadedWorkflow.value))
   }
 }))
 
 // Mock Vue I18n
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key, fallback) => fallback || key)
   }),
@@ -52,7 +52,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 // Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: vi.fn(() => ({
     closeDialog: vi.fn()
   }))
@@ -64,7 +64,7 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
@@ -76,14 +76,14 @@ const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
     mockDismissCard: vi.fn()
   }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionIsCloud.value
   }
 }))
 
-vi.mock(
-  '@/platform/workflow/templates/stores/partnerNodesEducationStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/stores/partnerNodesEducationStore'),
   () => ({
     usePartnerNodesEducationStore: () => ({
       requestCard: mockRequestCard,

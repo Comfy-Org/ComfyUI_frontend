@@ -12,7 +12,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { createAssetWidget } from './createAssetWidget'
 
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
+vi.mock(import('@/platform/assets/composables/useAssetBrowserDialog'), () => {
   const show = vi.fn()
   const browse = vi.fn()
   return {
