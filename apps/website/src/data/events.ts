@@ -55,7 +55,8 @@ export type FeaturedEvent = {
 
 const UPCOMING_LIVESTREAM: LocalizedText = {
   en: 'UPCOMING LIVESTREAM',
-  'zh-CN': '即将直播'
+  'zh-CN': '即将直播',
+  ja: '今後のライブ配信' /* machine */
 }
 
 function eventImage(fileName: string, alt: LocalizedText): EventMedia {
@@ -216,17 +217,20 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Comfy Agent Beta: What It Does & How We Built It',
-      'zh-CN': 'Comfy Agent Beta：它能做什么，我们又是如何打造它的'
+      'zh-CN': 'Comfy Agent Beta：它能做什么，我们又是如何打造它的',
+      ja: 'Comfy Agentベータ版：機能と開発の舞台裏' /* machine */
     },
     description: {
       en: 'Jo Zhang, Product Manager at Comfy, joins host Allyson to unpack the Comfy Agent beta — what it does and how the team built it.',
       'zh-CN':
-        'Comfy 产品经理 Jo Zhang 做客本场直播，与主持人 Allyson 一起拆解 Comfy Agent Beta 版——它能做什么，以及团队是如何打造它的。'
+        'Comfy 产品经理 Jo Zhang 做客本场直播，与主持人 Allyson 一起拆解 Comfy Agent Beta 版——它能做什么，以及团队是如何打造它的。',
+      ja: 'Comfyのプロダクトマネージャー、Jo ZhangがホストのAllysonとともに、Comfy Agentベータ版の機能と開発の舞台裏を解説します。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'September 10, 2026 · 10AM PT',
-      'zh-CN': '2026年9月10日 · 上午10点（PT）'
+      'zh-CN': '2026年9月10日 · 上午10点（PT）',
+      ja: '2026年9月10日・PT 午前10時' /* machine */
     },
     startDateTime: '2026-09-10T10:00:00-07:00',
     liveVideoId: '6ZT9y3rdvFg',
@@ -234,7 +238,8 @@ const events: readonly ComfyEvent[] = [
       '09.10-agent-beta.mp4',
       {
         en: 'Comfy Agent Beta: What It Does & How We Built It livestream',
-        'zh-CN': 'Comfy Agent Beta 直播'
+        'zh-CN': 'Comfy Agent Beta 直播',
+        ja: 'Comfy Agentベータ版：機能と開発の舞台裏 ライブ配信' /* machine */
       },
       '09.10-agent-beta-still.png'
     ),
@@ -244,7 +249,8 @@ const events: readonly ComfyEvent[] = [
         '09.10-agent-beta.mp4',
         {
           en: 'Comfy Agent Beta: What It Does & How We Built It livestream',
-          'zh-CN': 'Comfy Agent Beta 直播'
+          'zh-CN': 'Comfy Agent Beta 直播',
+          ja: 'Comfy Agentベータ版：機能と開発の舞台裏 ライブ配信' /* machine */
         },
         '09.10-agent-beta-still.png'
       ),
@@ -256,17 +262,20 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Comfy Agent: Live Demos — VFX, 3D & Marketing',
-      'zh-CN': 'Comfy Agent 现场演示：VFX、3D 与营销'
+      'zh-CN': 'Comfy Agent 现场演示：VFX、3D 与营销',
+      ja: 'Comfy Agent：VFX、3D、マーケティングのライブデモ' /* machine */
     },
     description: {
       en: 'Purz and Allyson host live demos of Comfy Agent across VFX, 3D, and marketing use cases.',
       'zh-CN':
-        'Purz 与 Allyson 主持本场直播，现场演示 Comfy Agent 在 VFX、3D 与营销场景中的应用。'
+        'Purz 与 Allyson 主持本场直播，现场演示 Comfy Agent 在 VFX、3D 与营销场景中的应用。',
+      ja: 'PurzとAllysonが、VFX、3D、マーケティングでのComfy Agent活用例をライブデモで紹介します。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'September 15, 2026 · 10AM PT',
-      'zh-CN': '2026年9月15日 · 上午10点（PT）'
+      'zh-CN': '2026年9月15日 · 上午10点（PT）',
+      ja: '2026年9月15日・PT 午前10時' /* machine */
     },
     startDateTime: '2026-09-15T10:00:00-07:00',
     liveVideoId: '3pBDHdgVD1E',
@@ -274,7 +283,8 @@ const events: readonly ComfyEvent[] = [
       '09.15-agent-ga.mp4',
       {
         en: 'Comfy Agent: Live Demos — VFX, 3D & Marketing livestream',
-        'zh-CN': 'Comfy Agent 现场演示直播'
+        'zh-CN': 'Comfy Agent 现场演示直播',
+        ja: 'Comfy Agent：VFX、3D、マーケティングのライブデモ 配信' /* machine */
       },
       '09.15-agent-ga-still.png'
     ),
@@ -284,7 +294,8 @@ const events: readonly ComfyEvent[] = [
         '09.15-agent-ga.mp4',
         {
           en: 'Comfy Agent: Live Demos — VFX, 3D & Marketing livestream',
-          'zh-CN': 'Comfy Agent 现场演示直播'
+          'zh-CN': 'Comfy Agent 现场演示直播',
+          ja: 'Comfy Agent：VFX、3D、マーケティングのライブデモ 配信' /* machine */
         },
         '09.15-agent-ga-still.png'
       ),
@@ -296,17 +307,20 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Developer Platform 101: Building with the New Comfy API',
-      'zh-CN': '开发者平台 101：使用全新 Comfy API 构建应用'
+      'zh-CN': '开发者平台 101：使用全新 Comfy API 构建应用',
+      ja: 'Developer Platform 101：新しい Comfy API を使った開発' /* machine */
     },
     description: {
       en: 'Jacob Segal, Product Manager at Comfy, joins hosts Allyson and Purz for an introduction to building with the new Comfy developer API.',
       'zh-CN':
-        'Comfy 产品经理 Jacob Segal 做客本场直播，与主持人 Allyson 和 Purz 一起介绍如何使用全新的 Comfy 开发者 API 构建应用。'
+        'Comfy 产品经理 Jacob Segal 做客本场直播，与主持人 Allyson 和 Purz 一起介绍如何使用全新的 Comfy 开发者 API 构建应用。',
+      ja: 'Comfy のプロダクトマネージャー、Jacob Segalが、AllysonとPurzとともに新しい Comfy 開発者向け API を使った開発を紹介します。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'September 16, 2026 · 10AM PT',
-      'zh-CN': '2026年9月16日 · 上午10点（PT）'
+      'zh-CN': '2026年9月16日 · 上午10点（PT）',
+      ja: '2026年9月16日・PT 午前10時' /* machine */
     },
     startDateTime: '2026-09-16T10:00:00-07:00',
     liveVideoId: '69slO15ovL8',
@@ -314,7 +328,8 @@ const events: readonly ComfyEvent[] = [
       '09.16-dev-platform.mp4',
       {
         en: 'Developer Platform 101: Building with the New Comfy API livestream',
-        'zh-CN': '开发者平台 101 直播'
+        'zh-CN': '开发者平台 101 直播',
+        ja: 'Developer Platform 101：新しい Comfy API を使った開発ライブ配信' /* machine */
       },
       '09.16-dev-platform-still.png'
     ),
@@ -324,7 +339,8 @@ const events: readonly ComfyEvent[] = [
         '09.16-dev-platform.mp4',
         {
           en: 'Developer Platform 101: Building with the New Comfy API livestream',
-          'zh-CN': '开发者平台 101 直播'
+          'zh-CN': '开发者平台 101 直播',
+          ja: 'Developer Platform 101：新しい Comfy API を使った開発ライブ配信' /* machine */
         },
         '09.16-dev-platform-still.png'
       ),
@@ -336,17 +352,24 @@ const events: readonly ComfyEvent[] = [
     category: 'community',
     title: {
       en: 'ComfyUI Official LA August Meet-Up',
-      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
+      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会',
+      ja: 'ComfyUI 公式LA 8月ミートアップ' /* machine */
     },
     description: {
       en: 'Join us for the official ComfyUI meetup in LA, hosted at the new AI on the Lot office in Culver City.',
       'zh-CN':
-        '欢迎参加在洛杉矶举办的官方 ComfyUI 见面会，地点位于卡尔弗城全新的 AI on the Lot 办公室。'
+        '欢迎参加在洛杉矶举办的官方 ComfyUI 见面会，地点位于卡尔弗城全新的 AI on the Lot 办公室。',
+      ja: 'カルバーシティにある新しいAI on the Lotオフィスで開催する、LAのComfyUI公式ミートアップにご参加ください。' /* machine */
     },
-    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+    location: {
+      en: 'Los Angeles, CA',
+      'zh-CN': '美国加州洛杉矶',
+      ja: 'ロサンゼルス（カリフォルニア州）' /* machine */
+    },
     dateLabel: {
       en: 'August 26, 2026 · 6–9 PM PT',
-      'zh-CN': '2026年8月26日 · 下午6点至9点（PT）'
+      'zh-CN': '2026年8月26日 · 下午6点至9点（PT）',
+      ja: '2026年8月26日 · PT 18:00～21:00' /* machine */
     },
     startDateTime: '2026-08-26T18:00:00-07:00',
     endDateTime: '2026-08-26T21:00:00-07:00',
@@ -357,10 +380,11 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名', ja: '登録' /* machine */ },
     media: eventImage('08.26_la-meetup.avif', {
       en: 'ComfyUI Official LA August Meet-Up',
-      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
+      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会',
+      ja: 'ComfyUI 公式LA 8月ミートアップ' /* machine */
     })
   },
   {
@@ -368,20 +392,25 @@ const events: readonly ComfyEvent[] = [
     category: 'community',
     title: {
       en: 'MUTEK: Generative AI for 3D Projection Mapping ft. Purz & Moment Factory',
-      'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI，特邀 Purz 与 Moment Factory'
+      'zh-CN':
+        'MUTEK：面向 3D 投影映射的生成式 AI，特邀 Purz 与 Moment Factory',
+      ja: 'MUTEK：Purz＆Moment Factoryによる3Dプロジェクションマッピングのための生成AI' /* machine */
     },
     description: {
       en: 'A hands-on workshop with Moment Factory on bringing generative AI into large-scale spatial design with ComfyUI, ending by projecting AI-generated visuals onto a physical maquette.',
       'zh-CN':
-        '与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。'
+        '与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。',
+      ja: 'Moment Factoryとの実践ワークショップ。ComfyUIを使って大規模な空間デザインに生成AIを取り入れ、最後にAI生成ビジュアルを実物のマケットへ投影します。' /* machine */
     },
     location: {
       en: 'Édifice Wilder, Montréal, QC',
-      'zh-CN': 'Édifice Wilder，加拿大魁北克蒙特利尔'
+      'zh-CN': 'Édifice Wilder，加拿大魁北克蒙特利尔',
+      ja: 'Édifice Wilder、モントリオール（ケベック州）' /* machine */
     },
     dateLabel: {
       en: 'August 27, 2026 · 1:30PM ET',
-      'zh-CN': '2026年8月27日 · 下午1:30（ET）'
+      'zh-CN': '2026年8月27日 · 下午1:30（ET）',
+      ja: '2026年8月27日 · ET 13:30' /* machine */
     },
     startDateTime: '2026-08-27T13:30:00-04:00',
     endDateTime: '2026-08-27T15:30:00-04:00',
@@ -393,14 +422,15 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名', ja: '登録' /* machine */ },
     featured: {
       order: 0,
       media: eventVideo(
         '08.27-MUTEK.mp4',
         {
           en: 'MUTEK: Generative AI for 3D Projection Mapping',
-          'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI'
+          'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI',
+          ja: 'MUTEK：3Dプロジェクションマッピングのための生成AI' /* machine */
         },
         '08.27-MUTEK_thumb.jpeg'
       )
@@ -411,29 +441,34 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Comfy H3 Sync Sound Challenge: Guest Judge Livestream',
-      'zh-CN': 'Comfy H3 同步声音挑战赛：特邀评委直播'
+      'zh-CN': 'Comfy H3 同步声音挑战赛：特邀评委直播',
+      ja: 'Comfy H3 Sync Sound Challenge：ゲスト審査員ライブ配信' /* machine */
     },
     description: {
       en: 'Guest judges join us live to review the best MiniMax H3 sync sound entries from the community and break down what makes generated audio and picture land together.',
       'zh-CN':
-        '特邀评委做客直播间，点评社区在 MiniMax H3 同步声音挑战赛中的优秀作品，并拆解让生成音频与画面同频的关键所在。'
+        '特邀评委做客直播间，点评社区在 MiniMax H3 同步声音挑战赛中的优秀作品，并拆解让生成音频与画面同频的关键所在。',
+      ja: 'ゲスト審査員がライブで参加し、コミュニティから寄せられた優秀な MiniMax H3 同期サウンド作品をレビュー。生成された音声と映像が噛み合うポイントを解説します。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'September 2, 2026 · 10AM PT',
-      'zh-CN': '2026年9月2日 · 上午10点（PT）'
+      'zh-CN': '2026年9月2日 · 上午10点（PT）',
+      ja: '2026年9月2日・PT 午前10時' /* machine */
     },
     startDateTime: '2026-09-02T10:00:00-07:00',
     liveVideoId: '2_vEJJU_MUU',
     media: eventImage('09.02-comfy-h3-sync.jpg', {
       en: 'Comfy H3 Sync Sound Challenge guest judge livestream',
-      'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播'
+      'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播',
+      ja: 'Comfy H3 Sync Sound Challenge ゲスト審査員ライブ配信' /* machine */
     }),
     featured: {
       order: 1,
       media: eventImage('09.02-comfy-h3-sync.jpg', {
         en: 'Comfy H3 Sync Sound Challenge guest judge livestream',
-        'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播'
+        'zh-CN': 'Comfy H3 同步声音挑战赛特邀评委直播',
+        ja: 'Comfy H3 Sync Sound Challenge ゲスト審査員ライブ配信' /* machine */
       }),
       showTitle: false
     }
@@ -443,20 +478,24 @@ const events: readonly ComfyEvent[] = [
     category: 'community',
     title: {
       en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure ft. Jo Zhang',
-      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施（特邀 Jo Zhang）'
+      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施（特邀 Jo Zhang）',
+      ja: 'UCAN：エージェンティックコマース — Jo Zhangと考える次世代ビジネスインフラの設計' /* machine */
     },
     description: {
       en: 'A UCAN by Alibaba Design gathering on agentic commerce — where AI shifts from generating outputs to taking action across real business workflows. Jo Zhang joins speakers from Alibaba, Figma, Stripe, and more to explore designing for trust and AI as operational infrastructure.',
       'zh-CN':
-        'UCAN（由阿里巴巴设计主办）关于智能体商务的聚会——探讨 AI 如何从生成内容转向在真实业务流程中采取行动。Jo Zhang 将与来自 Alibaba、Figma、Stripe 等机构的讲者一同，探讨如何为信任而设计，以及将 AI 作为运营基础设施。'
+        'UCAN（由阿里巴巴设计主办）关于智能体商务的聚会——探讨 AI 如何从生成内容转向在真实业务流程中采取行动。Jo Zhang 将与来自 Alibaba、Figma、Stripe 等机构的讲者一同，探讨如何为信任而设计，以及将 AI 作为运营基础设施。',
+      ja: 'Alibaba Design主催のUCANイベント。AIが出力を生成するだけでなく、実際のビジネスワークフロー全体でアクションを担うエージェンティックコマースを取り上げます。Jo ZhangがAlibaba、Figma、Stripeなどの登壇者とともに、信頼を前提とした設計と業務インフラとしてのAIを探ります。' /* machine */
     },
     location: {
       en: 'Plug and Play Tech Center, Sunnyvale, CA',
-      'zh-CN': 'Plug and Play 科技中心，加州森尼韦尔'
+      'zh-CN': 'Plug and Play 科技中心，加州森尼韦尔',
+      ja: 'Plug and Play Tech Center（カリフォルニア州サニーベール）' /* machine */
     },
     dateLabel: {
       en: 'September 13, 2026 · 2:00–6:30 PM PT',
-      'zh-CN': '2026年9月13日 · 下午2:00至6:30（PT）'
+      'zh-CN': '2026年9月13日 · 下午2:00至6:30（PT）',
+      ja: '2026年9月13日・PT 午後2:00～6:30' /* machine */
     },
     startDateTime: '2026-09-13T14:00:00-07:00',
     endDateTime: '2026-09-13T18:30:00-07:00',
@@ -467,10 +506,11 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名', ja: '参加登録' /* machine */ },
     media: eventImage('agentic-commerce.avif', {
       en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure',
-      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施'
+      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施',
+      ja: 'UCAN：エージェンティックコマース — 次世代ビジネスインフラの設計' /* machine */
     })
   },
   {
@@ -478,23 +518,27 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Local MCP: Run ComfyUI with Your Agent & Hardware',
-      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI'
+      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI',
+      ja: 'ローカルMCP：エージェントとハードウェアでComfyUIを実行' /* machine */
     },
     description: {
       en: 'Run ComfyUI locally through MCP — a live walkthrough of driving your own agent and hardware to build and run workflows from the tools you already use.',
       'zh-CN':
-        '通过 MCP 在本地运行 ComfyUI——现场演示如何驱动你自己的智能体与硬件，用你已经在使用的工具来构建并运行工作流。'
+        '通过 MCP 在本地运行 ComfyUI——现场演示如何驱动你自己的智能体与硬件，用你已经在使用的工具来构建并运行工作流。',
+      ja: 'MCPでComfyUIをローカル実行。普段使うツールから、自分のエージェントとハードウェアを操作してワークフローを構築・実行するライブウォークスルーです。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'August 26, 2026 · 10AM PT',
-      'zh-CN': '2026年8月26日 · 上午10点（PT）'
+      'zh-CN': '2026年8月26日 · 上午10点（PT）',
+      ja: '2026年8月26日 · PT 10:00' /* machine */
     },
     startDateTime: '2026-08-26T10:00:00-07:00',
     liveVideoId: '6yH_15XSd0w',
     media: eventImage('august-26-2026-local-mcp.jpg', {
       en: 'Local MCP: Run ComfyUI with Your Agent & Hardware livestream',
-      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI 直播'
+      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI 直播',
+      ja: 'ローカルMCP：エージェントとハードウェアでComfyUIを実行するライブ配信' /* machine */
     })
   },
   {
@@ -502,17 +546,20 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Using Comfy to Go Beyond the Models: Custom Workflows for Commercial and Film Production',
-      'zh-CN': '善用 Comfy，超越模型本身：面向商业与影视制作的自定义工作流'
+      'zh-CN': '善用 Comfy，超越模型本身：面向商业与影视制作的自定义工作流',
+      ja: 'Comfyでモデルの先へ進む：商業・映像制作向けカスタムワークフロー' /* machine */
     },
     description: {
       en: 'Go beyond off-the-shelf models: a live walkthrough of building custom ComfyUI workflows for commercial and film production.',
       'zh-CN':
-        '超越开箱即用的模型：现场演示如何为商业与影视制作构建自定义 ComfyUI 工作流。'
+        '超越开箱即用的模型：现场演示如何为商业与影视制作构建自定义 ComfyUI 工作流。',
+      ja: '既製モデルの先へ。商業制作・映像制作向けのカスタムComfyUIワークフロー構築をライブで解説します。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'August 19, 2026 · 10AM PT',
-      'zh-CN': '2026年8月19日 · 上午10点（PT）'
+      'zh-CN': '2026年8月19日 · 上午10点（PT）',
+      ja: '2026年8月19日・PT 午前10時' /* machine */
     },
     startDateTime: '2026-08-19T10:00:00-07:00',
     liveVideoId: 'IzTI8oK_Wg4',
@@ -520,7 +567,8 @@ const events: readonly ComfyEvent[] = [
       '08.19-Tool_landscape.mp4',
       {
         en: 'Using Comfy to Go Beyond the Models livestream',
-        'zh-CN': '善用 Comfy，超越模型本身直播'
+        'zh-CN': '善用 Comfy，超越模型本身直播',
+        ja: 'Comfyでモデルの先へ進む ライブ配信' /* machine */
       },
       'livestream-aug-19.jpg'
     ),
@@ -530,7 +578,8 @@ const events: readonly ComfyEvent[] = [
         '08.19-Tool_landscape.mp4',
         {
           en: 'Using Comfy to Go Beyond the Models livestream',
-          'zh-CN': '善用 Comfy，超越模型本身直播'
+          'zh-CN': '善用 Comfy，超越模型本身直播',
+          ja: 'Comfyでモデルの先へ進む ライブ配信' /* machine */
         },
         'livestream-aug-19.jpg'
       ),
@@ -542,17 +591,20 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'The Future of AI Post Production',
-      'zh-CN': 'AI 后期制作的未来'
+      'zh-CN': 'AI 后期制作的未来',
+      ja: 'AI ポストプロダクションの未来' /* machine */
     },
     description: {
       en: 'Ingi Erlingsson explores the future of AI post production with custom LoRAs and motion graphics nodes.',
       'zh-CN':
-        'Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。'
+        'Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。',
+      ja: 'Ingi Erlingssonが、カスタム LoRA とモーショングラフィックスノードを活用した AI ポストプロダクションの未来を探ります。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     dateLabel: {
       en: 'August 5, 2026 · 10AM PT',
-      'zh-CN': '2026年8月5日 · 上午10点（PT）'
+      'zh-CN': '2026年8月5日 · 上午10点（PT）',
+      ja: '2026年8月5日・PT 午前10時' /* machine */
     },
     startDateTime: '2026-08-05T10:00:00-07:00',
     link: { href: launchesHref, newTab: false },
@@ -563,7 +615,8 @@ const events: readonly ComfyEvent[] = [
         'future-of-ai-post-production.mp4',
         {
           en: 'The Future of AI Post Production livestream',
-          'zh-CN': 'AI 后期制作的未来直播'
+          'zh-CN': 'AI 后期制作的未来直播',
+          ja: 'AI ポストプロダクションの未来 ライブ配信' /* machine */
         },
         'livestream-aug05-v2.jpg'
       ),
@@ -575,16 +628,19 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Video Model Showdown: Open-Source vs. Paid AI Video Models',
-      'zh-CN': '视频模型对决：开源与付费 AI 视频模型'
+      'zh-CN': '视频模型对决：开源与付费 AI 视频模型',
+      ja: 'Video Model Showdown：オープンソース vs. 有料AI動画モデル' /* machine */
     },
     description: {
       en: 'Purz and Allyson put open-source and paid AI video models head to head in a live comparison.',
-      'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。'
+      'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。',
+      ja: 'PurzとAllysonが、オープンソースと有料のAI動画モデルをライブで比較します。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     media: eventImage('august-12-livestream_v2.png', {
       en: 'Video Model Showdown livestream recording',
-      'zh-CN': '视频模型对决直播回放'
+      'zh-CN': '视频模型对决直播回放',
+      ja: 'Video Model Showdown ライブ配信アーカイブ' /* machine */
     }),
     startDateTime: '2026-08-12T10:00:00-07:00',
     recordingVideoId: 'VeG1bveKZco'
@@ -595,17 +651,20 @@ const events: readonly ComfyEvent[] = [
     title: {
       en: 'Comfy Creatives Model Jam: MiniMax H3, Seedance 2.5, Wan Animate 2 & More',
       'zh-CN':
-        'Comfy Creatives 模型大乱斗：MiniMax H3、Seedance 2.5、Wan Animate 2 等'
+        'Comfy Creatives 模型大乱斗：MiniMax H3、Seedance 2.5、Wan Animate 2 等',
+      ja: 'Comfy クリエイティブ・モデル・ジャム：MiniMax H3、Seedance 2.5、Wan Animate 2 ほか' /* machine */
     },
     description: {
       en: 'The Comfy Creatives community jams on the latest models — MiniMax H3, Seedance 2.5, Wan Animate 2, and more — in a hands-on livestream.',
       'zh-CN':
-        'Comfy Creatives 社区在这场实战直播中集中体验最新模型——MiniMax H3、Seedance 2.5、Wan Animate 2 等。'
+        'Comfy Creatives 社区在这场实战直播中集中体验最新模型——MiniMax H3、Seedance 2.5、Wan Animate 2 等。',
+      ja: 'Comfyクリエイティブコミュニティが、MiniMax H3、Seedance 2.5、Wan Animate 2などの最新モデルを実際に試すライブ配信です。' /* machine */
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     media: eventImage('livestream_aug-10.jpg', {
       en: 'Comfy Creatives Model Jam livestream recording',
-      'zh-CN': 'Comfy Creatives 模型大乱斗直播回放'
+      'zh-CN': 'Comfy Creatives 模型大乱斗直播回放',
+      ja: 'Comfy Creativesモデルジャム ライブ配信アーカイブ' /* machine */
     }),
     startDateTime: '2026-08-10T10:00:00-07:00',
     recordingVideoId: 'BCqp2xnUeKk'
@@ -615,15 +674,18 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Using ComfyUI MCP with Claude Code',
-      'zh-CN': '在 Claude Code 中使用 ComfyUI MCP'
+      'zh-CN': '在 Claude Code 中使用 ComfyUI MCP',
+      ja: 'Claude Code で ComfyUI MCP を使う' /* machine */
     },
     description: {
       en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
-      'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
+      'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。',
+      ja: '最新の ComfyUI リリースとアップデートを紹介する月例ライブ配信。' /* machine */
     },
     media: eventImage('july-launches-v2.png', {
       en: 'July Launches livestream recording',
-      'zh-CN': '七月发布直播回放'
+      'zh-CN': '七月发布直播回放',
+      ja: '7月のリリース ライブ配信録画' /* machine */
     }),
     startDateTime: '2026-07-29',
     recordingVideoId: '8RGN69h_xTU'
@@ -633,16 +695,19 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Experience Design: How Black Math Built a Hackathon in 3 Weeks with ComfyUI',
-      'zh-CN': '体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松'
+      'zh-CN': '体验设计：Black Math 如何用 ComfyUI 在 3 周内打造一场黑客松',
+      ja: 'エクスペリエンスデザイン：Black MathがComfyUIで3週間でハッカソンを構築した方法' /* machine */
     },
     description: {
       en: 'Design and technology studio Black Math used ComfyUI to build a full hackathon experience in just three weeks. Jeremy Sahlman (Co-Founder & Chief Creative Officer, Black Math) shares how.',
       'zh-CN':
-        '设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。'
+        '设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。',
+      ja: 'デザイン・テクノロジースタジオのBlack Mathは、わずか3週間でComfyUIを使ったハッカソン体験を構築しました。共同創業者兼チーフ・クリエイティブ・オフィサーのJeremy Sahlmanがその方法を紹介します。' /* machine */
     },
     media: eventImage('black-math_comfy.png', {
       en: 'Black Math X Comfy livestream with Jeremy Sahlman',
-      'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
+      'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman',
+      ja: 'Jeremy Sahlmanと語るBlack Math X Comfy ライブ配信' /* machine */
     }),
     startDateTime: '2026-07-21',
     recordingVideoId: 'O72yyU-jupU'
@@ -652,16 +717,19 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP',
-      'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI'
+      'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI',
+      ja: 'Comfy MCP で Claude/Cursor から ComfyUI を実行' /* machine */
     },
     description: {
       en: 'Comfy MCP lets Claude, Cursor, and almost any AI agent you already use build, run, and iterate real Comfy Cloud workflows for you. Join Jo Zhang for a live walkthrough.',
       'zh-CN':
-        'Comfy MCP 让 Claude、Cursor 以及几乎所有你正在使用的 AI 智能体为你构建、运行并迭代真实的 Comfy Cloud 工作流。欢迎观看 Jo Zhang 的现场演示。'
+        'Comfy MCP 让 Claude、Cursor 以及几乎所有你正在使用的 AI 智能体为你构建、运行并迭代真实的 Comfy Cloud 工作流。欢迎观看 Jo Zhang 的现场演示。',
+      ja: 'Comfy MCP を使えば、すでに利用している Claude、Cursor、その他ほぼすべての AI エージェントで、実際の Comfy Cloud ワークフローを構築・実行・反復できます。Jo Zhangによるライブ解説にご参加ください。' /* machine */
     },
     media: eventImage('mcp.jpg', {
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording',
-      'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
+      'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放',
+      ja: 'Comfy MCP で Claude/Cursor から ComfyUI を実行するライブ配信録画' /* machine */
     }),
     startDateTime: '2026-07-08',
     recordingVideoId: 'sX2sJ5-4MS4'
@@ -671,16 +739,19 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Reinventing the Production Pipeline',
-      'zh-CN': '重塑生产流水线'
+      'zh-CN': '重塑生产流水线',
+      ja: 'プロダクションパイプラインの再構築' /* machine */
     },
     description: {
       en: 'Erin Sarofsky (COO/Owner, Sarofsky) and Ryan Summers (Head of Creative Innovation, Sarofsky) share how their team used ComfyUI to reinvent the studio production pipeline.',
       'zh-CN':
-        'Erin Sarofsky（Sarofsky COO/创始人）与 Ryan Summers（Sarofsky 创意创新负责人）分享他们的团队如何用 ComfyUI 重塑工作室的生产流水线。'
+        'Erin Sarofsky（Sarofsky COO/创始人）与 Ryan Summers（Sarofsky 创意创新负责人）分享他们的团队如何用 ComfyUI 重塑工作室的生产流水线。',
+      ja: 'Erin Sarofsky（COO／オーナー、Sarofsky）とRyan Summers（クリエイティブイノベーション責任者、Sarofsky）が、チームがComfyUIでスタジオの制作パイプラインを再構築した方法を紹介します。' /* machine */
     },
     media: eventImage('reinventing-the.png', {
       en: 'Reinventing the Production Pipeline livestream recording',
-      'zh-CN': '重塑生产流水线直播回放'
+      'zh-CN': '重塑生产流水线直播回放',
+      ja: '制作パイプライン再構築ライブ配信録画' /* machine */
     }),
     startDateTime: '2026-07-08',
     recordingVideoId: 'dsYggO4lsSo'
@@ -690,16 +761,19 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'June Launches | Desktop, MCP & Core Engine Improvements',
-      'zh-CN': '六月发布 | 桌面版、MCP 与核心引擎改进'
+      'zh-CN': '六月发布 | 桌面版、MCP 与核心引擎改进',
+      ja: '6月のローンチ | Desktop、MCP、コアエンジンの改善' /* machine */
     },
     description: {
       en: 'Your front-row seat to everything we shipped in June: product leaders Jedrzej Kosinski, Alexis Rolland, Jo Zhang, and Matt Miller walk through desktop, MCP, and core engine improvements.',
       'zh-CN':
-        '第一时间了解我们六月发布的所有内容：产品负责人 Jedrzej Kosinski、Alexis Rolland、Jo Zhang 和 Matt Miller 介绍桌面版、MCP 与核心引擎改进。'
+        '第一时间了解我们六月发布的所有内容：产品负责人 Jedrzej Kosinski、Alexis Rolland、Jo Zhang 和 Matt Miller 介绍桌面版、MCP 与核心引擎改进。',
+      ja: '6月のリリースをまとめて紹介。プロダクトリーダーのJedrzej Kosinski、Alexis Rolland、Jo Zhang、Matt Millerが、デスクトップ、MCP、コアエンジンの改善点を解説します。' /* machine */
     },
     media: eventImage('june-launch.jpg', {
       en: 'June Launches livestream recording',
-      'zh-CN': '六月发布直播回放'
+      'zh-CN': '六月发布直播回放',
+      ja: '6月ローンチのライブ配信録画' /* machine */
     }),
     startDateTime: '2026-06-29',
     recordingVideoId: 'yo7b_zHd20g'
@@ -709,16 +783,19 @@ const events: readonly ComfyEvent[] = [
     category: 'livestream',
     title: {
       en: 'Krea X Comfy: Founders Live',
-      'zh-CN': 'Krea X Comfy：创始人直播'
+      'zh-CN': 'Krea X Comfy：创始人直播',
+      ja: 'Krea X Comfy：創業者ライブ' /* machine */
     },
     description: {
       en: 'A special live conversation with Victor Perez (CEO, Krea), Miguel Lara (Krea team), and ComfyAnonymous (Co-Founder, Comfy Org) on building creative AI tools.',
       'zh-CN':
-        '与 Victor Perez（Krea CEO）、Miguel Lara（Krea 团队）以及 ComfyAnonymous（Comfy Org 联合创始人）的特别直播对谈，聊聊创意 AI 工具的打造。'
+        '与 Victor Perez（Krea CEO）、Miguel Lara（Krea 团队）以及 ComfyAnonymous（Comfy Org 联合创始人）的特别直播对谈，聊聊创意 AI 工具的打造。',
+      ja: 'クリエイティブAIツールの構築について、Victor Perez（CEO、Krea）、Miguel Lara（Kreaチーム）、ComfyAnonymous（共同創業者、Comfy Org）が語る特別ライブ対談。' /* machine */
     },
     media: eventImage('krea.jpg', {
       en: 'Krea X Comfy Founders Live recording',
-      'zh-CN': 'Krea X Comfy 创始人直播回放'
+      'zh-CN': 'Krea X Comfy 创始人直播回放',
+      ja: 'Krea X Comfy 創業者ライブ録画' /* machine */
     }),
     startDateTime: '2026-06-23',
     recordingVideoId: '31jiUhCEjJ4',
@@ -728,7 +805,8 @@ const events: readonly ComfyEvent[] = [
         'founders-live.mp4',
         {
           en: 'Krea X Comfy Founders Live',
-          'zh-CN': 'Krea X Comfy 创始人直播'
+          'zh-CN': 'Krea X Comfy 创始人直播',
+          ja: 'Krea X Comfy 創業者ライブ' /* machine */
         },
         'founders-live-thumb.png'
       )
