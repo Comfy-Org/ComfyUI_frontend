@@ -88,9 +88,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // platform/serverless-animation: English-only. Its three siblings under
 // /platform/ each have a zh-CN twin and it does not, so without this the
 // emitter advertises a Chinese page that 404s.
+//
+// workshop: the catalog is English-only. It is also build-gated until launch,
+// but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/pixal3d-trellis2',
-  '/platform/serverless-animation'
+  '/platform/serverless-animation',
+  '/workshop'
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([
