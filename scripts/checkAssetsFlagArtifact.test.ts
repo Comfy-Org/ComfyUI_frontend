@@ -35,15 +35,11 @@ describe('assertAssetApiGate', () => {
     }
   )
 
-  it('accepts a Cloud gate controlled by the opt-in setting', () => {
-    expect(() =>
-      assertAssetApiGate(
-        [
-          'function isAssetAPIEnabled() {\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}'
-        ],
-        'cloud'
-      )
-    ).not.toThrow()
+  it.for([
+    'function isAssetAPIEnabled() {\n  return useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}',
+    'function isAssetAPIEnabled() {\n  return !!useSettingStore().get("Comfy.Assets.UseAssetAPI");\n}'
+  ])('accepts a Cloud gate controlled by the opt-in setting', (gate) => {
+    expect(() => assertAssetApiGate([gate], 'cloud')).not.toThrow()
   })
 
   it('accepts a minified Cloud gate with a renamed getter and re-quoted key', () => {

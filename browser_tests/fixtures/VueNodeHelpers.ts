@@ -318,7 +318,7 @@ export class VueNodeHelpers {
     const nodeId = toNodeId(rawNodeId)
     return await this.page.evaluate(
       ([nodeId, type, slotId]) => {
-        const node = app?.canvas?.graph?.getNodeById(nodeId)
+        const node = app?.canvas.graph?.getNodeById(nodeId)
         if (!node) return false
 
         return type === 'in'
