@@ -19,6 +19,19 @@ const { registerExtension } = vi.hoisted(() => ({
   registerExtension: vi.fn()
 }))
 
+const {
+  createGroupNodeModeCommandBatch,
+  applyGroupNodeModeCommandBatch,
+  commandBatch
+} = vi.hoisted(() => {
+  const commandBatch = Symbol('group-node-mode-command-batch')
+  return {
+    commandBatch,
+    createGroupNodeModeCommandBatch: vi.fn(() => commandBatch),
+    applyGroupNodeModeCommandBatch: vi.fn()
+  }
+})
+
 vi.mock('@/scripts/app', () => ({
   app: { registerExtension }
 }))
@@ -27,16 +40,24 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: () => 10 })
 }))
 
+vi.mock('./groupNodeModeCommands', () => ({
+  createGroupNodeModeCommandBatch,
+  applyGroupNodeModeCommandBatch
+}))
+
 import '@/extensions/core/groupOptions'
 
 const ext = registerExtension.mock.calls[0]?.[0] as ComfyExtension
 
-const graphChange = vi.fn()
+const graphId = 'graph-id'
+const graph = fromPartial<LGraph>({
+  id: graphId
+})
 
 function makeNode(mode: LGraphEventMode): LGraphNode {
   return createMockLGraphNode({
     mode,
-    graph: fromPartial<LGraph>({ change: graphChange })
+    graph
   })
 }
 
@@ -82,7 +103,9 @@ const BASE_GROUP_ITEMS: (string | null)[] = [
 ]
 
 beforeEach(() => {
-  graphChange.mockClear()
+  createGroupNodeModeCommandBatch.mockClear()
+  createGroupNodeModeCommandBatch.mockReturnValue(commandBatch)
+  applyGroupNodeModeCommandBatch.mockClear()
 })
 
 describe('Comfy.GroupOptions canvas menu', () => {
@@ -154,11 +177,26 @@ describe('Comfy.GroupOptions canvas menu', () => {
     ])
   })
 
+  it('does not dispatch a batch spanning graphs', () => {
+    const nodes = [
+      makeNode(LGraphEventMode.ALWAYS),
+      makeNode(LGraphEventMode.ALWAYS)
+    ]
+    nodes[1].graph = fromPartial<LGraph>({ id: 'other-graph' })
+    const items = menuFor(makeCanvas(makeGroup(nodes)))
+    const item = items.find((entry) => entry?.content === 'Bypass Group Nodes')
+
+    item?.callback?.call(document.createElement('div'))
+
+    expect(createGroupNodeModeCommandBatch).not.toHaveBeenCalled()
+    expect(applyGroupNodeModeCommandBatch).not.toHaveBeenCalled()
+  })
+
   it.for<[label: string, expected: LGraphEventMode]>([
     ['Set Group Nodes to Always', LGraphEventMode.ALWAYS],
     ['Set Group Nodes to Never', LGraphEventMode.NEVER],
     ['Bypass Group Nodes', LGraphEventMode.BYPASS]
-  ])('applies %s to every node in the group', ([label, expected]) => {
+  ])('dispatches %s as one command batch', ([label, expected]) => {
     const nodes = [
       makeNode(LGraphEventMode.ON_TRIGGER),
       makeNode(LGraphEventMode.ON_TRIGGER)
@@ -169,7 +207,14 @@ describe('Comfy.GroupOptions canvas menu', () => {
 
     item?.callback?.call(menuElement)
 
-    expect(nodes.map((node) => node.mode)).toEqual([expected, expected])
-    expect(graphChange).toHaveBeenCalledTimes(nodes.length)
+    expect(createGroupNodeModeCommandBatch).toHaveBeenCalledWith(
+      graphId,
+      nodes,
+      expected
+    )
+    expect(applyGroupNodeModeCommandBatch).toHaveBeenCalledExactlyOnceWith(
+      graph,
+      commandBatch
+    )
   })
 })
