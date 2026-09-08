@@ -1,14 +1,27 @@
 <template>
   <router-view />
   <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading" />
+  <div
+    v-show="isLoading"
+    ref="loadingOverlay"
+    data-testid="app-loading-overlay"
+    class="fixed inset-0 bg-black/10"
+    :aria-busy="isLoading"
+  />
 </template>
 
 <script setup lang="ts">
-import BlockUI from 'primevue/blockui'
-import { computed, onMounted, watch } from 'vue'
+import { ZIndex } from '@primeuix/utils/zindex'
+import {
+  computed,
+  onMounted,
+  useTemplateRef,
+  watch,
+  watchPostEffect
+} from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -23,6 +36,15 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
+const loadingOverlay = useTemplateRef<HTMLDivElement>('loadingOverlay')
+
+watchPostEffect((onCleanup) => {
+  const overlay = loadingOverlay.value
+  if (!isLoading.value || !overlay) return
+
+  ZIndex.set(MODAL_Z_KEY, overlay, MODAL_Z_BASE)
+  onCleanup(() => ZIndex.clear(overlay))
+})
 
 watch(
   isLoading,
