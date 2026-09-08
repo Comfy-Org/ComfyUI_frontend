@@ -356,3 +356,75 @@ export const dataAdapter: SourceAdapter = {
       )
   }
 }
+
+/**
+ * Everything that must still be true after a write, checked against the plan
+ * that produced it.
+ *
+ * Returns problems rather than throwing, so a caller can gather them across
+ * every file and refuse the whole run before touching any of it. The value is
+ * in what it rejects: a byte changed outside the planned edits, a translation
+ * disturbed, an entry lost, or Japanese written without its marker — which
+ * would read back as approved and never be refreshed again.
+ */
+export function verifyWrite(
+  fileName: string,
+  original: string,
+  written: string,
+  edits: readonly Edit[]
+): string[] {
+  const problems: string[] = []
+
+  const delta = edits.reduce((n, edit) => n + edit.text.length - edit.length, 0)
+  if (written.length !== original.length + delta) {
+    problems.push('length does not match the plan')
+  }
+
+  // An edit's offset is a position in the ORIGINAL; in the written text it has
+  // been pushed along by every edit before it. Undo them in reverse — putting
+  // replaced bytes back from the original — and the original must return byte
+  // for byte.
+  let shift = 0
+  const placed = [...edits]
+    .sort((a, b) => a.offset - b.offset)
+    .map((edit) => {
+      const at = edit.offset + shift
+      shift += edit.text.length - edit.length
+      return { at, edit }
+    })
+
+  let rebuilt = written
+  for (const { at, edit } of [...placed].reverse()) {
+    rebuilt =
+      rebuilt.slice(0, at) +
+      original.slice(edit.offset, edit.offset + edit.length) +
+      rebuilt.slice(at + edit.text.length)
+  }
+  if (rebuilt !== original) {
+    problems.push('undoing the edits does not restore the original')
+  }
+
+  const before = entriesFromSource(fileName, original)
+  const after = entriesFromSource(fileName, written)
+
+  if (before.length !== after.length) {
+    problems.push(`entries went from ${before.length} to ${after.length}`)
+    return problems
+  }
+
+  for (const [index, entry] of before.entries()) {
+    const now = after[index]
+    if (now.key !== entry.key) problems.push(`key moved: ${entry.key}`)
+    if (now.english !== entry.english) {
+      problems.push(`English changed: ${entry.key}`)
+    }
+    if (now.approved['zh-CN'] !== entry.approved['zh-CN']) {
+      problems.push(`Chinese changed: ${entry.key}`)
+    }
+    if (now.approved.ja !== undefined) {
+      problems.push(`Japanese reads back as approved: ${entry.key}`)
+    }
+  }
+
+  return problems
+}
