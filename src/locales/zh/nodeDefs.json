@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "通过 comfy_kitchen 实现块稀疏注意力：每个查询块会精确关注所选键块的子集，从而减少注意力计算量。由于短序列通常使用稠密注意力更快，序列越长，相对加速收益越大。在活动调度范围之外、dense_blocks 中以及低于 min_tokens 时，模型使用当前活动的稠密模型注意力后端。",
-    "display_name": "块稀疏注意力",
+    "description": "将块稀疏注意力应用于符合条件的模型注意力层，减少长序列的计算量。序列越长，速度提升越明显，因为短序列通常使用稠密注意力更快。在 start/end_percent 范围外、dense_blocks 以及低于 min_tokens 时，模型会使用稠密模型注意力后端。请使用“模型注意力后端”节点选择该回退后端。",
+    "display_name": "模型稀疏注意力",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "调度在此点之后使用稠密注意力。"
+        "tooltip": "稀疏注意力结束的百分比位置。在此位置之后，注意力恢复为稠密。"
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "短于此长度的序列保持使用稠密注意力。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修补的模型。"
       },
       "selection": {
         "name": "selection",
-        "tooltip": "精确键块的选择方式。Sol-Attn：按每个头/块自适应阈值选择。top-k (SLA)：所有位置使用固定 keep_percent，仅建议搭配训练过的权重使用。VSA (FastVideo)：使用 FastH3-VSA 的立方体平铺和粗略分支，需要为其训练的权重。"
+        "tooltip": "用于选择进行完整词元级注意力的键块的方法。sol-attn：稀疏化在线注意力，对每个注意力头和查询块使用免训练的自适应阈值。sla：稀疏线性注意力，保留得分最高的键块中的固定百分比；仅可用于针对该模式训练的模型权重。vsa：视频稀疏注意力 (FastVideo)，使用 3D 视频立方体分块和学习得到的粗注意力分支；需要 FastH3 模型权重。"
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "调度在此点之前使用稠密注意力。"
+        "tooltip": "稀疏注意力开始的百分比位置。在此位置之前，注意力保持稠密。"
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "记录每种注意力形状是否使用了稀疏注意力，或其保持稠密的原因。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "模型",
+        "tooltip": "已应用块稀疏注意力的模型。"
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "选择模型的稠密注意力实现。与块稀疏注意力配合使用时，只要稀疏注意力未激活或不受支持，就会使用此后端。",
+    "display_name": "模型注意力后端",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "稠密注意力后端。Comfy Kitchen 注意力使用量化 INT8 注意力，仅适用于 Nvidia 和 AMD GPU。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修补的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "使用所选注意力后端的模型。"
       }
     }
   },
