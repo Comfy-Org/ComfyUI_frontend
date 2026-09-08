@@ -150,9 +150,14 @@ export function createBillingClient(
       const uid = activeCredential()?.uid
 
       if (inFlight !== undefined && inFlightUid === uid) {
-        return refreshOptions.force
-          ? inFlight.then(() => client.refresh())
-          : inFlight
+        if (!refreshOptions.force) return inFlight
+        // The forced re-read is a continuation on the old promise; capture
+        // the generation NOW, or a reset() landing before the continuation
+        // runs is invisible to it and the abandoned intent resurrects.
+        const queuedGeneration = generation
+        return inFlight.then(() =>
+          queuedGeneration === generation ? client.refresh() : undefined
+        )
       }
 
       inFlightUid = uid
