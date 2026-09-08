@@ -8,7 +8,7 @@ const minimaxRoute = '/minimax-h3'
 const minimaxRouteZh = '/zh-CN/minimax-h3'
 
 const TOP_LEVEL_LABELS = [
-  'Workshop',
+  'Models',
   'Products',
   'Pricing',
   'Community',
@@ -46,7 +46,7 @@ test.describe('Desktop navigation @smoke', () => {
 
     await expect(
       desktopLinks
-        .getByRole('link', { name: 'Workshop' })
+        .getByRole('link', { name: 'Models' })
         .getByText('NEW', { exact: true })
     ).toBeVisible()
     for (const label of ['Products', 'Community']) {
@@ -146,7 +146,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Workshop', 'Products', 'Pricing', 'Community']) {
+    for (const label of ['Models', 'Products', 'Pricing', 'Community']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
@@ -159,7 +159,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
 
     await expect(
-      menu.getByRole('link', { name: 'Workshop' }).getByText('NEW', {
+      menu.getByRole('link', { name: 'Models' }).getByText('NEW', {
         exact: true
       })
     ).toBeVisible()

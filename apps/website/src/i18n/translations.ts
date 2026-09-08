@@ -187,7 +187,7 @@ const translations = {
     en: 'Next featured workflow',
     'zh-CN': '下一个精选工作流'
   },
-  'modelDiscovery.label': { en: 'WORKSHOP', 'zh-CN': '工作坊' },
+  'modelDiscovery.label': { en: 'MODELS', 'zh-CN': '模型' },
   'modelDiscovery.heading': {
     en: 'All the latest models,\nready to run',
     'zh-CN': '最新模型，\n即刻运行'
@@ -8421,8 +8421,8 @@ Enterprise`
   },
 
   // Workshop – header account + nav
-  'nav.workshop': { en: 'Workshop', 'zh-CN': '工作坊' },
-  'nav.comfyWorkshop': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
+  'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
+  'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
@@ -8449,16 +8449,16 @@ Enterprise`
   },
 
   // Workshop – catalog pages
-  'workshop.title': { en: 'Workshop', 'zh-CN': '工作坊' },
+  'workshop.title': { en: 'Models', 'zh-CN': '模型' },
   'workshop.meta.title': {
-    en: 'Comfy Workshop - Models & Workflows',
-    'zh-CN': 'Comfy 工作坊 - 模型与工作流'
+    en: 'Browse Models - Comfy',
+    'zh-CN': '浏览模型 - Comfy'
   },
   'workshop.meta.description': {
-    en: 'Browse and run partner models and curated workflows in the Comfy Workshop.',
-    'zh-CN': '在 Comfy 工作坊中浏览并运行合作伙伴模型和精选工作流。'
+    en: 'Browse and run partner models and curated workflows on Comfy.',
+    'zh-CN': '在 Comfy 上浏览并运行合作伙伴模型和精选工作流。'
   },
-  'workshop.hero.eyebrow': { en: 'Comfy Workshop', 'zh-CN': 'Comfy 工作坊' },
+  'workshop.hero.eyebrow': { en: 'Browse models', 'zh-CN': '浏览模型' },
   'workshop.hero.heading': {
     en: 'Run the best models',
     'zh-CN': '运行顶尖模型'
@@ -8589,8 +8589,8 @@ Enterprise`
   },
   'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
   'workshop.signIn.meta.title': {
-    en: 'Sign in · Comfy Workshop',
-    'zh-CN': '登录 · Comfy 工作坊'
+    en: 'Sign in · Comfy Models',
+    'zh-CN': '登录 · Comfy 模型'
   },
   'workshop.signIn.title': {
     en: 'Log in to your account',
@@ -8690,8 +8690,8 @@ Enterprise`
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
   'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
   'workshop.model.related': {
-    en: 'More from the Workshop',
-    'zh-CN': '工作坊的更多内容'
+    en: 'More models',
+    'zh-CN': '更多模型'
   },
   'workshop.model.relatedProvider': {
     en: 'More from {provider}',
@@ -9010,7 +9010,7 @@ Enterprise`
     en: 'Opens this page with the controls above already applied.',
     'zh-CN': '打开此页面时会自动应用上面的控制项。'
   },
-  'workshop.hub.title': { en: 'Browse the Workshop', 'zh-CN': '浏览工作坊' },
+  'workshop.hub.title': { en: 'Browse models', 'zh-CN': '浏览模型' },
   'workshop.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.hub.search': {
     en: 'Search workflows, models, creators...',
