@@ -336,14 +336,10 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-09-16T10:00:00-07:00',
     liveVideoId: '69slO15ovL8',
-    media: eventVideo(
-      '09.16-dev-platform.mp4',
-      {
-        en: 'Developer Platform 101: Building with the New Comfy API livestream',
-        'zh-CN': '开发者平台 101 直播'
-      },
-      '09.16-dev-platform-still.png'
-    ),
+    media: eventVideo('09.16-dev-platform.mp4', {
+      en: 'Developer Platform 101: Building with the New Comfy API livestream',
+      'zh-CN': '开发者平台 101 直播'
+    }),
     featured: {
       order: 7,
       media: eventVideo(
