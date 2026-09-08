@@ -43,8 +43,17 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <ul v-else class="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
-      <li v-for="example in examples" :key="example.id">
+    <!-- A phone scrolls the examples sideways, edge to edge; from a tablet up
+      they fit in a row of their own. -->
+    <ul
+      v-else
+      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:scroll-px-6 max-sm:px-6 sm:grid sm:max-w-2xl sm:grid-cols-3 sm:overflow-visible"
+    >
+      <li
+        v-for="example in examples"
+        :key="example.id"
+        class="w-40 shrink-0 snap-start sm:w-auto"
+      >
         <button
           type="button"
           :aria-label="t('workshop.examples.open', locale)"
