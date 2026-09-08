@@ -39,15 +39,16 @@ export async function launchCancellationFlow({
   }
 
   const session = await prepareChurnkey().catch((error) => {
+    const workspaceStillCurrent = isLaunchWorkspaceCurrent()
     reportError(error, {
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
         failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'load',
-        outcome: 'recovered'
+        outcome: workspaceStillCurrent ? 'recovered' : 'aborted'
       },
-      context: { workspace_still_current: isLaunchWorkspaceCurrent() },
+      context: { workspace_still_current: workspaceStillCurrent },
       level: 'warning'
     })
     return null

@@ -207,6 +207,27 @@ describe('launchCancellationFlow', () => {
     )
   })
 
+  it('records an aborted fallback when the workspace changed mid-preparation', async () => {
+    const preparationError = new Error('blocked by browser')
+    mocks.reportError.mockClear()
+    mocks.prepare.mockImplementationOnce(async () => {
+      mocks.activeWorkspaceId = 'workspace-2'
+      throw preparationError
+    })
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(mocks.reportError).toHaveBeenCalledWith(
+      preparationError,
+      expect.objectContaining({
+        tags: expect.objectContaining({ outcome: 'aborted' }),
+        context: { workspace_still_current: false }
+      })
+    )
+  })
+
   it('falls back and records a failed cancel callback', async () => {
     mocks.cancelSubscription.mockRejectedValue(new Error('API down'))
     mocks.prepare.mockResolvedValue(
