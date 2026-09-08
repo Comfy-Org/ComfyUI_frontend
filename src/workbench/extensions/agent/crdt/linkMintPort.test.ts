@@ -263,4 +263,14 @@ describe('attachLinkMintPort', () => {
 
     expect(minted).toEqual([])
   })
+
+  it('drops a deferred disconnect when detached before the sweep', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    port.detach()
+
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
+  })
 })

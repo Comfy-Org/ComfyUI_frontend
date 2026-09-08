@@ -213,19 +213,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         lastMintedWorkflowId = workflowId
       }
       const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
-      const minted = mintWireOps(operations, {
-        actor: deps.actor(),
-        baseVersion
-      })
-      const batches = chunkWireOps(minted).map((ops, index) => {
-        const batchVersion = baseVersion + index
-        return ops.map<Op>((op) => ({
-          ...op,
-          base_version: batchVersion,
-          stamp: [batchVersion, op.actor]
-        }))
-      })
-      lastMintedVersion = baseVersion + batches.length - 1
+      const actor = deps.actor()
+      const minted = operations.flatMap((operation, index) =>
+        mintWireOps([operation], { actor, baseVersion: baseVersion + index })
+      )
+      const batches = chunkWireOps(minted)
+      lastMintedVersion = baseVersion + minted.length - 1
       if (workflowId === null) {
         deps.onBatchSettled({ state: 'undeliverable', ops: minted })
         return

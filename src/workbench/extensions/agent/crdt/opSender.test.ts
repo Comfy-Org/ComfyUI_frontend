@@ -1,4 +1,9 @@
-import type { Op } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
@@ -8,6 +13,22 @@ import type { BatchOutcome, OpsResultView } from './opSender'
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
+const CATALOG = {
+  types: { TestNode: { widget_order: ['seed'] } }
+} satisfies WidgetCatalog
+const SEED_WORKFLOW = {
+  nodes: [
+    {
+      id: 1,
+      type: 'TestNode',
+      pos: [0, 0],
+      widgets_values: [0],
+      inputs: [],
+      outputs: []
+    }
+  ],
+  links: []
+} satisfies WorkflowJSON
 
 function addNode(id: number): GraphOperation {
   return {
@@ -16,6 +37,15 @@ function addNode(id: number): GraphOperation {
     class_type: 'TestNode',
     pos: [0, 0],
     node: { id, type: 'TestNode' }
+  }
+}
+
+function setWidget(value: number): GraphOperation {
+  return {
+    op: 'set_widget',
+    node_id: 1,
+    widget: 'seed',
+    value
   }
 }
 
@@ -76,12 +106,26 @@ describe('createOpSender', () => {
     expect(sent[0].workflowId).toBe(WORKFLOW)
     expect(sent[0].tab).toBe(TAB)
     expect(sent[0].ops).toHaveLength(2)
-    for (const op of sent[0].ops) {
+    for (const [index, op] of sent[0].ops.entries()) {
       expect(op.op_id).toMatch(/^[0-9a-f]{32}$/)
       expect(op.actor).toBe(ACTOR)
-      expect(op.base_version).toBe(41)
-      expect(op.stamp).toEqual([41, ACTOR])
+      expect(op.base_version).toBe(41 + index)
+      expect(op.stamp).toEqual([41 + index, ACTOR])
     }
+  })
+
+  it('preserves authored order for same-register writes in one batch', () => {
+    sender.enqueue([setWidget(1), setWidget(2)])
+
+    const doc = mint(SEED_WORKFLOW, CATALOG)
+    const result = applyOps(doc, sent[0].ops, CATALOG)
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+    expect(result.outcomes.map((outcome) => outcome.outcome)).toEqual([
+      'applied',
+      'applied'
+    ])
+    expect(readGraph(doc).nodes['1']?.widgets).toEqual({ seed: 2 })
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
@@ -366,20 +410,20 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(1)
     expect(sent[0].ops).toHaveLength(256)
-    expect(new Set(sent[0].ops.map((op) => op.base_version))).toEqual(
-      new Set([41])
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual(
+      Array.from({ length: 256 }, (_, index) => 41 + index)
     )
     expect(sender.pending()).toBe(2)
 
     ackInFlight()
     expect(sent[1].ops).toHaveLength(44)
-    expect(new Set(sent[1].ops.map((op) => op.base_version))).toEqual(
-      new Set([42])
+    expect(sent[1].ops.map((op) => op.base_version)).toEqual(
+      Array.from({ length: 44 }, (_, index) => 297 + index)
     )
 
     ackInFlight()
     sender.enqueue([addNode(301)])
-    expect(sent[2].ops[0].base_version).toBe(43)
+    expect(sent[2].ops[0].base_version).toBe(341)
   })
 
   it('ignores a result for other ops while a batch is in flight', () => {

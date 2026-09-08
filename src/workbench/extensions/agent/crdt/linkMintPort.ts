@@ -93,6 +93,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
   let sweepScheduled = false
+  let detached = false
 
   function graphEntityKey(owningGraphId: string, entityId: string | number) {
     return `${owningGraphId}:${String(entityId)}`
@@ -147,6 +148,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     queueMicrotask(() => {
       queueMicrotask(() => {
         sweepScheduled = false
+        if (detached) return
         const surfaced = new Set<string>()
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
@@ -190,7 +192,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     const entry: SeveranceEntry = {
       linkId: topology.id,
       topology,
-      owningGraphId: String(scope.owningGraphId),
+      owningGraphId: scope.owningGraphId,
       mintable,
       rootScoped
     }
@@ -218,6 +220,9 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       }
     },
     detach() {
+      detached = true
+      severancesByNode.clear()
+      consumedLinkIds.clear()
       detachPlaced()
       detachDeleted()
     }
