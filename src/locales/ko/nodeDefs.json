@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "적격 모델 어텐션 레이어에 블록 희소 어텐션을 적용하여 긴 시퀀스의 연산량을 줄입니다. 짧은 시퀀스는 일반적으로 밀집 어텐션이 더 빠르므로, 속도 향상은 시퀀스 길이에 따라 커집니다. start_percent/end_percent 범위 밖, dense_blocks 및 min_tokens 미만에서는 모델이 밀집 모델 어텐션 백엔드를 사용합니다. 해당 대체 방식을 선택하려면 모델 어텐션 백엔드 노드를 사용하세요.",
+    "display_name": "모델 희소 어텐션",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "항상 밀집 방식으로 실행되는 Transformer 블록입니다. 예: '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "희소 어텐션이 종료되는 퍼센트 지점입니다. 이 지점 후에는 어텐션이 밀집 상태로 돌아갑니다."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "각 쿼리 블록이 선택된 블록 외에 어텐션하는 추가 상위 점수 토큰 수입니다. 값이 클수록 밀집 방식에 가까워져 어텐션 시간이 늘어납니다. 256을 권장하며, 0은 비활성화합니다. VSA에서는 무시됩니다."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "이보다 짧은 시퀀스는 밀집 방식으로 유지됩니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "패치할 모델입니다."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "전체 토큰 수준 어텐션에 사용할 키 블록을 선택하는 방법입니다. sol-attn: Sparsifying Online Attention은 각 어텐션 헤드와 쿼리 블록에 학습이 필요 없는 적응형 임계값을 사용합니다. sla: Sparse-Linear Attention은 가장 높은 점수를 받은 키 블록의 고정 비율을 유지합니다. 이 패턴으로 학습된 모델 가중치에서만 사용하세요. vsa: Video Sparse Attention (FastVideo)은 3D 비디오 큐브 타일링과 학습된 거친 어텐션 분기를 사용하며, FastH3 모델 가중치가 필요합니다."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 전용입니다. exact_kv: 모든 쿼리가 패킹된 텍스트/오디오/참조 행에 정확히 어텐션합니다(약 3% 비용). exact_kv_and_rows: 여기에 대상 오디오 쿼리 행을 밀집 방식으로 추가 실행하여 생성된 오디오를 그대로 유지합니다."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "희소 어텐션이 시작되는 퍼센트 지점입니다. 이 지점 전에는 어텐션이 밀집 상태로 유지됩니다."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "각 어텐션 형태에서 희소 어텐션이 사용되었는지, 또는 밀집 상태로 유지된 이유를 기록합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "블록 희소 어텐션이 적용된 모델입니다."
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria를 사용하여 이미지에서 mask로 윤곽 지정된 객체 또는 영역을 제거합니다.",
     "display_name": "Bria 지우개",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ)를 변환합니다. 203니트 SDR 화이트와 1000니트 HLG 기준 디스플레이를 사용합니다. 축소 시 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 장치 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "display_name": "이미지 색 공간 변환",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드도 동일한 색 공간으로 설정하세요."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "입력 픽셀의 색 공간입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "이미지 색상을 마스크로 변환",
     "inputs": {
@@ -13516,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "모델에 사용할 밀집 어텐션 구현을 선택합니다. 블록 희소 어텐션과 함께 사용할 경우, 희소 어텐션이 비활성화되었거나 지원되지 않을 때마다 이 백엔드가 사용됩니다.",
+    "display_name": "모델 어텐션 백엔드",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "밀집 어텐션 백엔드입니다. Comfy Kitchen 어텐션은 양자화된 INT8 어텐션을 사용하며 Nvidia 및 AMD GPU에서만 사용할 수 있습니다."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "패치할 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "선택한 어텐션 백엔드가 적용된 모델입니다."
       }
     }
   },

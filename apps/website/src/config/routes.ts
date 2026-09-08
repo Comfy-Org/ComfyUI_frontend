@@ -13,6 +13,8 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
+  customerVideoBlackMath: '/customers/videos/black-math',
+  customerVideoSilversideAi: '/customers/videos/silverside-ai',
   demos: '/demos',
   learning: '/learning',
   termsOfService: '/terms-of-service',
@@ -74,6 +76,11 @@ type Routes = Readonly<Record<RouteKey, string>>
 // src/pages/minimax/license/professional-request.astro.
 //
 // workshop, workshopSignIn: prototype pages, English only for now.
+//
+// customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
+// built from a single English-language caption track — a "translated" watch
+// page would either duplicate the English video under a Chinese path or lie
+// about having Chinese captions, so these are intentionally English-only.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -84,7 +91,9 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
-  'workshopSignIn'
+  'workshopSignIn',
+  'customerVideoBlackMath',
+  'customerVideoSilversideAi'
 ])
 
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,

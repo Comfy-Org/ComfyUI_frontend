@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "對符合條件的模型注意力層套用區塊稀疏注意力，以減少長序列的運算量。序列越長，速度提升越明顯，因為短序列通常使用密集注意力更快。在 start/end_percent 範圍外、使用 dense_blocks 時，以及 token 數低於 min_tokens 時，模型會使用密集模型注意力後端。請使用「模型注意力後端」節點選擇該備援後端。",
+    "display_name": "模型區塊稀疏注意力",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "一律以密集運算執行的 Transformer 區塊，例如「0, 1, 47-49」。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "稀疏注意力結束的百分比位置。在此位置之後，注意力恢復為密集。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "每個查詢區塊除了所選區塊外，還會關注額外得分最高的 token。數值越高，注意力運算越接近密集運算；建議為 256，設為 0 可停用。VSA 會忽略此設定。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "短於此長度的序列會維持使用密集運算。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "要修補的模型。"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "用於選擇進行完整 token 層級注意力之鍵區塊的方法。sol-attn：Sparsifying Online Attention 會針對每個注意力頭與查詢區塊使用免訓練的自適應閾值。sla：Sparse-Linear Attention 會保留固定百分比的最高分鍵區塊；僅適用於以此模式訓練的模型權重。vsa：Video Sparse Attention (FastVideo) 使用 3D 視訊立方體分塊與學習式粗略注意力分支；需要 FastH3 模型權重。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "僅適用於 MiniMax-H3。exact_kv：每個查詢會精確關注已封裝的文字／音訊／參考列（約 3% 成本）。exact_kv_and_rows：另外以密集運算執行目標音訊查詢列（維持生成的音訊完整）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "稀疏注意力開始的百分比位置。在此位置之前，注意力維持密集。"
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "記錄每種注意力形狀是否使用稀疏注意力，或維持密集的原因。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "已套用區塊稀疏注意力的模型。"
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 從影像中移除由遮罩標示的物件或區域。",
     "display_name": "Bria 擦除",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "description": "轉換 sRGB (Rec.709)、HDR (Rec.2020 HLG) 與 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白點與 1000 尼特 HLG 參考顯示器。縮窄會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與 dtype。直通 alpha 不會進行色彩轉換。",
+    "display_name": "轉換影像色彩空間",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "輸入像素的色彩空間。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "顏色轉遮罩",
     "inputs": {
@@ -13516,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "選擇模型的密集注意力實作。與「模型區塊稀疏注意力」搭配使用時，只要稀疏注意力未啟用或不受支援，就會使用此後端。",
+    "display_name": "模型注意力後端",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "密集注意力後端。Comfy Kitchen 注意力使用量化 INT8 注意力，且僅適用於 Nvidia 與 AMD GPU。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修補的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "使用所選注意力後端的模型。"
       }
     }
   },

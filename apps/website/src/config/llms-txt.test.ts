@@ -41,7 +41,8 @@ const EXCLUDED_PAGES = new Set([
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // noindex Workshop prototype, mock data
   '/workshop/workflows', // noindex Workshop prototype, mock data
-  '/workshop/sign-in' // noindex Workshop prototype, mock data
+  '/workshop/sign-in', // noindex Workshop prototype, mock data
+  '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
 
 /**

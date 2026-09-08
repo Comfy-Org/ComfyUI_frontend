@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "display_name": "Model Sparse Attention",
+    "description": "Applies block-sparse attention to eligible model attention layers, reducing compute for long sequences. The speed gain grows with sequence length since short sequences are usually faster dense. Outside the start/end_percent, dense_blocks and under min_tokens, the model uses the dense model attention backend. Use the node Model Attention Backend to select that fallback.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to patch."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Method used to choose key blocks for full token-level attention. sol-attn: Sparsifying Online Attention uses a training-free adaptive threshold for each attention head and query block. sla: Sparse-Linear Attention keeps a fixed percentage of the highest-scoring key blocks; use only with model weights trained for this pattern. vsa: Video Sparse Attention (FastVideo) uses 3D video-cube tiling and a learned coarse attention branch; requires FastH3 model weights."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Percentage point when sparse attention begins. Before this point, attention stays dense."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Percentage point when sparse attention ends. After this point, attention returns to dense."
+      },
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Transformer blocks that always run dense, e.g. '0, 1, 47-49'."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Sequences shorter than this stay dense."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Extra top-scoring tokens each query block attends beyond its selected blocks. Closer to dense for more attention time; 256 recommended, 0 disables. Ignored for VSA."
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 only. exact_kv: every query attends the packed text/audio/reference rows exactly (~3% cost). exact_kv_and_rows: additionally runs the target-audio query rows dense (keeps generated audio intact)."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "Logs whether each attention shape used sparse attention or why it stayed dense."
+      },
+      "selection_tau": {
+        "name": "tau"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "The model with block-sparse attention applied."
+      }
+    }
+  },
   "BriaEraser": {
     "display_name": "Bria Eraser",
     "description": "Remove objects or areas outlined by a mask from an image using Bria.",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "display_name": "Convert Image Color Space",
+    "description": "Convert sRGB (Rec.709), HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Uses 203-nit SDR white and a 1000-nit HLG reference display. Narrowing tone-maps excess luminance across the batch and compresses out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Color space of the input pixels."
+      },
+      "destination": {
+        "name": "destination",
+        "tooltip": "Color space of the output pixels. Set the save node to this same color space."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "Convert Image Color to Mask",
     "inputs": {
@@ -13369,13 +13442,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "display_name": "Model Attention Backend",
+    "description": "Selects the dense attention implementation for the model. When used with Block Sparse Attention, this backend is used whenever sparse attention is inactive or unsupported.",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "The model to patch."
       },
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "The dense attention backend. Comfy Kitchen attention uses quantized INT8 attention and is available only on Nvidia and AMD GPUs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "The model with the selected attention backend."
       }
     }
   },

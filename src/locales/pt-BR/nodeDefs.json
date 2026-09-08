@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Aplica atenção esparsa em blocos às camadas de atenção do modelo qualificadas, reduzindo o processamento para sequências longas. O ganho de velocidade aumenta com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas com atenção densa. Fora de start_percent/end_percent, com dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção densa do modelo. Use o nó Backend de Atenção do Modelo para selecionar essa alternativa.",
+    "display_name": "Atenção Esparsa em Blocos do Modelo",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocos do Transformer que sempre são executados de forma densa, por exemplo, '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Ponto percentual em que a atenção esparsa termina. Após esse ponto, a atenção volta a ser densa."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Tokens extras com maior pontuação aos quais cada bloco de consulta atende além dos blocos selecionados. Mais próximo de denso para mais tempo de atenção; 256 é recomendado, 0 desativa. Ignorado para VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Sequências mais curtas que isto permanecem densas."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo a ser modificado."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Método usado para escolher blocos de chave para atenção completa no nível de token. sol-attn: Sparsifying Online Attention usa um limiar adaptativo que não exige treinamento para cada cabeça de atenção e bloco de consulta. sla: Sparse-Linear Attention mantém uma porcentagem fixa dos blocos de chave com maior pontuação; use apenas com pesos de modelo treinados para esse padrão. vsa: Video Sparse Attention (FastVideo) usa divisão em blocos de cubos de vídeo 3D e um ramo de atenção grosseira aprendido; requer pesos de modelo FastH3."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Somente MiniMax-H3. exact_kv: cada consulta atende exatamente às linhas compactadas de texto/áudio/referência (~3% de custo). exact_kv_and_rows: adicionalmente executa de forma densa as linhas de consulta do áudio-alvo (mantém o áudio gerado intacto)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Ponto percentual em que a atenção esparsa começa. Antes desse ponto, a atenção permanece densa."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "Registra se cada formato de atenção usou atenção esparsa ou por que permaneceu densa."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "O modelo com atenção esparsa em blocos aplicada."
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Remova objetos ou áreas delimitadas por uma máscara de uma imagem usando Bria.",
     "display_name": "Bria Eraser",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "description": "Converte sRGB (Rec.709), HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Usa branco SDR de 203 nits e uma tela de referência HLG de 1000 nits. O estreitamento aplica mapeamento de tons à luminância excedente em todo o lote e comprime cores fora da gama. As conversões são calculadas em float32 e retornam o device e dtype intermediários. Alfa reto não passa por transformação de cor.",
+    "display_name": "Converter Espaço de Cor da Imagem",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Espaço de cor dos pixels de saída. Defina o nó de salvamento para este mesmo espaço de cor."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Espaço de cor dos pixels de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "Cor da Imagem para Máscara",
     "inputs": {
@@ -13516,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Seleciona a implementação de atenção densa para o modelo. Quando usado com Atenção Esparsa em Blocos, este backend é usado sempre que a atenção esparsa estiver inativa ou não for compatível.",
+    "display_name": "Backend de Atenção do Modelo",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "O backend de atenção densa. A atenção Comfy Kitchen usa atenção INT8 quantizada e está disponível apenas em GPUs Nvidia e AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "O modelo a ser modificado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "O modelo com o backend de atenção selecionado."
       }
     }
   },

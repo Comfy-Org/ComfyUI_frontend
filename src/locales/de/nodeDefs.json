@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Wendet Block-Sparse-Attention auf geeignete Attention-Layer des Modells an und reduziert so den Rechenaufwand bei langen Sequenzen. Der Geschwindigkeitsgewinn steigt mit der Sequenzlänge, da kurze Sequenzen mit dichter Attention in der Regel schneller sind. Außerhalb von start/end_percent, bei dense_blocks und unter min_tokens verwendet das Modell das dichte Attention-Backend des Modells. Verwenden Sie den Node Modell-Attention-Backend, um diesen Fallback auszuwählen.",
+    "display_name": "Modell-Sparse-Attention",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Transformer-Blöcke, die immer dicht ausgeführt werden, z. B. '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Prozentwert, ab dem Sparse-Attention endet. Danach wird die Attention wieder dicht."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Zusätzliche Tokens mit den höchsten Scores, die jeder Query-Block über seine ausgewählten Blöcke hinaus berücksichtigt. Für mehr Attention-Zeit näher an dicht; 256 empfohlen, 0 deaktiviert. Für VSA ignoriert."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Kürzere Sequenzen bleiben dicht."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Das zu patchende Modell."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Methode zur Auswahl von Key-Blöcken für vollständige Attention auf Token-Ebene. sol-attn: Sparsifying Online Attention verwendet für jeden Attention-Head und Query-Block einen trainingsfreien adaptiven Schwellenwert. sla: Sparse-Linear Attention behält einen festen Prozentsatz der Key-Blöcke mit der höchsten Bewertung bei; nur mit Modellgewichten verwenden, die für dieses Muster trainiert wurden. vsa: Video Sparse Attention (FastVideo) verwendet 3D-Videowürfel-Tiling und einen gelernten groben Attention-Zweig; erfordert FastH3-Modellgewichte."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Nur MiniMax-H3. exact_kv: Jede Query berücksichtigt die gepackten Text-/Audio-/Referenzzeilen exakt (~3 % Kosten). exact_kv_and_rows: Führt zusätzlich die Target-Audio-Query-Zeilen dicht aus (hält generiertes Audio intakt)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Prozentwert, ab dem Sparse-Attention beginnt. Davor bleibt die Attention dicht."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "Protokolliert, ob für jede Attention-Form Sparse-Attention verwendet wurde oder warum sie dicht blieb."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Das Modell mit angewendeter Block-Sparse-Attention."
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Entfernt mit Bria Objekte oder Bereiche, die durch eine mask markiert sind, aus einem Bild.",
     "display_name": "Bria-Radierer",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "description": "Konvertiert sRGB (Rec.709), HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Verwendet einen SDR-Weißpunkt von 203 Nit und ein HLG-Referenzdisplay mit 1000 Nit. Die Einengung führt für überschüssige Luminanz im gesamten Batch ein Tone-Mapping durch und komprimiert Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben Device und Datentyp des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
+    "display_name": "Bildfarbraum konvertieren",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Speicher-Node auf denselben Farbraum ein."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Farbraum der Eingabepixel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "Bildfarbe in Maske umwandeln",
     "inputs": {
@@ -13516,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Wählt die dichte Attention-Implementierung für das Modell aus. Bei Verwendung mit Block Sparse Attention wird dieses Backend immer dann verwendet, wenn Sparse-Attention inaktiv oder nicht unterstützt ist.",
+    "display_name": "Modell-Attention-Backend",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "Das dichte Attention-Backend. Comfy Kitchen Attention verwendet quantisierte INT8-Attention und ist nur auf NVIDIA- und AMD-GPUs verfügbar."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Das zu patchende Modell."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Das Modell mit dem ausgewählten Attention-Backend."
       }
     }
   },

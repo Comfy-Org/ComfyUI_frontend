@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Applique une attention clairsemée par blocs aux couches d’attention éligibles du modèle, réduisant les calculs pour les longues séquences. Le gain de vitesse augmente avec la longueur de séquence, car les séquences courtes sont généralement plus rapides en dense. En dehors de start_percent/end_percent, pour dense_blocks et sous min_tokens, le modèle utilise le backend d’attention dense du modèle. Utilisez le nœud Backend d’attention du modèle pour sélectionner ce repli.",
+    "display_name": "Attention clairsemée par blocs du modèle",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Blocs de transformeur qui s’exécutent toujours en dense, par ex. « 0, 1, 47-49 »."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Pourcentage auquel l’attention clairsemée se termine. Après ce point, l’attention redevient dense."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Jetons supplémentaires les mieux notés auxquels chaque bloc de requêtes porte attention au-delà de ses blocs sélectionnés. Plus proche du dense pour davantage de temps d’attention ; 256 recommandé, 0 désactive. Ignoré pour VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Les séquences plus courtes que cette valeur restent denses."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle à modifier."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Méthode utilisée pour choisir les blocs de clés pour une attention complète au niveau des tokens. sol-attn : Sparsifying Online Attention utilise un seuil adaptatif sans entraînement pour chaque tête d’attention et bloc de requêtes. sla : Sparse-Linear Attention conserve un pourcentage fixe des blocs de clés ayant les scores les plus élevés ; à utiliser uniquement avec des poids de modèle entraînés pour ce schéma. vsa : Video Sparse Attention (FastVideo) utilise un pavage en cubes vidéo 3D et une branche d’attention grossière apprise ; nécessite des poids de modèle FastH3."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 uniquement. exact_kv : chaque requête porte attention exactement aux lignes de texte/audio/référence compactées (coût d’environ 3 %). exact_kv_and_rows : exécute en plus les lignes de requêtes d’audio cible en dense (préserve l’audio généré)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Pourcentage à partir duquel l’attention clairsemée commence. Avant ce point, l’attention reste dense."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "Enregistre si chaque forme d’attention a utilisé l’attention clairsemée ou pourquoi elle est restée dense."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Le modèle avec l’attention clairsemée par blocs appliquée."
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Supprimez d’une image les objets ou zones délimités par un masque à l’aide de Bria.",
     "display_name": "Gomme Bria",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "description": "Convertit sRGB (Rec.709), HDR (Rec.2020 HLG) et HDR PQ (Rec.2020 PQ). Utilise un blanc SDR de 203 nits et un écran de référence HLG de 1000 nits. La compression applique un mappage tonal à la luminance excédentaire sur l’ensemble du lot et compresse les couleurs hors gamme. Les conversions sont calculées en float32 et renvoient l’appareil intermédiaire et le type de données. L’alpha direct n’est pas transformé dans l’espace colorimétrique.",
+    "display_name": "Convertir l’espace colorimétrique de l’image",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Espace colorimétrique des pixels de sortie. Réglez le nœud d’enregistrement sur ce même espace colorimétrique."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Espace colorimétrique des pixels d’entrée."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "ImageCouleurEnMasque",
     "inputs": {
@@ -13516,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Sélectionne l’implémentation d’attention dense du modèle. Lorsqu’il est utilisé avec Block Sparse Attention, ce backend est utilisé chaque fois que l’attention clairsemée est inactive ou non prise en charge.",
+    "display_name": "Backend d’attention du modèle",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "Le backend d’attention dense. L’attention Comfy Kitchen utilise une attention quantifiée INT8 et est disponible uniquement sur les GPU Nvidia et AMD."
       },
       "model": {
-        "name": "modèle"
+        "name": "modèle",
+        "tooltip": "Le modèle à modifier."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Le modèle avec le backend d’attention sélectionné."
       }
     }
   },

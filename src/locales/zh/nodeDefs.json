@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "将块稀疏注意力应用于符合条件的模型注意力层，减少长序列的计算量。序列越长，速度提升越明显，因为短序列通常使用稠密注意力更快。在 start/end_percent 范围外、dense_blocks 以及低于 min_tokens 时，模型会使用稠密模型注意力后端。请使用“模型注意力后端”节点选择该回退后端。",
+    "display_name": "模型稀疏注意力",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "始终以稠密方式运行的 Transformer 块，例如“0, 1, 47-49”。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "稀疏注意力结束的百分比位置。在此位置之后，注意力恢复为稠密。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "除所选块外，每个查询块额外关注的高分 token。数值越高越接近稠密注意力，注意力耗时也越多；建议使用 256，设为 0 可禁用。VSA 会忽略此项。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "短于此长度的序列保持使用稠密注意力。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "要修补的模型。"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "用于选择进行完整词元级注意力的键块的方法。sol-attn：稀疏化在线注意力，对每个注意力头和查询块使用免训练的自适应阈值。sla：稀疏线性注意力，保留得分最高的键块中的固定百分比；仅可用于针对该模式训练的模型权重。vsa：视频稀疏注意力 (FastVideo)，使用 3D 视频立方体分块和学习得到的粗注意力分支；需要 FastH3 模型权重。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "仅适用于 MiniMax-H3。exact_kv：每个查询都会精确关注打包的文本/音频/参考行（约占 3% 成本）。exact_kv_and_rows：此外会以稠密方式运行目标音频查询行（保持生成的音频完整）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "稀疏注意力开始的百分比位置。在此位置之前，注意力保持稠密。"
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "记录每种注意力形状是否使用了稀疏注意力，或其保持稠密的原因。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "已应用块稀疏注意力的模型。"
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 从图像中移除由蒙版勾勒出的对象或区域。",
     "display_name": "Bria 擦除",
@@ -7933,6 +7984,28 @@
       }
     }
   },
+  "ImageColorSpace": {
+    "description": "转换 sRGB (Rec.709)、HDR (Rec.2020 HLG) 和 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白点和 1000 尼特 HLG 参考显示器。缩窄时会对批次中的过量亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 计算，并返回中间设备和数据类型。直通 alpha 不进行颜色转换。",
+    "display_name": "转换图像色彩空间",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "输出像素的色彩空间。请将保存节点设为相同的色彩空间。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "输入像素的色彩空间。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageColorToMask": {
     "display_name": "图像颜色到遮罩",
     "inputs": {
@@ -13516,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "选择模型的稠密注意力实现。与块稀疏注意力配合使用时，只要稀疏注意力未激活或不受支持，就会使用此后端。",
+    "display_name": "模型注意力后端",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "稠密注意力后端。Comfy Kitchen 注意力使用量化 INT8 注意力，仅适用于 Nvidia 和 AMD GPU。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修补的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "使用所选注意力后端的模型。"
       }
     }
   },
