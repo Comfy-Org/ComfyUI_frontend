@@ -100,6 +100,7 @@ function globalOptions() {
 
 describe('SignUpForm', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     mockLoadingRef.value = false
     mockTurnstileEnabled.value = false
     mockTurnstileToken.value = ''
