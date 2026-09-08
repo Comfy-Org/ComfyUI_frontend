@@ -13,6 +13,8 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
+  customerVideoBlackMath: '/customers/videos/black-math',
+  customerVideoSilversideAi: '/customers/videos/silverside-ai',
   demos: '/demos',
   learning: '/learning',
   termsOfService: '/terms-of-service',
@@ -75,6 +77,11 @@ type Routes = Readonly<Record<RouteKey, string>>
 // workshop: the model workshop lives only at /workshop (src/pages/workshop/);
 // there is no /<locale>/workshop page, so a prefixed link 404s. The route is
 // also omitted from deployed builds until config/workshop-release.ts enables it.
+//
+// customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
+// built from a single English-language caption track — a "translated" watch
+// page would either duplicate the English video under a Chinese path or lie
+// about having Chinese captions, so these are intentionally English-only.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -84,7 +91,9 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
-  'workshop'
+  'workshop',
+  'customerVideoBlackMath',
+  'customerVideoSilversideAi'
 ])
 
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,

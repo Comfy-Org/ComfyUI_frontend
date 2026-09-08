@@ -38,3 +38,18 @@ describe('getMainNavigation workshop entry', () => {
     expect(workshopItem('ja', true)?.label).toBe('Workshop')
   })
 })
+
+describe('getMainNavigation', () => {
+  it('includes a Products entry linking to Enterprise Managed Builds', () => {
+    const [productsItem] = getMainNavigation('en')
+    const productsColumn = productsItem.columns?.[0]
+    const managedBuildsEntry = productsColumn?.items.find(
+      (item) => item.href === getRoutes('en').managedBuilds
+    )
+
+    expect(managedBuildsEntry).toMatchObject({
+      label: 'Managed Builds',
+      href: '/enterprise/managed-builds'
+    })
+  })
+})
