@@ -256,18 +256,6 @@ const translations = {
     en: 'Forgot password?',
     'zh-CN': '忘记密码？'
   },
-  'auth.turnstile.expired': {
-    en: 'The verification expired. Please solve it again.',
-    'zh-CN': '验证已过期，请重新完成验证。'
-  },
-  'auth.turnstile.failed': {
-    en: 'Verification could not load. You can still continue.',
-    'zh-CN': '验证无法加载，你仍可以继续。'
-  },
-  'auth.turnstile.waiting': {
-    en: 'Waiting for the verification to finish…',
-    'zh-CN': '正在等待验证完成…'
-  },
   'auth.forgot.meta.title': {
     en: 'Reset password - Comfy',
     'zh-CN': '重置密码 - Comfy'

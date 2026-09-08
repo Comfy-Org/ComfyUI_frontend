@@ -3,6 +3,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
 import {
+  TURNSTILE_MESSAGES,
   isTurnstileEnabled,
   useTurnstileGate
 } from '@comfyorg/account/turnstile'
@@ -167,8 +168,8 @@ defineExpose({ resetTurnstile })
       v-model:unavailable="unavailable"
       :site-key="WORKSHOP_TURNSTILE_SITE_KEY"
       theme="dark"
-      :expired-message="t('auth.turnstile.expired', locale)"
-      :failed-message="t('auth.turnstile.failed', locale)"
+      :expired-message="TURNSTILE_MESSAGES[locale].expired"
+      :failed-message="TURNSTILE_MESSAGES[locale].failed"
     />
     <p
       v-if="waiting"
@@ -176,7 +177,7 @@ defineExpose({ resetTurnstile })
       aria-live="polite"
       class="text-xs text-primary-comfy-canvas/55"
     >
-      {{ t('auth.turnstile.waiting', locale) }}
+      {{ TURNSTILE_MESSAGES[locale].submitBlockedHint }}
     </p>
 
     <button
