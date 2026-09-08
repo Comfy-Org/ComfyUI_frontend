@@ -478,6 +478,34 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes).toHaveLength(1)
     })
 
+    it('retains incumbent widgets when the re-created record omits widget values', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      const widget = incumbent.widgets?.[0]
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(nodePayload(1, 'widget-node'), {
+        ...REMOTE,
+        opId: 'op-1-again'
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(incumbent.widgets?.[0]).toBe(widget)
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(7)
+    })
+
     it('preserves widgets added after construction when re-adding the same id', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
