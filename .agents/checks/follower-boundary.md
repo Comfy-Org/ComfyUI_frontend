@@ -7,8 +7,8 @@ tools: [Read, Grep, glob]
 
 Check changes under `src/workbench/extensions/agent/**` (and anything importing
 `@comfyorg/comfy-multi-player` or the agent CRDT seam) against the follower invariants in
-[FOLLOWER](../../docs/adr/FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) and the CRDT
-layout split in [LAYOUT](../../docs/adr/LAYOUT-crdt-layout-intent-and-local-measurement.md).
+[FOLLOWER](../../docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) and the CRDT
+layout split in [LAYOUT](../../docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
 
 These are load-bearing: a low-context change that violates one can silently foreclose the
 future P2P / offline / multi-writer / multi-agent story, or ship a follower that renders in

@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "קשב דליל-בלוקים באמצעות comfy_kitchen: כל בלוק שאילתה מבצע קשב מדויק על תת-קבוצה נבחרת של בלוקי מפתח, ובכך מפחית את עלות חישוב הקשב. שיפור המהירות היחסי גדל עם אורך הרצף, מאחר שרצפים קצרים בדרך כלל מהירים יותר בחישוב צפוף. מחוץ ללוח הזמנים הפעיל, עבור dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב של המודל הצפוף הפעיל.",
+    "display_name": "קשב דליל-בלוקים",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "בלוקי Transformer שפועלים תמיד במצב צפוף, לדוגמה '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "קשב צפוף אחרי נקודה זו בלוח הזמנים."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "אסימונים נוספים בעלי הדירוג הגבוה ביותר, שכל בלוק שאילתה מבצע עליהם קשב מעבר לבלוקים שנבחרו עבורו. קרוב יותר לצפוף תמורת יותר זמן חישוב קשב; 256 מומלץ, 0 משבית. לא חל על VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "רצפים קצרים מערך זה נשארים בחישוב צפוף."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "כיצד נבחרים בלוקי מפתח מדויקים. Sol-Attn: סף מסתגל לכל ראש/בלוק. top-k (SLA): keep_percent קבוע בכל מקום, מומלץ רק עם משקולות מאומנות. VSA (FastVideo): ריצוף הקוביות והענף הגס של FastH3-VSA, דורש משקולות שאומנו עבורו."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "ל-MiniMax-H3 בלבד. exact_kv: כל שאילתה מבצעת קשב מדויק על שורות הטקסט/השמע/הייחוס הארוזות (עלות של כ-3%). exact_kv_and_rows: בנוסף, מריץ בצפיפות את שורות שאילתת שמע היעד (שומר על השמע שנוצר ללא פגע)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "קשב צפוף לפני נקודה זו בלוח הזמנים."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "הסרת אובייקטים או אזורים המסומנים באמצעות מסכה מתמונה בעזרת Bria.",
     "display_name": "מחק Bria",
@@ -7925,6 +7973,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "ממיר בין sRGB (Rec.709), HDR (Rec.2020 HLG) ו-HDR PQ (Rec.2020 PQ). משתמש בלבן SDR של 203 ניט ובתצוגת ייחוס HLG של 1000 ניט. בעת צמצום, מתבצע מיפוי גוונים של בהיקות עודפת על פני האצווה ודחיסה של צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת ה-dtype הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "display_name": "המרת מרחב הצבע של תמונה",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. הגדר את צומת השמירה לאותו מרחב צבע."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "מרחב הצבע של פיקסלי הקלט."
       }
     },
     "outputs": {
