@@ -23,6 +23,9 @@ target. Modern panel requests omit the legacy `current_tab` fallback.
 An omitted reference field preserves legacy model context. A present empty array
 means no additional workflow context; modern clients always send an array. The
 backend authorizes references separately and persists only explicit references.
+Unavailable references retain their client-supplied IDs/names with an unavailable
+marker so the Agent can acknowledge missing context. This does not grant access
+or reveal workflow contents; saved history retains the same reference intent.
 
 We considered marking individual open tabs as selected. A separate field keeps
 view state and prompt intent independently owned and permits referencing a saved
@@ -45,6 +48,6 @@ was rejected because it would change existing consumers' meaning.
 
 ## Notes
 
-[DES-902](https://linear.app/comfyorg/issue/DES-902) coordinates this change with
+[FE-1939](https://linear.app/comfyorg/issue/FE-1939) coordinates this change with
 [Cloud #8529](https://github.com/Comfy-Org/cloud/pull/8529). Cloud OpenAPI and the
 Agent turn schema own the wire contract; the ingest type package is generated.

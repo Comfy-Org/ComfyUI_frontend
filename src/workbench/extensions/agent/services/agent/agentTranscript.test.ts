@@ -90,12 +90,19 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('restores authorized workflow references and the latest user workflow target', () => {
+  it('restores available and unavailable references without changing the latest workflow target', () => {
     const first = row(1, 'user', 'turn-a', 'Compare these', 'row-1')
     first.workflow_id = 'wf-target-a'
     first.content = {
       text: 'Compare these',
-      workflow_references: [{ workflow_id: 'wf-reference', name: 'Reference' }]
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference' },
+        {
+          workflow_id: 'wf-unavailable',
+          name: 'My upscaler',
+          unavailable: true
+        }
+      ]
     }
     const latest = row(3, 'user', 'turn-b', 'Now edit B', 'row-3')
     latest.workflow_id = 'wf-target-b'
@@ -109,7 +116,13 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript).toMatchObject({ latestWorkflowId: 'wf-target-b' })
     expect(transcript).toMatchObject({
       userWorkflowReferences: new Map([
-        ['turn-a', [{ id: 'wf-reference', name: 'Reference' }]]
+        [
+          'turn-a',
+          [
+            { id: 'wf-reference', name: 'Reference' },
+            { id: 'wf-unavailable', name: 'My upscaler' }
+          ]
+        ]
       ])
     })
   })
