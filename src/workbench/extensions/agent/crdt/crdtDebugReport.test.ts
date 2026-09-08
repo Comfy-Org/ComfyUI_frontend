@@ -29,7 +29,11 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
-import { collectCrdtDebugReport } from './crdtDebugReport'
+import {
+  MAX_CRDT_EVENT_LOG_EXPORT_BYTES,
+  collectCrdtDebugReport,
+  formatCrdtEventLog
+} from './crdtDebugReport'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,
@@ -599,5 +603,25 @@ describe('collectCrdtDebugReport', () => {
     })
 
     expect(report).toContain('workflow omitted')
+  })
+})
+
+describe('formatCrdtEventLog', () => {
+  it('bounds a large diagnostic and marks the truncated output', () => {
+    const output = formatCrdtEventLog([
+      {
+        seq: 1,
+        at: 1,
+        kind: 'schema_error',
+        scope: 'doc',
+        level: 'warn',
+        detail: { message: 'x'.repeat(1_000_000) }
+      }
+    ])
+
+    expect(output).toContain('[CRDT event log truncated]')
+    expect(new TextEncoder().encode(output).byteLength).toBeLessThanOrEqual(
+      MAX_CRDT_EVENT_LOG_EXPORT_BYTES
+    )
   })
 })

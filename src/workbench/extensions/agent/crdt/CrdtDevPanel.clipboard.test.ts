@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { writeText } = vi.hoisted(() => ({
+const { reportError, writeText } = vi.hoisted(() => ({
+  reportError: vi.fn(),
   writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
 }))
 
@@ -10,16 +11,12 @@ vi.mock('@vueuse/core', async (importOriginal) => ({
   ...(await importOriginal()),
   useClipboard: () => ({ copy: writeText })
 }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
-import {
-  clearDevEvents,
-  devEvents,
-  recordDevEvent,
-  stringifyDevEvents
-} from './devPanelLog'
+import { clearDevEvents, recordDevEvent } from './devPanelLog'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -65,6 +62,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()
+    reportError.mockClear()
     writeText.mockClear()
     Object.defineProperty(window.navigator, 'clipboard', {
       configurable: true,
@@ -155,6 +153,9 @@ describe('CrdtDevPanel clipboard controls', () => {
       await userEvent.click(docButton)
 
       expect(writeText).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'crdt_dev_panel_clipboard_write_failed'
+      })
       expect(docButton).toHaveTextContent('Copy failed')
 
       await vi.advanceTimersByTimeAsync(1600)
@@ -178,9 +179,9 @@ describe('CrdtDevPanel clipboard controls', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith(
-      stringifyDevEvents(devEvents.value.filter((e) => e.kind === 'doc_update'))
-    )
+    expect(writeText).toHaveBeenCalledOnce()
+    expect(writeText.mock.calls[0][0]).toContain('doc_update')
+    expect(writeText.mock.calls[0][0]).not.toContain('doc_reset')
   })
 
   it('omits unavailable controls without writing', async () => {

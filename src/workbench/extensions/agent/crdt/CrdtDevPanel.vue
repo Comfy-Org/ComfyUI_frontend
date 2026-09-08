@@ -28,12 +28,11 @@ import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
-  EVENT_LOG_WARNING,
   collectCrdtDebugReport,
-  redactEventPayloads
+  formatCrdtEventLog
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
@@ -390,7 +389,10 @@ async function writeClipboard(text: string): Promise<boolean> {
   try {
     await copy(text)
     return true
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'crdt_dev_panel_clipboard_write_failed'
+    })
     return false
   }
 }
@@ -422,9 +424,7 @@ function flashReportCopyState(ok: boolean) {
 async function copyLog() {
   try {
     flashLogCopyState(
-      await writeClipboard(
-        `${EVENT_LOG_WARNING}\n\n${stringifyDevEvents(redactEventPayloads(matchingEvents.value))}`
-      )
+      await writeClipboard(formatCrdtEventLog(matchingEvents.value))
     )
   } catch {
     flashLogCopyState(false)

@@ -33,6 +33,7 @@ const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
+export const MAX_CRDT_EVENT_LOG_EXPORT_BYTES = 60_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SOURCE_TIMEOUT_MS = 5_000
@@ -53,8 +54,8 @@ const REDACTED = '[redacted by the debug report]'
 const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
 
-/** Heads the CRDT event log both in the report and in the panel's copied log. */
-export const EVENT_LOG_WARNING = `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`
+const EVENT_LOG_WARNING = `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`
+const EVENT_LOG_TRUNCATED = '[CRDT event log truncated]'
 
 /**
  * Redaction must RECURSE. A single top-level pass reads as sufficient and is
@@ -298,6 +299,30 @@ function truncate(text: string, max: number): string {
   return `…(${text.length - max} earlier characters trimmed)…\n${text.slice(-max)}`
 }
 
+export function formatCrdtEventLog(events: readonly DevEvent[]): string {
+  const prefix = `${EVENT_LOG_WARNING}\n\n\`\`\`json\n`
+  const suffix = '\n```'
+  const serialized = json(redactEventPayloads(events)).replaceAll(
+    '`',
+    '\\u0060'
+  )
+  const encoder = new TextEncoder()
+  const available =
+    MAX_CRDT_EVENT_LOG_EXPORT_BYTES -
+    encoder.encode(prefix).byteLength -
+    encoder.encode(suffix).byteLength
+  const serializedBytes = encoder.encode(serialized)
+  if (serializedBytes.byteLength <= available) {
+    return `${prefix}${serialized}${suffix}`
+  }
+  const marker = `${EVENT_LOG_TRUNCATED}\n`
+  const tailBytes = available - encoder.encode(marker).byteLength
+  let tailStart = serializedBytes.byteLength - tailBytes
+  while ((serializedBytes[tailStart] & 0xc0) === 0x80) tailStart++
+  const body = `${marker}${new TextDecoder().decode(serializedBytes.subarray(tailStart))}`
+  return `${prefix}${body}${suffix}`
+}
+
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
 
 /**
@@ -514,14 +539,7 @@ export async function collectCrdtDebugReport(
       : `_${stats.label} unavailable: ${stats.error}_`
   )
 
-  sections.push(
-    '## CRDT event log',
-    EVENT_LOG_WARNING,
-    fence(
-      'json',
-      truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
-    )
-  )
+  sections.push('## CRDT event log', formatCrdtEventLog(input.events))
 
   sections.push(
     '## Document stamps (LWW ledger)',
