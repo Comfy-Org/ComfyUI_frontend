@@ -40,7 +40,8 @@ const EXCLUDED_PAGES = new Set([
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
-  '/workshop' // build-gated; static public/llms.txt cannot vary by build shape
+  '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
+  '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
 
 const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([

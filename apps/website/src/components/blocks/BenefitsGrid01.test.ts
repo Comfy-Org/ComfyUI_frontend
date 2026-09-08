@@ -50,6 +50,20 @@ describe('BenefitsGrid01', () => {
     expect(screen.getAllByRole('link')).toHaveLength(1)
   })
 
+  it('renders the numbered eyebrow by default', () => {
+    renderBenefitsGrid()
+
+    expect(screen.getByText('01')).toBeTruthy()
+    expect(screen.getByText('02')).toBeTruthy()
+  })
+
+  it('omits the numbered eyebrow when hideNumbers is set', () => {
+    renderBenefitsGrid({ hideNumbers: true })
+
+    expect(screen.queryByText('01')).toBeNull()
+    expect(screen.queryByText('02')).toBeNull()
+  })
+
   it('renders both CTAs when a secondary CTA is provided', () => {
     renderBenefitsGrid({
       primaryCta: { label: 'VIEW DETAILS', href: '/details/' },
