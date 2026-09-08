@@ -109,6 +109,27 @@ describe('agentSubgraphHostSlots', () => {
     expect(index.get('sg-1')).toBe(first)
   })
 
+  it('treats duplicate declared input names as ambiguous', () => {
+    const base = definition()
+    const def: ExportedSubgraph = {
+      ...base,
+      inputs: [
+        ...(base.inputs ?? []),
+        { id: 'in-value-2', name: 'value', type: 'NUMBER' }
+      ]
+    }
+    expect(hostSlotIndex(def, 'value')).toBe(-1)
+    expect(hostSlotIndex(def, 'extra')).toBe(0)
+    const inputs = hostInputs(def, [{ name: 'value', type: 'NUMBER', link: 9 }])
+    expect(inputs.map((input) => input.name)).toEqual([
+      'extra',
+      'value',
+      'dangling',
+      'value'
+    ])
+    expect(inputs.map((input) => input.link)).toEqual([null, null, null, null])
+  })
+
   it('reports only inputs linked to a widget-bearing interior slot, in order', () => {
     expect(promotedWidgetNames(definition())).toEqual(['value'])
   })

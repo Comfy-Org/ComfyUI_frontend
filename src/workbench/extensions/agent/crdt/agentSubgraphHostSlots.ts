@@ -35,6 +35,20 @@ export function indexSubgraphDefinitions(
 }
 
 /**
+ * Declared input names that appear more than once. A repeated name cannot be
+ * resolved to a single host slot, so callers treat it as undeclared.
+ */
+function ambiguousInputNames(definition: ExportedSubgraph): Set<string> {
+  const seen = new Set<string>()
+  const ambiguous = new Set<string>()
+  for (const input of definition.inputs ?? []) {
+    if (seen.has(input.name)) ambiguous.add(input.name)
+    seen.add(input.name)
+  }
+  return ambiguous
+}
+
+/**
  * Names of the subgraph inputs that surface a widget on the host, in host
  * slot order. An input is promoted when one of its links lands on an interior
  * node input that carries a `widget` reference (see
@@ -62,15 +76,19 @@ export function promotedWidgetNames(definition: ExportedSubgraph): string[] {
 /**
  * The host's full input slot list in definition order, with `link` taken
  * from whatever slots the doc does carry (matched by name). Declared inputs
- * the doc omits are unlinked.
+ * the doc omits, and inputs whose name is declared more than once, are
+ * unlinked.
  */
 export function hostInputs(
   definition: ExportedSubgraph,
   docInputs: readonly ISerialisableNodeInput[]
 ): ISerialisableNodeInput[] {
+  const ambiguous = ambiguousInputNames(definition)
   const docByName = new Map(docInputs.map((input) => [input.name, input]))
   return (definition.inputs ?? []).map((input) => {
-    const fromDoc = docByName.get(input.name)
+    const fromDoc = ambiguous.has(input.name)
+      ? undefined
+      : docByName.get(input.name)
     return {
       ...fromDoc,
       name: input.name,
@@ -80,10 +98,14 @@ export function hostInputs(
   })
 }
 
-/** Index of the named input in definition order, or -1 when undeclared. */
+/**
+ * Index of the named input in definition order, or -1 when the name is
+ * undeclared or declared more than once.
+ */
 export function hostSlotIndex(
   definition: ExportedSubgraph,
   name: string
 ): number {
+  if (ambiguousInputNames(definition).has(name)) return -1
   return (definition.inputs ?? []).findIndex((input) => input.name === name)
 }
