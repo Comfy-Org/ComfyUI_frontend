@@ -281,7 +281,7 @@ describe('OutputHistory', () => {
       await nextTick()
 
       expect(screen.getByTestId('output-history-item')).toHaveTextContent(
-        output.filename ?? ''
+        output.filename
       )
     })
 
