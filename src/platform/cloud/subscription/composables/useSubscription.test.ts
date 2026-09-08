@@ -648,6 +648,38 @@ describe('useSubscription', () => {
       })
     })
 
+    it('separates an unreachable billing API from a missing completion', async () => {
+      vi.useFakeTimers()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-offline',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockRejectedValue(new Error('offline'))
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_recovery_unreachable',
+          tags: expect.objectContaining({
+            failure_kind: 'degraded',
+            outcome: 'failed'
+          })
+        })
+      )
+    })
+
     it('does not report a missing completion after recovery succeeds', async () => {
       vi.useFakeTimers()
       localStorage.setItem(

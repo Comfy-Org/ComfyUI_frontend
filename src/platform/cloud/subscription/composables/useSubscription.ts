@@ -140,6 +140,7 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
   let hasReportedPendingCheckoutRecoveryExhaustion = false
+  let didLastRecoveryAttemptThrow = false
 
   const stopPendingCheckoutRecovery = () => {
     if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
@@ -149,6 +150,7 @@ function useSubscriptionInternal() {
     pendingCheckoutRecoveryTimeout = null
     pendingCheckoutRecoveryAttempt = 0
     hasReportedPendingCheckoutRecoveryExhaustion = false
+    didLastRecoveryAttemptThrow = false
   }
 
   const reportMissingCheckoutCompletion = () => {
@@ -167,14 +169,22 @@ function useSubscriptionInternal() {
     }
 
     reportTelemetryError(
-      new Error('Pending subscription checkout recovery timed out'),
+      new Error(
+        didLastRecoveryAttemptThrow
+          ? 'Pending subscription checkout recovery could not reach billing'
+          : 'Pending subscription checkout recovery timed out'
+      ),
       {
-        errorType: 'cloud_checkout_completion_missing',
+        errorType: didLastRecoveryAttemptThrow
+          ? 'cloud_checkout_recovery_unreachable'
+          : 'cloud_checkout_completion_missing',
         tags: {
-          failure_kind: 'missing_event',
+          failure_kind: didLastRecoveryAttemptThrow
+            ? 'degraded'
+            : 'missing_event',
           feature_area: 'cloud',
           operation: 'sync',
-          outcome: 'timed_out',
+          outcome: didLastRecoveryAttemptThrow ? 'failed' : 'timed_out',
           assert_mode: 'soft'
         },
         context: {
@@ -388,11 +398,13 @@ function useSubscriptionInternal() {
 
     try {
       await fetchSubscriptionStatus()
+      didLastRecoveryAttemptThrow = false
     } catch (error) {
       console.error(
         `[Subscription] Failed to recover pending checkout on ${source}:`,
         error
       )
+      didLastRecoveryAttemptThrow = true
       schedulePendingCheckoutRecovery()
     } finally {
       isRecoveringPendingCheckout = false
