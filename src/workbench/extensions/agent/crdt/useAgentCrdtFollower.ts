@@ -784,11 +784,12 @@ export function useAgentCrdtFollower(
       status: status.value,
       tabId,
       lastSeq: bridge.lastSequence,
-      schemaError: bridge.lastSchemaError?.message ?? null
+      lastBridgeSchemaError: bridge.lastSchemaError?.message ?? null
     })
 
   return {
     status: readonly(status),
+    schemaErrorState: readonly(schemaError),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)

@@ -57,7 +57,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   },
   tabId: 'tab-1',
   lastSeq: 7,
-  schemaError: null,
+  lastBridgeSchemaError: null,
   meta: { schema_version: 1 },
   nodeIds: ['A', 'B'],
   linkIds: ['1'],

@@ -62,8 +62,12 @@ const ws = vi.hoisted(() => {
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
   }
+  const emitCustom = (type: string, detail?: unknown): void => {
+    for (const listener of listeners.get(type) ?? [])
+      listener(new CustomEvent(type, { detail }))
+  }
   const clear = (): void => listeners.clear()
-  return { add, remove, emit, clear }
+  return { add, remove, emit, emitCustom, clear }
 })
 
 vi.mock('@/scripts/api', () => ({
@@ -2051,6 +2055,65 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     return bodies
   }
+
+  it('adds one localized toast per schema error event', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    i18n.global.mergeLocaleMessage('fr', {
+      agent: {
+        schemaMismatch: 'Version du workflow incompatible',
+        schemaMismatchDetail: 'Version du document incompatible'
+      }
+    })
+    i18n.global.locale.value = 'en'
+    await renderAndSend('start workflow')
+    const toast = useToastStore()
+    await nextTick()
+
+    ws.emitCustom('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch'
+    })
+    await nextTick()
+
+    expect(toast.messagesToAdd).toEqual([
+      expect.objectContaining({
+        summary: 'Workflow version mismatch',
+        detail: 'Document schema version mismatch'
+      })
+    ])
+
+    i18n.global.locale.value = 'fr'
+    await nextTick()
+    expect(toast.messagesToAdd).toHaveLength(1)
+
+    const nextTab = addTab('workflows/next.json')
+    useAgentWorkflowTabBindingStore().bind('wf-43', nextTab.path)
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-43',
+      thread_id: 'th-1'
+    })
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(nextTab)
+    )
+
+    ws.emitCustom('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-43',
+      ok: false,
+      code: 'schema_version_mismatch'
+    })
+    await nextTick()
+
+    expect(toast.messagesToAdd).toHaveLength(2)
+    expect(toast.messagesToAdd[1]).toMatchObject({
+      summary: 'Version du workflow incompatible',
+      detail: 'Version du document incompatible'
+    })
+    i18n.global.locale.value = 'en'
+  })
 
   it('names the active workflow in the selector', async () => {
     makeTab('wf-42')

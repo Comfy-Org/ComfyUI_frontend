@@ -454,6 +454,7 @@ const isBoundWorkflowActive = computed(() => {
 // workflow's serialized activeState has hydrated the transient stores.
 const {
   status: crdtStatus,
+  schemaErrorState,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
@@ -467,17 +468,17 @@ const {
   () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
   computed(() => t('agent.schemaMismatchDetail'))
 )
-watch(
-  () => crdtStatus.value.schemaError,
-  (detail) => {
-    if (detail !== null)
-      toast.add({
-        severity: 'warn',
-        summary: t('agent.schemaMismatch'),
-        detail
-      })
-  }
-)
+watch(schemaErrorState, (error) => {
+  if (error !== null)
+    toast.add({
+      severity: 'warn',
+      summary: t('agent.schemaMismatch'),
+      detail:
+        error.kind === 'message'
+          ? error.message
+          : t('agent.schemaMismatchDetail')
+    })
+})
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,

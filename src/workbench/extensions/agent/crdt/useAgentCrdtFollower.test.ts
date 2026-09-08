@@ -254,7 +254,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('does not retry a permanent schema mismatch and exposes its detail', () => {
-    vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
 
     dispatchFrame('doc_subscribed', {
@@ -355,7 +354,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a re-ack of a gated, still-unreadable doc neither reports connected nor re-arms the stale probe', () => {
-    vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
     dispatchFrame('schema_error', {
@@ -431,7 +429,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('falls back to a default message when a schema_version_mismatch detail has no string message', () => {
-    vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
 
     dispatchFrame('doc_subscribed', {

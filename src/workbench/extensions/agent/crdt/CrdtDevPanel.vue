@@ -250,7 +250,7 @@ const docRows = computed<readonly (readonly [string, string])[]>(() => {
   const state = docState.value
   if (!state) return [['document', S.none]] as const
   return [
-    ['schema error', state.schemaError ?? S.none],
+    ['schema error', state.lastBridgeSchemaError ?? S.none],
     ['schema version', String(state.meta.schema_version ?? S.none)],
     ['last seq', state.lastSeq === null ? S.none : String(state.lastSeq)],
     ['tab id', state.tabId ?? S.none],
@@ -455,7 +455,7 @@ function fallbackSnapshot(): CrdtDebugSnapshot {
     status,
     tabId: null,
     lastSeq: null,
-    schemaError: null,
+    lastBridgeSchemaError: null,
     meta: {},
     nodeIds: [],
     linkIds: [],
