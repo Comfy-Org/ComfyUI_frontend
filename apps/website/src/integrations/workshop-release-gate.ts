@@ -7,7 +7,7 @@ import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
-import { isWorkshopInBuild } from '../config/workshop-release'
+import { isWorkshopInBuild, isWorkshopRoute } from '../config/workshop-release'
 
 /**
  * Keeps Workshop out of a release build.
@@ -34,19 +34,18 @@ export function workshopReleaseGate(): AstroIntegration {
       'astro:build:done': async ({ dir, pages, logger }) => {
         if (isWorkshopInBuild()) return
 
-        const built = pages.filter(
-          (page) =>
-            page.pathname === 'workshop' ||
-            page.pathname.startsWith('workshop/')
+        const built = pages.filter((page) =>
+          isWorkshopRoute(`/${page.pathname}`)
         ).length
 
         const root = fileURLToPath(dir)
-        await rm(join(root, 'workshop'), { recursive: true, force: true })
+        const workshopOutput = join(root, 'workshop')
+        await rm(workshopOutput, { recursive: true, force: true })
 
         // The whole point of this integration is that nothing ships. If the
         // directory is somehow still there, fail the build rather than let a
         // release go out with it.
-        if (existsSync(join(root, 'workshop'))) {
+        if (existsSync(workshopOutput)) {
           throw new Error(
             'workshop-release-gate could not remove the Workshop output; refusing to ship it.'
           )
