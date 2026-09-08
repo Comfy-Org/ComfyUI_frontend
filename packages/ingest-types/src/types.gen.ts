@@ -807,6 +807,20 @@ export type SubscribeRequest = {
    */
   cancel_url?: string
   /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
    * Explicit consent to reactivate a subscription that is currently
    * scheduled to cancel at period end. Set to true when the caller has
    * confirmed this with the user; omitting it (or sending false) while
@@ -884,6 +898,36 @@ export type SubscribeRequest = {
    *
    */
   team_credit_stop_id?: string
+}
+
+/**
+ * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ */
+export type StoredAgentConsentSetting = AgentConsentSettingValue &
+  GlobalSettingUpdatedAt
+
+/**
+ * The last-changed timestamp every stored setting carries.
+ */
+export type GlobalSettingUpdatedAt = {
+  /**
+   * When this value was last changed. A write that stores the value already present changes nothing and leaves this alone.
+   */
+  updated_at: string
+}
+
+/**
+ * Consent to the in-app Agent panel. `true` is the only value that can be written — consent is revoked by DELETE, not by writing `false`, so the audit trail records a revocation rather than a value flip.
+ */
+export type AgentConsentSettingValue = {
+  /**
+   * Discriminator selecting this member of GlobalSettingValue.
+   */
+  key: 'Comfy.AgentPanel.ConsentAccepted'
+  /**
+   * Always `true`; see the schema description.
+   */
+  value: true
 }
 
 /**
@@ -968,6 +1012,24 @@ export type SecretProvider = {
  */
 export type SecretListResponse = {
   data: Array<SecretResponse>
+}
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export type ScheduledPlanChange = {
+  /**
+   * Billing boundary when the destination plan takes effect
+   */
+  effective_at: string
+  /**
+   * Destination plan identifier
+   */
+  plan_slug: string
+  /**
+   * Destination Team credit stop. Null for personal plans and legacy Team plans without a credit stop.
+   */
+  team_credit_stop: TeamCreditStopSummary | null
 }
 
 export type SavedPaymentMethod = {
@@ -1439,6 +1501,20 @@ export type PreviewPlanInfo = {
  * Request body for previewing the cost of a plan subscription change.
  */
 export type PreviewSubscribeRequest = {
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
   /**
    * Target plan slug to preview subscribing to
    */
@@ -3046,6 +3122,25 @@ export type GlobalSubgraphData = {
 }
 
 /**
+ * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
+ */
+export type GlobalSettingValue = {
+  key: 'Comfy.AgentPanel.ConsentAccepted'
+} & AgentConsentSettingValue
+
+/**
+ * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
+ */
+export type GlobalSettingKey = 'Comfy.AgentPanel.ConsentAccepted'
+
+/**
+ * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
+ */
+export type GlobalSetting = {
+  key: 'Comfy.AgentPanel.ConsentAccepted'
+} & StoredAgentConsentSetting
+
+/**
  * Individual file entry within a full user data response.
  */
 export type GetUserDataResponseFullFile = {
@@ -3419,6 +3514,20 @@ export type CreateTopupRequest = {
    */
   amount_cents: number
   /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before ingest
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
    * Client-provided key to prevent duplicate operations.
    * If a billing op with this key already exists, returns the existing op instead of creating a new one.
    *
@@ -3649,6 +3758,10 @@ export type BillingStatusResponse = {
    * When the current billing period ends and the next one begins
    */
   renewal_date?: string
+  /**
+   * The authoritative successor scheduled for the current Stripe subscription. Always present; null when no valid scheduled plan transition exists.
+   */
+  scheduled_change: ScheduledPlanChange | null
   subscription_duration?: SubscriptionDuration
   /**
    * Subscription activity status (scheduled subscriptions are not returned)
@@ -4296,6 +4409,37 @@ export type AgentPostMessageRequest = {
 }
 
 /**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ */
+export type AgentPendingAsk = {
+  /**
+   * When true the UI offers a free-text answer, returned as other_text.
+   */
+  allow_other: boolean
+  ask_id: string
+  /**
+   * Kind-specific renderer payload. For `run_approval`: `workflow_id`, and `workflow_name` when the workflow's display name is known. Omitted for `ask_user`. Carries ids and a display name, never the user's prose.
+   */
+  context?: {
+    [key: string]: unknown
+  }
+  /**
+   * Which UI renders the ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text, with the workflow named in `context`. Same value as the agent_ask event's `kind`, so a reload rehydrates the identical widget.
+   */
+  kind: 'ask_user' | 'run_approval'
+  max_selections: number
+  message_id: string
+  min_selections: number
+  /**
+   * Selectable options, each with an `id` and a `label`.
+   */
+  options: Array<{
+    [key: string]: unknown
+  }>
+  prompt: string
+}
+
+/**
  * A persisted message in an agent thread.
  */
 export type AgentMessage = {
@@ -4306,6 +4450,7 @@ export type AgentMessage = {
     [key: string]: unknown
   }
   id: string
+  pending_ask?: AgentPendingAsk
   role: 'user' | 'assistant' | 'tool' | 'system'
   /**
    * Monotonic ordering within the thread.
@@ -4738,6 +4883,54 @@ export type AgentGetDraftResponses = {
 export type AgentGetDraftResponse =
   AgentGetDraftResponses[keyof AgentGetDraftResponses]
 
+export type AgentLlmMessagesData = {
+  /**
+   * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/messages'
+}
+
+export type AgentLlmMessagesErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The pre-turn admission gate declined the turn for a payment reason: the workspace is out of credits or has been blocked. Not retryable as-is — resolve the account condition first.
+   */
+  402: AgentAdmissionError
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). The feature is kept invisible when off, so ingest returns 404 rather than 403.
+   */
+  404: ErrorResponse
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmMessagesError =
+  AgentLlmMessagesErrors[keyof AgentLlmMessagesErrors]
+
+export type AgentLlmMessagesResponses = {
+  /**
+   * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
+   */
+  200: string
+}
+
+export type AgentLlmMessagesResponse =
+  AgentLlmMessagesResponses[keyof AgentLlmMessagesResponses]
+
 export type AgentGetRunModeData = {
   body?: never
   path?: never
@@ -4845,6 +5038,10 @@ export type AgentListSkillsErrors = {
    */
   401: ErrorResponse
   /**
+   * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
+  /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
   500: AgentError
@@ -4887,6 +5084,10 @@ export type AgentPublishSkillErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * The caller is not enrolled in the cohort gate fronting these CRUD routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
   /**
    * A per-user budget is full — the pack count, or the combined size of the caller's packs. Nothing about this pack can be edited to make it fit; another pack has to be deleted first.
    */
@@ -4948,7 +5149,7 @@ export type AgentDeleteSkillErrors = {
    */
   401: ErrorResponse
   /**
-   * The caller holds no pack with that name.
+   * The caller holds no pack with that name, or the caller is not enrolled in the cohort gate fronting these CRUD routes (the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface). Both flags default off and fail closed, and both answer 404 rather than 403 so the surface is invisible when off. The schema below is the agent-raised no-such-pack body; the gate-off 404 is ingest-raised and uses the standard ErrorResponse shape instead.
    */
   404: AgentError
   /**
@@ -5072,6 +5273,10 @@ export type AgentAnswerAskData = {
     id: string
     /**
      * Ask ID (from the agent_ask event or the message list's pending_ask).
+     * The same event/row also carries `kind` (ask_user | run_approval),
+     * which selects the widget, and, for run_approval, a `context` naming
+     * the workflow.
+     *
      */
     ask_id: string
   }
@@ -7546,6 +7751,153 @@ export type FreeMemoryResponses = {
    */
   200: unknown
 }
+
+export type SetGlobalSettingData = {
+  body: GlobalSettingValue
+  path?: never
+  query?: never
+  url: '/api/global-settings'
+}
+
+export type SetGlobalSettingErrors = {
+  /**
+   * Unregistered key, or a value the registry validator rejected
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The principal is not a user actor with a workspace, or the registry
+   * forbids this authentication method for this key.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * Request body exceeds 8 KiB. Enforced by the server's body-limit
+   * middleware ahead of the handler, so the registry never sees the
+   * value and the status stays 413 rather than being remapped to 400.
+   * The service's error handler still renders it into the same
+   * `{code, message}` envelope as the other failures, with code
+   * `PAYLOAD_TOO_LARGE`.
+   *
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type SetGlobalSettingError =
+  SetGlobalSettingErrors[keyof SetGlobalSettingErrors]
+
+export type SetGlobalSettingResponses = {
+  /**
+   * Setting stored
+   */
+  200: GlobalSetting
+}
+
+export type SetGlobalSettingResponse =
+  SetGlobalSettingResponses[keyof SetGlobalSettingResponses]
+
+export type DeleteGlobalSettingData = {
+  body?: never
+  path: {
+    /**
+     * Registered setting key to unset
+     */
+    key: GlobalSettingKey
+  }
+  query?: never
+  url: '/api/global-settings/{key}'
+}
+
+export type DeleteGlobalSettingErrors = {
+  /**
+   * Key is not in the server registry, or does not support delete
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The principal is not a user actor with a workspace
+   */
+  403: ErrorResponse
+  /**
+   * Key is registered but unset for this user and workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type DeleteGlobalSettingError =
+  DeleteGlobalSettingErrors[keyof DeleteGlobalSettingErrors]
+
+export type DeleteGlobalSettingResponses = {
+  /**
+   * Setting unset
+   */
+  204: void
+}
+
+export type DeleteGlobalSettingResponse =
+  DeleteGlobalSettingResponses[keyof DeleteGlobalSettingResponses]
+
+export type GetGlobalSettingData = {
+  body?: never
+  path: {
+    /**
+     * Registered setting key to read
+     */
+    key: GlobalSettingKey
+  }
+  query?: never
+  url: '/api/global-settings/{key}'
+}
+
+export type GetGlobalSettingErrors = {
+  /**
+   * Key is not in the server registry
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The principal is not a user actor with a workspace
+   */
+  403: ErrorResponse
+  /**
+   * Key is registered but unset for this user and workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetGlobalSettingError =
+  GetGlobalSettingErrors[keyof GetGlobalSettingErrors]
+
+export type GetGlobalSettingResponses = {
+  /**
+   * Success
+   */
+  200: GlobalSetting
+}
+
+export type GetGlobalSettingResponse =
+  GetGlobalSettingResponses[keyof GetGlobalSettingResponses]
 
 export type GetGlobalSubgraphsData = {
   body?: never

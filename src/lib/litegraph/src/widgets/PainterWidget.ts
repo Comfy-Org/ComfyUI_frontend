@@ -10,8 +10,6 @@ export class PainterWidget
   extends BaseWidget<IPainterWidget>
   implements IPainterWidget
 {
-  override type = 'painter' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'Painter')
   }

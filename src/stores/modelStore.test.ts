@@ -19,25 +19,31 @@ const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
 )
 
-vi.mock('@/platform/distribution/types', () => mockDistribution)
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistribution
+)
 
 const remoteConfigHolder = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   return { current: ref<RemoteConfig>({}) }
 })
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async (importOriginal) => ({
-  ...(await importOriginal<typeof RemoteConfigModule>()),
-  get remoteConfig() {
-    return remoteConfigHolder.current
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/remoteConfig/remoteConfig'),
+  async (importOriginal) => ({
+    ...(await importOriginal<typeof RemoteConfigModule>()),
+    get remoteConfig() {
+      return remoteConfigHolder.current
+    }
+  })
+)
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
@@ -54,7 +60,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the assetService
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
@@ -63,7 +69,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: vi.fn(() => false) })
 }))
 
