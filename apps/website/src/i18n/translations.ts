@@ -8513,6 +8513,7 @@ Enterprise`
     'zh-CN': '搜索模型、提供商、分类...'
   },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
+  'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
   'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
   'workshop.search.more': { en: '+ {n} more', 'zh-CN': '+ {n} 个' },
   'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },

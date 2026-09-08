@@ -317,7 +317,8 @@ const filteredTemplates = computed(() => {
               v-model:capabilities="capabilities"
               :models="workshopModels"
               :locale
-              class="w-full min-w-40 flex-1"
+              compact
+              class="max-sm:size-10 max-sm:flex-none sm:w-full sm:min-w-40 sm:flex-1"
             />
           </template>
 

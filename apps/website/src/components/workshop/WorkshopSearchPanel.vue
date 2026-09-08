@@ -13,12 +13,16 @@ const {
   query,
   providers,
   capabilities,
+  variant = 'dropdown',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
   query: string
   providers: readonly string[]
   capabilities: readonly string[]
+  /** On a phone the same panel fills the screen instead of hanging off a
+   * field. */
+  variant?: 'dropdown' | 'sheet'
   locale?: Locale
 }>()
 
@@ -107,7 +111,14 @@ const chipClass = (selected: boolean) =>
 
 <template>
   <div
-    class="bg-page absolute inset-x-0 top-full z-30 mt-2 flex flex-col gap-5 rounded-2xl border border-transparency-white-t20 p-4 shadow-lg"
+    :class="
+      cn(
+        'bg-page flex flex-col gap-5 p-4',
+        variant === 'sheet'
+          ? 'flex-1 overflow-y-auto'
+          : 'absolute inset-x-0 top-full z-30 mt-2 rounded-2xl border border-transparency-white-t20 shadow-lg'
+      )
+    "
     data-testid="workshop-search-panel"
   >
     <section v-if="popular.length" class="flex flex-col gap-2">
