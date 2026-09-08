@@ -18,6 +18,7 @@
 import { datadogRum } from '@datadog/browser-rum'
 import { addBreadcrumb } from '@sentry/vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
 export interface PerfSpan {
@@ -39,6 +40,23 @@ const NOOP_PERF_SPAN: PerfSpan = {
  * handing it over rather than emitting a warning per phase per page load.
  */
 const toRumTimingName = (name: string) => name.replace(/\//g, '.')
+
+let rumFailureReported = false
+
+/**
+ * A throwing RUM call means startup telemetry is silently absent, which is the
+ * failure mode that let an entirely dead sink ship unnoticed. Report it — but
+ * once: a broken SDK would otherwise raise one report per phase per load, and
+ * `reportError` reaches the same sink that just failed.
+ */
+function reportRumFailure(error: unknown, operation: string): void {
+  if (rumFailureReported) return
+  rumFailureReported = true
+  reportError(error, {
+    errorType: 'failure_publishing_startup_telemetry',
+    tags: { operation }
+  })
+}
 
 /**
  * Begin a named performance span.
@@ -121,8 +139,8 @@ function _measure(
 function _emitToRum(name: string): void {
   try {
     datadogRum.addTiming(toRumTimingName(name))
-  } catch {
-    // never break the app for telemetry
+  } catch (error) {
+    reportRumFailure(error, 'add_timing')
   }
 }
 
@@ -145,8 +163,8 @@ export function reportBootstrapToRum(
 ): void {
   try {
     datadogRum.addAction(eventName, metadata)
-  } catch {
-    // never break the app for telemetry
+  } catch (error) {
+    reportRumFailure(error, 'add_action')
   }
 }
 
@@ -161,8 +179,8 @@ export function reportBootstrapToRum(
 export function markViewLoaded(): void {
   try {
     datadogRum.setViewLoadingTime()
-  } catch {
-    // never break the app for telemetry
+  } catch (error) {
+    reportRumFailure(error, 'set_view_loading_time')
   }
 }
 
