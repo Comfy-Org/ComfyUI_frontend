@@ -174,7 +174,7 @@ export const externalLinks = {
   platformUsage: 'https://platform.comfy.org/profile/usage',
   pricing: 'https://comfy.org/pricing',
   reddit: 'https://www.reddit.com/r/comfyui/',
-  support: 'https://support.comfy.org/hc/en-us',
+  support: 'https://support.comfy.org/',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',

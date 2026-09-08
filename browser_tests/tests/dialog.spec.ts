@@ -103,14 +103,12 @@ test.describe('Settings', () => {
 })
 
 test.describe('Support', () => {
-  test('Should open external zendesk link with OSS tag', async ({
-    comfyPage
-  }) => {
+  test('Should open the external Pylon support form', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     // Prevent loading the external page
     await comfyPage.page
       .context()
-      .route('https://support.comfy.org/**', (route) =>
+      .route('https://comfy-org.portal.usepylon.com/**', (route) =>
         route.fulfill({ body: '<html></html>', contentType: 'text/html' })
       )
 
@@ -119,8 +117,8 @@ test.describe('Support', () => {
     const popup = await popupPromise
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('support.comfy.org')
-    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+    expect(url.hostname).toBe('comfy-org.portal.usepylon.com')
+    expect(url.pathname).toBe('/forms/question')
 
     await popup.close()
   })

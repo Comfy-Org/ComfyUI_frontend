@@ -1,18 +1,4 @@
-import { isCloud, isNightly } from '@/platform/distribution/types'
-
-/**
- * Zendesk ticket form field IDs.
- */
-const ZENDESK_FIELDS = {
-  /** Distribution tag (cloud vs OSS) */
-  DISTRIBUTION: 'tf_42243568391700',
-  /** User email (anonymous requester) */
-  ANONYMOUS_EMAIL: 'tf_anonymous_requester_email',
-  /** User email (authenticated) */
-  EMAIL: 'tf_40029135130388',
-  /** User ID */
-  USER_ID: 'tf_42515251051412'
-} as const
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 
 /**
  * Gets the distribution identifier for tracking.
@@ -24,7 +10,21 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
   return 'oss'
 }
 
-const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
+const SUPPORT_BASE_URL = 'https://comfy-org.portal.usepylon.com/forms/question'
+
+/**
+ * Separate from `getDistribution()`, whose tags feed feedback segmentation.
+ * The bridge check is load-bearing, not redundant: the shipping Desktop app
+ * loads the ordinary `dist.zip`, so `isDesktop` is false there.
+ */
+function getPylonComfyEnvironment():
+  | 'comfy_cloud'
+  | 'comfy_desktop_install'
+  | 'local_comfyui_oss' {
+  if (isCloud) return 'comfy_cloud'
+  if (isDesktop || !!window.__comfyDesktop2) return 'comfy_desktop_install'
+  return 'local_comfyui_oss'
+}
 
 export type FeedbackSource = 'topbar' | 'action-bar' | 'help-center'
 
@@ -60,27 +60,21 @@ export function buildFeedbackHiddenFields(
 }
 
 /**
- * Builds the support URL with optional user information for pre-filling.
- * Users without login information will still get a valid support URL without pre-fill.
- *
- * @param params - User information to pre-fill in the support form
- * @returns Complete Zendesk support URL with query parameters
+ * Builds the Pylon support form URL. Pylon prefills a field from a query
+ * parameter keyed by that field's slug, so signed-in users get their name and
+ * email filled in and every ticket carries the running Comfy environment.
  */
 export function buildSupportUrl(params?: {
   userEmail?: string | null
-  userId?: string | null
+  userDisplayName?: string | null
 }): string {
   const searchParams = new URLSearchParams({
-    [ZENDESK_FIELDS.DISTRIBUTION]: getDistribution()
+    comfy_environment: getPylonComfyEnvironment()
   })
 
-  if (params?.userEmail) {
-    searchParams.append(ZENDESK_FIELDS.ANONYMOUS_EMAIL, params.userEmail)
-    searchParams.append(ZENDESK_FIELDS.EMAIL, params.userEmail)
-  }
-  if (params?.userId) {
-    searchParams.append(ZENDESK_FIELDS.USER_ID, params.userId)
-  }
+  if (params?.userDisplayName)
+    searchParams.append('name', params.userDisplayName)
+  if (params?.userEmail) searchParams.append('email', params.userEmail)
 
   return `${SUPPORT_BASE_URL}?${searchParams.toString()}`
 }

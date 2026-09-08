@@ -100,6 +100,21 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
   }
 }))
 
+const mockCurrentUser = vi.hoisted(() => ({
+  userEmail: null as string | null,
+  userDisplayName: null as string | null
+}))
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    get userEmail() {
+      return ref(mockCurrentUser.userEmail)
+    },
+    get userDisplayName() {
+      return ref(mockCurrentUser.userDisplayName)
+    }
+  })
+}))
+
 const mockMissingModelStoreRefresh = vi.hoisted(() =>
   vi.fn().mockResolvedValue(undefined)
 )
@@ -840,6 +855,21 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
+    })
+
+    it('Comfy.ContactSupport forwards the signed-in identity into the support form', async () => {
+      mockCurrentUser.userEmail = 'ada@example.com'
+      mockCurrentUser.userDisplayName = 'Ada Lovelace'
+      try {
+        await findCmd('Comfy.ContactSupport').function()
+
+        const openedUrl = new URL(String(openSpy.mock.calls[0]?.[0]))
+        expect(openedUrl.searchParams.get('email')).toBe('ada@example.com')
+        expect(openedUrl.searchParams.get('name')).toBe('Ada Lovelace')
+      } finally {
+        mockCurrentUser.userEmail = null
+        mockCurrentUser.userDisplayName = null
+      }
     })
   })
 
