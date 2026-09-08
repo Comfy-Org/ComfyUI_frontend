@@ -125,7 +125,19 @@ describe('the localized-sitemap build hook', () => {
   })
 
   it('says so when the sitemap already lists everything', async () => {
-    await writeFile(join(root, 'sitemap-0.xml'), EMPTY_SITEMAP, 'utf8')
+    // A built page that IS listed, not an empty site. With no pages at all this
+    // passes even when page discovery is broken, which is the one thing the
+    // test is here to catch.
+    const loc = `${ORIGIN}/zh-CN/customers/example/`
+    await writeFile(
+      join(root, 'sitemap-0.xml'),
+      EMPTY_SITEMAP.replace(
+        '</urlset>',
+        `<url><loc>${loc}</loc></url></urlset>`
+      ),
+      'utf8'
+    )
+    await page('zh-CN/customers/example')
 
     await run()
 

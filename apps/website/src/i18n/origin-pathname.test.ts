@@ -17,10 +17,15 @@ function astroFiles(dir: string, acc: string[] = []): string[] {
 
 /** Comments describe the trap; only real code can fall into it. */
 function withoutComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/[^\n]*$/gm, '')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  return (
+    source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/[^\n]*$/gm, '')
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      // .astro also allows plain HTML comments, and the trap below is worth
+      // describing in one. Without this, documenting it would fail the guard.
+      .replace(/<!--[\s\S]*?-->/g, '')
+  )
 }
 
 /**

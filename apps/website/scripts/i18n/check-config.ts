@@ -40,8 +40,10 @@ function main(): void {
 
   // 3. A short preserve term matches inside ordinary words. `Wan` is a video
   //    model and also the first three letters of `Want`, which made 51 real
-  //    strings impossible to validate. The check is word-boundary aware now, but
-  //    a one- or two-character term would still be far too blunt.
+  //    strings impossible to validate. Matching is word-boundary aware now, so
+  //    a two-character term is safe — `AI`, `H3`, `T5` and `TB` are all real
+  //    terms and none of them can match inside a word. A single character
+  //    cannot carry meaning as a term and is rejected.
   const terms = preserveTerms()
   const tooShort = terms.filter((term) => term.trim().length < 2)
   if (tooShort.length > 0) {
