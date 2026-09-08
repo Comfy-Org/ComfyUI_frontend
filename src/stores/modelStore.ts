@@ -298,7 +298,7 @@ export const useModelStore = defineStore('models', () => {
    * all-registered-folders view.
    */
   const visibleModelFolders = computed<ModelFolder[]>(() =>
-    usesAssetApi()
+    flags.assetsEnabled
       ? modelFolders.value.filter(
           (folder) =>
             folder.state !== ResourceState.Loaded ||
@@ -307,17 +307,8 @@ export const useModelStore = defineStore('models', () => {
       : modelFolders.value
   )
 
-  /**
-   * Whether model contents come from the asset API. Follows the backend
-   * assets capability flag; assetService.isWidgetAssetPickerEnabled()
-   * separately hard-gates widget surfaces to cloud.
-   */
-  function usesAssetApi(): boolean {
-    return flags.assetsEnabled
-  }
-
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
-    return usesAssetApi()
+    return flags.assetsEnabled
       ? (folder) => assetService.getAssetModels(folder)
       : (folder) => api.getModels(folder)
   }
@@ -359,7 +350,7 @@ export const useModelStore = defineStore('models', () => {
         getModelsFunc,
         // Display filtering applies to the asset walk only; the legacy
         // listing keeps its historical server-side (global-set) filtering.
-        usesAssetApi() ? effectiveModelExtensions(folder.extensions) : []
+        flags.assetsEnabled ? effectiveModelExtensions(folder.extensions) : []
       )
     }
     return { requestId, names: resData.map((folder) => folder.name), folders }
@@ -485,7 +476,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function requestModelScan() {
     if (isCloud) return
-    if (!usesAssetApi()) return
+    if (!flags.assetsEnabled) return
     try {
       await assetService.seedModelAssets()
     } catch (error) {
@@ -557,7 +548,7 @@ export const useModelStore = defineStore('models', () => {
   watch(
     () => flags.supportsModelTypeTags,
     () =>
-      usesAssetApi() &&
+      flags.assetsEnabled &&
       reloadModels().catch((error) => {
         console.error(
           'Failed to reload the model library after a capability change',

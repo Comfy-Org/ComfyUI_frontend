@@ -11,7 +11,7 @@
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
       <Button
-        v-if="!usesAssetApi"
+        v-if="!flags.assetsEnabled"
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
@@ -96,7 +96,6 @@ const settingStore = useSettingStore()
 const toastStore = useToastStore()
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
-const usesAssetApi = computed(() => flags.assetsEnabled)
 const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
@@ -277,20 +276,19 @@ onMounted(async () => {
   // loading is cheap and keeps search and folder badges complete from the
   // start; AutoLoadAll remains the opt-in for the request-per-folder legacy path.
   if (
-    usesAssetApi.value ||
+    flags.assetsEnabled ||
     settingStore.get('Comfy.ModelLibrary.AutoLoadAll')
   ) {
     await withLoadFailureToast(() => modelStore.loadModels())
   }
 })
 
-// Off-cloud the assets capability arrives on the WS handshake, which can land
-// after this tab mounted. Sampling it only in onMounted would leave the tree
-// empty with the load-all button already hidden by `v-if="!usesAssetApi"`,
-// leaving no affordance to populate it.
-watch(usesAssetApi, async (enabled) => {
-  if (enabled) await withLoadFailureToast(() => modelStore.loadModels())
-})
+watch(
+  () => flags.assetsEnabled,
+  async (enabled) => {
+    if (enabled) await withLoadFailureToast(() => modelStore.loadModels())
+  }
+)
 </script>
 
 <style scoped>
