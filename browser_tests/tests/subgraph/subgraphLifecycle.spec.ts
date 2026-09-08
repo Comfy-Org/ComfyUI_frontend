@@ -168,7 +168,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       const onPageError = (err: Error) => {
         if (
           err.name === 'NullGraphError' ||
-          isNullGraphErrorText(err.message ?? '')
+          isNullGraphErrorText(err.message)
         ) {
           captured.push(`pageerror ${err.name}: ${err.message}`)
         }

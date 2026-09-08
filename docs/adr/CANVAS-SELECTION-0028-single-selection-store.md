@@ -72,25 +72,35 @@ Specifically:
    `false` or `undefined` dispatches `remove`. These raw compatibility writes do
    not add callback effects that they do not emit today. `selected_nodes`,
    `highlighted_links`, and `canvasStore.selectedItems` retain their current
-   projection shapes. If an extension writes one of those projections without
-   changing selection today, the adapter preserves that value separately and
-   does not treat it as selected state. Removing that writable behavior requires
-   a separate deprecation. Interaction focus fields such as `canvas.current_node`
+   projection shapes but are not selection inputs. A direct legacy write can
+   temporarily change a projection, as it can today, but cannot change the
+   store. The next selection command rebuilds the affected projection from the
+   store. Entity removal does this for its owning graph; workflow switches and
+   subgraph navigation clear the outgoing projections; root closure clears all
+   projections for that root. The store changes first, and projection cleanup
+   completes within the existing behavior boundary while callbacks keep their
+   current relative order. Removing writable projection behavior requires a
+   separate deprecation. Interaction focus fields such as `canvas.current_node`
    and `canvas.selected_group` remain separate.
-5. Existing methods remain the behavior boundary. `select`, `deselect`,
+5. During migration, `updateSelectedItems()` refreshes
+   `canvasStore.selectedItems` from the store. It never writes canvas objects
+   back into the store. Once `canvasStore.selectedItems` derives directly from
+   the store, `updateSelectedItems()` becomes a compatibility no-op until its
+   callers are removed.
+6. Existing methods remain the behavior boundary. `select`, `deselect`,
    `deselectAll`, `processSelect`, `selectNode`, `selectNodes`, and
    `selectItems` translate their current decisions into store commands. They
    continue to emit `onSelectionChange`, node selection hooks, redraw requests,
    and z-order changes at their current points and with their current call
    counts. A state command does not emit hooks by itself.
-6. Group selection keeps `groupSelectChildren`, `LGraphGroup._children`, and
+7. Group selection keeps `groupSelectChildren`, `LGraphGroup._children`, and
    `recomputeInsideNodes()` unchanged. The store records the resulting selected
    items rather than introducing new group semantics during this migration.
-7. Pointer handling stays unchanged. `CanvasPointer`,
+8. Pointer handling stays unchanged. `CanvasPointer`,
    `Comfy.Pointer.ClickBufferTime`, `useClickDragGuard`, classic and Vue gesture
    paths, `canvas.selectOnly`, and current modifier mappings are outside this
    decision.
-8. Selection changes continue to request the same redraws they request today.
+9. Selection changes continue to request the same redraws they request today.
    Adopting a classified `interaction/selection` invalidation reason belongs in
    the rendering-invalidation work.
 
@@ -116,14 +126,15 @@ before each caller moves to the store. Store tests cover command idempotence,
 scope, duplicate-free insertion order, removal of every selectable kind,
 graph-scoped cleanup, navigation clearing, and root-graph eviction. Adapter
 tests cover `Set` mutator return values, canonical object identity,
-group-and-child contents, and removal followed by same-ID recreation. Each
-migration step must leave the characterization tests unchanged.
+group-and-child contents, removal followed by same-ID recreation, projection
+cleanup at each lifecycle boundary, and the one-way `updateSelectedItems()`
+refresh. Each migration step must leave the characterization tests unchanged.
 
 ### Deferred decisions
 
 The following work requires separate decisions because it changes behavior or
 public compatibility. The proposed
-[ADR-CANVAS-GESTURE-0029](https://github.com/Comfy-Org/ComfyUI_frontend/pull/17106)
+[ADR-CANVAS-GESTURE-0029](CANVAS-GESTURE-0029-pointer-gesture-state-machine.md)
 owns the pointer gesture changes:
 
 - unifying classic and Vue gesture handling;
@@ -152,8 +163,9 @@ owns the pointer gesture changes:
 ### Positive
 
 - Selection has one graph-scoped owner.
-- Derived canvas, Vue, and highlighting state cannot drift from the selected
-  key set.
+- Store-derived canvas, Vue, and highlighting state comes from the selected key
+  set. A direct legacy projection write may differ until the next selection
+  command but cannot change canonical selection.
 - Entity cleanup cannot remove selection in an unrelated graph with the same
   local ID.
 - Later interaction changes start from consistent state and can be reviewed as
