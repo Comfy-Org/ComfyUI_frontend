@@ -167,6 +167,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     currentUser.value = user
     isInitialized.value = true
+    if (isCloud) {
+      useWorkspaceAuthStore().syncUnifiedIdentity()
+    }
     if (user === null) {
       lastTokenUserId.value = null
     } else if (isCloud) {

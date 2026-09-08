@@ -865,10 +865,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   let deliverUnifiedIdentity: ((user: AccountUser | null) => void) | undefined
 
-  // The authStore's own auth-state listener drives this store (mintAtLogin,
-  // clearWorkspaceContext), so identity reaches the client as a push from
-  // those same entry points rather than a reactive watch.
+  // Transitional migration adapter (ADR-AUTH-IDENTITY-0028): the Pinia
+  // authStore remains the identity authority; its auth-state listener pushes
+  // every identity diff here, and the unified entry points re-sync
+  // defensively before they mint.
   function syncUnifiedIdentity(): void {
+    if (!flags.unifiedCloudAuthEnabled) return
     if (detachUnifiedIdentity === undefined) {
       detachUnifiedIdentity = unifiedSessionClient.attachIdentity(
         {
