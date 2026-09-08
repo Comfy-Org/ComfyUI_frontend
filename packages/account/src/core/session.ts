@@ -826,6 +826,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       credential = undefined
       credentialTarget = undefined
       failure = undefined
+      safeClear()
       publish()
     },
     clearCache() {
