@@ -256,7 +256,7 @@ export const useWorkflowService = () => {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     const isSelfOverwrite =
-      existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
+      existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
@@ -282,7 +282,6 @@ export const useWorkflowService = () => {
       }
 
       if (options.isApp !== undefined) {
-        app.rootGraph.extra ??= {}
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
@@ -373,8 +372,9 @@ export const useWorkflowService = () => {
    * standing.
    */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
-    const retained = workflowStore.activeWorkflow
+    const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
+
     await app.loadGraphData(
       toRaw(retained.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
@@ -386,6 +386,10 @@ export const useWorkflowService = () => {
         skipAssetScans: true
       }
     )
+  }
+
+  function getActiveWorkflow(): ComfyWorkflow | null {
+    return workflowStore.activeWorkflow
   }
 
   const openWorkflow = (
@@ -613,7 +617,7 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker?.deactivate()
+      activeWorkflow.changeTracker.deactivate()
       persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
@@ -722,7 +726,7 @@ export const useWorkflowService = () => {
             // is the authoritative saved state.
             loadedWorkflow.initialMode =
               linearModeToAppMode(
-                loadedWorkflow.initialState?.extra?.linearMode
+                loadedWorkflow.initialState.extra?.linearMode
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
@@ -731,7 +735,7 @@ export const useWorkflowService = () => {
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+            ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -763,7 +767,7 @@ export const useWorkflowService = () => {
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+      ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
     )
     loadedWorkflow.changeTracker.restore()
   }

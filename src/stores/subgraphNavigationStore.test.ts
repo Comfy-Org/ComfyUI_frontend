@@ -43,7 +43,7 @@ function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
 }
 
 function getRouteTargetHash(target: VueRouter.RouteLocationRaw): string {
-  return typeof target === 'string' ? target : String(target.hash ?? '')
+  return typeof target === 'string' ? target : (target.hash ?? '')
 }
 
 function applyRouteTarget(target: VueRouter.RouteLocationRaw): void {

@@ -1,6 +1,6 @@
 import type { Token } from 'marked'
 
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -105,14 +105,13 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
   return out
 }
 
-export function replyAssetResultItem(asset: ReplyAsset): ResultItemImpl {
-  const item = new ResultItemImpl({
+export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
+  return {
     filename: asset.filename,
     subfolder: '',
     type: 'output',
     nodeId: '',
-    mediaType: asset.kind === 'image' ? 'images' : asset.kind
-  })
-  Object.defineProperty(item, 'url', { get: () => asset.url })
-  return item
+    mediaType: asset.kind === 'image' ? 'images' : asset.kind,
+    url: asset.url
+  }
 }

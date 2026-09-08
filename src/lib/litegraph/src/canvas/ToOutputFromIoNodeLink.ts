@@ -82,7 +82,7 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   ): void {
     const { fromSlot } = this
 
-    const newLink = fromSlot.connect(output, outputNode, reroute?.id)
+    const newLink = fromSlot.connect(output, outputNode, reroute.id)
     events.dispatch('link-created', newLink)
   }
 

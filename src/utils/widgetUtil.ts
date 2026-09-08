@@ -54,8 +54,8 @@ export function renameWidget(
   // to carry input.label, e.g. CLIPTextEncode `text`) is fixed by construction.
   const input =
     (widget.widgetId &&
-      node.inputs?.find((inp) => inp.widgetId === widget.widgetId)) ||
-    node.inputs?.find((inp) => inp.widget?.name === widget.name)
+      node.inputs.find((inp) => inp.widgetId === widget.widgetId)) ||
+    node.inputs.find((inp) => inp.widget?.name === widget.name)
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
     : undefined
