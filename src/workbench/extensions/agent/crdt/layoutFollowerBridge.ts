@@ -130,6 +130,20 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.lastSeq ?? this.ackSeq ?? 0
   }
 
+  /**
+   * The highest seq this follower has actually APPLIED for the current
+   * subscribe, or `null` while none has. Unlike {@link lastSequence} it never
+   * falls back to the ack seq: the ack only says where the host is, not what
+   * this doc holds, and the catch-up carrying that seq may still be in flight.
+   * Use this wherever "the follower has projected seq N" is the question
+   * (s3-opt-2 skipped-duplicate resolution); use {@link lastSequence} for the
+   * outbound `baseVersion`, where the ack fallback is what an already-current
+   * follower needs.
+   */
+  get lastAppliedSequence(): number | null {
+    return this.lastSeq
+  }
+
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
   get lastSchemaError(): FollowerSchemaError | null {
     return this.schemaError

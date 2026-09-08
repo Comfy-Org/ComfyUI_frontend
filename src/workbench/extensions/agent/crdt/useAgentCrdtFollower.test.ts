@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
@@ -19,6 +20,7 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { DocUpdate } from './docFrameClient'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -30,6 +32,7 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    lastAppliedSequence: number | null = null
     follower = {
       updatesApplied: 0,
       doc: {
@@ -42,13 +45,14 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn((_workflowId: string, _tab: string, _ops: Op[]) => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
+  retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -106,6 +110,7 @@ vi.mock('./ecsFollowerAdapter', () => ({
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
+    retryPending = adapterState.retryPending
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -206,6 +211,8 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    adapterState.applyFrame.mockReset().mockReturnValue(true)
+    adapterState.retryPending.mockReset().mockReturnValue(null)
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -404,15 +411,30 @@ describe('useAgentCrdtFollower', () => {
     expect(stampedAt).toBeTypeOf('number')
 
     vi.advanceTimersByTime(3 * 60 * 1000)
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-2',
+      ok: true,
+      applied: [],
+      skipped: []
+    })
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
 
     isTargetActive.value = false
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [],
+      skipped: []
+    })
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
 
     isTargetActive.value = true
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [],
+      skipped: []
+    })
     expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
     unmount()
   })
@@ -869,6 +891,53 @@ describe('useAgentCrdtFollower', () => {
       expect.any(String),
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
+    unmount()
+  })
+
+  it('settles pending state only after a rejected projection retries', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          ref('wf-1'),
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+    expect(opId).toBeDefined()
+    if (!opId) throw new Error('Expected a sent operation')
+    dispatchFrame('doc_ops_result', {
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+    const update = {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(),
+      opIds: [opId]
+    }
+    adapterState.applyFrame.mockReturnValueOnce(false)
+
+    dispatchFrame('doc_update', update)
+    expect(recordDevEvent).not.toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+
+    adapterState.retryPending.mockReturnValueOnce(update)
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
     unmount()
   })
 

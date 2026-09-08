@@ -37,6 +37,7 @@ export type DevEventKind =
   | 'doc_gap'
   | 'doc_stale'
   | 'agent_node_adapters_materialized'
+  | 'pending_ops'
 
 export interface DevEvent {
   seq: number

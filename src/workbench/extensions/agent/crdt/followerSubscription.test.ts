@@ -466,6 +466,40 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it('reports no applied seq between the ack and the catch-up frame (s3-opt-2)', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 7
+    })
+
+    // The ack moves the outbound baseline but nothing has landed in the doc
+    // yet; a skipped-duplicate result gating on the applied seq must not see 7.
+    expect(bridge.lastSequence).toBe(7)
+    expect(bridge.lastAppliedSequence).toBeNull()
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 7)
+    )
+    expect(bridge.lastAppliedSequence).toBe(7)
+
+    // A resubscribe reopens the window: the ack is known again, applied is not.
+    bridge.resubscribe()
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 9
+    })
+    expect(bridge.lastSequence).toBe(9)
+    expect(bridge.lastAppliedSequence).toBeNull()
+  })
+
   it('arms the gap detector from the ack: a first frame beyond ack+1 forces a resync', () => {
     const { transport, bridge, projected } = wire()
     transport.open = true
