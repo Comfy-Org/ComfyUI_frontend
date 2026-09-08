@@ -147,6 +147,7 @@ Look for:
 - Interface design and API clarity
 - Leftover debug code (console.log, commented code, TODO comments)
 - Hand-declared/inlined server or API response types that duplicate a type already generated from an OpenAPI spec (`@comfyorg/ingest-types`, `@comfyorg/registry-types` under `packages/`) instead of importing it — these silently drift from the real contract and caused real bugs in PR #14771
+- Gratuitous comments added by the diff (restating the next line, narrating obvious control flow, justifying a trivial fix) — run the `comment-sicko` skill (`.claude/skills/comment-sicko/SKILL.md`) as an additional pass and fold its findings into this same review instead of duplicating its diffing/classification logic
 
 ### 3.3 Library Usage Enforcement
 
