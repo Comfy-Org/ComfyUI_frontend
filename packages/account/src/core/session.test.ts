@@ -699,6 +699,30 @@ describe('host-driven invalidation', () => {
     ).toBe('post-invalidate-jwt')
   })
 
+  it('a mint outliving invalidation must not write the credential cache', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi.fn<typeof fetch>(
+      () => new Promise<Response>((resolve) => (release = resolve))
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+
+    client.invalidate()
+    release(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    // Let the released mint settle its whole chain before asserting absence.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(client.getToken()).toBeUndefined()
+    expect(
+      storage.raw(),
+      'a storage-backed host would resurrect the invalidated credential on the next reload'
+    ).toBeNull()
+  })
+
   it('reads signed-out immediately after invalidation, not minting', async () => {
     const { client } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
