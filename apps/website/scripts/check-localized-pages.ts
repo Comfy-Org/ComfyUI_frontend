@@ -18,15 +18,9 @@ import { join, relative, sep } from 'node:path'
 
 import { LOCALIZED_CODES, localePrefix } from '../src/config/locales'
 import { comparePage } from '../src/utils/pageCoverage'
+import { preserveTerms } from './i18n/config'
 
 const DIST = join(process.cwd(), 'dist')
-const PRESERVE_TERMS = join(
-  process.cwd(),
-  'src',
-  'i18n',
-  'glossary',
-  'preserve-terms.json'
-)
 
 /**
  * How much smaller a localized page may be before it counts as broken.
@@ -72,9 +66,7 @@ function main(): void {
     process.exit(1)
   }
 
-  const preserveTerms = JSON.parse(
-    readFileSync(PRESERVE_TERMS, 'utf8')
-  ) as string[]
+  const preserved = preserveTerms()
 
   const routes = englishRoutes()
   const failures: string[] = []
@@ -90,7 +82,7 @@ function main(): void {
       const { tagRatio } = comparePage({
         english: readFileSync(join(DIST, route, 'index.html'), 'utf8'),
         localized: readFileSync(localizedFile, 'utf8'),
-        preserveTerms
+        preserveTerms: preserved
       })
       if (tagRatio < MINIMUM_TAG_RATIO) {
         failures.push(

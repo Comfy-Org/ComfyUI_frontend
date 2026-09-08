@@ -27,8 +27,39 @@ const GLOSSARY_FILE = path.join(
   'preserve-terms.json'
 )
 
+/**
+ * The glossary is injected into a paid translation prompt and is also what the
+ * page-coverage gate treats as legitimately-English text, so a wrong shape
+ * surfaces a long way from its cause. Validated here, once, at the read.
+ */
+export function parsePreserveTerms(text: string, file: string): string[] {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch (error) {
+    throw new Error(`${file} is not valid JSON.`, { cause: error })
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error(`${file} must be a JSON array of strings.`)
+  }
+
+  const items: unknown[] = parsed
+  const terms: string[] = []
+  for (const [index, term] of items.entries()) {
+    if (typeof term !== 'string') {
+      throw new Error(`${file} entry ${index} is not a string.`)
+    }
+    terms.push(term)
+  }
+  return terms
+}
+
 export function preserveTerms(): string[] {
-  return JSON.parse(fs.readFileSync(GLOSSARY_FILE, 'utf8')) as string[]
+  return parsePreserveTerms(
+    fs.readFileSync(GLOSSARY_FILE, 'utf8'),
+    GLOSSARY_FILE
+  )
 }
 
 /**
