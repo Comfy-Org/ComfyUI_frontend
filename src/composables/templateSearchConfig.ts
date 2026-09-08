@@ -123,17 +123,15 @@ export function expandAbbreviation(token: string): string | null {
 
 /** Expands shorthand tokens (`wan i2v` → `wan image video`); null if none expand. */
 export function expandQuery(query: string): string | null {
-  let changed = false
-  const out = query
+  const expandedTokens = query
     .split(/\s+/)
     .filter(Boolean)
     .map((token) => {
       const expansion = expandAbbreviation(token.toLowerCase())
-      if (expansion) changed = true
-      return expansion ?? token
+      return { token: expansion ?? token, expanded: expansion !== null }
     })
-    .join(' ')
-  return changed ? out : null
+  if (!expandedTokens.some(({ expanded }) => expanded)) return null
+  return expandedTokens.map(({ token }) => token).join(' ')
 }
 
 export function createTemplateSearchIndex(
@@ -150,10 +148,10 @@ export function createTemplateSearchIndex(
     extractField: (template, field) => {
       if (field === 'title') return template.localizedTitle ?? template.title
       if (field === 'description') {
-        return template.localizedDescription ?? template.description ?? ''
+        return template.localizedDescription ?? template.description
       }
       const value = template[field as keyof TemplateInfo]
-      return Array.isArray(value) ? value.join(' ') : ((value as string) ?? '')
+      return Array.isArray(value) ? value.join(' ') : (value as string)
     },
     tokenize,
     searchOptions: searchOptions('AND')

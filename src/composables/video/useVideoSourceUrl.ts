@@ -45,8 +45,7 @@ export function useVideoSourceUrl(
     const current = node.value
     if (!current) return undefined
 
-    const slot =
-      current.inputs?.findIndex((input) => input.name === inputName) ?? -1
+    const slot = current.inputs.findIndex((input) => input.name === inputName)
     if (slot < 0) return current
 
     let upstream = current.getInputNode(slot)
@@ -64,7 +63,7 @@ export function useVideoSourceUrl(
   }
 
   function sourceFileWidgetValue(source: LGraphNode): unknown {
-    const graphId = source.graph?.rootGraph?.id
+    const graphId = source.graph?.rootGraph.id
     return (
       (graphId
         ? widgetValueStore.getWidget(widgetId(graphId, source.id, 'file'))
