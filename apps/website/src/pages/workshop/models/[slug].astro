@@ -10,6 +10,7 @@ import {
 } from '../../../config/workshop-detail'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import { pageContext } from '../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const models = (await getCollection('workshopModels')).map((entry) =>
@@ -27,6 +28,12 @@ interface Props {
 }
 
 const { model, related } = Astro.props
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale
+)
 ---
 
 <BaseLayout
@@ -36,7 +43,7 @@ const { model, related } = Astro.props
   <main class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
     <nav aria-label="Breadcrumb" class="mb-8 text-sm text-primary-comfy-canvas/55">
       <a href="/workshop/" class="hover:text-primary-comfy-yellow">
-        {t('workshop.model.breadcrumb')}
+        {t('workshop.model.breadcrumb', locale)}
       </a>
       <span aria-hidden="true" class="mx-2">/</span>
       <span aria-current="page" class="text-primary-comfy-canvas">
@@ -70,15 +77,15 @@ const { model, related } = Astro.props
       </ul>
     </div>
 
-    <WorkshopPlayground model={model} client:load />
+    <WorkshopPlayground locale={locale} model={model} client:load />
 
     <section class="mt-20 border-t border-primary-comfy-canvas/10 pt-10">
       <div class="flex items-center justify-between gap-4">
         <h2 class="text-2xl font-semibold text-primary-comfy-canvas">
-          {t('workshop.model.related')}
+          {t('workshop.model.related', locale)}
         </h2>
         <a href="/workshop/" class="text-sm text-primary-comfy-yellow hover:underline">
-          {t('workshop.model.browseAll')}
+          {t('workshop.model.browseAll', locale)}
         </a>
       </div>
       <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

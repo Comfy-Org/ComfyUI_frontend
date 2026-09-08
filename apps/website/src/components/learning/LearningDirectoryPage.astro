@@ -30,9 +30,9 @@ interface Props {
 
 const { category } = Astro.props
 
-const { locale, url } = pageContext(
+const { locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 
@@ -43,7 +43,7 @@ const description = learningMetaDescription(locale, category)
 const keywords = learningKeywords(category)
 
 const tutorialList = itemListNode(
-  url,
+  canonicalUrl,
   label ?? learningTitle,
   filterByCategory(category).map((tutorial) => ({
     name: tutorial.title[locale] || tutorial.title.en,
@@ -64,7 +64,7 @@ const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
   description={description}
   keywords={keywords}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
+  mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[tutorialList]}
 >

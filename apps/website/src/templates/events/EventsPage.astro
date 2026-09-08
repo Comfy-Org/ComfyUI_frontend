@@ -19,14 +19,14 @@ import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../../utils/jsonLd'
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 
 const eventList = itemListNode(
-  url,
+  canonicalUrl,
   t('events.past.title', locale),
   watchablePastEvents.map((event) => ({
     name: event.title[locale] || event.title.en,
@@ -35,7 +35,7 @@ const eventList = itemListNode(
 )
 
 const upcomingEventNodes: JsonLdNode[] = upcomingEvents.map((event) =>
-  eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: url, locale })
+  eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: canonicalUrl, locale })
 )
 
 const breadcrumbs = [
@@ -51,7 +51,7 @@ const breadcrumbs = [
   title={t('events.page.title', locale)}
   description={t('events.page.description', locale)}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
+  mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[eventList, ...upcomingEventNodes]}
 >

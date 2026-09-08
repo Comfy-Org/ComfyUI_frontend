@@ -1,10 +1,30 @@
+---
+import { DEFAULT_LOCALE } from '../../config/locales'
+import type { Locale } from '../../config/locales'
+import { t } from '../../i18n/translations'
+
+/**
+ * The placeholder shown on pages that are being redesigned.
+ *
+ * The copy used to be hardcoded English here while the zh-CN page files called
+ * `t('demos.comingSoon.*')` themselves. Once one file serves every language,
+ * the hardcoded version won: /zh-CN/demos, /zh-CN/videos and /zh-CN/case-studies
+ * went from Chinese to English. The keys already existed.
+ */
+interface Props {
+  locale?: Locale
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props
+---
+
 <section class="flex min-h-[60vh] items-center justify-center px-6">
   <div class="text-center">
     <h1 class="text-primary-comfy-canvas text-4xl font-light">
-      Coming Soon
+      {t('demos.comingSoon.title', locale)}
     </h1>
     <p class="text-primary-warm-gray mt-4 text-sm">
-      This page is being redesigned. Check back soon.
+      {t('demos.comingSoon.body', locale)}
     </p>
   </div>
 </section>

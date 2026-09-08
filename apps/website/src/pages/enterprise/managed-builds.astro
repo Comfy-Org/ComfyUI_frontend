@@ -11,11 +11,12 @@ import StepsCards01 from '../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
 import Button from '../../components/ui/button/Button.vue'
-import { t } from '../../i18n/translations'
+import { localizeHref } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
+import { t } from '../../i18n/translations'
 
 const faqs = [
   {
@@ -112,21 +113,21 @@ const compareRows = [
   },
 ] as const
 
-const { url } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
-const faqPage = buildFaqPageNode(url, faqs)
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)
 ---
 
 <BaseLayout
-  title="ComfyUI Managed Builds | Govern ComfyUI across your fleet"
-  description="Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure."
+  title={t('enterprise.managedBuilds.meta.title', locale)}
+  description={t('enterprise.managedBuilds.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
-    { name: 'Enterprise', url: absoluteUrl(Astro.site, '/enterprise/') },
+    { name: 'Home', url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    { name: 'Enterprise', url: absoluteUrl(Astro.site, localizeHref('/enterprise/', canonicalLocale)) },
     { name: 'ComfyUI Managed Builds' },
   ]}
   extraJsonLd={[faqPage]}
@@ -310,10 +311,10 @@ const faqPage = buildFaqPageNode(url, faqs)
   />
 
   <ClosingCtaSection
-    locale="en"
+    locale={locale}
     heading-after-badge={t(
       'enterprise.managedBuilds.closing.headingAfterBadge',
-      'en'
+      locale
     )}
     client:visible
   />
