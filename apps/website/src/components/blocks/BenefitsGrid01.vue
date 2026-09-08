@@ -10,19 +10,20 @@ type Cta = {
   target?: '_blank' | '_self' | '_parent' | '_top'
 }
 
-withDefaults(
-  defineProps<{
-    heading: string
-    benefits: readonly Benefit[]
-    columns?: 2 | 4
-    numbered?: boolean
-    contained?: boolean
-    footnote?: string
-    primaryCta?: Cta
-    secondaryCta?: Cta
-  }>(),
-  { columns: 4, numbered: true, contained: true }
-)
+const {
+  columns = 4,
+  numbered = true,
+  contained = true
+} = defineProps<{
+  heading: string
+  benefits: readonly Benefit[]
+  columns?: 2 | 4
+  numbered?: boolean
+  contained?: boolean
+  footnote?: string
+  primaryCta?: Cta
+  secondaryCta?: Cta
+}>()
 </script>
 
 <template>
