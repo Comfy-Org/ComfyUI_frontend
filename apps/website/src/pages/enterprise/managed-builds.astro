@@ -185,21 +185,18 @@ const faqPage = buildFaqPageNode(url, faqs)
     steps={[
       {
         id: 'packaging',
-        number: '01',
         title: 'Environment packaging',
         description:
           'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.',
       },
       {
         id: 'upkeep',
-        number: '02',
         title: 'Admin and upkeep',
         description:
           'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.',
       },
       {
         id: 'rollout',
-        number: '03',
         title: 'Onboarding and rollout',
         description:
           'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.',
@@ -243,6 +240,7 @@ const faqPage = buildFaqPageNode(url, faqs)
     heading="Govern the build, models, people, and usage."
     benefits={governanceBenefits}
     footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
+    hideNumbers={true}
   />
 
   <BenefitsGrid01
@@ -274,6 +272,7 @@ const faqPage = buildFaqPageNode(url, faqs)
       },
     ]}
     footnote="DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress."
+    hideNumbers={true}
     primaryCta={{
       label: 'VIEW TRUST CENTER',
       href: externalLinks.trustCenter,
@@ -317,7 +316,7 @@ const faqPage = buildFaqPageNode(url, faqs)
     client:visible
   />
   <CtaCenter01
-    heading={'Your approved ComfyUI setup,\nready for the whole team.'}
+    heading="Your approved ComfyUI setup, ready for the whole team."
     subtitle="Start with one known-good environment. Comfy engineers will map deployment targets, governance requirements, onboarding, and the path to your first approved build."
     primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
   />
