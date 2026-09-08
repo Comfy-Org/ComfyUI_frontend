@@ -13,14 +13,14 @@ const { trackSettingChanged } = vi.hoisted(() => ({
   trackSettingChanged: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackSettingChanged
   }))
 }))
 
 // Mock the api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(),
     storeSetting: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the app
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     ui: {
       settings: {

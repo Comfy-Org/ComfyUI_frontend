@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as ArrangeNodesModule from '@/composables/graph/useArrangeNodes'
 import { useArrangeSession } from '@/composables/graph/useArrangeSession'
 
 const mockArrangeNodes = vi.fn()
 
-vi.mock('@/composables/graph/useArrangeNodes', () => ({
-  DEFAULT_ARRANGE_GAP: 12,
+vi.mock('@/composables/graph/useArrangeNodes', async (importOriginal) => ({
+  ...(await importOriginal<typeof ArrangeNodesModule>()),
   useArrangeNodes: () => ({ arrangeNodes: mockArrangeNodes })
 }))
 

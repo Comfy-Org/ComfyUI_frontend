@@ -357,7 +357,7 @@ async function delayNextUpload(
       })
       return
     }
-    await route.continue()
+    await route.fallback()
   }
 
   await comfyPage.page.route('**/upload/image', uploadRouteHandler)

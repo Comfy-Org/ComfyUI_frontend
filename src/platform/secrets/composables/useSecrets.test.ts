@@ -5,11 +5,11 @@ import { useSecrets } from './useSecrets'
 
 const mockAdd = vi.fn()
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: mockAdd })
 }))
 
@@ -17,7 +17,7 @@ const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
-vi.mock('../api/secretsApi', () => ({
+vi.mock<unknown>(import('../api/secretsApi'), () => ({
   listSecrets: () => mockListSecrets(),
   listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
