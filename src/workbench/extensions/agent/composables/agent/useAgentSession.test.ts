@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -21,6 +22,7 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
+import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
@@ -162,6 +164,14 @@ const doneIn = (threadId: string, id: string) =>
     type: 'agent_message_done',
     data: { message_id: id, thread_id: threadId, usage: null }
   })
+
+function rotateWorkspaceIdentity(): void {
+  const workspace = useTeamWorkspaceStore()
+  const generation = workspace.workspaceTransitionGeneration
+  workspace.resetForIdentityChange()
+  expect(workspace.workspaceTransitionGeneration).toBe(generation + 1)
+}
+
 const historyRow = (
   seq: number,
   role: 'user' | 'assistant',
@@ -183,6 +193,105 @@ describe('useAgentSession (v1 composition root)', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
+  })
+
+  describe('principal rotation isolation', () => {
+    it('clears the prior workspace conversation across stop and restart', async () => {
+      let workspaceId = 'workspace-a'
+      let finishHydration: (history: AgentMessages) => void = () => {}
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            expect(workspaceId).toBe('workspace-b')
+            finishHydration = resolve
+          })
+      )
+      const rest = fakeRest({ getMessages })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      await first.sendMessage('workspace A prompt')
+      first.stop()
+      await Promise.resolve()
+
+      rotateWorkspaceIdentity()
+      workspaceId = 'workspace-b'
+      const second = useAgentSession({ rest, events: fakeEvents().source })
+      second.start()
+
+      expect(second.entries.value).toHaveLength(0)
+      finishHydration([])
+    })
+
+    it('rejects a thread-list response from the prior workspace epoch', async () => {
+      let workspaceId = 'workspace-a'
+      let finishHistory: (threads: AgentThreadSummary[]) => void = () => {}
+      const listThreads = vi.fn(
+        () =>
+          new Promise<AgentThreadSummary[]>((resolve) => {
+            expect(workspaceId).toBe('workspace-a')
+            finishHistory = resolve
+          })
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ listThreads }),
+        events: fakeEvents().source
+      })
+      const history = useAgentChatHistoryStore()
+      const refresh = session.listThreads().then((threads) =>
+        history.replaceAll(
+          threads.map((thread) => ({
+            id: thread.id,
+            title: thread.title,
+            updatedAt: Date.parse(thread.updated_at)
+          }))
+        )
+      )
+
+      rotateWorkspaceIdentity()
+      workspaceId = 'workspace-b'
+      history.replaceAll([])
+      finishHistory([
+        {
+          created_at: '2026-09-01T00:00:00Z',
+          id: 'workspace-a-thread',
+          last_message_at: '2026-09-01T00:00:00Z',
+          message_count: 1,
+          preview: 'workspace A prompt',
+          status: 'active',
+          title: 'Workspace A chat',
+          updated_at: '2026-09-01T00:00:00Z',
+          workflow_id: 'workflow-a'
+        }
+      ])
+      await refresh
+
+      expect(history.sessions).toHaveLength(0)
+    })
+
+    it('rejects a failed POST result from the prior workspace epoch', async () => {
+      let workspaceId = 'workspace-a'
+      let rejectPost: (error: AgentApiError) => void = () => {}
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            expect(workspaceId).toBe('workspace-a')
+            rejectPost = reject
+          })
+      )
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+      const sending = session.sendMessage('workspace A prompt')
+
+      rotateWorkspaceIdentity()
+      workspaceId = 'workspace-b'
+      rejectPost(new AgentApiError('forbidden', 403, null))
+      await sending
+
+      expect(session.entries.value).toHaveLength(0)
+    })
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
