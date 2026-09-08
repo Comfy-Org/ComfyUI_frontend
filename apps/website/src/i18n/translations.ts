@@ -9046,13 +9046,9 @@ Enterprise`
     en: 'Browse all',
     'zh-CN': '浏览全部'
   },
-  'workshop.workflow.clone': {
-    en: 'Clone to your machine — {credits} credits',
-    'zh-CN': '克隆到本机 — {credits} 积分'
-  },
-  'workshop.workflow.cloneSignedOut': {
-    en: 'Clone to your machine',
-    'zh-CN': '克隆到本机'
+  'workshop.workflow.cloneCta': {
+    en: 'Run on your machine',
+    'zh-CN': '在本机运行'
   },
   'workshop.hub.sort.popular': { en: 'Most Popular', 'zh-CN': '最受欢迎' },
   'workshop.hub.sort.newest': { en: 'Newest', 'zh-CN': '最新' },

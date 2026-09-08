@@ -40,7 +40,7 @@ const hasCustomNodes = (details.requiresCustomNodes?.length ?? 0) > 0
 const pillClass =
   'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
 const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
-const clone = { credits: stats.cloneCredits, href: downloadUrl, author: `@${author}` }
+const clone = { href: downloadUrl }
 const comments = [
   { author: '@midframe', stars: 5, text: t('workshop.workflow.comment1') },
   { author: '@rui.v', stars: 4, text: t('workshop.workflow.comment2') }

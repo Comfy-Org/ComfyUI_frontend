@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Coins, Copy, Play } from '@lucide/vue'
+import { Coins, Download, Play } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
@@ -44,7 +44,7 @@ const {
 } = defineProps<{
   model: WorkshopModelDetail
   locale?: Locale
-  clone?: { credits: number; href: string; author: string }
+  clone?: { href: string }
   /** Names the form's groups as numbered steps and keeps the result in view
    * while they are filled in. The workflow pages ask for it; a model page has
    * a shorter form that reads fine as one list. */
@@ -142,16 +142,6 @@ const gate = computed(() =>
         ? session.value.account.role
         : undefined
   })
-)
-const cloneLabel = computed(() =>
-  clone === undefined
-    ? ''
-    : session.value.status === 'signedIn'
-      ? t('workshop.workflow.clone', locale).replace(
-          '{credits}',
-          clone.credits.toLocaleString('en-US')
-        )
-      : t('workshop.workflow.cloneSignedOut', locale)
 )
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
@@ -483,16 +473,23 @@ function useInCode() {
           >
             {{ t('workshop.run.degraded', locale) }}
           </p>
-          <a
+          <!-- Running it here and taking it home are two ways to use the
+            same workflow, so the second one is a button too. -->
+          <Button
             v-if="clone"
+            as="a"
+            variant="outline"
+            size="lg"
             :href="clone.href"
             download
-            class="inline-flex items-center justify-center gap-2 self-center text-xs text-primary-warm-gray transition-colors hover:text-primary-warm-white"
+            class="w-full px-5"
             data-testid="clone-button"
           >
-            <Copy class="size-3.5" aria-hidden="true" />
-            {{ cloneLabel }}
-          </a>
+            <template #prepend>
+              <Download class="size-5" aria-hidden="true" />
+            </template>
+            {{ t('workshop.workflow.cloneCta', locale) }}
+          </Button>
         </div>
       </div>
 

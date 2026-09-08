@@ -58,7 +58,7 @@ const model: WorkshopModelDetail = {
 }
 
 function mountDetail(options?: {
-  clone?: { credits: number; href: string; author: string }
+  clone?: { href: string }
   details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
 }) {
@@ -228,13 +228,12 @@ describe('ModelDetail', () => {
 
   it('shows a Details tab and the clone button when given workflow details', async () => {
     const api = mountDetail({
-      clone: { credits: 2900, href: '/x.json', author: '@studioX' },
+      clone: { href: '/x.json' },
       details: () => h('p', 'About this workflow')
     })
     api.signIn('existing')
     await nextTick()
     expect(screen.queryByTestId('examples-section')).toBeNull()
-    expect(screen.getByTestId('clone-button').textContent).toContain('2,900')
     expect(screen.getByTestId('clone-button').getAttribute('href')).toBe(
       '/x.json'
     )

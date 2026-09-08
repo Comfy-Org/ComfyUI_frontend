@@ -28,7 +28,6 @@ interface HubWorkflowStats {
   readonly ratings: number
   readonly avgSeconds: number
   readonly creditsPerRun: number
-  readonly cloneCredits: number
 }
 
 interface HubIoRow {
@@ -58,7 +57,7 @@ export function listHubWorkflows(): readonly HubTemplate[] {
 
 const FILE_INPUTS: Record<
   string,
-  { accept: 'image' | 'video' | 'audio'; label: string }
+  { accept: 'image' | 'video' | 'audio'; label: string } | undefined
 > = {
   LoadImage: { accept: 'image', label: 'Image' },
   LoadVideo: { accept: 'video', label: 'Video' },
@@ -252,8 +251,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     rating: (4.5 + (seed % 5) / 10).toFixed(1),
     ratings: Math.max(3, Math.round(template.usage / 200)),
     avgSeconds: (BASE_SECONDS[mediaType] ?? 6) + (seed % 7),
-    creditsPerRun,
-    cloneCredits: 2500 + (seed % 9) * 50
+    creditsPerRun
   }
   const model: WorkshopModelDetail = {
     slug: template.name,
