@@ -512,6 +512,7 @@ export const zSubscribeResponse = z.object({
 export const zSubscribeRequest = z.object({
   billing_cycle: z.enum(['monthly', 'yearly']).optional(),
   cancel_url: z.string().optional(),
+  checkout_attempt_id: z.string().optional(),
   confirm_reactivation: z.boolean().optional(),
   confirmation_token: z.string().optional(),
   idempotency_key: z.string().optional(),
@@ -524,6 +525,28 @@ export const zSubscribeRequest = z.object({
   saved_payment_method_id: z.string().regex(/^pm_/).optional(),
   team_credit_stop_id: z.string().optional()
 })
+
+/**
+ * The last-changed timestamp every stored setting carries.
+ */
+export const zGlobalSettingUpdatedAt = z.object({
+  updated_at: z.string().datetime()
+})
+
+/**
+ * Consent to the in-app Agent panel. `true` is the only value that can be written — consent is revoked by DELETE, not by writing `false`, so the audit trail records a revocation rather than a value flip.
+ */
+export const zAgentConsentSettingValue = z.object({
+  key: z.enum(['Comfy.AgentPanel.ConsentAccepted']),
+  value: z.literal(true)
+})
+
+/**
+ * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ */
+export const zStoredAgentConsentSetting = zAgentConsentSettingValue.and(
+  zGlobalSettingUpdatedAt
+)
 
 /**
  * User secret metadata (the secret value itself is never returned after creation).
@@ -568,6 +591,15 @@ export const zSecretProvidersResponse = z.object({
  */
 export const zSecretListResponse = z.object({
   data: z.array(zSecretResponse)
+})
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export const zScheduledPlanChange = z.object({
+  effective_at: z.string().datetime(),
+  plan_slug: z.string(),
+  team_credit_stop: zTeamCreditStopSummary.nullable()
 })
 
 export const zSavedPaymentMethod = z.object({
@@ -871,6 +903,7 @@ export const zPreviewSubscribeResponse = z.object({
  * Request body for previewing the cost of a plan subscription change.
  */
 export const zPreviewSubscribeRequest = z.object({
+  checkout_attempt_id: z.string().optional(),
   plan_slug: z.string(),
   promotion_code: z.string().optional(),
   team_credit_stop_id: z.string().optional()
@@ -1474,7 +1507,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image upload grant.
+ * Request body for minting an input-image or input-audio upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -1812,6 +1845,29 @@ export const zGlobalSubgraphData = z.object({
 })
 
 /**
+ * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
+ */
+export const zGlobalSettingValue = z
+  .object({
+    key: z.literal('Comfy.AgentPanel.ConsentAccepted')
+  })
+  .and(zAgentConsentSettingValue)
+
+/**
+ * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
+ */
+export const zGlobalSettingKey = z.enum(['Comfy.AgentPanel.ConsentAccepted'])
+
+/**
+ * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
+ */
+export const zGlobalSetting = z
+  .object({
+    key: z.literal('Comfy.AgentPanel.ConsentAccepted')
+  })
+  .and(zStoredAgentConsentSetting)
+
+/**
  * Individual file entry within a full user data response.
  */
 export const zGetUserDataResponseFullFile = z.object({
@@ -2033,6 +2089,7 @@ export const zCreateTopupRequest = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  checkout_attempt_id: z.string().optional(),
   idempotency_key: z.string().optional()
 })
 
@@ -2151,6 +2208,7 @@ export const zBillingStatusResponse = z.object({
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
+  scheduled_change: zScheduledPlanChange.nullable(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -2473,6 +2531,22 @@ export const zAgentSkillListResponse = z.object({
 })
 
 /**
+ * The run mode to save.
+ */
+export const zAgentRunModePutRequest = z.object({
+  credit_limit: z.number().int().gte(1).lte(2147483647).nullish(),
+  mode: z.enum(['ask_approval', 'auto', 'auto_limited'])
+})
+
+/**
+ * How the agent may spend the caller's credits by running workflows from chat. The saved choice, or the default (ask_approval, no limit) for a caller who never chose.
+ */
+export const zAgentRunMode = z.object({
+  credit_limit: z.number().int().gte(1).lte(2147483647).nullable(),
+  mode: z.enum(['ask_approval', 'auto', 'auto_limited'])
+})
+
+/**
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
@@ -2498,11 +2572,27 @@ export const zAgentPostMessageRequest = z.object({
 })
 
 /**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ */
+export const zAgentPendingAsk = z.object({
+  allow_other: z.boolean(),
+  ask_id: z.string(),
+  context: z.record(z.unknown()).optional(),
+  kind: z.enum(['ask_user', 'run_approval']),
+  max_selections: z.number().int(),
+  message_id: z.string(),
+  min_selections: z.number().int(),
+  options: z.array(z.record(z.unknown())),
+  prompt: z.string()
+})
+
+/**
  * A persisted message in an agent thread.
  */
 export const zAgentMessage = z.object({
   content: z.record(z.unknown()).optional(),
   id: z.string(),
+  pending_ask: zAgentPendingAsk.optional(),
   role: z.enum(['user', 'assistant', 'tool', 'system']),
   seq: z.number().int(),
   status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
@@ -2546,6 +2636,17 @@ export const zAgentAnswerRequest = z.object({
  */
 export const zAgentAnswerAccepted = z.object({
   status: z.enum(['answered'])
+})
+
+/**
+ * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
+ */
+export const zAgentAdmissionError = z.object({
+  error: z.object({
+    message: z.string(),
+    reason: z.enum(['no_funds', 'manual_block', 'funds_unavailable']),
+    type: z.enum(['PAYMENT_REQUIRED', 'SERVICE_UNAVAILABLE'])
+  })
 })
 
 /**
@@ -2653,6 +2754,28 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+/**
+ * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
+ */
+export const zAgentLlmMessagesBody = z.record(z.unknown())
+
+/**
+ * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
+ */
+export const zAgentLlmMessagesResponse = z.string()
+
+/**
+ * The caller's run mode (the saved choice, or the default).
+ */
+export const zAgentGetRunModeResponse = zAgentRunMode
+
+export const zAgentPutRunModeBody = zAgentRunModePutRequest
+
+/**
+ * The saved run mode.
+ */
+export const zAgentPutRunModeResponse = zAgentRunMode
 
 /**
  * The caller's skill packs.
@@ -3222,6 +3345,31 @@ export const zFreeMemoryBody = z.object({
   free_memory: z.boolean().optional(),
   unload_models: z.boolean().optional()
 })
+
+export const zSetGlobalSettingBody = zGlobalSettingValue
+
+/**
+ * Setting stored
+ */
+export const zSetGlobalSettingResponse = zGlobalSetting
+
+export const zDeleteGlobalSettingPath = z.object({
+  key: zGlobalSettingKey
+})
+
+/**
+ * Setting unset
+ */
+export const zDeleteGlobalSettingResponse = z.void()
+
+export const zGetGlobalSettingPath = z.object({
+  key: zGlobalSettingKey
+})
+
+/**
+ * Success
+ */
+export const zGetGlobalSettingResponse = zGlobalSetting
 
 /**
  * Success - Map of subgraph IDs to their metadata

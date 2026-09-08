@@ -396,7 +396,7 @@ describe('useComboWidget', () => {
     ) {
       const options = vi.mocked(mockNode.addWidget).mock.calls[0]?.[4]
 
-      if (typeof options !== 'object' || !options) {
+      if (typeof options !== 'object') {
         throw new Error('Expected options to be an object')
       }
 

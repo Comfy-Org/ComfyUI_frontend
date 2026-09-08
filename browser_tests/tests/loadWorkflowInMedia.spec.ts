@@ -102,7 +102,7 @@ test.describe(
                 clientX: drop.x,
                 clientY: drop.y
               })
-            ) as [number, number]
+            )
             const node = window.app!.graph.nodes[0]
             return {
               nodePos: [node.pos[0], node.pos[1]] as [number, number],

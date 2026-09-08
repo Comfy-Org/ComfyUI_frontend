@@ -70,7 +70,7 @@ function renderInParent(
 }
 
 async function openSelect(triggerEl: HTMLElement) {
-  if (!triggerEl.hasPointerCapture) {
+  if (!Reflect.has(triggerEl, 'hasPointerCapture')) {
     triggerEl.hasPointerCapture = () => false
     triggerEl.releasePointerCapture = () => {}
   }

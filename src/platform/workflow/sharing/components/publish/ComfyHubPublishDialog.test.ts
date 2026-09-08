@@ -2,17 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({
-      t: (key: string, params?: Record<string, unknown>) =>
-        params ? `${key} ${Object.values(params).join(' ')}` : key
-    })
-  }
-})
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
@@ -35,7 +27,7 @@ const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
-  () => ({ value: null }) as { value: Record<string, unknown> | null }
+  (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
 
 vi.mock(
@@ -123,7 +115,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
       directory: 'workflows',
       isTemporary: false,
       isModified: false
-    } as Record<string, unknown> | null
+    }
   })
   return {
     useWorkflowStore: () => ({
@@ -140,6 +132,28 @@ function setActiveWorkflow(workflow: Record<string, unknown> | null) {
   if (mockWorkflowStore.instance) {
     mockWorkflowStore.instance.activeWorkflow = workflow
   }
+}
+
+function createTestI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        comfyHubPublish: {
+          title: 'Publish to Comfy Workflows',
+          publishFailedTitle: 'Publish failed',
+          publishFailedDescription:
+            'Something went wrong while publishing your workflow. Please try again.',
+          publishFailedDescriptionWithReason:
+            'Something went wrong while publishing your workflow: {reason}',
+          publishSuccessTitle: 'Published successfully',
+          publishSuccessDescription:
+            'Your workflow is now live on Comfy Workflows.'
+        }
+      }
+    }
+  })
 }
 
 async function flushPromises() {
@@ -175,9 +189,7 @@ describe('ComfyHubPublishDialog', () => {
     return render(ComfyHubPublishDialog, {
       props: { onClose },
       global: {
-        mocks: {
-          $t: (key: string) => key
-        },
+        plugins: [createTestI18n()],
         stubs: {
           BaseModalLayout: {
             template:
@@ -318,9 +330,8 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: expect.stringContaining(
-          'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
-        )
+        detail:
+          'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
       })
     )
   })
@@ -336,7 +347,8 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: 'comfyHubPublish.publishFailedDescription'
+        detail:
+          'Something went wrong while publishing your workflow. Please try again.'
       })
     )
     expect(onClose).not.toHaveBeenCalled()

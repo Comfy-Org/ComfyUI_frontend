@@ -20,7 +20,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
-const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
+const mockApp: {
+  rootGraph?: Partial<LGraph>
+  nodeOutputs: Record<string, never>
+  nodePreviewImages: Record<string, never>
+} = vi.hoisted(() => ({ nodeOutputs: {}, nodePreviewImages: {} }))
 // Mock dependencies
 vi.mock('@/scripts/app', () => ({
   app: mockApp

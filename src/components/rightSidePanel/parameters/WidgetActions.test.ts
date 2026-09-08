@@ -109,7 +109,7 @@ describe('WidgetActions', () => {
       options: {},
       y: 0,
       callback
-    } as IBaseWidget
+    }
   }
 
   function createMockNode(): LGraphNode {

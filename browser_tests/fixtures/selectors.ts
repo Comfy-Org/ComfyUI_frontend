@@ -4,6 +4,9 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
@@ -113,6 +116,12 @@ export const TestIds = {
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
+  },
+  partnerNodes: {
+    signInToRunButton: 'partner-sign-in-to-run-button',
+    runGateCaption: 'partner-run-gate-caption',
+    educationCard: 'partner-nodes-education-card',
+    educationCardDismiss: 'partner-nodes-education-dismiss'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'

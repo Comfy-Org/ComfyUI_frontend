@@ -58,6 +58,8 @@ const {
     pollPauses: 0,
     pollResumes: 0
   }
+  const progressStates: Record<string, NodeProgressState> = {}
+  const canvasStore = (canvas: unknown) => ({ canvas })
   return {
     counters,
     defaultSettingStore: {
@@ -65,8 +67,8 @@ const {
       get: vi.fn(() => true),
       set: vi.fn().mockResolvedValue(undefined)
     },
-    mockCanvasStore: { canvas: null as unknown },
-    progressStates: {} as Record<string, NodeProgressState>,
+    mockCanvasStore: canvasStore(null),
+    progressStates,
     linkTopologies: [] as Array<{
       originNodeId: string
       targetNodeId: string

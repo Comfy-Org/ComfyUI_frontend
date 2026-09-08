@@ -192,10 +192,7 @@ describe('keybindingService - dialog gate', () => {
   it.for([
     { label: 'Ctrl+S', modifiers: { ctrlKey: true } },
     { label: 'Meta+S', modifiers: { metaKey: true } }
-  ] as {
-    label: string
-    modifiers: { ctrlKey?: boolean; metaKey?: boolean }
-  }[])(
+  ])(
     'still suppresses the browser default for $label while a dialog is open',
     async ({ modifiers }) => {
       const dialogStore = useDialogStore()

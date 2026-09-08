@@ -45,7 +45,8 @@ const {
   sessionId = null,
   customTitle,
   historyGroups,
-  editableTurnId = null
+  editableTurnId = null,
+  answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -64,6 +65,7 @@ const {
   customTitle?: string
   historyGroups: HistoryGroups
   editableTurnId?: TurnId | null
+  answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
@@ -86,6 +88,8 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
+  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  openWorkflow: [workflowId: string, workflowName?: string]
 }>()
 
 const showHistory = ref(false)
@@ -286,13 +290,22 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           v-else
           :entries="entries"
           :editable-turn-id="editableTurnId"
+          :answering-ask-ids="answeringAskIds"
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
+          @answer-ask="
+            (askId, selection) => emit('answerAsk', askId, selection)
+          "
+          @open-workflow="
+            (workflowId, workflowName) =>
+              emit('openWorkflow', workflowId, workflowName)
+          "
         />
       </div>
     </template>
 
     <template v-if="!showHistory">
+      <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
           <RunNoticeBanner :expanded="isMaximized" />

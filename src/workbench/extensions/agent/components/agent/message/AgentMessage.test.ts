@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -15,7 +15,10 @@ vi.hoisted(() => {
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  RunApprovalPart
+} from '../../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
@@ -310,11 +313,37 @@ describe('AgentMessage fallback content', () => {
       }
     })
 
-    expect(screen.getAllByTestId('tab-link')).toHaveLength(2)
-    expect(screen.getByText('workflow-1:First workflow')).toBeInTheDocument()
-    expect(screen.getByText('workflow-2:Second workflow')).toBeInTheDocument()
-    expect(screen.getByText('Saved locally')).toBeInTheDocument()
-    expect(screen.getByText('Could not publish')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('group')).getAllByTestId('tab-link')
+    ).toHaveLength(2)
+    expect(screen.getByRole('status')).toHaveTextContent('Saved locally')
+    expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
+  })
+
+  it('hides completed thinking when the response did not use tools', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'thinking',
+          text: 'Reasoning before the answer',
+          state: 'done'
+        },
+        { type: 'text', text: 'Finished without tools', state: 'done' }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.queryByText('Reasoning before the answer')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Finished without tools')).toBeInTheDocument()
   })
 
   it('forwards feedback from a completed text response', async () => {
@@ -343,4 +372,98 @@ describe('AgentMessage fallback content', () => {
 
     expect(emitted().feedback).toEqual([['up']])
   })
+})
+
+describe('AgentMessage run approval', () => {
+  const approvalMessage = (
+    approval: Partial<RunApprovalPart> = {}
+  ): AssistantMessage => ({
+    id: 'msg-approval' as TurnId,
+    role: 'assistant',
+    parts: [
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow',
+        ...approval
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the Figma copy and emits workflow, cancel, and run actions', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run the workflow:')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+
+    expect(emitted().openWorkflow).toEqual([
+      ['workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', 'cancel'],
+      ['turn-1:call-1', 'run']
+    ])
+  })
+
+  it('keeps both labels in place while disabling an in-flight answer', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    for (const name of ['Cancel', 'Run']) {
+      const button = screen.getByRole('button', { name })
+      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-busy', 'true')
+    }
+  })
+
+  it.for([
+    {
+      approval: { workflowName: '  ' },
+      expectedLabel: 'workflow-1',
+      interactive: true
+    },
+    {
+      approval: { workflowId: undefined, workflowName: undefined },
+      expectedLabel: 'this workflow',
+      interactive: false
+    }
+  ] as const)(
+    'falls back to “$expectedLabel” when backend naming data is unavailable',
+    ({ approval, expectedLabel, interactive }) => {
+      render(AgentMessage, {
+        props: { message: approvalMessage(approval) },
+        global: { plugins: [i18n] }
+      })
+
+      if (interactive) {
+        expect(
+          screen.getByRole('button', { name: expectedLabel })
+        ).toBeInTheDocument()
+      } else {
+        expect(
+          screen.queryByRole('button', { name: expectedLabel })
+        ).not.toBeInTheDocument()
+        expect(screen.getByText(expectedLabel)).toBeInTheDocument()
+      }
+    }
+  )
 })
