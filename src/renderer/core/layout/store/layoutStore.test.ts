@@ -61,6 +61,74 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value).toEqual(layout)
   })
 
+  it('ignores creating a node that already exists, keeping its layout', () => {
+    const nodeId = toNodeId('test-node-duplicate')
+    const layout = createTestNode(nodeId)
+    const createOperation: LayoutOperation = {
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    }
+
+    layoutStore.applyOperation(createOperation)
+
+    // A remote add can legitimately replay under an id whose layout entry a
+    // stale node's owner never cleared, so a second create for the same id
+    // must no-op rather than overwrite the existing layout.
+    layoutStore.applyOperation({
+      ...createOperation,
+      layout: { ...layout, position: { x: 999, y: 999 } }
+    })
+
+    expect(layoutStore.getNodeLayoutRef(GRAPH, nodeId).value).toEqual(layout)
+  })
+
+  it('rejects moving a node that is not registered', () => {
+    const nodeId = toNodeId('test-node-unregistered-move')
+
+    vi.stubEnv('DEV', true)
+    try {
+      expect(() =>
+        layoutStore.applyOperation({
+          type: 'moveNode',
+          graphId: GRAPH,
+          nodeId,
+          position: { x: 1, y: 2 },
+          timestamp: Date.now(),
+          source: LayoutSource.Canvas,
+          actor: 'test'
+        })
+      ).toThrow(/not registered/)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('rejects resizing a node that is not registered', () => {
+    const nodeId = toNodeId('test-node-unregistered-resize')
+
+    vi.stubEnv('DEV', true)
+    try {
+      expect(() =>
+        layoutStore.applyOperation({
+          type: 'resizeNode',
+          graphId: GRAPH,
+          nodeId,
+          size: { width: 10, height: 10 },
+          timestamp: Date.now(),
+          source: LayoutSource.Canvas,
+          actor: 'test'
+        })
+      ).toThrow(/not registered/)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('does not create a node when reading a missing layout', () => {
     const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, toNodeId('missing'))
 
