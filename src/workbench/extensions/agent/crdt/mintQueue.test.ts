@@ -80,6 +80,17 @@ describe('orderMintedOperations', () => {
     ).toEqual([deleteNode(2), setWidget(3, 'kept'), connect(42, 1, 3)])
   })
 
+  it('drops dependents when a node is added and then deleted', () => {
+    expect(
+      orderMintedOperations([
+        addNode(2),
+        deleteNode(2),
+        setWidget(2, 'x'),
+        connect(41, 1, 2)
+      ])
+    ).toEqual([addNode(2), deleteNode(2)])
+  })
+
   it("drops writes to a clear's removed nodes but not to nodes added after it", () => {
     expect(
       orderMintedOperations([

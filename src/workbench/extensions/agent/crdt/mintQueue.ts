@@ -54,17 +54,15 @@ export function orderMintedOperations(
 ): GraphOperation[] {
   const structural = operations.filter(isStructural)
   const dependent = operations.filter((operation) => !isStructural(operation))
-  const added = new Set<string>()
   const removed = new Set<string>()
   for (const operation of structural) {
-    if (operation.op === 'add_node') added.add(String(operation.node_id))
+    if (operation.op === 'add_node') removed.delete(String(operation.node_id))
     else if (operation.op === 'delete_node')
       removed.add(String(operation.node_id))
     else for (const id of operation.removed_nodes) removed.add(String(id))
   }
   const gone = (nodeId: string | number): boolean => {
-    const key = String(nodeId)
-    return removed.has(key) && !added.has(key)
+    return removed.has(String(nodeId))
   }
   const kept = dependent.filter((operation) => {
     if (operation.op === 'connect') {
