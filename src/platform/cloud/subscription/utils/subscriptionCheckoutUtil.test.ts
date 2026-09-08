@@ -210,7 +210,7 @@ describe('performSubscriptionCheckout', () => {
         operation: 'load',
         outcome: 'recovered'
       },
-      context: { distribution: 'cloud' },
+      context: { attribution_stage: 'collect' },
       level: 'warning'
     })
     expect(global.fetch).toHaveBeenCalledWith(

@@ -28,16 +28,31 @@ const getCheckoutTier = (
   billingCycle: BillingCycle
 ): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
 
+type CheckoutAttributionStage = 'module_load' | 'collect'
+
+type CheckoutAttributionOutcome =
+  | { ok: true; attribution: CheckoutAttributionMetadata }
+  | { ok: false; error: unknown; stage: CheckoutAttributionStage }
+
 const getCheckoutAttributionForCloud =
-  async (): Promise<CheckoutAttributionMetadata> => {
+  async (): Promise<CheckoutAttributionOutcome> => {
     if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
+      return { ok: true, attribution: {} }
     }
 
-    const { getCheckoutAttribution } =
-      await import('@/platform/telemetry/utils/checkoutAttribution')
+    let getCheckoutAttribution
+    try {
+      ;({ getCheckoutAttribution } =
+        await import('@/platform/telemetry/utils/checkoutAttribution'))
+    } catch (error) {
+      return { ok: false, error, stage: 'module_load' }
+    }
 
-    return getCheckoutAttribution()
+    try {
+      return { ok: true, attribution: await getCheckoutAttribution() }
+    } catch (error) {
+      return { ok: false, error, stage: 'collect' }
+    }
   }
 
 interface PerformSubscriptionCheckoutOptions {
@@ -100,11 +115,9 @@ async function initiateSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
-  let checkoutAttribution: CheckoutAttributionMetadata = {}
-  try {
-    checkoutAttribution = await getCheckoutAttributionForCloud()
-  } catch (error) {
-    reportError(error, {
+  const attribution = await getCheckoutAttributionForCloud()
+  if (!attribution.ok) {
+    reportError(attribution.error, {
       errorType: 'cloud_checkout_attribution_fallback',
       tags: {
         failure_kind: 'degraded',
@@ -112,10 +125,11 @@ async function initiateSubscriptionCheckout(
         operation: 'load',
         outcome: 'recovered'
       },
-      context: { distribution: __DISTRIBUTION__ },
+      context: { attribution_stage: attribution.stage },
       level: 'warning'
     })
   }
+  const checkoutAttribution = attribution.ok ? attribution.attribution : {}
   const checkoutPayload = { ...checkoutAttribution }
 
   const response = await authStore.fetchWithCustomerRecovery(
