@@ -1,3 +1,7 @@
+import { spawnSync } from 'node:child_process'
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { mutateExecutionSource, proofIdentity } from './custom-node-proof'
@@ -42,5 +46,26 @@ NODE_CLASS_MAPPINGS = {"VHS_LoadAudioUpload": LoadAudioUpload}
         mutationDigest: 'bad'
       })
     ).toThrow(/digest/)
+  })
+
+  it('source patches apply to current src/', () => {
+    const directory = join(
+      'browser_tests',
+      'tests',
+      'customNodes',
+      'detection-proof'
+    )
+    const patches = readdirSync(directory).filter((name) =>
+      name.endsWith('.patch')
+    )
+    expect(patches.length).toBeGreaterThan(0)
+    for (const entry of patches) {
+      const result = spawnSync(
+        'git',
+        ['apply', '--check', join(directory, entry)],
+        { encoding: 'utf8' }
+      )
+      expect(result.status, `${entry}: ${result.stderr}`).toBe(0)
+    }
   })
 })
