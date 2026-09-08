@@ -377,7 +377,10 @@ export class LinkConnector {
             const renderLink = new ToOutputFromIoNodeLink(
               network,
               subgraphTarget.node,
-              subgraphTarget.output
+              subgraphTarget.output,
+              undefined,
+              undefined,
+              link
             )
             renderLink.fromDirection = LinkDirection.NONE
             renderLinks.push(renderLink)
@@ -621,7 +624,9 @@ export class LinkConnector {
         network,
         network.outputNode,
         output,
-        reroute
+        reroute,
+        undefined,
+        reroute.firstLink
       )
       renderLink.fromDirection = LinkDirection.NONE
       this.renderLinks.push(renderLink)

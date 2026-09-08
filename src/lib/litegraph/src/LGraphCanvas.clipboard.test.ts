@@ -16,7 +16,11 @@ import {
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import {
+  createTestRootGraph,
+  enableSubgraphNodeCreation
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   LGraph,
   LGraphCanvas,
@@ -33,6 +37,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -209,8 +214,40 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   el.getBoundingClientRect = vi
     .fn()
     .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
-  return new LGraphCanvas(el, graph, { skip_render: true })
+  return new LGraphCanvas(el, graph, { skip_render: true, skip_events: true })
 }
+
+describe('link presentation transfer across recreation flows', () => {
+  it('preserves presentation through clipboard copy and paste', () => {
+    const rootGraph = createTestRootGraph()
+    const origin = createTestNode(rootGraph, [], ['number'])
+    const target = createTestNode(rootGraph, ['number'])
+    const link = origin.connect(0, target, 0)
+    if (!link) throw new Error('Failed to connect clipboard test link')
+    useLinkPresentationStore().patch(graphScopeOf(rootGraph), link.id, {
+      hidden: true,
+      label: 'Copied'
+    })
+    const canvas = createCanvas(rootGraph)
+
+    const results = canvas._deserializeItems(
+      canvas._serializeItems([origin, target]),
+      {}
+    )
+    if (!results) throw new Error('Paste produced no results')
+    const { links } = results
+
+    const pasted = [...links.values()][0]
+    expect(pasted).toBeDefined()
+    expect(pasted.id).not.toBe(link.id)
+    expect(
+      useLinkPresentationStore().getPresentation(
+        graphScopeOf(rootGraph),
+        pasted.id
+      )
+    ).toEqual({ hidden: true, label: 'Copied' })
+  })
+})
 
 function registerClipboardNodeType(type: string): void {
   class ClipboardNode extends LGraphNode {

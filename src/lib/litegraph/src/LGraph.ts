@@ -2,7 +2,10 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import {
+  getAgreedLinkPresentation,
+  transferLinkPresentation
+} from '@/core/graph/transferLinkPresentation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -2187,9 +2190,18 @@ export class LGraph
       links,
       externalReroutes
     )
+    const outputPresentations = outputs.map(({ linkIds = [] }) =>
+      getAgreedLinkPresentation(
+        linkIds.map((id) => presentations.get(toLinkId(id)))
+      )
+    )
 
     for (const link of links) {
-      Object.assign(link, presentations.get(toLinkId(link.id)))
+      const presentation =
+        link.target_id === SUBGRAPH_OUTPUT_ID
+          ? outputPresentations[link.target_slot]
+          : presentations.get(toLinkId(link.id))
+      Object.assign(link, presentation)
     }
 
     // Prepare subgraph data
@@ -2302,15 +2314,11 @@ export class LGraph
       const [firstResolved, ...others] = connections
       const { output, outputNode, link, subgraphInput } = firstResolved
 
-      const grouped = connections.map(({ link: groupedLink }) =>
-        presentations.get(groupedLink.id)
+      const presentation = getAgreedLinkPresentation(
+        connections.map(({ link: groupedLink }) =>
+          presentations.get(groupedLink.id)
+        )
       )
-      const unambiguous = grouped.every(
-        (candidate) =>
-          candidate?.hidden === grouped[0]?.hidden &&
-          candidate?.label === grouped[0]?.label
-      )
-      const presentation = unambiguous ? grouped[0] : undefined
 
       // Special handling: Subgraph input node
       i++
@@ -2551,9 +2559,6 @@ export class LGraph
             scope,
             sublink.id
           )
-          const unambiguous =
-            presentation?.hidden === outerPresentation?.hidden &&
-            presentation?.label === outerPresentation?.label
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2563,7 +2568,7 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            ...(unambiguous ? presentation : undefined)
+            ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
         }
@@ -2580,10 +2585,6 @@ export class LGraph
       const outerPresentation = outerLink
         ? presentationStore.getPresentation(scope, outerLink.id)
         : undefined
-      const unambiguous =
-        !outerLink ||
-        (presentation?.hidden === outerPresentation?.hidden &&
-          presentation?.label === outerPresentation?.label)
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2593,7 +2594,9 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        ...(unambiguous ? presentation : undefined)
+        ...(outerLink
+          ? getAgreedLinkPresentation([presentation, outerPresentation])
+          : presentation)
       })
     }
     this.remove(subgraphNode)

@@ -699,14 +699,29 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             scope.rootGraphId,
             mutation.topology.id
           )
+          const presentation = existing
+            ? linkPresentationStore.getPresentation(scope, existing.id)
+            : undefined
           if (existing) removeLink(scope, existing, context)
           const occupant = linkStore.getInputSlotLink(
             scope,
             mutation.topology.targetNodeId,
             mutation.topology.targetSlot
           )
-          linkStore.replaceLink(scope, occupant, mutation.topology, context)
-          if (occupant) detachLinkSlots(scope, occupant, context)
+          const replacement = linkStore.replaceLink(
+            scope,
+            occupant,
+            mutation.topology,
+            context
+          )
+          if (!replacement) break
+          if (occupant) {
+            detachLinkSlots(scope, occupant, context)
+            linkPresentationStore.take(scope, occupant.id)
+          }
+          if (presentation) {
+            linkPresentationStore.patch(scope, replacement.id, presentation)
+          }
 
           const endpointNodes = new Map(
             nodeStore

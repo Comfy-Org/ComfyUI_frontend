@@ -132,6 +132,27 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
 
   const normalized = Object.assign({}, data, { links })
   const cloned = cloneDeep(normalized)
+  const presentation = cloned.extra?.linkPresentation
+  if (presentation) {
+    const survivorById = new Map(
+      links.map((link) => {
+        const fields = linkFields(link)
+        return [fields.id, fields]
+      })
+    )
+    for (const link of data.links) {
+      const fields = linkFields(link)
+      const survivorId = survivorByDuplicateId.get(fields.id)
+      if (survivorId === undefined || survivorId === fields.id) continue
+      const survivor = survivorById.get(survivorId)
+      if (
+        survivor &&
+        (toNodeId(fields.origin_id) !== toNodeId(survivor.origin_id) ||
+          fields.origin_slot !== survivor.origin_slot)
+      )
+        delete presentation[fields.id]
+    }
+  }
   remapLinkReferences(cloned, survivorByDuplicateId)
   return cloned
 }
