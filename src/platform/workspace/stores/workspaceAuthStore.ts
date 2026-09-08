@@ -45,6 +45,8 @@ export type WorkspaceTokenResponse = z.infer<
 
 const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
+const REFRESH_RETRY_JITTER_MS = 1000
+
 const UNIFIED_REFRESH_RETRY_BASE_MS = 5000
 
 const RECOVERY_COOLDOWN_MS = 5000
@@ -77,6 +79,10 @@ const PERMANENT_AUTH_ERROR_CODES = new Set([
   'INVALID_FIREBASE_TOKEN',
   'NOT_AUTHENTICATED'
 ])
+
+function withRefreshRetryJitter(delayMs: number): number {
+  return delayMs + Math.floor(Math.random() * REFRESH_RETRY_JITTER_MS)
+}
 
 function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
   return (
@@ -283,6 +289,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function destroy(): void {
+    refreshRequestId++
     stopRefreshTimer()
   }
 
@@ -667,7 +674,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           isAuthError && err.code === 'TOKEN_EXCHANGE_FAILED'
 
         if (isTransientError && attempt < maxRetries) {
-          const delay = baseDelayMs * Math.pow(2, attempt)
+          const delay = withRefreshRetryJitter(
+            baseDelayMs * Math.pow(2, attempt)
+          )
           console.warn(
             `Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
             err
@@ -680,7 +689,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           if (isTransientError && hasValidWorkspaceToken()) {
             error.value = null
             const retryScheduled = scheduleTokenRefreshRetry(
-              baseDelayMs * Math.pow(2, maxRetries)
+              withRefreshRetryJitter(baseDelayMs * Math.pow(2, maxRetries))
             )
             console.warn(
               retryScheduled
