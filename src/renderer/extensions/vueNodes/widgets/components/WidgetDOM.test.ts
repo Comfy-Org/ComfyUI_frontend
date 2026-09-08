@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const canvasMocks = vi.hoisted(() => ({
   canvas: {
     graph: {
-      getNodeById: vi.fn(() => null as unknown)
+      getNodeById: vi.fn((): unknown => null)
     }
   },
   linearMode: false
@@ -47,7 +47,7 @@ describe('WidgetDOM', () => {
     }
     return render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -74,7 +74,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -103,7 +103,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'

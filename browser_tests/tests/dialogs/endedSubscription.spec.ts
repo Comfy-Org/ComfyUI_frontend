@@ -29,7 +29,7 @@ test.describe('Ended workspace subscription', { tag: '@cloud' }, () => {
       TEAM_WORKSPACE,
       ENDED_STANDARD_BILLING_STATUS
     )
-    content = await workspace.openWorkspaceSettings()
+    content = await workspace.openPlanAndCreditsSettings()
   })
 
   test('shows subscribe prompt instead of stale paid plan metadata', async ({
@@ -74,12 +74,15 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
       TEAM_WORKSPACE,
       INACTIVE_TEAM_BILLING_STATUS
     )
-    content = await workspace.openWorkspaceSettings()
+    content = await workspace.openPlanAndCreditsSettings()
   })
 
   test('keeps the owner billing portal available', async ({ page }) => {
     await expect(
       content.getByRole('heading', { name: 'Inactive team subscription' })
+    ).toBeVisible()
+    await expect(
+      content.getByRole('button', { name: 'Reactivate plan' })
     ).toBeVisible()
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
     await expect
@@ -99,7 +102,7 @@ test.describe('Team member billing permissions', { tag: '@cloud' }, () => {
       TEAM_MEMBER_WORKSPACE,
       TEAM_BILLING_STATUS
     )
-    content = await workspace.openWorkspaceSettings()
+    content = await workspace.openPlanAndCreditsSettings()
   })
 
   test('does not expose owner billing actions', async () => {

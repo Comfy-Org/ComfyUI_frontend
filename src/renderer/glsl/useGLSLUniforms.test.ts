@@ -18,6 +18,19 @@ vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
   createPromotedHostWidgetIdLookup
 }))
 
+function makeGlslNode(
+  inputs: Array<{ name: string; link: number | null }>,
+  subgraph: Subgraph
+): LGraphNode {
+  const node = fromAny<LGraphNode, unknown>({ inputs })
+  return Object.assign(node, {
+    getInputLink: (slot: number) => {
+      const id = node.inputs[slot]?.link
+      return id == null ? null : subgraph.getLink(fromAny(id))
+    }
+  })
+}
+
 function createMockSubgraph(
   links: Record<number, { origin_id: number; origin_slot: number }>,
   nodes: Record<
@@ -33,13 +46,6 @@ function createMockSubgraph(
 
 describe('extractUniformSources', () => {
   it('uses origin_slot to select the correct widget from source node', () => {
-    const glslNode = fromAny<LGraphNode, unknown>({
-      inputs: [
-        { name: 'ints.u_int0', link: 1 },
-        { name: 'ints.u_int1', link: 2 }
-      ]
-    })
-
     const subgraph = createMockSubgraph(
       {
         1: { origin_id: 10, origin_slot: 1 },
@@ -59,6 +65,13 @@ describe('extractUniformSources', () => {
         }
       }
     )
+    const glslNode = makeGlslNode(
+      [
+        { name: 'ints.u_int0', link: 1 },
+        { name: 'ints.u_int1', link: 2 }
+      ],
+      subgraph
+    )
 
     const result = extractUniformSources(glslNode, subgraph)
 
@@ -67,13 +80,13 @@ describe('extractUniformSources', () => {
   })
 
   it('skips source when origin_slot exceeds widget count', () => {
-    const glslNode = fromAny<LGraphNode, unknown>({
-      inputs: [{ name: 'floats.u_float0', link: 1 }]
-    })
-
     const subgraph = createMockSubgraph(
       { 1: { origin_id: 10, origin_slot: 5 } },
       { 10: { id: 10, widgets: [{ name: 'value', value: 3.14 }] } }
+    )
+    const glslNode = makeGlslNode(
+      [{ name: 'floats.u_float0', link: 1 }],
+      subgraph
     )
 
     const result = extractUniformSources(glslNode, subgraph)
@@ -90,14 +103,11 @@ describe('extractUniformSources', () => {
     }
     const choiceWidget = { name: 'choice', value: 'Master' }
 
-    const glslNode = fromAny<LGraphNode, unknown>({
-      inputs: [{ name: 'ints.u_int0', link: 1 }]
-    })
-
     const subgraph = createMockSubgraph(
       { 1: { origin_id: 10, origin_slot: 1 } },
       { 10: { id: 10, widgets: [choiceWidget, indexWidget] } }
     )
+    const glslNode = makeGlslNode([{ name: 'ints.u_int0', link: 1 }], subgraph)
 
     const result = extractUniformSources(glslNode, subgraph)
 
@@ -108,12 +118,13 @@ describe('extractUniformSources', () => {
   })
 
   it('leaves hostWidgetId undefined when no subgraphNode is given', () => {
-    const glslNode = fromAny<LGraphNode, unknown>({
-      inputs: [{ name: 'curves.u_curve0', link: 1 }]
-    })
     const subgraph = createMockSubgraph(
       { 1: { origin_id: 10, origin_slot: 0 } },
       { 10: { id: 10, widgets: [{ name: 'curve', value: {} }] } }
+    )
+    const glslNode = makeGlslNode(
+      [{ name: 'curves.u_curve0', link: 1 }],
+      subgraph
     )
 
     const result = extractUniformSources(glslNode, subgraph)
@@ -129,12 +140,13 @@ describe('extractUniformSources', () => {
           : undefined
     )
 
-    const glslNode = fromAny<LGraphNode, unknown>({
-      inputs: [{ name: 'curves.u_curve0', link: 1 }]
-    })
     const subgraph = createMockSubgraph(
       { 1: { origin_id: 10, origin_slot: 0 } },
       { 10: { id: 10, widgets: [{ name: 'curve', value: {} }] } }
+    )
+    const glslNode = makeGlslNode(
+      [{ name: 'curves.u_curve0', link: 1 }],
+      subgraph
     )
     const subgraphNode = fromAny<SubgraphNode, unknown>({ id: 99 })
 

@@ -26,11 +26,11 @@ vi.mock('@/stores/widgetValueStore', () => ({
   useWidgetValueStore: () => ({ getWidget: () => undefined })
 }))
 
-function createMarkdownWidget(node: LGraphNode) {
+function createMarkdownWidget(node: LGraphNode, defaultValue = '') {
   const inputSpec: InputSpec = {
     type: 'MARKDOWN',
     name: 'note',
-    default: ''
+    default: defaultValue
   }
   return useMarkdownWidget()(node, inputSpec) as DOMWidget<HTMLElement, string>
 }
@@ -60,6 +60,18 @@ describe('useMarkdownWidget', () => {
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(2)
+  })
+
+  it('renders Markdown links and tables', () => {
+    const node = createMockDOMWidgetNode()
+    const widget = createMarkdownWidget(
+      node,
+      '[Comfy](https://www.comfy.org)\n\n| Name |\n| --- |\n| Comfy |'
+    )
+    onTestFinished(() => widget.onRemove?.())
+
+    expect(widget.element.querySelector('a')?.textContent).toBe('Comfy')
+    expect(widget.element.querySelector('table')?.textContent).toContain('Name')
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {

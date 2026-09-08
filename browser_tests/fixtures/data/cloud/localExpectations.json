@@ -1,0 +1,159 @@
+{
+  "ComfyUI-AdvancedLivePortrait": {
+    "expectedNodeCount": 6,
+    "reason": "stable-shard CI run 32082609026 registered 6 nodes vs Cloud's 4; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "ComfyUI-DepthAnythingV3": {
+    "expectedNodeCount": 15,
+    "reason": "stable-shard CI run 32082609026 registered 15 nodes vs Cloud's 9; the manifest's 6 disabled node IDs exactly match the delta"
+  },
+  "ComfyUI-DynamiCrafterWrapper": {
+    "expectedNodeCount": 12,
+    "reason": "stable-shard CI run 32082609026 registered 12 nodes vs Cloud's 11; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "ComfyUI-Image-Filters": {
+    "expectedNodeCount": 61,
+    "reason": "stable-shard CI run 32082609026 registered 61 nodes vs Cloud's 60; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "ComfyUI-KJNodes": {
+    "expectedNodeCount": 241,
+    "reason": "the pinned source declares 228 base and 13 conditional NODE_CONFIG entries; stable-shard CI run 32082609026 registered all 241 vs Cloud's 227"
+  },
+  "ComfyUI-LTXVideo": {
+    "expectedNodeCount": 76,
+    "reason": "the pinned source declares 76 unique static and decorated node IDs; stable-shard CI run 32082609026 registered all 76 vs Cloud's 74"
+  },
+  "ComfyUI-Prompt-Combinator": {
+    "expectedNodeCount": 4,
+    "reason": "stable-shard CI run 32082609026 registered 4 nodes vs Cloud's 3; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "ComfyUI-Qwen-TTS": {
+    "expectedNodeCount": 8,
+    "reason": "stable-shard CI run 32082609026 registered 8 nodes vs Cloud's 6; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "ComfyUI-QwenVL": {
+    "expectedNodeCount": 5,
+    "reason": "stable-shard CI run 32082609026 registered 5 nodes vs Cloud's 3; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "ComfyUI-WanAnimatePreprocess": {
+    "expectedNodeCount": 4,
+    "reason": "the pinned registry artifact declares exactly 4 NODE_CLASS_MAPPINGS entries; stable-shard CI run 32082609026 registered all 4 vs Cloud's 5"
+  },
+  "ComfyUI-WanVideoWrapper": {
+    "expectedNodeCount": 142,
+    "reason": "the pinned artifact declares 146 nodes across required and optional modules; stable-shard CI run 32082609026 registered an exact 142 vs Cloud's 141"
+  },
+  "ComfyUI-test-framework": {
+    "expectedNodeCount": 9,
+    "reason": "the pinned commit's get_node_list returns exactly 9 classes; stable-shard CI run 32082609026 registered all 9 vs Cloud's 17"
+  },
+  "ComfyUI_AudioTools": {
+    "expectedNodeCount": 31,
+    "reason": "the pinned commit declares exactly 31 NODE_CLASS_MAPPINGS entries; the fixed five-shard CPU environment registers all 31 vs Cloud's 29"
+  },
+  "ComfyUI_Fill-Nodes": {
+    "expectedNodeCount": 188,
+    "reason": "stable-shard CI run 32082609026 registered 188 nodes vs Cloud's 110; the manifest's 78 disabled node IDs exactly match the delta"
+  },
+  "ComfyUI_LayerStyle_Advance": {
+    "expectedNodeCount": 77,
+    "reason": "the pinned registry artifact declares 77 unique NODE_CLASS_MAPPINGS entries; stable-shard CI run 32082609026 registered all 77 vs Cloud's 46"
+  },
+  "ControlAltAI-Nodes": {
+    "expectedNodeCount": 22,
+    "reason": "stable-shard CI run 32082609026 registered 22 nodes vs Cloud's 21; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "OneButtonPrompt": {
+    "expectedNodeCount": 8,
+    "reason": "stable-shard CI run 32082609026 registered 8 nodes vs Cloud's 7; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "RES4LYF": {
+    "expectedNodeCount": 293,
+    "reason": "stable-shard CI run 32082609026 registered 293 nodes vs Cloud's 285; the manifest's 8 disabled node IDs exactly match the delta"
+  },
+  "WhatDreamsCost-ComfyUI": {
+    "expectedNodeCount": 8,
+    "reason": "stable-shard CI run 32082609026 registered 8 nodes vs Cloud's 6; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "basic_data_handling": {
+    "expectedNodeCount": 309,
+    "reason": "stable-shard CI run 32082609026 registered 309 nodes vs Cloud's 279; the manifest's 30 disabled node IDs exactly match the delta"
+  },
+  "comfyui-PlyPreview": {
+    "expectedNodeCount": 4,
+    "reason": "stable-shard CI run 32082609026 registered 4 nodes vs Cloud's 2; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "comfyui-advanced-controlnet": {
+    "expectedNodeCount": 43,
+    "reason": "stable-shard CI run 32082609026 registered 43 nodes vs Cloud's 42; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "comfyui-animatediff-evolved": {
+    "expectedNodeCount": 145,
+    "reason": "stable-shard CI run 32082609026 registered 145 nodes vs Cloud's 144; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "comfyui-florence2": {
+    "expectedNodeCount": 4,
+    "reason": "stable-shard CI run 32082609026 registered 4 nodes vs Cloud's 3; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "comfyui-frame-interpolation": {
+    "expectedNodeCount": 14,
+    "reason": "the pinned registry artifact declares exactly 14 NODE_CLASS_MAPPINGS entries; stable-shard CI run 32082609026 registered all 14 vs Cloud's 11"
+  },
+  "comfyui-impact-pack": {
+    "expectedExtensions": ["Comfy.Impack"],
+    "expectedNodeCount": 197,
+    "reason": "stable-shard CI run 32082609026 registered 197 nodes vs Cloud's 185, matching 12 disabled IDs, and registered the locally served Comfy.Impack extension"
+  },
+  "comfyui-itools": {
+    "expectedNodeCount": 22,
+    "reason": "stable-shard CI run 32082609026 registered 22 nodes vs Cloud's 14; the manifest's 8 disabled node IDs exactly match the delta"
+  },
+  "comfyui-layerdiffuse": {
+    "expectedNodeCount": 8,
+    "reason": "stable-shard CI run 32082609026 registered 8 nodes vs Cloud's 6; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "comfyui-logic": {
+    "expectedNodeCount": 7,
+    "reason": "stable-shard CI run 32082609026 registered 7 nodes vs Cloud's 6; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "comfyui-qwenmultiangle": {
+    "expectedNodeCount": 1,
+    "reason": "the pinned registry artifact's get_node_list returns exactly 1 class; stable-shard CI run 32082609026 registered it vs Cloud's 2"
+  },
+  "comfyui-rmbg": {
+    "expectedNodeCount": 42,
+    "reason": "the pinned artifact declares 43 nodes, but its SAM3Segment module requires unavailable Triton on this CPU shard; the other 42 register exactly vs Cloud's 35"
+  },
+  "comfyui-various": {
+    "expectedNodeCount": 68,
+    "reason": "stable-shard CI run 32082609026 registered 68 nodes vs Cloud's 55; the manifest's 13 disabled node IDs exactly match the delta"
+  },
+  "comfyui-videohelpersuite": {
+    "expectedNodeCount": 40,
+    "reason": "stable-shard CI run 32082609026 registered 40 nodes vs Cloud's 32; the manifest's 8 disabled node IDs exactly match the delta"
+  },
+  "comfyui_ipadapter_plus": {
+    "expectedNodeCount": 30,
+    "reason": "stable-shard CI run 32082609026 registered 30 nodes vs Cloud's 29; the manifest's 1 disabled node ID exactly matches the delta"
+  },
+  "comfyui_layerstyle": {
+    "expectedNodeCount": 165,
+    "reason": "the pinned registry artifact declares 165 unique NODE_CLASS_MAPPINGS entries; stable-shard CI run 32082609026 registered all 165 vs Cloud's 162"
+  },
+  "comfyui_steudio": {
+    "expectedNodeCount": 10,
+    "reason": "stable-shard CI run 32082609026 registered 10 nodes vs Cloud's 8; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "masquerade-nodes-comfyui": {
+    "expectedNodeCount": 22,
+    "reason": "stable-shard CI run 32082609026 registered 22 nodes vs Cloud's 20; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "wanvaceadvanced": {
+    "expectedNodeCount": 13,
+    "reason": "stable-shard CI run 32082609026 registered 13 nodes vs Cloud's 11; the manifest's 2 disabled node IDs exactly match the delta"
+  },
+  "was-node-suite-comfyui": {
+    "expectedNodeCount": 220,
+    "reason": "stable-shard CI run 32082609026 registered 220 nodes vs Cloud's 183; the manifest's 37 disabled node IDs exactly match the delta"
+  }
+}

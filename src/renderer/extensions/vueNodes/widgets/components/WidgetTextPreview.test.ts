@@ -1,8 +1,12 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -12,24 +16,25 @@ import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
-import type * as VueI18n from 'vue-i18n'
-
-import type * as LitegraphUtil from '@/utils/litegraphUtil'
-
 import WidgetTextPreview from './WidgetTextPreview.vue'
 
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
 const LOCATOR = 'loc-1'
 
+// jsdom does not implement ResizeObserver (happy-dom does); stub it before
+// component modules construct their module-level observer at import time.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   downloadFileMock: vi.fn(),
   copyMock: vi.fn()
-}))
-
-vi.mock('vue-i18n', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueI18n>()),
-  useI18n: () => ({ t: (key: string) => key })
 }))
 
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -40,8 +45,7 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: () => ({ copyToClipboard: copyMock })
 }))
 
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
-  ...(await importOriginal<typeof LitegraphUtil>()),
+vi.mock('@/utils/litegraphUtil', () => ({
   resolveNode: () => ({})
 }))
 
@@ -53,6 +57,21 @@ interface SavedFile {
   filename: string
   subfolder?: string
   type?: 'input' | 'output' | 'temp'
+}
+
+function createTestI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        g: {
+          copyToClipboard: 'Copy to Clipboard',
+          download: 'Download'
+        }
+      }
+    }
+  })
 }
 
 function renderPreview(
@@ -88,7 +107,7 @@ function renderPreview(
       nodeId: NODE_ID,
       modelValue: text
     },
-    global: { plugins: [pinia], mocks: { $t: (key: string) => key } }
+    global: { plugins: [pinia, createTestI18n()] }
   })
 }
 
@@ -111,7 +130,7 @@ describe('WidgetTextPreview', () => {
     renderPreview('hello world')
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'g.copyToClipboard' })
+      screen.getByRole('button', { name: 'Copy to Clipboard' })
     )
 
     expect(copyMock).toHaveBeenCalledWith('hello world')
@@ -121,7 +140,7 @@ describe('WidgetTextPreview', () => {
     renderPreview('hello')
 
     expect(
-      screen.queryByRole('button', { name: 'g.download' })
+      screen.queryByRole('button', { name: 'Download' })
     ).not.toBeInTheDocument()
   })
 
@@ -130,7 +149,7 @@ describe('WidgetTextPreview', () => {
       file: { filename: 'result_00001.txt', subfolder: 'sub', type: 'output' }
     })
 
-    await userEvent.click(screen.getByRole('button', { name: 'g.download' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Download' }))
 
     expect(downloadFileMock).toHaveBeenCalledTimes(1)
     const [url, filename] = downloadFileMock.mock.calls[0]

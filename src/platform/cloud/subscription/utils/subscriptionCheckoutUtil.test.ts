@@ -19,7 +19,7 @@ const {
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
   ),
-  mockUserId: { value: 'user-123' as string | undefined },
+  mockUserId: { value: 'user-123' },
   mockIsCloud: { value: true },
   mockGetCheckoutAttribution: vi.fn(() => ({
     ga_client_id: 'ga-client-id',
@@ -71,7 +71,7 @@ vi.mock('@/platform/telemetry', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() =>
     reactive({
-      getAuthHeader: mockGetAuthHeader,
+      getFirebaseAuthHeader: mockGetAuthHeader,
       fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
         fetch(input, init),
       userId: computed(() => mockUserId.value)
@@ -130,9 +130,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('tracks begin_checkout with user id and tier metadata', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -225,9 +223,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -256,9 +252,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('uses the latest userId when it changes after checkout starts', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     const authHeader = createDeferred<{ Authorization: string }>()
 
     mockUserId.value = 'user-early'

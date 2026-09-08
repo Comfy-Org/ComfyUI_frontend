@@ -5,13 +5,13 @@
 </template>
 
 <script setup lang="ts">
-import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -49,11 +49,9 @@ function handleResourceError(url: string, tagName: string) {
   console.error('[resource:loadError]', { url, tagName })
 
   if (__DISTRIBUTION__ === 'cloud') {
-    captureException(new Error(`Resource load failed: ${url}`), {
-      tags: {
-        error_type: 'resource_load_error',
-        tag_name: tagName
-      }
+    reportError(new Error(`Resource load failed: ${url}`), {
+      errorType: 'resource_load_error',
+      tags: { tag_name: tagName }
     })
   }
 }
@@ -77,18 +75,16 @@ onMounted(() => {
       message: info.message
     })
     if (__DISTRIBUTION__ === 'cloud') {
-      captureException(event.payload, {
+      reportError(event.payload, {
+        errorType: 'vite_preload_error',
         tags: {
-          error_type: 'vite_preload_error',
           file_type: info.fileType,
           chunk_name: info.chunkName ?? undefined
         },
-        contexts: {
-          preload: {
-            url: info.url,
-            fileType: info.fileType,
-            chunkName: info.chunkName
-          }
+        context: {
+          url: info.url,
+          fileType: info.fileType,
+          chunkName: info.chunkName
         }
       })
     }

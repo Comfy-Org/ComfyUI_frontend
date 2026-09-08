@@ -11,18 +11,16 @@ const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useKeyModifier: (key: string) => {
-      if (key === 'Shift') return mockShiftKey
-      if (key === 'Control') return mockCtrlKey
-      if (key === 'Meta') return mockMetaKey
-      return ref(false)
-    }
+vi.mock('@/platform/assets/composables/media/assetMappers')
+
+vi.mock('@vueuse/core', () => ({
+  useKeyModifier: (key: string) => {
+    if (key === 'Shift') return mockShiftKey
+    if (key === 'Control') return mockCtrlKey
+    if (key === 'Meta') return mockMetaKey
+    return ref(false)
   }
-})
+}))
 
 import { useAssetSelection } from './useAssetSelection'
 import { useAssetSelectionStore } from './useAssetSelectionStore'

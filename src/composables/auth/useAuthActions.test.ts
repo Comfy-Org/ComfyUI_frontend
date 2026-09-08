@@ -1,7 +1,9 @@
 import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
@@ -37,25 +39,38 @@ const mockDialogService = vi.hoisted(() => ({
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
-const mockStartTopupTracking = vi.hoisted(() => vi.fn())
+const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: false
 }))
 const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
+const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
-const knownAuthErrorCodes = new Set([
-  'auth/invalid-credential',
-  'auth/email-already-in-use',
-  'auth/user-not-found'
-])
+const authErrorMessages: Record<string, string> = enLocale.auth.errors
+
+const firebaseCodesWithOwnMessage = Object.keys(authErrorMessages).filter(
+  (key) => key.startsWith('auth/')
+)
+
+const popupPermissionCodes = [
+  AuthErrorCodes.POPUP_CLOSED_BY_USER,
+  AuthErrorCodes.EXPIRED_POPUP_REQUEST,
+  AuthErrorCodes.POPUP_BLOCKED
+]
+
+const accessErrorCodes = [
+  'auth/unauthorized-domain',
+  'auth/invalid-dynamic-link-domain',
+  'auth/unauthorized-continue-uri'
+]
 
 vi.mock('@/i18n', () => ({
-  t: (key: string, values?: { workflow?: string }) =>
-    values?.workflow ? `${key}:${values.workflow}` : key,
+  t: (key: string, values?: Record<string, string>) =>
+    values ? `${key}:${Object.values(values).join(':')}` : key,
   st: (key: string, fallback: string) => {
     const code = key.replace('auth.errors.', '')
-    return knownAuthErrorCodes.has(code) ? key : fallback
+    return code in authErrorMessages ? key : fallback
   }
 }))
 
@@ -67,9 +82,12 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackAuthFailed: mockTrackAuthFailed,
-    startTopupTracking: mockStartTopupTracking
+    trackAuthFailed: mockTrackAuthFailed
   }))
+}))
+
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -77,7 +95,8 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
-  clearAllWorkflowStorage: mockClearAllWorkflowStorage
+  clearAllWorkflowStorage: mockClearAllWorkflowStorage,
+  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -145,9 +164,9 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     await purchaseCreditsDirect(25)
 
-    expect(mockStartTopupTracking).toHaveBeenCalledOnce()
+    expect(mockStartPendingTopup).toHaveBeenCalledOnce()
     expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
-    expect(mockStartTopupTracking.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(mockStartPendingTopup.mock.invocationCallOrder[0]).toBeLessThan(
       open.mock.invocationCallOrder[0]
     )
   })
@@ -159,7 +178,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     await expect(purchaseCreditsDirect(25)).rejects.toThrow()
 
-    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(mockStartPendingTopup).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
   })
 
@@ -172,7 +191,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
     await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
 
-    expect(mockStartTopupTracking).not.toHaveBeenCalled()
+    expect(mockStartPendingTopup).not.toHaveBeenCalled()
     expect(open).not.toHaveBeenCalled()
   })
 })
@@ -214,12 +233,14 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith({
-      blockWrites: true
-    })
+    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
     expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
-      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
     )
+    expect(
+      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
+    ).toBeLessThan(mockClearAllWorkflowStorage.mock.invocationCallOrder[0])
     expect(
       mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
@@ -231,6 +252,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
+    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
     expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
 
@@ -412,17 +434,33 @@ describe('useAuthActions auth flow error telemetry', () => {
 })
 
 describe('useAuthActions.reportError', () => {
-  it('shows the friendly message for a known Firebase auth code', () => {
-    const { reportError } = useAuthActions()
+  it.for(firebaseCodesWithOwnMessage)(
+    'maps %s to its own message rather than the generic fallback',
+    (code) => {
+      const { reportError } = useAuthActions()
 
-    reportError(new FirebaseError('auth/invalid-credential', 'raw firebase'))
+      reportError(new FirebaseError(code, 'raw firebase'))
 
-    expect(mockToastStore.add).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'auth.errors.auth/invalid-credential'
-    })
-    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: `auth.errors.${code}` })
+      )
+      expect(mockToastErrorHandler).not.toHaveBeenCalled()
+    }
+  )
+
+  it('gives every Firebase code a message distinct from the generic one', () => {
+    const generic = authErrorMessages['generic']
+    const collisions = firebaseCodesWithOwnMessage.filter(
+      (code) => authErrorMessages[code] === generic
+    )
+
+    expect(collisions).toEqual([])
+  })
+
+  it('covers every popup-permission code with its own message', () => {
+    expect(firebaseCodesWithOwnMessage).toEqual(
+      expect.arrayContaining(popupPermissionCodes)
+    )
   })
 
   it('shows the signupBlocked message when the error carries the signup_blocked token', () => {
@@ -480,5 +518,60 @@ describe('useAuthActions.reportError', () => {
 
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
     expect(mockToastStore.add).not.toHaveBeenCalled()
+  })
+
+  it.for(popupPermissionCodes)(
+    'warns rather than errors for %s, since the user or browser caused it',
+    (code) => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(mockToastStore.add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'g.warning',
+        detail: `auth.errors.${code}`
+      })
+      expect(mockToastErrorHandler).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reports an account collision as an error, not a popup warning', () => {
+    const { reportError, accessError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('auth/account-exists-with-different-credential', 'raw')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.auth/account-exists-with-different-credential'
+    })
+    expect(accessError.value).toBe(false)
+  })
+
+  it.for(accessErrorCodes)(
+    'interpolates the domain and flips accessError for %s',
+    (code) => {
+      const { reportError, accessError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(accessError.value).toBe(true)
+      expect(mockToastStore.add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: `toastMessages.unauthorizedDomain:${window.location.hostname}:support@comfy.org`
+      })
+    }
+  )
+
+  it('leaves accessError false for auth codes outside the domain group', () => {
+    const { reportError, accessError } = useAuthActions()
+
+    reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
+
+    expect(accessError.value).toBe(false)
   })
 })

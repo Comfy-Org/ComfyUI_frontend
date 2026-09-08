@@ -14,10 +14,10 @@
         <p class="m-0">
           {{
             currentComfyUIVersion
-              ? t('loadWorkflowWarning.outdatedVersion', {
+              ? t('loadWorkflowWarning.newerVersionRequired', {
                   version: currentComfyUIVersion
                 })
-              : t('loadWorkflowWarning.outdatedVersionGeneric')
+              : t('loadWorkflowWarning.newerVersionRequiredGeneric')
           }}
         </p>
         <div

@@ -31,7 +31,7 @@ const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
 }
 
 const SectionWidgetsStub = {
-  props: ['widgets', 'node', 'parents'],
+  props: ['widgets', 'node', 'host'],
   setup(props: Record<string, unknown>) {
     captured.rows = props.widgets as {
       node: LGraphNode
@@ -67,7 +67,7 @@ function renderPanel(node: SubgraphNode) {
       plugins: [i18n],
       stubs: {
         SectionWidgets: SectionWidgetsStub,
-        AsyncSearchInput: true,
+        PanelSearchHeader: true,
         CollapseToggleButton: true
       }
     }

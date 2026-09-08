@@ -25,7 +25,10 @@ import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/managem
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createNodeState
+} from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -42,7 +45,10 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() },
+    get isGraphReady() {
+      return Boolean(this.rootGraph)
+    }
   }
 }))
 
@@ -104,7 +110,7 @@ function createBuilderWorkflowWithOutputs(
 ): LoadedComfyWorkflow {
   mockResolveNode.mockReturnValue(fromAny({ id: 1 }))
   const workflow = createBuilderWorkflow(activeMode)
-  workflow.changeTracker!.activeState!.extra ??= {}
+  workflow.changeTracker.activeState.extra ??= {}
   workflow.changeTracker.activeState.extra.linearData = {
     inputs: [],
     outputs: [toNodeId(1)]
@@ -170,7 +176,7 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:arrange')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:arrange')
     })
 
     it('navigates to builder:inputs when in app mode without outputs', () => {
@@ -178,7 +184,7 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
     it('navigates to builder:inputs when in graph mode with outputs', () => {
@@ -187,7 +193,7 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
     it('navigates to builder:inputs when in graph mode without outputs', () => {
@@ -195,7 +201,7 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
     it('shows empty workflow dialog when graph has no nodes', () => {
@@ -210,7 +216,7 @@ describe('appModeStore', () => {
           onDismiss: expect.any(Function)
         })
       )
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('graph')
     })
 
     it('prunes selections from workflow state on entry', () => {
@@ -304,7 +310,7 @@ describe('appModeStore', () => {
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
       expect(store.selectedOutputs).toEqual([toNodeId(1)])
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('graph')
     })
   })
 
@@ -804,12 +810,12 @@ describe('appModeStore', () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
       await nextTick()
-      vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
+      vi.mocked(workflow.changeTracker.captureCanvasState).mockClear()
 
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
 
-      expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
+      expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalled()
     })
 
     it('calls captureCanvasState when input is deselected', async () => {
@@ -817,12 +823,12 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = workflow
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
-      vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
+      vi.mocked(workflow.changeTracker.captureCanvasState).mockClear()
 
       store.selectedInputs.splice(0, 1)
       await nextTick()
 
-      expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
+      expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalled()
     })
 
     it('reflects input changes in linearData', async () => {
@@ -972,7 +978,7 @@ describe('appModeStore', () => {
       store.enterBuilder()
       await nextTick()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:arrange')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:arrange')
       expect(mockSettings.set).not.toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         expect.anything()
@@ -1078,7 +1084,7 @@ describe('appModeStore', () => {
         rootGraph.getNodeById(id)
       )
 
-      expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
+      expect(rootGraph.getNodeById(interior.id)).toBeNull()
 
       const result = store.pruneLinearData({
         inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
@@ -1106,9 +1112,10 @@ describe('appModeStore', () => {
         sourceWidgetName,
         widgetId: `${rootGraphId}:${hostId}:Prompt` as WidgetId
       }
+      const hostState = createNodeState({ id: toNodeId(hostId) })
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
-        id: hostId,
-        inputs: [{ name: 'Prompt', _widget: hostWidget }],
+        _state: hostState,
+        _inputs: [{ name: 'Prompt', _widget: hostWidget }],
         widgets: [hostWidget],
         isSubgraphNode: () => true
       }) as SubgraphNode

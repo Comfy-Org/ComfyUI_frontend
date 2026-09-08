@@ -16,7 +16,7 @@ export default defineConfig({
     unstubGlobals: true,
     fakeTimers: { shouldAdvanceTime: true },
     environment: 'node',
-    include: ['src/**/*.{test,spec}.ts'],
+    include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
     setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
     coverage: {

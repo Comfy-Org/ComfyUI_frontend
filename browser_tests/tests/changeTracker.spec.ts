@@ -86,13 +86,13 @@ async function waitForChangeTrackerSettled(
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window.app!.canvas!.emitBeforeChange()
+    window.app!.canvas.emitBeforeChange()
   })
 }
 
 async function afterChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window.app!.canvas!.emitAfterChange()
+    window.app!.canvas.emitAfterChange()
   })
 }
 
@@ -261,7 +261,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
     await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
-      window.app!.graph!.extra.foo = 'bar'
+      window.app!.graph.extra.foo = 'bar'
     })
     // Click empty space to trigger a change detection.
     await comfyPage.canvasOps.clickEmptySpace()
@@ -340,10 +340,37 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     'Does not restore invalid navigation stack',
     { tag: ['@vue-nodes', '@subgraph'] },
     async ({ comfyPage }) => {
-      const convertToSubgraph = (nodeTitle: string) =>
-        comfyPage.contextMenu
+      const convertToSubgraph = async (nodeTitle: string) => {
+        const { undoQueueSize } = await getChangeTrackerDebugState(comfyPage)
+
+        await comfyPage.contextMenu
           .openFor(comfyPage.vueNodes.getNodeByTitle(nodeTitle))
           .then((menu) => menu.clickMenuItem('Convert to Subgraph'))
+
+        await expect
+          .poll(async () => {
+            const state = await getChangeTrackerDebugState(comfyPage)
+            return {
+              graphMatchesActiveState: state.graphMatchesActiveState,
+              undoQueueAdvanced: state.undoQueueSize > undoQueueSize
+            }
+          })
+          .toEqual({
+            graphMatchesActiveState: true,
+            undoQueueAdvanced: true
+          })
+      }
+
+      const undoAndWait = () =>
+        comfyPage.page.evaluate(async () => {
+          const workspaceStore = window.app!.extensionManager as WorkspaceStore
+          const tracker = workspaceStore.workflow.activeWorkflow?.changeTracker
+          if (!tracker) {
+            throw new Error('Active workflow change tracker is not available')
+          }
+
+          await tracker.undo()
+        })
 
       await test.step('setup nested subgraph', async () => {
         await convertToSubgraph('Load Checkpoint')
@@ -359,7 +386,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
           .poll(() => comfyPage.subgraph.getActiveGraphId())
           .not.toBe(intermediateGraphId)
 
-        await comfyPage.keyboard.undo()
+        await undoAndWait()
         await expect
           .poll(
             () => comfyPage.subgraph.getActiveGraphId(),
@@ -368,8 +395,8 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
           .toBe(intermediateGraphId)
       })
 
-      await comfyPage.keyboard.undo()
-      await comfyPage.keyboard.undo()
+      await undoAndWait()
+      await undoAndWait()
       await expect
         .poll(
           () => comfyPage.subgraph.isInSubgraph(),

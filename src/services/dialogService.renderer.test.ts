@@ -32,6 +32,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: { value: true },
+    canSubscribeSelfServe: { value: false },
+    isReady: { value: true }
+  })
+}))
+
 import { useDialogService } from '@/services/dialogService'
 
 describe('dialogService Reka renderer opt-in', () => {
@@ -47,6 +55,20 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+  })
+
+  it('confirm() opens under its own stack key when the caller passes one', () => {
+    void useDialogService().confirm({ title: 'T', message: 'M' })
+    void useDialogService().confirm({
+      key: 'global-desktop-login-confirm',
+      title: 'T2',
+      message: 'M2'
+    })
+    const keys = showDialog.mock.calls.slice(-2).map(([args]) => args.key)
+    expect(
+      keys,
+      'a shared key would make showDialog reuse the open prompt and drop the second resolver, leaving its promise pending forever'
+    ).toEqual(['global-prompt', 'global-desktop-login-confirm'])
   })
 
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {

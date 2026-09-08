@@ -5,6 +5,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
 import { app } from '../../scripts/app'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
@@ -62,19 +63,13 @@ app.registerExtension({
 
         // Prevent multiple connections to different types when we have no input
         if (connected && type === LiteGraph.OUTPUT) {
+          const links = outputLinks(graph, this.id, 0)
           // Ignore wildcard nodes as these will be updated to real types
           const types = new Set(
-            this.outputs[0].links
-              ?.map((l) => graph.links[l]?.type)
-              ?.filter((t) => t && t !== '*') ?? []
+            links.map((l) => l.type).filter((t) => t && t !== '*')
           )
           if (types.size > 1) {
-            const linksToDisconnect = []
-            for (const linkId of this.outputs[0].links ?? []) {
-              const link = graph.links[linkId]
-              linksToDisconnect.push(link)
-            }
-            linksToDisconnect.pop()
+            const linksToDisconnect = links.slice(0, -1)
             for (const link of linksToDisconnect) {
               const node = graph.getNodeById(link.target_id)
               node?.disconnectInput(link.target_slot)
@@ -89,9 +84,8 @@ app.registerExtension({
         let inputNode = null
         while (currentNode) {
           updateNodes.unshift(currentNode)
-          const linkId = currentNode.inputs[0].link
-          if (linkId !== null) {
-            const link = graph.links[linkId]
+          if (currentNode.isInputConnected(0)) {
+            const link = currentNode.getInputLink(0)
             if (!link) return
             const node = graph.getNodeById(link.origin_id)
             if (!node) return
@@ -122,13 +116,7 @@ app.registerExtension({
         let outputType = null
         while (nodes.length) {
           currentNode = nodes.pop()!
-          const outputs = currentNode.outputs?.[0]?.links ?? []
-          for (const linkId of outputs) {
-            const link = graph.links[linkId]
-
-            // When disconnecting sometimes the link is still registered
-            if (!link) continue
-
+          for (const link of outputLinks(graph, currentNode.id, 0)) {
             const node = graph.getNodeById(link.target_id)
             if (!node) continue
             if (node instanceof RerouteNode) {
@@ -176,9 +164,7 @@ app.registerExtension({
             : ''
           node.setSize(node.computeSize())
 
-          for (const l of node.outputs[0].links || []) {
-            const link = graph.links[l]
-            if (!link) continue
+          for (const link of outputLinks(graph, node.id, 0)) {
             link.color = color
 
             if (app.configuringGraph) continue
@@ -215,11 +201,9 @@ app.registerExtension({
           }
         }
 
-        if (inputNode?.inputs?.[0]?.link) {
-          const link = graph.links[inputNode.inputs[0].link]
-          if (link) {
-            link.color = color
-          }
+        const inputNodeLink = inputNode?.getInputLink(0)
+        if (inputNodeLink) {
+          inputNodeLink.color = color
         }
       }
 

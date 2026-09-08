@@ -5,6 +5,7 @@ import type * as I18nModule from './i18n'
 let i18n: typeof I18nModule.i18n
 let loadLocale: typeof I18nModule.loadLocale
 let resolveNodeDefText: typeof I18nModule.resolveNodeDefText
+let resolveNodeDefSlotText: typeof I18nModule.resolveNodeDefSlotText
 let setBackendNodeText: typeof I18nModule.setBackendNodeText
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
@@ -16,6 +17,7 @@ async function importI18nModule() {
   i18n = i18nModule.i18n
   loadLocale = i18nModule.loadLocale
   resolveNodeDefText = i18nModule.resolveNodeDefText
+  resolveNodeDefSlotText = i18nModule.resolveNodeDefSlotText
   setBackendNodeText = i18nModule.setBackendNodeText
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
@@ -29,7 +31,7 @@ vi.mock('./locales/en/main.json', () => ({
 }))
 // vue-i18n merges mutate the message tree built from this object, and mocked
 // modules survive vi.resetModules(), so restore it before each test.
-const enNodeDefsMock = vi.hoisted(() => ({}) as Record<string, unknown>)
+const enNodeDefsMock = vi.hoisted<Record<string, unknown>>(() => ({}))
 
 function restoreEnNodeDefsMock() {
   for (const key of Object.keys(enNodeDefsMock)) {
@@ -37,7 +39,18 @@ function restoreEnNodeDefsMock() {
   }
   Object.assign(enNodeDefsMock, {
     testNode: 'Test Node',
-    KSampler: { display_name: 'KSampler (bundled)' }
+    KSampler: {
+      display_name: 'KSampler (bundled)',
+      inputs: {
+        seed: { name: 'seed (bundled)', tooltip: 'Seed tooltip (bundled)' },
+        // The serializer escapes `name` and leaves `tooltip` verbatim, so the
+        // same source text is stored differently per field.
+        syntax: { name: "50{'%'} {'@'}", tooltip: "50{'%'} {'@'}" }
+      },
+      outputs: {
+        0: { name: 'LATENT (bundled)', tooltip: 'Latent tooltip (bundled)' }
+      }
+    }
   })
 }
 
@@ -54,7 +67,12 @@ vi.mock('./locales/en/settings.json', () => ({
 // Mock lazy-loaded locales
 vi.mock('./locales/zh/main.json', () => ({ default: { welcome: '欢迎' } }))
 vi.mock('./locales/zh/nodeDefs.json', () => ({
-  default: { testNode: '测试节点' }
+  default: {
+    testNode: '测试节点',
+    KSampler: {
+      inputs: { seed: { name: '种子', tooltip: '种子提示' } }
+    }
+  }
 }))
 vi.mock('./locales/zh/commands.json', () => ({ default: { save: '保存' } }))
 vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
@@ -154,7 +172,9 @@ describe('i18n', () => {
 
       // 4. Also verify base locale data is present
       expect(zhMessages.welcome).toBe('欢迎')
-      expect(zhMessages.nodeDefs).toEqual({ testNode: '测试节点' })
+      expect(zhMessages.nodeDefs).toEqual(
+        expect.objectContaining({ testNode: '测试节点' })
+      )
     })
 
     it('should handle multiple locales in custom nodes i18n data', async () => {
@@ -362,6 +382,129 @@ describe('i18n', () => {
         setBackendNodeText([])
 
         expect(resolveNodeDefText('description', 'Unknown')).toBe('')
+      })
+    })
+  })
+
+  describe('slot text', () => {
+    describe('precedence', () => {
+      it.for([
+        { field: 'name', slot: 'seed', backend: 'Live Seed' },
+        { field: 'tooltip', slot: 0, backend: 'Live tooltip' }
+      ] as const)(
+        'en: live $field for slot $slot beats the bundled snapshot',
+        ({ field, slot, backend }) => {
+          expect(resolveNodeDefSlotText(field, 'KSampler', slot, backend)).toBe(
+            backend
+          )
+        }
+      )
+
+      it.for([
+        {
+          field: 'tooltip',
+          slot: 'seed',
+          expected: 'Seed tooltip (bundled)'
+        },
+        {
+          field: 'name',
+          slot: 0,
+          expected: 'LATENT (bundled)'
+        }
+      ] as const)(
+        'en: bundled $field for slot $slot is used without backend text',
+        ({ field, slot, expected }) => {
+          expect(resolveNodeDefSlotText(field, 'KSampler', slot)).toBe(expected)
+        }
+      )
+
+      it('en: falls back to the caller fallback when nothing supplies text', () => {
+        expect(
+          resolveNodeDefSlotText('name', 'Unknown', 'seed', undefined, 'seed')
+        ).toBe('seed')
+        expect(resolveNodeDefSlotText('tooltip', 'Unknown', 0)).toBe('')
+      })
+
+      it('en: a custom-node translation beats the backend', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              KSampler: { inputs: { seed: { name: 'Custom Seed' } } }
+            }
+          }
+        })
+
+        expect(
+          resolveNodeDefSlotText('name', 'KSampler', 'seed', 'Live Seed')
+        ).toBe('Custom Seed')
+      })
+
+      it('non-en: the translation stays authoritative over the backend', async () => {
+        await setActiveLocale('zh')
+
+        expect(
+          resolveNodeDefSlotText('name', 'KSampler', 'seed', 'Live Seed')
+        ).toBe('种子')
+        expect(
+          resolveNodeDefSlotText('tooltip', 'KSampler', 'seed', 'Live tooltip')
+        ).toBe('种子提示')
+      })
+
+      it('non-en: falls back to the live backend value, not the en snapshot', async () => {
+        await setActiveLocale('zh')
+
+        expect(
+          resolveNodeDefSlotText('name', 'KSampler', 0, 'Live Latent')
+        ).toBe('Live Latent')
+      })
+    })
+
+    describe('raw / compiled split', () => {
+      it('compiles a bundled name but returns a bundled tooltip uncompiled', () => {
+        expect(resolveNodeDefSlotText('name', 'KSampler', 'syntax')).toBe(
+          '50% @'
+        )
+        expect(resolveNodeDefSlotText('tooltip', 'KSampler', 'syntax')).toBe(
+          "50{'%'} {'@'}"
+        )
+      })
+
+      it('returns backend slot text verbatim, never through the compiler', () => {
+        const raw = "Mask {'@'} 100% | D:\\output"
+
+        expect(resolveNodeDefSlotText('tooltip', 'KSampler', 'seed', raw)).toBe(
+          raw
+        )
+      })
+    })
+
+    describe('key resolution', () => {
+      it('normalizes dotted input names', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              KSampler: { inputs: { a_b: { name: 'Dotted Input' } } }
+            }
+          }
+        })
+
+        expect(resolveNodeDefSlotText('name', 'KSampler', 'a.b', 'Live')).toBe(
+          'Dotted Input'
+        )
+      })
+
+      it('resolves the legacy nested shape hand-written locales use', () => {
+        mergeCustomNodesI18n({
+          en: {
+            nodeDefs: {
+              my: { node: { inputs: { seed: { name: 'Nested Seed' } } } }
+            }
+          }
+        })
+
+        expect(resolveNodeDefSlotText('name', 'my.node', 'seed', 'Live')).toBe(
+          'Nested Seed'
+        )
       })
     })
   })

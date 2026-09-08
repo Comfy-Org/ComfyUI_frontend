@@ -16,16 +16,20 @@ const {
   label,
   testId,
   triggerClass,
+  contentClass: contentClassOverride,
   ringClass = 'focus-visible:ring-base-foreground',
   side = 'top',
-  sideOffset = 6
+  sideOffset = 6,
+  delayDuration = 300
 } = defineProps<{
   label: string | string[]
   testId?: string
   triggerClass?: string
+  contentClass?: string
   ringClass?: string
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
+  delayDuration?: number
 }>()
 
 const open = ref(false)
@@ -35,17 +39,20 @@ const labelText = computed(() =>
   Array.isArray(label) ? label.join(', ') : label
 )
 
-const contentClass = cn(
-  'z-1700 max-w-48 rounded-md bg-charcoal-300 px-3 py-2',
-  'text-xs text-white shadow-interface will-change-[transform,opacity]',
-  'data-[state=closed]:animate-out data-[state=open]:animate-in',
-  'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-  'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95'
+const contentClass = computed(() =>
+  cn(
+    'z-1700 max-w-48 rounded-md bg-charcoal-300 px-3 py-2',
+    'text-xs text-white shadow-interface will-change-[transform,opacity]',
+    'data-[state=closed]:animate-out data-[state=open]:animate-in',
+    'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+    'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+    contentClassOverride
+  )
 )
 </script>
 
 <template>
-  <TooltipProvider :delay-duration="300">
+  <TooltipProvider :delay-duration="delayDuration">
     <TooltipRoot v-model:open="open" disable-closing-trigger>
       <TooltipTrigger as-child>
         <slot name="trigger">

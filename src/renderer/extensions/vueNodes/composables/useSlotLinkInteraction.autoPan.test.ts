@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -11,36 +13,40 @@ const {
   mockSetDirty,
   mockLinkConnector,
   mockAdapter
-} = vi.hoisted(() => ({
-  capturedOnPan: { current: null as ((dx: number, dy: number) => void) | null },
-  capturedAutoPan: {
-    current: null as {
-      updatePointer: ReturnType<typeof vi.fn>
-      start: ReturnType<typeof vi.fn>
-      stop: ReturnType<typeof vi.fn>
-    } | null
-  },
-  capturedHandlers: {} as Record<string, (...args: unknown[]) => void>,
-  mockDs: { offset: [0, 0] as [number, number], scale: 1 },
-  mockSetDirty: vi.fn(),
-  mockLinkConnector: {
+} = vi.hoisted(() => {
+  const capturedHandlers: Record<string, (...args: unknown[]) => void> = {}
+  const mockLinkConnector = {
     isConnecting: false,
     state: { snapLinksPos: null as [number, number] | null },
     events: {}
-  },
-  mockAdapter: {
-    beginFromOutput: vi.fn(),
-    beginFromInput: vi.fn(),
-    reset: vi.fn(),
-    renderLinks: [] as unknown[],
-    linkConnector: null as unknown,
-    isInputValidDrop: vi.fn(() => false),
-    isOutputValidDrop: vi.fn(() => false),
-    dropOnCanvas: vi.fn()
   }
-}))
-
-mockAdapter.linkConnector = mockLinkConnector
+  return {
+    capturedOnPan: {
+      current: null as ((dx: number, dy: number) => void) | null
+    },
+    capturedAutoPan: {
+      current: null as {
+        updatePointer: ReturnType<typeof vi.fn>
+        start: ReturnType<typeof vi.fn>
+        stop: ReturnType<typeof vi.fn>
+      } | null
+    },
+    capturedHandlers,
+    mockDs: { offset: [0, 0] as [number, number], scale: 1 },
+    mockSetDirty: vi.fn(),
+    mockLinkConnector,
+    mockAdapter: {
+      beginFromOutput: vi.fn(),
+      beginFromInput: vi.fn(),
+      reset: vi.fn(),
+      renderLinks: [] as unknown[],
+      linkConnector: mockLinkConnector,
+      isInputValidDrop: vi.fn(() => false),
+      isOutputValidDrop: vi.fn(() => false),
+      dropOnCanvas: vi.fn()
+    }
+  }
+})
 
 vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   AutoPanController: class {
@@ -63,10 +69,12 @@ vi.mock('@/scripts/app', () => ({
     canvas: {
       ds: mockDs,
       graph: {
+        rootGraph: { id: 'autopan-graph' },
+        nodes: [],
         getNodeById: (id: string) => ({
           id,
           inputs: [],
-          outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
+          outputs: [{ name: 'out', type: '*', links: [] }]
         }),
         getLink: () => null,
         getReroute: () => null
@@ -134,16 +142,18 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getSlotLayout: (_key: string) => ({
-      nodeId: 'node1',
-      index: 0,
-      type: 'output',
-      position: { x: 100, y: 200 }
-    }),
-    getAllSlotKeys: () => [],
     getRerouteLayout: () => null,
     queryRerouteAtPoint: () => null
   }
+}))
+
+vi.mock('@/renderer/core/canvas/litegraph/slotCalculations', () => ({
+  getGraphSlotLayout: () => ({
+    nodeId: 'node1',
+    index: 0,
+    type: 'output',
+    position: { x: 100, y: 200 }
+  })
 }))
 
 vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
@@ -190,7 +200,8 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 vi.mock('@/lib/litegraph/src/LLink', () => ({
-  LLink: { getReroutes: () => [] }
+  LLink: { getReroutes: () => [] },
+  slotFloatingLinks: () => []
 }))
 
 vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
@@ -238,6 +249,7 @@ function startDrag() {
 
 describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {

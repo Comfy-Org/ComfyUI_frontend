@@ -39,6 +39,7 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 | `./css/_palette.css` | Color variables                                            |
 | `./css/fonts.css`    | Font faces                                                 |
 | `./icons/*.svg`      | Comfy icon set source SVGs                                 |
+| `./workspaceAvatar`  | Deterministic workspace avatar styles by plan and name     |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.
