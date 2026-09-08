@@ -24,7 +24,7 @@ exports[`Workshop snippets > builds the typescript snippet from the current valu
 "import { comfy } from '@comfyorg/sdk'
 
 comfy.config({ credentials: 'YOUR_API_KEY' })
-const { data } = await comfy.models.run('bfl/flux-3', {
+const { data } = await comfy.models.run("bfl/flux-3", {
   "prompt": "A red fox",
   "enhance": true
 })"

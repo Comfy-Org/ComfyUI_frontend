@@ -5,7 +5,6 @@ const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
-const NOINDEX_PREFIXES = ['/workshop'] as const
 
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
   locale === DEFAULT_LOCALE ? '' : `/${locale}`
@@ -40,13 +39,7 @@ function normalizePathname(pathname: string): string {
 }
 
 export function isNoindexPathname(pathname: string): boolean {
-  const normalized = normalizePathname(pathname)
-  return (
-    NOINDEX_PATHNAMES.has(normalized) ||
-    NOINDEX_PREFIXES.some(
-      (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`)
-    )
-  )
+  return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
 }
 
 export function isExcludedFromSitemap(page: string): boolean {
