@@ -116,19 +116,22 @@ const options: {
 
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
-    <Tooltip :config="buildAgentTooltipConfig(triggerTooltip)" side="top">
-      <PopoverTrigger
-        :class="
-          cn(
-            'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
-            open && 'bg-agent-surface-hover text-agent-fg'
-          )
-        "
-      >
-        <span>{{ triggerLabel }}</span>
-        <span class="icon-[lucide--chevron-down] size-3" />
-      </PopoverTrigger>
-    </Tooltip>
+    <PopoverTrigger as-child>
+      <Tooltip :config="buildAgentTooltipConfig(triggerTooltip)" side="top">
+        <button
+          type="button"
+          :class="
+            cn(
+              'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
+              open && 'bg-agent-surface-hover text-agent-fg'
+            )
+          "
+        >
+          <span>{{ triggerLabel }}</span>
+          <span class="icon-[lucide--chevron-down] size-3" />
+        </button>
+      </Tooltip>
+    </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent
         side="top"
