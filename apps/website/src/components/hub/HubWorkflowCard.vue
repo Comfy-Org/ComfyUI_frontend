@@ -200,7 +200,7 @@ function openCard() {
       <h3
         :class="
           cn(
-            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-base leading-[1.3] font-medium drop-shadow-md sm:text-lg lg:text-xl',
+            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md sm:text-base lg:text-lg',
             modelLogos.length > 1 ? 'right-32' : 'right-16'
           )
         "
@@ -240,7 +240,15 @@ function openCard() {
           </span>
         </span>
 
-        <span class="flex items-center gap-1.5">
+        <!-- With the names open, the marks beside them only say it twice. -->
+        <span
+          :class="
+            cn(
+              'flex items-center gap-1.5',
+              modelLogos.length > 1 && 'group-hover:hidden'
+            )
+          "
+        >
           <span
             v-for="logo in shownLogos"
             :key="logo.name"

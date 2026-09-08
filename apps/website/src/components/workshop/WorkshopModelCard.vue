@@ -123,7 +123,7 @@ const pillClass =
         aria-hidden="true"
       />
       <h3
-        class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-base leading-[1.3] font-medium drop-shadow-md sm:text-lg lg:text-xl"
+        class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md sm:text-base lg:text-lg"
       >
         {{ model.name }}
       </h3>
@@ -157,7 +157,7 @@ const pillClass =
 
       <span
         v-if="versionCount > 1"
-        class="bg-page/70 text-content absolute top-4 right-4 z-10 inline-flex h-10 items-center rounded-2xl px-3 text-xs backdrop-blur-md"
+        class="bg-page/70 text-content absolute top-4 right-4 z-10 inline-flex h-8 items-center rounded-xl px-2.5 text-2xs backdrop-blur-md"
         data-testid="model-card-versions"
       >
         {{
@@ -166,7 +166,7 @@ const pillClass =
       </span>
       <span
         v-if="showStatus && model.status"
-        class="bg-primary-comfy-yellow/80 absolute top-4 right-4 z-10 inline-flex h-10 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-md"
+        class="bg-primary-comfy-yellow/80 absolute top-4 right-4 z-10 inline-flex h-8 items-center rounded-xl px-2.5 text-[10px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-md"
       >
         {{
           model.status === 'deprecated'

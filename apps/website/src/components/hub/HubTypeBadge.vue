@@ -31,16 +31,18 @@ const labels: Record<Kind, TranslationKey> = {
   <!-- The icon alone does not say "app" or "graph", so hovering the card opens
     the badge into its name. -->
   <span
-    class="absolute top-4 left-4 z-10 inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-black/40 px-2.5 text-white backdrop-blur-md"
+    class="absolute top-4 left-4 z-10 inline-flex h-8 min-w-8 items-center justify-center rounded-xl bg-black/40 px-2 text-white backdrop-blur-md"
     data-testid="hub-type-badge"
     :data-kind="kind"
   >
-    <component :is="icons[kind]" class="size-5 shrink-0" />
+    <component :is="icons[kind]" class="size-4 shrink-0" />
     <span
       class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-hover:grid-cols-[1fr]"
     >
       <span class="overflow-hidden">
-        <span class="ppformula-text-center-sm pl-1.5 text-xs whitespace-nowrap">
+        <span
+          class="ppformula-text-center-sm pl-1.5 text-2xs whitespace-nowrap"
+        >
           {{ t(labels[kind], locale) }}
         </span>
       </span>
