@@ -567,7 +567,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (!ownerUid) return null
     const targetWorkspaceId = preferredWorkspaceId ?? currentWorkspace.value?.id
 
-    while (true) {
+    for (;;) {
       if (!isCurrentUser(ownerUid)) return null
       if (hasValidTokenForWorkspace(targetWorkspaceId)) {
         return workspaceToken.value

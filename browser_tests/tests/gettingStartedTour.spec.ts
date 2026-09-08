@@ -52,6 +52,7 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-01-01',
@@ -63,6 +64,7 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE',
   subscription_duration: 'MONTHLY',
   has_funds: false
@@ -399,6 +401,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('arriving on a template link', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await clearWorkflowHistory(comfyPage.page)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: false,
         url: `/?template=${LINKED_TEMPLATE_ID}`
@@ -487,6 +490,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('arriving on a link that loads nothing', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await clearWorkflowHistory(comfyPage.page)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: false,
         url: '/?template=no_such_template_exists'
