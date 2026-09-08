@@ -47,6 +47,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -124,6 +125,11 @@ const { dismissedSelectionSignature, enabled: agentEnabled } =
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
+// Opens at the template's view so the follower's first nodes land on screen.
+const agentTabGraph: ComfyWorkflowJSON = {
+  ...blankGraph,
+  extra: { ds: { offset: [0, 0], scale: 1 } }
+}
 
 const canvasStore = useCanvasStore()
 const graphMutationsByWorkflow = new Map<
@@ -607,10 +613,15 @@ async function onAgentActiveTab(
     if (stale()) return
     const tab = workflowStore.createNewTemporary(
       agentTabFilename(data.name),
-      blankGraph
+      agentTabGraph
     )
     tabActivity.setCreating(false)
-    await workflowService.openWorkflow(tab)
+    try {
+      await workflowService.openWorkflow(tab)
+    } catch (error) {
+      await workflowStore.closeWorkflow(tab)
+      throw error
+    }
     if (stale()) {
       // A newer activation superseded this one mid-open: close the minted
       // tab rather than stranding a ghost the user never asked for.
