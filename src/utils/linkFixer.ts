@@ -38,7 +38,11 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
-interface BadLinksData<T = ISerialisedGraph | LGraph> {
+type FixableSerialisedGraph = Omit<ISerialisedGraph, 'links'> & {
+  links: (SerialisedLLinkArray | null)[]
+}
+
+interface BadLinksData<T = FixableSerialisedGraph | LGraph> {
   hasBadLinks: boolean
   fixed: boolean
   graph: T
@@ -51,11 +55,14 @@ enum IoDirection {
   OUTPUT
 }
 
-function isLiveGraph(graph: ISerialisedGraph | LGraph): graph is LGraph {
+function isLiveGraph(graph: FixableSerialisedGraph | LGraph): graph is LGraph {
   return 'getNodeById' in graph
 }
 
-function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
+function getNodeById(
+  graph: FixableSerialisedGraph | LGraph,
+  id: SerializedNodeId
+) {
   if (isLiveGraph(graph)) {
     const parsedNodeId = parseNodeId(id)
     return parsedNodeId ? graph.getNodeById(parsedNodeId) : null
@@ -99,7 +106,7 @@ function extendLink(link: SerialisedLLinkArray) {
  * result.
  */
 export function fixBadLinks(
-  graph: ISerialisedGraph | LGraph,
+  graph: FixableSerialisedGraph | LGraph,
   options: {
     fix?: boolean
     silent?: boolean
@@ -116,15 +123,21 @@ export function fixBadLinks(
   }
 
   const patchedNodeSlots: {
-    [nodeId: string]: {
-      inputs?: { [slot: number]: number | null }
-      outputs?: {
-        [slots: number]: {
-          links: number[]
-          changes: { [linkId: number]: 'ADD' | 'REMOVE' }
+    [nodeId: string]:
+      | {
+          inputs?: { [slot: number]: number | null | undefined }
+          outputs?: {
+            [slots: number]:
+              | {
+                  links: number[]
+                  changes: {
+                    [linkId: number]: 'ADD' | 'REMOVE' | undefined
+                  }
+                }
+              | undefined
+          }
         }
-      }
-    }
+      | undefined
   } = {}
 
   const data: {
@@ -145,8 +158,8 @@ export function fixBadLinks(
     linkId: number,
     op: 'ADD' | 'REMOVE'
   ) {
-    patchedNodeSlots[node.id] = patchedNodeSlots[node.id] || {}
-    const patchedNode = patchedNodeSlots[node.id]
+    const patchedNode = patchedNodeSlots[node.id] ?? {}
+    patchedNodeSlots[node.id] = patchedNode
     if (ioDir == IoDirection.INPUT) {
       patchedNode['inputs'] = patchedNode['inputs'] || {}
       // We can set to null (delete), so undefined means we haven't set it at all.
@@ -239,29 +252,29 @@ export function fixBadLinks(
   ) {
     // Patched data should be canonical. We can double check if fixing too.
     let has: boolean
+    const patchedNode = patchedNodeSlots[node.id]
     if (ioDir === IoDirection.INPUT) {
       const nodeHasIt = node.inputs?.[slot]?.link === linkId
-      if (patchedNodeSlots[node.id]?.['inputs']) {
-        const patchedHasIt =
-          patchedNodeSlots[node.id]['inputs']![slot] === linkId
+      if (patchedNode?.inputs) {
+        const patchedHasIt = patchedNode.inputs[slot] === linkId
         // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
           throw Error('Error. Expected node to match patched data.')
         }
         has = patchedHasIt
       } else {
-        has = !!nodeHasIt
+        has = nodeHasIt
       }
     } else {
       const nodeHasIt = outputLinkIdsOf(node, slot)?.includes(toLinkId(linkId))
-      if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes'][linkId]) {
-        const patchedHasIt =
-          patchedNodeSlots[node.id]['outputs']![slot]?.links.includes(linkId)
+      const patchedOutput = patchedNode?.outputs?.[slot]
+      if (patchedOutput?.changes[linkId]) {
+        const patchedHasIt = patchedOutput.links.includes(linkId)
         // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
           throw Error('Error. Expected node to match patched data.')
         }
-        has = !!patchedHasIt
+        has = patchedHasIt
       } else {
         has = !!nodeHasIt
       }
@@ -279,23 +292,24 @@ export function fixBadLinks(
   ) {
     // Patched data should be canonical. We can double check if fixing too.
     let hasAny: boolean
+    const patchedNode = patchedNodeSlots[node.id]
     if (ioDir === IoDirection.INPUT) {
       const nodeHasAny = node.inputs?.[slot]?.link != null
-      if (patchedNodeSlots[node.id]?.['inputs']) {
-        const patchedHasAny = patchedNodeSlots[node.id]['inputs']![slot] != null
+      if (patchedNode?.inputs) {
+        const patchedHasAny = patchedNode.inputs[slot] != null
         // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
           throw Error('Error. Expected node to match patched data.')
         }
         hasAny = patchedHasAny
       } else {
-        hasAny = !!nodeHasAny
+        hasAny = nodeHasAny
       }
     } else {
       const nodeHasAny = outputLinkIdsOf(node, slot)?.length
-      if (patchedNodeSlots[node.id]?.['outputs']?.[slot]?.['changes']) {
-        const patchedHasAny =
-          patchedNodeSlots[node.id]['outputs']![slot]?.links.length
+      const patchedOutput = patchedNode?.outputs?.[slot]
+      if (patchedOutput?.changes) {
+        const patchedHasAny = patchedOutput.links.length
         // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
           throw Error('Error. Expected node to match patched data.')
@@ -308,18 +322,15 @@ export function fixBadLinks(
     return hasAny
   }
 
-  const links: Array<SerialisedLLinkArray | LLink> = Array.isArray(graph.links)
-    ? graph.links
-    : Array.from((graph as LGraph).links.values())
+  const links: Array<SerialisedLLinkArray | LLink | null> = isLiveGraph(graph)
+    ? Array.from(graph.links.values())
+    : graph.links
 
   const linksReverse = [...links]
   linksReverse.reverse()
   for (const l of linksReverse) {
     if (!l) continue
-    const link =
-      (l as LLink).origin_slot != null
-        ? (l as LLink)
-        : extendLink(l as SerialisedLLinkArray)
+    const link = !Array.isArray(l) ? l : extendLink(l)
 
     const originNode = getNodeById(graph, link.origin_id)
     const originHasLink = () =>
@@ -410,10 +421,7 @@ export function fixBadLinks(
   // Now that we've cleaned up the inputs, outputs, run through it looking for dangling links.,
   for (const l of linksReverse) {
     if (!l) continue
-    const link =
-      (l as LLink).origin_slot != null
-        ? (l as LLink)
-        : extendLink(l as SerialisedLLinkArray)
+    const link = !Array.isArray(l) ? l : extendLink(l)
     const originNode = getNodeById(graph, link.origin_id)
     const targetNode = getNodeById(graph, link.target_id)
     // Now that we've manipulated the linking, check again if they both exist.
@@ -458,7 +466,7 @@ export function fixBadLinks(
         // data. We make a copy now, but can handle the bastardized objects just in case.
         const idx = links.findIndex(
           (l) =>
-            l &&
+            l != null &&
             (l[0] === data.deletedLinks[i] ||
               ('id' in l && l.id === data.deletedLinks[i]))
         )
@@ -471,7 +479,7 @@ export function fixBadLinks(
     }
     // If we're a serialized graph, we can filter out the links because it's just an array.
     if (!isLiveGraph(graph)) {
-      graph.links = graph.links.filter((l) => !!l)
+      graph.links = graph.links.filter((link) => link !== null)
     }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {

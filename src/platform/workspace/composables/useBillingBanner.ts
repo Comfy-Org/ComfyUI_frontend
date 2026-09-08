@@ -12,6 +12,7 @@ export type BillingBannerKind =
   | 'paymentFailed'
   | 'outOfCredits'
   | 'ending'
+  | 'planChange'
 
 export interface BillingBannerInputs {
   billingControlEnabled: boolean
@@ -25,11 +26,12 @@ export interface BillingBannerInputs {
   endDate: string | null
   canManage: boolean
   outOfCreditsDismissed: boolean
+  hasScheduledChange: boolean
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. Payment recovery and the existing billing-control
-// notices have independent rollout gates.
+// outOfCredits > ending > planChange. Payment recovery and the existing
+// billing-control notices have independent rollout gates.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
@@ -52,6 +54,9 @@ export function deriveBillingBanner(
   }
   if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
     return 'ending'
+  }
+  if (inputs.hasScheduledChange && !inputs.isCancelled) {
+    return 'planChange'
   }
 
   return null
@@ -84,7 +89,8 @@ function useBillingBannerInternal() {
       isCancelled: subscription.value?.isCancelled ?? false,
       endDate: subscription.value?.endDate ?? null,
       canManage: permissions.value.canManageSubscription,
-      outOfCreditsDismissed: dismissed.value
+      outOfCreditsDismissed: dismissed.value,
+      hasScheduledChange: subscription.value?.scheduledChange != null
     })
   })
 
