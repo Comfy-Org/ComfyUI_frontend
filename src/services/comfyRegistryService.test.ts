@@ -5,7 +5,7 @@ const mockRegistryApiClient = vi.hoisted(() => ({
   post: vi.fn()
 }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockRegistryApiClient),
     isAxiosError: vi.fn(() => false)

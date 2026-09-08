@@ -4,7 +4,7 @@ import { useUserStore } from './userStore'
 
 const getUserConfig = vi.fn()
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserConfig: (...args: unknown[]) => getUserConfig(...args)
   }

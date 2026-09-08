@@ -6,14 +6,14 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 const trackNamedValuesShadowDiffMismatch = vi.fn()
 const trackNamedValuesShadowDiffSummary = vi.fn()
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackNamedValuesShadowDiffMismatch,
     trackNamedValuesShadowDiffSummary
   })
 }))
 
-vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
+vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 

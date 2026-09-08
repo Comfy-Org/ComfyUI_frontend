@@ -9,9 +9,13 @@ const { mockQueryRerouteAtPoint } = vi.hoisted(() => ({
   mockQueryRerouteAtPoint: vi.fn<() => unknown>(() => null)
 }))
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: { queryRerouteAtPoint: mockQueryRerouteAtPoint }
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/store/layoutStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    layoutStore: { queryRerouteAtPoint: mockQueryRerouteAtPoint }
+  })
+)
 
 const GRAPH_ID = createUuidv4()
 

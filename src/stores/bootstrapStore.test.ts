@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     init: vi.fn().mockResolvedValue(undefined),
     getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
@@ -19,7 +19,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   mergeCustomNodesI18n: vi.fn()
 }))
 
@@ -27,7 +27,7 @@ const mockIsSettingsReady = ref(false)
 const mockSettingLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const mockWorkflowLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     load: mockSettingLoad,
     get isReady() {
@@ -38,15 +38,18 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    loadWorkflows: mockWorkflowLoad,
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      loadWorkflows: mockWorkflowLoad,
+      syncWorkflows: vi.fn().mockResolvedValue(undefined)
+    }))
+  })
+)
 
 const mockNeedsLogin = ref(false)
-vi.mock('@/stores/userStore', () => ({
+vi.mock<unknown>(import('@/stores/userStore'), () => ({
   useUserStore: vi.fn(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     needsLogin: mockNeedsLogin
@@ -55,7 +58,7 @@ vi.mock('@/stores/userStore', () => ({
 
 const mockIsAuthInitialized = ref(false)
 const mockIsAuthAuthenticated = ref(false)
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     isInitialized: mockIsAuthInitialized,
     isAuthenticated: mockIsAuthAuthenticated
@@ -65,14 +68,14 @@ vi.mock('@/stores/authStore', () => ({
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn()
 }))
 

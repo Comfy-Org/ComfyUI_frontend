@@ -30,50 +30,56 @@ const mockInitializeWorkspaces = vi.fn().mockResolvedValue(undefined)
 let mockActiveWorkspaceId: string | null = null
 let mockTeamWorkspaceInitState = 'ready'
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    getWorkspaceAuthHeader: mockWorkspaceAuthHeader,
-    getWorkspaceToken: mockGetWorkspaceToken,
-    ensureWorkspaceAuthHeader: mockEnsureWorkspaceAuthHeader,
-    ensureWorkspaceToken: mockEnsureWorkspaceToken,
-    getUnifiedToken: () => mockUnifiedToken ?? undefined,
-    clearWorkspaceContext: mockClearWorkspaceContext,
-    mintAtLogin: mockMintAtLogin,
-    get unifiedToken() {
-      return mockUnifiedToken
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/workspaceAuthStore'),
+  () => ({
+    useWorkspaceAuthStore: () => ({
+      getWorkspaceAuthHeader: mockWorkspaceAuthHeader,
+      getWorkspaceToken: mockGetWorkspaceToken,
+      ensureWorkspaceAuthHeader: mockEnsureWorkspaceAuthHeader,
+      ensureWorkspaceToken: mockEnsureWorkspaceToken,
+      getUnifiedToken: () => mockUnifiedToken ?? undefined,
+      clearWorkspaceContext: mockClearWorkspaceContext,
+      mintAtLogin: mockMintAtLogin,
+      get unifiedToken() {
+        return mockUnifiedToken
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId
-    },
-    get initState() {
-      return mockTeamWorkspaceInitState
-    },
-    initialize: mockInitializeWorkspaces,
-    resetForIdentityChange: mockResetForIdentityChange
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return mockActiveWorkspaceId
+      },
+      get initState() {
+        return mockTeamWorkspaceInitState
+      },
+      initialize: mockInitializeWorkspaces,
+      resetForIdentityChange: mockResetForIdentityChange
+    })
   })
-}))
+)
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
   })
 }))
 
-vi.mock('vuefire', () => ({
+vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key }),
   createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
-vi.mock('firebase/auth', async (importOriginal) => {
+vi.mock<unknown>(import('firebase/auth'), async (importOriginal) => {
   const actual = await importOriginal<typeof firebaseAuth>()
   return {
     ...actual,
@@ -96,20 +102,20 @@ vi.mock('firebase/auth', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: vi.fn() })
 }))
 
-vi.mock('@/services/dialogService')
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
 const mockApiKeyState = { isAuthenticated: false }
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
     getApiKey: vi.fn(),

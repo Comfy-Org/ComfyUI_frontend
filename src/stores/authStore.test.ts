@@ -48,9 +48,12 @@ const mockTeamWorkspaceStore = vi.hoisted(() => ({
   resetForIdentityChange: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => mockTeamWorkspaceStore
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => mockTeamWorkspaceStore
+  })
+)
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
@@ -96,11 +99,11 @@ const mockAccessBillingPortalResponse = {
     Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
 
-vi.mock('vuefire', () => ({
+vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   }),
@@ -111,7 +114,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('firebase/auth', async (importOriginal) => {
+vi.mock<unknown>(import('firebase/auth'), async (importOriginal) => {
   const actual = await importOriginal<typeof firebaseAuth>()
   return {
     ...actual,
@@ -136,7 +139,7 @@ vi.mock('firebase/auth', async (importOriginal) => {
 
 // Mock telemetry
 const mockTrackAuth = vi.fn()
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackAuth: mockTrackAuth
   })
@@ -145,16 +148,19 @@ vi.mock('@/platform/telemetry', () => ({
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
-vi.mock('@/scripts/api', async (importOriginal) => {
+vi.mock(import('@/scripts/api'), async (importOriginal) => {
   const actual = await importOriginal<typeof ApiModule>()
   Object.assign(actual.api, { resetSocket: mockResetSocket })
   return actual
 })
 
 // Mock useDialogService
-vi.mock('@/services/dialogService')
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock(import('@/services/dialogService'))
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistributionTypes
+)
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
   })
@@ -163,7 +169,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
 const mockApiKeyGetApiKey = vi.fn()
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
     getApiKey: mockApiKeyGetApiKey,

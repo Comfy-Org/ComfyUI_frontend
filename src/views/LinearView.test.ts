@@ -22,14 +22,14 @@ const state = vi.hoisted<ViewState>(() => ({
   hasOutputs: false
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.Sidebar.Location' ? state.sidebarLocation : undefined
   })
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     sidebarTab: {
       get activeSidebarTab() {
@@ -39,7 +39,7 @@ vi.mock('@/stores/workspaceStore', () => ({
   })
 }))
 
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { computed } = await import('vue')
   return {
     useAppMode: () => ({
@@ -49,7 +49,7 @@ vi.mock('@/composables/useAppMode', async () => {
   }
 })
 
-vi.mock('@/stores/appModeStore', async () => {
+vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
   const { reactive, computed } = await import('vue')
   return {
     useAppModeStore: () =>
@@ -58,7 +58,8 @@ vi.mock('@/stores/appModeStore', async () => {
 })
 
 vi.mock(
-  '@/workbench/extensions/agent/composables/useAgentDockMount',
+  import('@/workbench/extensions/agent/composables/useAgentDockMount'),
+
   async () => {
     const { computed, defineComponent, h } = await import('vue')
     return {
@@ -73,7 +74,7 @@ vi.mock(
   }
 )
 
-vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
+vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
   useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
 }))
 

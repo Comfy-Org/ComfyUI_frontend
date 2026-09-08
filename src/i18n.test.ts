@@ -26,7 +26,7 @@ async function importI18nModule() {
 }
 
 // Mock the JSON imports before importing i18n module
-vi.mock('./locales/en/main.json', () => ({
+vi.mock<unknown>(import('./locales/en/main.json'), () => ({
   default: { welcome: 'Welcome', enOnly: 'English only' }
 }))
 // vue-i18n merges mutate the message tree built from this object, and mocked
@@ -54,19 +54,21 @@ function restoreEnNodeDefsMock() {
   })
 }
 
-vi.mock('./locales/en/nodeDefs.json', () => ({
+vi.mock<unknown>(import('./locales/en/nodeDefs.json'), () => ({
   default: enNodeDefsMock
 }))
-vi.mock('./locales/en/commands.json', () => ({
+vi.mock<unknown>(import('./locales/en/commands.json'), () => ({
   default: { save: 'Save' }
 }))
-vi.mock('./locales/en/settings.json', () => ({
+vi.mock<unknown>(import('./locales/en/settings.json'), () => ({
   default: { theme: 'Theme' }
 }))
 
 // Mock lazy-loaded locales
-vi.mock('./locales/zh/main.json', () => ({ default: { welcome: '欢迎' } }))
-vi.mock('./locales/zh/nodeDefs.json', () => ({
+vi.mock<unknown>(import('./locales/zh/main.json'), () => ({
+  default: { welcome: '欢迎' }
+}))
+vi.mock<unknown>(import('./locales/zh/nodeDefs.json'), () => ({
   default: {
     testNode: '测试节点',
     KSampler: {
@@ -74,8 +76,12 @@ vi.mock('./locales/zh/nodeDefs.json', () => ({
     }
   }
 }))
-vi.mock('./locales/zh/commands.json', () => ({ default: { save: '保存' } }))
-vi.mock('./locales/zh/settings.json', () => ({ default: { theme: '主题' } }))
+vi.mock<unknown>(import('./locales/zh/commands.json'), () => ({
+  default: { save: '保存' }
+}))
+vi.mock<unknown>(import('./locales/zh/settings.json'), () => ({
+  default: { theme: '主题' }
+}))
 
 describe('i18n', () => {
   beforeEach(async () => {

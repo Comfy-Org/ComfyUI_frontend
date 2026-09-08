@@ -6,7 +6,7 @@ import { releaseSharedObjectUrl } from '@/utils/objectUrlUtil'
 
 const previewMethodRef = ref('latent2rgb')
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) => {
       if (key === 'Comfy.Execution.PreviewMethod') return previewMethodRef.value
@@ -15,7 +15,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/utils/objectUrlUtil', () => ({
+vi.mock(import('@/utils/objectUrlUtil'), () => ({
   retainSharedObjectUrl: vi.fn(),
   releaseSharedObjectUrl: vi.fn()
 }))

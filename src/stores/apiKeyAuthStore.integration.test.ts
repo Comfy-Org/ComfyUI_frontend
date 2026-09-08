@@ -11,16 +11,16 @@ import { useAuthStore } from '@/stores/authStore'
 
 const mockFetch = vi.fn()
 
-vi.mock('vuefire', () => ({
+vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key }),
   createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
-vi.mock('firebase/auth', async (importOriginal) => {
+vi.mock<unknown>(import('firebase/auth'), async (importOriginal) => {
   const actual = await importOriginal<typeof firebaseAuth>()
   return {
     ...actual,
@@ -38,39 +38,45 @@ vi.mock('firebase/auth', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: 'cloud',
   isCloud: true,
   isDesktop: false
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: { unifiedCloudAuthEnabled: false }
   })
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    clearWorkspaceContext: vi.fn(),
-    getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
-    getUnifiedToken: vi.fn().mockReturnValue(undefined),
-    mintAtLogin: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/workspaceAuthStore'),
+  () => ({
+    useWorkspaceAuthStore: () => ({
+      clearWorkspaceContext: vi.fn(),
+      getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
+      getUnifiedToken: vi.fn().mockReturnValue(undefined),
+      mintAtLogin: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspaceId: null,
-    resetForIdentityChange: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      activeWorkspaceId: null,
+      resetForIdentityChange: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showErrorDialog: vi.fn() })
 }))
 
