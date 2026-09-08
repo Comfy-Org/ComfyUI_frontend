@@ -111,23 +111,16 @@ function pay() {
 //
 // Deliberately not applied to waiting or unresolved: those are unfinished, and a
 // card that closes itself says the opposite.
-const AUTO_CLOSE_MS = 5_000
+const AUTO_CLOSE_MS = 3_600
 let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
-let autoCloseCancelled = false
 
 function stopAutoClose() {
   if (autoCloseTimer) clearTimeout(autoCloseTimer)
   autoCloseTimer = undefined
 }
 
-function cancelAutoClose() {
-  autoCloseCancelled = true
-  stopAutoClose()
-}
-
 function scheduleAutoClose() {
   stopAutoClose()
-  if (autoCloseCancelled) return
   if (typeof document !== 'undefined' && document.hidden) return
   autoCloseTimer = setTimeout(() => finish(), AUTO_CLOSE_MS)
 }
@@ -143,7 +136,6 @@ watch(step, (value) => {
     stopAutoClose()
     return
   }
-  autoCloseCancelled = false
   scheduleAutoClose()
 })
 
@@ -181,8 +173,6 @@ const stepperClass =
       :close-label="t('workshop.credits.close', locale)"
       class="flex min-h-[min(85vh,41rem)] flex-col sm:min-h-136 sm:max-w-xl"
       data-testid="buy-credits-dialog"
-      @pointerdown="cancelAutoClose"
-      @keydown="cancelAutoClose"
     >
       <!-- 1 · Amount — the last screen we own before the hand-off -->
       <div
@@ -389,17 +379,19 @@ const stepperClass =
         data-testid="buy-credits-done"
         data-step="landed"
       >
-        <span
-          class="bg-primary-comfy-yellow grid size-12 place-items-center rounded-2xl text-primary-comfy-ink"
-          aria-hidden="true"
-        >
-          <Check class="size-6" :stroke-width="3" />
-        </span>
-        <DialogTitle class="pr-16">
-          {{
-            t('workshop.credits.done', locale).replace('{n}', format(credits))
-          }}
-        </DialogTitle>
+        <div class="flex items-center gap-3 pr-16">
+          <span
+            class="border-primary-comfy-yellow text-primary-comfy-yellow grid size-8 shrink-0 place-items-center rounded-full border-2"
+            aria-hidden="true"
+          >
+            <Check class="size-4" :stroke-width="3" />
+          </span>
+          <DialogTitle>
+            {{
+              t('workshop.credits.done', locale).replace('{n}', format(credits))
+            }}
+          </DialogTitle>
+        </div>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
           {{
             t('workshop.credits.addedTo', locale).replace(
@@ -462,15 +454,24 @@ const stepperClass =
         data-testid="buy-credits-held"
         data-step="unresolved"
       >
-        <span
-          class="grid size-12 place-items-center rounded-2xl bg-transparency-white-t8 text-primary-warm-white"
-          aria-hidden="true"
-        >
-          <Clock class="size-6" />
-        </span>
-        <DialogTitle class="pr-16">
-          {{ t('workshop.credits.heldTitle', locale) }}
-        </DialogTitle>
+        <div class="flex items-center gap-3 pr-16">
+          <!-- Not yellow: "Payment received" is a reassuring headline on the
+               outcome that is not fine, and the mark is what says so before the
+               body does. Not secondary-mauve either, which /payment/failed uses
+               — it is #4d3762 on a #211927 surface, about 1.6:1, so it barely
+               renders. Orange is the palette's "needs attention" that is
+               legible on ink, the same problem --color-destructive-light exists
+               to solve. -->
+          <span
+            class="border-primary-comfy-orange text-primary-comfy-orange grid size-8 shrink-0 place-items-center rounded-full border-2"
+            aria-hidden="true"
+          >
+            <Clock class="size-4" />
+          </span>
+          <DialogTitle>
+            {{ t('workshop.credits.heldTitle', locale) }}
+          </DialogTitle>
+        </div>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
           {{ t('workshop.credits.heldBody', locale) }}
         </DialogDescription>
