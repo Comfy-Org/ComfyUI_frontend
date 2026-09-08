@@ -43,6 +43,7 @@ describe('deriveBillingBanner', () => {
 
   it('keeps team billing-control notices out of personal plans', () => {
     expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
+    expect(derive({ ...paused, isTeamPlan: false })).toBeNull()
   })
 
   it('shows payment failed to personal workspace owners', () => {
