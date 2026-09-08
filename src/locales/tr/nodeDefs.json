@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "comfy_kitchen aracılığıyla blok seyrek dikkat: her sorgu bloğu, anahtar bloklarının seçili bir alt kümesine tam olarak dikkat eder ve dikkat hesaplamasını azaltır. Göreli hız kazancı dizi uzunluğuyla artar; çünkü kısa diziler genellikle yoğun olarak daha hızlıdır. Etkin zamanlama dışında, dense_blocks kapsamında ve min_tokens altında model, etkin yoğun model dikkat arka ucunu kullanır.",
-    "display_name": "Blok Seyrek Dikkat",
+    "description": "Uygun model dikkat katmanlarına blok-seyrek dikkat uygular; uzun diziler için hesaplama maliyetini azaltır. Kısa diziler genellikle yoğun hesaplamada daha hızlı olduğundan, hız kazanımı dizi uzunluğuyla artar. start/end_percent dışında, dense_blocks altında ve min_tokens altında model yoğun model dikkat arka ucunu kullanır. Bu geri dönüşü seçmek için Model Attention Backend düğümünü kullanın.",
+    "display_name": "Model Seyrek Dikkat",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Zamanlamanın bu noktasından sonra yoğun kullanılır."
+        "tooltip": "Seyrek dikkatin bittiği yüzde noktası. Bu noktadan sonra dikkat yoğun hesaplamaya döner."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Bundan kısa diziler yoğun kalır."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Yama uygulanacak model."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Tam anahtar bloklarının nasıl seçildiği. Sol-Attn: başına/bloğa uyarlanabilir eşik. top-k (SLA): her yerde sabit keep_percent, yalnızca eğitilmiş ağırlıklarla önerilir. VSA (FastVideo): FastH3-VSA'nın küp döşemesi ve kaba dalı; bunun için eğitilmiş ağırlıklar gerektirir."
+        "tooltip": "Tam token düzeyinde dikkat için anahtar bloklarını seçmekte kullanılan yöntem. sol-attn: Sparsifying Online Attention, her dikkat başlığı ve sorgu bloğu için eğitim gerektirmeyen uyarlanabilir bir eşik kullanır. sla: Sparse-Linear Attention, en yüksek puanlı anahtar bloklarının sabit bir yüzdesini korur; yalnızca bu örüntü için eğitilmiş model ağırlıklarıyla kullanın. vsa: Video Sparse Attention (FastVideo), 3B video-küp döşemesi ve öğrenilmiş kaba dikkat dalı kullanır; FastH3 model ağırlıkları gerektirir."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Zamanlamanın bu noktasından önce yoğun kullanılır."
+        "tooltip": "Seyrek dikkatin başladığı yüzde noktası. Bu noktadan önce dikkat yoğun kalır."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Her dikkat şeklinin seyrek dikkat kullanıp kullanmadığını veya neden yoğun kaldığını günlüğe kaydeder."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "Blok-seyrek dikkat uygulanmış model."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Bir video latent'ine detaylandırma anahtar kareleri ekler. Her anahtar kare, RoPE konumu tek bir piksel kareyi kapsayan tokenlardan oluşan bir latent karedir; video ile birlikte gürültüsü giderilir ve kodu çözülmüş çıktının parçası değildir. Yerleştirme, I2V kareleri, mevcut kılavuzlar ve cond üzerinde zaten bulunan detaylandırma anahtar kareleri atlanarak her interval_frames pikselde bir yuvadır. Bağlanan anahtar kareler yalnızca içeriktir ve frame_indices ayarlanmadıkça bu tuval üzerinde yeniden yerleştirilir. Bunları LTXV Separate Generated Keyframes ile geri çıkarın. Oluşturulan anahtar kareler için eğitilmiş bir checkpoint gerektirir (keyframes_abs_pos_embedding taşıyan bir checkpoint).",
+    "display_name": "LTXV Oluşturulan Anahtar Kareleri Ekle",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "İsteğe bağlı piksel-kare dizinleri. Geçerli tuvalde interval_frames üzerinden yerleştirmek için boş bırakın. Ayarlandığında bu liste yerleştirmeyi belirler (bağlanan anahtar kareler sırayla eşleştirilir). Son kareye izin verilir; 0. kareye verilmez (zaten bağımsız bir tokendir)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Otomatik yerleştirme için piksel-kare adımı. Varsayılan 24, 24 fps'de saniyede yaklaşık bir anahtar karedir. Dolu pikseller atlanır. frame_indices ayarlandığında yok sayılır."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Yeni anahtar kareleri başlatmak için isteğe bağlı içerik. Daha önceki bir Separate düğümünden anahtar kareleri (aynı uzamsal boyutta) veya her yeni yuvada en yakın kareyi kopyalamak için düz bir video latent'ini bağlayın (ör. zamansal yükseltmeden sonra). Bunlar kılavuz olarak sabitlenmez, yine de gürültüsü giderilir. Bir keyframes latent'indeki kaydedilmiş dizinler, frame_indices ayarlanmadıkça yok sayılır. Yalnızca örnekleme sigma 1'in altında başladığında etkilidir."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Yanında anahtar kareler oluşturulacak düz 5B video latent'i. Bunları Concat AV Latent'ten önce ekleyin."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Anahtar karelerin eklendiği negatif koşullandırma."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Anahtar karelerin eklendiği pozitif koşullandırma."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Yalnızca latent ölçek faktörlerini okumak için kullanılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Oluşturulan anahtar kare dikkati eklenmiş pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Oluşturulan anahtar kare dikkati eklenmiş negatif koşullandırma."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T üzerinde oluşturulan anahtar kareler eklenmiş video latent'i."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVRehberEkle",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Örnekleme sırasında bu latent'in temiz tutulması için noise_mask'i 0 olarak ayarlayın. Video veya ses üzerinde çalışır. Tipik kullanımlar: yalnızca çapraz dikkat sağlaması için Concat AV'den önce sesi dondurmak ya da gürültüsü giderilmemesi gereken herhangi bir latent'i dondurmak.",
+    "display_name": "LTXV Latent'i Dondur",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Dondurulacak video veya ses latent'i. Ses 4B, video 5B'dir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Daha önceki bir aşamadaki oluşturulan anahtar kareleri, sonraki bir tuvalde dondurulmuş görüntü kılavuzları olarak sabitleyin. Bağımsız kareler olarak kodları çözülür, gerekirse yeniden boyutlandırılır ve tekrar gürültülerinin giderilmemesi için noise_mask=0 ile yazılırlar. Zamansal yükseltmeden sonra, kaydedilen dizinler oluşturuldukları tuvalden bu tuvale ölçeklenir (aynı anlar). Konumları açıkça ayarlamak için override_frame_indices kullanın. Yeni konumlarda anahtar kare oluşturmaya (ve gürültülerini gidermeye) devam etmek için bunun yerine Add Generated Keyframes kullanın.",
+    "display_name": "LTXV Oluşturulan Anahtar Kareleri Kılavuzlara Dönüştür",
+    "inputs": {
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Her anahtar karenin oluşturulduğu piksel kare dizinini taşıyan LTXV Oluşturulan Anahtar Kareleri Ayır çıktısı."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Kılavuzların ekleneceği hedef video latent'i; örneğin zamansal olarak büyütülmüş olan."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "İsteğe bağlı — kaydedilmiş (veya otomatik ölçeklenmiş) konumlar yerine bu piksel karelerinde sabitleyin. Her anahtar kare için bir dizin sağlayın. Kaydedilmiş konumları yeniden kullanmak veya hedef tuval farklı bir uzunluktaysa (ör. zamansal x2 sonrasında) ölçeklemek için boş bırakın."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Kılavuz gücü. 1.0 kesin bir sabitlemedir; daha düşük değerler bunu gevşetir."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": "Anahtar karelerin görüntü kılavuzları olarak sabitlendiği pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": "Anahtar karelerin görüntü kılavuzları olarak sabitlendiği negatif koşullandırma."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Anahtar karelerin dondurulmuş kılavuzlar olarak eklendiği hedef video latent'i."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVGörüntüdenVideoya",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Oluşturulan Anahtar Kareler Ekle tarafından eklenen oluşturulmuş anahtar kareleri, örneklenmiş bir latent'ten yeniden ayırır ve bunları koşullandırmadan kaldırır. Video latent'ini mekânsal olarak büyütmeden önce ayırın. Önce LTXV Kılavuzları Kırp'ı çalıştırmayın — oluşturulmuş anahtar kareleri atılabilir kılavuzlar olarak değerlendirir ve kaldırır.",
+    "display_name": "LTXV Oluşturulan Anahtar Kareleri Ayır",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Anahtar kareleri tek kareli latent'lerden oluşan bir toplu iş olarak döndürür. Tek çok kareli latent olarak almak için kapalı bırakın; latent büyütücü ve sonraki bir Oluşturulan Anahtar Kareler Ekle düğümünün beklediği biçim budur."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": "Oluşturulmuş anahtar kare meta verileri kaldırılmış pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": "Oluşturulmuş anahtar kare meta verileri kaldırılmış negatif koşullandırma."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Oluşturulmuş anahtar kareleri ayıklanmış video latent'i."
+      },
+      "3": {
+        "name": "anahtar kareler",
+        "tooltip": "generated_keyframe_indices ve generated_keyframe_num_frames ile etiketlenmiş ayrıştırılmış anahtar kareler. Yeni yuvaları başlatmak için bunları sonraki bir Oluşturulan Anahtar Kareler Ekle düğümüne veya dondurulmuş görüntü kılavuzları olarak sabitlemek için Oluşturulan Anahtar Kareleri Kılavuzlara Dönüştür düğümüne aktarın (tuval uzunluğu değiştiyse dizinler yeniden eşlenir)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Model için yoğun dikkat uygulamasını seçer. Blok Seyrek Dikkat ile kullanıldığında, seyrek dikkat etkin olmadığında veya desteklenmediğinde bu arka uç kullanılır.",
+    "display_name": "Model Dikkat Arka Ucu",
     "inputs": {
       "attention": {
-        "name": "dikkat"
+        "name": "dikkat",
+        "tooltip": "Yoğun dikkat arka ucu. Comfy Kitchen dikkati, nicemlenmiş INT8 dikkat kullanır ve yalnızca Nvidia ile AMD GPU'larda kullanılabilir."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Yama uygulanacak model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Seçilen dikkat arka ucuna sahip model."
       }
     }
   },

@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Atenção esparsa em blocos via comfy_kitchen: cada bloco de consulta atende exatamente a um subconjunto selecionado de blocos de chave, reduzindo o custo computacional da atenção. O ganho relativo de velocidade aumenta com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas no modo denso. Fora da programação ativa, em dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção densa do modelo ativo.",
-    "display_name": "Atenção Esparsa em Blocos",
+    "description": "Aplica atenção esparsa por blocos às camadas de atenção elegíveis do modelo, reduzindo o processamento para sequências longas. O ganho de velocidade aumenta com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas com atenção densa. Fora de start/end_percent, com dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção densa do modelo. Use o nó Model Attention Backend para selecionar essa alternativa.",
+    "display_name": "Atenção Esparsa do Modelo",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Denso após este ponto da programação."
+        "tooltip": "Ponto percentual em que a atenção esparsa termina. Após esse ponto, a atenção volta a ser densa."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Sequências mais curtas que isto permanecem densas."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "O modelo a ser modificado."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Como os blocos de chave exatos são escolhidos. Sol-Attn: limiar adaptativo por cabeça/bloco. top-k (SLA): keep_percent fixo em todos os lugares, recomendado apenas com pesos treinados. VSA (FastVideo): divisão em cubos e ramo grosseiro do FastH3-VSA; requer pesos treinados para isso."
+        "tooltip": "Método usado para escolher blocos de chave para atenção completa no nível de tokens. sol-attn: Sparsifying Online Attention usa um limite adaptativo sem treinamento para cada cabeça de atenção e bloco de consulta. sla: Sparse-Linear Attention mantém uma porcentagem fixa dos blocos de chave com maior pontuação; use apenas com pesos de modelo treinados para esse padrão. vsa: Video Sparse Attention (FastVideo) usa divisão em blocos de cubo de vídeo 3D e um ramo de atenção grosseira aprendido; requer pesos de modelo FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Denso antes deste ponto da programação."
+        "tooltip": "Ponto percentual em que a atenção esparsa começa. Antes desse ponto, a atenção permanece densa."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Registra se cada formato de atenção usou atenção esparsa ou por que permaneceu denso."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "O modelo com atenção esparsa por blocos aplicada."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Acrescenta keyframes de detalhamento a um latent de vídeo. Cada keyframe é um quadro latent de tokens cuja posição RoPE abrange um único quadro de pixels; eles são desruídos junto com o vídeo e não fazem parte da saída decodificada. O posicionamento é um espaço a cada interval_frames quadros de pixels, ignorando quadros I2V, guias existentes e keyframes de detalhamento já presentes no cond. Keyframes conectados são apenas conteúdo e são reposicionados nesta tela, a menos que frame_indices esteja definido. Extraia-os novamente com LTXV Separate Generated Keyframes. Requer um checkpoint treinado para keyframes gerados (que contenha keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Adicionar Keyframes Gerados",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Índices opcionais de quadros de pixels. Deixe vazio para posicionar usando interval_frames na tela atual. Quando definido, esta lista determina o posicionamento (os keyframes conectados são correspondidos em ordem). O último quadro é permitido; o quadro 0 não (ele já é um token independente)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Intervalo de quadros de pixels para posicionamento automático. O padrão 24 equivale a cerca de um keyframe por segundo a 24 fps. Pixels ocupados são ignorados. Ignorado quando frame_indices está definido."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Conteúdo opcional para inicializar os novos keyframes. Conecte keyframes de um Separate anterior (com o mesmo tamanho espacial) ou um latent de vídeo simples para copiar o quadro mais próximo em cada novo espaço (por exemplo, após aumento de escala temporal). Eles ainda são desruídos, não fixados como guias. Índices registrados em um latent de keyframes são ignorados, a menos que frame_indices esteja definido. Só tem efeito quando a amostragem começa abaixo de sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent de vídeo 5D simples para gerar keyframes junto. Adicione-os antes de Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Condicionamento negativo ao qual os keyframes são anexados."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Condicionamento positivo ao qual os keyframes são anexados."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Usado apenas para ler os fatores de escala do latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Condicionamento positivo com atenção de keyframes gerados anexada."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Condicionamento negativo com atenção de keyframes gerados anexada."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent de vídeo com keyframes gerados acrescentados em T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Define noise_mask como 0 para que este latent permaneça limpo durante a amostragem. Funciona com vídeo ou áudio. Usos típicos: congelar o áudio antes de Concat AV para que ele forneça apenas atenção cruzada, ou congelar qualquer latent que não deva ser desruído.",
+    "display_name": "LTXV Congelar Latent",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent de vídeo ou áudio a ser congelado. Áudio é 4D; vídeo é 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fixa keyframes gerados de uma etapa anterior como guias de imagem congelados em uma tela posterior. Eles são decodificados como quadros independentes, redimensionados se necessário e gravados com noise_mask=0 para não serem desruídos novamente. Após um aumento de escala temporal, os índices registrados são escalados da tela em que foram gerados para esta tela, mantendo os mesmos momentos. Use override_frame_indices para definir as posições explicitamente. Para continuar gerando (e desruindo) keyframes em novas posições, use Add Generated Keyframes.",
+    "display_name": "LTXV Keyframes Gerados para Guias",
+    "inputs": {
+      "keyframes": {
+        "name": "quadros-chave",
+        "tooltip": "A saída de quadros-chave de LTXV Separar Quadros-chave Gerados, que contém o índice do quadro em pixels no qual cada quadro-chave foi gerado."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "O latent de vídeo de destino ao qual adicionar as guias, por exemplo, aquele com upscale temporal."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Opcional — fixe nestes quadros em pixels em vez das posições registradas (ou escaladas automaticamente). Forneça um índice por quadro-chave. Deixe vazio para reutilizar as posições registradas ou escaloná-las quando o canvas de destino tiver uma duração diferente (por exemplo, após x2 temporal)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "Intensidade da guia. 1.0 é uma fixação rígida; valores menores a flexibilizam."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": "Condicionamento positivo com os quadros-chave fixados como guias de imagem."
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": "Condicionamento negativo com os quadros-chave fixados como guias de imagem."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent de vídeo de destino com os quadros-chave adicionados como guias congeladas."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Separe os quadros-chave gerados adicionados por LTXV Adicionar Quadros-chave Gerados de um latent amostrado e remova-os do condicionamento. Separe-os antes de aumentar espacialmente o latent de vídeo. Não execute LTXV Cortar Guias primeiro — ele trata os quadros-chave gerados como guias descartáveis e os remove.",
+    "display_name": "LTXV Separar Quadros-chave Gerados",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Retorna os quadros-chave como um lote de latents de quadro único. Deixe desativado para obtê-los como um único latent de vários quadros, que é o esperado pelo ampliador de latent e por um posterior Adicionar Quadros-chave Gerados."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": "Condicionamento positivo com os metadados de quadros-chave gerados removidos."
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": "Condicionamento negativo com os metadados de quadros-chave gerados removidos."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent de vídeo sem os quadros-chave gerados."
+      },
+      "3": {
+        "name": "quadros-chave",
+        "tooltip": "Os quadros-chave extraídos, identificados com generated_keyframe_indices e generated_keyframe_num_frames. Envie-os para um posterior Adicionar Quadros-chave Gerados para inicializar novos slots, ou para Quadros-chave Gerados para Guias para fixá-los como guias de imagem congeladas (os índices são remapeados se a duração do canvas tiver mudado)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Seleciona a implementação de atenção densa para o modelo. Quando usado com Atenção Esparsa em Blocos, este backend é usado sempre que a atenção esparsa estiver inativa ou não for compatível.",
+    "display_name": "Backend de Atenção do Modelo",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "O backend de atenção densa. A atenção Comfy Kitchen usa atenção INT8 quantizada e está disponível apenas em GPUs Nvidia e AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "O modelo a ser corrigido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo",
+        "tooltip": "O modelo com o backend de atenção selecionado."
       }
     }
   },

@@ -771,23 +771,24 @@
     }
   },
   "BlockSparseAttention": {
-    "display_name": "Block Sparse Attention",
-    "description": "Block-sparse attention through comfy_kitchen: each query block attends a selected subset of key blocks exactly, reducing attention compute. The relative speed gain grows with sequence length since short sequences are usually faster dense. Outside the active schedule, dense_blocks and under min_tokens, the model uses the active dense model attention backend.",
+    "display_name": "Model Sparse Attention",
+    "description": "Applies block-sparse attention to eligible model attention layers, reducing compute for long sequences. The speed gain grows with sequence length since short sequences are usually faster dense. Outside the start/end_percent, dense_blocks and under min_tokens, the model uses the dense model attention backend. Use the node Model Attention Backend to select that fallback.",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "The model to patch."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "How exact key blocks are chosen. Sol-Attn: per head/block adaptive threshold. top-k (SLA): fixed keep_percent everywhere, recommended only with trained weights. VSA (FastVideo): FastH3-VSA's cube tiling and coarse branch, requires weights trained for it."
+        "tooltip": "Method used to choose key blocks for full token-level attention. sol-attn: Sparsifying Online Attention uses a training-free adaptive threshold for each attention head and query block. sla: Sparse-Linear Attention keeps a fixed percentage of the highest-scoring key blocks; use only with model weights trained for this pattern. vsa: Video Sparse Attention (FastVideo) uses 3D video-cube tiling and a learned coarse attention branch; requires FastH3 model weights."
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Dense before this point of the schedule."
+        "tooltip": "Percentage point when sparse attention begins. Before this point, attention stays dense."
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Dense after this point of the schedule."
+        "tooltip": "Percentage point when sparse attention ends. After this point, attention returns to dense."
       },
       "dense_blocks": {
         "name": "dense_blocks",
@@ -806,7 +807,8 @@
         "tooltip": "MiniMax-H3 only. exact_kv: every query attends the packed text/audio/reference rows exactly (~3% cost). exact_kv_and_rows: additionally runs the target-audio query rows dense (keeps generated audio intact)."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Logs whether each attention shape used sparse attention or why it stayed dense."
       },
       "selection_tau": {
         "name": "tau"
@@ -814,7 +816,8 @@
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "The model with block-sparse attention applied."
       }
     }
   },
@@ -10808,6 +10811,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "display_name": "LTXV Add Generated Keyframes",
+    "description": "Append detailing keyframes to a video latent. Each keyframe is one latent frame of tokens whose RoPE position spans a single pixel frame; they are denoised with the video and are not part of the decoded output. Placement is one slot every interval_frames pixels, skipping I2V frames, existing guides, and detailing keyframes already on the cond. Connected keyframes are content only and are re-placed on this canvas unless frame_indices is set. Pull them back out with LTXV Separate Generated Keyframes. Requires a checkpoint trained for generated keyframes (one carrying keyframes_abs_pos_embedding).",
+    "inputs": {
+      "positive": {
+        "name": "positive",
+        "tooltip": "Positive conditioning the keyframes are attached to."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative conditioning the keyframes are attached to."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Only used to read the latent scale factors."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Plain 5D video latent to generate keyframes alongside. Add them before Concat AV Latent."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Pixel-frame stride for auto placement. Default 24 is about one keyframe per second at 24 fps. Occupied pixels are skipped. Ignored when frame_indices is set."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optional content to initialize the new keyframes with. Connect keyframes from an earlier Separate (same spatial size), or a plain video latent to copy the nearest frame at each new slot (e.g. after temporal upscale). These are still denoised, not pinned as guides. Recorded indices on a keyframes latent are ignored unless frame_indices is set. Only has an effect when sampling starts below sigma 1."
+      },
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Optional pixel-frame indices. Leave empty to place from interval_frames on the current canvas. When set, this list is the placement (connected keyframes are matched in order). The last frame is allowed; frame 0 is not (it is already a standalone token)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive conditioning with generated-keyframe attention attached."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative conditioning with generated-keyframe attention attached."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video latent with generated keyframes appended on T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -11120,6 +11171,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "display_name": "LTXV Freeze Latent",
+    "description": "Set noise_mask to 0 so this latent is kept clean during sampling. Works on video or audio. Typical uses: freeze audio before Concat AV so it only provides cross-attention, or freeze any latent that should not be denoised.",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Video or audio latent to freeze. Audio is 4D; video is 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "display_name": "LTXV Generated Keyframes to Guides",
+    "description": "Pin generated keyframes from an earlier stage as frozen image guides on a later canvas. They are decoded as standalone frames, resized if needed, and written with noise_mask=0 so they are not denoised again. After a temporal upscale, recorded indices are scaled from the canvas they were generated on onto this one (same moments). Use override_frame_indices to set positions explicitly. To keep generating (and denoising) keyframes at new positions, use Add Generated Keyframes instead.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "The target video latent to add the guides to, e.g. the temporally upscaled one."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "The keyframes output of LTXV Separate Generated Keyframes, which carries the pixel frame index each keyframe was generated at."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Guide strength. 1.0 is a hard pin; lower values relax it."
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Optional — pin at these pixel frames instead of the recorded (or auto-scaled) positions. Provide one index per keyframe. Leave empty to reuse recorded positions, or to scale them when the target canvas is a different length (e.g. after temporal x2)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive conditioning with the keyframes pinned as image guides."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative conditioning with the keyframes pinned as image guides."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Target video latent with the keyframes added as frozen guides."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -11347,6 +11459,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "display_name": "LTXV Separate Generated Keyframes",
+    "description": "Split the generated keyframes added by LTXV Add Generated Keyframes back out of a sampled latent, and remove them from the conditioning. Separate them before spatially upscaling the video latent. Do not run LTXV Crop Guides first — it treats generated keyframes as disposable guides and drops them.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Return the keyframes as a batch of single-frame latents. Leave off to get them as one multi-frame latent, which is what the latent upsampler and a later Add Generated Keyframes expect."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive conditioning with generated-keyframe metadata removed."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative conditioning with generated-keyframe metadata removed."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video latent with the generated keyframes stripped."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "The peeled keyframes, labeled with generated_keyframe_indices and generated_keyframe_num_frames. Feed these to a later Add Generated Keyframes to initialize new slots, or to Generated Keyframes To Guides to pin them as frozen image guides (indices are remapped if the canvas length changed)."
       }
     }
   },
@@ -13439,13 +13588,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "display_name": "Model Attention Backend",
+    "description": "Selects the dense attention implementation for the model. When used with Block Sparse Attention, this backend is used whenever sparse attention is inactive or unsupported.",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "The model to patch."
       },
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "The dense attention backend. Comfy Kitchen attention uses quantized INT8 attention and is available only on Nvidia and AMD GPUs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "The model with the selected attention backend."
       }
     }
   },

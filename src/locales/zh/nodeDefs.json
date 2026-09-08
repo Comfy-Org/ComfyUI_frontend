@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "通过 comfy_kitchen 实现块稀疏注意力：每个查询块会精确关注所选键块的子集，从而减少注意力计算量。由于短序列通常使用稠密注意力更快，序列越长，相对加速收益越大。在活动调度范围之外、dense_blocks 中以及低于 min_tokens 时，模型使用当前活动的稠密模型注意力后端。",
-    "display_name": "块稀疏注意力",
+    "description": "对符合条件的模型注意力层应用块稀疏注意力，以减少长序列的计算量。序列越长，速度提升越明显，因为短序列通常使用稠密注意力更快。在 start/end_percent 范围之外、dense_blocks 之外以及低于 min_tokens 时，模型会使用稠密模型注意力后端。使用“模型注意力后端”节点选择该回退方案。",
+    "display_name": "模型稀疏注意力",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "调度在此点之后使用稠密注意力。"
+        "tooltip": "稀疏注意力结束时的百分比位置。在此之后，注意力恢复为稠密。"
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "短于此长度的序列保持使用稠密注意力。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修补的模型。"
       },
       "selection": {
         "name": "selection",
-        "tooltip": "精确键块的选择方式。Sol-Attn：按每个头/块自适应阈值选择。top-k (SLA)：所有位置使用固定 keep_percent，仅建议搭配训练过的权重使用。VSA (FastVideo)：使用 FastH3-VSA 的立方体平铺和粗略分支，需要为其训练的权重。"
+        "tooltip": "用于选择进行完整词元级注意力的键块的方法。sol-attn：稀疏化在线注意力，为每个注意力头和查询块使用免训练的自适应阈值。sla：稀疏线性注意力，保留固定百分比的最高评分键块；仅适用于针对此模式训练的模型权重。vsa：视频稀疏注意力（FastVideo），使用 3D 视频立方体分块和学习得到的粗注意力分支；需要 FastH3 模型权重。"
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "调度在此点之前使用稠密注意力。"
+        "tooltip": "稀疏注意力开始时的百分比位置。在此之前，注意力保持稠密。"
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "记录每种注意力形状是否使用了稀疏注意力，或其保持稠密的原因。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "已应用块稀疏注意力的模型。"
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "向视频潜空间追加细节关键帧。每个关键帧都是一帧潜空间词元，其 RoPE 位置跨越单个像素帧；它们会与视频一同去噪，且不属于解码输出。每隔 interval_frames 个像素帧放置一个槽位，跳过 I2V 帧、现有引导以及 cond 中已有的细节关键帧。连接的关键帧仅作为内容使用，除非设置了 frame_indices，否则会重新放置在此画布上。使用 LTXV 分离生成的关键帧将其取出。需要使用为生成关键帧训练的检查点（包含 keyframes_abs_pos_embedding 的检查点）。",
+    "display_name": "LTXV 添加生成的关键帧",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "可选的像素帧索引。留空时，将根据当前画布上的 interval_frames 进行放置。设置后，此列表即为放置位置（连接的关键帧按顺序匹配）。允许最后一帧；不允许第 0 帧（它已经是独立词元）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自动放置的像素帧步长。默认值 24 在 24 fps 下约为每秒一个关键帧。会跳过已占用的像素帧。设置 frame_indices 时将忽略此项。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "用于初始化新关键帧的可选内容。可连接先前 Separate 的关键帧（相同空间尺寸），或连接普通视频潜空间以在每个新槽位复制最近的帧（例如时间上采样后）。它们仍会被去噪，而不会作为固定引导。除非设置了 frame_indices，否则会忽略关键帧潜空间中记录的索引。仅当采样从低于 sigma 1 的位置开始时才有效。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "用于同时生成关键帧的普通 5D 视频潜空间。在 Concat AV Latent 之前添加它们。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "附加关键帧的负向条件。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "附加关键帧的正向条件。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "仅用于读取潜空间缩放系数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "附加了生成关键帧注意力的正向条件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "附加了生成关键帧注意力的负向条件。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "在 T 维度追加了生成关键帧的视频潜空间。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV添加指导",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "将 noise_mask 设为 0，使此潜空间在采样期间保持干净。适用于视频或音频。典型用途：在 Concat AV 之前冻结音频，使其仅提供交叉注意力；或冻结任何不应被去噪的潜空间。",
+    "display_name": "LTXV 冻结潜空间",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要冻结的视频或音频潜空间。音频为 4D；视频为 5D。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "将较早阶段生成的关键帧固定为后续画布上的冻结图像引导。它们会被解码为独立帧，按需调整大小，并以 noise_mask=0 写入，因此不会再次去噪。时间上采样后，记录的索引会从生成它们的画布缩放到当前画布上（保持相同时刻）。使用 override_frame_indices 显式设置位置。若要在新位置继续生成并去噪关键帧，请改用“添加生成的关键帧”。",
+    "display_name": "LTXV 将生成的关键帧转为引导",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "LTXV Separate Generated Keyframes 的 keyframes 输出，包含生成每个关键帧时对应的像素帧索引。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "要添加引导的目标视频 latent，例如经过时间上采样的视频。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "可选 — 在这些像素帧处固定，而非使用记录的（或自动缩放的）位置。每个关键帧提供一个索引。留空可复用记录的位置，或在目标画布长度不同时缩放这些位置（例如时间 x2 后）。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "引导强度。1.0 表示强制固定；较低值会减弱固定效果。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "将关键帧作为图像引导固定的正面条件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "将关键帧作为图像引导固定的负面条件。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "已将关键帧添加为固定引导的目标视频 latent。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "图像到视频（LTXV）",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "从采样后的 latent 中分离出由 LTXV Add Generated Keyframes 添加的生成关键帧，并从条件中移除它们。请在对视频 latent 进行空间上采样前分离它们。请勿先运行 LTXV Crop Guides — 它会将生成关键帧视为可丢弃的引导并将其移除。",
+    "display_name": "LTXV 分离生成的关键帧",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "将关键帧作为单帧 latent 批次返回。关闭此选项可将其作为一个多帧 latent 返回，这正是 latent 上采样器和后续 Add Generated Keyframes 所需的格式。"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "已移除生成关键帧元数据的正面条件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "已移除生成关键帧元数据的负面条件。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "已剥离生成关键帧的视频 latent。"
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "已分离的关键帧，标注有 generated_keyframe_indices 和 generated_keyframe_num_frames。将其输入后续的 Add Generated Keyframes 以初始化新槽位，或输入 Generated Keyframes To Guides 以将其固定为静态图像引导（如果画布长度发生变化，索引会重新映射）。"
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "选择模型的密集注意力实现。与 Block Sparse Attention 一起使用时，只要稀疏注意力未启用或不受支持，就会使用此后端。",
+    "display_name": "模型注意力后端",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "密集注意力后端。Comfy Kitchen 注意力使用量化 INT8 注意力，且仅适用于 Nvidia 和 AMD GPU。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修补的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "使用所选注意力后端的模型。"
       }
     }
   },

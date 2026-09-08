@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "透過 comfy_kitchen 的區塊稀疏注意力：每個查詢區塊會精確關注所選取的部分鍵區塊，藉此降低注意力運算量。相較於通常使用密集運算較快的短序列，序列越長，速度提升越明顯。在有效排程之外、dense_blocks 中，以及低於 min_tokens 時，模型會使用啟用中的密集模型注意力後端。",
-    "display_name": "區塊稀疏注意力",
+    "description": "將區塊稀疏注意力套用至符合條件的模型注意力層，降低長序列的運算量。由於短序列通常使用密集注意力較快，因此加速效果會隨序列長度增加。在 start/end_percent 範圍外、dense_blocks 中，以及低於 min_tokens 時，模型會使用密集模型注意力後端。使用 Model Attention Backend 節點選取該備援後端。",
+    "display_name": "模型稀疏注意力",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "在排程的此時間點之後使用密集運算。"
+        "tooltip": "結束使用稀疏注意力的百分比位置。在此位置之後，注意力會恢復為密集。"
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "短於此長度的序列會維持使用密集運算。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修補的模型。"
       },
       "selection": {
         "name": "selection",
-        "tooltip": "選擇精確鍵區塊的方式。Sol-Attn：依每個頭部／區塊採用自適應閾值。top-k (SLA)：在所有位置固定保留 keep_percent，僅建議搭配已訓練的權重使用。VSA (FastVideo)：FastH3-VSA 的立方體切片與粗略分支，需要為其訓練的權重。"
+        "tooltip": "用於選擇進行完整詞元層級注意力之鍵區塊的方法。sol-attn：稀疏化線上注意力會為每個注意力頭與查詢區塊使用免訓練的自適應閾值。sla：稀疏線性注意力會保留固定百分比的最高評分鍵區塊；僅可搭配針對此模式訓練的模型權重使用。vsa：視訊稀疏注意力（FastVideo）使用 3D 視訊立方塊分割與學習式粗略注意力分支；需要 FastH3 模型權重。"
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "在排程的此時間點之前使用密集運算。"
+        "tooltip": "開始使用稀疏注意力的百分比位置。在此位置之前，注意力會維持密集。"
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "記錄每種注意力形狀是否使用稀疏注意力，或維持密集注意力的原因。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "已套用區塊稀疏注意力的模型。"
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "將細節強化關鍵影格附加至視訊潛在空間。每個關鍵影格都是由詞元構成的一個潛在影格，其 RoPE 位置涵蓋單一像素影格；它們會與視訊一同去雜訊，且不屬於解碼輸出的一部分。每隔 interval_frames 個像素影格放置一個槽位，並略過 I2V 影格、既有引導影格，以及條件中已有的細節強化關鍵影格。連接的 keyframes 僅作為內容使用；除非設定 frame_indices，否則會重新放置於此畫布上。可使用 LTXV Separate Generated Keyframes 將其取回。需要針對生成關鍵影格訓練的 checkpoint（含有 keyframes_abs_pos_embedding）。",
+    "display_name": "LTXV 新增生成的關鍵影格",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "可選的像素影格索引。留空時會依目前畫布上的 interval_frames 放置。設定後，此清單即為放置位置（連接的 keyframes 會依順序對應）。可使用最後一個影格；不可使用影格 0（它已是獨立詞元）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自動放置的像素影格步距。預設值 24 在 24 fps 時約為每秒一個關鍵影格。會略過已佔用的像素。設定 frame_indices 時會忽略此項。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可選擇用於初始化新關鍵影格的內容。可連接先前 Separate 產生的 keyframes（空間尺寸須相同），或一般視訊潛在空間，以在每個新槽位複製最接近的影格（例如時間升頻後）。這些影格仍會去雜訊，不會固定為引導影格。除非設定 frame_indices，否則會忽略 keyframes 潛在空間中記錄的索引。僅在取樣從低於 sigma 1 開始時生效。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "用來一同生成關鍵影格的一般 5D 視訊潛在空間。請在 Concat AV Latent 之前加入。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "關鍵影格所附加的負向條件。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "關鍵影格所附加的正向條件。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "僅用於讀取潛在空間縮放係數。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "附加生成關鍵影格注意力的正向條件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "附加生成關鍵影格注意力的負向條件。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "在 T 維度附加生成關鍵影格的視訊潛在空間。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV 添加引導",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "將 noise_mask 設為 0，使此潛在空間在取樣期間保持無雜訊。適用於視訊或音訊。常見用途：在 Concat AV 前凍結音訊，使其僅提供交叉注意力；或凍結任何不應去雜訊的潛在空間。",
+    "display_name": "LTXV 凍結潛在空間",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要凍結的視訊或音訊潛在空間。音訊為 4D；視訊為 5D。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "將先前階段生成的關鍵影格固定為後續畫布上的凍結影像引導。它們會解碼為獨立影格，視需要調整大小，並以 noise_mask=0 寫入，因此不會再次去雜訊。時間升頻後，記錄的索引會從其生成所在的畫布按比例映射至此畫布（維持相同時間點）。使用 override_frame_indices 可明確設定位置。若要在新位置持續生成並去雜訊關鍵影格，請改用 Add Generated Keyframes。",
+    "display_name": "LTXV 將生成的關鍵影格轉為引導影格",
+    "inputs": {
+      "keyframes": {
+        "name": "關鍵影格",
+        "tooltip": "LTXV Separate Generated Keyframes 的關鍵影格輸出，其中包含每個關鍵影格生成時所在的像素影格索引。"
+      },
+      "latent": {
+        "name": "潛在空間",
+        "tooltip": "要加入引導的目標影片潛在空間，例如經時序升頻的潛在空間。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "選用 — 改為固定在這些像素影格，而非記錄的位置（或自動縮放後的位置）。每個關鍵影格提供一個索引。留空可重複使用記錄的位置，或在目標畫布長度不同時縮放位置（例如時序 x2 後）。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "引導強度。1.0 為強制固定；較低的值會放寬固定程度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": "將關鍵影格固定為影像引導的正向條件化。"
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": "將關鍵影格固定為影像引導的負向條件化。"
+      },
+      "2": {
+        "name": "潛在空間",
+        "tooltip": "已將關鍵影格作為凍結引導加入的目標影片潛在空間。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV 圖片轉影片",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "從取樣後的潛在空間中分離由 LTXV Add Generated Keyframes 加入的生成關鍵影格，並從條件化中移除它們。請在對影片潛在空間進行空間升頻前分離它們。請勿先執行 LTXV Crop Guides — 它會將生成關鍵影格視為可捨棄的引導並將其移除。",
+    "display_name": "LTXV Separate Generated Keyframes",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "將關鍵影格作為單影格潛在空間的批次回傳。關閉後，會將它們作為一個多影格潛在空間取得，這正是潛在空間升頻器與後續 Add Generated Keyframes 所預期的格式。"
+      },
+      "latent": {
+        "name": "潛在空間"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": "已移除生成關鍵影格中繼資料的正向條件化。"
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": "已移除生成關鍵影格中繼資料的負向條件化。"
+      },
+      "2": {
+        "name": "潛在空間",
+        "tooltip": "已移除生成關鍵影格的影片潛在空間。"
+      },
+      "3": {
+        "name": "關鍵影格",
+        "tooltip": "已分離的關鍵影格，標記有 generated_keyframe_indices 與 generated_keyframe_num_frames。將其輸入後續的 Add Generated Keyframes 以初始化新插槽，或輸入 Generated Keyframes To Guides 以將其固定為凍結影像引導（若畫布長度變更，索引會重新對應）。"
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "選擇模型的密集注意力實作。與 Block Sparse Attention 搭配使用時，只要稀疏注意力未啟用或不受支援，就會使用此後端。",
+    "display_name": "Model Attention Backend",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "密集注意力後端。Comfy Kitchen 注意力使用量化 INT8 注意力，且僅適用於 Nvidia 與 AMD GPU。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修補的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "使用所選注意力後端的模型。"
       }
     }
   },

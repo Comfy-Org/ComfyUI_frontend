@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Blocksparse Attention über comfy_kitchen: Jeder Query-Block berücksichtigt exakt eine ausgewählte Teilmenge von Key-Blöcken, wodurch der Rechenaufwand für Attention sinkt. Der relative Geschwindigkeitsgewinn steigt mit der Sequenzlänge, da kurze Sequenzen mit dichter Attention meist schneller sind. Außerhalb des aktiven Zeitplans, bei dense_blocks und unter min_tokens verwendet das Modell das aktive Attention-Backend des dichten Modells.",
-    "display_name": "Blocksparse Attention",
+    "description": "Wendet Block-sparse Attention auf geeignete Attention-Layer des Modells an und reduziert so den Rechenaufwand bei langen Sequenzen. Der Geschwindigkeitsgewinn wächst mit der Sequenzlänge, da kurze Sequenzen mit dichter Attention normalerweise schneller sind. Außerhalb von start/end_percent, bei dense_blocks und unter min_tokens verwendet das Modell das dichte Attention-Backend des Modells. Verwenden Sie den Node Model Attention Backend, um diesen Fallback auszuwählen.",
+    "display_name": "Sparse Attention des Modells",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Nach diesem Punkt des Zeitplans dicht."
+        "tooltip": "Prozentpunkt, an dem Sparse Attention endet. Nach diesem Punkt wird die Attention wieder dicht."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Kürzere Sequenzen bleiben dicht."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Das zu patchende Modell."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Wie exakte Key-Blöcke ausgewählt werden. Sol-Attn: adaptiver Schwellenwert pro Head/Block. top-k (SLA): festes keep_percent überall, nur mit trainierten Weights empfohlen. VSA (FastVideo): Cube-Tiling und grober Branch von FastH3-VSA, erfordert dafür trainierte Weights."
+        "tooltip": "Methode zur Auswahl von Key-Blöcken für vollständige Attention auf Token-Ebene. sol-attn: Sparsifying Online Attention verwendet für jeden Attention-Head und Query-Block einen trainingsfreien adaptiven Schwellenwert. sla: Sparse-Linear Attention behält einen festen Prozentsatz der Key-Blöcke mit der höchsten Bewertung bei; nur mit Modellgewichten verwenden, die für dieses Muster trainiert wurden. vsa: Video Sparse Attention (FastVideo) verwendet 3D-Videowürfel-Tiling und einen trainierten groben Attention-Zweig; erfordert FastH3-Modellgewichte."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Vor diesem Punkt des Zeitplans dicht."
+        "tooltip": "Prozentpunkt, an dem Sparse Attention beginnt. Vor diesem Punkt bleibt die Attention dicht."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Protokolliert, ob jede Attention-Form Sparse Attention verwendet hat oder warum sie dicht geblieben ist."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "Das Modell mit angewendeter Block-sparse Attention."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Fügt einem Video-latent detaillierende Keyframes hinzu. Jeder Keyframe ist ein latent-Frame aus Tokens, dessen RoPE-Position einen einzelnen Pixel-Frame umfasst; sie werden mit dem Video entrauscht und sind nicht Teil der dekodierten Ausgabe. Die Platzierung erfolgt alle interval_frames Pixel in einem Slot, wobei I2V-Frames, vorhandene Guides und bereits an cond vorhandene detaillierende Keyframes übersprungen werden. Verbundene Keyframes enthalten nur Inhalt und werden erneut auf diesem Canvas platziert, sofern frame_indices nicht gesetzt ist. Mit LTXV Separate Generated Keyframes können Sie sie wieder herauslösen. Erfordert einen für generierte Keyframes trainierten Checkpoint (mit keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Generierte Keyframes hinzufügen",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Optionale Pixel-Frame-Indizes. Leer lassen, um die Platzierung anhand von interval_frames auf dem aktuellen Canvas vorzunehmen. Wenn gesetzt, bestimmt diese Liste die Platzierung (verbundene Keyframes werden der Reihenfolge nach zugeordnet). Der letzte Frame ist zulässig; Frame 0 nicht (er ist bereits ein eigenständiges Token)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Pixel-Frame-Schrittweite für die automatische Platzierung. Der Standardwert 24 entspricht bei 24 fps etwa einem Keyframe pro Sekunde. Belegte Pixel werden übersprungen. Wird ignoriert, wenn frame_indices gesetzt ist."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optionaler Inhalt zur Initialisierung der neuen Keyframes. Verbinden Sie Keyframes aus einem vorherigen Separate (gleiche räumliche Größe) oder ein einfaches Video-latent, um den nächstgelegenen Frame an jeden neuen Slot zu kopieren (z. B. nach zeitlichem Upscaling). Diese werden weiterhin entrauscht und nicht als Guides fixiert. Auf einem Keyframes-latent aufgezeichnete Indizes werden ignoriert, sofern frame_indices nicht gesetzt ist. Wirkt sich nur aus, wenn das Sampling unter sigma 1 beginnt."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Einfaches 5D-Video-latent, zu dem parallel Keyframes generiert werden. Fügen Sie sie vor Concat AV Latent hinzu."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative Conditioning, an das die Keyframes angehängt werden."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Positive Conditioning, an das die Keyframes angehängt werden."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Wird nur zum Lesen der latent-Skalierungsfaktoren verwendet."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive Conditioning mit angehängter Attention für generierte Keyframes."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative Conditioning mit angehängter Attention für generierte Keyframes."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video-latent mit auf T angehängten generierten Keyframes."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Setzt noise_mask auf 0, sodass dieses latent während des Samplings unverändert bleibt. Funktioniert für Video oder Audio. Typische Verwendungen: Audio vor Concat AV einfrieren, sodass es nur Cross-Attention bereitstellt, oder jedes latent einfrieren, das nicht entrauscht werden soll.",
+    "display_name": "LTXV Latent einfrieren",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Einzufrierendes Video- oder Audio-latent. Audio ist 4D; Video ist 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fixiert generierte Keyframes aus einer früheren Phase als eingefrorene Bild-Guides auf einem späteren Canvas. Sie werden als eigenständige Frames dekodiert, bei Bedarf skaliert und mit noise_mask=0 geschrieben, sodass sie nicht erneut entrauscht werden. Nach einem zeitlichen Upscale werden aufgezeichnete Indizes vom Canvas, auf dem sie generiert wurden, auf diesen Canvas skaliert (gleiche Zeitpunkte). Verwenden Sie override_frame_indices, um Positionen explizit festzulegen. Um Keyframes an neuen Positionen weiterhin zu generieren (und zu entrauschen), verwenden Sie stattdessen Add Generated Keyframes.",
+    "display_name": "LTXV Generierte Keyframes in Guides umwandeln",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Die Keyframes-Ausgabe von LTXV Separate Generated Keyframes, die den Pixel-Frame-Index enthält, an dem jedes Keyframe generiert wurde."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Das Ziel-Video-latent, dem die Guides hinzugefügt werden sollen, z. B. das zeitlich hochskalierte."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Optional — an diesen Pixel-Frames statt an den aufgezeichneten (oder automatisch skalierten) Positionen fixieren. Geben Sie einen Index pro Keyframe an. Leer lassen, um aufgezeichnete Positionen wiederzuverwenden oder sie zu skalieren, wenn das Ziel-Canvas eine andere Länge hat (z. B. nach zeitlichem x2)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Guide-Stärke. 1.0 ist eine feste Fixierung; niedrigere Werte lockern sie."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positives Conditioning mit als Bild-Guides fixierten Keyframes."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negatives Conditioning mit als Bild-Guides fixierten Keyframes."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Ziel-Video-latent mit den als fixierte Guides hinzugefügten Keyframes."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Trennt die von LTXV Add Generated Keyframes hinzugefügten generierten Keyframes wieder aus einem gesampelten latent heraus und entfernt sie aus dem Conditioning. Trennen Sie sie, bevor Sie das Video-latent räumlich hochskalieren. Führen Sie LTXV Crop Guides nicht vorher aus — es behandelt generierte Keyframes als verwerfbare Guides und verwirft sie.",
+    "display_name": "LTXV Separate Generated Keyframes",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Gibt die Keyframes als Batch von Einzelframe-latents zurück. Deaktiviert lassen, um sie als ein Multi-Frame-latent zu erhalten, was der latent-Upsampler und ein späteres Add Generated Keyframes erwarten."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positives Conditioning, aus dem die Metadaten generierter Keyframes entfernt wurden."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negatives Conditioning, aus dem die Metadaten generierter Keyframes entfernt wurden."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video-latent, aus dem die generierten Keyframes entfernt wurden."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Die extrahierten Keyframes, gekennzeichnet mit generated_keyframe_indices und generated_keyframe_num_frames. Übergeben Sie diese an ein späteres Add Generated Keyframes, um neue Slots zu initialisieren, oder an Generated Keyframes To Guides, um sie als fixierte Bild-Guides zu verankern (Indizes werden neu zugeordnet, wenn sich die Canvas-Länge geändert hat)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Wählt die Dense-Attention-Implementierung für das Modell aus. Bei Verwendung mit Block Sparse Attention wird dieses Backend immer verwendet, wenn Sparse Attention inaktiv oder nicht unterstützt ist.",
+    "display_name": "Modell-Attention-Backend",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "Das Dense-Attention-Backend. Comfy Kitchen attention verwendet quantisierte INT8-Attention und ist nur auf Nvidia- und AMD-GPUs verfügbar."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Das zu patchende Modell."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Das Modell mit dem ausgewählten Attention-Backend."
       }
     }
   },

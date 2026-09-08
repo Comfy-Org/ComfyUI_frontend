@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "comfy_kitchen によるブロックスパースアテンション: 各クエリブロックが選択したキー ブロックのサブセットに対して正確にアテンションを実行し、アテンション計算量を削減します。短いシーケンスでは通常デンスの方が高速なため、相対的な速度向上はシーケンス長に応じて大きくなります。有効なスケジュール外、dense_blocks、および min_tokens 未満では、モデルは有効なデンスモデルのアテンションバックエンドを使用します。",
-    "display_name": "ブロックスパースアテンション",
+    "description": "対象となるモデルの注意レイヤーにブロック疎注意を適用し、長いシーケンスの計算量を削減します。短いシーケンスでは通常、密な注意の方が高速なため、速度向上はシーケンス長に応じて大きくなります。start/end_percent の範囲外、dense_blocks、および min_tokens 未満では、モデルは密なモデル注意バックエンドを使用します。このフォールバックを選択するには、Model Attention Backend ノードを使用してください。",
+    "display_name": "モデル疎注意",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "スケジュールのこの時点より後はデンス処理です。"
+        "tooltip": "疎注意を終了するパーセント位置。この位置より後では、注意は密に戻ります。"
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "これより短いシーケンスはデンス処理のままです。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "パッチを適用するモデル。"
       },
       "selection": {
         "name": "selection",
-        "tooltip": "正確なキーブロックの選択方法。Sol-Attn: ヘッド/ブロックごとの適応的しきい値。top-k (SLA): 全体で固定の keep_percent を維持。学習済み重みでのみ推奨。VSA (FastVideo): FastH3-VSA のキューブタイリングと粗いブランチを使用し、対応する学習済み重みが必要です。"
+        "tooltip": "完全なトークンレベル注意のキー・ブロックを選択する方法。sol-attn: Sparsifying Online Attention は、各注意ヘッドおよびクエリ・ブロックにトレーニング不要の適応しきい値を使用します。sla: Sparse-Linear Attention は、最高スコアのキー・ブロックを固定割合で保持します。このパターンでトレーニングされたモデル重みでのみ使用してください。vsa: Video Sparse Attention (FastVideo) は、3Dビデオキューブのタイリングと学習済みの粗い注意ブランチを使用します。FastH3 モデル重みが必要です。"
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "スケジュールのこの時点より前はデンス処理です。"
+        "tooltip": "疎注意を開始するパーセント位置。この位置より前では、注意は密のままです。"
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "各注意形状で疎注意が使用されたか、または密のままとなった理由をログに記録します。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "ブロック疎注意が適用されたモデル。"
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "詳細用キーフレームを動画 latent に追加します。各キーフレームは、RoPE 位置が1つのピクセルフレームにまたがるトークンの latent フレームです。これらは動画とともにデノイズされ、デコード出力には含まれません。配置は interval_frames ピクセルごとに1スロットで、I2V フレーム、既存のガイド、および cond にすでにある詳細用キーフレームをスキップします。接続したキーフレームはコンテンツのみとして扱われ、frame_indices が設定されていない限り、このキャンバス上に再配置されます。LTXV Separate Generated Keyframes で再度取り出せます。生成キーフレーム用にトレーニングされたチェックポイント（keyframes_abs_pos_embedding を含むもの）が必要です。",
+    "display_name": "LTXV 生成キーフレームを追加",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "任意のピクセルフレーム・インデックス。空のままにすると、現在のキャンバス上で interval_frames に基づいて配置されます。設定すると、このリストが配置位置になります（接続されたキーフレームは順番に対応付けられます）。最後のフレームは指定できますが、フレーム0は指定できません（すでに単独トークンであるためです）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自動配置のピクセルフレーム間隔。デフォルトの24は、24 fps でおよそ毎秒1キーフレームです。使用済みのピクセルはスキップされます。frame_indices が設定されている場合は無視されます。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "新しいキーフレームの初期化に使用する任意のコンテンツ。先行する Separate のキーフレーム（同じ空間サイズ）を接続するか、通常の動画 latent を接続して各新規スロットで最も近いフレームをコピーします（例: 時間アップスケール後）。これらもデノイズされ、ガイドとして固定されません。keyframes latent に記録されたインデックスは、frame_indices が設定されていない限り無視されます。サンプリングが sigma 1 未満で開始される場合にのみ効果があります。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "キーフレームを並行して生成するための通常の5D動画 latent。Concat AV Latent の前に追加してください。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "キーフレームを追加するネガティブ conditioning。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "キーフレームを追加するポジティブ conditioning。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "latent のスケール係数の読み取りにのみ使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "生成キーフレーム注意が追加されたポジティブ conditioning。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "生成キーフレーム注意が追加されたネガティブ conditioning。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T に生成キーフレームが追加された動画 latent。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask を 0 に設定し、この latent をサンプリング中にクリーンな状態で保持します。動画または音声で動作します。一般的な用途: Concat AV の前に音声を固定してクロス注意のみを提供させる、またはデノイズすべきでない latent を固定する。",
+    "display_name": "LTXV Latent を固定",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "固定する動画または音声 latent。音声は4D、動画は5Dです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "先行ステージで生成されたキーフレームを、後のキャンバス上で固定された画像ガイドとしてピン留めします。これらは単独フレームとしてデコードされ、必要に応じてリサイズされ、noise_mask=0 で書き込まれるため再度デノイズされません。時間アップスケール後は、記録されたインデックスが生成元のキャンバスからこのキャンバスへスケーリングされます（同じ時点）。位置を明示的に設定するには override_frame_indices を使用してください。新しい位置でキーフレームの生成とデノイズを続けるには、代わりに Add Generated Keyframes を使用してください。",
+    "display_name": "LTXV 生成キーフレームをガイドに変換",
+    "inputs": {
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "各キーフレームが生成されたピクセルフレームのインデックスを保持する、LTXV Separate Generated Keyframes のkeyframes出力。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ガイドを追加する対象の動画latent。例: 時間方向にアップスケールしたもの。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "任意 — 記録済み（または自動スケーリング済み）の位置ではなく、これらのピクセルフレームで固定します。キーフレームごとに1つのインデックスを指定してください。空欄のままにすると、記録済みの位置を再利用するか、対象キャンバスの長さが異なる場合（例: temporal x2後）にスケーリングされます。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "ガイドの強度。1.0では強く固定され、値を下げると固定が緩和されます。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": "キーフレームを画像ガイドとして固定したポジティブconditioning。"
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "キーフレームを画像ガイドとして固定したネガティブconditioning。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "キーフレームを固定ガイドとして追加した対象動画latent。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV画像からビデオへ",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "オーディオlatent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Add Generated Keyframes で追加された生成キーフレームをサンプリング済みlatentから分離し、conditioningから削除します。動画latentを空間的にアップスケールする前に分離してください。先にLTXV Crop Guidesを実行しないでください。生成キーフレームが使い捨てガイドとして扱われ、削除されます。",
+    "display_name": "LTXV Separate Generated Keyframes",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "キーフレームを単一フレームlatentのバッチとして返します。オフにすると、1つの複数フレームlatentとして取得します。これはlatentアップサンプラーと後続のAdd Generated Keyframesで想定される形式です。"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": "生成キーフレームのメタデータを削除したポジティブconditioning。"
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "生成キーフレームのメタデータを削除したネガティブconditioning。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "生成キーフレームを除去した動画latent。"
+      },
+      "3": {
+        "name": "キーフレーム",
+        "tooltip": "分離されたキーフレーム。generated_keyframe_indicesおよびgenerated_keyframe_num_framesのラベルが付与されます。後続のAdd Generated Keyframesに渡して新しいスロットを初期化するか、Generated Keyframes To Guidesに渡して固定画像ガイドとして設定します（キャンバス長が変更された場合、インデックスは再マッピングされます）。"
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "モデルの密なattention実装を選択します。Block Sparse Attentionと併用する場合、スパースattentionが無効または未対応のときにこのバックエンドが使用されます。",
+    "display_name": "モデル注意バックエンド",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "密なattentionバックエンド。Comfy Kitchen attentionは量子化INT8 attentionを使用し、NvidiaおよびAMD GPUでのみ利用できます。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "パッチを適用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル",
+        "tooltip": "選択したattentionバックエンドを適用したモデル。"
       }
     }
   },
