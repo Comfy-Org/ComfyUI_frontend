@@ -5,15 +5,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { LGraphNode, NodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
-/**
- * https://github.com/Comfy-Org/ComfyUI_frontend/pull/15924#discussion_r3858723898
- *
- * `extensionConfigureView` used to `Object.assign` the extensions-namespaced
- * payload directly onto the caller's serialized node object and hand that
- * same live object to `onConfigure`. An extension mutating its argument, or
- * simply the namespaced payload being promoted onto it, polluted the
- * caller's workflow JSON in place.
- */
 function nodeWithNamespacedExtension(): ISerialisedNode {
   return {
     id: 1,
@@ -54,8 +45,9 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
 
   it('does not promote namespaced extension keys onto the caller serialized object', () => {
     const node = new LGraphNode('TestNode')
-    // The configure view is only built when a hook is installed.
-    node.onConfigure = () => {}
+    node.onConfigure = (data) => {
+      expect(Reflect.get(data, 'myExt')).toEqual({ note: 'hello' })
+    }
     const info = nodeWithNamespacedExtension()
 
     node.configure(info)
@@ -69,12 +61,6 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
   })
 
   it('accepts a serialized object that still holds live slot instances', () => {
-    // `ComfyNode.configure` (litegraphService) fills `data.inputs` with the
-    // node's live `NodeInputSlot` instances before calling
-    // `LGraphNode.configure`. Those carry a node back-reference, so the view
-    // must not `structuredClone` them (DataCloneError). The shallow copy
-    // passes nested values through unchanged, so the hook sees the same
-    // shapes it always did.
     const node = new LGraphNode('TestNode')
     node.addInput('in', 'number')
     const liveSlot = new NodeInputSlot({ name: 'in', type: 'number' }, node)
@@ -102,9 +88,6 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
     const info = nodeWithNamespacedExtension()
 
     node.configure(info)
-    // Missing-node placeholders retain the caller's object as their
-    // last-serialization fallback (see `LGraph.ts`'s `last_serialization =
-    // n_info` assignments).
     node.last_serialization = info
 
     const reserialized = node.serialize()

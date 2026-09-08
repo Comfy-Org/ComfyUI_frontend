@@ -299,8 +299,6 @@ describe('LGraph Serialisation', () => {
 
     expect(configuredData).not.toBe(saved)
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
-    // The hook's top-level mutation of its argument must not leak back to the
-    // caller's object (https://github.com/Comfy-Org/ComfyUI_frontend/pull/15924#discussion_r3858723898).
     expect(saved).not.toHaveProperty('mutated')
   })
 

@@ -209,17 +209,6 @@ export const runExtensionSerializeHook = <T extends object>(
   return canonical
 }
 
-/**
- * Builds the object handed to `onConfigure`.
- *
- * The view is a shallow copy of the caller's serialized object: adding,
- * removing, or reassigning top-level keys on it (including the extension
- * payload promoted onto it here) never reaches the caller or its later
- * `serialize()` output. Nested values are intentionally shared as-is rather
- * than cloned: `ComfyNode.configure` passes live slot instances in
- * `data.inputs`, and any clone boundary (`structuredClone`, JSON) would either
- * throw on them or rewrite the value shapes hooks already receive.
- */
 export const extensionConfigureView = <T extends object>(
   owner: object,
   canonical: T
