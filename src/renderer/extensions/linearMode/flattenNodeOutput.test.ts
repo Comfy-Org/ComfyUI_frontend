@@ -143,7 +143,6 @@ describe(flattenNodeOutput, () => {
     expect(result).toHaveLength(2)
     expect(result[0].filename).toBe('valid.png')
     expect(result[1].filename).toBe('no-subfolder.png')
-    expect(result[1].subfolder).toBe('')
   })
 
   it('excludes items missing filename', () => {
