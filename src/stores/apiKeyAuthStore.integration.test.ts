@@ -55,7 +55,8 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
     clearWorkspaceContext: vi.fn(),
     getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
     getUnifiedToken: vi.fn().mockReturnValue(undefined),
-    mintAtLogin: vi.fn()
+    mintAtLogin: vi.fn(),
+    syncUnifiedIdentity: vi.fn()
   })
 }))
 
