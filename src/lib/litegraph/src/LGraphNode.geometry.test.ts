@@ -86,6 +86,21 @@ describe('layout geometry projection', () => {
     })
   })
 
+  test('keeps detached setPos and setSize writes local', () => {
+    const { graph, node } = nodeWithStoredBounds(30, 40)
+    const graphId = graph.rootGraph.id
+    const nodeId = node.id
+    graph.remove(node)
+
+    node.setPos(70, 90)
+    node.setSize([320, 180])
+
+    expect([...node.pos]).toEqual([70, 90])
+    expect([...node.size]).toEqual([320, 180])
+    expect(layoutStore.getNodeLayout(graphId, nodeId)).toBeNull()
+    expect(graph.getNodeById(nodeId)).toBeNull()
+  })
+
   test('refreshes stable views before indexed mutations', () => {
     const { graph, node } = nodeWithStoredBounds(30, 40, true)
     const pos = node.pos

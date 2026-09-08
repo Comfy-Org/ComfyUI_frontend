@@ -43,7 +43,7 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { reactive } = await import('vue')
   mocks.workflowStore = reactive({
-    activeWorkflow: { path: WORKFLOW_A } as { path: string } | null,
+    activeWorkflow: { path: WORKFLOW_A },
     openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }],
     nodeIdToNodeLocatorId: (id: string | number) => String(id),
     nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)

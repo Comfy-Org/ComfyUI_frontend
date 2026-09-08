@@ -17,18 +17,15 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getNodeLayout: vi.fn(() => null),
   getNodeLayoutRef: vi.fn(() => ({ value: null })),
   getRerouteLayout: vi.fn(() => null),
-  getSlotLayout: vi.fn(() => null),
+  getSlotOffset: vi.fn(() => null),
   getVersion: vi.fn(() => ({ value: 0 })),
-  hasSlotLayouts: false,
   onChange: vi.fn(() => () => {}),
   onGeometryChange: vi.fn(() => () => {}),
   onNodeChange: vi.fn(() => () => {}),
-  pendingSlotSync: false,
   queryLinkAtPoint: vi.fn(() => null),
   queryLinkSegmentAtPoint: vi.fn(() => null),
   queryRerouteAtPoint: vi.fn(() => null),
-  querySlotAtPoint: vi.fn(() => null),
   readNodeRect: vi.fn(() => false),
   contentSizeOf: vi.fn(() => undefined),
-  setPendingSlotSync: vi.fn()
+  updateNodeSlotOffsets: vi.fn()
 })

@@ -1,9 +1,13 @@
 {
   "recordedAt": {
     "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
-    "pin": "4ee72c065db22c9d96c2427954dc69e7b908444b"
+    "pin": "115de7a9d9e34410cffb9ecfd268e993b11a50fb"
   },
-  "schema": 1,
+  "schema": 3,
+  "corpus": {
+    "count": 40,
+    "nodeTypesSha256": "1e652681b9d77e556c25fd7eb1b6850416622ef68a4635db4d471971aecda9fb"
+  },
   "nodes": {
     "VHS_AudioToVHSAudio": {
       "connectFirst": [],
@@ -51,64 +55,64 @@
       "disconnect": []
     },
     "VHS_LoadAudioUpload": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "VHS_LoadImagePath": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_LoadImages": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_LoadImagesPath": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_LoadVideo": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_LoadVideoFFmpeg": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_LoadVideoFFmpegPath": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_LoadVideoPath": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_MergeImages": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_MergeLatents": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_MergeMasks": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_PruneOutputs": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_SelectEveryNthImage": {
       "connectFirst": [],
@@ -126,7 +130,7 @@
       "disconnect": []
     },
     "VHS_SelectFilename": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -166,9 +170,9 @@
       "disconnect": []
     },
     "VHS_Unbatch": {
-      "connectFirst": [],
+      "connectFirst": ["+output:unbatched:INT", "-output:unbatched:*"],
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": ["+output:unbatched:*", "-output:unbatched:INT"]
     },
     "VHS_VAEDecodeBatched": {
       "connectFirst": [],
@@ -181,29 +185,29 @@
       "disconnect": []
     },
     "VHS_VHSAudioToAudio": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_VideoCombine": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "VHS_VideoInfo": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_VideoInfoLoaded": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "VHS_VideoInfoSource": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     }
   }
 }

@@ -1,17 +1,31 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { BillingTelemetryEvent } from '../../types'
+import type {
+  BillingTelemetryEvent,
+  BootstrapCompleteMetadata
+} from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
-const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
+const {
+  addAction,
+  addDurationVital,
+  addFeatureFlagEvaluation,
+  getInternalContext
+} = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
+  addFeatureFlagEvaluation: vi.fn(),
   getInternalContext: vi.fn()
 }))
 
 vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addAction, addDurationVital, getInternalContext }
+  datadogRum: {
+    addAction,
+    addDurationVital,
+    addFeatureFlagEvaluation,
+    getInternalContext
+  }
 }))
 
 const workflowExecutionIntent = {
@@ -35,6 +49,45 @@ describe('DatadogRumTelemetryProvider', () => {
         final_status: 401,
         failure_reason: 'retry_rejected'
       }
+    )
+  })
+
+  it('records proactive unified refresh lifecycle outcomes', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRefresh({
+      outcome: 'retries_exhausted',
+      retry_count: 3
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      { outcome: 'retries_exhausted', retry_count: 3 }
+    )
+  })
+
+  it('records image load failures by source', () => {
+    new DatadogRumTelemetryProvider().trackImageLoadFailed({
+      source: 'node_image_preview'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.IMAGE_LOAD_FAILED,
+      { source: 'node_image_preview' }
+    )
+  })
+
+  it.for([
+    ['extension.manager:supports-v4', 'extension_manager_supports_v4'],
+    ['rollout(beta)[staff]', 'rollout_beta__staff_'],
+    [
+      'a+b=c&&d||e>f<g!h{i}^j"k“l”~m*n?o\\p',
+      'a_b_c__d__e_f_g_h_i__j_k_l__m_n_o_p'
+    ]
+  ])('normalizes feature flag key %s', ([key, normalizedKey]) => {
+    new DatadogRumTelemetryProvider().trackFeatureFlagEvaluation(key, true)
+
+    expect(addFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      normalizedKey,
+      true
     )
   })
 
@@ -256,5 +309,47 @@ describe('DatadogRumTelemetryProvider', () => {
         execution_duration_ms: 0
       }
     })
+  })
+
+  it('records startup as one action plus a duration vital', () => {
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      total_ms: 5200,
+      outcome: 'failed',
+      phase_count: 2,
+      phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      {
+        total_ms: 5200,
+        outcome: 'failed',
+        phase_count: 2,
+        phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
+      }
+    )
+    expect(addDurationVital).toHaveBeenCalledWith('bootstrap', {
+      startTime: performance.timeOrigin,
+      duration: 5200,
+      context: { outcome: 'failed' }
+    })
+  })
+
+  it('records timed-out startup without a duration vital', () => {
+    const metadata: BootstrapCompleteMetadata = {
+      total_ms: 30_000,
+      outcome: 'timed_out',
+      phase_count: 1,
+      phases: {},
+      pending: ['bootstrap/object-info']
+    }
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      metadata
+    )
+    expect(addDurationVital).not.toHaveBeenCalled()
   })
 })

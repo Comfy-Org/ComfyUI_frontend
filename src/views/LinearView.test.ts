@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -56,6 +56,22 @@ vi.mock('@/stores/appModeStore', async () => {
       reactive({ hasOutputs: computed(() => state.hasOutputs) })
   }
 })
+
+vi.mock(
+  '@/workbench/extensions/agent/composables/useAgentDockMount',
+  async () => {
+    const { computed, defineComponent, h } = await import('vue')
+    return {
+      useAgentDockMount: () => ({
+        docked: computed(() => true),
+        DockedAgentPanel: defineComponent({
+          name: 'DockedAgentPanel',
+          setup: () => () => h('div', { 'data-testid': 'docked-agent-panel' })
+        })
+      })
+    }
+  }
+)
 
 vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
   useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
@@ -212,5 +228,14 @@ describe('LinearView', () => {
 
     expect(screen.getByTestId('app-builder')).toBeInTheDocument()
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
+  })
+
+  it('docks the agent panel beside the workspace column, not inside it', () => {
+    renderView()
+
+    const column = within(screen.getByTestId('linear-workspace-column'))
+    expect(column.getByTestId('workflow-tabs')).toBeInTheDocument()
+    expect(column.queryByTestId('docked-agent-panel')).toBeNull()
+    expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
   })
 })

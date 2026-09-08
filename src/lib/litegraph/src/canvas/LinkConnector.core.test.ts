@@ -155,14 +155,18 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'input'
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
-      expect(() => {
-        connector.moveInputLink(
-          network,
-          new LGraphNode('mock'),
-          createMockNodeInputSlot({ link: toLinkId(1) })
-        )
-      }).toThrow('Already dragging links.')
+      connector.moveInputLink(
+        network,
+        new LGraphNode('mock'),
+        createMockNodeInputSlot({ link: toLinkId(1) })
+      )
+
+      expect(consoleError).toHaveBeenCalledWith('Already dragging links.')
+      expect(connector.inputLinks).toHaveLength(0)
     })
   })
 
@@ -196,14 +200,18 @@ describe('LinkConnector', () => {
       network
     }) => {
       connector.state.connectingTo = 'output'
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
-      expect(() => {
-        connector.moveOutputLink(
-          network,
-          new LGraphNode('mock'),
-          createMockNodeOutputSlot({ links: [toLinkId(1)] })
-        )
-      }).toThrow('Already dragging links.')
+      connector.moveOutputLink(
+        network,
+        new LGraphNode('mock'),
+        createMockNodeOutputSlot({ links: [toLinkId(1)] })
+      )
+
+      expect(consoleError).toHaveBeenCalledWith('Already dragging links.')
+      expect(connector.outputLinks).toHaveLength(0)
     })
   })
 

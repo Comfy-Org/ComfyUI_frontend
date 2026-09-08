@@ -71,10 +71,10 @@ describe('registerBadgeRowsProvider', () => {
 })
 
 describe('badgeDrawObjects', () => {
-  it('joins core parts into one badge in id, lifecycle, source order', () => {
+  it('joins core parts in their projected order', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
-      coreRow('lifecycle', '[BETA]'),
       coreRow('id', '#5'),
+      coreRow('lifecycle', '[BETA]'),
       coreRow('source', 'my-pack')
     ])
 
@@ -86,8 +86,8 @@ describe('badgeDrawObjects', () => {
 
   it('truncates the joined core text', () => {
     const badges = badgeDrawObjects(new LGraphNode('n'), [
-      coreRow('source', 'a'.repeat(40)),
-      coreRow('id', '#5')
+      coreRow('id', '#5'),
+      coreRow('source', 'a'.repeat(40))
     ])
 
     expect(badges[0].text).toHaveLength(31)

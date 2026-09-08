@@ -144,7 +144,8 @@ function getUIConfig(
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+  const { canAccessSubscriptionFeatures, isTeamPlan, subscription } =
+    useBillingContext()
   const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
@@ -169,7 +170,8 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate } = useBillingCapabilities()
+  const { canReactivate, canSubscribeSelfServe, snapshotAuthoritative } =
+    useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
@@ -195,6 +197,25 @@ function useWorkspaceUIInternal() {
       ? canReactivate.value
       : permissions.value.canManageSubscriptionLifecycle
   )
+
+  // Whether the self-serve pricing catalog applies to this workspace at all.
+  // The server resolves can_subscribe_self_serve false for sales-managed tiers
+  // (Enterprise, unrecognized), so every pricing-table entry point — menu
+  // items, settings links, and the ?pricing= deep link — reads this one value.
+  // Same rail split as canReactivatePlan: legacy_stripe has no capability
+  // projection row and stays on the membership check.
+  //
+  // Opening the catalog is navigation, not a billing write — every checkout
+  // endpoint enforces its own policy — so an absent snapshot falls back to
+  // membership rather than stranding a self-serve owner with no route to a
+  // plan. This mirrors canTopUp, which already fails open for owners.
+  const canOpenPricingSurface = computed(() => {
+    if (!isCloud || !shouldUseWorkspaceBilling.value)
+      return permissions.value.canManageSubscription
+    return snapshotAuthoritative.value
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription
+  })
 
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)
@@ -227,7 +248,8 @@ function useWorkspaceUIInternal() {
   // their menus can't desync on a billing-flag change.
   const isDeleteDisabled = computed(
     () =>
-      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
+      canAccessSubscriptionFeatures.value &&
+      !(subscription.value?.isCancelled ?? false)
   )
 
   const deleteDisabledTooltipKey = computed(() =>
@@ -238,12 +260,13 @@ function useWorkspaceUIInternal() {
     // Permissions and config
     permissions,
     canReactivatePlan,
+    canOpenPricingSurface,
     uiConfig,
     workspaceType,
     workspaceRole,
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isOriginalOwner,
     isSubscriptionCancelled,
     isTeamPlanCancelled,

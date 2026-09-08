@@ -131,7 +131,8 @@ export const usePartnerNodeGovernanceStore = defineStore(
       const workspaceId = governedWorkspaceId.value
       if (!workspaceId) return
       if (activeSaveIdsByWorkspace.value.has(workspaceId)) {
-        throw new Error('Provider policy save already in progress')
+        console.error('Provider policy save already in progress')
+        return
       }
 
       const version = ++requestVersion

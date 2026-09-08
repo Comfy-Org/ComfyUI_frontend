@@ -13,14 +13,14 @@
  * reader — whatever keys still parsed would render, silently and wrongly. That
  * is fail-OPEN, the exact failure KA-11 names.
  *
- * The version is read through the shared package's PUBLIC api (`metaMap`,
- * `SCHEMA_VERSION`) — never through a deep/internal import — so the key name
- * and the expected value cannot drift from the writer: they are the same
- * symbols the cloud doc-host uses. The package's own `migrate()` is deliberately
+ * The version is read through the shared package's PUBLIC api
+ * (`readSchemaVersion`, `SCHEMA_VERSION`) — never through a deep/internal
+ * import — so the key name and the expected value cannot drift from the
+ * writer: they are the same symbols the cloud doc-host uses. The package's own `migrate()` is deliberately
  * NOT called: it is host-only (it mutates the doc), and a follower must never
  * write the shared doc (KA-6 / FORECLOSE #5).
  */
-import { SCHEMA_VERSION, metaMap } from '@comfyorg/comfy-multi-player'
+import { SCHEMA_VERSION, readSchemaVersion } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
@@ -48,7 +48,7 @@ export class FollowerSchemaError extends Error {
  * @throws FollowerSchemaError when the doc is not readable at this version.
  */
 export function assertReadableSchema(doc: Y.Doc): void {
-  const found = metaMap(doc).get('schema_version')
+  const found = readSchemaVersion(doc)
   if (found === SCHEMA_VERSION) return
 
   const message =
@@ -59,7 +59,10 @@ export function assertReadableSchema(doc: Y.Doc): void {
   try {
     // Route through the repo's central invariant channel: console.error in
     // every environment, Sentry reporter in production.
-    assert(false, message)
+    assert(
+      false,
+      'CRDT follower: doc meta.schema_version is not the layout this build reads — refusing to project it (fail-closed, keep-alive invariant KA-11)'
+    )
   } catch {
     // Swallowed on purpose. `assert` throws only under DEV, so it is NOT a
     // fail-closed mechanism by itself — outside DEV it returns normally and

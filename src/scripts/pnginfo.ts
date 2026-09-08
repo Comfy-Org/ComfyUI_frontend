@@ -203,7 +203,7 @@ export type A1111ImportOutcome =
 export async function importA1111(
   graph: LGraph,
   parameters: string,
-  beforeGraphClear?: () => void
+  beforeGraphClear?: () => void | Promise<void>
 ): Promise<A1111ImportOutcome> {
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
@@ -362,7 +362,7 @@ export async function importA1111(
           return { embeddings: [], embeddingsLoaded: false }
         })
 
-      beforeGraphClear?.()
+      await beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)

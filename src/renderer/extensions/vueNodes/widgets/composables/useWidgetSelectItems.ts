@@ -26,9 +26,9 @@ import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
   value: string,
@@ -59,14 +59,14 @@ function getMediaUrl(
   return `/api/view?${params}`
 }
 
-interface UseWidgetSelectItemsOptions {
+export interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
   getOptionLabel: MaybeRefOrGetter<
     ((value?: string | null) => string) | undefined
   >
   modelValue: Ref<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
-  outputMediaAssets: IAssetsProvider
+  outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
@@ -113,7 +113,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
 
   watch(
-    () => outputMediaAssets.media.value,
+    () => toValue(toValue(outputMediaAssets).items),
     (assets, _, onCleanup) => {
       let cancelled = false
       onCleanup(() => {
@@ -206,11 +206,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const items: FormDropdownItem[] = []
     const labelFn = toValue(options.getOptionLabel)
 
-    const assets = outputMediaAssets.media.value.flatMap((asset) => {
-      const meta = getOutputAssetMetadata(asset.user_metadata)
-      const resolved = meta ? resolvedByJobId.value.get(meta.jobId) : undefined
-      return resolved ?? [asset]
-    })
+    const assets = toValue(toValue(outputMediaAssets).items).flatMap(
+      (asset) => {
+        const meta = getOutputAssetMetadata(asset.user_metadata)
+        const resolved = meta
+          ? resolvedByJobId.value.get(meta.jobId)
+          : undefined
+        return resolved ?? [asset]
+      }
+    )
 
     const missing = missingMediaValues.value
     for (const asset of assets) {

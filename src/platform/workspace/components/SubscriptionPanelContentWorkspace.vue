@@ -55,6 +55,7 @@
       <!-- Cancelled subscription info card -->
       <div
         v-if="showSubscriptionStateCard"
+        data-testid="subscription-state-card"
         class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
       >
         <div
@@ -220,12 +221,16 @@
                     {{ planDisplayName }}
                   </h3>
                   <StatusBadge
-                    v-if="isSubscriptionCancelled"
-                    :label="$t('subscription.canceled')"
-                    severity="warn"
+                    v-if="planStatusBadge"
+                    data-testid="plan-status-badge"
+                    :label="planStatusBadge.label"
+                    :severity="planStatusBadge.severity"
                   />
                 </div>
-                <div class="flex items-baseline gap-1 font-inter">
+                <div
+                  v-if="!isNonCatalogPlan"
+                  class="flex items-baseline gap-1 font-inter"
+                >
                   <span class="text-2xl font-semibold">{{ displayPrice }}</span>
                   <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
@@ -317,9 +322,10 @@
 
           <div
             v-if="
-              canAccessSubscriptionFeatures ||
-              isPersonalFree ||
-              showInactiveTeamSubscription
+              !isNonCatalogPlan &&
+              (canAccessSubscriptionFeatures ||
+                isPersonalFree ||
+                showInactiveTeamSubscription)
             "
             class="flex flex-col gap-2"
           >
@@ -378,22 +384,12 @@
         </div>
       </div>
 
-      <!-- View More Details - Outside main content -->
-      <div v-if="permissions.canManageSubscription" class="py-6">
-        <Button
-          variant="muted-textonly"
-          class="text-sm text-muted"
-          @click="handleViewMoreDetails"
-        >
-          {{ $t('subscription.viewMoreDetailsPlans') }}
-          <i class="pi pi-external-link text-muted" />
-        </Button>
-      </div>
-
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
+        :show-plans-link="canOpenPricingSurface"
         :show-invoice-history="permissions.canManageSubscription"
         :show-usage-activity="workspaceRole === 'owner'"
+        @view-plans="handleViewMoreDetails"
       />
     </template>
   </div>
@@ -413,10 +409,12 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
@@ -435,7 +433,8 @@ const {
   permissions,
   isSubscriptionCancelled,
   workspaceRole,
-  canReactivatePlan
+  canReactivatePlan,
+  canOpenPricingSurface
 } = useWorkspaceUI()
 const { canChangeSeats, canSubscribeSelfServe } = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
@@ -458,7 +457,6 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
-  plans,
   billingStatus,
   subscriptionStatus,
   isLoading,
@@ -520,7 +518,8 @@ const showTeamSubscribePrompt = computed(
 
 const showInactiveTeamSubscription = computed(
   () =>
-    showTeamSubscribePrompt.value &&
+    permissions.value.canManageSubscription &&
+    !isInPersonalWorkspace.value &&
     isSubscriptionEnded.value &&
     isTeamPlan.value
 )
@@ -576,43 +575,37 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
-const formattedChangeDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
-)
-
-const scheduledPlanName = computed(() => {
-  const scheduledPlan = plans.value.find(
-    (plan) => plan.slug === subscription.value?.scheduledPlanSlug
-  )
-  if (!scheduledPlan) return ''
-  if (scheduledPlan.slug.startsWith('team')) {
-    return t('subscription.teamPlanName')
-  }
-  return t(
-    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
-  )
-})
+const {
+  scheduledChange,
+  planName: scheduledPlanName,
+  formattedDate: formattedChangeDate
+} = useScheduledPlanChange()
 
 const showSubscriptionStateCard = computed(
-  () => isSubscriptionCancelled.value || isSubscriptionEnded.value
+  () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
-  isSubscriptionEnded.value
-    ? t('subscription.canceledCard.endedTitle')
-    : t('subscription.canceledCard.title')
+  t('subscription.canceledCard.title')
 )
 
-const subscriptionStateCardDescription = computed(() => {
-  if (isSubscriptionEnded.value) {
-    return t('subscription.canceledCard.endedDescription')
-  }
-  if (!formattedEndDate.value) {
-    return t('subscription.canceledCard.descriptionWithoutDate')
-  }
-  return t('subscription.canceledCard.description', {
-    date: formattedEndDate.value
-  })
+const subscriptionStateCardDescription = computed(() =>
+  formattedEndDate.value
+    ? t('subscription.canceledCard.description', {
+        date: formattedEndDate.value
+      })
+    : t('subscription.canceledCard.descriptionWithoutDate')
+)
+
+const planStatusBadge = computed(() => {
+  if (isSubscriptionEnded.value)
+    return {
+      label: t('subscription.inactive.badge'),
+      severity: 'secondary' as const
+    }
+  if (isSubscriptionCancelled.value)
+    return { label: t('subscription.canceled'), severity: 'warn' as const }
+  return null
 })
 
 const planDateDisplay = computed(() => {
@@ -623,7 +616,7 @@ const planDateDisplay = computed(() => {
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
   }
-  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+  if (scheduledChange.value) {
     return scheduledPlanName.value && formattedChangeDate.value
       ? t('subscription.changesToPlanOnDate', {
           plan: scheduledPlanName.value,
@@ -646,9 +639,21 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
-const planDisplayName = computed(() =>
-  isTeamPlan.value ? t('subscription.teamPlanName') : subscriptionTierName.value
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
 )
+
+const isNonCatalogPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
+
+const planDisplayName = computed(() => {
+  if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
+  if (isNonCatalogPlan.value) return t('subscription.unknownTierName')
+  return isTeamPlan.value
+    ? t('subscription.teamPlanName')
+    : subscriptionTierName.value
+})
 
 const tierKey = computed(() =>
   resolveSubscriptionTierKey(subscription.value?.tier)
@@ -662,6 +667,7 @@ const TEAM_PERK_KEYS = [
 ] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
+  if (isNonCatalogPlan.value) return []
   if (isTeamActive.value || showInactiveTeamSubscription.value) {
     return TEAM_PERK_KEYS.map((key) => ({
       key,

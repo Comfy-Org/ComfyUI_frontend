@@ -1,0 +1,364 @@
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Nach Updates suchen"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Custom-Nodes-Ordner öffnen"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Eingabeordner öffnen"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Protokollordner öffnen"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yaml öffnen"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Modellordner öffnen"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Ausgabeordner öffnen"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "DevTools öffnen"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Desktop-Benutzerhandbuch"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Beenden"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Neu installieren"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Neu starten"
+  },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "3D-Viewer (Beta) für ausgewählten Node öffnen"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Experimentell: Modellressourcen durchsuchen"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "Vorlagen durchsuchen"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Kopieren"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Ausgewählte Elemente löschen"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "Ansicht an ausgewählte Nodes anpassen"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Canvas sperren"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Ausgewählte Nodes nach unten verschieben"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Ausgewählte Nodes nach links verschieben"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Ausgewählte Nodes nach rechts verschieben"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Ausgewählte Nodes nach oben verschieben"
+  },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Einfügen"
+  },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Mit Verbindung einfügen"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "Ansicht zurücksetzen"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Größe ausgewählter Nodes ändern"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Alle auswählen"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "Verbindungssichtbarkeit im Canvas umschalten"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "Canvas-Sperre umschalten"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Canvas-Minimap umschalten"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "Bypass für ausgewählte Nodes aktivieren/deaktivieren"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "Ausgewählte Nodes einklappen/ausklappen"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "Ausgewählte Nodes stummschalten/Stummschaltung aufheben"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "Ausgewählte Nodes anheften/lösen"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Ausgewählte Elemente anheften/lösen"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Canvas entsperren"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "Vergrößern"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "Verkleinern"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "Ausstehende Aufgaben löschen"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "Workflow leeren"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Support kontaktieren"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Modellauswahl anzeigen (Dev)"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Aktuellen Workflow duplizieren"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "Workflow exportieren"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "Workflow exportieren (API-Format)"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Auswahl in Subgraph umwandeln"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Subgraph-Widgets bearbeiten"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Subgraph verlassen"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "Gruppe an Inhalt anpassen"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "Ausgewählte Nodes gruppieren"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Hochstufung des Widgets unter dem Mauszeiger umschalten"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Ausgewählten Subgraph entpacken"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Info zu ComfyUI öffnen"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Comfy-Org Discord öffnen"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "ComfyUI-Dokumentation öffnen"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "ComfyUI-Forum öffnen"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "ComfyUI-Issues öffnen"
+  },
+  "Comfy_Interrupt": {
+    "label": "Unterbrechen"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Ebenen-Editor für ausgewählten Node öffnen"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "Standard-Workflow laden"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Manager für benutzerdefinierte Nodes"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Benutzerdefinierte Nodes (Legacy)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Manager-Menü (Legacy)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Fehlende benutzerdefinierte Nodes installieren"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Nach Updates für benutzerdefinierte Nodes suchen"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Pinselgröße im MaskEditor verringern"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Pinselgröße im MaskEditor erhöhen"
+  },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Farbauswahl im MaskEditor öffnen"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Im MaskEditor horizontal spiegeln"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Im MaskEditor vertikal spiegeln"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Mask-Editor für ausgewählten Node öffnen"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Im MaskEditor nach links drehen"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Im MaskEditor nach rechts drehen"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Modelle entladen"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Modelle und Ausführungs-Cache entladen"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "Neuer leerer Workflow"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "Clipspace"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "Manager"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "Workflow öffnen"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Subgraph veröffentlichen"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "Prompt einreihen"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "Prompt einreihen (vorne)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Ausgewählte Output-Nodes einreihen"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Auftragsverlauf ein-/ausblenden"
+  },
+  "Comfy_Redo": {
+    "label": "Wiederholen"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "Node-Definitionen aktualisieren"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Workflow umbenennen"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "Workflow speichern"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "Workflow speichern unter"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "Einstellungsdialog anzeigen"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Subgraph-Beschreibung festlegen"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Subgraph-Suchaliase festlegen"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Experimentell: AssetAPI aktivieren"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Canvas-Leistung"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Hilfe-Center"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "App-Modus umschalten"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Queue-Panel V2 ein-/ausblenden"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "Theme umschalten (Dunkel/Hell)"
+  },
+  "Comfy_Undo": {
+    "label": "Rückgängig"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Anmeldedialog öffnen"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Abmelden"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Experimentell: Nodes 2.0 aktivieren"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "Aktuellen Workflow schließen"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "Nächsten geöffneten Workflow"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "Vorherigen geöffneten Workflow"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "Suchfeld ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "Bottom-Panel ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Terminal-Bottom-Panel ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Protokoll-Bottom-Panel ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Wichtiges Bottom-Panel ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Bottom-Panel für Ansichtssteuerung ein-/ausblenden"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Tastenkürzeldialog anzeigen"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "Fokusmodus umschalten"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Apps-Seitenleiste ein-/ausblenden",
+    "tooltip": "Apps"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Assets-Seitenleiste ein-/ausblenden",
+    "tooltip": "Assets"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "Modellbibliothek-Seitenleiste ein-/ausblenden",
+    "tooltip": "Modellbibliothek"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "Node-Bibliothek-Seitenleiste ein-/ausblenden",
+    "tooltip": "Node-Bibliothek"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "Workflow-Seitenleiste ein-/ausblenden",
+    "tooltip": "Workflows"
+  }
+}

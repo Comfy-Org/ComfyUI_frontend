@@ -23,6 +23,7 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: false,
   canReactivate: false,
   canReactivatePlan: false,
+  canOpenPricingSurface: false,
   shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
@@ -79,7 +80,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
-    canReactivatePlan: computed(() => state.canReactivatePlan)
+    canReactivatePlan: computed(() => state.canReactivatePlan),
+    canOpenPricingSurface: computed(() => state.canOpenPricingSurface)
   })
 }))
 
@@ -198,6 +200,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canOpenPricingSurface = false
     state.canReactivate = false
     state.shouldUseWorkspaceBilling = true
   })
@@ -537,6 +540,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
+    state.canOpenPricingSurface = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -546,6 +550,33 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
+    // Server-resolved for Enterprise/unrecognized tiers: no self-serve
+    // catalog, so canOpenPricingSurface resolves false while the plan is
+    // still manageable through settings.
+    state.canManageSubscription = true
+    state.canOpenPricingSurface = false
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+  })
+
+  it('hides Resubscribe for a cancelled sales-managed plan', () => {
+    state.isCancelled = true
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    state.canReactivatePlan = false
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('reads the derived reactivate policy, not the raw server capability', () => {

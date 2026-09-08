@@ -15,6 +15,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { CORE_PART_ORDER } from '@/types/badgeData'
 import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
 import type { NodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
@@ -66,11 +67,17 @@ function badgeTextVisible(
 /** Projects a node's core and credits badge rows from their sources. */
 export function computeBadges(sources: BadgeSources): BadgeData[] {
   const { nodeId, nodeDef, badgeModes, colors, pricing } = sources
-  const coreParts: [CoreBadgePart, NodeBadgeMode, string][] = [
-    ['lifecycle', badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
-    ['id', badgeModes.id, `#${nodeId}`],
-    ['source', badgeModes.source, nodeDef?.sourceText ?? '']
-  ]
+  const corePartsByPart: Record<CoreBadgePart, [NodeBadgeMode, string]> = {
+    id: [badgeModes.id, `#${nodeId}`],
+    lifecycle: [badgeModes.lifecycle, nodeDef?.lifecycleText ?? ''],
+    source: [badgeModes.source, nodeDef?.sourceText ?? '']
+  }
+  const coreParts = CORE_PART_ORDER.map(
+    (part): [CoreBadgePart, NodeBadgeMode, string] => [
+      part,
+      ...corePartsByPart[part]
+    ]
+  )
   const rows: BadgeData[] = coreParts
     .filter(
       ([, mode, text]) => badgeTextVisible(nodeDef, mode) && text.length > 0
@@ -133,10 +140,10 @@ function touchPricingSources(graphId: UUID, node: LGraphNode): void {
   const groupPrefixes = pricing.getInputGroupPrefixes(node.type)
   const graph = node.graph
   const graphScope = graph ? graphScopeOf(graph) : undefined
-  node.inputs?.forEach((input, index) => {
+  node.inputs.forEach((input, index) => {
     const relevant =
       (input.name && inputNames.includes(input.name)) ||
-      groupPrefixes.some((prefix) => input.name?.startsWith(prefix + '.'))
+      groupPrefixes.some((prefix) => input.name.startsWith(prefix + '.'))
     if (relevant && graphScope) {
       void linkStore.isInputSlotConnected(graphScope, nodeId, index)
     }
@@ -172,7 +179,7 @@ function collectPromotedOverrides(
 function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
   const pricing = useNodePricing()
   const apiLeaves = mapUniqueNodes(wrapper.subgraph, (node) =>
-    !node.isSubgraphNode() && node.constructor?.nodeData?.api_node
+    !node.isSubgraphNode() && node.constructor.nodeData?.api_node
       ? node
       : undefined
   )
@@ -194,7 +201,7 @@ function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
 
 function gatherPricing(node: LGraphNode): PricingBadgeSources {
   if (node.isSubgraphNode()) return gatherSubgraphCredits(node)
-  if (!node.constructor?.nodeData?.api_node) return { kind: 'none' }
+  if (!node.constructor.nodeData?.api_node) return { kind: 'none' }
   const graphId = node.graph?.rootGraph.id
   if (graphId !== undefined) touchPricingSources(graphId, node)
   return { kind: 'api-node', label: useNodePricing().getNodeDisplayPrice(node) }
@@ -204,7 +211,7 @@ function gatherSources(node: LGraphNode): BadgeSources {
   const settingStore = useSettingStore()
   const palette = useColorPaletteStore().completedActivePalette
   const def = useNodeDefStore().fromLGraphNode(node)
-  const showApiPricing = !!settingStore.get('Comfy.NodeBadge.ShowApiPricing')
+  const showApiPricing = settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
   return {
     nodeId: node.id,
@@ -212,7 +219,7 @@ function gatherSources(node: LGraphNode): BadgeSources {
       ? {
           isCoreNode: def.isCoreNode,
           lifecycleText: def.nodeLifeCycleBadgeText,
-          sourceText: def.nodeSource?.badgeText ?? ''
+          sourceText: def.nodeSource.badgeText
         }
       : null,
     badgeModes: {

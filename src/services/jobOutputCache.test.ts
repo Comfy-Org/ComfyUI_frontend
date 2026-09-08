@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/platform/assets/composables/media/assetMappers')
+
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
 import type {
@@ -14,7 +16,8 @@ import {
   getJobWorkflow,
   getOutputsForTask
 } from '@/services/jobOutputCache'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
   fetchJobDetail: vi.fn(),
@@ -31,17 +34,18 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
-  const item = new ResultItemImpl({
+function createResultItem(
+  url: string,
+  supportsPreview = true
+): AugmentedResultItem {
+  return {
     filename: url,
     subfolder: '',
     type: 'output',
     nodeId: 'node-1',
-    mediaType: supportsPreview ? 'images' : 'unknown'
-  })
-  Object.defineProperty(item, 'url', { get: () => url })
-  Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
-  return item
+    mediaType: supportsPreview ? 'images' : 'unknown',
+    url
+  }
 }
 
 function createMockJob(id: string, outputsCount = 1): JobListItem {
@@ -56,8 +60,8 @@ function createMockJob(id: string, outputsCount = 1): JobListItem {
 }
 
 function createTask(
-  preview?: ResultItemImpl,
-  allOutputs?: ResultItemImpl[],
+  preview?: AugmentedResultItem,
+  allOutputs?: AugmentedResultItem[],
   outputsCount = 1
 ): TaskItemImpl {
   const job = createMockJob(
@@ -238,15 +242,17 @@ describe('jobOutputCache', () => {
 
       expect(result).toHaveLength(4)
       expect(result.map((item) => item.filename).sort()).toEqual(
-        ['image.png', 'image.webp', 'clip.mp4', 'sound.mp3'].sort()
+        expect.arrayContaining([
+          'image.png',
+          'image.webp',
+          'clip.mp4',
+          'sound.mp3'
+        ])
       )
 
       const image = result.find((item) => item.filename === 'image.png')
       const video = result.find((item) => item.filename === 'clip.mp4')
-      const { ResultItemImpl: ResultItemImplClass } =
-        await import('@/stores/queueStore')
 
-      expect(image).toBeInstanceOf(ResultItemImplClass)
       expect(image?.nodeId).toBe('node-1')
       expect(image?.mediaType).toBe('images')
       expect(video?.nodeId).toBe('node-2')

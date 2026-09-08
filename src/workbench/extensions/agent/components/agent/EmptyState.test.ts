@@ -7,7 +7,7 @@ import { i18n } from '@/i18n'
 import EmptyState from './EmptyState.vue'
 
 describe('EmptyState', () => {
-  it('renders every suggestion and inserts the full final prompt', async () => {
+  it('T-22 / PM-649 / FE-1288 renders every suggestion without truncating the inserted prompt', async () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
       global: { plugins: [i18n] }

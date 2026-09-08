@@ -1,6 +1,16 @@
 name: Validate Action SHA Pins
 
 on:
+  # pull_request builds against the base at event time, so a stale base can merge
+  # green; merge_group rebuilds against main's tip and push catches queue bypasses.
+  merge_group:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.pinact.yaml'
   pull_request:
     paths:
       - '.github/workflows/**'

@@ -41,7 +41,7 @@ export function useMissingModelDownload() {
     const bridge = window.__comfyDesktop2
     if (bridge?.openModelAccessPage) {
       try {
-        if ((await bridge.openModelAccessPage(repoUrl)) === true) return
+        if (await bridge.openModelAccessPage(repoUrl)) return
       } catch (error: unknown) {
         console.error('Failed to open model access page in Desktop:', error)
       }

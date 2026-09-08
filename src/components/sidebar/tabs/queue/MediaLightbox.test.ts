@@ -4,8 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
 
@@ -29,23 +28,15 @@ const i18n = createI18n({
         gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next',
-        videoFailedToLoad: 'Video failed to load'
+        videoFailedToLoad: 'Video failed to load',
+        textFailedToLoad: 'Text failed to load'
       }
     }
   }
 })
 
-type MockResultItem = Partial<ResultItemImpl> & {
-  filename: string
-  subfolder: string
-  type: string
-  nodeId: SerializedNodeId
-  mediaType: string
+type MockResultItem = AugmentedResultItem & {
   id?: string
-  url?: string
-  isImage?: boolean
-  isVideo?: boolean
-  isAudio?: boolean
 }
 
 describe('MediaLightbox', () => {
@@ -76,9 +67,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '123',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image1.jpg',
       id: '1'
     },
@@ -88,9 +76,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '456',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image2.jpg',
       id: '2'
     },
@@ -100,15 +85,12 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '789',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image3.jpg',
       id: '3'
     }
   ]
 
-  const renderGallery = (props = {}) => {
+  const renderGallery = (props = {}, stubs = {}) => {
     const onUpdateActiveIndex = vi.fn()
     const user = userEvent.setup()
     const { rerender, container } = render(MediaLightbox, {
@@ -120,11 +102,12 @@ describe('MediaLightbox', () => {
           ResultAudio: mockResultAudio
         },
         stubs: {
-          teleport: true
+          teleport: true,
+          ...stubs
         }
       },
       props: {
-        allGalleryItems: mockGalleryItems as ResultItemImpl[],
+        allGalleryItems: mockGalleryItems,
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -153,7 +136,7 @@ describe('MediaLightbox', () => {
 
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]] as ResultItemImpl[]
+      allGalleryItems: [mockGalleryItems[0]]
     })
     await nextTick()
 
@@ -169,7 +152,7 @@ describe('MediaLightbox', () => {
     /* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
     await rerender({
-      allGalleryItems: mockGalleryItems as ResultItemImpl[],
+      allGalleryItems: mockGalleryItems,
       activeIndex: 0
     })
     await nextTick()
@@ -187,6 +170,34 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+  })
+
+  it('keeps failed text media actionable until the viewer closes', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 503 }))
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { user } = renderGallery(
+      {
+        allGalleryItems: [
+          {
+            ...mockGalleryItems[0],
+            filename: 'failed.txt',
+            mediaType: 'text',
+            url: '/api/view?filename=failed.txt'
+          }
+        ]
+      },
+      { ResultText: false }
+    )
+
+    expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
+
+    await user.click(screen.getByLabelText('Close'))
+
+    expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
   /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
@@ -249,9 +260,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: `${n}`,
       mediaType: 'video',
-      isImage: false,
-      isVideo: true,
-      isAudio: false,
       url: `http://assets.test/v${n}.mp4`,
       id: `v${n}`
     })
@@ -260,13 +268,13 @@ describe('MediaLightbox', () => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items as ResultItemImpl[],
+          allGalleryItems: items,
           activeIndex: 0
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
-          allGalleryItems: items as ResultItemImpl[],
+          allGalleryItems: items,
           activeIndex
         })
         await nextTick()

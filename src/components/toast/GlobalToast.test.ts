@@ -31,7 +31,7 @@ describe('GlobalToast', () => {
     cleanup()
   })
 
-  it('forwards queued messages and clears the queue', async () => {
+  it('forwards queued additions and clears the queue', async () => {
     renderToast()
     const toastStore = useToastStore()
     const message = { severity: 'error' as const, summary: 'Failed' }

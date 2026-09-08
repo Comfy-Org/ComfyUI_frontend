@@ -83,7 +83,7 @@ async function nodeIdsByType(
   classTypes: string[]
 ): Promise<string[]> {
   return await page.evaluate((types) => {
-    const nodes = window.app!.graph.nodes ?? []
+    const nodes = window.app!.graph.nodes
     return nodes
       .filter((node) => {
         const n = node as { comfyClass?: string; type?: string }
@@ -176,8 +176,8 @@ for (const entry of manifestEntries) {
             servedExtensionPaths,
             entry.pack
           )
-          const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
-          if (exclusion) {
+          if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
+            const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
             expect(packIdentity(entry)).toBe(exclusion.deployRef)
             expect(webDirectory).toBe(exclusion.webDirectory)
             expect(
@@ -219,9 +219,9 @@ for (const entry of manifestEntries) {
         }
         await comfyPage.nextFrame()
 
-        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
-          entry.expectedNodes.length
-        )
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(entry.expectedNodes.length)
         // Vue Nodes 2.0 mounts each node as a [data-node-id] element; assert
         // the pack's own nodes rendered, not just any node count.
         if (vueNodesEnabled)
@@ -340,7 +340,7 @@ for (const entry of manifestEntries) {
               ) as CuratedOutputHashes)
             : null
           const observed = await hashSinkPayloads(
-            result.outputsByNode as Record<string, unknown>,
+            result.outputsByNode,
             async (ref) => {
               const encoded = await comfyPage.page.evaluate(async (file) => {
                 const query = new URLSearchParams({

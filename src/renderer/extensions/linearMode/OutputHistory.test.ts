@@ -7,13 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
-import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { PagedList } from '@/utils/pagedList'
 
 import OutputHistory from './OutputHistory.vue'
 
@@ -31,12 +31,12 @@ const runningTasksRef = ref<Array<{ jobId: string }>>([])
 const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
 const selectFirstHistoryFn = vi.fn(() => {
-  const first = mediaRef.value[0]
+  const first = mediaRef.value.at(0)
   selectedIdRef.value = first ? `history:${first.id}:0` : null
 })
 const mayBeActiveWorkflowPendingRef = ref(false)
 
-const allOutputsFn = vi.fn((): ResultItemImpl[] => [])
+const allOutputsFn = vi.fn((): AugmentedResultItem[] => [])
 
 const selectFn = vi.fn((id: string | null) => {
   selectedIdRef.value = id
@@ -56,15 +56,13 @@ vi.mock('@/lib/litegraph/src/CanvasPointer', () => ({
 vi.mock('@/renderer/extensions/linearMode/useOutputHistory', () => ({
   useOutputHistory: () => ({
     outputs: {
-      media: mediaRef,
       hasMore: hasMoreRef,
+      invalidate: vi.fn(),
+      isLoading: ref(false),
+      items: mediaRef,
       loadMore: loadMoreFn,
-      isLoadingMore: ref(false),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn(),
-      refresh: vi.fn()
-    } satisfies IAssetsProvider,
+      loadNew: vi.fn()
+    } satisfies PagedList<AssetItem>,
     allOutputs: allOutputsFn,
     selectFirstHistory: selectFirstHistoryFn,
     mayBeActiveWorkflowPending:
@@ -148,7 +146,7 @@ function makeAsset(id: string): AssetItem {
   return fromPartial({ id, name: `${id}.png`, tags: [], user_metadata: {} })
 }
 
-function makeResult(filename: string): ResultItemImpl {
+function makeResult(filename: string): AugmentedResultItem {
   return {
     filename,
     subfolder: '',
@@ -156,7 +154,7 @@ function makeResult(filename: string): ResultItemImpl {
     nodeId: '1',
     mediaType: 'images',
     url: `http://localhost/${filename}`
-  } as unknown as ResultItemImpl
+  }
 }
 
 function makeInProgressItem(
@@ -180,7 +178,7 @@ function lastEmission(result: RenderResult): OutputSelection {
     | Array<[OutputSelection]>
     | undefined
   expect(emitted).toBeDefined()
-  return emitted![emitted!.length - 1][0] as OutputSelection
+  return emitted![emitted!.length - 1][0]
 }
 
 function historySelectableItems(): HTMLElement[] {

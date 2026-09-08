@@ -462,7 +462,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -506,7 +506,7 @@ describe('ComboWidget', () => {
       const mockContextMenu = vi
         .fn<typeof LiteGraph.ContextMenu>()
         .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
+          capturedCallback = options?.callback
         })
       LiteGraph.ContextMenu = mockContextMenu as Partial<
         typeof LiteGraph.ContextMenu
@@ -834,7 +834,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
@@ -889,7 +889,7 @@ describe('ComboWidget', () => {
         const mockContextMenu = vi
           .fn<typeof LiteGraph.ContextMenu>()
           .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
+            capturedCallback = options?.callback
             this.addItem = mockAddItem
           })
         LiteGraph.ContextMenu = mockContextMenu as Partial<
@@ -1056,7 +1056,7 @@ describe('ComboWidget', () => {
       expect(widget.canDecrement()).toBe(false)
     })
 
-    it('should throw error when values is null in getValues', () => {
+    it('should ignore clicks when values is null', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
           name: 'mode',
@@ -1071,10 +1071,16 @@ describe('ComboWidget', () => {
       const mockEvent = { canvasX: 150 } as CanvasPointerEvent
       node.pos = [50, 50]
       node.size = [200, 30]
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
 
-      expect(() => {
-        widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
-      }).toThrow('[ComboWidget]: values is required')
+      widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(consoleError).toHaveBeenCalledWith(
+        '[ComboWidget]: values is required'
+      )
+      expect(widget.value).toBe('test')
     })
 
     it('should default to first value when incrementing from invalid value', () => {

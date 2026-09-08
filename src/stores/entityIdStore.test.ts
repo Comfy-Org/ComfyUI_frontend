@@ -1,3 +1,4 @@
+import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
@@ -29,5 +30,16 @@ describe(useEntityIdStore, () => {
     state.lastNodeId = 99
 
     expect(store.get(first).lastNodeId).toBe(2)
+  })
+
+  it('reacts to in-place map mutations', () => {
+    const store = useEntityIdStore()
+    const hasFirst = computed(() => store.has(first))
+
+    expect(hasFirst.value).toBe(false)
+    store.get(first)
+    expect(hasFirst.value).toBe(true)
+    store.clear(first)
+    expect(hasFirst.value).toBe(false)
   })
 })

@@ -16,18 +16,12 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
+import type { Bounds, NodeId, Size } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import {
-  isBoundsEqual,
-  isSizeEqual
-} from '@/renderer/core/layout/utils/geometry'
+import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-
-import {
-  scheduleSlotLayoutSync,
-  syncNodeSlotLayoutsFromDOM
-} from './useSlotElementTracking'
+import type { UUID } from '@/utils/uuid'
 
 /**
  * Generic update item for element bounds tracking
@@ -39,8 +33,9 @@ interface ElementBoundsUpdate {
 }
 
 interface CachedNodeMeasurement {
+  rootGraphId: UUID
   nodeId: NodeId
-  bounds: Bounds
+  size: Size
 }
 
 /**
@@ -49,6 +44,7 @@ interface CachedNodeMeasurement {
 interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
+  syncSlots?: boolean
   /** Handler for processing bounds updates. Omit for signal-only entries. */
   updateHandler?: (updates: ElementBoundsUpdate[]) => void
 }
@@ -74,9 +70,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       }
     }
   ],
-  // Signal-only: outer node stays at its persisted min-h floor during
-  // widget hydration, so the inner grid's RO is the only slot-drift signal.
-  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId' }]
+  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId', syncSlots: true }]
 ])
 
 // Elements whose ResizeObserver fired while the tab was hidden
@@ -124,20 +118,10 @@ const resizeObserver = new ResizeObserver((entries) => {
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
   const updatesByType = new Map<string, ElementBoundsUpdate[]>()
-  // Track nodes whose slots should be resynced after node size changes
-  const nodesNeedingSlotResync = new Set<NodeId>()
-
+  const slotSyncElements = new Map<NodeId, HTMLElement>()
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
-
-    // Signal-only widgets-grid resize - route the parent node through the
-    // slot-layout pipeline and skip bounds processing entirely.
-    const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
-    if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(toNodeId(widgetsGridParentNodeId))
-      continue
-    }
 
     // Find which type this element belongs to
     let elementType: string | undefined
@@ -153,8 +137,12 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
 
     if (!elementType || !elementId) continue
-    const nodeId: NodeId | undefined =
-      elementType === 'node' ? toNodeId(elementId) : undefined
+    const config = trackingConfigs.get(elementType)
+    const nodeId = toNodeId(elementId)
+    if (config?.syncSlots) {
+      slotSyncElements.set(nodeId, element)
+      continue
+    }
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
@@ -172,28 +160,30 @@ const resizeObserver = new ResizeObserver((entries) => {
         ? layoutStore.getNodeLayout(rootGraphId, nodeId)
         : null
     const normalizedHeight = removeNodeTitleHeight(height)
+    const measuredSize = { width, height: normalizedHeight }
     const previousMeasurement = cachedNodeMeasurements.get(element)
+    const reportedContentSize =
+      nodeId && rootGraphId
+        ? layoutStore.contentSizeOf(rootGraphId, nodeId)
+        : undefined
     const hasFreshMeasurementPending =
       elementsNeedingFreshMeasurement.has(element)
     const hasMatchingCachedNodeMeasurement =
       previousMeasurement != null &&
+      previousMeasurement.rootGraphId === rootGraphId &&
       previousMeasurement.nodeId === nodeId &&
-      nodeLayout != null &&
-      isBoundsEqual(previousMeasurement.bounds, nodeLayout.bounds)
+      isSizeEqual(previousMeasurement.size, measuredSize) &&
+      reportedContentSize != null &&
+      isSizeEqual(reportedContentSize, measuredSize)
 
-    // ResizeObserver emits entries where nothing changed (e.g. initial observe).
-    // Skip expensive DOM reads when this exact element/node already measured at
-    // the same normalized bounds and size.
-    if (
-      nodeLayout &&
-      !hasFreshMeasurementPending &&
-      isSizeEqual(nodeLayout.size, {
-        width,
-        height: normalizedHeight
-      }) &&
-      hasMatchingCachedNodeMeasurement
-    ) {
+    // ResizeObserver can repeat an unchanged entry (for example after an
+    // initial or changed-size delivery). Skip downstream work only when this
+    // exact element, graph, and node already reported the normalized size.
+    if (!hasFreshMeasurementPending && hasMatchingCachedNodeMeasurement) {
       continue
+    }
+    if (rootGraphId) {
+      slotSyncElements.set(nodeId, element)
     }
 
     // Use existing position from layout store (source of truth) rather than
@@ -219,16 +209,12 @@ const resizeObserver = new ResizeObserver((entries) => {
       width,
       height
     }
-    const normalizedBounds: Bounds = {
-      ...bounds,
-      height: normalizedHeight
-    }
-
     elementsNeedingFreshMeasurement.delete(element)
-    if (nodeId) {
+    if (nodeId && rootGraphId) {
       cachedNodeMeasurements.set(element, {
+        rootGraphId,
         nodeId,
-        bounds: normalizedBounds
+        size: measuredSize
       })
     }
 
@@ -237,24 +223,16 @@ const resizeObserver = new ResizeObserver((entries) => {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    if (!nodeId) continue
     updates.push({ id: nodeId, bounds })
-
-    // If this entry is a node, mark it for slot layout resync
-    nodesNeedingSlotResync.add(nodeId)
   }
-
-  if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
   for (const [type, updates] of updatesByType) {
     const config = trackingConfigs.get(type)
     if (config?.updateHandler && updates.length) config.updateHandler(updates)
   }
-
-  // After node bounds are updated, refresh slot cached offsets and layouts
-  if (nodesNeedingSlotResync.size > 0) {
-    for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsFromDOM(nodeId)
+  if (rootGraphId) {
+    for (const [nodeId, element] of slotSyncElements) {
+      syncSlotOffsets(element, rootGraphId, nodeId)
     }
   }
 })

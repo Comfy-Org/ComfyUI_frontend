@@ -203,6 +203,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canChangeSeats.value).toBe(false)
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
     const initialization = billingCapabilities.initialize()
     expect(billingCapabilities.canTopUp.value).toBe(false)
@@ -217,6 +218,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canChangeSeats.value).toBe(true)
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 
   it('applies denied server capabilities without client-side inference', async () => {
@@ -283,6 +285,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canInviteMembers.value).toBe(false)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
     expect(mockReportError).toHaveBeenCalledOnce()
   })
 
@@ -295,6 +298,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
   })
 
   it('fails closed when the endpoint denies the current actor', async () => {
@@ -309,6 +313,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 
   it('does not fail open when capability loading is aborted', async () => {
@@ -328,6 +333,7 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
     expect(mockReportError).not.toHaveBeenCalled()
   })
 

@@ -1,14 +1,14 @@
 name: CI - PR Risk Grade
 
 # Thin caller for the shared ADVISORY PR risk grader (shadow check). Grades
-# every PR R0 (safest) .. R3 (riskiest) against .github/risk.json (read from
-# the BASE ref) and syncs exactly one `risk:*` label — nothing gates, routes,
-# or merges on it. Disagree with a grade by adding the human-owned
-# `risk-dispute` label plus a comment saying why.
+# every PR against .github/risk.json (read from the BASE ref) and syncs exactly
+# one `risk:low` .. `risk:xhigh` label — nothing gates, routes, or merges on it.
+# The existing `risk-dispute` label remains a marker. A named
+# `risk-dispute:low` .. `risk-dispute:xhigh` label overrides the visible grade.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -38,6 +38,8 @@ jobs:
     if: >-
       github.event_name != 'pull_request' ||
       (github.actor != 'dependabot[bot]' &&
+       ((github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+        startsWith(github.event.label.name, 'risk-dispute:')) &&
        github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: read # the .github/risk.json override, read from the BASE ref
@@ -50,16 +52,17 @@ jobs:
       checks: write # the rollup read + the opt-in Check Run publish
       actions: read # CheckRun -> checkSuite -> workflowRun for self-exclusion
       statuses: read
-    # Pinned to github-workflows main (e4a8f7c); keep workflows_ref in
+    # Pinned to github-workflows main (df10491); keep workflows_ref in
     # lock-step so the grader + risk map schema load from the same commit.
     # This permissions block must stay a superset of the UNION of every job
     # the reusable workflow declares, including jobs whose `if:` skips them.
-    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@e4a8f7cd4a073da082b03950136530d4df50738f # github-workflows main (e4a8f7c)
+    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@df10491e93cddef6fd78e512a2ec1d363237d44a # github-workflows main (df10491)
     with:
-      workflows_ref: e4a8f7cd4a073da082b03950136530d4df50738f
+      workflows_ref: df10491e93cddef6fd78e512a2ec1d363237d44a
       # Required: upstream defaults enabled to FALSE. The repository variable
       # RISK_CONFIG outranks this in both directions ({"enabled": false} is a
       # kill switch that needs no PR).
       enabled: true
+      label_map: 'R0=risk:low,R1=risk:medium,R2=risk:high,R3=risk:xhigh,unknown=risk:unknown'
       pr_number: ${{ inputs.pr_number }}
       pr_numbers: ${{ inputs.pr_numbers }}

@@ -34,15 +34,15 @@ describe('computeBadges', () => {
     expect(computeBadges(sources())).toEqual([
       {
         kind: 'core',
-        part: 'lifecycle',
-        text: '[BETA]',
+        part: 'id',
+        text: '#5',
         fgColor: '#fff',
         bgColor: '#0b8'
       },
       {
         kind: 'core',
-        part: 'id',
-        text: '#5',
+        part: 'lifecycle',
+        text: '[BETA]',
         fgColor: '#fff',
         bgColor: '#0b8'
       },
@@ -191,8 +191,8 @@ describe('nodeBadges', () => {
     seedTestNodeDef()
 
     expect(nodeBadges(node).map((b) => b.text)).toEqual([
-      '[BETA]',
       '#7',
+      '[BETA]',
       'my_pack'
     ])
   })

@@ -1,4 +1,4 @@
-import type { Page, Response } from '@playwright/test'
+import type { Page, Request, Response } from '@playwright/test'
 
 import type {
   ActivePathPointer,
@@ -151,6 +151,14 @@ export function onPromptIdResponse(
 interface PromptLedger {
   ids: Set<string>
   settled: () => Promise<void>
+  submissions: number
+}
+
+function isPromptPost(request: Request): boolean {
+  return (
+    request.method() === 'POST' &&
+    new URL(request.url()).pathname.endsWith('/prompt')
+  )
 }
 
 // Backends are shared - two workers, two CI runs - so an unscoped
@@ -167,10 +175,25 @@ const promptLedgers = new WeakMap<Page, PromptLedger>()
 export function trackSubmittedPrompts(page: Page): void {
   if (promptLedgers.has(page)) return
   const ids = new Set<string>()
+  const ledger: PromptLedger = { ids, settled: async () => {}, submissions: 0 }
+  page.on('request', (request) => {
+    if (isPromptPost(request)) ledger.submissions++
+  })
   const { settled } = onPromptIdResponse(page, (promptId) => {
     if (promptId !== undefined) ids.add(promptId)
   })
-  promptLedgers.set(page, { ids, settled })
+  ledger.settled = settled
+  promptLedgers.set(page, ledger)
+}
+
+export async function submittedPromptCount(page: Page): Promise<number> {
+  const ledger = promptLedgers.get(page)
+  if (!ledger)
+    throw new Error(
+      'submittedPromptCount: no prompt ledger for this page - call trackSubmittedPrompts(page) in beforeEach'
+    )
+  await ledger.settled()
+  return ledger.submissions
 }
 
 interface QueueIds {
@@ -178,7 +201,7 @@ interface QueueIds {
   pending: string[]
 }
 
-function ownedQueueEntries(
+export function ownedQueueEntries(
   queue: QueueIds,
   ownedIds: ReadonlySet<string>
 ): QueueIds {

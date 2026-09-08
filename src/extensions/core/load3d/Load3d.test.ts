@@ -1114,7 +1114,7 @@ describe('Load3d', () => {
       return { cameraStub, sceneCaptureMock }
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects thumbnail capture when no model is loaded', async () => {
       Object.assign(ctx.load3d, {
         modelManager: { ...ctx.modelManager, currentModel: null }
       })
@@ -1164,7 +1164,7 @@ describe('Load3d', () => {
       })
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects export when no model is loaded', async () => {
       setupForExport({ currentModel: null })
 
       await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
@@ -1312,7 +1312,7 @@ describe('Load3d', () => {
       )
     })
 
-    it('throws on unsupported format', async () => {
+    it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1344,7 +1344,7 @@ describe('Load3d', () => {
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
     })
 
-    it('refuses a direct export when the requested format differs from the source', async () => {
+    it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
       vi.spyOn(console, 'error').mockImplementation(() => {})

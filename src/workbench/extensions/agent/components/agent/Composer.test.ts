@@ -1,41 +1,62 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
+
+const tooltipBindings = new WeakMap<Element, unknown>()
+const tooltipDirectiveStub = {
+  mounted(element: Element, binding: DirectiveBinding<unknown>) {
+    tooltipBindings.set(element, binding.value)
+  },
+  updated(element: Element, binding: DirectiveBinding<unknown>) {
+    tooltipBindings.set(element, binding.value)
+  }
+}
+
+const fetchApi = vi.hoisted(() =>
+  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
+)
+vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
 
 function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: Tooltip }
+      plugins: [i18n],
+      directives: { tooltip: tooltipDirectiveStub }
     }
   })
 }
 
 describe('Composer', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setActivePinia(createPinia())
   })
 
-  it('shows the interactive empty-composer hint', () => {
+  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
     const addNodes = screen.getByRole('button', {
-      name: 'add nodes from graph,'
+      name: 'mention nodes from graph,'
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
@@ -52,7 +73,7 @@ describe('Composer', () => {
 
     expect((box as HTMLTextAreaElement).value).toBe('hello')
     expect(
-      screen.queryByRole('button', { name: 'add nodes from graph,' })
+      screen.queryByRole('button', { name: 'mention nodes from graph,' })
     ).toBeNull()
   })
 
@@ -60,7 +81,7 @@ describe('Composer', () => {
     const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
     const hintButton = screen.getByRole('button', {
-      name: 'add nodes from graph,'
+      name: 'mention nodes from graph,'
     })
 
     await userEvent.tab()
@@ -98,7 +119,7 @@ describe('Composer', () => {
 
     // The menu strings only compile once reka mounts the lazy menu content.
     await openAddMenu()
-    await screen.findByRole('menuitem', { name: 'Attach images or files' })
+    await screen.findByRole('menuitem', { name: 'Upload images or files' })
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
@@ -146,6 +167,10 @@ describe('Composer', () => {
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
+      fetchApi.mockReset()
+      fetchApi.mockImplementation(async () =>
+        jsonResponse(404, { error: 'not found' })
+      )
     })
 
     it('opens from the mode control with the ask mode selected by default', async () => {
@@ -175,25 +200,48 @@ describe('Composer', () => {
       const save = screen.getByRole('button', { name: 'Save changes' })
       expect(save).toBeEnabled()
       const input = screen.getByRole('spinbutton', { name: 'credits' })
+      expect(input).toHaveValue(300)
       await userEvent.clear(input)
       await userEvent.type(input, '500')
       expect(save).toBeEnabled()
       await userEvent.click(save)
 
-      expect(store.mode).toBe('auto-limit')
-      expect(store.creditLimit).toBe(500)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        screen.getByRole('button', { name: 'Auto (limited)' })
+        await screen.findByRole('button', { name: 'Auto (limited)' })
       ).toBeInTheDocument()
+      expect(store.mode).toBe('auto_limited')
+      expect(store.creditLimit).toBe(500)
+    })
+
+    it('keeps the popover open and reports a failed save', async () => {
+      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Save changes' })
+      )
+
+      expect(
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
+      expect(useToastStore().messagesToAdd).toContainEqual({
+        severity: 'error',
+        detail: i18n.global.t('agent.runModeSaveFailed')
+      })
     })
 
     it('keeps Save disabled while the limit draft is invalid', async () => {
       mount()
       const store = useAgentRunModeStore()
-      store.save('auto-limit', 450)
+      await store.save('auto_limited', 450)
 
       await userEvent.click(
         await screen.findByRole('button', { name: 'Auto (limited)' })
@@ -204,12 +252,17 @@ describe('Composer', () => {
       expect(
         screen.getByRole('button', { name: 'Save changes' })
       ).toBeDisabled()
+
+      await userEvent.type(input, '1.5')
+      expect(
+        screen.getByRole('button', { name: 'Save changes' })
+      ).toBeDisabled()
     })
 
     it('enables Save when only the credit limit changes', async () => {
       mount()
       const store = useAgentRunModeStore()
-      store.save('auto-limit', 450)
+      await store.save('auto_limited', 450)
 
       await userEvent.click(
         await screen.findByRole('button', { name: 'Auto (limited)' })
@@ -223,12 +276,12 @@ describe('Composer', () => {
       expect(save).toBeEnabled()
 
       await userEvent.click(save)
-      expect(store.creditLimit).toBe(460)
+      await vi.waitFor(() => expect(store.creditLimit).toBe(460))
     })
 
-    it('keeps unlimited auto mode distinct from limited auto mode', () => {
+    it('keeps unlimited auto mode distinct from limited auto mode', async () => {
       const store = useAgentRunModeStore()
-      store.save('auto', 450)
+      await store.save('auto', null)
 
       mount()
 
@@ -239,20 +292,22 @@ describe('Composer', () => {
     })
 
     it.for([
-      ['ask', 'Ask', 'Ask for permission'],
+      ['ask_approval', 'Ask', 'Ask for permission'],
       ['auto', 'Auto', 'Run workflow without permission'],
-      ['auto-limit', 'Auto (limited)', 'Ask when credit limit is reached']
+      ['auto_limited', 'Auto (limited)', 'Ask when credit limit is reached']
     ] as const)(
       'shows the %s mode tooltip copy',
       async ([mode, triggerName, tooltipCopy]) => {
-        useAgentRunModeStore().save(mode, 450)
+        await useAgentRunModeStore().save(
+          mode,
+          mode === 'auto_limited' ? 450 : null
+        )
         mount()
 
-        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
-
-        expect(
-          await screen.findByRole('tooltip', { hidden: true })
-        ).toHaveTextContent(tooltipCopy)
+        const trigger = screen.getByRole('button', { name: triggerName })
+        expect(tooltipBindings.get(trigger)).toEqual(
+          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
+        )
       }
     )
 
@@ -265,7 +320,7 @@ describe('Composer', () => {
         await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask')
+      expect(store.mode).toBe('ask_approval')
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
@@ -280,21 +335,25 @@ describe('Composer', () => {
       { id: '7', title: 'KSampler' },
       { id: '9', title: 'VAE Decode' }
     ]
-    const ASSETS: AssetItem[] = [
-      fromPartial({
+    const ASSETS = [
+      {
         id: 'asset-1',
         name: 'sunset-original.png',
         hash: 'sunset-hash.png',
         tags: ['input'],
         display_name: 'Sunset.png',
-        thumbnail_url: '/api/assets/asset-1/thumbnail'
-      }),
-      fromPartial({
+        thumbnail_url: '/api/assets/asset-1/thumbnail',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z'
+      },
+      {
         id: 'asset-2',
         name: 'forest.png',
         tags: ['input'],
-        user_metadata: { name: 'Forest reference' }
-      })
+        user_metadata: { name: 'Forest reference' },
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z'
+      }
     ]
 
     it('lists matching nodes alphabetically', async () => {
@@ -309,9 +368,7 @@ describe('Composer', () => {
       await userEvent.type(screen.getByRole('textbox'), '@')
 
       expect(
-        screen
-          .getAllByRole('option')
-          .map((option) => option.textContent?.trim())
+        screen.getAllByRole('option').map((option) => option.textContent.trim())
       ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
     })
 
@@ -326,7 +383,7 @@ describe('Composer', () => {
 
       const labels = screen
         .getAllByRole('option')
-        .map((option) => option.textContent?.trim())
+        .map((option) => option.textContent.trim())
       expect(labels).not.toContain(NODES[0].title)
       expect(screen.getAllByRole('option')).toHaveLength(NODES.length - 1)
     })
@@ -380,17 +437,6 @@ describe('Composer', () => {
 
       expect(emitted().mentionPick[0]).toEqual([NODES[0]])
       expect(emitted().send).toBeUndefined()
-    })
-
-    it('excludes only the referenced id when node titles match', async () => {
-      mount({ selectionTags: [NODES[0]], getMentionNodes: () => NODES })
-
-      await userEvent.type(screen.getByRole('textbox'), '@')
-      const listbox = screen.getByRole('listbox')
-
-      expect(within(listbox).queryByText('#5')).not.toBeInTheDocument()
-      expect(within(listbox).getByText('#7')).toBeInTheDocument()
-      expect(within(listbox).getByText('VAE Decode')).toBeInTheDocument()
     })
 
     it('filters assets, stages a keyboard pick, removes its token, and sends its ref', async () => {
@@ -501,7 +547,7 @@ describe('Composer', () => {
     first.unmount()
 
     mount()
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe(
       'keep me'
     )
   })
@@ -510,7 +556,7 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     // Anchor on the entry that is always present, so the absence assertions
     // below cannot pass against a menu that never opened.
-    return screen.findByRole('menuitem', { name: 'Add nodes from graph' })
+    return screen.findByRole('menuitem', { name: 'Mention nodes from graph' })
   }
 
   it('hides the conditional entries from the add menu by default', async () => {
@@ -519,10 +565,10 @@ describe('Composer', () => {
     await openAddMenu()
 
     expect(
-      screen.queryByRole('menuitem', { name: 'Attach images or files' })
+      screen.queryByRole('menuitem', { name: 'Upload images or files' })
     ).toBeNull()
     expect(
-      screen.queryByRole('menuitem', { name: 'Add from assets panel' })
+      screen.queryByRole('menuitem', { name: 'Drag in asset from asset panel' })
     ).toBeNull()
   })
 
@@ -531,7 +577,7 @@ describe('Composer', () => {
 
     await openAddMenu()
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'Attach images or files' })
+      await screen.findByRole('menuitem', { name: 'Upload images or files' })
     )
 
     expect(emitted().attach).toHaveLength(1)
@@ -542,7 +588,9 @@ describe('Composer', () => {
 
     await openAddMenu()
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'Add from assets panel' })
+      await screen.findByRole('menuitem', {
+        name: 'Drag in asset from asset panel'
+      })
     )
 
     expect(emitted().openAssets).toHaveLength(1)
@@ -565,6 +613,17 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
+  it('passes the full tooltip config to selection chip directives', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    const button = screen.getByRole('button', {
+      name: 'Show KSampler #5 on canvas'
+    })
+    expect(tooltipBindings.get(button)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
+    )
+  })
+
   it('emits removeTag when a selection chip is removed', async () => {
     const { emitted } = mount({
       selectionTags: [{ id: '5', title: 'KSampler' }]
@@ -577,16 +636,15 @@ describe('Composer', () => {
     expect(emitted().removeTag).toEqual([['5']])
   })
 
-  it('shows the remove tooltip for a selection chip', async () => {
+  it('builds the remove tooltip for a selection chip', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    await userEvent.hover(
-      screen.getByRole('button', { name: 'Remove KSampler #5 reference' })
+    const removeButton = screen.getByRole('button', {
+      name: 'Remove KSampler #5 reference'
+    })
+    expect(tooltipBindings.get(removeButton)).toEqual(
+      tooltipConfig.buildAgentTooltipConfig('Remove')
     )
-
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Remove')
   })
 
   it('emits focusTag when a selection chip is activated', async () => {

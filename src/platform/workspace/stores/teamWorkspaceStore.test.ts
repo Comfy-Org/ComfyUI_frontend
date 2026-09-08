@@ -603,7 +603,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceBillingRail).toBe('metronome')
     })
 
-    it('rejects an overlapping local switch', async () => {
+    it('ignores an overlapping local switch', async () => {
       mockDistributionTypes.isCloud = false
       const store = useTeamWorkspaceStore()
       await store.initialize()
@@ -620,12 +620,16 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      await expect(
-        store.switchWorkspace(mockMemberWorkspace.id)
-      ).rejects.toThrow('Workspace switch already in progress')
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      await store.switchWorkspace(mockMemberWorkspace.id)
       finishSwitch()
       await firstSwitch
 
+      expect(consoleError).toHaveBeenCalledWith(
+        'Workspace switch already in progress'
+      )
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
@@ -1894,7 +1898,7 @@ describe('useTeamWorkspaceStore', () => {
       )
     })
 
-    it('resendInvite rejects a concurrent resend for the same invite', async () => {
+    it('resendInvite ignores a concurrent resend for the same invite', async () => {
       const inviteOne = {
         id: 'inv-1',
         email: 'one@test.com',
@@ -1916,11 +1920,16 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchPendingInvites()
 
       const first = store.resendInvite('inv-1')
-      await expect(store.resendInvite('inv-1')).rejects.toThrow(
-        'already in progress'
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const duplicateResult = await store.resendInvite('inv-1')
+      expect(consoleError).toHaveBeenCalledWith(
+        'Invite resend already in progress'
       )
       await first
 
+      expect(duplicateResult.id).toBe('inv-1')
       expect(mockWorkspaceApi.resendInvite).toHaveBeenCalledTimes(1)
     })
 
