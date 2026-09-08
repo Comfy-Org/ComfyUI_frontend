@@ -318,7 +318,7 @@ const filteredTemplates = computed(() => {
               :models="workshopModels"
               :locale
               compact
-              class="max-sm:size-10 max-sm:flex-none sm:w-full sm:min-w-40 sm:flex-1"
+              class="max-sm:size-10 max-sm:flex-none sm:w-64 lg:w-80"
             />
           </template>
 

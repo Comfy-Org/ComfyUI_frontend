@@ -38,7 +38,7 @@ const mediaLabel: Record<string, string> = {
 }
 const hasCustomNodes = (details.requiresCustomNodes?.length ?? 0) > 0
 const pillClass =
-  'inline-flex h-6 items-center rounded-2xl bg-transparency-white-t8 px-3 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
+  'inline-flex h-8 items-center rounded-full bg-transparency-white-t8 px-4 text-[11px] leading-none font-bold tracking-wider text-primary-warm-white uppercase'
 const downloadUrl = `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
 const clone = { href: downloadUrl }
 const comments = [
@@ -123,7 +123,7 @@ const comments = [
                 <li>
                   <a
                     href={tag.href}
-                    class="inline-flex h-8 shrink-0 items-center rounded-full bg-transparency-white-t8 px-4 text-sm whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                    class="inline-flex h-8 shrink-0 items-center rounded-full bg-transparency-white-t8 px-4 text-sm leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
                   >
                     {tag.label}
                   </a>
