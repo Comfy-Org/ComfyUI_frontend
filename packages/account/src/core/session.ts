@@ -434,6 +434,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
 
     const startEpoch = identityEpoch
+    const startInvalidation = invalidationEpoch
     const controller = new AbortController()
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
@@ -528,9 +529,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         permissions: parseResult.data.permissions
       }
       // The cache write consults the identity epoch like the in-memory
-      // commit does: a mint outliving a sign-out or detach must not
-      // resurrect the session in persistent storage.
-      if (identityEpoch === startEpoch) {
+      // commit does: a mint outliving a sign-out, detach, or invalidation
+      // must not resurrect the session in persistent storage.
+      if (
+        identityEpoch === startEpoch &&
+        invalidationEpoch === startInvalidation
+      ) {
         safeWrite(
           JSON.stringify({
             ...session,
@@ -646,7 +650,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * The scheduled re-mint mirrors the cloud store's refresh semantics: a
    * transient failure keeps the still-valid credential and retries with
    * doubling backoff; a permanent failure commits the error; exhausted
-   * retries leave recovery to the next valid-on-read call.
+   * retries leave recovery to the next valid-on-read call. Every commit
+   * runs publish() before reporting its outcome — host outcome handlers
+   * read state the publish just wrote.
    */
   async function runScheduledRefresh(): Promise<void> {
     const user = currentUser
