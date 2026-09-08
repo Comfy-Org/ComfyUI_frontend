@@ -60,7 +60,7 @@ const {
 } = defineProps<{
   locale?: Locale
   class?: HTMLAttributes['class']
-  badgeText: string
+  badgeText?: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
   badgeShowLogo?: boolean
@@ -104,7 +104,7 @@ const {
     "
   >
     <div class="w-full lg:flex-1">
-      <div class="flex items-center gap-3">
+      <div v-if="badgeText || $slots.badge" class="flex items-center gap-3">
         <slot name="badge">
           <ProductHeroBadge
             :text="badgeText"

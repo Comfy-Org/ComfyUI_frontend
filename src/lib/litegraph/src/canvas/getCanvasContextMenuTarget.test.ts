@@ -1,13 +1,25 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
 import { getLinkBadgeFrameState } from '@/lib/litegraph/src/canvas/linkBadges'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
+import {
+  createMockCanvas2DContext,
+  createTestCanvas
+} from '@/utils/__tests__/litegraphTestUtils'
 
 const { mockQueryLinkSegmentAtPoint, mockQueryRerouteAtPoint } = vi.hoisted(
   () => ({
@@ -23,87 +35,90 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-const GRAPH_ID = createUuidv4()
-
-interface StubGraph {
-  rootGraph: { id: typeof GRAPH_ID }
-  getLink: ReturnType<typeof vi.fn>
-  getReroute: ReturnType<typeof vi.fn>
-  getRerouteOnPos: ReturnType<typeof vi.fn>
-  getGroupOnPos: ReturnType<typeof vi.fn>
-}
-
-interface StubCanvas {
-  graph: StubGraph | null
-  ctx: CanvasRenderingContext2D
-  connections_width: number
-  links_render_mode: number
-  renderedPaths: Set<unknown>
-  _visibleReroutes: Set<unknown>
+let strokeHit = false
+const isPointInStrokeMock = vi.fn()
+function isPointInStroke(x: number, y: number): boolean
+function isPointInStroke(path: Path2D, x: number, y: number): boolean
+function isPointInStroke(
+  ...args: [x: number, y: number] | [path: Path2D, x: number, y: number]
+): boolean {
+  isPointInStrokeMock(...args)
+  return strokeHit
 }
 
 describe('getCanvasContextMenuTarget', () => {
-  let graph: StubGraph
-  let canvas: StubCanvas
-  let isPointInStroke: ReturnType<typeof vi.fn>
+  let graph: LGraph
+  let canvas: LGraphCanvas
+  let group: LGraphGroup
+  let reroute: Reroute
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     mockQueryLinkSegmentAtPoint.mockReturnValue(null)
     mockQueryRerouteAtPoint.mockReturnValue(null)
-    graph = {
-      rootGraph: { id: GRAPH_ID },
-      getLink: vi.fn(),
-      getReroute: vi.fn(() => ({ id: 9 })),
-      getRerouteOnPos: vi.fn(() => undefined),
-      getGroupOnPos: vi.fn(() => ({ id: 1 }))
-    }
-    isPointInStroke = vi.fn(() => false)
-    canvas = {
+    isPointInStrokeMock.mockClear()
+    strokeHit = false
+    graph = new LGraph()
+    group = new LGraphGroup('Group', toGroupId(1))
+    reroute = new Reroute(toRerouteId(9), graph)
+    vi.spyOn(graph, 'getReroute').mockReturnValue(reroute)
+    vi.spyOn(graph, 'getRerouteOnPos').mockReturnValue(undefined)
+    vi.spyOn(graph, 'getGroupOnPos').mockReturnValue(group)
+    canvas = createTestCanvas(
       graph,
-      ctx: fromPartial<CanvasRenderingContext2D>({
+      createMockCanvas2DContext({
         lineWidth: 3,
         isPointInStroke
-      }),
-      connections_width: 3,
-      links_render_mode: LinkRenderType.SPLINE_LINK,
-      renderedPaths: new Set(),
-      _visibleReroutes: new Set()
-    }
+      })
+    )
+    canvas.connections_width = 3
+    canvas.links_render_mode = LinkRenderType.SPLINE_LINK
   })
 
   function resolve() {
-    return getCanvasContextMenuTarget(fromAny(canvas), 10, 20)
+    return getCanvasContextMenuTarget(canvas, 10, 20)
+  }
+
+  function createLink(id: number): LLink {
+    const link = new LLink(toLinkId(id), 'MODEL', 4, 0, 5, 0)
+    graph.links.set(link.id, link)
+    return link
+  }
+
+  function hide(link: LLink): void {
+    useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+      hidden: true
+    })
   }
 
   it('returns the group under the point', () => {
     const target = resolve()
 
     expect(graph.getGroupOnPos).toHaveBeenCalledWith(10, 20)
-    expect(target.group).toEqual({ id: 1 })
+    expect(target.group).toBe(group)
     expect(target.reroute).toBeUndefined()
   })
 
   it('resolves a reroute from the layout store without the positional fallback', () => {
-    const reroute = { id: 9 }
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    graph.getReroute.mockReturnValue(reroute)
     canvas.renderedPaths.add(reroute)
 
     const target = resolve()
 
-    expect(mockQueryRerouteAtPoint).toHaveBeenCalledWith(GRAPH_ID, {
+    expect(mockQueryRerouteAtPoint).toHaveBeenCalledWith(graph.rootGraph.id, {
       x: 10,
       y: 20
     })
     expect(graph.getReroute).toHaveBeenCalledWith(9)
     expect(graph.getRerouteOnPos).not.toHaveBeenCalled()
-    expect(target.reroute).toEqual({ id: 9 })
+    expect(target.reroute).toBe(reroute)
   })
 
   it('falls back when a layout hit names a reroute in another graph', () => {
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    graph.getReroute.mockReturnValue(undefined)
-    graph.getRerouteOnPos.mockReturnValue({ id: 7 })
+    vi.mocked(graph.getReroute).mockReturnValue(undefined)
+    const fallback = new Reroute(toRerouteId(7), graph)
+    vi.mocked(graph.getRerouteOnPos).mockReturnValue(fallback)
 
     const target = resolve()
 
@@ -112,11 +127,12 @@ describe('getCanvasContextMenuTarget', () => {
       20,
       canvas._visibleReroutes
     )
-    expect(target.reroute).toEqual({ id: 7 })
+    expect(target.reroute).toBe(fallback)
   })
 
   it('falls back to the visible-scoped positional hit-test when the layout store misses', () => {
-    graph.getRerouteOnPos.mockReturnValue({ id: 7 })
+    const fallback = new Reroute(toRerouteId(7), graph)
+    vi.mocked(graph.getRerouteOnPos).mockReturnValue(fallback)
 
     const target = resolve()
 
@@ -125,16 +141,15 @@ describe('getCanvasContextMenuTarget', () => {
       20,
       canvas._visibleReroutes
     )
-    expect(target.reroute).toEqual({ id: 7 })
+    expect(target.reroute).toBe(fallback)
   })
 
   it('returns a visible link hit on its curve', () => {
-    const link = { id: toLinkId(4), hidden: false }
+    const link = createLink(4)
     mockQueryLinkSegmentAtPoint.mockReturnValue({
       linkId: link.id,
       rerouteId: null
     })
-    graph.getLink.mockReturnValue(link)
     canvas.renderedPaths.add(link)
 
     const target = resolve()
@@ -147,19 +162,20 @@ describe('getCanvasContextMenuTarget', () => {
   })
 
   it('falls back to current-frame paths when the layout store has no geometry', () => {
-    const link = new LLink(toLinkId(4), 'MODEL', 4, 0, 5, 0)
+    const link = createLink(4)
     link.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(link)
-    isPointInStroke.mockReturnValue(true)
+    strokeHit = true
 
     const target = resolve()
 
-    expect(isPointInStroke).toHaveBeenCalledWith(link.path, 10, 20)
+    expect(isPointInStrokeMock).toHaveBeenCalledWith(link.path, 10, 20)
     expect(target.link).toBe(link)
   })
 
   it('returns a hidden link hit on its badge', () => {
-    const link = { id: toLinkId(5), hidden: true }
+    const link = createLink(5)
+    hide(link)
     getLinkBadgeFrameState(canvas).hitAreas.push({
       linkId: link.id,
       x: 5,
@@ -167,8 +183,6 @@ describe('getCanvasContextMenuTarget', () => {
       width: 20,
       height: 10
     })
-    graph.getLink.mockReturnValue(link)
-
     const target = resolve()
 
     expect(target.link).toBe(link)
@@ -176,14 +190,14 @@ describe('getCanvasContextMenuTarget', () => {
   })
 
   it('skips a revealed hidden curve and returns the visible link behind it', () => {
-    const hiddenLink = new LLink(toLinkId(5), 'MODEL', 4, 0, 5, 0)
-    hiddenLink.hidden = true
+    const hiddenLink = createLink(5)
+    hide(hiddenLink)
     hiddenLink.path = fromPartial<Path2D>({})
-    const visibleLink = new LLink(toLinkId(6), 'MODEL', 6, 0, 7, 0)
+    const visibleLink = createLink(6)
     visibleLink.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(hiddenLink)
     canvas.renderedPaths.add(visibleLink)
-    isPointInStroke.mockReturnValue(true)
+    strokeHit = true
 
     const target = resolve()
 
@@ -191,22 +205,19 @@ describe('getCanvasContextMenuTarget', () => {
   })
 
   it('does not return a hidden link from a stale curve layout', () => {
-    const link = { id: toLinkId(5), hidden: true }
+    const link = createLink(5)
+    hide(link)
     mockQueryLinkSegmentAtPoint.mockReturnValue({
       linkId: link.id,
       rerouteId: null
     })
-    graph.getLink.mockReturnValue(link)
-
     const target = resolve()
 
     expect(target.link).toBeUndefined()
   })
 
   it('gives a reroute precedence over a link at the same point', () => {
-    const reroute = { id: 9 }
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    graph.getReroute.mockReturnValue(reroute)
     canvas.renderedPaths.add(reroute)
     mockQueryLinkSegmentAtPoint.mockReturnValue({
       linkId: toLinkId(4),
@@ -215,17 +226,15 @@ describe('getCanvasContextMenuTarget', () => {
 
     const target = resolve()
 
-    expect(target.reroute).toEqual({ id: 9 })
+    expect(target.reroute).toBe(reroute)
     expect(target.link).toBeUndefined()
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
   })
 
   it('ignores a non-rendered layout reroute and resolves the badge beneath it', () => {
-    const reroute = { id: 9 }
-    const link = { id: toLinkId(5), hidden: true }
+    const link = createLink(5)
+    hide(link)
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    graph.getReroute.mockReturnValue(reroute)
-    graph.getLink.mockReturnValue(link)
     getLinkBadgeFrameState(canvas).hitAreas.push({
       linkId: link.id,
       x: 5,
@@ -254,7 +263,7 @@ describe('getCanvasContextMenuTarget', () => {
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
     expect(graph.getRerouteOnPos).not.toHaveBeenCalled()
     expect(target.reroute).toBeUndefined()
-    expect(target.group).toEqual({ id: 1 })
+    expect(target.group).toBe(group)
   })
 
   it('returns an empty target when the canvas has no graph', () => {

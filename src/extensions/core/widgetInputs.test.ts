@@ -3,18 +3,26 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
@@ -53,6 +61,13 @@ const widgetInputsExtension = vi.mocked(app.registerExtension).mock
 if (!widgetInputsExtension)
   throw new Error('Comfy.WidgetInputs was not registered on import')
 
+await import('./rerouteNode')
+const rerouteNodeExtension = vi
+  .mocked(app.registerExtension)
+  .mock.calls.find(([extension]) => extension.name === 'Comfy.RerouteNode')?.[0]
+if (!rerouteNodeExtension)
+  throw new Error('Comfy.RerouteNode was not registered on import')
+
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
  * `prepare` runs first, so hooks it installs are the ones the extension chains.
@@ -85,26 +100,302 @@ function widgetSlot(
 describe('PrimitiveNode', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.namedValuesRestore = false
   })
 
-  it('resets itself when the store reports a link the graph cannot resolve', () => {
+  function intFixture() {
     const graph = new LGraph()
-    const node = new PrimitiveNode('Primitive')
-    graph.add(node)
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    return { graph, primitive, target }
+  }
+
+  function restoreIntPrimitive(
+    primitive: PrimitiveNode,
+    target: LGraphNode,
+    values: ISerialisedNode['widgets_values'],
+    named?: ISerialisedNode['widgets_values_named']
+  ) {
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({
+        widgets_values: values,
+        widgets_values_named: named,
+        outputs: [{ type: 'INT' }]
+      })
+    )
+    appState.configuringGraph = false
+    primitive.onAfterGraphConfigured()
+  }
+
+  it('keeps its serialized value when the target widget has a stale value', () => {
+    const { primitive, target } = intFixture()
+
+    restoreIntPrimitive(primitive, target, [222])
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+
+    primitive.widgets![0].value = 333
+    primitive.applyToGraph()
+    primitive.disconnectOutput(0)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(333)
+  })
+
+  it.each([
+    { label: 'null', value: null },
+    { label: 'undefined', value: undefined }
+  ])('restores an explicit $label value', ({ value }) => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'STRING')
+    target.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['STRING', {}]
+    }
+    target.addWidget('text', 'value', 'stale', () => {})
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: [value], outputs: [{ type: 'STRING' }] })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets).toHaveLength(1)
+    expect(primitive.widgets?.[0].value).toBe(value)
+  })
+
+  it('restores named main and control values when enabled', () => {
+    LiteGraph.namedValuesRestore = true
+    const { primitive, target } = intFixture()
+
+    restoreIntPrimitive(primitive, target, [222, 'randomize'], {
+      value: 333,
+      control_after_generate: 'fixed'
+    })
+
+    expect(primitive.widgets?.[0].value).toBe(333)
+    expect(primitive.widgets?.[1].value).toBe('fixed')
+  })
+
+  it('does not apply a serialized value left over from an unresolved output type', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Loader')
+    target.comfyClass = 'CheckpointLoaderSimple'
+    graph.add(target)
+    target.addInput('ckpt_name', 'COMBO')
+    target.inputs[0].widget = {
+      name: 'ckpt_name',
+      [GET_CONFIG]: () => [['a.safetensors', 'b.safetensors'], {}]
+    }
+    target.addWidget('combo', 'ckpt_name', 'a.safetensors', () => {}, {
+      values: ['a.safetensors', 'b.safetensors']
+    })
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: '*' }] })
+    )
+
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe('a.safetensors')
+  })
+
+  it('keeps its serialized value for an asset browser widget', () => {
+    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    target.comfyClass = 'CheckpointLoaderSimple'
+    graph.add(target)
+    target.addInput('ckpt_name', 'COMBO')
+    target.inputs[0].widget = {
+      name: 'ckpt_name',
+      [GET_CONFIG]: () => [['target.safetensors', 'serialized.safetensors'], {}]
+    }
+    target.addWidget('combo', 'ckpt_name', 'target.safetensors', () => {}, {
+      values: ['target.safetensors', 'serialized.safetensors']
+    })
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({
+        widgets_values: ['serialized.safetensors'],
+        outputs: [{ type: 'COMBO' }]
+      })
+    )
+    appState.configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0]).toMatchObject({
+      type: 'asset',
+      value: 'serialized.safetensors'
+    })
+  })
+
+  it('uses the legacy fallback for unsupported widget types', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'CUSTOM_WIDGET')
+    target.inputs[0].widget = {
+      name: 'value',
+      [GET_CONFIG]: () => ['CUSTOM_WIDGET', {}]
+    }
+
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0]).toBeInstanceOf(LegacyWidget)
+    expect(primitive.widgets?.[0].type).toBe('custom_widget')
+  })
+
+  it('restores its serialized value through the reroute lifecycle', () => {
+    widgetInputsExtension.registerCustomNodes?.(app)
+    localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
+    rerouteNodeExtension.registerCustomNodes?.(app)
+    const frameCallbacks: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frameCallbacks.push(callback)
+      return frameCallbacks.length
+    })
+
+    const graph = new LGraph()
+    const reroute = LiteGraph.createNode('Reroute')
+    if (!reroute) throw new Error('Reroute was not registered')
+    graph.add(reroute)
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('seed', 'INT')
+    target.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
+    }
+    target.addWidget('number', 'seed', 111, () => {})
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode))
+      throw new Error('PrimitiveNode was not registered')
+    graph.add(primitive)
+    appState.configuringGraph = true
+    const primitiveLinkId = toLinkId(1)
+    graph._addLink(
+      new LLink(
+        primitiveLinkId,
+        'INT',
+        serializeNodeId(primitive.id),
+        0,
+        serializeNodeId(reroute.id),
+        0
+      )
+    )
+    graph._addLink(
+      new LLink(
+        toLinkId(2),
+        'INT',
+        serializeNodeId(reroute.id),
+        0,
+        serializeNodeId(target.id),
+        0
+      )
+    )
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222],
+        outputs: [{ type: 'INT', links: [primitiveLinkId] }]
+      })
+    )
+    appState.configuringGraph = false
+
+    for (const node of graph.nodes) node.onAfterGraphConfigured?.()
+    expect(primitive.widgets).toBeUndefined()
+
+    expect(frameCallbacks).toHaveLength(1)
+    frameCallbacks.shift()!(0)
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+  })
+
+  it('drops restoration when the store reports an unresolvable link', () => {
+    const { graph, primitive, target } = intFixture()
     useLinkStore().registerLink(graphScopeOf(graph), {
       id: toLinkId(999),
       graphId: graphScopeOf(graph).owningGraphId,
-      originNodeId: node.id,
+      originNodeId: primitive.id,
       originSlot: 0,
       targetNodeId: toNodeId(42),
       targetSlot: 0,
       type: '*'
     })
-    const onLastDisconnect = vi.spyOn(node, 'onLastDisconnect')
+    const onLastDisconnect = vi.spyOn(primitive, 'onLastDisconnect')
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
 
-    node.onAfterGraphConfigured()
+    primitive.onAfterGraphConfigured()
 
     expect(onLastDisconnect).toHaveBeenCalled()
+    expect(primitive.widgets?.length).toBeFalsy()
+    primitive.connect(0, target, 0)
+    expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  it('drops an unconsumed serialized value after graph configuration', () => {
+    const { primitive, target } = intFixture()
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+
+    primitive.onAfterGraphConfigured()
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  it('clears its serialized value when its output is disconnected', () => {
+    const { primitive, target } = intFixture()
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+
+    primitive.onLastDisconnect()
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  it('does not retain restoration configured before graph insertion', () => {
+    const { graph, target } = intFixture()
+    const primitive = new PrimitiveNode('Primitive')
+    primitive.configure(
+      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+    )
+    graph.add(primitive)
+
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(111)
   })
 })
 

@@ -4,6 +4,8 @@ import { LLink } from '../LLink'
 import { Reroute } from '../Reroute'
 import { LinkRenderType } from '../types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 import { findRerouteAtPoint } from './findRerouteAtPoint'
 import { getLinkBadgeFrameState, queryLinkBadgeAtPoint } from './linkBadges'
@@ -21,17 +23,21 @@ function queryVisibleLinkAtPoint(
 ): LLink | undefined {
   const { ctx, graph, renderedPaths } = canvas
   if (!graph) return
+  const scope = graphScopeOf(graph)
+  const presentationStore = useLinkPresentationStore()
+  const isHidden = (link: LLink) =>
+    presentationStore.getPresentation(scope, link.id)?.hidden === true
 
   const lineWidth = ctx.lineWidth
   ctx.lineWidth = canvas.connections_width + 7
   try {
     const segmentHit = layoutStore.queryLinkSegmentAtPoint({ x, y }, ctx)
     const layoutLink = segmentHit ? graph.getLink(segmentHit.linkId) : undefined
-    if (layoutLink && !layoutLink.hidden && renderedPaths.has(layoutLink)) {
+    if (layoutLink && !isHidden(layoutLink) && renderedPaths.has(layoutLink)) {
       return layoutLink
     }
 
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
+    const dpi = Math.max(window.devicePixelRatio, 1)
     for (const segment of renderedPaths) {
       if (
         !segment.path ||
@@ -40,13 +46,13 @@ function queryVisibleLinkAtPoint(
         continue
       }
       if (segment instanceof LLink) {
-        if (!segment.hidden) return segment
+        if (!isHidden(segment)) return segment
         continue
       }
       if (segment instanceof Reroute) {
         for (const linkId of segment.linkIds) {
           const link = graph.getLink(linkId)
-          if (link && !link.hidden) return link
+          if (link && !isHidden(link)) return link
         }
       }
     }
@@ -63,6 +69,7 @@ export function getCanvasContextMenuTarget(
 ): CanvasContextMenuTarget {
   const { graph } = canvas
   if (!graph) return {}
+  const scope = graphScopeOf(graph)
 
   let reroute: Reroute | undefined
   let link: LLink | undefined
@@ -83,7 +90,10 @@ export function getCanvasContextMenuTarget(
       )
       const badgeLink =
         badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
-      if (badgeLink?.hidden) {
+      if (
+        badgeLink &&
+        useLinkPresentationStore().getPresentation(scope, badgeLink.id)?.hidden
+      ) {
         link = badgeLink
       } else {
         link = queryVisibleLinkAtPoint(canvas, x, y)

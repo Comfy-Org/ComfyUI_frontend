@@ -43,7 +43,7 @@ async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
 async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
   const handle = await comfyPage.page.waitForFunction((gap) => {
     const link = window.app!.graph.links.values().next().value
-    if (!link?.hidden) return null
+    if (!link) return null
     const origin = window.app!.graph.getNodeById(link.origin_id)
     const socket = origin?.getOutputPos(link.origin_slot)
     return socket ? { x: socket[0] + gap + 4, y: socket[1] } : null

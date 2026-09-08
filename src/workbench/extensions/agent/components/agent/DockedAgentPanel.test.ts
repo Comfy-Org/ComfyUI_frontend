@@ -5,15 +5,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+
+const fetchApi = vi.hoisted(() =>
+  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
+)
+vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
 
 const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
 
@@ -50,6 +65,9 @@ describe('DockedAgentPanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    fetchApi.mockReset()
+    fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
   })
@@ -68,7 +86,32 @@ describe('DockedAgentPanel', () => {
     ).toBeTruthy()
   })
 
-  it('T-30 / PM-654 / FE-1285 fills the panel opaquely and draws the canvas seam border', () => {
+  it('restores the server run mode when the panel initializes', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })
+    )
+    openPanel()
+    renderPanel()
+
+    const runMode = useAgentRunModeStore()
+    await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
+    expect(runMode.creditLimit).toBe(25)
+    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+  })
+
+  it('reports non-404 run mode load failures', async () => {
+    fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+    openPanel()
+    renderPanel()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_run_mode_load_failure'
+      })
+    )
+  })
+
+  it('fills the panel shell and draws the canvas seam border', () => {
     openPanel()
     renderPanel()
 

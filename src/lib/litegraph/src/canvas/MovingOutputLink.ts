@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { transferLinkPresentation } from '@/lib/litegraph/src/LLink'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -72,13 +73,17 @@ export class MovingOutputLink extends MovingLinkBase {
   ): LLink | null | undefined {
     if (output === this.outputSlot) return
 
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+
     const link = outputNode.connectSlots(
       output,
       this.inputNode,
       this.inputSlot,
       this.link.parentId
     )
-    transferLinkPresentation(this.link, link)
+    transferLinkPresentation(scope, this.presentation, link?.id)
     if (link) events.dispatch('output-moved', this)
     return link
   }
@@ -87,12 +92,16 @@ export class MovingOutputLink extends MovingLinkBase {
     input: SubgraphInput,
     events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+
     const newLink = input.connect(
       this.fromSlot,
       this.node,
       this.fromReroute?.id
     )
-    transferLinkPresentation(this.link, newLink)
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
     events?.dispatch('link-created', newLink)
   }
 
@@ -112,9 +121,12 @@ export class MovingOutputLink extends MovingLinkBase {
   ): void {
     // Moving output side of links
     const { inputNode, inputSlot, fromReroute } = this
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
 
     // Creating a new link removes floating prop - check before connecting
-    const floatingTerminus = reroute?.floating?.slotType === 'output'
+    const floatingTerminus = reroute.floating?.slotType === 'output'
 
     // Connect the first reroute of the link being dragged to the reroute being dropped on
     if (fromReroute) {
@@ -130,7 +142,7 @@ export class MovingOutputLink extends MovingLinkBase {
       inputSlot,
       this.link.parentId
     )
-    transferLinkPresentation(this.link, newLink)
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) reroute.removeAllFloatingLinks()
