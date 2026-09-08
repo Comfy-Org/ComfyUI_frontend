@@ -35,7 +35,13 @@ async function waitForPopupNavigation(page: Page, action: () => Promise<void>) {
 }
 
 test.describe('Error dialog', () => {
-  test.beforeEach(async ({ comfyPage }) => {
+  test.beforeEach(async ({ context, comfyPage }) => {
+    await context.route('https://github.com/**/issues**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    )
+    await context.route('https://support.comfy.org/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    )
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 

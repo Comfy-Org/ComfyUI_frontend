@@ -1,9 +1,9 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
   TOUR_SEEN_SETTING
@@ -349,7 +349,7 @@ export class ComfyPage {
             body: JSON.stringify([])
           })
         } else {
-          await route.continue()
+          await route.fallback()
         }
       })
     }
