@@ -48,8 +48,8 @@ export interface IWidgetOptions<TValues = unknown> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
-  surfaces?: Partial<WidgetSurfaces>
-  /** @deprecated Declare `surfaces: { vueNode: 'never', panel: 'never' }` instead. */
+  surfaces?: WidgetSurfaces
+  /** @deprecated This key stays supported for third-party widgets. */
   canvasOnly?: boolean
   /**
    * If `true`, the widget still renders on the node but is omitted from the

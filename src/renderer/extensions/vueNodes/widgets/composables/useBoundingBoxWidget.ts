@@ -79,7 +79,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
           step2: 1,
           precision: 0,
           serialize: false,
-          surfaces: { vueNode: 'never', panel: 'never' }
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
         }
       )
 

@@ -37,7 +37,7 @@ export interface WidgetVisibilitySource {
   options?: {
     hidden?: boolean
     advanced?: boolean
-    surfaces?: Partial<WidgetSurfaces>
+    surfaces?: WidgetSurfaces
     canvasOnly?: boolean
     hideInPanel?: boolean
   }
@@ -77,12 +77,14 @@ export function deriveWidgetSurfaces(
   const vueNode: WidgetSurfaceTier = source.options?.canvasOnly
     ? 'never'
     : specTier
-  return {
+  const surfaces: WidgetSurfaces = {
     canvas,
     vueNode,
-    panel: source.options?.hideInPanel ? 'never' : vueNode,
-    ...(isPlainObject(source.options?.surfaces) ? source.options.surfaces : {})
+    panel: source.options?.hideInPanel ? 'never' : vueNode
   }
+  return isPlainObject(source.options?.surfaces)
+    ? { ...source.options.surfaces }
+    : surfaces
 }
 
 export function deriveWidgetVisibility(

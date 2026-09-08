@@ -219,6 +219,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         if (property === 'hideInPanel') {
           return isWidgetHiddenInPanel(this._visibility)
         }
+        if (property === 'canvasOnly') {
+          return this._visibility.surfaces.vueNode === 'never'
+        }
         if (property === 'advanced') return isWidgetAdvanced(this._visibility)
         return Reflect.get(target, property, receiver)
       },

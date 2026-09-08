@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { WidgetVisibilitySource } from '@/types/widgetVisibility'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyHiddenWrite,
@@ -16,6 +17,20 @@ import {
   setWidgetHiddenInPanel,
   WIDGET_SURFACES
 } from '@/types/widgetVisibility'
+
+describe('WidgetVisibilitySource', () => {
+  it('requires complete surface declarations', () => {
+    const source: WidgetVisibilitySource = {
+      type: 'text',
+      options: {
+        // @ts-expect-error Surface declarations must include every surface.
+        surfaces: { panel: 'never' }
+      }
+    }
+
+    expect(source.type).toBe('text')
+  })
+})
 
 describe('deriveWidgetSurfaces', () => {
   it.for([
@@ -34,13 +49,21 @@ describe('deriveWidgetSurfaces', () => {
       ['shown', 'shown', 'never']
     ],
     [
-      { type: 'text', options: { surfaces: { panel: 'never' } } },
+      {
+        type: 'text',
+        options: {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+        }
+      },
       ['shown', 'shown', 'never']
     ],
     [
       {
         type: 'combo',
-        options: { canvasOnly: true, surfaces: { vueNode: 'shown' } }
+        options: {
+          canvasOnly: true,
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'never' }
+        }
       },
       ['shown', 'shown', 'never']
     ]
