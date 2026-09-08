@@ -270,13 +270,8 @@ watch(mentionActive, async () => {
 const { t } = useI18n()
 
 const placeholderHint = computed(() => {
-  const [firstLine = '', secondLine = ''] = t('agent.placeholder').split('\n')
-  const addNodes = t('agent.addNodesFromGraph').toLocaleLowerCase()
-  return {
-    firstLine,
-    addNodes,
-    dragAssets: secondLine.slice(addNodes.length).trim()
-  }
+  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
+  return { text, mentionNodes }
 })
 
 const composer = useComposer({
@@ -477,20 +472,19 @@ defineExpose({
           v-if="!composer.draft.value"
           class="text-agent-fg-muted pointer-events-none absolute inset-x-[12px] top-[8px] z-10 font-inter text-[14px]/[20px] font-normal"
         >
-          <span>{{ placeholderHint.firstLine }}</span>
+          <span>{{ placeholderHint.text }} </span>
           <button
             type="button"
-            class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
+            class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
             @click="emit('selectNodes')"
           >
             <span
               class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
             />
-            <span class="underline decoration-dashed underline-offset-2"
-              >{{ placeholderHint.addNodes }},</span
-            >
+            <span class="underline decoration-dashed underline-offset-2">{{
+              placeholderHint.mentionNodes
+            }}</span>
           </button>
-          <span>{{ placeholderHint.dragAssets }}</span>
         </div>
       </div>
 
