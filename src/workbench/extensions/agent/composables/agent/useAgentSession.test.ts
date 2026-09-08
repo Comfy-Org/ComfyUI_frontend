@@ -554,6 +554,41 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
+  it.for(['paywall', 'notice'] as const)(
+    'preserves both rejected prompts and distinct %s replies across a panel remount',
+    async (partType) => {
+      const error =
+        partType === 'paywall'
+          ? admissionError('no_funds', 'Out of credits')
+          : new AgentApiError('Request failed', 500, undefined)
+      const rest = fakeRest({
+        postMessage: vi
+          .fn<AgentRestClient['postMessage']>()
+          .mockRejectedValue(error)
+      })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      expect(await first.sendMessage('first prompt')).toBe(false)
+      const firstReplyId = first.entries.value[1].id
+      first.stop()
+      await Promise.resolve()
+
+      const second = useAgentSession({ rest, events: fakeEvents().source })
+      second.start()
+      expect(await second.sendMessage('second prompt')).toBe(false)
+
+      expect(second.entries.value).toMatchObject([
+        { role: 'user', text: 'first prompt' },
+        { role: 'assistant', streaming: false, parts: [{ type: partType }] },
+        { role: 'user', text: 'second prompt' },
+        { role: 'assistant', streaming: false, parts: [{ type: partType }] }
+      ])
+      expect(second.entries.value[3].id).not.toBe(firstReplyId)
+      second.stop()
+      await Promise.resolve()
+    }
+  )
+
   it('renders manual_block as its contact-support error instead of a paywall', async () => {
     const message =
       'This workspace is blocked. Contact support to restore access.'
