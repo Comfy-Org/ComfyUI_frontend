@@ -661,6 +661,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   /** Without coordination every tab is its own leader. */
   let isRefreshLeader = crossTab === undefined
   let coordinationKey: string | undefined
+  /**
+   * Bumped on every coordination teardown. A leadership grant landing on an
+   * abandoned request carries the generation it was issued under — the key
+   * string alone cannot distinguish an abandoned request from its same-key
+   * successor after a sign-out/sign-in round trip.
+   */
+  let coordinationGeneration = 0
+  let armingScheduledRefresh = false
   let releaseLeadership: (() => void) | undefined
   let stopCredentialFeed: (() => void) | undefined
 
@@ -672,6 +680,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   function teardownCoordination(): void {
+    coordinationGeneration += 1
     releaseLeadership?.()
     releaseLeadership = undefined
     stopCredentialFeed?.()
@@ -682,25 +691,31 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
   function ensureCoordination(): void {
     if (crossTab === undefined || credential === undefined) return
-    const key = `comfy-account-refresh:${credential.uid}:${credentialTarget ?? ''}`
+    // Keyed by the SERVER-RESOLVED workspace, never the requested target: a
+    // personal {} mint resolves to a concrete workspace the target string
+    // cannot name, and tabs on one workspace must share one lease however
+    // they reached it.
+    const key = `comfy-account-refresh:${credential.uid}:${credential.workspace.id}`
     if (key === coordinationKey) return
     teardownCoordination()
     coordinationKey = key
+    const generationAtRequest = coordinationGeneration
     stopCredentialFeed = crossTab.port.onCredential(
       key,
       adoptPublishedCredential
     )
     releaseLeadership = crossTab.port.requestLeadership(key, () => {
-      // A real port grants asynchronously; a grant for a key this client
-      // has since re-keyed away from must not promote it. The same check
-      // bounds the onAcquired → armScheduledRefresh → ensureCoordination
-      // cycle for a synchronous port: the key matches, so ensureCoordination
-      // early-returns instead of recursing.
-      if (coordinationKey !== key) return
+      // A grant is honored only for the coordination generation that issued
+      // the request: abandoned requests can still win the grant race in the
+      // lock manager, and after a same-user round trip their key is
+      // byte-identical to the live request's.
+      if (generationAtRequest !== coordinationGeneration) return
       isRefreshLeader = true
-      // Promotion after a leader loss: the jittered follower timer is
-      // waiting on a broadcast that will never come — retake the schedule.
-      if (credential !== undefined && scheduledTimer !== undefined) {
+      // Promotion retakes the schedule unconditionally — the follower timer
+      // may be jittered, mid-retry, or already dead from exhausted retries.
+      // The latch skips the redundant re-arm when the grant fires
+      // synchronously inside armScheduledRefresh itself.
+      if (credential !== undefined && !armingScheduledRefresh) {
         armScheduledRefresh(credential.expiresAt)
       }
     })
@@ -752,7 +767,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (!clientOptions.refreshScheduler) return
     stopScheduledRefresh()
     scheduledRetryCount = 0
-    ensureCoordination()
+    armingScheduledRefresh = true
+    try {
+      ensureCoordination()
+    } finally {
+      armingScheduledRefresh = false
+    }
     const now = clientOptions.now?.() ?? Date.now()
     // A follower holds past the leader's refresh point by bounded random
     // jitter; when no published credential has arrived by then, the leader
