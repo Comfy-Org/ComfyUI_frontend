@@ -19,6 +19,7 @@ const HERO_VIDEO_PATTERN = /minimax-license\/hero\.mp4/
 const STEPS_HEADING = t('minimaxLicense.steps.heading')
 const FAQ_HEADING = t('minimaxLicense.faq.heading')
 const CLOSING_HEADING = t('minimaxLicense.cta.heading')
+const HAN = /\p{Script=Han}/u
 
 function faqAnswer(id: string, locale: Locale) {
   const item = minimaxLicensePage.faq?.items.find((entry) => entry.id === id)
@@ -157,6 +158,11 @@ test.describe('MiniMax license page — zh-CN', () => {
       'zh-CN'
     )
     expect(emphasised).toHaveLength(1)
+    // faqAnswer() falls back to English, which would otherwise make an English
+    // string dropped into the zh-CN slot this test's own expectation.
+    expect(question).toMatch(HAN)
+    expect(plainText).toMatch(HAN)
+    expect(emphasised[0]).toMatch(HAN)
 
     const answer = await openFaq(page, question)
 
