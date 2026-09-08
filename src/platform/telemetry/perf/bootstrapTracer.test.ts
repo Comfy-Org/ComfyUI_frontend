@@ -30,11 +30,13 @@ const {
 })
 
 vi.mock('@/platform/telemetry', () => ({ useTelemetry }))
-vi.mock('./perfMark', async (importOriginal) => ({
-  ...(await importOriginal<typeof PerfMarkModule>()),
-  markViewLoaded,
-  reportBootstrapToRum
-}))
+// The tracer derives its timings from the real perfMark/perfPoint; only the
+// two sink publishers are stubbed, so the durations under assertion are
+// measured rather than invented.
+vi.mock('./perfMark', async (importOriginal) => {
+  const { perfMark, perfPoint } = await importOriginal<typeof PerfMarkModule>()
+  return { perfMark, perfPoint, markViewLoaded, reportBootstrapToRum }
+})
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {
