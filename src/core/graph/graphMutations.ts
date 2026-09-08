@@ -595,7 +595,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   ): void {
     detachLinkSlots(scope, topology, context)
     if (linkStore.deleteLink(scope, topology, context)) {
-      linkPresentationStore.take(scope, topology.id, context)
+      linkPresentationStore.take(scope, topology.id)
     }
   }
 
@@ -765,7 +765,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           deps.layout.deleteNodes(scope, mutation.nodeIds, context)
           linkStore.clearOwner(scope, context)
-          linkPresentationStore.clearOwner(scope, context)
+          linkPresentationStore.clearOwner(scope)
           nodeStore.clearOwner(scope, context)
           break
       }

@@ -2551,6 +2551,9 @@ export class LGraph
             scope,
             sublink.id
           )
+          const unambiguous =
+            presentation?.hidden === outerPresentation?.hidden &&
+            presentation?.label === outerPresentation?.label
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2560,9 +2563,7 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            hidden:
-              presentation?.hidden || outerPresentation?.hidden || undefined,
-            label: presentation?.label ?? outerPresentation?.label
+            ...(unambiguous ? presentation : undefined)
           })
           sublink.parentId = undefined
         }
@@ -2579,6 +2580,10 @@ export class LGraph
       const outerPresentation = outerLink
         ? presentationStore.getPresentation(scope, outerLink.id)
         : undefined
+      const unambiguous =
+        !outerLink ||
+        (presentation?.hidden === outerPresentation?.hidden &&
+          presentation?.label === outerPresentation?.label)
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2588,8 +2593,7 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        hidden: presentation?.hidden || outerPresentation?.hidden || undefined,
-        label: presentation?.label ?? outerPresentation?.label
+        ...(unambiguous ? presentation : undefined)
       })
     }
     this.remove(subgraphNode)

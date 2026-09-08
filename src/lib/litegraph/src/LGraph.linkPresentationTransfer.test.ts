@@ -1,9 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkPresentation } from '@/types/linkPresentation'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
@@ -20,19 +19,13 @@ import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/L
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,
-  enableSubgraphNodeCreation,
-  resetSubgraphFixtureState
+  enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvas2DContext,
   createMockCanvasPointerEvent,
   createTestCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-  resetSubgraphFixtureState()
-})
 
 describe('link presentation transfer across recreation flows', () => {
   it('keeps interior presentation through a convert and unpack round-trip', () => {
@@ -117,6 +110,77 @@ describe('link presentation transfer across recreation flows', () => {
       )
     ).toEqual({ hidden: true, label: 'Boundary' })
   })
+
+  it.for<{
+    name: string
+    inner: LinkPresentation
+    outer: LinkPresentation
+    expected?: LinkPresentation
+  }>([
+    {
+      name: 'hidden inner and visible outer segments',
+      inner: { hidden: true, label: 'Shared' },
+      outer: { label: 'Shared' }
+    },
+    {
+      name: 'visible inner and hidden outer segments',
+      inner: { label: 'Shared' },
+      outer: { hidden: true, label: 'Shared' }
+    },
+    {
+      name: 'different inner and outer labels',
+      inner: { hidden: true, label: 'Inner' },
+      outer: { hidden: true, label: 'Outer' }
+    },
+    {
+      name: 'matching hidden segments',
+      inner: { hidden: true, label: 'Shared' },
+      outer: { hidden: true, label: 'Shared' },
+      expected: { hidden: true, label: 'Shared' }
+    },
+    {
+      name: 'matching empty labels',
+      inner: { label: '' },
+      outer: { label: '' },
+      expected: { label: '' }
+    },
+    {
+      name: 'matching default segments',
+      inner: { hidden: false },
+      outer: {}
+    }
+  ])(
+    'unpacks boundary presentation with $name',
+    ({ inner, outer, expected }) => {
+      const rootGraph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(rootGraph))
+      const source = createTestNode(rootGraph, [], ['number'])
+      const interior = createTestNode(rootGraph, ['number'], ['number'])
+      const firstTarget = createTestNode(rootGraph, ['number'])
+      const secondTarget = createTestNode(rootGraph, ['number'])
+      source.connect(0, interior, 0)
+      interior.connect(0, firstTarget, 0)
+      interior.connect(0, secondTarget, 0)
+      const { subgraph, node: host } = rootGraph.convertToSubgraph(
+        new Set<Positionable>([interior])
+      )
+      const store = useLinkPresentationStore()
+      const scope = graphScopeOf(rootGraph)
+      for (const link of subgraph.links.values()) {
+        store.patch(graphScopeOf(subgraph), link.id, inner)
+      }
+      for (const link of rootGraph.links.values()) {
+        store.patch(scope, link.id, outer)
+      }
+
+      rootGraph.unpackSubgraph(host)
+
+      expect([...rootGraph.links.values()]).toHaveLength(3)
+      for (const link of rootGraph.links.values()) {
+        expect(store.getPresentation(scope, link.id)).toEqual(expected)
+      }
+    }
+  )
 
   it('preserves presentation through clipboard copy and paste', () => {
     const rootGraph = createTestRootGraph()

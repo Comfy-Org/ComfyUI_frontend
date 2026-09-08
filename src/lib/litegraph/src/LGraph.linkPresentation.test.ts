@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -9,8 +7,7 @@ import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
-  enableSubgraphNodeCreation,
-  resetSubgraphFixtureState
+  enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -20,11 +17,6 @@ import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 function makeLink(id = 1): LLink {
   return new LLink(toLinkId(id), 'MODEL', 4, 0, 5, 0)
 }
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-  resetSubgraphFixtureState()
-})
 
 describe('graph link presentation serialization', () => {
   it.for([
