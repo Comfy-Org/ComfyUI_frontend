@@ -11,7 +11,7 @@ const transparentPng = Buffer.from(
 
 export async function mockViewFiles(
   page: Page,
-  filesByName: Readonly<Record<string, ViewFile>>
+  filesByName: Readonly<Partial<Record<string, ViewFile>>>
 ) {
   await page.route('**/api/view**', async (route) => {
     if (route.request().method().toUpperCase() !== 'GET') {
