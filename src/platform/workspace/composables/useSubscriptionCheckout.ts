@@ -1449,6 +1449,9 @@ export function useSubscriptionCheckout(
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
+      // Captured before subscribe, as in handleSubscription: afterwards this
+      // attempt's own operation is registered too.
+      const knownOperationIds = new Set(billingOperationStore.operations.keys())
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
           buildPaymentOptions(quote, confirmationToken, promotionCode)),
@@ -1477,7 +1480,13 @@ export function useSubscriptionCheckout(
         tier: 'team',
         cycle: billingCycle,
         checkoutType,
-        attemptStartedAt
+        attemptStartedAt,
+        suppliedPaymentAuthority: Boolean(
+          confirmationToken || selectedSavedPaymentMethodId.value
+        ),
+        replayedKnownOperation: response
+          ? knownOperationIds.has(response.billing_op_id)
+          : false
       })
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {

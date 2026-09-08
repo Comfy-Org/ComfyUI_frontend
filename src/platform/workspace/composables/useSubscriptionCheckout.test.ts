@@ -1633,6 +1633,31 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('pricing')
     })
 
+    it('offers payment recovery on a parked team-new checkout', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+      checkout.quoteIsCurrent.value = true
+      mockKnownOperations.value = new Map([['op-team-parked', {}]])
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-team-parked'
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      expect(mockStartOperation).not.toHaveBeenCalled()
+    })
+
     it('previews a fresh team subscribe for exact billing terms', async () => {
       const checkout = await setup()
 
