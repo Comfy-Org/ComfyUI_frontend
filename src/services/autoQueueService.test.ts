@@ -3,96 +3,146 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { app } from '@/scripts/app'
-import {
-  useQueuePendingTaskCountStore,
-  useQueueSettingsStore
-} from '@/stores/queueStore'
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
-const { mockAddEventListener, mockApp, mockWorkspaceWorkflow } = vi.hoisted(
-  () => ({
-    mockAddEventListener: vi.fn(),
-    mockApp: {
-      queuePrompt: vi.fn(),
-      lastExecutionError: null
-    },
-    mockWorkspaceWorkflow: {
-      activeWorkflow: null as LoadedComfyWorkflow | null
-    }
-  })
-)
+const mocks = vi.hoisted(() => ({
+  addEventListener:
+    vi.fn<(event: string, listener: (event: Event) => void) => void>(),
+  queuePrompt: vi.fn(() => Promise.resolve(true)),
+  lastExecutionError: null as object | null,
+  gateBlocks: false
+}))
+
+vi.mock('@/composables/billing/usePartnerNodesRunGate', () => ({
+  partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
+}))
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    addEventListener: mockAddEventListener
+    addEventListener: mocks.addEventListener
   }
 }))
 
 vi.mock('@/scripts/app', () => ({
-  app: mockApp
+  app: {
+    queuePrompt: mocks.queuePrompt,
+    get lastExecutionError() {
+      return mocks.lastExecutionError
+    }
+  }
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: vi.fn(() => ({
-    workflow: mockWorkspaceWorkflow
-  }))
-}))
+import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+
+function setupAndGetAutoQueueGraphChangedListener() {
+  setupAutoQueueHandler()
+  const registration = mocks.addEventListener.mock.calls.find(
+    ([event]) => event === 'autoQueueGraphChanged'
+  )
+  if (!registration) throw new Error('autoQueueGraphChanged listener missing')
+  return registration[1]
+}
 
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-    mockWorkspaceWorkflow.activeWorkflow = null
-    mockApp.lastExecutionError = null
-  })
-
-  it('keeps Run Instant bound to the workflow where it started', async () => {
-    const workflowA = { path: 'workflows/a.json' } as LoadedComfyWorkflow
-    const workflowB = { path: 'workflows/b.json' } as LoadedComfyWorkflow
+    setActivePinia(
+      createTestingPinia({
+        createSpy: vi.fn,
+        stubActions: false
+      })
+    )
     const queueSettingsStore = useQueueSettingsStore()
-    const queueCountStore = useQueuePendingTaskCountStore()
-
-    mockWorkspaceWorkflow.activeWorkflow = workflowA
-    queueSettingsStore.batchCount = 3
-    setupAutoQueueHandler()
-
-    queueSettingsStore.$patch({ mode: 'instant-running' })
-    await nextTick()
-    mockWorkspaceWorkflow.activeWorkflow = workflowB
-
-    queueCountStore.$patch({ count: 1 })
-    await nextTick()
-    queueCountStore.$patch({ count: 0 })
-    await nextTick()
-
-    expect(app.queuePrompt).toHaveBeenCalledWith(0, 3, undefined, workflowA)
-  })
-
-  it('clears the Run Instant workflow when instant mode stops', async () => {
-    const workflowA = { path: 'workflows/a.json' } as LoadedComfyWorkflow
-    const workflowB = { path: 'workflows/b.json' } as LoadedComfyWorkflow
-    const queueSettingsStore = useQueueSettingsStore()
-    const queueCountStore = useQueuePendingTaskCountStore()
-
-    mockWorkspaceWorkflow.activeWorkflow = workflowA
+    queueSettingsStore.mode = 'change'
     queueSettingsStore.batchCount = 2
-    setupAutoQueueHandler()
+    useQueuePendingTaskCountStore().count = 0
+    mocks.lastExecutionError = null
+    mocks.gateBlocks = false
+  })
 
-    queueSettingsStore.$patch({ mode: 'instant-running' })
+  it('queues on autoQueueGraphChanged instead of graphChanged', () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    expect(mocks.addEventListener).not.toHaveBeenCalledWith(
+      'graphChanged',
+      expect.any(Function)
+    )
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).toHaveBeenCalledWith(0, 2, {
+      intent: { trigger_source: 'auto_queue' }
+    })
+  })
+
+  it('coalesces changes while busy and queues once after the queue drains', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    const queueCountStore = useQueuePendingTaskCountStore()
+
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+
+    queueCountStore.count = 1
     await nextTick()
-    queueSettingsStore.$patch({ mode: 'instant-idle' })
-    await nextTick()
-    mockWorkspaceWorkflow.activeWorkflow = workflowB
-    queueSettingsStore.$patch({ mode: 'instant-running' })
+    queueCountStore.count = 0
     await nextTick()
 
-    queueCountStore.$patch({ count: 1 })
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(2)
+    expect(mocks.queuePrompt).toHaveBeenLastCalledWith(0, 2, {
+      intent: { trigger_source: 'auto_queue' }
+    })
+  })
+
+  it('does not requeue a deferred change after an execution error', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    const queueCountStore = useQueuePendingTaskCountStore()
+
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+    mocks.lastExecutionError = new Error('execution failed')
+    queueCountStore.count = 1
     await nextTick()
-    queueCountStore.$patch({ count: 0 })
+    queueCountStore.count = 0
     await nextTick()
 
-    expect(app.queuePrompt).toHaveBeenCalledWith(0, 2, undefined, workflowB)
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not queue while the partner run gate blocks auto-queue', () => {
+    mocks.gateBlocks = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('queues again once the gate clears rather than staying stuck', () => {
+    mocks.gateBlocks = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+
+    mocks.gateBlocks = false
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-queue when a busy processor reports the item as not run yet', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    mocks.queuePrompt.mockResolvedValueOnce(false)
+    listener(new Event('autoQueueGraphChanged'))
+    await nextTick()
+    listener(new Event('autoQueueGraphChanged'))
+    await nextTick()
+
+    expect(
+      mocks.queuePrompt,
+      'a false from a busy processor already enqueued the item; do not queue it again'
+    ).toHaveBeenCalledTimes(1)
   })
 })

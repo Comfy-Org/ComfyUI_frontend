@@ -9,9 +9,12 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
+import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { hexToInt } from '@/utils/colorUtil'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
 interface AutogrowGroup {
@@ -23,6 +26,7 @@ interface AutogrowGroup {
 interface UniformSource {
   nodeId: NodeId
   widgetName: string
+  hostWidgetId?: WidgetId
   /** Fallback getter for widgets not registered in widgetValueStore (e.g. hidden computed widgets). */
   directValue: () => unknown
 }
@@ -45,7 +49,7 @@ export function getAutogrowLimits(node: LGraphNode): GLSLRendererConfig {
 
   if (!('comfyDynamic' in node)) return defaults
 
-  const dynamic = node.comfyDynamic
+  const dynamic: unknown = node.comfyDynamic
   if (
     typeof dynamic !== 'object' ||
     dynamic === null ||
@@ -53,39 +57,48 @@ export function getAutogrowLimits(node: LGraphNode): GLSLRendererConfig {
   )
     return defaults
 
-  const groups = dynamic.autogrow as Record<string, AutogrowGroup> | undefined
+  const groups = dynamic.autogrow as
+    | Record<string, AutogrowGroup | undefined>
+    | undefined
   if (!groups) return defaults
 
+  const images = groups['images']
+  const floats = groups['floats']
+  const ints = groups['ints']
+  const bools = groups['bools']
+  const curves = groups['curves']
+
   return {
-    maxInputs: groups['images']?.max ?? defaults.maxInputs,
-    maxFloatUniforms: groups['floats']?.max ?? defaults.maxFloatUniforms,
-    maxIntUniforms: groups['ints']?.max ?? defaults.maxIntUniforms,
-    maxBoolUniforms: groups['bools']?.max ?? defaults.maxBoolUniforms,
-    maxCurves: groups['curves']?.max ?? defaults.maxCurves
+    maxInputs: images?.max ?? defaults.maxInputs,
+    maxFloatUniforms: floats?.max ?? defaults.maxFloatUniforms,
+    maxIntUniforms: ints?.max ?? defaults.maxIntUniforms,
+    maxBoolUniforms: bools?.max ?? defaults.maxBoolUniforms,
+    maxCurves: curves?.max ?? defaults.maxCurves
   }
 }
 
 export function extractUniformSources(
   glslNode: LGraphNode,
-  subgraph: Subgraph
+  subgraph: Subgraph,
+  subgraphNode?: SubgraphNode
 ): UniformSources {
   const floats: UniformSource[] = []
   const ints: UniformSource[] = []
   const bools: UniformSource[] = []
   const curves: UniformSource[] = []
 
-  if (!glslNode.inputs) return { floats, ints, bools, curves }
+  const hostWidgetIdForSource = subgraphNode
+    ? createPromotedHostWidgetIdLookup(subgraphNode)
+    : undefined
 
-  for (const input of glslNode.inputs) {
-    if (input.link == null) continue
-
-    const link = subgraph.getLink(input.link)
+  for (const [index, input] of glslNode.inputs.entries()) {
+    const link = glslNode.getInputLink(index)
     if (!link || link.origin_id === SUBGRAPH_INPUT_ID) continue
 
     const sourceNode = subgraph.getNodeById(link.origin_id)
     if (!sourceNode?.widgets?.length) continue
 
-    const inputName = input.name ?? ''
+    const inputName = input.name
     const dotIndex = inputName.indexOf('.')
     if (dotIndex === -1) continue
 
@@ -95,6 +108,7 @@ export function extractUniformSources(
     const source: UniformSource = {
       nodeId: sourceNode.id,
       widgetName: widget.name,
+      hostWidgetId: hostWidgetIdForSource?.(sourceNode.id, widget.name),
       directValue: () => widget.value
     }
 
@@ -133,12 +147,14 @@ export function useGLSLUniforms(
     if (!gId) return []
 
     if (subgraphSources) {
-      return subgraphSources.map(({ nodeId: nId, widgetName, directValue }) => {
-        const widget = widgetValueStore.getWidget(
-          widgetId(gId, nId, widgetName)
-        )
-        return coerce(widget?.value ?? directValue() ?? defaultValue)
-      })
+      return subgraphSources.map(
+        ({ nodeId: nId, widgetName, hostWidgetId, directValue }) => {
+          const widget = widgetValueStore.getWidget(
+            hostWidgetId ?? widgetId(gId, nId, widgetName)
+          )
+          return coerce(widget?.value ?? directValue() ?? defaultValue)
+        }
+      )
     }
 
     const nId = nodeId.value
@@ -154,8 +170,8 @@ export function useGLSLUniforms(
         continue
       }
 
-      const slot = node.inputs?.findIndex((inp) => inp.name === inputName)
-      if (slot == null || slot < 0) break
+      const slot = node.inputs.findIndex((inp) => inp.name === inputName)
+      if (slot < 0) break
 
       const link = node.getInputLink(slot)
       if (!link) break
@@ -217,12 +233,12 @@ export function useGLSLUniforms(
     const sources = uniformSources.value?.curves
     if (sources && sources.length > 0) {
       return sources
-        .map(({ nodeId: nId, widgetName, directValue }) => {
+        .map(({ nodeId: nId, widgetName, hostWidgetId, directValue }) => {
           const widget = widgetValueStore.getWidget(
-            widgetId(gId, nId, widgetName)
+            hostWidgetId ?? widgetId(gId, nId, widgetName)
           )
           const value = widget?.value ?? directValue()
-          return isCurveData(value) ? (value as CurveData) : null
+          return isCurveData(value) ? value : null
         })
         .filter((v): v is CurveData => v !== null)
     }
@@ -238,7 +254,7 @@ export function useGLSLUniforms(
 
       const widget = widgetValueStore.getWidget(widgetId(gId, nId, inputName))
       if (widget && isCurveData(widget.value)) {
-        values.push(widget.value as CurveData)
+        values.push(widget.value)
         continue
       }
 

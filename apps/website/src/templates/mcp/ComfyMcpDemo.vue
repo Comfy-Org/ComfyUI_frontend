@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
-import { useElementVisibility } from '@vueuse/core'
-import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { useCssVar, useElementVisibility } from '@vueuse/core'
+import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
@@ -12,14 +12,6 @@ import { mcpDemoPrompts, thumbUrls, visibleWindow } from './mcpDemoPrompts'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const VISIBLE_CARDS = 5
-const START_DELAY_MS = 2600
-const TYPE_MIN_MS = 18
-const TYPE_MAX_MS = 55
-const AFTER_TYPING_MS = 520
-const RUN_TOOL_MS = 360
-const AFTER_CARD_MS = 900
-const BETWEEN_PROMPTS_MS = 650
-const REDUCED_MOTION_DWELL_MS = 2600
 
 const promptTextClass =
   'font-formula col-start-1 row-start-1 text-[17px] leading-[1.3] font-light'
@@ -40,10 +32,32 @@ const nextPrompt = computed(
 const typed = ref(t(nextPrompt.value.promptKey, locale))
 const submitting = ref(false)
 const status = ref(idleStatus)
-const reducedMotion = computed(prefersReducedMotion)
 
 const root = useTemplateRef<HTMLElement>('root')
 const visible = useElementVisibility(root)
+
+// Parse a CSS <time> (ms or s); malformed overrides fall back to the initial.
+function parseCssMs(value: string | undefined, fallbackMs: number) {
+  const match = /^([+-]?(?:\d+|\d*\.\d+))(ms|s)$/i.exec(value?.trim() ?? '')
+  if (!match) return fallbackMs
+  const [, amountRaw, unit] = match
+  const amount = Number.parseFloat(amountRaw)
+  return unit.toLowerCase() === 's' ? amount * 1000 : amount
+}
+
+function cssMs(name: string, initialValue: string) {
+  const raw = useCssVar(name, root, { initialValue, observe: true })
+  const fallbackMs = parseCssMs(initialValue, 0)
+  return computed(() => parseCssMs(raw.value, fallbackMs))
+}
+
+const startDelayMs = cssMs('--mcp-start-delay', '2600ms')
+const typeMinMs = cssMs('--mcp-type-min', '18ms')
+const typeMaxMs = cssMs('--mcp-type-max', '55ms')
+const afterTypingMs = cssMs('--mcp-after-typing', '520ms')
+const runToolMs = cssMs('--mcp-run-tool', '360ms')
+const afterCardMs = cssMs('--mcp-after-card', '900ms')
+const betweenPromptsMs = cssMs('--mcp-between-prompts', '650ms')
 
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -54,13 +68,6 @@ function schedule(step: () => void, ms: number) {
 
 function typeNextPrompt() {
   const text = t(nextPrompt.value.promptKey, locale)
-
-  if (reducedMotion.value) {
-    typed.value = text
-    schedule(runTool, AFTER_TYPING_MS)
-    return
-  }
-
   typed.value = ''
 
   let typedLength = 0
@@ -71,12 +78,12 @@ function typeNextPrompt() {
     if (typedLength < text.length) {
       schedule(
         typeCharacter,
-        TYPE_MIN_MS + Math.random() * (TYPE_MAX_MS - TYPE_MIN_MS)
+        typeMinMs.value + Math.random() * (typeMaxMs.value - typeMinMs.value)
       )
       return
     }
 
-    schedule(runTool, AFTER_TYPING_MS)
+    schedule(runTool, afterTypingMs.value)
   }
 
   typeCharacter()
@@ -93,32 +100,30 @@ function runTool() {
         .replace('{tool}', tool)
     : t('mcp.hero.demoStatusRunning', locale).replace('{tool}', tool)
 
-  schedule(commitCard, RUN_TOOL_MS)
+  schedule(commitCard, runToolMs.value)
 }
 
 function commitCard() {
   submitting.value = false
   index.value = (index.value + 1) % mcpDemoPrompts.length
   status.value = idleStatus
-  schedule(restBeforeNextPrompt, AFTER_CARD_MS)
+  schedule(restBeforeNextPrompt, afterCardMs.value)
 }
 
 function restBeforeNextPrompt() {
-  if (!reducedMotion.value) typed.value = ''
-
-  schedule(
-    typeNextPrompt,
-    reducedMotion.value ? REDUCED_MOTION_DWELL_MS : BETWEEN_PROMPTS_MS
-  )
+  typed.value = ''
+  schedule(typeNextPrompt, betweenPromptsMs.value)
 }
 
-watch(visible, (onScreen) => {
-  if (onScreen) {
-    schedule(typeNextPrompt, START_DELAY_MS)
+watchEffect(() => {
+  clearTimeout(timer)
+  if (prefersReducedMotion()) {
+    typed.value = t(nextPrompt.value.promptKey, locale)
+    submitting.value = false
+    status.value = idleStatus
     return
   }
-
-  clearTimeout(timer)
+  if (visible.value) schedule(typeNextPrompt, startDelayMs.value)
 })
 
 onUnmounted(() => clearTimeout(timer))
@@ -183,7 +188,6 @@ onUnmounted(() => clearTimeout(timer))
       <TransitionGroup
         name="card-slide"
         tag="div"
-        :css="!reducedMotion"
         class="flex flex-col gap-2.5"
       >
         <div

@@ -30,7 +30,7 @@
           "
         />
         <Suspense @resolve="comfyRunButtonResolved">
-          <ComfyRunButton />
+          <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
         </Suspense>
         <Button
           v-tooltip.bottom="cancelJobTooltipConfig"
@@ -76,6 +76,7 @@
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
       <FreeTierQuota v-if="!isDocked" />
+      <PartnerNodesRunCaption v-if="!isDocked" />
     </Panel>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
@@ -105,6 +106,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -115,14 +117,21 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton'
 
-const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
-  topMenuContainer?: HTMLElement | null
+const { dockedProgressContainer, queueOverlayExpanded = false } = defineProps<{
+  /**
+   * Element the inline run-progress bar is teleported into while the actionbar
+   * is docked. Must be the bordered actionbar card, not the inner button row —
+   * the bar is `absolute inset-0` and sits flush with its container's bottom.
+   */
+  dockedProgressContainer?: HTMLElement | null
   queueOverlayExpanded?: boolean
 }>()
 
@@ -335,7 +344,7 @@ const inlineProgressTarget = computed(() => {
   ) {
     return null
   }
-  if (isDocked.value) return topMenuContainer ?? null
+  if (isDocked.value) return dockedProgressContainer ?? null
   return panelElement.value
 })
 const shouldHideInlineProgress = computed(
@@ -434,11 +443,11 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z-1300',
+    'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
     isDocked.value
       ? 'static border-none bg-transparent p-0'
-      : ['fixed shadow-interface', 'border-interface-stroke']
+      : ['fixed z-1300 shadow-interface', 'border-interface-stroke']
   )
 )
 </script>

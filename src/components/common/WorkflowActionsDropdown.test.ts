@@ -96,7 +96,6 @@ function renderDropdown() {
 
 describe('WorkflowActionsDropdown', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     viewState.viewMode = 'graph'
     viewState.displayViewMode = 'graph'
     // A prior test's segment switch arms the module-level focus handoff;

@@ -50,9 +50,9 @@ describe('usePaletteSwatchRow', () => {
     for (const i of [0, 1]) {
       const swatch = document.createElement('div')
       swatch.setAttribute('data-index', String(i))
-      container.value!.appendChild(swatch)
+      container.value.appendChild(swatch)
     }
-    const second = container.value!.children[1] as HTMLDivElement
+    const second = container.value.children[1] as HTMLDivElement
     second.getBoundingClientRect = () =>
       ({ left: 100, right: 140, top: 0, bottom: 20, width: 40 }) as DOMRect
 
@@ -68,9 +68,9 @@ describe('usePaletteSwatchRow', () => {
     for (const i of [0, 1]) {
       const swatch = document.createElement('div')
       swatch.setAttribute('data-index', String(i))
-      container.value!.appendChild(swatch)
+      container.value.appendChild(swatch)
     }
-    const second = container.value!.children[1] as HTMLDivElement
+    const second = container.value.children[1] as HTMLDivElement
     second.getBoundingClientRect = () =>
       ({ left: 100, right: 140, top: 0, bottom: 20, width: 40 }) as DOMRect
 
@@ -85,7 +85,7 @@ describe('usePaletteSwatchRow', () => {
     const { modelValue, container, onPointerDown } = setup(['#a', '#b'])
     const swatch = document.createElement('div')
     swatch.setAttribute('data-index', '1')
-    container.value!.appendChild(swatch)
+    container.value.appendChild(swatch)
     onPointerDown(0, { button: 2, clientX: 10, clientY: 10 } as PointerEvent)
     document.dispatchEvent(
       new MouseEvent('pointermove', { clientX: 130, clientY: 10 })

@@ -3,7 +3,7 @@
     <Button
       variant="textonly"
       class="w-full"
-      @click="handleViewModeChange('list')"
+      @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.list)"
     >
       <span class="flex items-center gap-2">
         <i class="icon-[lucide--table-of-contents] size-4" />
@@ -11,22 +11,37 @@
       </span>
       <i
         class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'list' && 'opacity-0'"
+        :class="viewMode !== MEDIA_ASSET_VIEW_MODE.list && 'opacity-0'"
       />
     </Button>
 
     <Button
       variant="textonly"
       class="w-full"
-      @click="handleViewModeChange('grid')"
+      @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.gridSmall)"
     >
       <span class="flex items-center gap-2">
-        <i class="icon-[lucide--layout-grid] size-4" />
-        <span>{{ $t('sideToolbar.queueProgressOverlay.viewGrid') }}</span>
+        <i class="icon-[lucide--grid-3x3] size-4" />
+        <span>{{ $t('sideToolbar.mediaAssets.viewGridSmall') }}</span>
       </span>
       <i
         class="ml-auto icon-[lucide--check] size-4"
-        :class="viewMode !== 'grid' && 'opacity-0'"
+        :class="viewMode !== MEDIA_ASSET_VIEW_MODE.gridSmall && 'opacity-0'"
+      />
+    </Button>
+
+    <Button
+      variant="textonly"
+      class="w-full"
+      @click="handleViewModeChange(MEDIA_ASSET_VIEW_MODE.grid)"
+    >
+      <span class="flex items-center gap-2">
+        <i class="icon-[lucide--layout-grid] size-4" />
+        <span>{{ $t('sideToolbar.mediaAssets.viewGridLarge') }}</span>
+      </span>
+      <i
+        class="ml-auto icon-[lucide--check] size-4"
+        :class="viewMode !== MEDIA_ASSET_VIEW_MODE.grid && 'opacity-0'"
       />
     </Button>
 
@@ -54,6 +69,22 @@
         <i
           class="ml-auto icon-[lucide--check] size-4"
           :class="sortBy !== 'oldest' && 'opacity-0'"
+        />
+      </Button>
+
+      <Button variant="textonly" class="w-full" @click="handleSortChange('az')">
+        <span>{{ $t('sideToolbar.mediaAssets.sortAToZ') }}</span>
+        <i
+          class="ml-auto icon-[lucide--check] size-4"
+          :class="sortBy !== 'az' && 'opacity-0'"
+        />
+      </Button>
+
+      <Button variant="textonly" class="w-full" @click="handleSortChange('za')">
+        <span>{{ $t('sideToolbar.mediaAssets.sortZToA') }}</span>
+        <i
+          class="ml-auto icon-[lucide--check] size-4"
+          :class="sortBy !== 'za' && 'opacity-0'"
         />
       </Button>
 
@@ -89,7 +120,10 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
-export type SortBy = 'newest' | 'oldest' | 'longest' | 'fastest'
+import { MEDIA_ASSET_VIEW_MODE } from './mediaAssetViewOptions'
+import type { MediaAssetViewMode } from './mediaAssetViewOptions'
+
+export type SortBy = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
 const { showSortOptions = false, showGenerationTimeSort = false } =
   defineProps<{
@@ -97,10 +131,10 @@ const { showSortOptions = false, showGenerationTimeSort = false } =
     showGenerationTimeSort?: boolean
   }>()
 
-const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const viewMode = defineModel<MediaAssetViewMode>('viewMode', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 
-function handleViewModeChange(value: 'list' | 'grid') {
+function handleViewModeChange(value: MediaAssetViewMode) {
   viewMode.value = value
 }
 

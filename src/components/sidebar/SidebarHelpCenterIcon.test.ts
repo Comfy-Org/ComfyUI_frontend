@@ -90,7 +90,6 @@ function renderIcon() {
 
 describe('SidebarHelpCenterIcon', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     typeformState.typeformError = false
     typeformState.isValidTypeformId = true
     canvasState.linearMode = true

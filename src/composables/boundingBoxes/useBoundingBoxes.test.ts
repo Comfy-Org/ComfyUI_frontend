@@ -1,6 +1,5 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
@@ -8,13 +7,17 @@ import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
 
-const { appState, outputState } = vi.hoisted(() => ({
-  appState: { node: null as unknown },
-  outputState: {
-    outputs: undefined as unknown,
+const { appState, outputState } = vi.hoisted(() => {
+  const appState: { node: MockNode | null } = { node: null }
+  const outputState: {
+    outputs: { input_bboxes: unknown } | undefined
+    nodeOutputs: { value: Record<string, unknown> } | null
+  } = {
+    outputs: undefined,
     nodeOutputs: null as { value: Record<string, unknown> } | null
   }
-}))
+  return { appState, outputState }
+})
 
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { graph: { getNodeById: () => appState.node } } }
@@ -61,18 +64,17 @@ function makeCanvas(): HTMLCanvasElement {
   Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
   Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true })
   el.getContext = (() => ctx) as unknown as HTMLCanvasElement['getContext']
-  el.getBoundingClientRect = () =>
-    ({
-      left: 0,
-      top: 0,
-      right: 100,
-      bottom: 100,
-      width: 100,
-      height: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  el.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    right: 100,
+    bottom: 100,
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
   el.focus = () => {}
   el.setPointerCapture = () => {}
   el.releasePointerCapture = () => {}
@@ -175,7 +177,6 @@ function makeConnectedNode(): MockNode {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
   appState.node = makeNode()
   outputState.outputs = undefined
   if (outputState.nodeOutputs) outputState.nodeOutputs.value = {}
@@ -184,10 +185,6 @@ beforeEach(() => {
     return 1
   })
   vi.stubGlobal('cancelAnimationFrame', () => {})
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 describe('useBoundingBoxes initialization', () => {
@@ -271,7 +268,7 @@ describe('useBoundingBoxes region editing', () => {
 describe('useBoundingBoxes inline editor', () => {
   it('opens on double click and commits the description', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30))
     await flush()
     expect(c.inlineEditor.value).not.toBeNull()
 
@@ -284,7 +281,7 @@ describe('useBoundingBoxes inline editor', () => {
 
   it('closes the inline editor on Escape', async () => {
     const c = setup([box()])
-    c.onDoubleClick(pe(30, 30) as unknown as MouseEvent)
+    c.onDoubleClick(pe(30, 30))
     await flush()
     c.onInlineKeyDown({ key: 'Escape' } as KeyboardEvent)
     expect(c.inlineEditor.value).toBeNull()
@@ -319,6 +316,19 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     outputState.outputs = { input_bboxes: [box({ x: 0, width: 100 })] }
     const c = setup([])
     expect(modelBoxes(c)).toHaveLength(0)
+  })
+
+  it('ignores an output containing an invalid bounding box', () => {
+    const node = makeConnectedNode()
+    appState.node = node
+    outputState.outputs = {
+      input_bboxes: [box(), { x: 1 }]
+    }
+
+    const c = setup([])
+
+    expect(modelBoxes(c)).toHaveLength(0)
+    expect(lastIncomingOf(node)).toEqual([])
   })
 
   it('repopulates from the next run after clearing the canvas', async () => {

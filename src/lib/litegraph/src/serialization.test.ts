@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import type { NodeInputSlot } from './node/NodeInputSlot'
@@ -11,9 +13,12 @@ class TestNode extends LGraphNode {
   }
 }
 
-LiteGraph.registerNodeType('test/TestNode', TestNode)
-
 describe('Serialization - Circular Reference Prevention', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.registerNodeType('test/TestNode', TestNode)
+  })
+
   describe('LGraph.toJSON()', () => {
     it('should serialize without circular reference errors', () => {
       const graph = new LGraph()

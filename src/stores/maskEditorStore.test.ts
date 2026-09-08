@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -31,7 +29,6 @@ const makeCanvas = (): HTMLCanvasElement => {
 
 describe('maskEditorStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockHistory.canUndo.value = false
     mockHistory.canRedo.value = false
   })

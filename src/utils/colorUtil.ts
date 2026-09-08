@@ -87,6 +87,13 @@ export function hexToInt(hex: string): number {
   return (r << 16) | (g << 8) | b
 }
 
+export function intToHex(value: number): string {
+  const normalized = Number.isFinite(value)
+    ? Math.max(0, Math.min(0xffffff, Math.round(value)))
+    : 0
+  return `#${normalized.toString(16).padStart(6, '0')}`
+}
+
 export function rgbToHex({ r, g, b }: RGB): string {
   const toHex = (n: number) =>
     Math.max(0, Math.min(255, Math.round(n)))
@@ -256,8 +263,8 @@ function isHSBObject(v: unknown): v is HSB {
     Number.isFinite(rec.h) &&
     typeof rec.s === 'number' &&
     Number.isFinite(rec.s) &&
-    typeof (rec as Record<string, unknown>).b === 'number' &&
-    Number.isFinite((rec as Record<string, number>).b!)
+    typeof rec.b === 'number' &&
+    Number.isFinite(rec.b)
   )
 }
 
@@ -269,8 +276,8 @@ function isHSVObject(v: unknown): v is HSV {
     Number.isFinite(rec.h) &&
     typeof rec.s === 'number' &&
     Number.isFinite(rec.s) &&
-    typeof (rec as Record<string, unknown>).v === 'number' &&
-    Number.isFinite((rec as Record<string, number>).v!)
+    typeof rec.v === 'number' &&
+    Number.isFinite(rec.v)
   )
 }
 
@@ -366,7 +373,7 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
   }
 }
 
-function rgbToHsv({ r, g, b }: RGB): {
+export function rgbToHsv({ r, g, b }: RGB): {
   h: number
   s: number
   v: number
@@ -395,6 +402,11 @@ function rgbToHsv({ r, g, b }: RGB): {
     }
   }
   return { h, s, v }
+}
+
+export function normalizeHex(value: string): string | null {
+  const digits = value.trim().replace(/^#/, '')
+  return /^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(digits) ? `#${digits}` : null
 }
 
 export function hexToHsva(hex: string): HSVA {

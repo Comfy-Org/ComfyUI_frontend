@@ -1,27 +1,24 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const createResultItem = (
   url: string,
   supportsPreview = true
-): ResultItemImpl => {
-  const item = new ResultItemImpl({
-    filename: url,
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType: supportsPreview ? 'images' : 'unknown'
-  })
-  // Override url getter for test matching
-  Object.defineProperty(item, 'url', { get: () => url })
-  Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
-  return item
-}
+): AugmentedResultItem => ({
+  filename: url,
+  mediaType: supportsPreview ? 'images' : 'unknown',
+  nodeId: 'node-1',
+  subfolder: '',
+  type: 'output',
+  url
+})
 
 const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
   id,
@@ -33,8 +30,8 @@ const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
 })
 
 const createTask = (
-  preview?: ResultItemImpl,
-  allOutputs?: ResultItemImpl[],
+  preview?: AugmentedResultItem,
+  allOutputs?: AugmentedResultItem[],
   outputsCount = 1
 ): TaskItemImpl => {
   const job = createMockJob(
@@ -48,21 +45,16 @@ const createTask = (
 const createJobViewItem = (
   id: string,
   taskRef?: TaskItemImpl
-): JobListViewItem =>
-  ({
-    id,
-    title: `Job ${id}`,
-    meta: '',
-    state: 'completed',
-    showClear: false,
-    taskRef
-  }) as JobListViewItem
+): JobListViewItem => ({
+  id,
+  title: `Job ${id}`,
+  meta: '',
+  state: 'completed',
+  showClear: false,
+  taskRef
+})
 
 describe('useResultGallery', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('collects only previewable outputs and preserves their order', async () => {
     const previewable = [createResultItem('p-1'), createResultItem('p-2')]
     const nonPreviewable = createResultItem('skip-me', false)

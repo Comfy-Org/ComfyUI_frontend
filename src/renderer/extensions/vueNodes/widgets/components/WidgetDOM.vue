@@ -11,7 +11,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 // Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{
-  widget: SimplifiedWidget<void>
+  widget: SimplifiedWidget<undefined>
   nodeId: NodeId
 }>()
 

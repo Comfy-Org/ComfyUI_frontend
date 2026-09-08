@@ -3,6 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import HeroSection from '../../../components/cloud-nodes/HeroSection.vue'
 import PackGridSection from '../../../components/cloud-nodes/PackGridSection.vue'
 import { t } from '../../../i18n/translations'
+import { toGridPack } from '../../../data/cloudNodes'
 import { loadPacksForBuild } from '../../../utils/cloudNodes.build'
 import {
   absoluteUrl,
@@ -12,6 +13,7 @@ import {
 } from '../../../utils/jsonLd'
 
 const packs = await loadPacksForBuild()
+const gridPacks = packs.map(toGridPack)
 
 const title = t('cloudNodes.meta.title', 'zh-CN')
 const description = t('cloudNodes.meta.description', 'zh-CN')
@@ -46,5 +48,5 @@ const packList = itemListNode(
   extraJsonLd={[packList]}
 >
   <HeroSection locale="zh-CN" client:visible />
-  <PackGridSection locale="zh-CN" packs={packs} client:visible />
+  <PackGridSection locale="zh-CN" packs={gridPacks} client:visible />
 </BaseLayout>

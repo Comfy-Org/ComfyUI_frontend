@@ -61,13 +61,6 @@ vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/NodeDragPreview.vue', () => ({
-  default: {
-    name: 'NodeDragPreview',
-    template: '<div />'
-  }
-}))
-
 vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
   default: {
     name: 'SearchBox',
@@ -98,8 +91,6 @@ const i18n = createI18n({
 
 describe('NodeLibrarySidebarTabV2', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    hoisted.mockSearchNode.mockReset()
     hoisted.mockSearchNode.mockReturnValue([])
   })
 

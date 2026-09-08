@@ -13,12 +13,13 @@ const {
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockTelemetry: {
-    trackBeginCheckout: vi.fn()
+    trackBeginCheckout: vi.fn(),
+    trackBillingEvent: vi.fn()
   },
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
   ),
-  mockUserId: { value: 'user-123' as string | undefined },
+  mockUserId: { value: 'user-123' },
   mockIsCloud: { value: true },
   mockGetCheckoutAttribution: vi.fn(() => ({
     ga_client_id: 'ga-client-id',
@@ -70,11 +71,19 @@ vi.mock('@/platform/telemetry', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() =>
     reactive({
-      getAuthHeader: mockGetAuthHeader,
+      getFirebaseAuthHeader: mockGetAuthHeader,
+      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+        fetch(input, init),
       userId: computed(() => mockUserId.value)
     })
   ),
-  AuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -109,23 +118,19 @@ function createDeferred<T>() {
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
     setDistribution('cloud')
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockUserId.value = 'user-123'
     mockLocalStorage.__reset()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     setDistribution('localhost')
     mockLocalStorage.__reset()
   })
 
   it('tracks begin_checkout with user id and tier metadata', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -218,9 +223,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -249,9 +252,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('uses the latest userId when it changes after checkout starts', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     const authHeader = createDeferred<{ Authorization: string }>()
 
     mockUserId.value = 'user-early'
@@ -303,5 +304,32 @@ describe('performSubscriptionCheckout', () => {
         checkout_attempt_id: expect.any(String)
       })
     )
+  })
+
+  it('reports checkout-initiation failure via trackBillingEvent, so the marketing deep link inherits it too', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      json: async () => ({ message: 'declined for person@example.com' }),
+      text: async () => ''
+    } as Response)
+
+    await expect(
+      performSubscriptionCheckout('pro', 'yearly', {
+        paymentIntentSource: 'deep_link'
+      })
+    ).rejects.toThrow()
+
+    expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: 'pro',
+      cycle: 'yearly',
+      checkout_type: 'new',
+      payment_intent_source: 'deep_link',
+      failure_category: 'api_rejected'
+    })
   })
 })

@@ -19,6 +19,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({ subscription: billingMocks.subscription })
 }))
 
+const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => distributionMocks)
+
 const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
 
@@ -31,6 +35,9 @@ const i18n = createI18n({
         personal: 'Personal',
         roleOwner: 'Owner',
         roleMember: 'Member',
+        scopeCaption: 'Workspaces only affect which credits you use.',
+        scopeTooltip:
+          'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
           'You can only own 10 workspaces. Delete one to create a new one.'
@@ -99,8 +106,19 @@ function renderComponent(
 }
 
 describe('WorkspaceSwitcherPopover', () => {
+  it('shows the credits-scope caption off cloud', () => {
+    distributionMocks.isCloud = false
+    renderComponent()
+    expect(
+      screen.getByText('Workspaces only affect which credits you use.')
+    ).toBeInTheDocument()
+
+    distributionMocks.isCloud = true
+  })
+
   beforeEach(() => {
     billingMocks.subscription.value = null
+    distributionMocks.isCloud = true
   })
 
   it.for([
@@ -215,5 +233,37 @@ describe('WorkspaceSwitcherPopover', () => {
     })
 
     expect(screen.getByText('Pro')).toBeInTheDocument()
+  })
+
+  it('renders every workspace row inside the scroll region and keeps the create-workspace footer outside it', () => {
+    const workspaceNames = Array.from({ length: 25 }, (_, i) => `Team ${i}`)
+    const workspaces = workspaceNames.map((name, i) =>
+      createWorkspaceState({
+        id: `ws-${i}`,
+        name,
+        type: 'team',
+        role: 'member'
+      })
+    )
+
+    renderComponent({ activeWorkspaceId: 'ws-0', workspaces })
+
+    const list = screen.getByTestId('workspace-switcher-list')
+
+    workspaceNames.forEach((name) => {
+      expect(list).toContainElement(screen.getByText(name))
+    })
+
+    const createWorkspaceButton = screen.getByText('Create a team workspace')
+    expect(list).not.toContainElement(createWorkspaceButton)
+  })
+
+  it('hides the create-workspace footer on non-cloud distributions', () => {
+    distributionMocks.isCloud = false
+
+    renderComponent()
+
+    expect(screen.queryByText('Create a team workspace')).toBeNull()
+    expect(screen.queryByText(/You can only own 10 workspaces/)).toBeNull()
   })
 })

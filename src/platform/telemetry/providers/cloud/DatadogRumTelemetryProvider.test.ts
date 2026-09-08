@@ -1,0 +1,355 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import type {
+  BillingTelemetryEvent,
+  BootstrapCompleteMetadata
+} from '../../types'
+import { TelemetryEvents } from '../../types'
+import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
+
+const {
+  addAction,
+  addDurationVital,
+  addFeatureFlagEvaluation,
+  getInternalContext
+} = vi.hoisted(() => ({
+  addAction: vi.fn(),
+  addDurationVital: vi.fn(),
+  addFeatureFlagEvaluation: vi.fn(),
+  getInternalContext: vi.fn()
+}))
+
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: {
+    addAction,
+    addDurationVital,
+    addFeatureFlagEvaluation,
+    getInternalContext
+  }
+}))
+
+const workflowExecutionIntent = {
+  trigger_source: 'keybinding'
+} as const
+
+describe('DatadogRumTelemetryProvider', () => {
+  it('records terminal unified auth retry outcomes without request data', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
+      transport: 'axios',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+      {
+        transport: 'axios',
+        outcome: 'failed',
+        final_status: 401,
+        failure_reason: 'retry_rejected'
+      }
+    )
+  })
+
+  it('records proactive unified refresh lifecycle outcomes', () => {
+    new DatadogRumTelemetryProvider().trackUnifiedAuthRefresh({
+      outcome: 'retries_exhausted',
+      retry_count: 3
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      { outcome: 'retries_exhausted', retry_count: 3 }
+    )
+  })
+
+  it('records image load failures by source', () => {
+    new DatadogRumTelemetryProvider().trackImageLoadFailed({
+      source: 'node_image_preview'
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.IMAGE_LOAD_FAILED,
+      { source: 'node_image_preview' }
+    )
+  })
+
+  it.for([
+    ['extension.manager:supports-v4', 'extension_manager_supports_v4'],
+    ['rollout(beta)[staff]', 'rollout_beta__staff_'],
+    [
+      'a+b=c&&d||e>f<g!h{i}^j"k“l”~m*n?o\\p',
+      'a_b_c__d__e_f_g_h_i__j_k_l__m_n_o_p'
+    ]
+  ])('normalizes feature flag key %s', ([key, normalizedKey]) => {
+    new DatadogRumTelemetryProvider().trackFeatureFlagEvaluation(key, true)
+
+    expect(addFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      normalizedKey,
+      true
+    )
+  })
+
+  it('records the same canonical billing name and context as PostHog', () => {
+    const event: BillingTelemetryEvent = {
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'opaque-op-id',
+      operation_type: 'subscription',
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new',
+      payment_intent_source: 'subscribe_to_run',
+      failure_category: 'provider_decline',
+      duration_ms: 4200
+    }
+
+    new DatadogRumTelemetryProvider().trackBillingEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BILLING_OPERATION_FAILED,
+      event
+    )
+  })
+
+  it('drops fields outside the billing telemetry contract', () => {
+    const event = {
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: 'opaque-op-id',
+      failure_category: 'unknown',
+      error_message: 'raw provider response',
+      email: 'user@example.com'
+    } satisfies BillingTelemetryEvent & {
+      error_message: string
+      email: string
+    }
+
+    new DatadogRumTelemetryProvider().trackBillingEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BILLING_TOPUP_FAILED,
+      {
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: 'opaque-op-id',
+        failure_category: 'unknown'
+      }
+    )
+  })
+
+  it('records one successful workflow vital with every stage', () => {
+    getInternalContext.mockReturnValue({ view: { id: 'view-a' } })
+
+    new DatadogRumTelemetryProvider().trackExecutionOutcome({
+      startTime: 42,
+      submissionAcceptedAt: 62,
+      executionStartedAt: 92,
+      endTime: 142,
+      success: true,
+      failureReason: '',
+      ...workflowExecutionIntent,
+      workflowContext: {
+        workflow_type: 'custom',
+        view_mode: 'graph',
+        execution_scope: 'full',
+        total_node_count: 42,
+        executable_node_count: 12,
+        custom_node_count: 3,
+        api_node_count: 1,
+        subgraph_count: 2
+      }
+    })
+
+    expect(getInternalContext).toHaveBeenCalledWith(42)
+    expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
+      startTime: performance.timeOrigin + 42,
+      duration: 100,
+      context: {
+        api_node_count: 1,
+        custom_node_count: 3,
+        executable_node_count: 12,
+        execution_duration_ms: 50,
+        execution_scope: 'full',
+        execution_started_at_unix_ms: performance.timeOrigin + 92,
+        failure_reason: '',
+        origin_view_id: 'view-a',
+        queue_wait_duration_ms: 30,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        submission_duration_ms: 20,
+        subgraph_count: 2,
+        success: true,
+        terminal_stage: 'execution',
+        total_node_count: 42,
+        trigger_source: 'keybinding',
+        view_mode: 'graph',
+        workflow_ended_at_unix_ms: performance.timeOrigin + 142,
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        workflow_type: 'custom'
+      }
+    })
+  })
+
+  it.for([
+    {
+      name: 'submission',
+      metadata: {
+        startTime: 42,
+        endTime: 62,
+        success: false,
+        failureReason: 'submission_rejected',
+        ...workflowExecutionIntent
+      },
+      duration: 20,
+      context: () => ({
+        success: false,
+        failure_reason: 'submission_rejected',
+        terminal_stage: 'submission',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 62,
+        submission_duration_ms: 20,
+        trigger_source: 'keybinding'
+      })
+    },
+    {
+      name: 'queue wait',
+      metadata: {
+        startTime: 42,
+        submissionAcceptedAt: 62,
+        endTime: 82,
+        success: false,
+        failureReason: 'execution_failed',
+        ...workflowExecutionIntent
+      },
+      duration: 40,
+      context: () => ({
+        success: false,
+        failure_reason: 'execution_failed',
+        terminal_stage: 'queue_wait',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 82,
+        submission_duration_ms: 20,
+        queue_wait_duration_ms: 20,
+        trigger_source: 'keybinding'
+      })
+    },
+    {
+      name: 'execution',
+      metadata: {
+        startTime: 42,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_failed',
+        ...workflowExecutionIntent
+      },
+      duration: 100,
+      context: () => ({
+        success: false,
+        failure_reason: 'execution_failed',
+        terminal_stage: 'execution',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        execution_started_at_unix_ms: performance.timeOrigin + 92,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 142,
+        submission_duration_ms: 20,
+        queue_wait_duration_ms: 30,
+        execution_duration_ms: 50,
+        trigger_source: 'keybinding'
+      })
+    }
+  ] as const)(
+    'records a failed workflow vital ending during $name',
+    ({ metadata, duration, context }) => {
+      getInternalContext.mockReturnValue(undefined)
+
+      new DatadogRumTelemetryProvider().trackExecutionOutcome(metadata)
+
+      expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
+        startTime: performance.timeOrigin + 42,
+        duration,
+        context: context()
+      })
+    }
+  )
+
+  it('keeps stage timestamps monotonic when execution finishes before the submission response', () => {
+    getInternalContext.mockReturnValue(undefined)
+
+    new DatadogRumTelemetryProvider().trackExecutionOutcome({
+      startTime: 42,
+      executionStartedAt: 52,
+      submissionAcceptedAt: 62,
+      endTime: 58,
+      success: false,
+      failureReason: 'execution_failed',
+      ...workflowExecutionIntent
+    })
+
+    expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
+      startTime: performance.timeOrigin + 42,
+      duration: 20,
+      context: {
+        success: false,
+        failure_reason: 'execution_failed',
+        terminal_stage: 'execution',
+        trigger_source: 'keybinding',
+        workflow_started_at_unix_ms: performance.timeOrigin + 42,
+        submission_accepted_at_unix_ms: performance.timeOrigin + 62,
+        execution_started_at_unix_ms: performance.timeOrigin + 62,
+        workflow_ended_at_unix_ms: performance.timeOrigin + 62,
+        submission_duration_ms: 20,
+        queue_wait_duration_ms: 0,
+        execution_duration_ms: 0
+      }
+    })
+  })
+
+  it('records startup as one action plus a duration vital', () => {
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      total_ms: 5200,
+      outcome: 'failed',
+      phase_count: 2,
+      phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      {
+        total_ms: 5200,
+        outcome: 'failed',
+        phase_count: 2,
+        phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
+      }
+    )
+    expect(addDurationVital).toHaveBeenCalledWith('bootstrap', {
+      startTime: performance.timeOrigin,
+      duration: 5200,
+      context: { outcome: 'failed' }
+    })
+  })
+
+  it('records timed-out startup without a duration vital', () => {
+    const metadata: BootstrapCompleteMetadata = {
+      total_ms: 30_000,
+      outcome: 'timed_out',
+      phase_count: 1,
+      phases: {},
+      pending: ['bootstrap/object-info']
+    }
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      metadata
+    )
+    expect(addDurationVital).not.toHaveBeenCalled()
+  })
+})

@@ -8,37 +8,62 @@ import {
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
-  ComfyNodeDef,
-  InputSpec
+  InputSpec,
+  ObjectInfoResponse
 } from '@/schemas/nodeDefSchema'
-
-type ObjectInfoResponse = Record<string, ComfyNodeDef>
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
+
+function getNodeInfo(
+  objectInfo: Partial<ObjectInfoResponse>,
+  nodeType: string
+) {
+  const nodeInfo = objectInfo[nodeType]
+  if (!nodeInfo) {
+    throw new Error(`Missing object_info entry for ${nodeType}`)
+  }
+  return nodeInfo
+}
+
+function getRequiredInputs(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string
+): Partial<Record<string, InputSpec>> {
+  const nodeInfo = getNodeInfo(objectInfo, nodeType)
+  const requiredInputs = nodeInfo.input?.required
+  if (!requiredInputs) {
+    throw new Error(`Missing required inputs for ${nodeType}`)
+  }
+
+  return requiredInputs
+}
 
 function getRequiredInput(
   objectInfo: ObjectInfoResponse,
   nodeType: string,
   inputName: string
 ): InputSpec {
-  const nodeInfo = objectInfo[nodeType]
-  if (!nodeInfo) {
-    throw new Error(`Missing object_info entry for ${nodeType}`)
-  }
-
-  const requiredInputs = nodeInfo.input?.required
-  if (!requiredInputs) {
-    throw new Error(`Missing required inputs for ${nodeType}`)
-  }
-
-  const input = requiredInputs[inputName]
+  const input = getRequiredInputs(objectInfo, nodeType)[inputName]
   if (!input) {
     throw new Error(`Missing input ${nodeType}.${inputName}`)
   }
 
   return input
+}
+
+export function setStringInputTooltip(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  inputName: string,
+  tooltip: string
+): void {
+  const requiredInputs = getRequiredInputs(objectInfo, nodeType)
+  getRequiredInput(objectInfo, nodeType, inputName)
+
+  const input: InputSpec = ['STRING', { tooltip }]
+  requiredInputs[inputName] = input
 }
 
 function getComboInput(
@@ -82,6 +107,32 @@ export function appendComboInputOptions(
     ...getComboSpecComboOptions(input),
     ...values
   ])
+}
+
+/**
+ * Clones an existing node definition under a new type whose display name is
+ * `displayName`, so a test can put arbitrary text on the node-search result
+ * label without depending on a real node happening to contain it.
+ *
+ * Deep-cloned: a spread would leave the copy sharing `input`/`output` with the
+ * donor, so a later mutator aimed at the clone would silently rewrite the real
+ * node in the same payload.
+ */
+export function addNodeWithDisplayName(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  displayName: string,
+  donorNodeType = 'KSampler'
+): void {
+  const donor = getNodeInfo(objectInfo, donorNodeType)
+
+  objectInfo[nodeType] = {
+    ...structuredClone(donor),
+    name: nodeType,
+    display_name: displayName,
+    category: 'testing',
+    description: ''
+  }
 }
 
 export async function routeObjectInfoFromSetupApi(

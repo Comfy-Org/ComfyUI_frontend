@@ -125,17 +125,16 @@ describe('ErrorOverlay', () => {
     mockErrorGroups.missingModelGroups.value = []
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
-    mockOpenPanel.mockClear()
     mockCanvasStore.linearMode = false
     mockCanvasStore.canvas = null
     mockCanvasStore.currentGraph = null
-    mockCanvasStore.updateSelectedItems.mockClear()
   })
 
   it('renders a single overlay message without list markup', async () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
@@ -173,6 +172,7 @@ describe('ErrorOverlay', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,

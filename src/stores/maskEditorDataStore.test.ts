@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
@@ -26,10 +24,6 @@ const createOutputData = (): EditorOutputData => {
 }
 
 describe('maskEditorDataStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('hasValidInput', () => {
     it('should be false when inputData is null', () => {
       const store = useMaskEditorDataStore()

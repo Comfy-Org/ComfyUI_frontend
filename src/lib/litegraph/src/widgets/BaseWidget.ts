@@ -14,12 +14,12 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
-  NodeBindable,
-  TWidgetType
+  NodeBindable
 } from '@/lib/litegraph/src/types/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
@@ -40,10 +40,20 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   rightPadding?: number
 }
 
+type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
+  TWidget['value'],
+  TWidget['type'],
+  TWidget['options']
+>
+
 export interface WidgetEventOptions {
   e: CanvasPointerEvent
   node: LGraphNode
   canvas: LGraphCanvas
+}
+
+export function extensionValue<T>(value: T): T | null | undefined {
+  return value
 }
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
@@ -76,8 +86,44 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   linkedWidgets?: IBaseWidget[]
-  name: string
-  options: TWidget['options']
+  private _name!: string
+  get name(): string {
+    return this._name
+  }
+
+  set name(value: string) {
+    const previous = extensionValue(this._name)
+    if (previous == null || previous === value) {
+      this._name = value
+      return
+    }
+
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) {
+      this._name = value
+      return
+    }
+
+    const moved = useWidgetValueStore().renameWidget(
+      widgetId(graphId, nodeId, previous),
+      widgetId(graphId, nodeId, value)
+    )
+    if (!moved) return
+
+    this._name = value
+    this._state = moved
+  }
+
+  get options(): TWidget['options'] {
+    return this._state.options
+  }
+  set options(value: TWidget['options']) {
+    const hidden = this._state.options.hidden
+    this._state.options = extensionValue(value) ?? {}
+    if (hidden !== undefined) this._state.options.hidden = hidden
+  }
+
   type: TWidget['type']
   y: number = 0
   last_y?: number
@@ -85,8 +131,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: Omit<WidgetState, 'nodeId'> &
-    Partial<Pick<WidgetState, 'nodeId'>>
+  private _state: Omit<BaseWidgetState<TWidget>, 'nodeId'> &
+    Partial<Pick<BaseWidgetState<TWidget>, 'nodeId'>>
 
   get label(): string | undefined {
     return this._state.label
@@ -95,7 +141,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
+  get hidden(): boolean | undefined {
+    return this._state.options.hidden
+  }
+  set hidden(value: boolean | undefined) {
+    this._state.options.hidden = value
+  }
+
   advanced?: boolean
 
   get disabled(): boolean | undefined {
@@ -126,7 +178,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   ): boolean
 
   get value(): TWidget['value'] {
-    return this._state.value as TWidget['value']
+    return this._state.value
   }
   set value(value: TWidget['value']) {
     this._state.value = value
@@ -136,6 +188,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
     return widgetId(graphId, nodeId, this.name)
   }
 
@@ -146,13 +199,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   setNodeId(nodeId: NodeId): void {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
 
     const registered = useWidgetValueStore().registerWidget(
       widgetId(graphId, nodeId, this.name),
       {
-        ...this._state,
-        value: this.value
-      }
+        disabled: this.disabled,
+        label: this.label,
+        name: this.name,
+        options: this._state.options,
+        serialize: this.serialize,
+        type: this.type,
+        value: this.value,
+        y: this.y
+      },
+      deriveWidgetRenderState(this)
     )
     if (registered) this._state = registered
   }
@@ -163,11 +224,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
-    // The set and get functions for DOM widget values are hacked on to the options object;
-    // attempting to set value before options will throw.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
-    this.options = widget.options
     this.type = widget.type
 
     // `node` has no setter - Object.assign will throw.
@@ -192,7 +249,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
+      options,
       label,
+      hidden,
       disabled,
       value,
       linkedWidgets,
@@ -203,14 +262,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     this._state = {
       name: this.name,
-      type: this.type as TWidgetType,
+      type: this.type,
       value,
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options,
+      options: extensionValue(options) ?? {},
       y: this.y
     }
+    if (hidden !== undefined) this.hidden = hidden
   }
 
   getOutlineColor() {
@@ -423,16 +483,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     const v = this.type === 'number' ? Number(value) : value
     this.value = v
-    if (
-      this.options?.property &&
-      node.properties[this.options.property] !== undefined
-    ) {
-      node.setProperty(this.options.property, v)
+    const property = extensionValue(this.options)?.property
+    if (property && node.properties[property] !== undefined) {
+      node.setProperty(property, v)
     }
     const pos = canvas.graph_mouse
     this.callback?.(this.value, canvas, node, pos, e)
 
-    node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
+    node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()
   }
 

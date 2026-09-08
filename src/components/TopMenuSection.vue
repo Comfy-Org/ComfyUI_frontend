@@ -6,12 +6,31 @@
     @mouseleave="isTopMenuHovered = false"
   >
     <div class="flex gap-x-0.5">
-      <div class="min-w-0 flex-1">
+      <div
+        :inert="isActionBarsHidden"
+        :aria-hidden="isActionBarsHidden"
+        :class="
+          cn(
+            'max-h-16 min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-in-out',
+            isActionBarsHidden && 'max-h-0 -translate-x-8 opacity-0'
+          )
+        "
+      >
         <SubgraphBreadcrumb />
       </div>
 
       <div class="mx-1 flex flex-col items-end gap-1">
-        <div class="flex items-start gap-2">
+        <div
+          data-testid="top-menu-actionbars"
+          :inert="isActionBarsHidden"
+          :aria-hidden="isActionBarsHidden"
+          :class="
+            cn(
+              'flex max-h-24 items-start gap-2 overflow-hidden transition-all duration-300 ease-in-out',
+              isActionBarsHidden && 'max-h-0 translate-x-8 opacity-0'
+            )
+          "
+        >
           <div
             v-if="managerState.shouldShowManagerButtons.value || isCloud"
             class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
@@ -35,10 +54,11 @@
           </div>
 
           <div
-            class="pointer-events-auto z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            ref="actionbarCardRef"
+            data-testid="action-bar-card"
+            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
           >
             <div
-              ref="actionbarContainerRef"
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
@@ -56,7 +76,7 @@
               ></div>
 
               <ComfyActionbar
-                :top-menu-container="actionbarContainerRef"
+                :docked-progress-container="actionbarCardRef"
                 :queue-overlay-expanded="isQueueOverlayExpanded"
                 @update:progress-target="updateProgressTarget"
               />
@@ -64,7 +84,7 @@
                 v-if="isLoggedIn && !isIntegratedTabBar"
                 class="shrink-0"
               />
-              <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+              <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
@@ -103,9 +123,12 @@
               </div>
             </div>
             <FreeTierQuota v-if="!isActionbarFloating" />
+            <!-- Complement of ComfyActionbar's `!isDocked` mount (same storage
+                 key), so at most one caption renders in any menu state. -->
+            <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
-        <ErrorOverlay />
+        <ErrorOverlay v-if="!isActionBarsHidden" />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
@@ -147,6 +170,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
@@ -166,11 +190,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
@@ -185,6 +210,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+const isActionBarsHidden = computed(
+  () => agentNodeSelectionStore.isActionBarsHidden
+)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
 const { flags } = useFeatureFlags()
@@ -198,7 +227,7 @@ const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const actionbarContainerRef = ref<HTMLElement>()
+const actionbarCardRef = ref<HTMLElement>()
 const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
@@ -215,8 +244,7 @@ const isActionbarFloating = computed(
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
-  if (isLoggedIn.value && !isIntegratedTabBar.value) return true
-  if (isDesktop && !isIntegratedTabBar.value) return true
+  if (!isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false

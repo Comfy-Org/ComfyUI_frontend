@@ -12,7 +12,7 @@ async function openSubgraphById(comfyPage: ComfyPage, nodeId: string) {
     const node = window.app!.rootGraph.nodes.find(
       (candidate) => String(candidate.id) === targetNodeId
     )
-    if (!node || !('subgraph' in node) || !node.subgraph) {
+    if (!node?.isSubgraphNode()) {
       throw new Error(`Subgraph node ${targetNodeId} not found`)
     }
 
@@ -165,5 +165,29 @@ test.describe(
         })
       }
     )
+
+    test('Can add DOMWidget directly onto node', async ({ comfyPage }) => {
+      const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await comfyPage.contextMenu.openForVueNode(ksampler.header)
+      await comfyPage.contextMenu.clickMenuItem('Convert to Subgraph')
+
+      expect(
+        await comfyPage.page.evaluate(() => {
+          const subgraphNode = graph?.nodes.find(
+            (n) => n.title === 'New Subgraph'
+          )
+          if (!subgraphNode) throw new Error('Failed to find subgraph node')
+
+          const el = document.createElement('div')
+          el.dataset.testid = 'custom-node-widget'
+          subgraphNode.addDOMWidget('testwidget', 'testwidget', el)
+          return !!subgraphNode.widgets?.find((w) => w.type === 'testwidget')
+        }),
+        'widget exists on node'
+      ).toBeTruthy()
+      await expect(
+        comfyPage.page.getByTestId('custom-node-widget')
+      ).toBeAttached()
+    })
   }
 )

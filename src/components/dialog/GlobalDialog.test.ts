@@ -1,12 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
@@ -15,13 +14,88 @@ import {
 import UiDialog from '@/components/ui/dialog/Dialog.vue'
 import UiDialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import UiDialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
+
+vi.mock(
+  '@/platform/workspace/composables/useSubscriptionCheckout',
+  async () => {
+    const { computed, ref } = await import('vue')
+
+    return {
+      useSubscriptionCheckout: () => ({
+        checkoutStep: ref('pricing'),
+        isLoadingPreview: ref(false),
+        loadingTier: ref(null),
+        isSubscribing: ref(false),
+        isResubscribing: ref(false),
+        previewData: ref(null),
+        reactivationRequired: ref(false),
+        quoteIsCurrent: ref(false),
+        savedPaymentMethods: ref([]),
+        selectedSavedPaymentMethodId: ref(null),
+        selectedTierKey: ref(null),
+        selectedTeamStop: ref(null),
+        selectedBillingCycle: ref('yearly'),
+        activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        authenticationError: ref(null),
+        reconciliationOperationId: ref(null),
+        isPolling: ref(false),
+        isTeamCheckout: computed(() => false),
+        previewVariant: computed(() => null),
+        handleSubscribeClick: vi.fn(),
+        handleSubscribeTeamClick: vi.fn(),
+        handleBackToPricing: vi.fn(),
+        handleSuccessClose: vi.fn(),
+        handleAddCreditCard: vi.fn(),
+        handleConfirmTransition: vi.fn(),
+        handleTeamSubscribe: vi.fn(),
+        handleSubscriptionPayment: vi.fn(),
+        handleTeamSubscriptionPayment: vi.fn(),
+        applyPromotionCode: vi.fn(),
+        invalidateQuote: vi.fn(),
+        handleResubscribe: vi.fn()
+      })
+    }
+  }
+)
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
-    en: { g: { close: 'Close', maximizeDialog: 'Maximize' } }
+    en: {
+      g: {
+        cancel: 'Cancel',
+        close: 'Close',
+        maximizeDialog: 'Maximize',
+        save: 'Save'
+      },
+      builderToolbar: {
+        app: 'App',
+        appDescription: 'Opens as an app by default',
+        defaultViewLabel: 'By default, this workflow will open as:',
+        filename: 'Filename',
+        nodeGraph: 'Node graph',
+        nodeGraphDescription: 'Opens as node graph by default',
+        saveAs: 'Save as'
+      },
+      workspacePanel: {
+        members: {
+          creditLimitDialog: {
+            title: 'Set a monthly credit limit for {name}',
+            description: 'Description',
+            limitOption: 'Limit monthly credit usage to:',
+            noLimit: 'No limit',
+            warning: 'Already spent {credits}',
+            invalidLimit: 'Invalid limit',
+            update: 'Update limit'
+          }
+        }
+      }
+    }
   },
   missingWarn: false,
   fallbackWarn: false
@@ -31,6 +105,9 @@ const Body = defineComponent({
   name: 'Body',
   setup: () => () => h('p', { 'data-testid': 'body' }, 'body content')
 })
+
+const flushPromises = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 const ClosedNonModalDialog = defineComponent({
   name: 'ClosedNonModalDialog',
@@ -47,14 +124,6 @@ function mountDialog() {
 }
 
 describe('GlobalDialog renderer branching', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders the Reka branch when renderer is omitted (default)', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -119,14 +188,6 @@ describe('GlobalDialog renderer branching', () => {
 })
 
 describe('GlobalDialog Reka parity with PrimeVue', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('omits the close button when closable is false', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -185,6 +246,51 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
     expect(screen.getByText('Visible title')).toBeInTheDocument()
+  })
+
+  it('uses the credit-limit heading as the headless dialog name', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'set-member-credit-limit',
+      component: SetMemberCreditLimitDialogContent,
+      props: {
+        memberId: 'member-1',
+        memberName: 'Jane',
+        creditsUsed: 645,
+        currentLimit: 3000
+      },
+      dialogComponentProps: { renderer: 'reka', headless: true }
+    })
+
+    expect(
+      await screen.findByRole('dialog', {
+        name: 'Set a monthly credit limit for Jane'
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('opens the save dialog with an accessible name and description', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'builder-save',
+      component: BuilderSaveDialogContent,
+      props: { defaultFilename: 'workflow.json' },
+      dialogComponentProps: {
+        renderer: 'reka',
+        headless: true,
+        useAutomaticLabeling: true
+      }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save as' })
+    expect(dialog).toHaveAccessibleDescription('Filename')
+    expect(screen.getByLabelText('Filename')).toHaveFocus()
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('closes the dialog on Escape by default', async () => {
@@ -287,14 +393,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 })
 
 describe('GlobalDialog Reka overlay scrim', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    cleanup()
-  })
-
   it('renders a backdrop scrim for modal Reka dialogs', async () => {
     mountDialog()
     const store = useDialogStore()
@@ -358,6 +456,121 @@ describe('GlobalDialog Reka overlay scrim', () => {
     await waitFor(() =>
       expect(store.isDialogOpen('reka-scrim-dismiss')).toBe(false)
     )
+  })
+
+  it('keeps checkout open on the scrim while preserving explicit dismissal', async () => {
+    render(GlobalDialog, {
+      global: {
+        plugins: [PrimeVue, i18n],
+        stubs: {
+          UnifiedPricingTable: true,
+          SubscriptionAddPaymentPreviewWorkspace: true,
+          SubscriptionTransitionPreviewWorkspace: true,
+          SubscriptionSuccessWorkspace: true
+        }
+      }
+    })
+    const store = useDialogStore()
+    const user = userEvent.setup()
+    const key = 'subscription-required'
+
+    function openDialog() {
+      store.showDialog({
+        key,
+        component: SubscriptionRequiredDialogContentUnified,
+        props: { onClose: () => store.closeDialog({ key }) },
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          dismissableMask: false
+        }
+      })
+    }
+
+    openDialog()
+    const dialog = await screen.findByRole('dialog')
+    await user.click(screen.getByTestId('dialog-overlay'))
+    await nextTick()
+
+    expect(dialog).toHaveAttribute('data-state', 'open')
+    expect(store.isDialogOpen(key)).toBe(true)
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
+
+    openDialog()
+    await screen.findByRole('dialog')
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() => expect(store.isDialogOpen(key)).toBe(false))
+  })
+})
+
+describe('GlobalDialog Reka focus-outside binding', () => {
+  // Reka's DismissableLayer fires focus-outside off a real focus transition
+  // (blur inside the layer, then focusin on the new target), so drive the
+  // mounted binding by moving focus to a fresh element outside the dialog
+  // rather than dispatching a synthetic event.
+  async function moveFocusToPlainElementOutside() {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    return () => outside.remove()
+  }
+
+  it('dismisses on focus-outside by default', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'focus-default',
+      title: 'Focus dismisses',
+      component: Body,
+      dialogComponentProps: { renderer: 'reka', modal: false }
+    })
+
+    await screen.findByRole('dialog')
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      await waitFor(() =>
+        expect(store.isDialogOpen('focus-default')).toBe(false)
+      )
+    } finally {
+      removeOutside()
+    }
+  })
+
+  it('does not dismiss on focus-outside when dismissOnFocusOutside is false', async () => {
+    // Exercises GlobalDialog's own template wiring
+    // `@focus-outside="(e) => onRekaFocusOutside(e, item.dialogComponentProps)"`
+    // through a mounted dialog — the direct `onRekaFocusOutside` unit test can't
+    // catch a regression that drops the props argument here. The positive
+    // control above proves the focus-outside path really fires, so this staying
+    // open isolates the opt-out flag rather than a dead event.
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'focus-opted-out',
+      title: 'Focus blocked',
+      component: Body,
+      dialogComponentProps: {
+        renderer: 'reka',
+        modal: false,
+        dismissOnFocusOutside: false
+      }
+    })
+
+    await screen.findByRole('dialog')
+    const removeOutside = await moveFocusToPlainElementOutside()
+    try {
+      // Drain every pending microtask so a wrongful dismiss lands before we
+      // assert, regardless of how many awaits deep the handler chain runs.
+      await flushPromises()
+      expect(store.isDialogOpen('focus-opted-out')).toBe(true)
+    } finally {
+      removeOutside()
+    }
   })
 })
 
@@ -426,7 +639,7 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay'])(
+  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
     (className) => {
       const overlay = document.createElement('div')

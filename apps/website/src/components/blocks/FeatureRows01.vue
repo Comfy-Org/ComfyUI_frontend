@@ -49,6 +49,10 @@ const {
       {{ heading }}
     </SectionHeader>
 
+    <div v-if="$slots.media" class="mt-12 lg:mt-16">
+      <slot name="media" />
+    </div>
+
     <div class="mt-16 flex flex-col gap-4 lg:gap-6">
       <GlassCard
         v-for="(row, i) in rows"

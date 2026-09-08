@@ -1,7 +1,7 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RendererView } from '@/renderer/three/RendererView'
 import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
@@ -144,7 +144,6 @@ describe('SceneManager', () => {
   let manager: SceneManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     renderer = makeRenderer()
     camera = new THREE.PerspectiveCamera()
     events = makeMockEventManager()
@@ -154,10 +153,6 @@ describe('SceneManager', () => {
       () => ({}) as unknown as OrbitControls,
       events
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('construction', () => {
@@ -640,10 +635,6 @@ function makeSceneManager(
 }
 
 describe('SceneManager.captureScene', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('resolves with scene, mask, and normal data URLs', async () => {
     const { manager } = makeSceneManager()
     const result = await manager.captureScene(800, 600)

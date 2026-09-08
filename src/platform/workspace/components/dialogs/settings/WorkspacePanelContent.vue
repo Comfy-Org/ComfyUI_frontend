@@ -4,6 +4,7 @@
       <WorkspaceProfilePic
         class="size-12 text-3xl!"
         :workspace-name="workspaceName"
+        :subscription-tier="activeWorkspace?.subscriptionTier"
       />
       <h1 class="text-3xl font-semibold text-base-foreground">
         {{ workspaceName }}
@@ -81,19 +82,22 @@ const { defaultTab = 'plan' } = defineProps<{
 }>()
 
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, members } = storeToRefs(workspaceStore)
+const { workspaceName, isInPersonalWorkspace, members, activeWorkspace } =
+  storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole } = useWorkspaceUI()
-const { hasTeamPlan, isPlanLoading } = useTeamPlan()
+const { maxSeats, hasMemberSeats, isPlanLoading } = useTeamPlan()
 const activeTab = ref(defaultTab)
 
 const showMembersTabCount = computed(
-  () => hasTeamPlan.value && members.value.length > 1
+  () => hasMemberSeats.value && members.value.length > 1
 )
 
 whenever(
-  () => hasTeamPlan.value && !isPlanLoading.value,
+  () =>
+    (!isInPersonalWorkspace.value || maxSeats.value !== 1) &&
+    !isPlanLoading.value,
   () => Promise.allSettled([fetchMembers(), fetchPendingInvites()]),
   { immediate: true }
 )

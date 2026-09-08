@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { effectScope, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -28,7 +27,6 @@ function nextFrame() {
 
 describe('useDismissOnCanvasGesture', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     panCanvasTo(0, 0)
   })
 

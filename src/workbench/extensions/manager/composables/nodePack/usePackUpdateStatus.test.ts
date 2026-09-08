@@ -24,11 +24,10 @@ function makePack(overrides: Partial<NodePack> = {}): NodePack {
     name: 'Pack',
     latest_version: { version: '2.0.0' },
     ...overrides
-  } as NodePack
+  }
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
   mockIsPackInstalled.mockReturnValue(true)
   mockIsPackEnabled.mockReturnValue(true)
   mockGetInstalledPackVersion.mockReturnValue('1.0.0')

@@ -7,20 +7,24 @@ type Subscription = BillingContext['subscription']['value']
 /** The billing state a story wants the stub to report. */
 export interface BillingContextMockState {
   subscription: Subscription
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
   subscriptionStatus: BillingContext['subscriptionStatus']['value']
   renewalDate: string | null
+  maxSeats: number | null
+  occupiedSeats: number | null
 }
 
 const defaultState: BillingContextMockState = {
   subscription: null,
-  isActiveSubscription: false,
+  canAccessSubscriptionFeatures: false,
   isTeamPlan: false,
   billingStatus: null,
   subscriptionStatus: null,
-  renewalDate: null
+  renewalDate: null,
+  maxSeats: null,
+  occupiedSeats: null
 }
 
 const state = ref<BillingContextMockState>({ ...defaultState })
@@ -52,10 +56,17 @@ export function useBillingContext(): BillingContext {
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
     currentTeamCreditStop: computed(() => null),
+    maxSeats: computed(() => state.value.maxSeats),
+    occupiedSeats: computed(() => state.value.occupiedSeats),
     isLoading: ref(false),
     error: ref<string | null>(null),
-    isActiveSubscription: computed(() => state.value.isActiveSubscription),
-    canRunWorkflows: computed(() => state.value.isActiveSubscription),
+    canAccessSubscriptionFeatures: computed(
+      () => state.value.canAccessSubscriptionFeatures
+    ),
+    canRunWorkflows: computed(() => state.value.canAccessSubscriptionFeatures),
+    showsSubscribeToRunPrompt: computed(
+      () => !state.value.canAccessSubscriptionFeatures
+    ),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),
     isTeamPlan: computed(() => state.value.isTeamPlan),

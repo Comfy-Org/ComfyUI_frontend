@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { AnchorHTMLAttributes } from 'vue'
 
 import Button from '../ui/button/Button.vue'
@@ -16,11 +18,22 @@ type TermsLink = {
   href: string
 }
 
-const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
+const {
+  heading,
+  subtitle,
+  subtitleClass,
+  primaryCta,
+  secondaryCta,
+  termsLink,
+  compact = false
+} = defineProps<{
   heading: string
+  subtitle?: string
+  subtitleClass?: string
   primaryCta: Cta
   secondaryCta?: Cta
   termsLink?: TermsLink
+  compact?: boolean
 }>()
 </script>
 
@@ -29,10 +42,30 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <h2
-      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl/snug"
+      :aria-label="heading"
+      :class="
+        cn(
+          'max-w-3xl font-light tracking-tight text-pretty whitespace-pre-line text-primary-comfy-canvas',
+          compact
+            ? 'text-2xl/snug lg:text-4xl/snug'
+            : 'text-4xl/snug lg:text-6xl/snug'
+        )
+      "
     >
-      {{ heading }}
+      <slot name="heading">{{ heading }}</slot>
     </h2>
+
+    <p
+      v-if="subtitle"
+      :class="
+        cn(
+          'mt-4 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas/80 lg:text-lg/relaxed',
+          subtitleClass
+        )
+      "
+    >
+      {{ subtitle }}
+    </p>
 
     <div class="mt-10 flex flex-col gap-4 sm:flex-row lg:mt-12">
       <Button
@@ -41,7 +74,7 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
         :target="primaryCta.target"
         :rel="resolveRel(primaryCta)"
         variant="default"
-        size="lg"
+        :size="compact ? 'default' : 'lg'"
       >
         {{ primaryCta.label }}
       </Button>
@@ -52,7 +85,7 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
         :target="secondaryCta.target"
         :rel="resolveRel(secondaryCta)"
         variant="outline"
-        size="lg"
+        :size="compact ? 'default' : 'lg'"
       >
         {{ secondaryCta.label }}
       </Button>

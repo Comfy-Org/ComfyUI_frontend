@@ -137,6 +137,7 @@ export const INPUT_LEVEL_VALIDATION_ERROR_TYPES = new Set([
 ])
 
 export const NODE_LEVEL_VALIDATION_ERROR_TYPES = new Set([
+  'PARTNER_NODE_DISABLED',
   'exception_during_validation',
   'dependency_cycle'
 ])

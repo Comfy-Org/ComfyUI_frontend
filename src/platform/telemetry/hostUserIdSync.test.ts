@@ -43,7 +43,6 @@ function startSync(): void {
 
 describe('host user ID sync', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.authStore.isInitialized = false
     hoisted.authStore.currentUser = null
   })

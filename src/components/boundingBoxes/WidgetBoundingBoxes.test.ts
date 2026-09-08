@@ -1,8 +1,7 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
@@ -10,10 +9,17 @@ import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
 
-const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
+const { appState } = vi.hoisted(() => {
+  const appState: { node: unknown } = { node: null }
+  return { appState }
+})
 
 vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => appState.node } } }
+  app: {
+    canvas: { graph: { getNodeById: () => appState.node } },
+    nodeOutputs: {},
+    nodePreviewImages: {}
+  }
 }))
 
 const i18n = createI18n({
@@ -66,18 +72,17 @@ function prepCanvas(canvas: HTMLCanvasElement) {
   })
   canvas.getContext = (() =>
     fakeCtx) as unknown as HTMLCanvasElement['getContext']
-  canvas.getBoundingClientRect = () =>
-    ({
-      left: 0,
-      top: 0,
-      right: 100,
-      bottom: 100,
-      width: 100,
-      height: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  canvas.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    right: 100,
+    bottom: 100,
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
   canvas.setPointerCapture = () => {}
   canvas.releasePointerCapture = () => {}
 }
@@ -98,7 +103,6 @@ const lastBoxes = (emitted: () => Record<string, unknown[][]>) => {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
   appState.node = {
     widgets: [
       { name: 'width', value: 512 },
@@ -109,10 +113,6 @@ beforeEach(() => {
   }
   vi.stubGlobal('requestAnimationFrame', () => 1)
   vi.stubGlobal('cancelAnimationFrame', () => {})
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 describe('WidgetBoundingBoxes', () => {

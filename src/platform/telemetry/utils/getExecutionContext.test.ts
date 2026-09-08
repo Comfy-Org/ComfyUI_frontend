@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const hoisted = vi.hoisted(() => ({
-  mockNodeDefsByName: {} as Record<string, unknown>,
+  mockNodeDefsByName: {} as Partial<Record<string, Record<string, unknown>>>,
   mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[],
   mockActiveWorkflow: null as null | {
     filename: string
@@ -15,7 +15,12 @@ const hoisted = vi.hoisted(() => ({
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
-    nodeDefsByName: hoisted.mockNodeDefsByName
+    fromLGraphNode: (node: Pick<LGraphNode, 'type'>) => {
+      const nodeDef = hoisted.mockNodeDefsByName[node.type]
+      return nodeDef
+        ? { nodeSource: { type: 'unknown' }, ...nodeDef }
+        : undefined
+    }
   })
 }))
 
@@ -68,7 +73,6 @@ import { getExecutionContext } from './getExecutionContext'
 
 describe('getExecutionContext', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.mockNodes.length = 0
     for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
       delete hoisted.mockNodeDefsByName[key]

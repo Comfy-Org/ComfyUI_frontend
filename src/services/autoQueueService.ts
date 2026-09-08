@@ -1,11 +1,12 @@
+import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   isInstantRunningMode,
-  useQueuePendingTaskCountStore,
   useQueueSettingsStore
-} from '@/stores/queueStore'
+} from '@/stores/queueSettingsStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 export function setupAutoQueueHandler() {
@@ -27,14 +28,20 @@ export function setupAutoQueueHandler() {
     { detached: true, flush: 'sync' }
   )
 
-  api.addEventListener('graphChanged', () => {
+  api.addEventListener('autoQueueGraphChanged', () => {
+    // Skip the whole submission while gated: never enqueue a prompt the gate
+    // would drop, and never treat queuePrompt's false as gate rejection — it
+    // also means the item was queued behind an active processor.
+    if (partnerRunGateBlocksAutoQueue()) return
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true
       } else {
         graphHasChanged = false
         // Queue the prompt in the background
-        void app.queuePrompt(0, queueSettingsStore.batchCount)
+        void app.queuePrompt(0, queueSettingsStore.batchCount, {
+          intent: { trigger_source: 'auto_queue' }
+        })
         internalCount++
       }
     }
@@ -43,20 +50,22 @@ export function setupAutoQueueHandler() {
   queueCountStore.$subscribe(
     async () => {
       internalCount = queueCountStore.count
-      if (!internalCount && !app.lastExecutionError) {
+      if (
+        !internalCount &&
+        !app.lastExecutionError &&
+        !partnerRunGateBlocksAutoQueue()
+      ) {
         if (
           isInstantRunningMode(queueSettingsStore.mode) ||
           (queueSettingsStore.mode === 'change' && graphHasChanged)
         ) {
           graphHasChanged = false
-          await app.queuePrompt(
-            0,
-            queueSettingsStore.batchCount,
-            undefined,
-            isInstantRunningMode(queueSettingsStore.mode)
-              ? instantWorkflow
-              : undefined
-          )
+          await app.queuePrompt(0, queueSettingsStore.batchCount, {
+            intent: { trigger_source: 'auto_queue' },
+            ...(isInstantRunningMode(queueSettingsStore.mode)
+              ? { workflow: instantWorkflow }
+              : {})
+          })
         }
       }
     },

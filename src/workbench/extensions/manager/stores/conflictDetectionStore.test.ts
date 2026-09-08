@@ -1,15 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 describe('useConflictDetectionStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   const mockConflictedPackages: ConflictDetectionResult[] = [
     {
       package_id: 'ComfyUI-Manager',

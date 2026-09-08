@@ -36,15 +36,7 @@
         >
           <i class="icon-[lucide--monitor-x] size-4" />
         </Button>
-        <Button
-          variant="textonly"
-          size="icon-sm"
-          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
-          :aria-label="t('rightSidePanel.locateNode')"
-          @click.stop="handleLocateNode"
-        >
-          <i class="icon-[lucide--locate] size-4" />
-        </Button>
+        <LocateNodeButton :label="locateLabel" @locate="handleLocateNode" />
       </div>
     </div>
 
@@ -176,7 +168,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
+import LocateNodeButton from './LocateNodeButton.vue'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
 
 import type { ErrorCardData, ErrorItem } from './types'
@@ -199,6 +193,12 @@ const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
 )
+const locateLabel = computed(() => {
+  const item = card.nodeTitle || card.title
+  return item
+    ? t('rightSidePanel.locateNodeFor', { item }, { escapeParameter: false })
+    : t('rightSidePanel.locateNode')
+})
 const runtimeDetailsControlIds = computed(() =>
   card.errors
     .map((error, idx) => (error.isRuntimeError ? getRuntimeDetailsId(idx) : ''))
@@ -217,6 +217,10 @@ function handleLocateNode() {
 }
 
 function handleCopyError(idx: number) {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_tab_copy_error_clicked',
+    element_group: 'errors_panel'
+  })
   const details = displayedDetailsMap.value[idx]
   const message = getCopyMessage(card.errors[idx])
   emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))

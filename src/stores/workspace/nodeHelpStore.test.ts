@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
@@ -14,10 +12,6 @@ describe('nodeHelpStore', () => {
     outputs: [],
     python_module: 'comfy.test_node'
   }
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   it('should initialize with empty state', () => {
     const nodeHelpStore = useNodeHelpStore()

@@ -63,7 +63,6 @@ describe('ErrorNodeCard.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     cardIdCounter = 0
     mockGetLogs.mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
@@ -82,6 +81,7 @@ describe('ErrorNodeCard.vue', () => {
           },
           rightSidePanel: {
             locateNode: 'Locate Node',
+            locateNodeFor: 'Locate {item}',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues for related problems',
             getHelpTooltip:
@@ -252,6 +252,14 @@ describe('ErrorNodeCard.vue', () => {
     await user.click(screen.getByRole('button', { name: 'KSampler' }))
 
     expect(onLocateNode).toHaveBeenCalledWith('10')
+  })
+
+  it('exposes a node-specific accessible name on the locate button', () => {
+    renderCard(makeRuntimeErrorCard())
+
+    expect(
+      screen.getByRole('button', { name: 'Locate KSampler' })
+    ).toBeInTheDocument()
   })
 
   it('does not generate report for non-runtime errors', async () => {

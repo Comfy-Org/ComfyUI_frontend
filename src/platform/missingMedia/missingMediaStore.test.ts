@@ -1,5 +1,6 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
@@ -37,10 +38,6 @@ function makeCandidate(
 }
 
 describe('useMissingMediaStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('starts with no missing media', () => {
     const store = useMissingMediaStore()
     expect(store.missingMediaCandidates).toBeNull()
@@ -212,6 +209,19 @@ describe('useMissingMediaStore', () => {
       store.removeMissingMediaByNodeId('1')
       expect(store.missingMediaCandidates).toBeNull()
     })
+
+    it('does not remove a node whose id only shares a numeric prefix', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65', 'matching.png'),
+        makeCandidate('650', 'numeric-sibling.png')
+      ])
+
+      store.removeMissingMediaByNodeId('65')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('numeric-sibling.png')
+    })
   })
 
   describe('removeMissingMediaByPrefix', () => {
@@ -305,6 +315,24 @@ describe('useMissingMediaStore', () => {
 
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('orphan.png')
+    })
+  })
+
+  describe('promoted host identity', () => {
+    it('finds missing media by the promoted host widget identity', () => {
+      const store = useMissingMediaStore()
+      const hostExecutionId = createNodeExecutionId([65])
+      store.setMissingMedia([
+        {
+          ...makeCandidate('65', 'host.png'),
+          widgetName: 'outer_image'
+        }
+      ])
+
+      expect(store.isWidgetMissingMedia(hostExecutionId, 'outer_image')).toBe(
+        true
+      )
+      expect(store.isWidgetMissingMedia(hostExecutionId, 'other')).toBe(false)
     })
   })
 })

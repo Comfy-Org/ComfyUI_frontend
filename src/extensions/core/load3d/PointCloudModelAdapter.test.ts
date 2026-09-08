@@ -64,10 +64,6 @@ function makeContext(
 }
 
 describe('PointCloudModelAdapter', () => {
-  beforeEach(() => {
-    mockSettingGet.mockReset()
-  })
-
   describe('identity', () => {
     it('handles the ply extension', () => {
       const adapter = new PointCloudModelAdapter()

@@ -7,7 +7,7 @@ import {
   liftNodeErrorsToBoundary,
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -16,6 +16,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import type {
   ExecutionErrorWsMessage,
   NodeError,
@@ -31,6 +32,8 @@ import {
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
@@ -47,6 +50,12 @@ interface SlotNodeErrorClearTarget {
   useRecordedBounds?: boolean
 }
 
+interface RunErrorState {
+  nodeErrors: Record<string, NodeError> | null
+  executionError: ExecutionErrorWsMessage | null
+  promptError: PromptError | null
+}
+
 /** Execution error state: node errors, runtime errors, prompt errors, and missing assets. */
 export const useExecutionErrorStore = defineStore('executionError', () => {
   const workflowStore = useWorkflowStore()
@@ -55,24 +64,170 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const missingNodesStore = useMissingNodesErrorStore()
   const missingMediaStore = useMissingMediaStore()
 
-  const lastNodeErrors = ref<Record<string, NodeError> | null>(null)
-  const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
-  const lastPromptError = ref<PromptError | null>(null)
-
+  /**
+   * Run errors belong to the workflow that produced them, so they are parked
+   * under its path and root graph id and follow that graph back into view
+   * rather than being discarded when another workflow is loaded.
+   */
+  const runErrorsByWorkflow = ref(new Map<string, RunErrorState>())
+  const activeRunErrorKey = ref<string | null>(`:${zeroUuid}`)
   const isErrorOverlayOpen = ref(false)
 
-  /** Replaces the full record; empty or null means the run produced no errors. */
-  function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
-    lastNodeErrors.value =
-      nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+  const activeRunErrors = computed<RunErrorState | undefined>(() =>
+    activeRunErrorKey.value === null
+      ? undefined
+      : runErrorsByWorkflow.value.get(activeRunErrorKey.value)
+  )
+
+  const lastNodeErrors = computed(
+    () => activeRunErrors.value?.nodeErrors ?? null
+  )
+  const lastExecutionError = computed(
+    () => activeRunErrors.value?.executionError ?? null
+  )
+  const lastPromptError = computed(
+    () => activeRunErrors.value?.promptError ?? null
+  )
+
+  function updateRunErrors(patch: Partial<RunErrorState>, key: string | null) {
+    if (key === null) return
+
+    const next: RunErrorState = {
+      nodeErrors: null,
+      executionError: null,
+      promptError: null,
+      ...runErrorsByWorkflow.value.get(key),
+      ...patch
+    }
+
+    if (Object.values(next).every((value) => value === null)) {
+      runErrorsByWorkflow.value.delete(key)
+    } else {
+      runErrorsByWorkflow.value.set(key, next)
+    }
   }
 
-  function recordExecutionError(detail: ExecutionErrorWsMessage) {
-    lastExecutionError.value = detail
+  function runErrorKey(graphId: UUID, workflowPath?: string) {
+    return `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
   }
 
-  function recordPromptError(promptError: PromptError) {
-    lastPromptError.value = promptError
+  function moveRunErrors(
+    graphId: UUID,
+    oldWorkflowPath: string,
+    newWorkflowPath: string
+  ) {
+    const oldKey = runErrorKey(graphId, oldWorkflowPath)
+    const newKey = runErrorKey(graphId, newWorkflowPath)
+    if (oldKey === newKey) return
+
+    const runErrors = runErrorsByWorkflow.value.get(oldKey)
+    if (runErrors) runErrorsByWorkflow.value.set(newKey, runErrors)
+    else runErrorsByWorkflow.value.delete(newKey)
+    runErrorsByWorkflow.value.delete(oldKey)
+
+    if (activeRunErrorKey.value === oldKey) {
+      activeRunErrorKey.value = newKey
+    }
+  }
+
+  function captureRunErrorKey() {
+    return activeRunErrorKey.value
+  }
+
+  /**
+   * Point the store at the run errors of `graphId`. `null` detaches it, so a
+   * discarded graph shows nothing until the next one is loaded. The overlay is
+   * dismissed on every move so it only ever reopens for the graph in front.
+   */
+  function setActiveGraph(graphId: UUID | null, workflowPath?: string) {
+    const key = graphId === null ? null : runErrorKey(graphId, workflowPath)
+    if (key === activeRunErrorKey.value) return
+    activeRunErrorKey.value = key
+    isErrorOverlayOpen.value = false
+  }
+
+  const pendingAddedNodeScans = new WeakMap<
+    LGraph,
+    Map<NodeExecutionId, number>
+  >()
+  const pendingAddedNodeScanRevision = ref(0)
+
+  function beginAddedNodeErrorScan(
+    rootGraph: LGraph,
+    executionId: NodeExecutionId
+  ): () => void {
+    const scansForGraph = pendingAddedNodeScans.get(rootGraph) ?? new Map()
+    scansForGraph.set(executionId, (scansForGraph.get(executionId) ?? 0) + 1)
+    pendingAddedNodeScans.set(rootGraph, scansForGraph)
+    pendingAddedNodeScanRevision.value++
+
+    let finished = false
+    return () => {
+      if (finished) return
+      finished = true
+
+      const remaining = (scansForGraph.get(executionId) ?? 1) - 1
+      if (remaining > 0) scansForGraph.set(executionId, remaining)
+      else scansForGraph.delete(executionId)
+      pendingAddedNodeScanRevision.value++
+    }
+  }
+
+  function hasPendingAddedNodeErrorScan(
+    rootGraph: LGraph,
+    executionId: NodeExecutionId
+  ): boolean {
+    // Subscribe callers to changes in the non-reactive WeakMap.
+    void pendingAddedNodeScanRevision.value
+    return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
+  }
+
+  /**
+   * Replaces the full record; empty or null means the run produced no errors.
+   *
+   * `key` files the errors against the workflow that produced them, which is
+   * not necessarily the one on screen. Build it with `runErrorKey`. It defaults
+   * to the visible workflow for callers that record synchronously while
+   * submitting it.
+   */
+  function recordNodeErrors(
+    nodeErrors: Record<string, NodeError> | null,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors(
+      {
+        nodeErrors:
+          nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+      },
+      key
+    )
+  }
+
+  function recordExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors({ executionError: detail }, key)
+  }
+
+  function showExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    if (key === null || key !== activeRunErrorKey.value) return
+
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      showErrorOverlay()
+    } else {
+      useDialogService().showExecutionErrorDialog(detail)
+    }
+  }
+
+  function recordPromptError(
+    promptError: PromptError,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors({ promptError }, key)
   }
 
   function showErrorOverlay() {
@@ -83,29 +238,28 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state.
-   *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
-   *  Missing models are cleared separately during workflow load/clean paths. */
-  function clearAllErrors() {
-    lastExecutionError.value = null
-    lastPromptError.value = null
-    lastNodeErrors.value = null
-    missingNodesStore.setMissingNodeTypes([])
+  /** Clear error state produced by a run. Missing-resource state describes the
+   *  loaded graph rather than the run, so only replacing or discarding the
+   *  graph invalidates it. */
+  function clearRunErrors() {
+    if (activeRunErrorKey.value !== null) {
+      runErrorsByWorkflow.value.delete(activeRunErrorKey.value)
+    }
     isErrorOverlayOpen.value = false
   }
 
-  function clearExecutionStartErrors() {
-    lastExecutionError.value = null
-    lastPromptError.value = null
-    if (!lastNodeErrors.value) {
+  function clearExecutionStartErrors(
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors({ executionError: null, promptError: null }, key)
+    if (key === activeRunErrorKey.value && !lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
-  function clearPromptError() {
-    lastPromptError.value = null
+  function clearPromptError(key: string | null = activeRunErrorKey.value) {
+    updateRunErrors({ promptError: null }, key)
   }
 
   function clearSimpleNodeErrorsFromRecord(
@@ -113,8 +267,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     executionId: NodeExecutionId,
     slotName?: string
   ): Record<string, NodeError> | null {
+    if (!(executionId in nodeErrors)) return null
     const nodeError = nodeErrors[executionId]
-    if (!nodeError) return null
 
     const isSlotScoped = slotName !== undefined
     const relevantErrors = isSlotScoped
@@ -228,8 +382,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     value: number,
     callerOptions: { min?: number; max?: number }
   ): boolean {
+    if (!(target.executionId in nodeErrors)) return false
     const nodeError = nodeErrors[target.executionId]
-    if (!nodeError) return false
 
     const errors = errorsForSlot(nodeError.errors, target.slotName)
     const options = target.useRecordedBounds
@@ -255,7 +409,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
 
     if (updated === lastNodeErrors.value) return
-    lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
+    updateRunErrors(
+      { nodeErrors: Object.keys(updated).length > 0 ? updated : null },
+      activeRunErrorKey.value
+    )
   }
 
   /**
@@ -394,14 +551,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       : lastNodeErrors.value
   )
 
+  const hasMissingError = computed(
+    () =>
+      missingNodesStore.hasMissingNodes ||
+      missingModelStore.hasMissingModels ||
+      missingMediaStore.hasMissingMedia
+  )
+
   const hasAnyError = computed(
     () =>
       hasExecutionError.value ||
       hasPromptError.value ||
       hasNodeError.value ||
-      missingNodesStore.hasMissingNodes ||
-      missingModelStore.hasMissingModels ||
-      missingMediaStore.hasMissingMedia
+      hasMissingError.value
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -411,7 +573,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
-      if (nodeId !== null && nodeId !== undefined) {
+      if (nodeId != null) {
         ids.push(String(nodeId))
       }
     }
@@ -479,7 +641,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       for (const [executionId, nodeError] of Object.entries(
         surfacedNodeErrors.value
       )) {
-        const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
+        const locatorId = executionIdToNodeLocatorId(
+          app.rootGraphOrUndefined,
+          executionId
+        )
         if (locatorId) {
           map[locatorId] = nodeError
         }
@@ -535,22 +700,29 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   return {
     // Read-only state
-    lastNodeErrors: computed(() => lastNodeErrors.value),
-    lastExecutionError: computed(() => lastExecutionError.value),
-    lastPromptError: computed(() => lastPromptError.value),
+    lastNodeErrors,
+    lastExecutionError,
+    lastPromptError,
 
     // Recording
     recordNodeErrors,
     recordExecutionError,
     recordPromptError,
 
+    // Workflow scoping
+    captureRunErrorKey,
+    runErrorKey,
+    moveRunErrors,
+    setActiveGraph,
+
     // Clearing
-    clearAllErrors,
+    clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
 
     // Overlay UI
     isErrorOverlayOpen,
+    showExecutionError,
     showErrorOverlay,
     dismissErrorOverlay,
 
@@ -559,11 +731,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
     totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
+
+    // Added-node scan coordination
+    beginAddedNodeErrorScan,
+    hasPendingAddedNodeErrorScan,
 
     // Clearing (targeted)
     clearSimpleNodeErrors,

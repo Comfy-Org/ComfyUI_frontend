@@ -8,7 +8,10 @@ import type {
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -30,6 +33,24 @@ function normalizePreviewExposure(
     ...exposure,
     sourceNodeId: toNodeId(exposure.sourceNodeId)
   }
+}
+
+export function getPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
+  const locator = tryGetPreviewExposureHostLocator(host)
+  if (locator) return locator
+  console.error(
+    `Cannot create preview exposure host locator for node ${String(host.id)}`
+  )
+  return null
+}
+
+export function tryGetPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
+  const graphId = host.graph?.isRootGraph ? null : (host.graph?.id ?? null)
+  return createNodeLocatorId(graphId, host.id)
 }
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
@@ -104,6 +125,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures(rootGraphId, hostNodeLocator, next)
   }
 
+  function clearHost(rootGraphId: UUID, hostNodeLocator: string): void {
+    const hosts = exposures.value.get(rootGraphId)
+    if (!hosts) return
+    hosts.delete(hostNodeLocator)
+    if (hosts.size === 0) exposures.value.delete(rootGraphId)
+  }
+
   function clearGraph(rootGraphId: UUID): void {
     exposures.value.delete(rootGraphId)
   }
@@ -141,6 +169,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures,
     addExposure,
     removeExposure,
+    clearHost,
     clearGraph,
     resolveChain
   }

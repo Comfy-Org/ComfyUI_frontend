@@ -9,36 +9,52 @@
         v-if="isInFolderView"
         class="flex w-full items-center justify-between gap-2"
       >
-        <div class="flex items-center gap-2">
-          <span class="font-bold">{{ $t('assetBrowser.jobId') }}:</span>
-          <span class="text-sm">{{ folderJobId?.substring(0, 8) }}</span>
-          <button
-            class="m-0 cursor-pointer border-0 bg-transparent p-0 outline-0"
-            role="button"
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <Button
+            v-tooltip.bottom="{
+              value: $t('sideToolbar.backToAssets'),
+              showDelay: 300
+            }"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('sideToolbar.backToAssets')"
+            @click="exitFolderView"
+          >
+            <i class="icon-[lucide--arrow-left] size-4" />
+          </Button>
+          <span class="shrink-0 font-bold">
+            {{ $t('assetBrowser.jobId') }}:
+          </span>
+          <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
+          <Button
+            v-tooltip.bottom="{
+              value: $t('g.copyJobId'),
+              showDelay: 300
+            }"
+            variant="textonly"
+            size="icon"
+            type="button"
+            class="shrink-0"
+            :aria-label="$t('g.copyJobId')"
             @click="copyJobId"
           >
-            <i class="icon-[lucide--copy] text-sm"></i>
-          </button>
+            <i class="icon-[lucide--copy] size-4" />
+          </Button>
         </div>
-        <div>
+        <div class="shrink-0">
           <span>{{ formattedExecutionTime }}</span>
         </div>
       </div>
     </template>
     <template #header>
-      <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <Button variant="secondary" size="lg" @click="exitFolderView">
-          <i class="icon-[lucide--arrow-left] size-4" />
-          <span>{{ $t('sideToolbar.backToAssets') }}</span>
-        </Button>
-      </div>
-
       <!-- Filter Bar -->
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
+        v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
         bottom-divider
         :show-generation-time-sort="activeTab === 'output'"
@@ -57,7 +73,8 @@
     <template #body>
       <div
         v-if="showLoadingState"
-        class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2 p-2"
+        class="grid gap-2 p-2"
+        :style="skeletonGridStyle"
       >
         <div
           v-for="n in skeletonCount"
@@ -107,7 +124,9 @@
             :is-selected
             :show-output-count
             :get-output-count
+            :grid-mode
             @select-asset="handleAssetSelect"
+            @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
             @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
@@ -174,6 +193,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  toValue,
   useTemplateRef,
   watch
 } from 'vue'
@@ -191,8 +211,15 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
+import {
+  getMediaAssetGridColumns,
+  MEDIA_ASSET_VIEW_MODE
+} from '@/platform/assets/components/mediaAssetViewOptions'
+import type {
+  MediaAssetGridMode,
+  MediaAssetViewMode
+} from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -202,17 +229,21 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  getAssetSubfolder,
+  getAssetUrl
+} from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -227,11 +258,19 @@ const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
-const viewMode = useStorage<'list' | 'grid'>(
+const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
-  'grid'
+  MEDIA_ASSET_VIEW_MODE.grid
 )
-const isListView = computed(() => viewMode.value === 'list')
+const isListView = computed(() => viewMode.value === MEDIA_ASSET_VIEW_MODE.list)
+const gridMode = computed<MediaAssetGridMode>(() =>
+  viewMode.value === MEDIA_ASSET_VIEW_MODE.gridSmall
+    ? MEDIA_ASSET_VIEW_MODE.gridSmall
+    : MEDIA_ASSET_VIEW_MODE.grid
+)
+const skeletonGridStyle = computed(() => ({
+  gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)
+}))
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -264,15 +303,14 @@ const formattedExecutionTime = computed(() => {
 })
 
 const toast = useToast()
-
-const inputAssets = useAssetsApi('input')
-const outputAssets = useAssetsApi('output')
+const assetsStore = useAssetsStore()
 
 // Asset selection
 const {
   isSelected,
   selectedIds,
   handleAssetClick,
+  toggleAssetSelection,
   selectAll,
   setSelectedIds,
   hasSelection,
@@ -300,11 +338,12 @@ const {
 } = useMediaAssetActions()
 
 const currentAssets = computed(() =>
-  activeTab.value === 'input' ? inputAssets : outputAssets
+  activeTab.value === 'input'
+    ? assetsStore.inputAssets
+    : assetsStore.outputAssets
 )
-const loading = computed(() => currentAssets.value.loading.value)
-const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+const loading = computed(() => toValue(currentAssets.value.isLoading))
+const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -337,7 +376,7 @@ const baseAssets = computed(() => {
 })
 
 // Use media asset filtering composable
-const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
+const { searchQuery, sortBy, dateFilter, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
 const displayAssets = computed(() => {
@@ -416,33 +455,22 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed(() => {
+const galleryItems = computed<AugmentedResultItem[]>(() => {
   return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
-    const resultItem = new ResultItemImpl({
+    return {
       filename: asset.name,
-      subfolder: '',
+      subfolder: getAssetSubfolder(asset),
       type: 'output',
       nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType
-    })
-
-    Object.defineProperty(resultItem, 'url', {
-      get() {
-        return asset.preview_url || ''
-      },
-      configurable: true
-    })
-
-    return resultItem
+      mediaType: mediaType === 'image' ? 'images' : mediaType,
+      url: asset.preview_url || ''
+    }
   })
 })
 
 const refreshAssets = async () => {
-  await currentAssets.value.fetchMediaList()
-  if (error.value) {
-    console.error('Failed to refresh assets:', error.value)
-  }
+  await currentAssets.value.invalidate()
 }
 
 watch(
@@ -462,6 +490,12 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
+}
+
+function handleAssetSelectionToggle(asset: AssetItem) {
+  const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
+  emit('assetSelected', asset)
+  toggleAssetSelection(asset, index, visibleAssets.value)
 }
 
 const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(
@@ -539,7 +573,7 @@ const handleZoomClick = (asset: AssetItem) => {
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })
@@ -632,13 +666,6 @@ const copyJobId = async () => {
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    activeTab.value === 'output' &&
-    !isInFolderView.value &&
-    outputAssets.hasMore.value &&
-    !outputAssets.isLoadingMore.value
-  ) {
-    await outputAssets.loadMore()
-  }
+  if (!isInFolderView.value) await currentAssets.value.loadMore()
 }, 300)
 </script>

@@ -63,8 +63,6 @@ function scrollToSection(id: string) {
 }
 
 onMounted(() => {
-  // The section anchors live in the statically rendered article body, so the
-  // observer targets are resolved from the DOM by id rather than template refs.
   const elements = categories
     .map((category) => document.getElementById(category.value))
     .filter((el): el is HTMLElement => el !== null)

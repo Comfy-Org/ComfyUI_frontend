@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
@@ -22,10 +22,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 }))
 
 describe('useAccountPreconditionDialog', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {
     useAccountPreconditionDialog().open('sign_in', { nodeType: 'ApiNode' })
 

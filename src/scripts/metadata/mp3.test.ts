@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
@@ -16,8 +16,6 @@ const nanFixturePath = path.resolve(
   __dirname,
   '__fixtures__/with_nan_metadata.mp3'
 )
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('MP3 metadata', () => {
   it('extracts workflow and prompt from ID3 tags', async () => {

@@ -7,13 +7,16 @@
   >
     <!-- Email Field -->
     <div class="flex flex-col gap-2">
-      <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
+      <label
+        class="mb-1 text-base text-primary-comfy-canvas/70"
+        :for="emailInputId"
+      >
         {{ t('auth.login.emailLabel') }}
       </label>
       <InputText
         :id="emailInputId"
         autocomplete="email"
-        class="h-10"
+        :class="CLOUD_AUTH_FIELD_CLASS"
         name="email"
         type="text"
         :placeholder="t('auth.login.emailPlaceholder')"
@@ -26,24 +29,22 @@
 
     <!-- Password Field -->
     <div class="flex flex-col gap-2">
-      <div class="mb-2 flex items-center justify-between">
-        <label
-          class="text-base font-medium opacity-80"
-          for="cloud-sign-in-password"
-        >
-          {{ t('auth.login.passwordLabel') }}
-        </label>
-      </div>
+      <label
+        class="mb-1 text-base text-primary-comfy-canvas/70"
+        for="cloud-sign-in-password"
+      >
+        {{ t('auth.login.passwordLabel') }}
+      </label>
       <Password
         input-id="cloud-sign-in-password"
         pt:pc-input-text:root:autocomplete="current-password"
+        :pt:pc-input-text:root:class="CLOUD_AUTH_FIELD_CLASS"
         name="password"
         :feedback="false"
         toggle-mask
         :placeholder="t('auth.login.passwordPlaceholder')"
         :class="{ 'p-invalid': $form.password?.invalid }"
         fluid
-        class="h-10"
       />
       <small v-if="$form.password?.invalid" class="text-red-500">{{
         $form.password.error.message
@@ -51,7 +52,7 @@
 
       <router-link
         :to="{ name: 'cloud-forgot-password' }"
-        class="text-sm font-medium text-muted no-underline"
+        class="mt-1 self-start text-sm text-primary-comfy-canvas/70 underline"
       >
         {{ t('auth.login.forgotPassword') }}
       </router-link>
@@ -62,13 +63,12 @@
       {{ authError }}
     </Message>
 
-    <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="size-8" />
     <Button
-      v-else
       type="submit"
-      variant="secondary"
-      class="relative mt-4 h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
+      variant="brand-solid"
+      size="brand"
+      class="mt-2 w-full"
+      :loading="loading"
       :disabled="!$form.valid"
     >
       {{ t('auth.login.loginButton') }}
@@ -83,11 +83,11 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { CLOUD_AUTH_FIELD_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
@@ -113,29 +113,3 @@ const onSubmit = (event: FormSubmitEvent) => {
   }
 }
 </script>
-<style scoped>
-:deep(.p-inputtext) {
-  border: none !important;
-  box-shadow: none !important;
-  background: #2d2e32 !important;
-  color: var(--color-primary-comfy-canvas) !important;
-  caret-color: var(--color-primary-comfy-canvas);
-}
-
-:deep(.p-inputtext::placeholder) {
-  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
-}
-
-:deep(.p-password input) {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-:deep(.p-password-toggle-mask-icon) {
-  cursor: pointer;
-}
-:deep(.p-checkbox-checked .p-checkbox-box) {
-  background-color: #f0ff41 !important;
-  border-color: #f0ff41 !important;
-}
-</style>

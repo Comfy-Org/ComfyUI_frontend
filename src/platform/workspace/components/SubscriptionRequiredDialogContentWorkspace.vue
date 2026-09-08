@@ -3,17 +3,6 @@
     class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
-      v-if="checkoutStep === 'preview'"
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -85,7 +74,15 @@
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :authentication-state
+      :authentication-error
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -98,7 +95,16 @@
       "
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :force-reactivation="reactivationRequired"
+      :authentication-state
+      :authentication-error
+      :reconciliation-operation-id
+      :quote-is-current
+      :is-applying-promotion-code
       @confirm="handleConfirmTransition"
+      @apply-promotion-code="applyPromotionCode"
+      @invalidate-quote="invalidateQuote"
       @back="handleBackToPricing"
     />
 
@@ -149,13 +155,22 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
+  quoteIsCurrent,
+  isApplyingPromotionCode,
   selectedTierKey,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
+  authenticationState,
+  authenticationError,
+  reconciliationOperationId,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
+  applyPromotionCode,
+  invalidateQuote,
   handleResubscribe,
   handleSuccessClose
 } = useSubscriptionCheckout(emit, reason, {

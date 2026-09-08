@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -15,14 +14,12 @@ const SETTINGS_CONTENT_CLASS =
 export function useSettingsDialog() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const { flags } = useFeatureFlags()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
   function show(panel?: SettingPanelType, settingId?: string) {
-    const isWorkspaceMode = isCloud && flags.teamWorkspacesEnabled
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: SettingDialog,
@@ -46,7 +43,7 @@ export function useSettingsDialog() {
         dismissOnFocusOutside: false,
         size: 'full',
         contentClass: SETTINGS_CONTENT_CLASS,
-        overlayClass: isWorkspaceMode ? 'p-8' : undefined
+        overlayClass: isCloud ? 'p-8' : undefined
       }
     })
   }

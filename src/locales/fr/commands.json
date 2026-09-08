@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "Interrompre"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Ouvrir l’éditeur de calques pour le nœud sélectionné"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
   },

@@ -98,7 +98,6 @@ const renderHeader = () => render(TopBarHeader, { global: { plugins: [i18n] } })
 
 describe('TopBarHeader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMock()
   })
 
@@ -241,7 +240,7 @@ describe('TopBarHeader', () => {
       expect(mockDialogStore.closeDialog).not.toHaveBeenCalled()
       // After failure, the Save button reads "Save" again (not "Saving")
       expect(
-        screen.getByRole('button', { name: /save/i }).textContent?.trim()
+        screen.getByRole('button', { name: /save/i }).textContent.trim()
       ).toBe('Save')
       errorSpy.mockRestore()
     })

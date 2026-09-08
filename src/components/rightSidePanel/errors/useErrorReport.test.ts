@@ -26,7 +26,7 @@ const mocks = vi.hoisted(() => {
 const storeState = vi.hoisted(() => {
   // Plain objects wired up in beforeEach. Tests use setStoreState to swap values.
   return {
-    systemStats: null as unknown,
+    systemStats: null,
     isLoading: false
   }
 })
@@ -115,10 +115,6 @@ describe('useErrorReport', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(async () => {
-    mocks.getLogs.mockReset()
-    mocks.serialize.mockReset()
-    mocks.refetchSystemStats.mockReset()
-    mocks.generateErrorReport.mockReset()
     storeState.systemStats = null
     storeState.isLoading = false
     const store = await getStore()

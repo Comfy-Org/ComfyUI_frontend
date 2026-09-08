@@ -1,6 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
@@ -35,13 +36,9 @@ vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
   showConfirmDialog: vi.fn()
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useImage: () => ({ isLoading: false, error: null })
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  useImage: () => ({ isLoading: false, error: null })
+}))
 
 const HASH = 'blake3:abc123def456'
 const ORIGINAL_FILENAME = 'sunset_photo.png'
@@ -49,7 +46,7 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  const base = {
+  return fromPartial({
     id: 'asset-1',
     name: HASH,
     hash: HASH,
@@ -61,12 +58,10 @@ function createDisplayAsset(
     user_metadata: {},
     metadata: { filename: ORIGINAL_FILENAME },
     ...overrides
-  }
-  return base
+  })
 }
 
 function renderCard(asset: AssetDisplayItem) {
-  setActivePinia(createPinia())
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -93,10 +88,6 @@ function renderCard(asset: AssetDisplayItem) {
 }
 
 describe('AssetCard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('FE-228: filename rendering', () => {
     it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
       const asset = createDisplayAsset()

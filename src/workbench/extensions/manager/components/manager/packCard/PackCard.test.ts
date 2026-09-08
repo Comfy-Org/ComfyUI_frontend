@@ -78,7 +78,6 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 describe('PackCard', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     storageMap.clear()
   })
 
@@ -113,7 +112,7 @@ describe('PackCard', () => {
     latest_version: {
       createdAt: '2024-01-01T00:00:00Z'
     }
-  } as RegistryPack
+  }
 
   describe('basic rendering', () => {
     it('should render package card with basic information', () => {

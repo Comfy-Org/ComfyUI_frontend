@@ -15,7 +15,7 @@
     v-else-if="widget.controlWidget"
     v-model="modelValue"
     :component="WidgetSelectDefault"
-    :widget="widget as StringControlWidget"
+    :widget="widget as SelectControlWidget"
   />
   <WidgetSelectDefault v-else v-model="modelValue" :widget />
 </template>
@@ -33,18 +33,19 @@ import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   SimplifiedControlWidget,
-  SimplifiedWidget
+  SimplifiedWidget,
+  WidgetValue
 } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 
-type StringControlWidget = SimplifiedControlWidget<string | undefined>
+type SelectControlWidget = SimplifiedControlWidget<WidgetValue>
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | undefined>
   nodeType?: string
 }>()
 
-const modelValue = defineModel<string | undefined>()
+const modelValue = defineModel<WidgetValue>()
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {

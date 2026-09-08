@@ -1,6 +1,4 @@
 import { render } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -33,7 +31,7 @@ const captured: { rows: { node: LGraphNode; widget: IBaseWidget }[] } = {
 }
 
 const SectionWidgetsStub = {
-  props: ['widgets', 'node', 'parents'],
+  props: ['widgets', 'node', 'host'],
   setup(props: Record<string, unknown>) {
     captured.rows = props.widgets as {
       node: LGraphNode
@@ -69,7 +67,7 @@ function renderPanel(node: SubgraphNode) {
       plugins: [i18n],
       stubs: {
         SectionWidgets: SectionWidgetsStub,
-        AsyncSearchInput: true,
+        PanelSearchHeader: true,
         CollapseToggleButton: true
       }
     }
@@ -78,9 +76,7 @@ function renderPanel(node: SubgraphNode) {
 
 describe('TabSubgraphInputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     captured.rows = []
-    vi.clearAllMocks()
   })
 
   it('lists a subgraph node promoted widget as a store-backed parameter row', () => {

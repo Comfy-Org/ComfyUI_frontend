@@ -1,9 +1,8 @@
 <template>
   <div class="flex flex-col xl:h-full">
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
-         on top of the content area — outside it, attached with no gap (DES QA).
-         Only shown when team plans are available (teamWorkspacesEnabled). -->
-    <div v-if="showTeam" class="flex justify-center">
+         on top of the content area — outside it, attached with no gap (DES QA). -->
+    <div class="flex justify-center">
       <SelectButton
         v-model="planMode"
         :options="planScopeOptions"
@@ -166,7 +165,7 @@
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex flex-row items-center gap-2">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -244,7 +243,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex flex-row items-center gap-2">
                   <i
-                    class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
                   />
                   <span
@@ -416,13 +415,13 @@ import { I18nT, useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  hasActivePaidPlan,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -435,7 +434,9 @@ import {
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -443,8 +444,7 @@ type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
-  /** Initial plan scope. The toggle to switch is only shown when team plans
-   *  are available (`teamWorkspacesEnabled`). */
+  /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
 }
 
@@ -468,11 +468,41 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { flags } = useFeatureFlags()
+const capabilities = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
 
-/** Team plans only exist behind the flag (mirrors useBillingContext type). */
-const showTeam = computed(() => flags.teamWorkspacesEnabled)
+// Every CTA here resolves to a billing write the server authorizes on its own,
+// so each catalog asks whether any write that reaches it is permitted instead of
+// mapping each card to one capability itself — that mapping is policy, and the
+// response carries no plan dimension to derive it from. An unresolved snapshot
+// is not a denial: the CTA stays live and the checkout endpoint answers, the
+// same trade canOpenPricingSurface and canTopUp already make.
+//
+// The team catalog is not reachable by downgrading to personal, so its gate
+// stops at the three writes that do reach it.
+const lifecycleActionPermitted = computed(() => {
+  if (!isCloud) return permissions.value.canManageSubscription
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return (
+    capabilities.canSubscribeSelfServe.value ||
+    capabilities.canChangeSeats.value ||
+    capabilities.canReactivate.value
+  )
+})
+
+// Read on its own by the plan-scope toggle, which offers or withholds the whole
+// personal catalog rather than one CTA, so it keeps its own capability.
+const canDowngradeToPersonal = computed(() => {
+  if (!isCloud) return permissions.value.canDowngradeToPersonal
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return capabilities.canDowngradeToPersonal.value
+})
+
+// A personal card is reachable by one further write the team catalog has no
+// counterpart for: leaving a team plan.
+const personalPlanActionPermitted = computed(
+  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
+)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -482,8 +512,8 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
-const PRICING_URL = 'https://www.comfy.org/pricing'
+const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -501,7 +531,7 @@ interface PlanScopeOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -615,11 +645,12 @@ const {
   fetchPlans,
   isTeamPlan,
   subscription,
+  subscriptionStatus,
   currentTeamCreditStop
 } = useBillingContext()
 
 const canSelectPersonalPlan = computed(
-  () => !isTeamPlan.value || permissions.value.canDowngradeToPersonal
+  () => !isTeamPlan.value || canDowngradeToPersonal.value
 )
 
 const planScopeOptions = computed(() =>
@@ -639,6 +670,16 @@ watch(
 const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+// An ended subscription still reports its plan slug and tier, so the plan it
+// held must not read as current — it is buyable again.
+const isEnded = computed(() => subscriptionStatus.value === 'ended')
+
+// An active current plan has nothing to transition to, which describes the card
+// rather than the actor's permission — so it stays a client-side check while
+// permission comes from lifecycleActionPermitted.
+const offersTransition = (isCurrent: boolean): boolean =>
+  !isCurrent || isCancelled.value
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
@@ -676,7 +717,9 @@ const teamVideoEstimate = computed(() =>
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
 // the slider stops by list price so the current stop can be disabled.
-const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
+const isTeamSubscribed = computed(
+  () => currentTeamCreditStop.value !== null && !isEnded.value
+)
 
 // `teamUsd` is seeded at mount from the fallback default; when the API stops
 // resolve afterwards with different breakpoints that seed can match no stop,
@@ -741,13 +784,16 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
+// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
+// subscription still reports, so it only means "current plan" while the team
+// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
 const isTeamButtonDisabled = computed(
   () =>
-    !permissions.value.canManageSubscription ||
     isLoading ||
-    (isTeamSubscribed.value &&
-      isTeamCurrentPlanSelected.value &&
-      !isCancelled.value)
+    !offersTransition(
+      isTeamSubscribed.value && isTeamCurrentPlanSelected.value
+    ) ||
+    !lifecycleActionPermitted.value
 )
 
 // A subscriber moving off their current plan is a prorated change rather than a
@@ -779,8 +825,12 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
+const currentAccountTier = computed(() =>
+  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
+)
+
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
 )
 
 const isYearlySubscription = computed(
@@ -788,6 +838,7 @@ const isYearlySubscription = computed(
 )
 
 const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  if (isEnded.value) return false
   if (currentPlanSlug.value) {
     const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
     return plan?.slug === currentPlanSlug.value
@@ -812,11 +863,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       : t('subscription.currentPlan')
   }
 
-  // Free tier is not a paid plan to "change" from — those users subscribe.
-  const hasActivePaidPlan =
-    currentTierKey.value !== null && currentTierKey.value !== 'free'
-
-  return hasActivePaidPlan
+  return hasActivePaidPlan(currentAccountTier.value)
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }
@@ -831,18 +878,13 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const isButtonDisabled = (tier: PricingTierConfig): boolean => {
-  if (
-    isLoading ||
-    !permissions.value.canManageSubscription ||
-    !canSelectPersonalPlan.value
-  )
-    return true
-  if (isCurrentPlan(tier.key)) {
-    return !isCancelled.value
-  }
-  return false
-}
+const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
+  canSelectPersonalPlan.value &&
+  offersTransition(isCurrentPlan(tierKey)) &&
+  personalPlanActionPermitted.value
+
+const isButtonDisabled = (tier: PricingTierConfig): boolean =>
+  isLoading || !canUsePersonalPlanAction(tier.key)
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -863,12 +905,7 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (
-    isLoading ||
-    !permissions.value.canManageSubscription ||
-    !canSelectPersonalPlan.value
-  )
-    return
+  if (isLoading || !canUsePersonalPlanAction(tierKey)) return
   if (isCurrentPlan(tierKey)) {
     if (isCancelled.value) {
       emit('resubscribe')
@@ -881,8 +918,13 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
   // Re-subscribe only when keeping the exact current plan; any other stop or
-  // cycle is a change.
-  if (isCancelled.value && isTeamCurrentPlanSelected.value) {
+  // cycle is a change. An ended subscription still reports its credit stop, so
+  // the stop alone is no proof there is a subscription left to resume.
+  if (
+    isTeamSubscribed.value &&
+    isCancelled.value &&
+    isTeamCurrentPlanSelected.value
+  ) {
     emit('resubscribe')
     return
   }

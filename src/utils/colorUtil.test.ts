@@ -8,8 +8,10 @@ import {
   hexToRgb,
   hsbToRgb,
   hsvaToHex,
+  intToHex,
   isTransparent,
   luminance,
+  normalizeHex,
   parseToRgb,
   readableTextColor,
   rgbToHex,
@@ -101,6 +103,22 @@ describe('colorUtil conversions', () => {
     })
   })
 
+  describe('normalizeHex', () => {
+    it('canonicalizes 3- and 6-digit hex with or without a leading #', () => {
+      expect(normalizeHex('#ff0000')).toBe('#ff0000')
+      expect(normalizeHex('ff0000')).toBe('#ff0000')
+      expect(normalizeHex('#0f0')).toBe('#0f0')
+      expect(normalizeHex(' 0f0 ')).toBe('#0f0')
+    })
+
+    it('rejects malformed input', () => {
+      expect(normalizeHex('nothex')).toBeNull()
+      expect(normalizeHex('#ff00')).toBeNull()
+      expect(normalizeHex('#ff00000')).toBeNull()
+      expect(normalizeHex('')).toBeNull()
+    })
+  })
+
   describe('hexToInt', () => {
     it('converts 6-digit hex to packed integer', () => {
       expect(hexToInt('#ff0000')).toBe(0xff0000)
@@ -112,6 +130,22 @@ describe('colorUtil conversions', () => {
     it('converts 3-digit hex to packed integer', () => {
       expect(hexToInt('#fff')).toBe(0xffffff)
       expect(hexToInt('#f00')).toBe(0xff0000)
+    })
+  })
+
+  describe('intToHex', () => {
+    it.for([
+      [0, '#000000'],
+      [0x45edf5, '#45edf5'],
+      [0xffffff, '#ffffff'],
+      [-1, '#000000'],
+      [0.5, '#000001'],
+      [0x1000000, '#ffffff'],
+      [Number.NaN, '#000000'],
+      [Number.POSITIVE_INFINITY, '#000000'],
+      [Number.NEGATIVE_INFINITY, '#000000']
+    ] as const)('%s → %s', ([value, expected]) => {
+      expect(intToHex(value)).toBe(expected)
     })
   })
 
@@ -336,7 +370,7 @@ describe('colorUtil - adjustColor', () => {
 
   describe.for(Object.entries(colors))('%s color', ([_colorName, color]) => {
     describe.for(formats)('%s format', (format) => {
-      runAdjustColorTests(color, format as ColorFormat)
+      runAdjustColorTests(color, format)
     })
   })
 

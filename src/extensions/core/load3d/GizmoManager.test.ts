@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
 
@@ -82,7 +82,6 @@ describe('GizmoManager', () => {
   let mockHelper: THREE.Object3D
 
   beforeEach(() => {
-    vi.clearAllMocks()
     transformControlsInstances.length = 0
     omitGetPointer.value = false
 
@@ -104,10 +103,6 @@ describe('GizmoManager', () => {
       () => camera,
       onTransformChange
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('setPointerNdcSource', () => {

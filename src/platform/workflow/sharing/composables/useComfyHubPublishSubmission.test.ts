@@ -7,9 +7,9 @@ const mockGetShareableAssets = vi.hoisted(() => vi.fn())
 const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
 const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
 const mockPublishWorkflow = vi.hoisted(() => vi.fn())
-const mockProfile = vi.hoisted(
-  () => ({ value: null }) as { value: ComfyHubProfile | null }
-)
+const mockProfile = vi.hoisted((): { value: ComfyHubProfile | null } => ({
+  value: null
+}))
 
 vi.mock(
   '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
@@ -72,7 +72,6 @@ function createFormData(
 
 describe('useComfyHubPublishSubmission', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockProfile.value = {
       username: 'builder',
       name: 'Builder'

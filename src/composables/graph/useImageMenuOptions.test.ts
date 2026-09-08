@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -45,10 +45,6 @@ function createImageNode(
 }
 
 describe('useImageMenuOptions', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
@@ -117,6 +113,19 @@ describe('useImageMenuOptions', () => {
       const options = getImageMenuOptions(node)
 
       expect(options.every((o) => !!o.icon)).toBe(true)
+    })
+
+    it('keeps output preview actions when the local image input is unavailable', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const labels = getImageMenuOptions(node, {
+        input: false,
+        preview: true
+      }).map((option) => option.label)
+
+      expect(labels).toContain('Open Image')
+      expect(labels).toContain('Save Image')
+      expect(labels).not.toContain('Paste Image')
     })
   })
 

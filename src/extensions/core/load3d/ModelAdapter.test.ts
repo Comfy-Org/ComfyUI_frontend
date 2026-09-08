@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -28,14 +28,6 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
 
 describe('fetchModelData', () => {
   const mockFetchApi = vi.mocked(api.fetchApi)
-
-  beforeEach(() => {
-    mockFetchApi.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   it('returns the arrayBuffer on a successful response', async () => {
     const buf = new ArrayBuffer(8)

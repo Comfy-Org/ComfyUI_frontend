@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -52,15 +52,10 @@ function makeViewer(overrides: Record<string, unknown> = {}) {
 
 describe('load3dService', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     nodeMap.clear()
     const svc = useLoad3dService()
     for (const node of createdNodes) svc.removeViewer(node)
     createdNodes.clear()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
   })
 
   describe('singleton', () => {
@@ -198,14 +193,8 @@ describe('load3dService', () => {
       const viewer = makeViewer()
       const factory = vi.fn().mockReturnValue(viewer)
 
-      const first = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
-      const second = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
+      const first = svc.getOrCreateViewerSync(node, factory)
+      const second = svc.getOrCreateViewerSync(node, factory)
 
       expect(first).toBe(viewer)
       expect(second).toBe(viewer)
@@ -428,7 +417,7 @@ describe('load3dService', () => {
         scene.add(o)
       })
       const modelManager = {
-        currentModel: existingModel as THREE.Object3D | null,
+        currentModel: existingModel,
         originalModel: null as unknown,
         materialMode: 'original',
         currentUpDirection: 'original',

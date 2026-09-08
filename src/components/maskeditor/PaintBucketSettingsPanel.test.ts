@@ -44,7 +44,6 @@ const renderPanel = () =>
 
 describe('PaintBucketSettingsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore.paintBucketTolerance = 5
     mockStore.fillOpacity = 100
   })

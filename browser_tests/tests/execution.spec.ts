@@ -56,18 +56,12 @@ async function getValidationErrorMessage(comfyPage: ComfyPage) {
   )
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    await comfyPage.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Top',
+      'Comfy.RightSidePanel.ShowErrorsTab': true
+    }
   })
 
   test(
@@ -97,6 +91,10 @@ test.describe(
   'Execute to selected output nodes',
   { tag: ['@smoke', '@workflow'] },
   () => {
+    test.use({
+      initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
+    })
+
     test('Execute to selected output nodes', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('execution/partial_execution')
       const input = await comfyPage.nodeOps.getNodeRefById(3)
@@ -129,16 +127,17 @@ test.describe(
 )
 
 test.describe('Execution validation errors', { tag: '@workflow' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Top',
+      'Comfy.RightSidePanel.ShowErrorsTab': true
+    }
+  })
+
   test('preserves validation errors when another active root starts execution', async ({
     comfyPage,
     getWebSocket
   }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
 
     const ws = await getWebSocket()

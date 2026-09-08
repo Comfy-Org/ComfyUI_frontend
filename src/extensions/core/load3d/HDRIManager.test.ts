@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
@@ -69,7 +69,6 @@ describe('HDRIManager', () => {
   let manager: HDRIManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     scene = new THREE.Scene()
     eventManager = makeMockEventManager()
 
@@ -84,10 +83,6 @@ describe('HDRIManager', () => {
       createRendererViewState(),
       eventManager
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('initial state', () => {

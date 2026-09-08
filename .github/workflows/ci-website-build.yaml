@@ -20,7 +20,7 @@ jobs:
       app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
       packages-changes: ${{ steps.changes.outputs.packages-changes }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: changes
         uses: ./.github/actions/changes-filter
 
@@ -30,10 +30,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+
+      - name: Typecheck website
+        run: pnpm --filter @comfyorg/website typecheck
 
       - name: Build website
         env:
@@ -43,3 +46,12 @@ jobs:
 
       - name: Validate JSON-LD structured data
         run: pnpm --filter @comfyorg/website validate:jsonld
+
+      - name: Validate llms.txt links
+        run: pnpm --filter @comfyorg/website validate:llms-txt-links
+
+      # Same shape as validate:jsonld: reads the built dist/ and exits non-zero.
+      # Which routes are locale-invariant is hand-maintained, so this is what
+      # catches a cluster that points at a page the build never produced.
+      - name: Check hreflang clusters
+        run: pnpm --filter @comfyorg/website check:hreflang

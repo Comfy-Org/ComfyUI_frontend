@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,7 +8,7 @@ import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as FormatUtil from '@/utils/formatUtil'
+import type * as LoaderNodeUtil from '@/utils/loaderNodeUtil'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -22,9 +24,19 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', async (importOriginal) => ({
-  ...(await importOriginal<typeof FormatUtil>()),
+vi.mock('@/utils/formatUtil', () => ({
   isPreviewableMediaType: () => true
+}))
+
+const detectNodeTypeFromFilename = vi.hoisted(() =>
+  vi.fn<typeof LoaderNodeUtil.detectNodeTypeFromFilename>(() => ({
+    nodeType: null,
+    widgetName: null
+  }))
+)
+
+vi.mock('@/utils/loaderNodeUtil', () => ({
+  detectNodeTypeFromFilename
 }))
 
 const mediaAssetActions = {
@@ -86,12 +98,12 @@ const contextMenuStub = defineComponent({
   `
 })
 
-const asset: AssetItem = {
+const asset: AssetItem = fromPartial({
   id: 'asset-1',
   name: 'image.png',
   tags: [],
   user_metadata: {}
-}
+})
 
 const buttonStub = {
   template: '<div class="button-stub"><slot /></div>'
@@ -139,10 +151,8 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 }
 
 afterEach(() => {
-  vi.clearAllMocks()
   capturedRef = null
   capturedMenu.model = []
-  document.body.innerHTML = ''
 })
 
 type MenuItemWithCommand = MenuItem & {
@@ -185,6 +195,10 @@ describe('MediaAssetContextMenu', () => {
   })
 
   it('shows insert-as-node for assets with a loader node', async () => {
+    detectNodeTypeFromFilename.mockReturnValue({
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
     const { container, unmount } = mountComponent()
     await showMenu(container)
 

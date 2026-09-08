@@ -84,7 +84,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
     void mode.value
-    return !!app.rootGraph?.nodes?.length
+    return app.isGraphReady && app.rootGraph.nodes.length > 0
   })
 
   function pruneLinearData(data: Partial<LinearData> | undefined): {
@@ -93,7 +93,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-    const rootGraph = app.rootGraph
+    const rootGraph = app.isGraphReady ? app.rootGraph : undefined
     if (!rootGraph) {
       return {
         inputs: rawInputs,
@@ -135,7 +135,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
       const { nodeId } = parseWidgetId(storedId)
-      if (rootGraph.getNodeById?.(nodeId)) {
+      if (rootGraph.getNodeById(nodeId)) {
         return buildEntry(storedId, widgetName, config)
       }
       return null
@@ -148,9 +148,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
 
     const directNodeId = parseNodeId(storedId)
-    const directNode = directNodeId
-      ? rootGraph.getNodeById?.(directNodeId)
-      : null
+    const directNode = directNodeId ? rootGraph.getNodeById(directNodeId) : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
@@ -187,10 +185,32 @@ export const useAppModeStore = defineStore('appMode', () => {
     return null
   }
 
+  function warnOnUninterpretableAppConfig(
+    data: Partial<LinearData> | undefined,
+    resolvedInputs: LinearInput[],
+    resolvedOutputs: NodeId[]
+  ) {
+    if (ChangeTracker.isLoadingGraph) return
+
+    if (!app.isGraphReady || !app.rootGraph.nodes.length) return
+
+    const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
+    if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
+
+    console.warn(
+      '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
+      {
+        inputs: data.inputs,
+        outputs: data.outputs
+      }
+    )
+  }
+
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
+    warnOnUninterpretableAppConfig(data, inputs, outputs)
   }
 
   function resetSelectedToWorkflow() {
@@ -198,13 +218,13 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!activeWorkflow) return
 
     const source =
-      activeWorkflow.changeTracker?.activeState?.extra?.linearData ??
-      activeWorkflow.initialState?.extra?.linearData
+      activeWorkflow.changeTracker.activeState.extra?.linearData ??
+      activeWorkflow.initialState.extra?.linearData
     loadSelections(source)
   }
 
   useEventListener(
-    () => app.rootGraph?.events,
+    () => (app.isGraphReady ? app.rootGraph.events : undefined),
     'configured',
     resetSelectedToWorkflow
   )
@@ -216,28 +236,27 @@ export const useAppModeStore = defineStore('appMode', () => {
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
+      if (!app.isGraphReady) return
       const graph = app.rootGraph
-      if (!graph) return
-      const extra = (graph.extra ??= {})
+      const extra = graph.extra
       extra.linearData = {
         inputs: [...data.inputs],
         outputs: [...data.outputs]
       }
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     },
     { deep: true }
   )
 
   let unwatchReadOnly: (() => void) | undefined
   function enforceReadOnly(inSelect: boolean) {
-    const { state } = getCanvas()
-    if (!state) return
-    state.readOnly = inSelect
+    const canvas = getCanvas()
+    canvas.read_only = inSelect
     unwatchReadOnly?.()
     if (inSelect)
       unwatchReadOnly = watch(
-        () => state.readOnly,
-        () => (state.readOnly = true)
+        () => canvas.read_only,
+        () => (canvas.read_only = true)
       )
   }
 

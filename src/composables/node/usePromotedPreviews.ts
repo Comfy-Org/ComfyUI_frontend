@@ -5,7 +5,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import type { NodeId } from '@/types/nodeId'
 import {
   appendNodeExecutionId,
@@ -78,7 +81,8 @@ export function usePromotedPreviews(
     if (node.isDetached) return []
 
     const rootGraphId = node.rootGraph.id
-    const hostLocator = String(node.id)
+    const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const exposures = previewExposureStore.getExposures(
       rootGraphId,
       hostLocator
@@ -87,6 +91,9 @@ export function usePromotedPreviews(
 
     const hostNodesByLocator = new Map<string, SubgraphNode>([
       [hostLocator, node]
+    ])
+    const hostExecutionsByLocator = new Map<string, string>([
+      [hostLocator, String(node.id)]
     ])
 
     function resolveNestedHost(
@@ -98,14 +105,15 @@ export function usePromotedPreviews(
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
-      const pathLocator = `${currentHostLocator}:${sourceNode.id}`
-      const definitionLocator = String(sourceNode.id)
-      const hasPathExposures =
-        previewExposureStore.getExposures(rootGraphId, pathLocator).length > 0
-      const nestedHostLocator = hasPathExposures
-        ? pathLocator
-        : definitionLocator
+      const nestedHostLocator = getPreviewExposureHostLocator(sourceNode)
+      if (!nestedHostLocator) return undefined
+      const currentExecutionId = hostExecutionsByLocator.get(currentHostLocator)
+      if (!currentExecutionId) return undefined
       hostNodesByLocator.set(nestedHostLocator, sourceNode)
+      hostExecutionsByLocator.set(
+        nestedHostLocator,
+        `${currentExecutionId}:${sourceNode.id}`
+      )
       return { rootGraphId, hostNodeLocator: nestedHostLocator }
     }
 
@@ -123,11 +131,13 @@ export function usePromotedPreviews(
       const leafHostLocator =
         resolved?.steps.at(-1)?.hostNodeLocator ?? hostLocator
       const leafHost = hostNodesByLocator.get(leafHostLocator) ?? node
+      const leafHostExecutionId =
+        hostExecutionsByLocator.get(leafHostLocator) ?? String(node.id)
       const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
       if (!interiorNode) return []
 
       const leafExecutionId = appendNodeExecutionId(
-        leafHostLocator,
+        leafHostExecutionId,
         leaf.sourceNodeId
       )
       if (!leafExecutionId) return []

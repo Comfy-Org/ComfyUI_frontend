@@ -394,7 +394,10 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     })
 
     const getReroutePos = () =>
-      comfyPage.page.evaluate(() => [...graph!.reroutes.values()][0])
+      comfyPage.page.evaluate(() => {
+        const reroute = graph!.reroutes.values().next().value
+        return reroute ? [...reroute.pos] : null
+      })
     const getGroupPos = () =>
       comfyPage.page.evaluate(() => graph!.groups[0].pos)
     const initialReroutePos = await getReroutePos()
@@ -403,6 +406,18 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
 
     await expect.poll(getReroutePos).not.toEqual(initialReroutePos)
     await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
+    const movedReroutePos = await getReroutePos()
+    const movedGroupPos = await getGroupPos()
+
+    await comfyPage.keyboard.undo()
+
+    await expect.poll(getReroutePos).toEqual(initialReroutePos)
+    await expect.poll(getGroupPos).toEqual(initialGroupPos)
+
+    await comfyPage.keyboard.redo()
+
+    await expect.poll(getReroutePos).toEqual(movedReroutePos)
+    await expect.poll(getGroupPos).toEqual(movedGroupPos)
   })
 
   test(
@@ -412,19 +427,24 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       // Disable minimap (gets in way of the node on small screens)
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
-      const loadCheckpointHeaderPos =
-        await getLoadCheckpointHeaderPos(comfyPage)
+      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('Save Image')
+      await node.centerOnNode()
+      const nodeHeaderPos = await getHeaderPos(comfyPage, 'Save Image')
       await comfyPage.canvasOps.panWithTouch(
         {
           x: 64,
           y: 64
         },
-        loadCheckpointHeaderPos
+        nodeHeaderPos,
+        10
       )
 
-      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-      expect(newHeaderPos.x).toBeCloseTo(loadCheckpointHeaderPos.x + 64)
-      expect(newHeaderPos.y).toBeCloseTo(loadCheckpointHeaderPos.y + 64)
+      await expect
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.x))
+        .toBeCloseTo(nodeHeaderPos.x + 64, 0)
+      await expect
+        .poll(() => getHeaderPos(comfyPage, 'Save Image').then((p) => p.y))
+        .toBeCloseTo(nodeHeaderPos.y + 64, 0)
     }
   )
 })

@@ -97,6 +97,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { is3DResult } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -180,7 +181,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   trackFeatureUsed()
   const previewOutput = item.taskRef?.previewOutput
 
-  if (previewOutput?.is3D) {
+  if (previewOutput && is3DResult(previewOutput)) {
     dialogStore.showDialog({
       key: 'asset-3d-viewer',
       title: item.title,
@@ -191,7 +192,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })

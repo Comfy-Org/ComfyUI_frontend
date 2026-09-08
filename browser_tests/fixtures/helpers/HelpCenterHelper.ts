@@ -116,10 +116,7 @@ class HelpCenterHelper {
    * opened by help center actions don't navigate to the real sites.
    */
   async stubExternalPages(): Promise<void> {
-    for (const pattern of [
-      'https://www.comfy.org/**',
-      'https://github.com/**'
-    ]) {
+    for (const pattern of ['https://comfy.org/**', 'https://github.com/**']) {
       await this.page.context().route(pattern, (route: Route) =>
         route.fulfill({
           status: 200,

@@ -52,6 +52,7 @@
           )
         "
         :placeholder="placeholderText"
+        :aria-label="ariaLabel"
         :auto-focus="autofocus"
       />
     </ComboboxAnchor>
@@ -78,6 +79,7 @@ const { t } = useI18n()
 
 const {
   placeholder,
+  ariaLabel,
   icon = 'icon-[lucide--search]',
   debounceTime = 300,
   autofocus = false,
@@ -87,6 +89,7 @@ const {
   class: className
 } = defineProps<{
   placeholder?: string
+  ariaLabel?: string
   icon?: string
   debounceTime?: number
   autofocus?: boolean

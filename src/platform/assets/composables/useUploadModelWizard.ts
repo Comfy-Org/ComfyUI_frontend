@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
@@ -11,7 +12,11 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetFilename,
+  stripModelTypePrefix,
+  toModelTypeTag
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -68,6 +73,7 @@ export function useUploadModelWizard(
   options: UploadModelWizardOptions = {}
 ) {
   const { t } = useI18n()
+  const { flags } = useFeatureFlags()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
@@ -271,19 +277,22 @@ export function useUploadModelWizard(
   }
 
   function getImportedModelType(asset: AssetItem): string | undefined {
-    const knownType = asset.tags.find(
-      (tag) =>
-        tag !== MODEL_ROOT_TAG &&
+    const subtypeTags = asset.tags
+      .filter((tag) => tag !== MODEL_ROOT_TAG)
+      .map(stripModelTypePrefix)
+    return (
+      subtypeTags.find((tag) =>
         modelTypes.value.some((type) => type.value === tag)
+      ) ?? subtypeTags[0]
     )
-    return knownType ?? asset.tags.find((tag) => tag !== MODEL_ROOT_TAG)
   }
 
   function blockMismatchedImportedModel(
     asset: AssetItem,
     requiredType: string
   ): boolean {
-    if (asset.tags.includes(requiredType)) return false
+    if (asset.tags.map(stripModelTypePrefix).includes(requiredType))
+      return false
 
     const importedType = getImportedModelType(asset)
     uploadStatus.value = 'error'
@@ -317,7 +326,11 @@ export function useUploadModelWizard(
 
     try {
       const modelType = resolvedModelType.value
-      const tags = modelType ? ['models', modelType] : ['models']
+      const subtypeTag =
+        modelType && flags.supportsModelTypeTags
+          ? toModelTypeTag(modelType)
+          : modelType
+      const tags = subtypeTag ? [MODEL_ROOT_TAG, subtypeTag] : [MODEL_ROOT_TAG]
       const filename =
         wizardData.value.metadata?.filename ||
         wizardData.value.metadata?.name ||
@@ -354,7 +367,7 @@ export function useUploadModelWizard(
         }
 
         stopAsyncWatch?.()
-        let resolved = false
+        const watchState = { resolved: false }
         const stop = watch(
           () =>
             assetDownloadStore.downloadList.find(
@@ -362,13 +375,13 @@ export function useUploadModelWizard(
             )?.status,
           async (status) => {
             if (status === 'completed') {
-              resolved = true
+              watchState.resolved = true
               uploadStatus.value = 'success'
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
             } else if (status === 'failed') {
-              resolved = true
+              watchState.resolved = true
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
               )
@@ -384,7 +397,7 @@ export function useUploadModelWizard(
           },
           { immediate: true }
         )
-        if (resolved) {
+        if (watchState.resolved) {
           stop()
           stopAsyncWatch = undefined
         } else {

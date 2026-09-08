@@ -13,7 +13,6 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
 
 describe('preservedQueryManager', () => {
   beforeEach(() => {
-    sessionStorage.clear()
     clearPreservedQuery(NAMESPACE)
   })
 
