@@ -489,6 +489,11 @@ Enterprise`
     'zh-CN': '查看全部案例',
     ja: 'すべてのケーススタディを見る'
   },
+  'caseStudy.watchStory': {
+    en: 'WATCH STORY',
+    'zh-CN': '观看故事',
+    ja: 'ストーリーを見る'
+  },
 
   // BuildWhatSection
   'buildWhat.subtitle': {
@@ -5351,6 +5356,26 @@ Enterprise`
     'zh-CN':
       '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
   },
+  'customers.group.watch': { en: 'WATCH', 'zh-CN': '观看' },
+  'customers.group.read': { en: 'READ', 'zh-CN': '阅读' },
+  'customers.video.watchStory': { en: 'WATCH STORY', 'zh-CN': '观看故事' },
+  'customers.watch.transcript': { en: 'Transcript', 'zh-CN': '文字记录' },
+  'customers.watch.readWrittenStory': {
+    en: 'Read the written story',
+    'zh-CN': '阅读文字版故事'
+  },
+  'customers.watch.browseAll': {
+    en: 'BROWSE ALL CUSTOMER STORIES',
+    'zh-CN': '浏览全部客户故事'
+  },
+  'pricing.customerProof.heading': {
+    en: 'Built with ComfyUI',
+    'zh-CN': '使用 ComfyUI 构建'
+  },
+  'customers.article.watchVideo': {
+    en: 'WATCH THE VIDEO',
+    'zh-CN': '观看视频'
+  },
   'customers.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'customers.contact.heading': {
     en: 'Interested in a case study with ComfyUI? Reach out <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-Keeq1VIePeanQIsdHq9eYeDE82MHJTdvwdgpxCoEzo_CUg/viewform" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>',
@@ -7570,6 +7595,10 @@ Enterprise`
   'enterprise.managedBuilds.aboutBuilder': {
     en: 'About Builder',
     'zh-CN': '了解 Builder'
+  },
+  'enterprise.managedBuilds.closing.headingAfterBadge': {
+    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
+    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   },
   'enterprise.managedBuilds.1.title': {
     en: 'Open Source Models',
