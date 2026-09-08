@@ -1,4 +1,4 @@
-# 27. E2E Coverage Measurement and Test Selection
+# ADR-TESTING-E2E-0027: E2E Coverage Measurement and Test Selection
 
 Date: 2026-09-01
 
@@ -58,7 +58,9 @@ The supporting analysis, per-area tables, and reproduction steps are in
    artifact set instead of merging a partial one. `mobile-safari` is excluded because
    Playwright's coverage API does not support WebKit. `performance` is excluded
    because coverage instrumentation would perturb its measurements, as
-   described in ADR 0022. No regular CI job runs `audit`.
+   described in
+   [ADR-PERF-BENCHMARKS-0022](PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md).
+   No regular CI job runs `audit`.
 2. Source files that never load in any project are reported at 0% instead of
    being left out of the report. The headline number will fall when this
    lands, and the lower number is the accurate one.

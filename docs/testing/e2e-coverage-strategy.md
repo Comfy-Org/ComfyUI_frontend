@@ -249,7 +249,9 @@ Ordered by safety gained per hour. Each phase is independently shippable.
    the package job's dependencies and reject an incomplete expected artifact
    set instead of silently producing a partial merge. `mobile-safari` remains
    excluded because Playwright coverage is Chromium-only. Keep `performance`
-   uninstrumented under ADR 0022; no regular CI job runs `audit`.
+   uninstrumented under
+   [ADR-PERF-BENCHMARKS-0022](../adr/PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md);
+   no regular CI job runs `audit`.
 2. Count never-loaded production files through monocart's `all` option so
    source files with no V8 entry are reported at 0% instead of omitted. The
    implementation must transform TypeScript and Vue files before monocart

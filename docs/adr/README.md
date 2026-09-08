@@ -36,9 +36,9 @@ An Architecture Decision Record captures an important architectural decision mad
 | [RENDERING-INVALIDATION-0021](RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md)     | Classified, Frame-Coalesced Canvas Invalidation                 | Proposed | 2026-08-26 |
 | [SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)                | Represent Promoted Widgets as Linked Inputs                     | Proposed | 2026-05-05 |
 | [SUBGRAPH-PROMOTION-0027](SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md)              | Defer Promoted-Widget Registration to `onAdded()`               | Accepted | 2026-09-01 |
-| [0027](0027-e2e-coverage-measurement-and-test-selection.md)                                                      | E2E Coverage Measurement and Test Selection                     | Proposed | 2026-09-01 |
 | [TELEMETRY-DIAGNOSTICS-0019](TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md)                        | Recoverable Event Diagnostics                                   | Proposed | 2026-08-25 |
 | [TELEMETRY-ROUTING-0013](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)                           | Telemetry Routing Across Consumers                              | Accepted | 2026-07-28 |
+| [TESTING-E2E-0027](TESTING-E2E-0027-coverage-measurement-and-test-selection.md)                                  | E2E Coverage Measurement and Test Selection                     | Proposed | 2026-09-01 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                      | Accepted | 2026-02-22 |
 
 ## Creating a New ADR
