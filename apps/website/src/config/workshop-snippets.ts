@@ -47,7 +47,7 @@ function pythonLiteral(value: unknown, depth = 0): string {
     if (value.length === 0) return '[]'
     return `[\n${value.map((item) => `${childPad}${pythonLiteral(item, depth + 1)}`).join(',\n')}\n${pad}]`
   }
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === 'object') {
     const entries = Object.entries(value)
     if (entries.length === 0) return '{}'
     return `{\n${entries
@@ -79,12 +79,13 @@ export function buildWorkshopSnippet(
   values: WorkshopFormValues
 ): string {
   const input = buildWorkshopInput(fields, values)
+  const modelIdLiteral = JSON.stringify(modelId)
   if (language === 'typescript') {
     return [
       "import { comfy } from '@comfyorg/sdk'",
       '',
       "comfy.config({ credentials: 'YOUR_API_KEY' })",
-      `const { data } = await comfy.models.run('${modelId}', ${JSON.stringify(input, null, 2)})`
+      `const { data } = await comfy.models.run(${modelIdLiteral}, ${JSON.stringify(input, null, 2)})`
     ].join('\n')
   }
   if (language === 'python') {
@@ -92,12 +93,15 @@ export function buildWorkshopSnippet(
       'from comfy_sdk import Comfy',
       '',
       'comfy = Comfy(api_key="YOUR_API_KEY")',
-      `result = comfy.models.run("${modelId}", ${pythonLiteral(input)})`
+      `result = comfy.models.run(${modelIdLiteral}, ${pythonLiteral(input)})`
     ].join('\n')
   }
   const continuation = '\\'
+  const endpoint = shellSingleQuote(
+    `https://api.comfy.org/v2/models/${modelId}`
+  )
   return [
-    `curl --request POST 'https://api.comfy.org/v2/models/${modelId}' ${continuation}`,
+    `curl --request POST '${endpoint}' ${continuation}`,
     `  --header 'Authorization: Bearer YOUR_API_KEY' ${continuation}`,
     `  --header 'Content-Type: application/json' ${continuation}`,
     `  --data '${shellSingleQuote(JSON.stringify(input, null, 2))}'`

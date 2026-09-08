@@ -1,70 +1,49 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { isWorkshopInBuild, isWorkshopRoute } from './workshop-release'
 
-const saved = {
-  vercel: process.env.VERCEL_ENV,
-  override: process.env.WORKSHOP_IN_BUILD
-}
-
-afterEach(() => {
-  process.env.VERCEL_ENV = saved.vercel
-  process.env.WORKSHOP_IN_BUILD = saved.override
-  if (saved.vercel === undefined) delete process.env.VERCEL_ENV
-  if (saved.override === undefined) delete process.env.WORKSHOP_IN_BUILD
-})
-
 describe('isWorkshopInBuild', () => {
-  it('keeps Workshop out of a production build', () => {
-    // The whole point: an unfinished feature must not be reachable at a URL
-    // on comfy.org, and noindex does not achieve that.
-    process.env.VERCEL_ENV = 'production'
-    delete process.env.WORKSHOP_IN_BUILD
+  it.for([
+    {
+      name: 'production excludes Workshop',
+      vercelEnv: 'production',
+      expected: false
+    },
+    {
+      name: 'preview excludes Workshop',
+      vercelEnv: 'preview',
+      expected: false
+    },
+    { name: 'an unset environment includes Workshop', expected: true },
+    {
+      name: 'development includes Workshop',
+      vercelEnv: 'development',
+      expected: true
+    }
+  ])('$name', ({ vercelEnv, expected }) => {
+    vi.stubEnv('VERCEL_ENV', vercelEnv)
+    vi.stubEnv('WORKSHOP_IN_BUILD', undefined)
 
-    expect(isWorkshopInBuild()).toBe(false)
+    expect(isWorkshopInBuild()).toBe(expected)
   })
 
-  it('keeps Workshop out of a preview, so preview matches production', () => {
-    // A preview exists to answer "what goes out if we release right now?".
-    // If it carries an unreleased feature it cannot answer that.
-    process.env.VERCEL_ENV = 'preview'
-    delete process.env.WORKSHOP_IN_BUILD
+  it.for([
+    {
+      name: 'a preview can opt in',
+      vercelEnv: 'preview',
+      override: '1',
+      expected: true
+    },
+    {
+      name: 'local development can opt out',
+      override: '0',
+      expected: false
+    }
+  ])('$name', ({ vercelEnv, override, expected }) => {
+    vi.stubEnv('VERCEL_ENV', vercelEnv)
+    vi.stubEnv('WORKSHOP_IN_BUILD', override)
 
-    expect(isWorkshopInBuild()).toBe(false)
-  })
-
-  it('keeps Workshop in local development, where it is being built', () => {
-    delete process.env.WORKSHOP_IN_BUILD
-    delete process.env.VERCEL_ENV
-
-    expect(isWorkshopInBuild()).toBe(true)
-  })
-
-  it('gives an unrecognised VERCEL_ENV the local answer', () => {
-    // `vercel dev` sets VERCEL_ENV=development. That is a developer's machine,
-    // not a deployment, so it behaves like local rather than like a release.
-    delete process.env.WORKSHOP_IN_BUILD
-    process.env.VERCEL_ENV = 'development'
-
-    expect(isWorkshopInBuild()).toBe(true)
-  })
-
-  it('puts Workshop in a deployed build on an explicit override', () => {
-    // Two users: CI on a PR labelled `workshop`, to get a review URL...
-    process.env.VERCEL_ENV = 'preview'
-    process.env.WORKSHOP_IN_BUILD = '1'
-    expect(isWorkshopInBuild()).toBe(true)
-
-    // ...and production on the day Workshop launches. No code change either.
-    process.env.VERCEL_ENV = 'production'
-    expect(isWorkshopInBuild()).toBe(true)
-  })
-
-  it('can be forced off locally, to reproduce a release build', () => {
-    delete process.env.VERCEL_ENV
-    process.env.WORKSHOP_IN_BUILD = '0'
-
-    expect(isWorkshopInBuild()).toBe(false)
+    expect(isWorkshopInBuild()).toBe(expected)
   })
 })
 

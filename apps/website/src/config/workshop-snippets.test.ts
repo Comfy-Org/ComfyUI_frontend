@@ -167,4 +167,27 @@ describe('Workshop snippets', () => {
     expect(dataIndex).toBeGreaterThan(-1)
     expect(JSON.parse(args[dataIndex + 1])).toEqual({ prompt: "don't stop" })
   })
+
+  it.for(['typescript', 'python'] as const)(
+    'preserves an untrusted model ID in the %s string literal',
+    (language) => {
+      const modelId = `bf'l$(printf injected)\`printf injected\`/fl"ux`
+      const snippet = buildWorkshopSnippet(language, modelId, promptOnly, {
+        prompt: 'A red fox'
+      })
+
+      expect(snippet).toContain(`models.run(${JSON.stringify(modelId)},`)
+    }
+  )
+
+  it('preserves an untrusted model ID as one HTTP argument', () => {
+    const modelId = `bf'l$(printf injected)\`printf injected\`/fl"ux`
+    const snippet = buildWorkshopSnippet('http', modelId, promptOnly, {
+      prompt: 'A red fox'
+    })
+
+    expect(executeWithStubCurl(snippet)).toContain(
+      `https://api.comfy.org/v2/models/${modelId}`
+    )
+  })
 })
