@@ -49,7 +49,7 @@ describe('localizeHref', () => {
   it('keeps a query or fragment while localizing the path', () => {
     expect(localizeHref('/cloud#pricing', 'zh-CN')).toBe('/zh-CN/cloud#pricing')
     expect(localizeHref('/cloud?ref=nav', 'zh-CN')).toBe('/zh-CN/cloud?ref=nav')
-    expect(localizeHref('/about#team', 'ja')).toBe('/about#team')
+    expect(localizeHref('/about#team', 'ja')).toBe('/ja/about#team')
   })
 
   it('still refuses to localize a held-back route that carries one', () => {
@@ -73,8 +73,8 @@ describe('localizeHref', () => {
    */
   it('localizes a published Japanese route and leaves a held-back one alone', () => {
     expect(localizeHref('/', 'ja')).toBe('/ja/')
-    expect(localizeHref('/cloud', 'ja')).toBe('/cloud')
-    expect(localizeHref('/about', 'ja')).toBe('/about')
+    expect(localizeHref('/cloud', 'ja')).toBe('/ja/cloud')
+    expect(localizeHref('/about', 'ja')).toBe('/ja/about')
 
     expect(localizeHref('/cli', 'ja')).toBe('/cli')
     expect(localizeHref('/careers', 'ja')).toBe('/careers')

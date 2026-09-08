@@ -61,9 +61,9 @@ describe('resolveTranslation provenance', () => {
     })
   })
 
-  it('falls back to English before Japanese machine translations are published', () => {
+  it('reports machine-filled Japanese as machine, not as approved', () => {
     const resolved = resolveTranslation('tags.partnerNodes', 'ja')
-    expect(resolved.provenance).toBe('english')
-    expect(resolved.value).toBe('Partner Nodes')
+    expect(resolved.provenance).toBe('machine')
+    expect(resolved.value).not.toBe('Partner Nodes')
   })
 })
