@@ -18,23 +18,24 @@ export function createWebCrossTabRefreshPort():
     return undefined
   }
   const locks = navigator.locks
-  // One channel per key, shared by subscribe and publish. A channel never
-  // delivers a message back to itself, so publishing on the subscription
-  // channel keeps a tab from hearing its own broadcasts.
-  const channels = new Map<string, BroadcastChannel>()
-  const channelFor = (key: string): BroadcastChannel => {
-    const existing = channels.get(key)
-    if (existing !== undefined) return existing
-    const created = new BroadcastChannel(key)
-    channels.set(key, created)
-    return created
-  }
+  // One refcounted channel per subscribed key, shared by subscribe and
+  // publish. A channel never delivers a message back to itself, so
+  // publishing on the subscription channel keeps a tab from hearing its own
+  // broadcasts.
+  const channels = new Map<
+    string,
+    { channel: BroadcastChannel; subscribers: number }
+  >()
   return {
     requestLeadership(key, onAcquired) {
       const controller = new AbortController()
+      let disposed = false
       let releaseHeld: (() => void) | undefined
       void locks
         .request(key, { signal: controller.signal }, () => {
+          // A grant can win the race against our own abandon; returning
+          // without holding releases the lock straight to the next tab.
+          if (disposed) return
           onAcquired()
           // Hold the lock until released; the browser releases it for us
           // when the tab dies, which is what promotes the next tab.
@@ -51,22 +52,46 @@ export function createWebCrossTabRefreshPort():
           console.warn('Cross-tab refresh leadership request failed:', error)
         })
       return () => {
+        disposed = true
         controller.abort()
         releaseHeld?.()
       }
     },
     publishCredential(key, credential) {
-      channelFor(key).postMessage(credential)
+      const entry = channels.get(key)
+      if (entry !== undefined) {
+        entry.channel.postMessage(credential)
+        return
+      }
+      // No subscriber on this key here: publish on an ephemeral channel so
+      // nothing is left open with no owner to close it.
+      const channel = new BroadcastChannel(key)
+      channel.postMessage(credential)
+      channel.close()
     },
     onCredential(key, callback) {
-      const channel = channelFor(key)
-      channel.onmessage = (event) => {
+      let entry = channels.get(key)
+      if (entry === undefined) {
+        entry = { channel: new BroadcastChannel(key), subscribers: 0 }
+        channels.set(key, entry)
+      }
+      entry.subscribers += 1
+      const subscribed = entry
+      const handler = (event: MessageEvent) => {
         const message: unknown = event.data
         callback(message)
       }
+      subscribed.channel.addEventListener('message', handler)
+      let active = true
       return () => {
-        channel.close()
-        channels.delete(key)
+        if (!active) return
+        active = false
+        subscribed.channel.removeEventListener('message', handler)
+        subscribed.subscribers -= 1
+        if (subscribed.subscribers === 0) {
+          subscribed.channel.close()
+          if (channels.get(key) === subscribed) channels.delete(key)
+        }
       }
     }
   }
