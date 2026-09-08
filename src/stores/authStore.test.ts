@@ -380,6 +380,26 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('unified identity push', () => {
+    it('pushes the identity sync into the workspace store on every auth-state event', () => {
+      const workspaceAuth = useWorkspaceAuthStore()
+      const syncSpy = vi.spyOn(workspaceAuth, 'syncUnifiedIdentity')
+
+      authStateCallback(mockUser)
+      expect(
+        syncSpy,
+        'identity must reach the unified client on the auth event itself, not on the next entry-point call'
+      ).toHaveBeenCalled()
+
+      syncSpy.mockClear()
+      authStateCallback(null)
+      expect(
+        syncSpy,
+        'sign-out must push the identity diff too, so the client can never hold a stale user'
+      ).toHaveBeenCalled()
+    })
+  })
+
   describe('user-scoped billing endpoints with API-key sessions', () => {
     beforeEach(() => {
       authStateCallback(null)

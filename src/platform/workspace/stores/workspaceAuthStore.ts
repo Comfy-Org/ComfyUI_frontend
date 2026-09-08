@@ -1106,6 +1106,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     refreshToken,
     mintAtLogin,
     remintUnifiedOnce,
+    syncUnifiedIdentity,
     getWorkspaceAuthHeader,
     ensureWorkspaceAuthHeader,
     ensureWorkspaceToken,
