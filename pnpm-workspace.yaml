@@ -66,7 +66,7 @@ catalog:
   '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.8
-  '@vitest/coverage-v8': ^4.1.11
+  '@vitest/coverage-v8': ^5.0.0
   '@vitest/ui': ^4.1.11
   '@vueuse/core': ^14.4.0
   '@vueuse/integrations': ^14.4.0
