@@ -186,12 +186,16 @@ const upscalingTag: TranslationKey = 'tags.upscaling'
 const motionControlTag: TranslationKey = 'tags.motionControl'
 
 const dougHogan: TutorialAuthor = {
-  name: { en: 'Doug Hogan', 'zh-CN': 'Doug Hogan' },
+  name: {
+    en: 'Doug Hogan',
+    'zh-CN': 'Doug Hogan',
+    ja: 'Doug Hogan' /* machine */
+  },
   avatar: 'https://media.comfy.org/website/authors/doug-hogan.jpeg'
 }
 
 const shaneFu: TutorialAuthor = {
-  name: { en: 'Shane Fu', 'zh-CN': 'Shane Fu' },
+  name: { en: 'Shane Fu', 'zh-CN': 'Shane Fu', ja: 'Shane Fu' /* machine */ },
   avatar: 'https://media.comfy.org/website/authors/shane-fu.jpeg'
 }
 
@@ -206,12 +210,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     youtubeId: 'TQhIYT1ZYGQ',
     title: {
       en: 'ComfyUI Tutorial for Beginners: Full Node Graph Basics (2026)',
-      'zh-CN': 'ComfyUI 新手教程：完整节点图基础 (2026)'
+      'zh-CN': 'ComfyUI 新手教程：完整节点图基础 (2026)',
+      ja: '初心者向けComfyUIチュートリアル：ノードグラフの基本を完全解説（2026年）' /* machine */
     },
     description: {
       en: "A beginner's tour of the ComfyUI node graph: how nodes, links, and the run queue fit together to build your first working pipeline.",
       'zh-CN':
-        '面向初学者的 ComfyUI 节点图入门：了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。'
+        '面向初学者的 ComfyUI 节点图入门：了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。',
+      ja: 'ComfyUIのノードグラフを初心者向けに解説。ノード、リンク、実行キューの仕組みを理解し、最初の動作するパイプラインを構築します。' /* machine */
     },
     poster:
       'https://media.comfy.org/website/learning/full-node-graph-basics-thumb.jpg',
@@ -230,12 +236,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     youtubeId: 'uafAN8zLKD8',
     title: {
       en: 'ComfyUI Tutorial for Beginners: Text-to-Image & Image-to-Image Workflows (2026)',
-      'zh-CN': 'ComfyUI 新手教程：文生图与图生图工作流 (2026)'
+      'zh-CN': 'ComfyUI 新手教程：文生图与图生图工作流 (2026)',
+      ja: '初心者向けComfyUIチュートリアル：テキストから画像・画像から画像ワークフロー（2026年）' /* machine */
     },
     description: {
       en: 'Build your first text-to-image workflow, then adapt it for image-to-image: prompts, samplers, denoise strength, and when to reach for each.',
       'zh-CN':
-        '搭建你的第一条文生图工作流，再将它改造为图生图：提示词、采样器、去噪强度，以及各自的适用场景。'
+        '搭建你的第一条文生图工作流，再将它改造为图生图：提示词、采样器、去噪强度，以及各自的适用场景。',
+      ja: '最初のテキストから画像生成ワークフローを構築し、画像から画像生成向けに調整します。プロンプト、サンプラー、ノイズ除去強度、それぞれの使い分けを解説します。' /* machine */
     },
     poster:
       'https://media.comfy.org/website/learning/text-to-image-image-to-image-thumb.jpg',
@@ -254,12 +262,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     youtubeId: '-igiHGaxKek',
     title: {
       en: 'ComfyUI Tutorial for Beginners: LoRAs, Style Transfer & ControlNets (2026)',
-      'zh-CN': 'ComfyUI 新手教程：LoRA、风格迁移与 ControlNet (2026)'
+      'zh-CN': 'ComfyUI 新手教程：LoRA、风格迁移与 ControlNet (2026)',
+      ja: 'ComfyUI初心者向けチュートリアル：LoRA、スタイル転送、ControlNet（2026）' /* machine */
     },
     description: {
       en: 'Go further with LoRAs, style transfer, and ControlNets: what each one does and how to wire them into a ComfyUI workflow.',
       'zh-CN':
-        '进阶了解 LoRA、风格迁移与 ControlNet：各自的作用，以及如何将它们接入 ComfyUI 工作流。'
+        '进阶了解 LoRA、风格迁移与 ControlNet：各自的作用，以及如何将它们接入 ComfyUI 工作流。',
+      ja: 'LoRA、スタイル転送、ControlNetをさらに活用。それぞれの役割と、ComfyUIワークフローへの接続方法を解説します。' /* machine */
     },
     poster:
       'https://media.comfy.org/website/learning/loras-style-transfer-controlnets-thumb.jpg',
@@ -278,12 +288,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     youtubeId: 'hFCuhcm37uY',
     title: {
       en: 'ComfyUI Tutorial for Beginners: Inpainting, Outpainting & Upscaling (2026)',
-      'zh-CN': 'ComfyUI 新手教程：局部重绘、扩图与放大 (2026)'
+      'zh-CN': 'ComfyUI 新手教程：局部重绘、扩图与放大 (2026)',
+      ja: 'ComfyUI初心者向けチュートリアル：インペインティング、アウトペインティング、アップスケーリング（2026）' /* machine */
     },
     description: {
       en: 'Edit and enlarge images in ComfyUI: mask and repaint with inpainting, extend the frame with outpainting, and add resolution with upscaling.',
       'zh-CN':
-        '在 ComfyUI 中编辑与放大图像：用局部重绘遮罩改图，用扩图扩展画面，再通过放大提升分辨率。'
+        '在 ComfyUI 中编辑与放大图像：用局部重绘遮罩改图，用扩图扩展画面，再通过放大提升分辨率。',
+      ja: 'ComfyUIで画像を編集・拡大。インペインティングでマスク箇所を再描画し、アウトペインティングでフレームを拡張、アップスケーリングで解像度を高めます。' /* machine */
     },
     poster:
       'https://media.comfy.org/website/learning/inpainting-outpainting-upscaling-thumb.jpg',
@@ -302,12 +314,14 @@ export const learningTutorials: readonly LearningTutorial[] = [
     youtubeId: 'Yuw8F4E4-7Y',
     title: {
       en: 'ComfyUI Tutorial for Beginners: Image-to-Video, Motion Control & Upscaling (2026)',
-      'zh-CN': 'ComfyUI 新手教程：图生视频、运动控制与放大 (2026)'
+      'zh-CN': 'ComfyUI 新手教程：图生视频、运动控制与放大 (2026)',
+      ja: 'ComfyUI初心者向けチュートリアル：Image-to-Video、モーションコントロール、アップスケーリング（2026）' /* machine */
     },
     description: {
       en: 'Turn a still into a shot: build an image-to-video workflow, steer the result with motion control, and finish at higher resolution with upscaling.',
       'zh-CN':
-        '让静态图动起来：搭建图生视频工作流，用运动控制引导镜头表现，再通过放大以更高分辨率输出。'
+        '让静态图动起来：搭建图生视频工作流，用运动控制引导镜头表现，再通过放大以更高分辨率输出。',
+      ja: '静止画をショットに変換。image-to-videoワークフローを構築し、モーションコントロールで結果を調整して、アップスケーリングで高解像度に仕上げます。' /* machine */
     },
     poster:
       'https://media.comfy.org/website/learning/image-to-video-motion-control-upscaling-thumb.png',
@@ -323,7 +337,11 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'vfx',
     episode: 1,
     author: dougHogan,
-    title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
+    title: {
+      en: 'Cleanplate Walkthrough',
+      'zh-CN': '净板演练',
+      ja: 'クリーンプレート解説' /* machine */
+    },
     videoSrc:
       'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03.mp4',
     poster:
@@ -346,7 +364,11 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'vfx',
     episode: 2,
     author: dougHogan,
-    title: { en: 'Deaging Workflow', 'zh-CN': '减龄工作流' },
+    title: {
+      en: 'Deaging Workflow',
+      'zh-CN': '减龄工作流',
+      ja: '若返りワークフロー' /* machine */
+    },
     videoSrc:
       'https://media.comfy.org/website/learning/deaging_workflow_v03.mp4',
     poster:
@@ -369,7 +391,11 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'vfx',
     episode: 3,
     author: dougHogan,
-    title: { en: 'Frame Adjustments Demo', 'zh-CN': '帧调整演示' },
+    title: {
+      en: 'Frame Adjustments Demo',
+      'zh-CN': '帧调整演示',
+      ja: 'フレーム調整デモ' /* machine */
+    },
     videoSrc:
       'https://media.comfy.org/website/learning/frame_adjustments_demo_v03.mp4',
     poster:
@@ -393,7 +419,11 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'vfx',
     episode: 4,
     author: dougHogan,
-    title: { en: 'Mattes and Utilities', 'zh-CN': '遮罩与实用工具' },
+    title: {
+      en: 'Mattes and Utilities',
+      'zh-CN': '遮罩与实用工具',
+      ja: 'マットとユーティリティ' /* machine */
+    },
     videoSrc:
       'https://media.comfy.org/website/learning/mattes_and_utilities_v03.mp4',
     poster:
@@ -417,7 +447,11 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'vfx',
     episode: 5,
     author: dougHogan,
-    title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
+    title: {
+      en: 'Seedance Demo ComfyUI',
+      'zh-CN': 'Seedance ComfyUI 演示',
+      ja: 'Seedanceデモ ComfyUI' /* machine */
+    },
     videoSrc:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03.mp4',
     poster:
@@ -441,7 +475,11 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'vfx',
     episode: 6,
     author: dougHogan,
-    title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
+    title: {
+      en: 'Sky Replacement',
+      'zh-CN': '天空替换',
+      ja: '空の置き換え' /* machine */
+    },
     videoSrc:
       'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4',
     poster:
@@ -464,11 +502,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'animations',
     episode: 1,
     author: shaneFu,
-    title: { en: 'Character Sheet', 'zh-CN': '角色设定表' },
+    title: {
+      en: 'Character Sheet',
+      'zh-CN': '角色设定表',
+      ja: 'キャラクターシート' /* machine */
+    },
     description: {
       en: 'Turn concept art into a full character sheet with this ComfyUI workflow: GPT Image 2 generates body turnarounds and face close-ups, then auto-stitches them.',
       'zh-CN':
-        '用此 ComfyUI 工作流将概念美术转化为完整的角色设定表：GPT Image 2 生成全身转身视图与面部特写，并自动拼接成一张图。'
+        '用此 ComfyUI 工作流将概念美术转化为完整的角色设定表：GPT Image 2 生成全身转身视图与面部特写，并自动拼接成一张图。',
+      ja: 'コンセプトアートからキャラクターシートを作成するComfyUIワークフロー。GPT Image 2でターンアラウンドと顔のクローズアップを生成し、自動でつなぎ合わせます。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation1.mp4',
     poster: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
@@ -491,11 +534,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'animations',
     episode: 2,
     author: shaneFu,
-    title: { en: 'Keyframe Exploration', 'zh-CN': '关键帧探索' },
+    title: {
+      en: 'Keyframe Exploration',
+      'zh-CN': '关键帧探索',
+      ja: 'キーフレーム探索' /* machine */
+    },
     description: {
       en: 'Generate a character keyframe at any camera angle with this ComfyUI workflow: set direction, elevation, and distance, then GPT Image 2 renders the shot.',
       'zh-CN':
-        '用此 ComfyUI 工作流在任意机位角度生成角色关键帧：设置方向、俯仰和距离，再由 GPT Image 2 渲染出画面。'
+        '用此 ComfyUI 工作流在任意机位角度生成角色关键帧：设置方向、俯仰和距离，再由 GPT Image 2 渲染出画面。',
+      ja: '任意のカメラアングルでキャラクターのキーフレームを生成するComfyUIワークフロー。方向・高さ・距離を設定してから、GPT Image 2でショットをレンダリングします。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation2.mp4',
     poster: 'https://media.comfy.org/website/learning/animation2-thumb.jpg',
@@ -518,11 +566,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'animations',
     episode: 3,
     author: shaneFu,
-    title: { en: 'Background and Asset Generation', 'zh-CN': '背景与素材生成' },
+    title: {
+      en: 'Background and Asset Generation',
+      'zh-CN': '背景与素材生成',
+      ja: '背景・アセット生成' /* machine */
+    },
     description: {
       en: 'Apply a production frame’s style to backgrounds and props with this ComfyUI workflow: GPT Image 2 paints sketches to match, with auto background removal.',
       'zh-CN':
-        '用此 ComfyUI 工作流将制作帧的风格应用到背景与道具：GPT Image 2 将草图绘制成匹配风格，并自动去除背景。'
+        '用此 ComfyUI 工作流将制作帧的风格应用到背景与道具：GPT Image 2 将草图绘制成匹配风格，并自动去除背景。',
+      ja: 'プロダクションフレームのスタイルを背景や小道具に適用するComfyUIワークフロー。GPT Image 2がスケッチをスタイルに合わせて描画し、背景を自動で削除します。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation3.mp4',
     poster: 'https://media.comfy.org/website/learning/animation3-thumb.jpg',
@@ -550,11 +603,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'animations',
     episode: 4,
     author: shaneFu,
-    title: { en: 'Concept Exploration', 'zh-CN': '概念探索' },
+    title: {
+      en: 'Concept Exploration',
+      'zh-CN': '概念探索',
+      ja: 'コンセプト探索' /* machine */
+    },
     description: {
       en: 'Turn concept art into a poseable 3D proxy with this ComfyUI workflow: Tripo builds the model, then generate a styled still or camera-move video from any angle.',
       'zh-CN':
-        '用此 ComfyUI 工作流将概念美术转化为可摆姿的 3D 代理：Tripo 生成模型，再从任意角度生成风格化静帧或运镜视频。'
+        '用此 ComfyUI 工作流将概念美术转化为可摆姿的 3D 代理：Tripo 生成模型，再从任意角度生成风格化静帧或运镜视频。',
+      ja: 'コンセプトアートをポーズ可能な3Dプロキシに変換するComfyUIワークフロー。Tripoでモデルを作成し、任意のアングルからスタイル付きスチルまたはカメラ移動動画を生成します。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation4.mp4',
     poster: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
@@ -577,11 +635,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'animations',
     episode: 5,
     author: shaneFu,
-    title: { en: 'In-Betweening', 'zh-CN': '中间帧绘制' },
+    title: {
+      en: 'In-Betweening',
+      'zh-CN': '中间帧绘制',
+      ja: '中割り' /* machine */
+    },
     description: {
       en: 'Generate the in-between frames from a sequence of keyframes with this ComfyUI workflow: Wan 2.2 interpolates each pair into one assembled character animation.',
       'zh-CN':
-        '用此 ComfyUI 工作流从关键帧序列生成中间帧：Wan 2.2 对每一对关键帧进行插值，拼接成一段完整的角色动画。'
+        '用此 ComfyUI 工作流从关键帧序列生成中间帧：Wan 2.2 对每一对关键帧进行插值，拼接成一段完整的角色动画。',
+      ja: 'キーフレームの連続から中割りフレームを生成するComfyUIワークフロー。Wan 2.2が各ペアを補間し、1本のキャラクターアニメーションにまとめます。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation5.mp4',
     poster: 'https://media.comfy.org/website/learning/animation5-thumb.jpg',
@@ -604,11 +667,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'animations',
     episode: 6,
     author: shaneFu,
-    title: { en: 'Background and Compositing', 'zh-CN': '背景与合成' },
+    title: {
+      en: 'Background and Compositing',
+      'zh-CN': '背景与合成',
+      ja: '背景とコンポジット' /* machine */
+    },
     description: {
       en: 'Animate backgrounds and composite characters with this ComfyUI workflow: Cdance loops still backgrounds, then blends the character with matched lighting.',
       'zh-CN':
-        '用此 ComfyUI 工作流让背景动起来并合成角色：Cdance 将静态背景生成循环动画，再以匹配的光照将角色融合其中。'
+        '用此 ComfyUI 工作流让背景动起来并合成角色：Cdance 将静态背景生成循环动画，再以匹配的光照将角色融合其中。',
+      ja: '背景をアニメーション化し、キャラクターを合成するComfyUIワークフロー。Cdanceで静止背景をループさせ、照明を合わせてキャラクターを合成します。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/animation6.mp4',
     poster: 'https://media.comfy.org/website/learning/animation6-thumb.jpg',
@@ -631,11 +699,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     episode: 1,
     author: shaneFu,
-    title: { en: 'Moodboard Creation', 'zh-CN': '情绪板制作' },
+    title: {
+      en: 'Moodboard Creation',
+      'zh-CN': '情绪板制作',
+      ja: 'ムードボード作成' /* machine */
+    },
     description: {
       en: 'Turn mood board selects into fresh, on-brand ad visuals with this ComfyUI workflow: extract a style with Recraft, or alter elements with GPT Image 2.',
       'zh-CN':
-        '通过此 ComfyUI 工作流，将情绪板参考图转化为符合品牌调性的全新广告视觉：用 Recraft 提取风格，或用 GPT Image 2 调整元素。'
+        '通过此 ComfyUI 工作流，将情绪板参考图转化为符合品牌调性的全新广告视觉：用 Recraft 提取风格，或用 GPT Image 2 调整元素。',
+      ja: 'このComfyUIワークフローで、ムードボードから選んだ素材を新しいブランドに沿った広告ビジュアルに変換します。Recraftでスタイルを抽出するか、GPT Image 2で要素を変更できます。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising1.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
@@ -658,11 +731,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     episode: 2,
     author: shaneFu,
-    title: { en: 'Storyboard Creation', 'zh-CN': '故事板制作' },
+    title: {
+      en: 'Storyboard Creation',
+      'zh-CN': '故事板制作',
+      ja: 'ストーリーボード作成' /* machine */
+    },
     description: {
       en: 'Generate an ad storyboard from a shot list, then render polished style frames: a ComfyUI workflow using GPT Image and NanoBanana Pro across two passes.',
       'zh-CN':
-        '通过此 ComfyUI 工作流，从镜头表生成广告故事板，再渲染精致的风格帧：两个阶段分别使用 GPT Image 与 NanoBanana Pro。'
+        '通过此 ComfyUI 工作流，从镜头表生成广告故事板，再渲染精致的风格帧：两个阶段分别使用 GPT Image 与 NanoBanana Pro。',
+      ja: 'ショットリストから広告用ストーリーボードを生成し、洗練されたスタイルフレームをレンダリング。GPT ImageとNanoBanana Proを2段階で使うComfyUIワークフローです。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising2.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
@@ -690,11 +768,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     episode: 3,
     author: shaneFu,
-    title: { en: 'Product Photography', 'zh-CN': '产品摄影' },
+    title: {
+      en: 'Product Photography',
+      'zh-CN': '产品摄影',
+      ja: '商品写真' /* machine */
+    },
     description: {
       en: 'Generate, retouch, and animate product shots in one ComfyUI workflow: place products with GPT Image, mask-edit details, then create a hero video.',
       'zh-CN':
-        '在一套 ComfyUI 工作流中生成、修饰并让产品照片动起来：用 GPT Image 置入产品，蒙版编辑细节，再生成主打视频。'
+        '在一套 ComfyUI 工作流中生成、修饰并让产品照片动起来：用 GPT Image 置入产品，蒙版编辑细节，再生成主打视频。',
+      ja: '1つのComfyUIワークフローで商品写真を生成・レタッチ・アニメーション化。GPT Imageで商品を配置し、マスク編集で細部を調整してから、ヒーロー動画を作成します。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising3.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
@@ -722,11 +805,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     episode: 4,
     author: shaneFu,
-    title: { en: 'Talent Casting', 'zh-CN': '演员选角' },
+    title: {
+      en: 'Talent Casting',
+      'zh-CN': '演员选角',
+      ja: 'タレントキャスティング' /* machine */
+    },
     description: {
       en: 'Preview talent in a scene before the shoot with this ComfyUI workflow: generate a previs still with Gemini Image 2, then animate it into a clip with Kling.',
       'zh-CN':
-        '在开拍前用此 ComfyUI 工作流预览演员在场景中的效果：用 Gemini Image 2 生成预演静帧，再用 Kling 将其动画化为短片。'
+        '在开拍前用此 ComfyUI 工作流预览演员在场景中的效果：用 Gemini Image 2 生成预演静帧，再用 Kling 将其动画化为短片。',
+      ja: '撮影前にシーン内の出演者をプレビューするComfyUIワークフロー。Gemini Image 2でプリビズ用スチルを生成し、Klingでクリップにアニメーション化します。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising4.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising4-thumb.png',
@@ -754,11 +842,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     episode: 5,
     author: shaneFu,
-    title: { en: 'B-Roll Creation', 'zh-CN': 'B-Roll 素材制作' },
+    title: {
+      en: 'B-Roll Creation',
+      'zh-CN': 'B-Roll 素材制作',
+      ja: 'Bロール作成' /* machine */
+    },
     description: {
       en: 'Create or edit B-roll three ways in one ComfyUI workflow: generate a clip from a prompt, place a subject into a reference scene, or alter existing footage.',
       'zh-CN':
-        '在一套 ComfyUI 工作流中以三种方式创建或编辑 B-Roll 素材：用提示词生成片段、将主体置入参考场景，或修改现有素材。'
+        '在一套 ComfyUI 工作流中以三种方式创建或编辑 B-Roll 素材：用提示词生成片段、将主体置入参考场景，或修改现有素材。',
+      ja: '1つのComfyUIワークフローで、Bロールを3つの方法で作成・編集できます。プロンプトからクリップを生成、被写体を参照シーンに配置、または既存映像を変更します。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising5.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising5-thumb.png',
@@ -781,11 +874,16 @@ export const learningTutorials: readonly LearningTutorial[] = [
     category: 'ads',
     episode: 6,
     author: shaneFu,
-    title: { en: 'OOH Visualization', 'zh-CN': '户外广告可视化' },
+    title: {
+      en: 'OOH Visualization',
+      'zh-CN': '户外广告可视化',
+      ja: 'OOHビジュアライゼーション' /* machine */
+    },
     description: {
       en: 'Place a poster into real-world outdoor ad spots with this ComfyUI workflow: auto-generate billboard, transit, and building-wrap mockups with Gemini Image 2.',
       'zh-CN':
-        '用此 ComfyUI 工作流将海报置入真实的户外广告场景：通过 Gemini Image 2 自动生成广告牌、公交站台和楼体包装样机。'
+        '用此 ComfyUI 工作流将海报置入真实的户外广告场景：通过 Gemini Image 2 自动生成广告牌、公交站台和楼体包装样机。',
+      ja: 'このComfyUIワークフローで、ポスターを実在する屋外広告枠に配置します。Gemini Image 2を使い、ビルボード、交通広告、建物ラッピングのモックアップを自動生成できます。' /* machine */
     },
     videoSrc: 'https://media.comfy.org/website/learning/advertising6.mp4',
     poster: 'https://media.comfy.org/website/learning/advertising6-thumb.png',

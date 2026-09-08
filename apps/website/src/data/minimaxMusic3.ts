@@ -157,7 +157,8 @@ export const minimaxMusic3Page: ModelLaunchPage = {
         id: 'sample-01',
         description: {
           en: 'Gospel Soul',
-          'zh-CN': '福音灵魂乐'
+          'zh-CN': '福音灵魂乐',
+          ja: 'ゴスペル・ソウル' /* machine */
         },
         prompt: {
           en: gospelSoulPrompt,
@@ -176,7 +177,8 @@ export const minimaxMusic3Page: ModelLaunchPage = {
         id: 'sample-02',
         description: {
           en: 'Rock (Instrumental)',
-          'zh-CN': '摇滚（纯音乐）'
+          'zh-CN': '摇滚（纯音乐）',
+          ja: 'ロック（インストゥルメンタル）' /* machine */
         },
         prompt: {
           en: rockInstrumentalPrompt,
@@ -212,31 +214,36 @@ export const minimaxMusic3Page: ModelLaunchPage = {
         id: 'what-is-minimax-music-3',
         question: {
           en: 'What is MiniMax Music 3?',
-          'zh-CN': 'MiniMax Music 3 是什么？'
+          'zh-CN': 'MiniMax Music 3 是什么？',
+          ja: 'MiniMax Music 3とは？' /* machine */
         },
         answer: {
           en: 'An open weights music generation model that writes complete songs. Give it lyrics and a description of the sound, and it returns a finished track with vocals and full arrangement.',
           'zh-CN':
-            '一款开源权重的音乐生成模型，能创作完整的歌曲。给它歌词和对声音的描述，它就会返回一首带人声和完整编曲的成品曲目。'
+            '一款开源权重的音乐生成模型，能创作完整的歌曲。给它歌词和对声音的描述，它就会返回一首带人声和完整编曲的成品曲目。',
+          ja: '完全な楽曲を書き出せるオープンウェイトの音楽生成モデルです。歌詞とサウンドの説明を指定すると、ボーカルとフルアレンジを含む完成トラックが出力されます。' /* machine */
         }
       },
       {
         id: 'how-to-use',
         question: {
           en: 'How do I use MiniMax Music 3?',
-          'zh-CN': '如何使用 MiniMax Music 3？'
+          'zh-CN': '如何使用 MiniMax Music 3？',
+          ja: 'MiniMax Music 3の使い方を教えてください。' /* machine */
         },
         answer: {
           en: 'The easiest way to try MiniMax Music 3 is to connect to Comfy Cloud, search the corresponding workflows in the example workflows and run them! To use the model locally, download Comfy Desktop, create a new ComfyUI instance or update an existing one, search MiniMax Music 3 in the example workflows, download the models and run.',
           'zh-CN':
-            '体验 MiniMax Music 3 最简单的方式是连接 Comfy Cloud，在示例工作流中搜索对应的工作流并运行！若要在本地使用该模型，请下载 Comfy Desktop，新建一个 ComfyUI 实例或更新现有实例，在示例工作流中搜索 MiniMax Music 3，下载模型后运行。'
+            '体验 MiniMax Music 3 最简单的方式是连接 Comfy Cloud，在示例工作流中搜索对应的工作流并运行！若要在本地使用该模型，请下载 Comfy Desktop，新建一个 ComfyUI 实例或更新现有实例，在示例工作流中搜索 MiniMax Music 3，下载模型后运行。',
+          ja: 'MiniMax Music 3を試す最も簡単な方法は、Comfy Cloudに接続し、サンプルワークフローで該当するワークフローを検索して実行することです。ローカルでモデルを使用するには、Comfy Desktopをダウンロードし、新しいComfyUIインスタンスを作成するか既存のインスタンスを更新します。サンプルワークフローでMiniMax Music 3を検索し、モデルをダウンロードして実行してください。' /* machine */
         }
       },
       {
         id: 'how-to-prompt',
         question: {
           en: 'How do I prompt MiniMax Music 3?',
-          'zh-CN': '如何为 MiniMax Music 3 编写提示词？'
+          'zh-CN': '如何为 MiniMax Music 3 编写提示词？',
+          ja: 'MiniMax Music 3へのプロンプトはどう書けばよいですか？' /* machine */
         },
         answer: {
           en: howToPromptAnswerEn,
@@ -247,58 +254,68 @@ export const minimaxMusic3Page: ModelLaunchPage = {
         id: 'song-length',
         question: {
           en: 'How long can MiniMax Music 3 songs be?',
-          'zh-CN': 'MiniMax Music 3 生成的歌曲能有多长？'
+          'zh-CN': 'MiniMax Music 3 生成的歌曲能有多长？',
+          ja: 'MiniMax Music 3で生成できる曲の長さは？' /* machine */
         },
         answer: {
           en: 'Up to five minutes in a single generation. Structure holds across the full length, so melody, rhythm, and vocal identity stay consistent from intro to outro.',
           'zh-CN':
-            '单次生成最长五分钟。结构在整首曲目中保持稳定，因此旋律、节奏和人声特征从前奏到尾声都保持一致。'
+            '单次生成最长五分钟。结构在整首曲目中保持稳定，因此旋律、节奏和人声特征从前奏到尾声都保持一致。',
+          ja: '1回の生成で最長5分です。曲全体で構成が維持されるため、イントロからアウトロまでメロディ、リズム、ボーカルの個性を一貫させられます。' /* machine */
         }
       },
       {
         id: 'control-vocals',
         question: {
           en: 'Can I control the vocals?',
-          'zh-CN': '我可以控制人声吗？'
+          'zh-CN': '我可以控制人声吗？',
+          ja: 'ボーカルをコントロールできますか？' /* machine */
         },
         answer: {
           en: 'Yes. You can set gender, timbre, performance style, harmony, backing vocals, and effects.',
-          'zh-CN': '可以。你可以设定性别、音色、演唱风格、和声、伴唱以及音效。'
+          'zh-CN': '可以。你可以设定性别、音色、演唱风格、和声、伴唱以及音效。',
+          ja: 'はい。性別、声質、歌唱スタイル、ハーモニー、バッキングボーカル、エフェクトを設定できます。' /* machine */
         }
       },
       {
         id: 'audio-quality',
         question: {
           en: 'What audio quality does MiniMax Music 3 output?',
-          'zh-CN': 'MiniMax Music 3 输出的音频质量如何？'
+          'zh-CN': 'MiniMax Music 3 输出的音频质量如何？',
+          ja: 'MiniMax Music 3の出力音質は？' /* machine */
         },
         answer: {
           en: '32 kHz, 16-bit stereo WAV.',
-          'zh-CN': '32 kHz、16 位立体声 WAV。'
+          'zh-CN': '32 kHz、16 位立体声 WAV。',
+          ja: '32 kHz、16ビットステレオWAV。' /* machine */
         }
       },
       {
         id: 'free-to-use',
         question: {
           en: 'Is MiniMax Music 3 free to use?',
-          'zh-CN': 'MiniMax Music 3 可以免费使用吗？'
+          'zh-CN': 'MiniMax Music 3 可以免费使用吗？',
+          ja: 'MiniMax Music 3は無料で使えますか？' /* machine */
         },
         answer: {
           en: 'Yes. MiniMax Music 3 is open weight under the [MiniMax Community License](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE), free to use, including commercially, for companies under 20 million US dollars in yearly revenue.',
           'zh-CN':
-            '可以。MiniMax Music 3 依据 [MiniMax 社区许可](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE)提供开源权重，年收入低于 2000 万美元的公司可免费使用，包括商业用途。'
+            '可以。MiniMax Music 3 依据 [MiniMax 社区许可](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE)提供开源权重，年收入低于 2000 万美元的公司可免费使用，包括商业用途。',
+          ja: 'はい。MiniMax Music 3は[MiniMax Community License](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE)に基づくオープンウェイトで、年間売上高が2,000万米ドル未満の企業は商用利用を含め無料で使用できます。' /* machine */
         }
       },
       {
         id: 'commercial-use',
         question: {
           en: 'Can I use MiniMax Music 3 commercially?',
-          'zh-CN': '我可以将 MiniMax Music 3 用于商业用途吗？'
+          'zh-CN': '我可以将 MiniMax Music 3 用于商业用途吗？',
+          ja: 'MiniMax Music 3を商用利用できますか？' /* machine */
         },
         answer: {
           en: 'Yes, for companies under 20 million US dollars in yearly revenue, under the MiniMax Community License. Above that threshold you need MiniMax authorization, which [a MiniMax commercial license through Comfy](https://comfy.org/minimax/license) covers.',
           'zh-CN':
-            '可以。依据 MiniMax 社区许可，年收入低于 2000 万美元的公司可以商用。超过该门槛需要 MiniMax 授权，[通过 Comfy 获取的 MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license)即涵盖这一授权。'
+            '可以。依据 MiniMax 社区许可，年收入低于 2000 万美元的公司可以商用。超过该门槛需要 MiniMax 授权，[通过 Comfy 获取的 MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license)即涵盖这一授权。',
+          ja: 'はい。年間売上高が2,000万米ドル未満の企業は、MiniMax Community Licenseに基づき商用利用できます。この基準を超える場合はMiniMaxの承認が必要ですが、[Comfyを通じたMiniMaxの商用ライセンス](https://comfy.org/minimax/license)で対応できます。' /* machine */
         }
       }
     ]
@@ -319,26 +336,41 @@ export const minimaxMusic3Page: ModelLaunchPage = {
     items: [
       {
         id: 'write-your-lyrics',
-        title: { en: 'Write your lyrics', 'zh-CN': '写下你的歌词' },
+        title: {
+          en: 'Write your lyrics',
+          'zh-CN': '写下你的歌词',
+          ja: '歌詞を書く' /* machine */
+        },
         description: {
           en: 'Your words, or auto-written from a theme',
-          'zh-CN': '用你自己的词，或根据主题自动生成'
+          'zh-CN': '用你自己的词，或根据主题自动生成',
+          ja: '自作の歌詞、またはテーマから自動作成' /* machine */
         }
       },
       {
         id: 'describe-the-sound',
-        title: { en: 'Describe the sound', 'zh-CN': '描述你想要的声音' },
+        title: {
+          en: 'Describe the sound',
+          'zh-CN': '描述你想要的声音',
+          ja: 'サウンドを説明' /* machine */
+        },
         description: {
           en: 'Style, mood, instruments',
-          'zh-CN': '风格、情绪、乐器'
+          'zh-CN': '风格、情绪、乐器',
+          ja: 'スタイル、ムード、楽器' /* machine */
         }
       },
       {
         id: 'generate-your-song',
-        title: { en: 'Generate your song', 'zh-CN': '生成你的歌曲' },
+        title: {
+          en: 'Generate your song',
+          'zh-CN': '生成你的歌曲',
+          ja: '楽曲を生成' /* machine */
+        },
         description: {
           en: 'Full track, up to five minutes',
-          'zh-CN': '完整曲目，最长五分钟'
+          'zh-CN': '完整曲目，最长五分钟',
+          ja: '最長5分のフルトラック' /* machine */
         }
       }
     ]

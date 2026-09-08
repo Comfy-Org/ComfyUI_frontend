@@ -73,7 +73,11 @@ const geminiOmniLinks = {
 
 // Every card is the same model on pay-as-you-go, which is what the Figma shows:
 // the note reads "pay-as-you-go" on all four rather than naming a capability.
-const premiumNote = { en: 'Pay-as-you-go', 'zh-CN': '按量付费' }
+const premiumNote = {
+  en: 'Pay-as-you-go',
+  'zh-CN': '按量付费',
+  ja: '従量課金' /* machine */
+}
 
 // Prompts are literal text a reader pastes into the model, so they are not
 // translated. Same rule as /seedance-2.5.
@@ -132,12 +136,17 @@ export const geminiOmniPage: ModelLaunchPage = {
     cards: [
       {
         id: 'seasonal-timelapse',
-        name: { en: 'Seasonal timelapse', 'zh-CN': '四季延时' },
+        name: {
+          en: 'Seasonal timelapse',
+          'zh-CN': '四季延时',
+          ja: '季節のタイムラプス' /* machine */
+        },
         tier: 'premium',
         note: premiumNote,
         description: {
           en: 'Winter to spring and back again',
-          'zh-CN': '冬去春来，四季轮回'
+          'zh-CN': '冬去春来，四季轮回',
+          ja: '冬から春、そして再び冬へ' /* machine */
         },
         prompt: { en: SEASONS_PROMPT, 'zh-CN': SEASONS_PROMPT },
         media: media.seasons,
@@ -145,12 +154,17 @@ export const geminiOmniPage: ModelLaunchPage = {
       },
       {
         id: 'saxophone-halftone',
-        name: { en: 'Saxophone solo', 'zh-CN': '萨克斯独奏' },
+        name: {
+          en: 'Saxophone solo',
+          'zh-CN': '萨克斯独奏',
+          ja: 'サックスソロ' /* machine */
+        },
         tier: 'premium',
         note: premiumNote,
         description: {
           en: 'Saxophone solo in halftone',
-          'zh-CN': '半调风格的萨克斯独奏'
+          'zh-CN': '半调风格的萨克斯独奏',
+          ja: 'ハーフトーンのサックスソロ' /* machine */
         },
         prompt: { en: SAXOPHONE_PROMPT, 'zh-CN': SAXOPHONE_PROMPT },
         media: media.saxophone,
@@ -158,12 +172,17 @@ export const geminiOmniPage: ModelLaunchPage = {
       },
       {
         id: 'floor-robot',
-        name: { en: 'Floor robot advert', 'zh-CN': '扫地机器人广告' },
+        name: {
+          en: 'Floor robot advert',
+          'zh-CN': '扫地机器人广告',
+          ja: '床掃除ロボットの広告' /* machine */
+        },
         tier: 'premium',
         note: premiumNote,
         description: {
           en: 'Slow push on a floor robot',
-          'zh-CN': '缓缓推近的扫地机器人'
+          'zh-CN': '缓缓推近的扫地机器人',
+          ja: '床掃除ロボットへのゆっくりしたプッシュイン' /* machine */
         },
         prompt: { en: VACUUM_PROMPT, 'zh-CN': VACUUM_PROMPT },
         media: media.vacuum,
@@ -171,12 +190,17 @@ export const geminiOmniPage: ModelLaunchPage = {
       },
       {
         id: 'stone-head-speaks',
-        name: { en: 'Stone head speaks', 'zh-CN': '石像开口' },
+        name: {
+          en: 'Stone head speaks',
+          'zh-CN': '石像开口',
+          ja: '石の頭部が話す' /* machine */
+        },
         tier: 'premium',
         note: premiumNote,
         description: {
           en: 'Stone head speaks',
-          'zh-CN': '石像开口说话'
+          'zh-CN': '石像开口说话',
+          ja: '石の頭部が話す' /* machine */
         },
         prompt: { en: STONE_HEAD_PROMPT, 'zh-CN': STONE_HEAD_PROMPT },
         media: media.stoneHead,
@@ -186,12 +210,17 @@ export const geminiOmniPage: ModelLaunchPage = {
       },
       {
         id: 'cavemen-discover-fire',
-        name: { en: 'Cavemen discover fire', 'zh-CN': '穴居人发现火' },
+        name: {
+          en: 'Cavemen discover fire',
+          'zh-CN': '穴居人发现火',
+          ja: '原始人が火を発見' /* machine */
+        },
         tier: 'premium',
         note: premiumNote,
         description: {
           en: 'Cavemen meet the future',
-          'zh-CN': '穴居人遇见未来'
+          'zh-CN': '穴居人遇见未来',
+          ja: '原始人が未来に出会う' /* machine */
         },
         prompt: { en: CAVEMEN_PROMPT, 'zh-CN': CAVEMEN_PROMPT },
         media: media.cavemen,
@@ -199,12 +228,17 @@ export const geminiOmniPage: ModelLaunchPage = {
       },
       {
         id: 'dog-with-hot-dog',
-        name: { en: 'Dog in a hot dog costume', 'zh-CN': '穿热狗装的狗' },
+        name: {
+          en: 'Dog in a hot dog costume',
+          'zh-CN': '穿热狗装的狗',
+          ja: 'ホットドッグのコスチュームを着た犬' /* machine */
+        },
         tier: 'premium',
         note: premiumNote,
         description: {
           en: 'A dog with hot dog',
-          'zh-CN': '狗与热狗'
+          'zh-CN': '狗与热狗',
+          ja: 'ホットドッグを持つ犬' /* machine */
         },
         prompt: { en: HOT_DOG_PROMPT, 'zh-CN': HOT_DOG_PROMPT },
         media: media.hotDogDog,
@@ -220,23 +254,34 @@ export const geminiOmniPage: ModelLaunchPage = {
         id: 'upload-references',
         title: {
           en: 'Upload your reference assets',
-          'zh-CN': '上传你的参考素材'
+          'zh-CN': '上传你的参考素材',
+          ja: '参照アセットをアップロード' /* machine */
         }
       },
       {
         id: 'prompt-the-scene',
-        title: { en: 'Prompt the scene', 'zh-CN': '描述你的场景' },
+        title: {
+          en: 'Prompt the scene',
+          'zh-CN': '描述你的场景',
+          ja: 'シーンをプロンプト' /* machine */
+        },
         description: {
           en: 'Camera, action, timing, dialogue',
-          'zh-CN': '运镜、动作、节奏、对白'
+          'zh-CN': '运镜、动作、节奏、对白',
+          ja: 'カメラ、アクション、タイミング、台詞' /* machine */
         }
       },
       {
         id: 'generate-your-shot',
-        title: { en: 'Generate your shot', 'zh-CN': '生成你的镜头' },
+        title: {
+          en: 'Generate your shot',
+          'zh-CN': '生成你的镜头',
+          ja: 'ショットを生成' /* machine */
+        },
         description: {
           en: 'Up to 10 seconds at 4k.',
-          'zh-CN': '最长 10 秒，最高 4K。'
+          'zh-CN': '最长 10 秒，最高 4K。',
+          ja: '4Kで最大10秒。' /* machine */
         }
       }
     ],
@@ -272,36 +317,42 @@ export const geminiOmniPage: ModelLaunchPage = {
         id: 'what-is-omni-flash',
         question: {
           en: 'What is Gemini Omni 1.1 Flash?',
-          'zh-CN': '什么是 Gemini Omni 1.1 Flash？'
+          'zh-CN': '什么是 Gemini Omni 1.1 Flash？',
+          ja: 'Gemini Omni 1.1 Flashとは？' /* machine */
         },
         answer: {
           en: "Gemini Omni 1.1 Flash is Google's multimodal video model, built for fast video generation, editing, and cinematic control. It processes text, image, audio, and video together, generates clips with an audio track, and edits existing video from plain-language instructions. It replaces earlier versions of Gemini Omni Flash.",
           'zh-CN':
-            'Gemini Omni 1.1 Flash 是 Google 的多模态视频模型，为快速视频生成、编辑与运镜控制而打造。它同时处理文本、图像、音频与视频，生成自带音轨的片段，并可依据自然语言指令编辑已有视频。它取代了此前各版本的 Gemini Omni Flash。'
+            'Gemini Omni 1.1 Flash 是 Google 的多模态视频模型，为快速视频生成、编辑与运镜控制而打造。它同时处理文本、图像、音频与视频，生成自带音轨的片段，并可依据自然语言指令编辑已有视频。它取代了此前各版本的 Gemini Omni Flash。',
+          ja: 'Gemini Omni 1.1 Flashは、迅速な動画生成、編集、シネマティックな制御向けに設計されたGoogleのマルチモーダル動画モデルです。テキスト、画像、音声、動画をまとめて処理し、音声トラック付きのクリップを生成できます。自然言語の指示で既存動画を編集することも可能です。以前のGemini Omni Flashバージョンに代わるモデルです。' /* machine */
         }
       },
       {
         id: 'extend-a-video',
         question: {
           en: 'Can Gemini Omni 1.1 Flash extend a video?',
-          'zh-CN': 'Gemini Omni 1.1 Flash 可以延长视频吗？'
+          'zh-CN': 'Gemini Omni 1.1 Flash 可以延长视频吗？',
+          ja: 'Gemini Omni 1.1 Flashで動画を延長できますか？' /* machine */
         },
         answer: {
           en: 'Yes. With task type set to extend, Gemini Omni 1.1 Flash reads the prior motion and composition of a clip and continues the shot, holding character identity and lighting steady. A prompt like "continue the shot: the woman finishes the violin solo and takes a bow" picks up where the clip ends.',
           'zh-CN':
-            '可以。将任务类型设为 extend 后，Gemini Omni 1.1 Flash 会读取片段此前的运动与构图并延续该镜头，同时保持人物特征与光照一致。诸如「continue the shot: the woman finishes the violin solo and takes a bow」这样的提示词，会从片段结束处接续下去。'
+            '可以。将任务类型设为 extend 后，Gemini Omni 1.1 Flash 会读取片段此前的运动与构图并延续该镜头，同时保持人物特征与光照一致。诸如「continue the shot: the woman finishes the violin solo and takes a bow」这样的提示词，会从片段结束处接续下去。',
+          ja: 'はい。task typeをextendに設定すると、Gemini Omni 1.1 Flashがクリップの前の動きと構図を読み取り、キャラクターの同一性と照明を維持しながらショットを続けます。「ショットを続ける：女性がバイオリンのソロを弾き終え、お辞儀をする」のようなプロンプトで、クリップの終わりから続きを作成できます。' /* machine */
         }
       },
       {
         id: 'commercial-use',
         question: {
           en: 'Can I use Gemini Omni 1.1 Flash commercially?',
-          'zh-CN': '我可以将 Gemini Omni 1.1 Flash 用于商业用途吗？'
+          'zh-CN': '我可以将 Gemini Omni 1.1 Flash 用于商业用途吗？',
+          ja: 'Gemini Omni 1.1 Flashは商用利用できますか？' /* machine */
         },
         answer: {
           en: "Yes. Output generated through ComfyUI partner nodes can be used in commercial work, subject to ComfyUI's terms and Google's usage policies. All videos carry a SynthID watermark, which is invisible to viewers but programmatically detectable for provenance.",
           'zh-CN':
-            '可以。通过 ComfyUI 合作伙伴节点生成的内容可用于商业作品，但须遵守 ComfyUI 的条款与 Google 的使用政策。所有视频都带有 SynthID 水印，观众无法察觉，但可通过程序检测以追溯来源。'
+            '可以。通过 ComfyUI 合作伙伴节点生成的内容可用于商业作品，但须遵守 ComfyUI 的条款与 Google 的使用政策。所有视频都带有 SynthID 水印，观众无法察觉，但可通过程序检测以追溯来源。',
+          ja: 'はい。ComfyUIのパートナーノードを通じて生成した出力は、ComfyUIの利用規約およびGoogleの利用ポリシーに従う限り、商用利用できます。すべての動画にはSynthIDウォーターマークが付与されます。視聴者には見えませんが、来歴確認のためプログラムで検出できます。' /* machine */
         }
       },
       {
@@ -309,48 +360,56 @@ export const geminiOmniPage: ModelLaunchPage = {
         question: {
           en: 'What resolutions and aspect ratios does Gemini Omni 1.1 Flash support in ComfyUI?',
           'zh-CN':
-            '在 ComfyUI 中，Gemini Omni 1.1 Flash 支持哪些分辨率和宽高比？'
+            '在 ComfyUI 中，Gemini Omni 1.1 Flash 支持哪些分辨率和宽高比？',
+          ja: 'ComfyUIでGemini Omni 1.1 Flashが対応する解像度とアスペクト比は？' /* machine */
         },
         answer: {
           en: 'The Gemini Video Omni node outputs Gemini Omni 1.1 Flash video at 360p, 720p, 1080p, or 4K, in 16:9 or 9:16. Landscape is the default; set 9:16 for vertical clips. Higher resolutions take longer to generate.',
           'zh-CN':
-            'Gemini Video Omni 节点可输出 360p、720p、1080p 或 4K 的 Gemini Omni 1.1 Flash 视频，宽高比为 16:9 或 9:16。默认是横屏；竖屏片段请设为 9:16。分辨率越高，生成耗时越长。'
+            'Gemini Video Omni 节点可输出 360p、720p、1080p 或 4K 的 Gemini Omni 1.1 Flash 视频，宽高比为 16:9 或 9:16。默认是横屏；竖屏片段请设为 9:16。分辨率越高，生成耗时越长。',
+          ja: 'Gemini Video Omniノードは、Gemini Omni 1.1 Flashの動画を360p、720p、1080p、4K、アスペクト比16:9または9:16で出力します。デフォルトは横長です。縦長クリップには9:16を設定してください。高解像度ほど生成に時間がかかります。' /* machine */
         }
       },
       {
         id: 'edit-an-existing-video',
         question: {
           en: 'Can Gemini Omni 1.1 Flash edit an existing video?',
-          'zh-CN': 'Gemini Omni 1.1 Flash 可以编辑已有视频吗？'
+          'zh-CN': 'Gemini Omni 1.1 Flash 可以编辑已有视频吗？',
+          ja: 'Gemini Omni 1.1 Flashで既存の動画を編集できますか？' /* machine */
         },
         answer: {
           en: 'Yes. Connect a clip to the node\'s video input and describe the change, and Gemini Omni 1.1 Flash applies it while preserving everything else. Short prompts work best: "make this video anime," "change the lighting to be more dramatic." Add "keep everything else the same" when targeting a single element.',
           'zh-CN':
-            '可以。将片段接入节点的视频输入并描述改动，Gemini Omni 1.1 Flash 会在保留其余部分的前提下应用该改动。简短的提示词效果最好，例如「make this video anime」「change the lighting to be more dramatic」。若只想改动单个元素，可加上「keep everything else the same」。'
+            '可以。将片段接入节点的视频输入并描述改动，Gemini Omni 1.1 Flash 会在保留其余部分的前提下应用该改动。简短的提示词效果最好，例如「make this video anime」「change the lighting to be more dramatic」。若只想改动单个元素，可加上「keep everything else the same」。',
+          ja: 'はい。クリップをノードの動画入力に接続して変更内容を記述すると、Gemini Omni 1.1 Flashがそれ以外を維持したまま適用します。短いプロンプトが効果的です。「この動画をアニメ風にする」「照明をもっとドラマチックに変える」。1つの要素だけを変更する場合は、「それ以外はすべて同じに保つ」を加えてください。' /* machine */
         }
       },
       {
         id: 'compared-to-previous-omni-flash',
         question: {
           en: 'How does Gemini Omni 1.1 Flash compare to the previous Omni Flash?',
-          'zh-CN': 'Gemini Omni 1.1 Flash 与上一代 Omni Flash 相比如何？'
+          'zh-CN': 'Gemini Omni 1.1 Flash 与上一代 Omni Flash 相比如何？',
+          ja: 'Gemini Omni 1.1 Flashは以前のOmni 1.1 Flashとどう違いますか？' /* machine */
         },
         answer: {
           en: 'Gemini Omni 1.1 Flash is a full replacement for earlier Omni Flash versions, with the same generate-and-edit workflow and faster generation. The 1.1 release lets you draft videos more efficiently at 360p, upscale to 4K resolution, and extend scenes for longer storytelling.',
           'zh-CN':
-            'Gemini Omni 1.1 Flash 完全取代此前各版本的 Omni Flash，沿用同样的生成与编辑工作流，且生成更快。1.1 版本让你能以 360p 更高效地打草稿，放大到 4K 分辨率，并延长场景以讲述更长的故事。'
+            'Gemini Omni 1.1 Flash 完全取代此前各版本的 Omni Flash，沿用同样的生成与编辑工作流，且生成更快。1.1 版本让你能以 360p 更高效地打草稿，放大到 4K 分辨率，并延长场景以讲述更长的故事。',
+          ja: 'Gemini Omni 1.1 Flashは、従来のOmni 1.1 Flashバージョンを完全に置き換えるモデルです。同じ生成・編集ワークフローに対応し、生成速度が向上しています。1.1リリースでは、360pで効率よく動画の下書きを作成し、4K解像度へアップスケールし、シーンを延長してより長いストーリーを作成できます。' /* machine */
         }
       },
       {
         id: 'cost-in-comfyui',
         question: {
           en: 'How much does Gemini Omni 1.1 Flash cost in ComfyUI?',
-          'zh-CN': '在 ComfyUI 中使用 Gemini Omni 1.1 Flash 的费用是多少？'
+          'zh-CN': '在 ComfyUI 中使用 Gemini Omni 1.1 Flash 的费用是多少？',
+          ja: 'ComfyUIでGemini Omni 1.1 Flashを使う料金はいくらですか？' /* machine */
         },
         answer: {
           en: 'Gemini Omni 1.1 Flash is billed per generation through ComfyUI credits, with cost varying by resolution. See the ComfyUI pricing page for current rates. No separate Google subscription is needed.',
           'zh-CN':
-            'Gemini Omni 1.1 Flash 按每次生成通过 ComfyUI 积分计费，费用随分辨率而变。当前费率请见 ComfyUI 定价页面。无需单独订阅 Google。'
+            'Gemini Omni 1.1 Flash 按每次生成通过 ComfyUI 积分计费，费用随分辨率而变。当前费率请见 ComfyUI 定价页面。无需单独订阅 Google。',
+          ja: 'Gemini Omni 1.1 FlashはComfyUIクレジットで生成ごとに課金され、料金は解像度によって異なります。最新の料金はComfyUIの料金ページをご確認ください。Googleの別途サブスクリプションは不要です。' /* machine */
         }
       }
     ]

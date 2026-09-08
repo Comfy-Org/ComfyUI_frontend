@@ -68,6 +68,33 @@ describe('collectViolations', () => {
   })
 
   /**
+   * A sentence that ends on its URL.
+   *
+   * The pattern stops at whitespace, so it swallowed the full stop and then
+   * demanded the translation contain `https://comfy.org/mcp.` — which no
+   * Japanese sentence would, because it ends with `。`. Two correct
+   * translations were dropped to English by this before it was noticed, and the
+   * failure is invisible: the page simply stays English.
+   */
+  it('does not treat sentence punctuation as part of the URL', () => {
+    expect(
+      kinds(
+        { 'a.b': 'Read more at https://comfy.org/mcp.' },
+        { 'a.b': '詳しくは https://comfy.org/mcp をご覧ください。' }
+      )
+    ).toEqual([])
+  })
+
+  it('still catches a URL lost from a sentence that ends on one', () => {
+    expect(
+      kinds(
+        { 'a.b': 'Read more at https://comfy.org/mcp.' },
+        { 'a.b': '詳しくは公式サイトをご覧ください。' }
+      )
+    ).toEqual(['url'])
+  })
+
+  /**
    * `Wan` is a video model and also the first three letters of `Want`. A
    * substring test demanded the Japanese for "Want to build tools" contain
    * "Wan", which is impossible, so 51 real strings could never pass. Brand

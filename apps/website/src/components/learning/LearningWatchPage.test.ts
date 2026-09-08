@@ -49,11 +49,32 @@ describe('LearningWatchPage', () => {
     expect(screen.queryByTestId('youtube-embed')).toBeNull()
   })
 
+  /**
+   * Both directions, on fixtures rather than on whichever tutorial happens to
+   * be untranslated today. The previous version asserted that a real tutorial
+   * had no Japanese, so it started failing the moment one was translated —
+   * reporting a defect in the data instead of in the component.
+   */
+  it('titles the embed in the locale when the tutorial has a translation', () => {
+    renderWatchPage(
+      {
+        ...youtubeTutorial,
+        title: { en: 'Node graph basics', ja: 'ノードの基本' }
+      },
+      'ja'
+    )
+
+    expect(screen.getByTestId('youtube-embed').textContent).toBe('ノードの基本')
+  })
+
   it('titles the embed in English when the locale has no translation', () => {
-    renderWatchPage(youtubeTutorial, 'ja')
+    renderWatchPage(
+      { ...youtubeTutorial, title: { en: 'Node graph basics' } },
+      'ja'
+    )
 
     expect(screen.getByTestId('youtube-embed').textContent).toBe(
-      youtubeTutorial.title.en
+      'Node graph basics'
     )
   })
 })
