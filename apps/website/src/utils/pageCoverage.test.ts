@@ -104,6 +104,21 @@ describe('comparePage', () => {
     expect(result.tagRatio).toBeLessThan(0.9)
   })
 
+  /**
+   * Equal node counts do not mean equal order. A positional comparison would
+   * line the moved English string up against a different node, see a
+   * difference, and score it as translated.
+   */
+  it('still sees English that moved to another position', () => {
+    const result = comparePage({
+      english: page('<p>Run it locally</p><p>Build anything</p>'),
+      localized: page('<p>本地运行</p><p>Run it locally</p>'),
+      preserveTerms: preserve
+    })
+    expect(result.translated).toBe(0.5)
+    expect(result.stillEnglish).toContain('Run it locally')
+  })
+
   it('tolerates markup reordered inside a translated string', () => {
     const result = comparePage({
       english: page(

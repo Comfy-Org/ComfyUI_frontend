@@ -102,20 +102,26 @@ export function comparePage({
   const source = visibleText(english)
   const target = visibleText(localized)
 
-  // Text nodes line up only when nothing structural moved. When they do not,
-  // membership is the honest fallback: a source string still present anywhere
-  // on the localized page was not translated.
-  const aligned = source.length === target.length
-  const present = aligned ? undefined : new Set(target)
+  // Compared as a multiset, never by position. Equal node counts do not imply
+  // equal order: markup reordering inside a translated string moves an
+  // unchanged English node to a different index, where a positional check
+  // compares it against an unrelated node and scores it as translated. Counting
+  // occurrences and consuming each match is order-independent and still refuses
+  // to credit the same localized node twice.
+  const remaining = new Map<string, number>()
+  for (const text of target) {
+    remaining.set(text, (remaining.get(text) ?? 0) + 1)
+  }
 
   let total = 0
   let untranslated = 0
   const stillEnglish: string[] = []
-  for (const [index, text] of source.entries()) {
+  for (const text of source) {
     if (!isTranslatable(text, preserved)) continue
     total++
-    const same = aligned ? text === target[index] : present!.has(text)
-    if (!same) continue
+    const left = remaining.get(text) ?? 0
+    if (left === 0) continue
+    remaining.set(text, left - 1)
     untranslated++
     if (stillEnglish.length < 8) stillEnglish.push(text)
   }
