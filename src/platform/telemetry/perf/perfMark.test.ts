@@ -1,27 +1,80 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { markViewLoaded, perfMark, perfPoint } from './perfMark'
+import { TelemetryEvents } from '@/platform/telemetry/types'
+import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
-const { addBreadcrumb, addTiming, reportError, setViewLoadingTime } =
-  vi.hoisted(() => ({
-    addBreadcrumb: vi.fn(),
-    addTiming: vi.fn(),
-    reportError: vi.fn(),
-    setViewLoadingTime: vi.fn()
-  }))
+import {
+  markViewLoaded,
+  perfMark,
+  perfPoint,
+  reportBootstrapToRum
+} from './perfMark'
+
+const {
+  addAction,
+  addBreadcrumb,
+  addTiming,
+  distribution,
+  reportError,
+  setViewLoadingTime
+} = vi.hoisted(() => ({
+  addAction: vi.fn(),
+  addBreadcrumb: vi.fn(),
+  addTiming: vi.fn(),
+  distribution: { isCloud: true },
+  reportError: vi.fn(),
+  setViewLoadingTime: vi.fn()
+}))
 
 vi.mock('@sentry/vue', () => ({ addBreadcrumb }))
 vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addTiming, addAction: vi.fn(), setViewLoadingTime }
+  datadogRum: { addTiming, addAction, setViewLoadingTime }
 }))
+vi.mock('@/platform/distribution/types', () => distribution)
 vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+
+const metadata: BootstrapCompleteMetadata = {
+  total_ms: 5200,
+  outcome: 'completed',
+  phase_count: 1,
+  phases: { 'bootstrap/object-info': 700 }
+}
 
 describe('perfMark', () => {
   beforeEach(() => {
+    addAction.mockReset()
     addBreadcrumb.mockReset()
     addTiming.mockReset()
     reportError.mockReset()
     setViewLoadingTime.mockReset()
+    distribution.isCloud = true
+  })
+
+  it('publishes the startup summary as the bootstrap-complete action', () => {
+    reportBootstrapToRum(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      metadata
+    )
+  })
+
+  it('marks the view loaded through the RUM loading-time API', () => {
+    markViewLoaded()
+
+    expect(setViewLoadingTime).toHaveBeenCalledOnce()
+  })
+
+  it('publishes nothing off cloud, where nothing ever initializes RUM', () => {
+    distribution.isCloud = false
+
+    perfMark('bootstrap/object-info').stop()
+    reportBootstrapToRum(metadata)
+    markViewLoaded()
+
+    expect(addTiming).not.toHaveBeenCalled()
+    expect(addAction).not.toHaveBeenCalled()
+    expect(setViewLoadingTime).not.toHaveBeenCalled()
   })
 
   it('publishes the phase boundary under a RUM-safe timing name', () => {
