@@ -3,11 +3,13 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
 const mockCanRunWorkflows = ref(true)
 const mockIsInitialized = ref(true)
-const mockBillingStatus = ref<string | null>('paid')
+const mockBillingStatus = ref<BillingStatus | null>('paid')
 const mockSubscriptionTier = ref<string | null>(null)
 const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
