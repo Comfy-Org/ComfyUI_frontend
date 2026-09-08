@@ -1,7 +1,10 @@
 import { clamp } from 'es-toolkit/compat'
 
 import type { IKnobWidget } from '@/lib/litegraph/src/types/widgets'
-import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import {
+  coerceNumericWidgetValue,
+  getWidgetStep
+} from '@/lib/litegraph/src/utils/widget'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -113,8 +116,9 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     ctx.stroke()
     ctx.closePath()
 
+    const value = coerceNumericWidgetValue(this.value)
     const range = this.options.max - this.options.min
-    let nvalue = (this.value - this.options.min) / range
+    let nvalue = (value - this.options.min) / range
     nvalue = clamp(nvalue, 0, 1)
 
     // Draw value
@@ -169,7 +173,7 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
     if (showText) {
       ctx.textAlign = 'center'
       ctx.fillStyle = this.text_color
-      const fixedValue = Number(this.value).toFixed(this.options.precision ?? 3)
+      const fixedValue = value.toFixed(this.options.precision ?? 3)
       ctx.fillText(
         `${this.label || this.name}\n${fixedValue}`,
         width * 0.5,
@@ -227,8 +231,10 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
         : step
 
     const deltaValue = adjustment * step_with_shift_modifier
+    const currentValue = coerceNumericWidgetValue(this.value)
     const newValue = clamp(
-      this.value + deltaValue,
+      (Number.isNaN(currentValue) ? this.options.min : currentValue) +
+        deltaValue,
       this.options.min,
       this.options.max
     )

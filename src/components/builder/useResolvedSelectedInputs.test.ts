@@ -18,6 +18,9 @@ vi.mock('@/scripts/app', () => ({
       nodes: [] as LGraphNode[],
       events: new EventTarget(),
       getNodeById: vi.fn() as (id: number) => LGraphNode | null
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))
