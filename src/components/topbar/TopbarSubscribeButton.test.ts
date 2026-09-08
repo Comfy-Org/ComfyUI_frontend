@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -26,11 +27,31 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: vi.fn(() => ({
-    isFreeTier: { value: true }
-  }))
+const mockState = vi.hoisted(() => ({
+  holder: null as null | { isFreeTier: boolean; promptMounted: boolean }
 }))
+
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed, reactive } = await import('vue')
+  mockState.holder ??= reactive({ isFreeTier: true, promptMounted: false })
+  return {
+    useBillingContext: vi.fn(() => ({
+      isFreeTier: computed(() => mockState.holder!.isFreeTier)
+    }))
+  }
+})
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscribeCtaPresence',
+  async () => {
+    const { computed, reactive } = await import('vue')
+    mockState.holder ??= reactive({ isFreeTier: true, promptMounted: false })
+    return {
+      useSubscribeToRunPromptPresence: () =>
+        computed(() => mockState.holder!.promptMounted)
+    }
+  }
+)
 
 vi.mock('pinia')
 
@@ -62,9 +83,27 @@ function renderComponent() {
 }
 
 describe('TopbarSubscribeButton', () => {
+  beforeEach(() => {
+    mockState.holder!.isFreeTier = true
+    mockState.holder!.promptMounted = false
+  })
+
   it('renders on cloud when isFreeTier is true', () => {
     mockIsCloud.value = true
     renderComponent()
+    expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+  })
+
+  it('yields while a Run-slot subscribe prompt is mounted, and returns when it unmounts', async () => {
+    mockIsCloud.value = true
+    mockState.holder!.promptMounted = true
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+
+    mockState.holder!.promptMounted = false
+    await nextTick()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 
