@@ -25,7 +25,7 @@ const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
 const resolvedOutputsCacheRef = new Map<string, AugmentedResultItem[]>()
 
-vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
     tags?.[0] === 'output' ? 'output' : 'input',
   mapInputFileToAssetItem: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
   unflattenOutputAssets: vi.fn()
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     outputAssets: {
       hasMore: ref(false),
@@ -46,35 +46,42 @@ vi.mock('@/stores/assetsStore', () => ({
   })
 }))
 
-vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
-  useLinearOutputStore: () => ({
-    get pendingResolve() {
-      return pendingResolveRef.value
-    },
-    get inProgressItems() {
-      return inProgressItemsRef.value
-    },
-    get activeWorkflowInProgressItems() {
-      return activeWorkflowInProgressItemsRef.value
-    },
-    get selectedId() {
-      return selectedIdRef.value
-    },
-    resolvedOutputsCache: resolvedOutputsCacheRef,
-    selectAsLatest: selectAsLatestFn,
-    resolveIfReady: resolveIfReadyFn
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/linearOutputStore'),
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return { path: activeWorkflowPathRef.value }
-    }
+  () => ({
+    useLinearOutputStore: () => ({
+      get pendingResolve() {
+        return pendingResolveRef.value
+      },
+      get inProgressItems() {
+        return inProgressItemsRef.value
+      },
+      get activeWorkflowInProgressItems() {
+        return activeWorkflowInProgressItemsRef.value
+      },
+      get selectedId() {
+        return selectedIdRef.value
+      },
+      resolvedOutputsCache: resolvedOutputsCacheRef,
+      selectAsLatest: selectAsLatestFn,
+      resolveIfReady: resolveIfReadyFn
+    })
   })
-}))
+)
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return { path: activeWorkflowPathRef.value }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     get jobIdToSessionWorkflowPath() {
       return jobIdToPathRef.value
@@ -85,7 +92,7 @@ vi.mock('@/stores/executionStore', () => ({
   })
 }))
 
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: () => ({
     get runningTasks() {
       return runningTasksRef.value
@@ -100,7 +107,7 @@ const { jobDetailResults } = vi.hoisted(() => ({
   jobDetailResults: new Map<string, unknown>()
 }))
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock<unknown>(import('@/services/jobOutputCache'), () => ({
   getJobDetail: (jobId: string) =>
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
 }))

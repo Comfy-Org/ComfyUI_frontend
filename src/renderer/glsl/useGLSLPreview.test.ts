@@ -65,16 +65,20 @@ const mockRendererFactory = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
-  useGLSLRenderer: (config?: GLSLRendererConfig) =>
-    mockRendererFactory.create(config)
-}))
+vi.mock<unknown>(
+  import('@/renderer/glsl/useGLSLRenderer'),
+
+  () => ({
+    useGLSLRenderer: (config?: GLSLRendererConfig) =>
+      mockRendererFactory.create(config)
+  })
+)
 
 const mockSetNodePreviewsByNodeId = vi.fn()
 const mockRevokePreviewsByLocatorId = vi.fn()
 const mockNodeOutputs = reactive<Record<string, unknown>>({})
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     setNodePreviewsByNodeId: mockSetNodePreviewsByNodeId,
     setNodePreviewsByLocatorId: vi.fn(),
@@ -84,7 +88,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   })
 }))
 
-vi.mock('@/stores/widgetValueStore', () => {
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => {
   const widgetMap = new Map<string, { value: unknown }>()
   const getWidget = vi.fn((id: string) => widgetMap.get(id))
   return {
@@ -95,14 +99,17 @@ vi.mock('@/stores/widgetValueStore', () => {
   }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      nodeIdToNodeLocatorId: (id: string | number) => String(id),
+      nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+    })
   })
-}))
+)
 
-vi.mock('@/utils/objectUrlUtil', () => ({
+vi.mock(import('@/utils/objectUrlUtil'), () => ({
   createSharedObjectUrl: () => 'blob:test',
   releaseSharedObjectUrl: vi.fn()
 }))

@@ -48,23 +48,31 @@ const {
   }
 })
 
-vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
-  AutoPanController: class {
-    updatePointer = vi.fn()
-    start = vi.fn()
-    stop = vi.fn()
-    constructor(opts: { onPan: (dx: number, dy: number) => void }) {
-      capturedOnPan.current = opts.onPan
-      capturedAutoPan.current = this as typeof capturedAutoPan.current
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useAutoPan'),
+
+  () => ({
+    AutoPanController: class {
+      updatePointer = vi.fn()
+      start = vi.fn()
+      stop = vi.fn()
+      constructor(opts: { onPan: (dx: number, dy: number) => void }) {
+        capturedOnPan.current = opts.onPan
+        capturedAutoPan.current = this
+      }
     }
-  }
-}))
+  })
+)
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ isReadOnly: false })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/scripts/app', () => ({
+  () => ({
+    useCanvasStore: () => ({ isReadOnly: false })
+  })
+)
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       ds: mockDs,
@@ -95,78 +103,106 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/renderer/core/canvas/links/linkConnectorAdapter', () => ({
-  createLinkConnectorAdapter: () => mockAdapter
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/links/linkConnectorAdapter'),
 
-vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => {
-  const pointer = { client: { x: 0, y: 0 }, canvas: { x: 0, y: 0 } }
-  return {
-    useSlotLinkDragUIState: () => ({
-      state: {
-        active: false,
-        pointerId: null,
-        source: null,
-        pointer,
-        candidate: null,
-        compatible: new Map()
-      },
-      beginDrag: vi.fn(),
-      endDrag: vi.fn(),
-      updatePointerPosition: (
-        cx: number,
-        cy: number,
-        canX: number,
-        canY: number
-      ) => {
-        pointer.client.x = cx
-        pointer.client.y = cy
-        pointer.canvas.x = canX
-        pointer.canvas.y = canY
-      },
-      setCandidate: vi.fn(),
-      setCompatibleForKey: vi.fn(),
-      clearCompatible: vi.fn()
+  () => ({
+    createLinkConnectorAdapter: () => mockAdapter
+  })
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/links/slotLinkDragUIState'),
+
+  () => {
+    const pointer = { client: { x: 0, y: 0 }, canvas: { x: 0, y: 0 } }
+    return {
+      useSlotLinkDragUIState: () => ({
+        state: {
+          active: false,
+          pointerId: null,
+          source: null,
+          pointer,
+          candidate: null,
+          compatible: new Map()
+        },
+        beginDrag: vi.fn(),
+        endDrag: vi.fn(),
+        updatePointerPosition: (
+          cx: number,
+          cy: number,
+          canX: number,
+          canY: number
+        ) => {
+          pointer.client.x = cx
+          pointer.client.y = cy
+          pointer.canvas.x = canX
+          pointer.canvas.y = canY
+        },
+        setCandidate: vi.fn(),
+        setCompatibleForKey: vi.fn(),
+        clearCompatible: vi.fn()
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/composables/element/useCanvasPositionConversion'),
+  () => ({
+    useSharedCanvasPositionConversion: () => ({
+      clientPosToCanvasPos: (pos: [number, number]): [number, number] => [
+        pos[0] / (mockDs.scale || 1) - mockDs.offset[0],
+        pos[1] / (mockDs.scale || 1) - mockDs.offset[1]
+      ]
     })
-  }
-})
-
-vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
-  useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: (pos: [number, number]): [number, number] => [
-      pos[0] / (mockDs.scale || 1) - mockDs.offset[0],
-      pos[1] / (mockDs.scale || 1) - mockDs.offset[1]
-    ]
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getRerouteLayout: () => null,
-    queryRerouteAtPoint: () => null
-  }
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/store/layoutStore'),
 
-vi.mock('@/renderer/core/canvas/litegraph/slotCalculations', () => ({
-  getGraphSlotLayout: () => ({
-    nodeId: 'node1',
-    index: 0,
-    type: 'output',
-    position: { x: 100, y: 200 }
+  () => ({
+    layoutStore: {
+      getRerouteLayout: () => null,
+      queryRerouteAtPoint: () => null
+    }
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
-  getSlotKey: (...args: unknown[]) => args.join('-')
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/litegraph/slotCalculations'),
 
-vi.mock('@/renderer/core/canvas/interaction/canvasPointerEvent', () => ({
-  toCanvasPointerEvent: (e: PointerEvent) => e,
-  clearCanvasPointerHistory: vi.fn()
-}))
+  () => ({
+    getGraphSlotLayout: () => ({
+      nodeId: 'node1',
+      index: 0,
+      type: 'output',
+      position: { x: 100, y: 200 }
+    })
+  })
+)
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/slotLinkDragContext',
+vi.mock<unknown>(
+  import('@/renderer/core/layout/slots/slotIdentifier'),
+
+  () => ({
+    getSlotKey: (...args: unknown[]) => args.join('-')
+  })
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/interaction/canvasPointerEvent'),
+
+  () => ({
+    toCanvasPointerEvent: (e: PointerEvent) => e,
+    clearCanvasPointerHistory: vi.fn()
+  })
+)
+
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/slotLinkDragContext'),
+
   () => ({
     createSlotLinkDragContext: () => ({
       pendingPointerMove: null,
@@ -182,16 +218,24 @@ vi.mock(
   })
 )
 
-vi.mock('@/renderer/extensions/vueNodes/utils/eventUtils', () => ({
-  augmentToCanvasPointerEvent: vi.fn()
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/utils/eventUtils'),
 
-vi.mock('@/renderer/core/canvas/links/linkDropOrchestrator', () => ({
-  resolveSlotTargetCandidate: () => null,
-  resolveNodeSurfaceSlotCandidate: () => null
-}))
+  () => ({
+    augmentToCanvasPointerEvent: vi.fn()
+  })
+)
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(
+  import('@/renderer/core/canvas/links/linkDropOrchestrator'),
+
+  () => ({
+    resolveSlotTargetCandidate: () => null,
+    resolveNodeSurfaceSlotCandidate: () => null
+  })
+)
+
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
     return vi.fn()
@@ -199,16 +243,16 @@ vi.mock('@vueuse/core', () => ({
   tryOnScopeDispose: () => {}
 }))
 
-vi.mock('@/lib/litegraph/src/LLink', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   LLink: { getReroutes: () => [] },
   slotFloatingLinks: () => []
 }))
 
-vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/types/globalEnums'), () => ({
   LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
 }))
 
-vi.mock('@/utils/rafBatch', () => ({
+vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
   createRafBatch: (fn: () => void) => ({
     schedule: () => {},
     cancel: () => {},

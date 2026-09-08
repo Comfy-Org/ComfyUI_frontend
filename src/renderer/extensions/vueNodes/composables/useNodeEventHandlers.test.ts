@@ -21,42 +21,54 @@ const graphNode = vi.hoisted(() => ({
   flags: { pinned: false }
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => {
-  const canvas: Partial<LGraphCanvas> = {
-    select: vi.fn(),
-    deselect: vi.fn(),
-    deselectAll: vi.fn()
-  }
-  const updateSelectedItems = vi.fn()
-  const currentGraph: Partial<LGraph> = {
-    getNodeById: vi.fn(() => graphNode as Partial<LGraphNode> as LGraphNode)
-  }
-  const canvasStoreInstance = {
-    canvas: canvas as LGraphCanvas,
-    currentGraph: currentGraph as LGraph,
-    updateSelectedItems,
-    selectedItems: canvasSelectedItems,
-    rootGraphId: ROOT_GRAPH_ID
-  }
-  return {
-    useCanvasStore: vi.fn(() => canvasStoreInstance)
-  }
-})
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: vi.fn(() => ({
-    shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
-  }))
-}))
+  () => {
+    const canvas: Partial<LGraphCanvas> = {
+      select: vi.fn(),
+      deselect: vi.fn(),
+      deselectAll: vi.fn()
+    }
+    const updateSelectedItems = vi.fn()
+    const currentGraph: Partial<LGraph> = {
+      getNodeById: vi.fn(() => graphNode as Partial<LGraphNode> as LGraphNode)
+    }
+    const canvasStoreInstance = {
+      canvas: canvas as LGraphCanvas,
+      currentGraph: currentGraph as LGraph,
+      updateSelectedItems,
+      selectedItems: canvasSelectedItems,
+      rootGraphId: ROOT_GRAPH_ID
+    }
+    return {
+      useCanvasStore: vi.fn(() => canvasStoreInstance)
+    }
+  }
+)
 
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
-  const setNodeOrder = vi.fn()
-  return {
-    useLayoutMutations: vi.fn(() => ({
-      setNodeOrder
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+
+  () => ({
+    useCanvasInteractions: vi.fn(() => ({
+      shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
     }))
+  })
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/layout/operations/layoutMutations'),
+
+  () => {
+    const setNodeOrder = vi.fn()
+    return {
+      useLayoutMutations: vi.fn(() => ({
+        setNodeOrder
+      }))
+    }
   }
-})
+)
 
 describe('useNodeEventHandlers', () => {
   const mockNode = graphNode as Partial<LGraphNode> as LGraphNode

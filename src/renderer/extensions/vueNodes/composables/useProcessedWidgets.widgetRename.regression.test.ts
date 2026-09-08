@@ -10,9 +10,13 @@ import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-widget-rename'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ rootGraphId: GRAPH_ID })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
+
+  () => ({
+    useCanvasStore: () => ({ rootGraphId: GRAPH_ID })
+  })
+)
 
 const noopUi = {
   getTooltipConfig: () => ({}),

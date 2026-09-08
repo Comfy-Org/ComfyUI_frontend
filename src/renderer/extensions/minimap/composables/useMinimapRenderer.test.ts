@@ -7,9 +7,13 @@ import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/us
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@/renderer/extensions/minimap/minimapCanvasRenderer', () => ({
-  renderMinimapToCanvas: vi.fn()
-}))
+vi.mock(
+  import('@/renderer/extensions/minimap/minimapCanvasRenderer'),
+
+  () => ({
+    renderMinimapToCanvas: vi.fn()
+  })
+)
 
 describe('useMinimapRenderer', () => {
   let mockCanvas: HTMLCanvasElement

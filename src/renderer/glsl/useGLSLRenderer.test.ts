@@ -4,9 +4,13 @@ import { detectPassCount } from '@/renderer/glsl/glslUtils'
 import { useGLSLRenderer } from '@/renderer/glsl/useGLSLRenderer'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 
-vi.mock('@/renderer/glsl/glslUtils', () => ({
-  detectPassCount: vi.fn().mockReturnValue(1)
-}))
+vi.mock(
+  import('@/renderer/glsl/glslUtils'),
+
+  () => ({
+    detectPassCount: vi.fn().mockReturnValue(1)
+  })
+)
 
 interface MockGL {
   // Constants referenced in test assertions

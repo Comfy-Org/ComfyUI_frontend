@@ -8,12 +8,12 @@ import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 
 // Mock the layout mutations module
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
+vi.mock(import('@/renderer/core/layout/operations/layoutMutations'), () => ({
   useLayoutMutations: vi.fn()
 }))
 
 const CURRENT_GRAPH = fromPartial({ id: createUuidv4() })
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({ currentGraph: CURRENT_GRAPH })
 }))
 

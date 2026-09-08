@@ -15,15 +15,18 @@ const { hasNodes, hasOutputs, enterBuilder } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({ setMode: vi.fn() })
 }))
 
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({ show: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  () => ({
+    useWorkflowTemplateSelectorDialog: () => ({ show: vi.fn() })
+  })
+)
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: () => ({
     hasNodes,
     hasOutputs,
@@ -31,11 +34,14 @@ vi.mock('@/stores/appModeStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: null
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      activeWorkflow: null
+    })
   })
-}))
+)
 
 const i18n = createI18n({ legacy: false, locale: 'en', missingWarn: false })
 

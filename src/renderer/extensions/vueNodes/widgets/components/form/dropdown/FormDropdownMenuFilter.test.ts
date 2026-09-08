@@ -8,17 +8,20 @@ import { createI18n } from 'vue-i18n'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
 
-vi.mock('@/platform/assets/composables/useModelUpload', async () => {
-  const { ref } = await import('vue')
-  const isUploadButtonEnabled = ref(false)
-  const showUploadDialog = vi.fn()
-  return {
-    useModelUpload: () => ({
-      isUploadButtonEnabled,
-      showUploadDialog
-    })
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useModelUpload'),
+  async () => {
+    const { ref } = await import('vue')
+    const isUploadButtonEnabled = ref(false)
+    const showUploadDialog = vi.fn()
+    return {
+      useModelUpload: () => ({
+        isUploadButtonEnabled,
+        showUploadDialog
+      })
+    }
   }
-})
+)
 
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 

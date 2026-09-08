@@ -16,28 +16,37 @@ import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 const forwardEventToCanvasMock = vi.fn()
 
 // Mock the dependencies
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => ({
-    forwardEventToCanvas: forwardEventToCanvasMock,
-    shouldHandleNodePointerEvents: ref(true)
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
 
-vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
-  const startDrag = vi.fn()
-  const handleDrag = vi.fn()
-  const endDrag = vi.fn()
-  return {
-    useNodeDrag: () => ({
-      startDrag,
-      handleDrag,
-      endDrag
+  () => ({
+    useCanvasInteractions: () => ({
+      forwardEventToCanvas: forwardEventToCanvasMock,
+      shouldHandleNodePointerEvents: ref(true)
     })
-  }
-})
+  })
+)
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+  import('@/renderer/extensions/vueNodes/layout/useNodeDrag'),
+
+  () => {
+    const startDrag = vi.fn()
+    const handleDrag = vi.fn()
+    const endDrag = vi.fn()
+    return {
+      useNodeDrag: () => ({
+        startDrag,
+        handleDrag,
+        endDrag
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
+
   () => {
     const handleNodeSelect = vi.fn()
     const deselectNode = vi.fn()
@@ -74,19 +83,23 @@ const mockData = vi.hoisted(() => {
   return { fakeNodeLayout }
 })
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => {
-  const isDraggingVueNodes = ref(false)
-  const isResizingVueNodes = ref(false)
-  const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
-  const getNodeLayoutRef = vi.fn(() => fakeNodeLayoutRef)
-  return {
-    layoutStore: {
-      isDraggingVueNodes,
-      isResizingVueNodes,
-      getNodeLayoutRef
+vi.mock<unknown>(
+  import('@/renderer/core/layout/store/layoutStore'),
+
+  () => {
+    const isDraggingVueNodes = ref(false)
+    const isResizingVueNodes = ref(false)
+    const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
+    const getNodeLayoutRef = vi.fn(() => fakeNodeLayoutRef)
+    return {
+      layoutStore: {
+        isDraggingVueNodes,
+        isResizingVueNodes,
+        getNodeLayoutRef
+      }
     }
   }
-})
+)
 
 const testNodeId = fromAny<NodeLayout, unknown>(mockData.fakeNodeLayout).id
 const testNodeState = createNodeState({ id: testNodeId })
