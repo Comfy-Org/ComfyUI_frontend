@@ -11,6 +11,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -111,6 +112,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    this.dispatch((provider) => provider.trackBootstrapComplete?.(metadata))
   }
 
   trackFeatureFlagEvaluation(key: string, value: unknown): void {

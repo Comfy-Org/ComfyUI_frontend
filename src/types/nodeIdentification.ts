@@ -130,9 +130,9 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @param nodeIds Array of node IDs from root to target
  * @returns A properly formatted NodeExecutionId, or null when any segment is invalid
  */
-export function createNodeExecutionId<
-  const T extends readonly [SerializedNodeId, ...SerializedNodeId[]]
->(nodeIds: T): NodeExecutionId
+export function createNodeExecutionId(
+  nodeIds: readonly [SerializedNodeId, ...SerializedNodeId[]]
+): NodeExecutionId
 export function createNodeExecutionId(
   nodeIds: readonly SerializedNodeId[]
 ): NodeExecutionId | null

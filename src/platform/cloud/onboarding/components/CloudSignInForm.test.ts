@@ -55,6 +55,7 @@ const submitButton = () =>
   screen.getByRole('button', { name: LOGIN_COPY.loginButton })
 
 beforeEach(() => {
+  vi.useRealTimers()
   loading.value = false
 })
 

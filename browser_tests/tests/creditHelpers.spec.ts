@@ -119,7 +119,7 @@ testWithMockedObjectInfo.describe(
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeUsd')
-          window.app!.graph.add(node!)
+          window.app!.graph.add(node)
           return node!.id
         })
 
@@ -155,7 +155,7 @@ testWithMockedObjectInfo.describe(
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeRange')
-          window.app!.graph.add(node!)
+          window.app!.graph.add(node)
           return node!.id
         })
 
@@ -187,7 +187,7 @@ testWithMockedObjectInfo.describe(
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeList')
-          window.app!.graph.add(node!)
+          window.app!.graph.add(node)
           return node!.id
         })
 
