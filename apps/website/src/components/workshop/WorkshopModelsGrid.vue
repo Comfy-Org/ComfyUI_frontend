@@ -8,7 +8,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import { useMediaQuery } from '@vueuse/core'
 
@@ -34,8 +34,10 @@ import {
   countByUseCase,
   modalityOf,
   filterWorkshopModels,
-  sortWorkshopModels
+  sortWorkshopModels,
+  useCaseFor
 } from '../../config/workshop'
+import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
@@ -50,7 +52,9 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const query = ref('')
-const useCase = ref<UseCase | 'all'>('all')
+// 'other' opens the combined text/3D/audio section that the browsing rows show
+// under one "other formats" shelf.
+const useCase = ref<UseCase | 'all' | 'other'>('all')
 const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
@@ -64,6 +68,13 @@ onMounted(() => {
   capabilities.value = [...(initial.capabilities ?? [])]
   providers.value = [...(initial.providers ?? [])]
   modalities.value = [...(initial.modalities ?? [])]
+})
+
+// Entering or leaving a section changes the page height, so without this a
+// title clicked far down the browsing rows would leave the viewport parked on
+// the footer of the much shorter section view.
+watch(useCase, () => {
+  void nextTick(() => window.scrollTo({ top: 0 }))
 })
 
 const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
@@ -171,15 +182,28 @@ const modalityLabelKey: Record<
 const inModality = (model: WorkshopModel) =>
   modalities.value.length === 0 || modalities.value.includes(modalityOf(model))
 
+// The other-formats section stands in for several sparse use cases at once, so
+// its models come from that whole set rather than a single-use-case filter.
+const inOtherFormats = (model: WorkshopModel) => {
+  const modelUseCase = useCaseFor(model)
+  return (
+    modelUseCase !== undefined && OTHER_FORMAT_USE_CASES.includes(modelUseCase)
+  )
+}
+const inSectionScope = (model: WorkshopModel) =>
+  useCase.value !== 'other' || inOtherFormats(model)
+
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
       filterWorkshopModels(models, {
         query: query.value,
-        useCase: useCase.value,
+        useCase: useCase.value === 'other' ? 'all' : useCase.value,
         providers: providers.value,
         capabilities: capabilities.value
-      }).filter(inModality),
+      })
+        .filter(inModality)
+        .filter(inSectionScope),
       sort.value
     ),
     groupVersions.value
@@ -210,14 +234,24 @@ const inSection = computed(
 // V1.1 navigates through its section rows and the way back out of one, so the
 // row of use cases would be a second, competing way to move around.
 const showRail = computed(() => version.value !== 'v1.1')
+const sectionModels = computed(() =>
+  useCase.value === 'other'
+    ? models.filter(inOtherFormats)
+    : filterWorkshopModels(models, { useCase: useCase.value })
+)
 const sectionProviders = computed<FacetMenuOption[]>(() =>
-  countByFacet(
-    filterWorkshopModels(models, { useCase: useCase.value }),
-    'provider'
-  ).map((option) => ({ ...option, label: option.value }))
+  countByFacet(sectionModels.value, 'provider').map((option) => ({
+    ...option,
+    label: option.value
+  }))
+)
+const sectionTitleKey = computed<TranslationKey>(() =>
+  useCase.value === 'other'
+    ? 'workshop.sections.otherFormats'
+    : useCaseLabelKey[useCase.value]
 )
 
-function openSection(value: UseCase) {
+function openSection(value: UseCase | 'other') {
   useCase.value = value
 }
 
@@ -417,7 +451,7 @@ const menuItemClass =
             {{ t('workshop.sections.back', locale) }}
           </button>
           <h2 class="text-2xl font-bold text-primary-warm-white">
-            {{ t(useCaseLabelKey[useCase], locale) }}
+            {{ t(sectionTitleKey, locale) }}
           </h2>
         </div>
 

@@ -9,6 +9,7 @@ import {
   sortWorkshopModels,
   useCaseFor
 } from '../../config/workshop'
+import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupByFamily } from '../../config/model-family'
@@ -31,11 +32,11 @@ const {
   showStatuses?: boolean
 }>()
 
-const emit = defineEmits<{ open: [UseCase] }>()
+const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
-// Text, 3D and audio hold a handful of models each, so a row apiece reads as an
-// empty shelf. They share one row until the catalogue fills out.
-const GROUPED: readonly UseCase[] = ['text', '3d', 'audio']
+// Text, 3D and audio share one "other formats" row until the catalogue fills
+// out, rather than each reading as a near-empty shelf.
+const GROUPED: readonly UseCase[] = OTHER_FORMAT_USE_CASES
 
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
@@ -82,27 +83,23 @@ const unplaced = computed(() =>
     >
       <CardRow :locale>
         <template #heading>
-          <h2
-            :id="`section-${section.useCase}`"
-            class="flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
-          >
-            {{ t(labelKey[section.useCase], locale) }}
-            <span class="text-sm text-primary-warm-gray tabular-nums">
-              {{ section.total }}
-            </span>
+          <h2 :id="`section-${section.useCase}`" class="text-xl font-medium">
+            <button
+              type="button"
+              class="group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-baseline gap-2 rounded-lg text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
+              :data-testid="`section-${section.useCase}-see-all`"
+              @click="emit('open', section.useCase)"
+            >
+              {{ t(labelKey[section.useCase], locale) }}
+              <span class="text-sm text-primary-warm-gray tabular-nums">
+                {{ section.total }}
+              </span>
+              <ChevronRight
+                class="size-5 self-center transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
           </h2>
-        </template>
-
-        <template #actions>
-          <button
-            type="button"
-            class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
-            :data-testid="`section-${section.useCase}-see-all`"
-            @click="emit('open', section.useCase)"
-          >
-            {{ t('workshop.sections.seeAll', locale) }}
-            <ChevronRight class="size-4" aria-hidden="true" />
-          </button>
         </template>
 
         <li
@@ -127,14 +124,22 @@ const unplaced = computed(() =>
     >
       <CardRow :locale>
         <template #heading>
-          <h2
-            id="section-other-formats"
-            class="flex items-baseline gap-2 text-xl font-medium text-primary-warm-white"
-          >
-            {{ t('workshop.sections.otherFormats', locale) }}
-            <span class="text-sm text-primary-warm-gray tabular-nums">
-              {{ otherFormats.length }}
-            </span>
+          <h2 id="section-other-formats" class="text-xl font-medium">
+            <button
+              type="button"
+              class="group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-baseline gap-2 rounded-lg text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
+              data-testid="section-other-formats-see-all"
+              @click="emit('open', 'other')"
+            >
+              {{ t('workshop.sections.otherFormats', locale) }}
+              <span class="text-sm text-primary-warm-gray tabular-nums">
+                {{ otherFormats.length }}
+              </span>
+              <ChevronRight
+                class="size-5 self-center transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
           </h2>
         </template>
 

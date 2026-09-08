@@ -14,11 +14,16 @@ const row = useTemplateRef<HTMLElement>('row')
 const atStart = ref(true)
 const atEnd = ref(true)
 
+// Scroll-snap and the row's own horizontal padding leave a few pixels at each
+// resting edge, so the row never sits at an exact scrollLeft of 0.
+const EDGE_TOLERANCE = 8
+
 function measure() {
   const el = row.value
   if (!el) return
-  atStart.value = el.scrollLeft <= 1
-  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+  atStart.value = el.scrollLeft <= EDGE_TOLERANCE
+  atEnd.value =
+    el.scrollLeft + el.clientWidth >= el.scrollWidth - EDGE_TOLERANCE
 }
 
 function page(direction: 1 | -1) {
@@ -35,7 +40,7 @@ useMutationObserver(row, measure, { childList: true, subtree: true })
 
 const arrowClass = (disabled: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 bg-page/70 grid size-9 place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 bg-page/70 grid size-9 place-items-center rounded-lg border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3',
     disabled
       ? 'cursor-not-allowed opacity-30'
       : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow cursor-pointer'
@@ -82,7 +87,6 @@ const arrowClass = (disabled: boolean) =>
       :class="
         cn(
           '-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2',
-          !atStart && 'mask-l-from-85%',
           !atEnd && 'mask-r-from-85%'
         )
       "

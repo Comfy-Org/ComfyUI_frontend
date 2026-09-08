@@ -38,7 +38,7 @@ const VERSION_KEY = 'comfy-workshop-version'
 
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
-const version = ref<Version>('v1.2')
+const version = ref<Version>('v1.1')
 // Deprecated and degraded models are invented cases: hidden unless asked for.
 const showStatuses = ref(false)
 // The catalogue lists one card per model, as the TDD describes. Grouping the
