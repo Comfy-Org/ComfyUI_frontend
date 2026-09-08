@@ -56,7 +56,9 @@ export function createBillingClient(
   let state: CreditsState = { status: 'unknown' }
   const listeners = new Set<(state: CreditsState) => void>()
   let inFlight: Promise<void> | undefined
-  let inFlightIdentity: string | undefined
+  let inFlightUid: string | undefined
+  /** Bumped by reset(): an abandoned read must not publish its late result. */
+  let generation = 0
 
   function publish(next: CreditsState): void {
     state = next
@@ -67,8 +69,6 @@ export function createBillingClient(
     const snapshot = session.getSnapshot()
     return snapshot.phase === 'authenticated' ? snapshot.session : undefined
   }
-
-  const identityKey = (uid: string, token: string) => `${uid}|${token}`
 
   async function fetchBalance(token: string): Promise<CreditsState> {
     let response: Response
@@ -95,6 +95,7 @@ export function createBillingClient(
   }
 
   async function runRefresh(): Promise<void> {
+    const startGeneration = generation
     const snapshot = session.getSnapshot()
     if (snapshot.phase !== 'authenticated') {
       publish({ status: 'unknown' })
@@ -118,7 +119,11 @@ export function createBillingClient(
     // Publish only if the same user and token are still live. A sign-out,
     // user switch, or re-mint must not publish an older read.
     const live = activeCredential()
-    if (live?.uid === uid && live.token === token) {
+    if (
+      generation === startGeneration &&
+      live?.uid === uid &&
+      live.token === token
+    ) {
       publish(result)
     }
   }
@@ -133,35 +138,37 @@ export function createBillingClient(
     /**
      * Session-change and refocus can fire together; without dedupe they race
      * and the last fetch to resolve wins, so a slow earlier read can
-     * overwrite a fresh later one. Concurrent callers for the same identity
-     * share one in-flight refresh; a caller for a different identity starts
-     * its own. A forced call queued behind an in-flight read inherits that
+     * overwrite a fresh later one. Concurrent callers for the same user
+     * share one in-flight refresh (uid-keyed, as in production: the read's
+     * own 401 re-mint rotates the token mid-flight, and a token-keyed join
+     * would race a duplicate read); a different user starts their own. A
+     * forced call queued behind an in-flight read inherits that
      * read's remaining time on top of its own — it never drops, but it has
      * no independent ceiling until the earlier read settles.
      */
     refresh(refreshOptions = {}) {
-      const active = activeCredential()
-      const identity = active
-        ? identityKey(active.uid, active.token)
-        : undefined
+      const uid = activeCredential()?.uid
 
-      if (inFlight !== undefined && inFlightIdentity === identity) {
+      if (inFlight !== undefined && inFlightUid === uid) {
         return refreshOptions.force
           ? inFlight.then(() => client.refresh())
           : inFlight
       }
 
-      inFlightIdentity = identity
+      inFlightUid = uid
       const refresh = runRefresh().finally(() => {
         if (inFlight === refresh) {
           inFlight = undefined
-          inFlightIdentity = undefined
+          inFlightUid = undefined
         }
       })
       inFlight = refresh
       return refresh
     },
     reset() {
+      generation += 1
+      inFlight = undefined
+      inFlightUid = undefined
       publish({ status: 'unknown' })
     }
   }
