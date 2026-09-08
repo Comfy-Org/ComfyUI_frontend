@@ -13,6 +13,14 @@ import type {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
+import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+import {
+  hostInputs,
+  hostSlotIndex,
+  indexSubgraphDefinitions,
+  promotedWidgetNames
+} from './agentSubgraphHostSlots'
+import type { SubgraphDefinitionIndex } from './agentSubgraphHostSlots'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
@@ -47,7 +55,37 @@ function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
   return payload as SemanticNodePayload
 }
 
-function readSemanticLink(doc: Y.Doc, id: string): SemanticLinkPayload | null {
+/**
+ * Resolves a link whose target is a SubgraphNode host. cmp only writes the
+ * grown slot into the host's doc `inputs`, and its `target_slot` indexes that
+ * doc-local list. The live host orders its inputs by the subgraph definition,
+ * so re-derive both the slot index and the full input list from it.
+ */
+function hostTarget(
+  doc: Y.Doc,
+  definitions: SubgraphDefinitionIndex,
+  targetId: string,
+  docSlot: number
+): Pick<SemanticLinkPayload, 'targetSlot' | 'targetInputs'> {
+  const docInputs = readNodeSlots(doc, targetId, 'inputs')
+  const type = nodesMap(doc).get(targetId)?.get('type')
+  const definition =
+    typeof type === 'string' ? definitions.get(type) : undefined
+  if (!definition) return { targetSlot: docSlot, targetInputs: docInputs }
+
+  const name = docInputs?.[docSlot]?.name
+  const slot = name == null ? -1 : hostSlotIndex(definition, name)
+  return {
+    targetSlot: slot >= 0 ? slot : docSlot,
+    targetInputs: hostInputs(definition, docInputs ?? [])
+  }
+}
+
+function readSemanticLink(
+  doc: Y.Doc,
+  id: string,
+  definitions: SubgraphDefinitionIndex
+): SemanticLinkPayload | null {
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
@@ -63,19 +101,23 @@ function readSemanticLink(doc: Y.Doc, id: string): SemanticLinkPayload | null {
   ) {
     return null
   }
+  const targetNodeId = String(tuple[3])
   return {
     id: linkId,
     originNodeId: String(tuple[1]),
     originSlot,
-    targetNodeId: String(tuple[3]),
-    targetSlot,
+    targetNodeId,
     type:
       typeof tuple[5] === 'string' || typeof tuple[5] === 'number'
         ? tuple[5]
         : '*',
     originOutputs: readNodeSlots(doc, String(tuple[1]), 'outputs'),
-    targetInputs: readNodeSlots(doc, String(tuple[3]), 'inputs')
+    ...hostTarget(doc, definitions, targetNodeId, targetSlot)
   }
+}
+
+function readDefinitions(doc: Y.Doc): SubgraphDefinitionIndex {
+  return indexSubgraphDefinitions(readSubgraphDefinitions(doc))
 }
 
 function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
@@ -112,6 +154,8 @@ interface TargetSession {
   readonly nodeActions: Map<string, NodeRootAction>
   readonly changedWidgets: Map<string, Set<string>>
   readonly replacedWidgetMaps: Set<string>
+  /** Nodes whose positional `__widgets_opaque` array was replaced. */
+  readonly replacedOpaqueWidgets: Set<string>
   readonly changedLinks: Set<string>
   readonly frameQueue: DocUpdate[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
@@ -202,6 +246,7 @@ export class EcsFollowerAdapter {
       nodeActions: new Map<string, NodeRootAction>(),
       changedWidgets: new Map<string, Set<string>>(),
       replacedWidgetMaps: new Set<string>(),
+      replacedOpaqueWidgets: new Set<string>(),
       changedLinks: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
@@ -221,9 +266,13 @@ export class EcsFollowerAdapter {
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
     )
     const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
+    const replacedOpaqueWidgets = new Set(session.replacedOpaqueWidgets)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
     this.discardSessionPending(session)
+
+    const doc = session.follower.doc
+    const definitions = readDefinitions(doc)
 
     const replacedNodeIds = new Set(
       [...nodeActions]
@@ -232,7 +281,7 @@ export class EcsFollowerAdapter {
     )
     if (replacedNodeIds.size > 0) {
       session.links.forEach((_raw, id) => {
-        const link = readSemanticLink(session.follower.doc, id)
+        const link = readSemanticLink(doc, id, definitions)
         if (
           link &&
           (replacedNodeIds.has(String(link.originNodeId)) ||
@@ -253,7 +302,7 @@ export class EcsFollowerAdapter {
           return payload ? [payload] : []
         })
         const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(session.follower.doc, id)
+          const link = readSemanticLink(doc, id, definitions)
           return link ? [link] : []
         })
         batch.removeMissing(
@@ -281,6 +330,29 @@ export class EcsFollowerAdapter {
         const payload = readSemanticNode(session.follower.doc, id)
         if (payload) batch.reconcileNode(payload)
       }
+      for (const id of replacedOpaqueWidgets) {
+        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+        const node = session.nodes.get(id)
+        if (!(node instanceof Y.Map)) continue
+        const type = node.get('type')
+        const definition =
+          typeof type === 'string' ? definitions.get(type) : undefined
+        if (!definition) {
+          const payload = readSemanticNode(session.follower.doc, id)
+          if (payload) batch.reconcileNode(payload)
+          continue
+        }
+        // Subgraph host: positional values map onto promoted widget names.
+        // reconcileNode would clear and re-register the host's widgets under
+        // positional names, wiping the promoted ones, so set them by name.
+        const values = plain(node.get(OPAQUE_WIDGETS_KEY))
+        if (!Array.isArray(values)) continue
+        const names = promotedWidgetNames(definition)
+        // Values past the promoted list have no host widget; drop them.
+        values.slice(0, names.length).forEach((value, index) => {
+          batch.setWidget(toNodeId(id), names[index], value)
+        })
+      }
       for (const [id, names] of changedWidgets) {
         if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
         const node = session.nodes.get(id)
@@ -296,7 +368,7 @@ export class EcsFollowerAdapter {
         }
       }
       for (const id of changedLinkIds) {
-        const link = readSemanticLink(session.follower.doc, id)
+        const link = readSemanticLink(doc, id, definitions)
         if (link) batch.connect(link)
       }
     })
@@ -314,6 +386,7 @@ export class EcsFollowerAdapter {
     session.nodeActions.clear()
     session.changedWidgets.clear()
     session.replacedWidgetMaps.clear()
+    session.replacedOpaqueWidgets.clear()
     session.changedLinks.clear()
   }
 
@@ -338,8 +411,10 @@ export class EcsFollowerAdapter {
         continue
       }
 
-      if (event.path.length === 1 && event.keysChanged.has('widgets'))
-        session.replacedWidgetMaps.add(id)
+      if (event.path.length !== 1) continue
+      if (event.keysChanged.has('widgets')) session.replacedWidgetMaps.add(id)
+      if (event.keysChanged.has(OPAQUE_WIDGETS_KEY))
+        session.replacedOpaqueWidgets.add(id)
     }
   }
 
