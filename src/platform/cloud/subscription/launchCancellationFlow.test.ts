@@ -180,7 +180,7 @@ describe('launchCancellationFlow', () => {
       tags: {
         failure_kind: 'degraded',
         feature_area: 'billing',
-        operation: 'navigate',
+        operation: 'load',
         outcome: 'recovered'
       },
       context: { workspace_still_current: true },
