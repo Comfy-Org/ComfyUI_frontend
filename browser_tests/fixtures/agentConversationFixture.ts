@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -105,6 +106,7 @@ class AgentConversationHarness {
   private readonly host: HostDoc
   private socket: WebSocketRoute | null = null
   private postedTurns = 0
+  private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
   private resolveSubscribed: (() => void) | null = null
@@ -139,12 +141,18 @@ class AgentConversationHarness {
         })
       )
     })
+    const objectInfo = this.page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith('/api/object_info')
+    )
     await bootAgentApp(this.page, agentFlag, {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: { 'Comfy.VueNodes.Enabled': true },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
       objectInfo: 'server'
     })
+    const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
+    for (const [type, definition] of Object.entries(definitions))
+      this.displayNames.set(type, definition.display_name || definition.name)
 
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
@@ -333,6 +341,19 @@ class AgentConversationHarness {
       .join('')
   }
 
+  // A recorded title renders verbatim. An untitled node should show its
+  // display name, but the follower's full reconcile (the catch-up path) still
+  // re-titles it by type through graphMutations.ts prepareNode, so until that
+  // is settled either spelling of the same node identity passes.
+  private expectedTitle(body: NodeBody): string | RegExp {
+    if (body.title) return body.title
+    const displayName = this.displayNames.get(body.type)
+    if (displayName === undefined)
+      throw new Error(`the server registers no node type ${body.type}`)
+    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^(?:${escape(displayName)}|${escape(body.type)})$`)
+  }
+
   private async renderedLinks(): Promise<RecordedLink[]> {
     const links = await this.page.evaluate(() =>
       [...window.app!.graph.links.values()].map((link) => ({
@@ -356,14 +377,11 @@ class AgentConversationHarness {
         await expect(this.vueNodes.getNodeLocator(String(body.id))).toHaveCount(
           0
         )
-    // The follower titles an untitled remote node by its type
-    // (core/graph/graphMutations.ts prepareNode), not by the display name a
-    // loaded workflow shows; asserted as is until that contract changes.
     for (const [id, body] of nodes) {
       const node = this.vueNodes.getNodeLocator(id)
       await expect(node).toBeVisible()
       await expect(node.getByTestId('node-title')).toHaveText(
-        body.title ?? body.type
+        this.expectedTitle(body)
       )
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.size)
