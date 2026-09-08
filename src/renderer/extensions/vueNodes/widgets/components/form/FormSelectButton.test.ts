@@ -31,7 +31,7 @@ describe('FormSelectButton Core Component', () => {
   const clickButton = async (buttonText: string) => {
     const buttons = screen.getAllByRole('button')
     const targetButton = buttons.find((button) =>
-      button.textContent?.includes(buttonText)
+      button.textContent.includes(buttonText)
     )
 
     if (!targetButton) {
