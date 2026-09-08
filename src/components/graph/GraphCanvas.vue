@@ -148,6 +148,7 @@ import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
@@ -178,6 +179,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -234,6 +236,9 @@ const { isBuilderMode } = useAppMode()
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
+const nodeProgressCanvasSync = createNodeProgressCanvasSync(
+  workflowStore.nodeToNodeLocatorId
+)
 const { linearMode } = storeToRefs(canvasStore)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
@@ -436,21 +441,15 @@ watch(
       canvasStore.currentGraph
     ] as const,
   ([nodeLocationProgressStates, canvas]) => {
-    if (!canvas?.graph) return
-    for (const node of canvas.graph.nodes) {
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
-      const progressState = nodeLocationProgressStates[nodeLocatorId]
-      if (progressState && progressState.state === 'running') {
-        node.progress = progressState.value / progressState.max
-      } else {
-        node.progress = undefined
-      }
-    }
-
-    // Force canvas redraw to ensure progress updates are visible
-    canvas.setDirty(true, false)
+    nodeProgressCanvasSync.sync(
+      nodeLocationProgressStates,
+      canvas,
+      canvas?.graph ?? canvasStore.currentGraph
+    )
   }
 )
+
+onUnmounted(nodeProgressCanvasSync.dispose)
 
 // Repaint canvas when node errors change.
 // Slot error flags are reconciled by reconcileNodeErrorFlags in executionErrorStore.
@@ -519,6 +518,7 @@ onMounted(async () => {
   workspaceStore.spinner = true
   let startupOutcome: StartupOutcome | undefined
   let urlTemplateId: string | undefined
+  let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -576,8 +576,10 @@ onMounted(async () => {
     await workflowPersistence.restoreWorkflowTabsState()
     urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    bootstrapOutcome = 'completed'
   } finally {
     workspaceStore.spinner = false
+    bootstrapTracer.complete(bootstrapOutcome)
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()

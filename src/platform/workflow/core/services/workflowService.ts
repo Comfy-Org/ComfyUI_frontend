@@ -45,7 +45,7 @@ import {
 } from '@/utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -54,18 +54,22 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
 
 /**
  * Returns the root graph id to scope run errors by, minting one when the graph
- * carries the zero id. `loadApiJson` and `importA1111` populate the root graph
- * without `configure()`, so every such import would otherwise share the zero
- * id's bucket and lose it once a reload generated a real id. The id is written
- * back into `workflowData` so the state this load persists reloads under the
- * same key.
+ * carries the zero id. Every caller passes `rootGraph.serialize()` as
+ * `workflowData`, and `app.clean()` mints a fresh root id before `loadApiJson`
+ * and `importA1111` populate the graph, so the zero id only survives here when
+ * something upstream skipped both. The id is written back into `workflowData`
+ * only in that zero-id case, so a `configure()`-based load (where
+ * `rootGraph.id` already came from `workflowData.id`) can never have this
+ * rewrite the incoming workflow's identity to a stale graph's id.
  */
 function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
   if (!app.isGraphReady) return null
 
   const rootGraph = app.rootGraph
-  workflowData.id = ensureNonZeroUuid(rootGraph)
-  return workflowData.id
+  if (rootGraph.id === zeroUuid) {
+    workflowData.id = ensureNonZeroUuid(rootGraph)
+  }
+  return rootGraph.id
 }
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
@@ -252,7 +256,7 @@ export const useWorkflowService = () => {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     const isSelfOverwrite =
-      existingWorkflow?.path === workflow.path && !existingWorkflow?.isTemporary
+      existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
@@ -278,7 +282,6 @@ export const useWorkflowService = () => {
       }
 
       if (options.isApp !== undefined) {
-        app.rootGraph.extra ??= {}
         app.rootGraph.extra.linearMode = isApp
         target.initialMode = isApp ? 'app' : 'graph'
       }
@@ -369,8 +372,9 @@ export const useWorkflowService = () => {
    * standing.
    */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
-    const retained = workflowStore.activeWorkflow
+    const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
+
     await app.loadGraphData(
       toRaw(retained.activeState) as ComfyWorkflowJSON,
       /* clean=*/ true,
@@ -382,6 +386,10 @@ export const useWorkflowService = () => {
         skipAssetScans: true
       }
     )
+  }
+
+  function getActiveWorkflow(): ComfyWorkflow | null {
+    return workflowStore.activeWorkflow
   }
 
   const openWorkflow = (
@@ -546,7 +554,12 @@ export const useWorkflowService = () => {
   }
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+    const oldPath = workflow.path
+    const graphId = workflow.activeState?.id
     await workflowStore.renameWorkflow(workflow, newPath)
+    if (graphId) {
+      useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
   }
 
   /**
@@ -604,7 +617,7 @@ export const useWorkflowService = () => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      activeWorkflow.changeTracker?.deactivate()
+      activeWorkflow.changeTracker.deactivate()
       persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
@@ -713,7 +726,7 @@ export const useWorkflowService = () => {
             // is the authoritative saved state.
             loadedWorkflow.initialMode =
               linearModeToAppMode(
-                loadedWorkflow.initialState?.extra?.linearMode
+                loadedWorkflow.initialState.extra?.linearMode
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
@@ -722,7 +735,7 @@ export const useWorkflowService = () => {
           }
           loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
           loadedWorkflow.changeTracker.reset(
-            ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+            ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
           )
           loadedWorkflow.changeTracker.restore()
           return
@@ -754,7 +767,7 @@ export const useWorkflowService = () => {
     }
     loadedWorkflow.legacyId ??= getLegacyWorkflowId(workflowData.id)
     loadedWorkflow.changeTracker.reset(
-      ensureWorkflowId(workflowData, loadedWorkflow.activeState?.id)
+      ensureWorkflowId(workflowData, loadedWorkflow.activeState.id)
     )
     loadedWorkflow.changeTracker.restore()
   }
