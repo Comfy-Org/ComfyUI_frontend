@@ -168,7 +168,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isDocBound: deps.isDocBound,
     source: {
       graphId() {
-        return String(deps.getGraph()?.id ?? '')
+        return deps.getGraph()?.id ?? ''
       },
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)
