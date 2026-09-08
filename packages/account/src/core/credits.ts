@@ -144,7 +144,9 @@ export function createBillingClient(
      * would race a duplicate read); a different user starts their own. A
      * forced call queued behind an in-flight read inherits that
      * read's remaining time on top of its own — it never drops, but it has
-     * no independent ceiling until the earlier read settles.
+     * no independent ceiling until the earlier read settles, and several
+     * queued forced calls coalesce onto whichever read their predecessor
+     * started rather than each fetching independently.
      */
     refresh(refreshOptions = {}) {
       const uid = activeCredential()?.uid
