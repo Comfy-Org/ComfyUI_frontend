@@ -1,9 +1,12 @@
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import { ToInputRenderLink } from '@/lib/litegraph/src/canvas/ToInputRenderLink'
+import { ToOutputRenderLink } from '@/lib/litegraph/src/canvas/ToOutputRenderLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
@@ -61,6 +64,38 @@ export class LinkConnectorAdapter {
         node,
         output,
         fromReroute
+      )
+    }
+  }
+
+  /**
+   * Adds extra output→input render links for a multi-node fan-out drag, so
+   * every selected node's output renders while a single drag is in progress.
+   */
+  addOutputRenderLinks(
+    sources: ReadonlyArray<{ node: LGraphNode; outputIndex: number }>
+  ): void {
+    for (const { node, outputIndex } of sources) {
+      const output = node.outputs?.[outputIndex]
+      if (!output) continue
+      this.linkConnector.renderLinks.push(
+        new ToInputRenderLink(this.network, node, output)
+      )
+    }
+  }
+
+  /**
+   * Adds extra input→output render links for a multi-node fan-out drag, so
+   * every selected node's input renders while a single drag is in progress.
+   */
+  addInputRenderLinks(
+    sources: ReadonlyArray<{ node: LGraphNode; inputIndex: number }>
+  ): void {
+    for (const { node, inputIndex } of sources) {
+      const input = node.inputs?.[inputIndex]
+      if (!input) continue
+      this.linkConnector.renderLinks.push(
+        new ToOutputRenderLink(this.network, node, input)
       )
     }
   }
