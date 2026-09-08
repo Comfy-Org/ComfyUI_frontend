@@ -292,9 +292,13 @@ test.describe('Workflow tabs', () => {
       await expect(scrollRight).toBeDisabled()
 
       const activeTabName = await topbar.getActiveTabName()
-      await scrollLeft.dispatchEvent('mousedown')
-      await expect(scrollRight).toBeEnabled()
-      await scrollLeft.dispatchEvent('mouseup')
+      await scrollLeft.hover()
+      await comfyPage.page.mouse.down()
+      try {
+        await expect(scrollRight).toBeEnabled()
+      } finally {
+        await comfyPage.page.mouse.up()
+      }
       await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
     }
   )
