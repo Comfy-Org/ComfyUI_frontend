@@ -13,9 +13,10 @@ const createResultItem = (
   supportsPreview = true
 ): AugmentedResultItem => ({
   filename: url,
-  type: 'output',
-  nodeId: 'node-1',
   mediaType: supportsPreview ? 'images' : 'unknown',
+  nodeId: 'node-1',
+  subfolder: '',
+  type: 'output',
   url
 })
 

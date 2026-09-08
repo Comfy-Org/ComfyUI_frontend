@@ -6,6 +6,7 @@ export interface AugmentedResultItem extends ResultItem {
   filename: string
   mediaType: string
   nodeId: SerializedNodeId
+  subfolder: string
   assetId?: string
   display_name?: string
   content?: string

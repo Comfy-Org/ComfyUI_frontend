@@ -42,7 +42,7 @@ export function parseNodeOutput(
     if (METADATA_KEYS.has(mediaType) || !isUnknownArray(items)) return []
     return items
       .filter(isResultItem)
-      .map((item) => ({ ...item, mediaType, nodeId }))
+      .map((item) => ({ subfolder: '', ...item, mediaType, nodeId }))
   })
 }
 

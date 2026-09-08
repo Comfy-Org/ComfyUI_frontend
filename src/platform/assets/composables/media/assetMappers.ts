@@ -37,7 +37,7 @@ export function mapTaskOutputToAssetItem(
   const metadata: OutputAssetMetadata = {
     jobId: taskItem.jobId,
     nodeId: output.nodeId,
-    subfolder: output.subfolder ?? '',
+    subfolder: output.subfolder,
     executionTimeInSeconds: taskItem.executionTimeInSeconds,
     format: output.format,
     create_time: taskItem.createTime
@@ -49,7 +49,7 @@ export function mapTaskOutputToAssetItem(
 
   return {
     id: taskItem.jobId,
-    name: output.filename ?? '',
+    name: output.filename,
     display_name: output.display_name,
     size: 0,
     created_at: executionTime,
@@ -80,7 +80,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder,
+    subfolder: metadata?.subfolder ?? '',
     type: asset.tags.includes('temp') ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url
