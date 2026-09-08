@@ -97,7 +97,7 @@ const showingText = computed(() =>
     <slot v-if="store.activeTab.value === 'models'" name="models" />
     <div
       v-else
-      class="relative z-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+      class="relative z-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
       data-testid="hub-grid"
     >
       <slot name="lead" />

@@ -239,8 +239,9 @@ const earlierClass = (active: boolean) =>
     <template v-else-if="shown">
       <div class="relative flex-1">
         <div
+          :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
-          class="size-full transition-[filter]"
+          class="animate-soft-in size-full transition-[filter]"
         >
           <VideoPlayer
             v-if="currentUrl && isVideoUrl(currentUrl)"

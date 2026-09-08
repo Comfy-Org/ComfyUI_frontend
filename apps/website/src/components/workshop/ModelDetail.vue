@@ -299,7 +299,7 @@ function useInCode() {
     <div
       role="tablist"
       :aria-label="t('workshop.title', locale)"
-      class="flex gap-8 border-b border-transparency-white-t8"
+      class="flex scrollbar-hide gap-8 overflow-x-auto border-b border-transparency-white-t8 max-sm:gap-5"
       data-testid="model-tabs"
       @keydown="onTabKeydown"
     >
@@ -345,7 +345,12 @@ function useInCode() {
           <span>{{ t('workshop.input.title', locale) }}</span>
         </header>
 
-        <div class="flex flex-col gap-6 p-5">
+        <!-- Loading an example rewrites every field at once, so the form
+          settles in instead of snapping. -->
+        <div
+          :key="activeExampleId"
+          class="animate-soft-in flex flex-col gap-6 p-5"
+        >
           <PlaygroundForm
             v-model="values"
             :schema

@@ -70,8 +70,8 @@ const tags = model.capabilities.map((capability) => ({
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <div class="mx-auto max-w-10xl px-6 py-8 lg:px-8 lg:py-10">
-    <nav aria-label="Breadcrumb" class="mb-4 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
+  <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
+    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
       <ol class="flex flex-wrap items-center gap-2">
         <li>
           <a href={routes.home} class="hover:text-primary-warm-white">
@@ -88,9 +88,9 @@ const tags = model.capabilities.map((capability) => ({
         <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
       </ol>
     </nav>
-    <header class="mb-8 sm:mx-8 lg:mx-10" data-testid="model-hero">
-      <div class="flex flex-col gap-4 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
-        <div class="flex max-w-2xl flex-col gap-2">
+    <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
+      <div class="flex flex-col gap-6 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
+        <div class="flex max-w-2xl flex-col gap-4">
           <div class="flex flex-wrap items-center gap-3">
             <p
               class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
@@ -112,7 +112,7 @@ const tags = model.capabilities.map((capability) => ({
           </h1>
         </div>
 
-        <div class="flex flex-col gap-3 lg:items-end">
+        <div class="flex flex-col gap-4 lg:items-end">
           <p
             class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
             data-testid="model-price"

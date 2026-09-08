@@ -4,6 +4,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { cardBadgeClass } from '../../lib/hub/badge'
 import { resolveTemplateLogos } from '../../lib/hub/model-logos'
 import { hubCreatorUrl } from '../../lib/hub/routes'
 import type { HubTemplate } from '../../lib/hub/types'
@@ -205,12 +206,7 @@ function openCard() {
       </h3>
       <div
         v-if="modelLogos.length"
-        :class="
-          cn(
-            'absolute top-4 right-4 z-10 flex items-center justify-center gap-1 rounded-2xl bg-transparency-white-t8 backdrop-blur-sm',
-            modelLogos.length > 1 ? 'h-10 w-auto px-2' : 'size-10'
-          )
-        "
+        :class="cn(cardBadgeClass, 'right-4', modelLogos.length > 1 && 'px-2')"
       >
         <span
           v-for="logo in modelLogos"

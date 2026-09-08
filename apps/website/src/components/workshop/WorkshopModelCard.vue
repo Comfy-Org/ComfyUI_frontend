@@ -13,6 +13,7 @@ import { modalityOf, splitTask } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
+import { cardBadgeClass } from '../../lib/hub/badge'
 import { getLogoPath } from '../../lib/hub/model-logos'
 import TagRow from '../hub/TagRow.vue'
 
@@ -20,12 +21,14 @@ const {
   model,
   locale = 'en',
   showStatus = false,
-  versionCount = 1
+  versionCount = 1,
+  providerBadge = false
 } = defineProps<{
   model: WorkshopModel
   locale?: Locale
   showStatus?: boolean
   versionCount?: number
+  providerBadge?: boolean
 }>()
 
 const modality = computed(() => modalityOf(model))
@@ -89,6 +92,24 @@ const pillClass =
       class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
     >
       <HubTypeBadge kind="model" :locale />
+
+      <!-- The hub's cards carry the provider in the same corner, so a mixed
+        grid reads the same wherever the eye lands. -->
+      <span
+        v-if="providerBadge"
+        :title="providerName"
+        role="img"
+        :aria-label="providerName"
+        :class="cn(cardBadgeClass, 'right-4 text-sm font-bold')"
+        data-testid="model-card-provider-badge"
+      >
+        <span
+          v-if="logo"
+          class="size-5 bg-white mask-contain mask-center mask-no-repeat"
+          :style="{ maskImage: `url(${logo})` }"
+        />
+        <template v-else>{{ providerName.charAt(0).toUpperCase() }}</template>
+      </span>
       <img
         v-if="model.thumbnailUrl"
         :src="model.thumbnailUrl"
@@ -127,7 +148,7 @@ const pillClass =
 
       <span
         v-if="versionCount > 1"
-        class="bg-page/70 text-content absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-xs backdrop-blur-sm"
+        class="bg-page/70 text-content absolute top-4 left-16 z-10 inline-flex h-10 items-center rounded-2xl px-3 text-xs backdrop-blur-md"
         data-testid="model-card-versions"
       >
         {{
@@ -136,7 +157,7 @@ const pillClass =
       </span>
       <span
         v-if="showStatus && model.status"
-        class="bg-primary-comfy-yellow/80 absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-sm"
+        class="bg-primary-comfy-yellow/80 absolute top-4 left-16 z-10 inline-flex h-10 items-center rounded-2xl px-3 text-[11px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-md"
       >
         {{
           model.status === 'deprecated'

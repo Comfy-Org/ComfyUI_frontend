@@ -229,7 +229,9 @@ function phoneToggle(value: string) {
 
 <template>
   <div class="relative flex flex-col gap-3">
-    <div class="flex flex-wrap items-center gap-2">
+    <!-- Tabs and search share one row: below sm the row may wrap, from there
+      up the search shrinks instead of dropping under the tabs. -->
+    <div class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
       <TabsRoot
         ref="tabs"
         :model-value="store.activeTab.value"
@@ -260,16 +262,16 @@ function phoneToggle(value: string) {
               class="size-3.5 shrink-0"
               aria-hidden="true"
             />
-            <span
-              class="ppformula-text-center-sm max-sm:hidden max-sm:group-data-[state=active]:inline-block"
-            >
+            <!-- Below lg the row runs out of width, so the tabs keep the icon
+              and drop the word; the trigger's aria-label still names it. -->
+            <span class="ppformula-text-center-sm max-lg:hidden">
               {{ labels[tab.labelKey] }}
             </span>
           </TabsTrigger>
         </TabsList>
       </TabsRoot>
 
-      <div class="ml-auto flex min-w-0 items-center gap-2">
+      <div class="ml-auto flex min-w-0 flex-1 items-center gap-2">
         <slot name="search" />
         <button
           type="button"

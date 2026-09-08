@@ -8983,8 +8983,8 @@ Enterprise`
     'zh-CN': '搜索工作流、模型、创作者...'
   },
   'workshop.hub.kind.all': { en: 'All', 'zh-CN': '全部' },
-  'workshop.hub.kind.graph': { en: 'Node Graphs', 'zh-CN': '节点图' },
-  'workshop.hub.kind.app': { en: 'Comfy Apps', 'zh-CN': 'Comfy 应用' },
+  'workshop.hub.kind.graph': { en: 'Graphs', 'zh-CN': '节点图' },
+  'workshop.hub.kind.app': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.hub.kind.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hub.io.image': { en: 'Image', 'zh-CN': '图像' },
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },

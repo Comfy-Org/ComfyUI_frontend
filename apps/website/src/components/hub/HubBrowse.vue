@@ -317,7 +317,7 @@ const filteredTemplates = computed(() => {
               v-model:capabilities="capabilities"
               :models="workshopModels"
               :locale
-              class="w-40 sm:w-52 lg:w-64 xl:w-96"
+              class="w-full min-w-40 flex-1"
             />
           </template>
 
@@ -328,13 +328,14 @@ const filteredTemplates = computed(() => {
               :model="family.latest"
               :version-count="family.versions.length"
               :locale
+              provider-badge
               data-testid="hub-models-lead"
             />
           </template>
 
           <template #models>
             <ul
-              class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+              class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
               data-testid="hub-models"
             >
               <li v-for="family in modelFamilies" :key="family.key">
@@ -342,6 +343,7 @@ const filteredTemplates = computed(() => {
                   :model="family.latest"
                   :version-count="family.versions.length"
                   :locale
+                  provider-badge
                 />
               </li>
             </ul>

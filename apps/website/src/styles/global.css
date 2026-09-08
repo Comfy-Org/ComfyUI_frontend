@@ -579,3 +579,23 @@ video::-webkit-media-controls-panel {
     animation: backdrop-drift 48s ease-in-out infinite alternate;
   }
 }
+
+@keyframes soft-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-soft-in {
+  animation: soft-in 260ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
