@@ -63,7 +63,7 @@ describe('EssentialsPanel', () => {
     render(EssentialsPanel)
 
     const el = screen.getByTestId('shortcuts-list')
-    const subcategories = JSON.parse(el.textContent ?? '{}')
+    const subcategories = JSON.parse(el.textContent)
 
     expect(subcategories).toHaveProperty('workflow')
     expect(subcategories).toHaveProperty('node')

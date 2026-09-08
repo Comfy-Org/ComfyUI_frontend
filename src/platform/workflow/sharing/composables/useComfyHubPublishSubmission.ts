@@ -11,7 +11,7 @@ function getFileContentType(file: File): string {
 }
 
 function getUsername(profile: ComfyHubProfile | null): string {
-  const username = profile?.username?.trim()
+  const username = profile?.username.trim()
   if (!username) {
     throw new Error('ComfyHub profile is required before publishing')
   }

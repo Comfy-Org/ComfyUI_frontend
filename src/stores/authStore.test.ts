@@ -1,7 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
@@ -22,9 +21,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import type * as ApiModule from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { createTestingPinia } from '@pinia/testing'
 
-// Hoisted mocks for dynamic imports
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
@@ -111,30 +108,8 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    signInWithEmailAndPassword: vi.fn(),
-    createUserWithEmailAndPassword: vi.fn(),
-    signOut: vi.fn(),
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    signInWithPopup: vi.fn(),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
-  }
-})
+vi.mock('firebase/auth')
 
-// Mock telemetry
 const mockTrackAuth = vi.fn()
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
@@ -216,6 +191,12 @@ describe('useAuthStore', () => {
         return vi.fn()
       }
     )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
+      (_auth, callback) => {
+        idTokenCallback = callback as (user: User | null) => void
+        return vi.fn()
+      }
+    )
 
     // Mock fetch responses
     mockFetch.mockImplementation((url: string) => {
@@ -247,57 +228,36 @@ describe('useAuthStore', () => {
   })
 
   describe('token refresh events', () => {
-    beforeEach(async () => {
-      vi.resetModules()
-
-      vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
-        (_auth, callback) => {
-          idTokenCallback = callback as (user: User | null) => void
-          return vi.fn()
-        }
-      )
-
-      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-        mockAuth as Partial<
-          ReturnType<typeof vuefire.useFirebaseAuth>
-        > as ReturnType<typeof vuefire.useFirebaseAuth>
-      )
-
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      const storeModule = await import('@/stores/authStore')
-      store = storeModule.useAuthStore()
-    })
-
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
       mockFeatureFlags.unifiedCloudAuthEnabled = true
-      idTokenCallback?.(mockUser) // initial event (always skipped)
-      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      idTokenCallback(mockUser) // initial event (always skipped)
+      idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
