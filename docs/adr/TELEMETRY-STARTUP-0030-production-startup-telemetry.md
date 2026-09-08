@@ -75,11 +75,26 @@ vitals describe discrete operations inside a view, such as
 
 ### The aggregate action still earns its place
 
-`app:bootstrap_complete` carries one row per session with `total_ms`,
-`outcome`, `phase_count`, `phases`, and `pending`. Custom timings cannot
-express `outcome` or `pending`, and per-phase events cannot be percentiled
-without a fifteen-row join. This row is what makes "how many users hit a slow
-load" a single query.
+`app:bootstrap_complete` carries `total_ms`, `outcome`, `phase_count`,
+`phases`, and `pending`. Custom timings cannot express `outcome` or `pending`,
+and per-phase events cannot be percentiled without a fifteen-row join. This row
+is what makes "how many users hit a slow load" a single query.
+
+**Cardinality is one to two rows per session, not one.** A session that
+finishes normally emits exactly one terminal row. A session still running at
+the watchdog deadline emits a `timed_out` row first and then its terminal row
+if it ever finishes, so it contributes two. A session that never finishes
+contributes only the `timed_out` row.
+
+Queries must therefore select an outcome rather than counting rows:
+
+| Question                               | Filter                                                         |
+| -------------------------------------- | -------------------------------------------------------------- |
+| How long did startup take              | `outcome:(completed OR failed)` — one row per finished session |
+| How many sessions blew past 30 s       | `outcome:timed_out` — one row per affected session             |
+| How many sessions are affected overall | count distinct session id, not rows                            |
+
+An undifferentiated row count double-counts every hung session.
 
 ### Outcomes are recorded so the bad sessions survive
 
@@ -104,8 +119,14 @@ the registry for the same reason and the same sink. `perfMark.ts` sits under
 `src/platform/telemetry/**`, which `no-restricted-imports` permits to import
 the sinks behind an explicit disable comment.
 
-PostHog receives the same row through the registry, preserving that ADR's
-split: Datadog for alerting, PostHog for exploration.
+PostHog receives bootstrap rows through the registry, preserving that ADR's
+split: Datadog for alerting, PostHog for exploration. The two sinks are not
+symmetric here. Rows emitted before `initTelemetry()` resolves are
+Datadog-only, because the registry does not exist yet to dispatch them — in
+practice a `timed_out` row from a session that stalled inside
+`startup/remote-config` or `startup/telemetry-init`. Datadog is the complete
+record of startup outcomes; PostHog is complete only for sessions that got
+past telemetry init.
 
 ## Consequences
 
@@ -133,8 +154,9 @@ split: Datadog for alerting, PostHog for exploration.
 - Emitting to Datadog directly rather than through the registry means a future
   sink added to the registry does not automatically receive this signal.
 - Datadog and PostHog will disagree on volume, as ADR-TELEMETRY-ROUTING-0013
-  already notes for every dual-emitted event. Build monitors on rates, not
-  absolute counts.
+  already notes for every dual-emitted event, and additionally here because
+  pre-registry rows never reach PostHog. Build monitors on rates, not absolute
+  counts, and build them on Datadog.
 
 ### Neutral
 
