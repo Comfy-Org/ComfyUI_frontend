@@ -1,17 +1,17 @@
 ---
 name: adr-compliance
-description: Checks code changes against Architecture Decision Records, with emphasis on ECS (ADR 0008) and command-pattern (ADR 0003) compliance
+description: Checks code changes against Architecture Decision Records, with emphasis on ECS (ADR-ECS) and command-pattern (ADR-LAYOUT) compliance
 severity-default: medium
 tools: [Read, Grep, glob]
 ---
 
 Check that code changes are consistent with the project's Architecture Decision Records in `docs/adr/`.
 
-## Priority 1: ECS and Command-Pattern Compliance (ADR 0008 + ADR 0003)
+## Priority 1: ECS and Command-Pattern Compliance (ADR-ECS + ADR-LAYOUT)
 
 These are the primary architectural guardrails. Every entity/litegraph change must be checked against them.
 
-### Command Pattern (ADR 0003)
+### Command Pattern (ADR-LAYOUT)
 
 All entity state mutations MUST be expressible as **serializable, idempotent, deterministic commands**. This is required for CRDT sync, undo/redo, cross-environment portability, and gateway backends.
 
@@ -22,7 +22,7 @@ Flag:
 - **Void-returning mutation APIs** — New entity mutation functions that return `void` instead of a result type (`{ status: 'applied' | 'rejected' | 'no-op' }`). Commands need error/rejection semantics.
 - **Auto-incrementing IDs in new entity code** — New entity creation using auto-increment counters without acknowledging the CRDT collision problem. Concurrent environments need globally unique, stable identifiers.
 
-### ECS Architecture (ADR 0008)
+### ECS Architecture (ADR-ECS)
 
 The graph domain model is migrating to ECS. New code must not make the migration harder.
 
@@ -72,7 +72,7 @@ For all other ADRs, iterate through each file in `docs/adr/` and extract the cor
 
 These ADRs can be skipped for most reviews (they cover completed or narrow-scope decisions):
 
-- **ADR 0004** (Rejected — Fork PrimeVue) — only relevant if someone proposes forking PrimeVue again
+- **ADR-PRIMEVUE** (Rejected — Fork PrimeVue) — only relevant if someone proposes forking PrimeVue again
 
 ## How to Check
 

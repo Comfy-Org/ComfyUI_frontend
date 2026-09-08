@@ -509,6 +509,46 @@ describe('usePaste', () => {
     })
   })
 
+  it.for([
+    { version: '1.0', extra: {} },
+    { version: '1.0', nodes: [] },
+    { version: '1.0', nodes: {}, extra: {} }
+  ])('does not load malformed workflow JSON', async (workflow) => {
+    usePaste()
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify(workflow))
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it('preserves text input paste for malformed workflow JSON', async () => {
+    usePaste()
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify({ version: '1.0' }))
+
+    input.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        clipboardData: dataTransfer
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+  })
+
   it('should ignore paste when shift is down', () => {
     mockWorkspaceStore.shiftDown = true
 

@@ -32,6 +32,7 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -161,7 +162,7 @@ import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
-import { type ComfyWidgetConstructor } from './widgets'
+import type { CustomComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
   extractFilesFromDragEvent,
@@ -253,9 +254,9 @@ export interface QueuePromptOptions {
 }
 
 function createNodeOutputsMutationView(
-  outputs: Record<string, NodeExecutionOutput>,
+  outputs: Partial<Record<string, NodeExecutionOutput>>,
   commit: (id: string, output: NodeExecutionOutput | undefined) => void
-): Record<string, NodeExecutionOutput> {
+): Partial<Record<string, NodeExecutionOutput>> {
   const views = new WeakMap<object, Map<string, object>>()
   const wrapNestedValue = (id: string, value: unknown): unknown => {
     if (value === null || typeof value !== 'object') return value
@@ -318,13 +319,15 @@ export class ComfyApp {
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
   static maskeditor_is_opended: (() => void) | null = null
-  static clipspace_return_node = null
+  static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly nodeOutputsData: Partial<
+    Record<string, NodeExecutionOutput>
+  > = {}
   private readonly _nodeOutputs = createNodeOutputsMutationView(
     this.nodeOutputsData,
     (id, output) => {
@@ -334,7 +337,7 @@ export class ComfyApp {
       else store.setOutputFromLegacy(id, output)
     }
   )
-  nodePreviewImages: Record<string, string[]>
+  nodePreviewImages: Partial<Record<string, string[]>>
 
   private rootGraphInternal: LGraph | undefined
 
@@ -349,6 +352,10 @@ export class ComfyApp {
       console.error('ComfyApp graph accessed before initialization')
     }
     return this.rootGraphInternal!
+  }
+
+  get rootGraphOrUndefined(): LGraph | undefined {
+    return this.rootGraphInternal
   }
 
   /** Whether the root graph has been initialized. Safe to check without triggering error logs. */
@@ -418,8 +425,13 @@ export class ComfyApp {
   /**
    * @deprecated Use useWidgetStore().widgets instead
    */
-  get widgets(): Record<string, ComfyWidgetConstructor> {
-    return Object.fromEntries(useWidgetStore().widgets.entries())
+  get widgets(): Record<string, CustomComfyWidgetConstructor> &
+    typeof import('./widgets').ComfyWidgets {
+    const widgetStore = useWidgetStore()
+    return Object.assign(
+      Object.fromEntries(widgetStore.widgets.entries()),
+      widgetStore.coreWidgets
+    )
   }
 
   /**
@@ -882,8 +894,6 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      const isActiveWorkflowError =
-        useExecutionStore().isJobErrorForActiveWorkflow(detail.prompt_id)
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type ?? '',
         exceptionMessage: detail.exception_message ?? ''
@@ -892,12 +902,6 @@ export class ComfyApp {
         useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
-      } else if (isActiveWorkflowError) {
-        if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
-          useExecutionErrorStore().showErrorOverlay()
-        } else {
-          useDialogService().showExecutionErrorDialog(detail)
-        }
       }
       this.canvas.draw(true, true)
     })
@@ -973,7 +977,9 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
-    await useExtensionService().loadExtensions()
+    await bootstrapTracer.settle('bootstrap/extensions-load', () =>
+      useExtensionService().loadExtensions()
+    )
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1068,12 +1074,17 @@ export class ComfyApp {
       }
     })
 
-    await useExtensionService().invokeExtensionsAsync('init')
+    await bootstrapTracer.settle('bootstrap/extensions-init', () =>
+      useExtensionService().invokeExtensionsAsync('init')
+    )
+
     await this.registerNodes()
 
     this.addDropHandler()
 
-    await useExtensionService().invokeExtensionsAsync('setup')
+    await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
+      useExtensionService().invokeExtensionsAsync('setup')
+    )
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,
@@ -1175,10 +1186,14 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    // Load node definitions from the backend
-    const defs = await this.getNodeDefs()
-    await this.registerNodesFromDefs(defs)
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    const defs = await bootstrapTracer.settle('bootstrap/object-info', () =>
+      this.getNodeDefs()
+    )
+
+    await bootstrapTracer.settle('bootstrap/extensions', async () => {
+      await this.registerNodesFromDefs(defs)
+      await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    })
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }

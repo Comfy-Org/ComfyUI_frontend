@@ -86,7 +86,7 @@ interface SeveranceEntry {
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
-  return String(scope.owningGraphId) === String(scope.rootGraphId)
+  return scope.owningGraphId === scope.rootGraphId
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
