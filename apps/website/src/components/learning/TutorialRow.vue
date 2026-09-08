@@ -24,7 +24,7 @@ const { tutorial, locale = 'en' } = defineProps<{
     <a
       :href="localizeHref(tutorialPath(tutorial), locale)"
       class="group/thumb relative block aspect-video w-full shrink-0 overflow-hidden rounded-2xl md:w-36 lg:w-44"
-      :aria-label="`${t('player.play', locale)} ${tutorial.title[locale]}`"
+      :aria-label="`${t('player.play', locale)} ${tutorial.title[locale] || tutorial.title.en}`"
     >
       <img
         :src="tutorial.poster"
@@ -46,7 +46,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           :href="localizeHref(tutorialPath(tutorial), locale)"
           class="text-left hover:underline"
         >
-          {{ tutorial.title[locale] }}
+          {{ tutorial.title[locale] || tutorial.title.en }}
         </a>
       </h3>
       <ul class="mt-2 flex flex-wrap gap-2">

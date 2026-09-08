@@ -41,7 +41,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await selectNodeWithPan(comfyPage, nodeRef)
 
     const initialCount = await comfyPage.page.evaluate(
-      () => window.app!.graph!._nodes.length
+      () => window.app!.graph._nodes.length
     )
 
     const deleteButton = comfyPage.page.getByTestId('delete-button')
@@ -51,7 +51,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => window.app!.graph!._nodes.length)
+        comfyPage.page.evaluate(() => window.app!.graph._nodes.length)
       )
       .toBe(initialCount - 1)
   })
@@ -118,7 +118,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nextFrame()
 
     const initialCount = await comfyPage.page.evaluate(
-      () => window.app!.graph!._nodes.length
+      () => window.app!.graph._nodes.length
     )
 
     const deleteButton = comfyPage.page.getByTestId('delete-button')
@@ -128,7 +128,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     await expect
       .poll(() =>
-        comfyPage.page.evaluate(() => window.app!.graph!._nodes.length)
+        comfyPage.page.evaluate(() => window.app!.graph._nodes.length)
       )
       .toBe(initialCount - 2)
   })
@@ -288,14 +288,14 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     const readSeed = () =>
       comfyPage.page.evaluate(() => {
-        const sampler = window.app!.graph!._nodes.find(
+        const sampler = window.app!.graph._nodes.find(
           (node) => node.type === 'KSampler'
         )
         return sampler!.widgets!.find((widget) => widget.name === 'seed')!.value
       })
 
     await comfyPage.page.evaluate(() => {
-      const sampler = window.app!.graph!._nodes.find(
+      const sampler = window.app!.graph._nodes.find(
         (node) => node.type === 'KSampler'
       )
       const control = sampler?.widgets?.find(

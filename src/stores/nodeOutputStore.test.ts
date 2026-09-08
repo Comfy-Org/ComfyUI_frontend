@@ -230,6 +230,92 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('nodeOutputStore legacy entry synchronization', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('updates one mapped output without replacing unrelated records', () => {
+    const store = useNodeOutputStore()
+    const untouched = createMockOutputs([{ filename: 'untouched.png' }])
+    store.replaceOutputsFromLegacy({ untouched })
+    const untouchedRecord = store.nodeOutputs.untouched
+
+    store.setOutputFromLegacy(
+      'changed',
+      createMockOutputs([{ filename: 'changed.png' }])
+    )
+
+    expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+    expect(store.nodeOutputs.changed?.images?.[0]?.filename).toBe('changed.png')
+
+    store.removeOutputFromLegacy('changed')
+
+    expect(store.nodeOutputs.changed).toBeUndefined()
+    expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+  })
+})
+
+describe('nodeOutputStore replaceNodeOutputImages', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('drops the previous output metadata when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setOutputFromLegacy(
+      '7',
+      fromAny({
+        images: [{ filename: 'previous.webp' }],
+        animated: [true],
+        video: [{ filename: 'previous.mp4' }]
+      })
+    )
+
+    const images = [
+      {
+        filename: 'painted.png',
+        subfolder: 'clipspace',
+        type: 'input' as const
+      }
+    ]
+    store.replaceNodeOutputImages(node, images)
+
+    expect(store.nodeOutputs['7']?.animated).toBeUndefined()
+    expect(store.nodeOutputs['7']?.video).toBeUndefined()
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+  })
+
+  it('ignores an empty replacement', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png', type: 'input' as const }]
+    const node = createMockNode({ id: 7, images })
+    store.setOutputFromLegacy('7', { images })
+
+    store.replaceNodeOutputImages(node, [])
+
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+    expect(node.images).toEqual(images)
+  })
+
+  it('removes stale previews when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'preview:stale'
+    ])
+
+    store.replaceNodeOutputImages(node, [
+      { filename: 'painted.png', type: 'input' }
+    ])
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(app.nodePreviewImages['7']).toBeUndefined()
+  })
+})
+
 describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
     app.nodeOutputs = {}

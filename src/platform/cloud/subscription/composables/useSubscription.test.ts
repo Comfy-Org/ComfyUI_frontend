@@ -24,7 +24,7 @@ const {
   mockIsCloud: { value: true },
   mockAuthStoreInitialized: { value: true },
   mockGetBillingStatus: vi.fn(),
-  mockActiveWorkspaceId: { value: 'workspace-123' as string | null },
+  mockActiveWorkspaceId: { value: 'workspace-123' },
   mockSetWorkspaceBillingRail: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
@@ -207,7 +207,7 @@ describe('useSubscription', () => {
     })
     window.__CONFIG__ = {
       subscription_required: true
-    } as typeof window.__CONFIG__
+    }
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -457,7 +457,7 @@ describe('useSubscription', () => {
       // Mock window.open
       const windowOpenSpy = vi
         .spyOn(window, 'open')
-        .mockImplementation(() => window as unknown as Window)
+        .mockImplementation(() => window)
 
       const { subscribe } = useSubscriptionWithScope()
 
@@ -514,7 +514,7 @@ describe('useSubscription', () => {
       } as Response)
       const windowOpenSpy = vi
         .spyOn(window, 'open')
-        .mockImplementation(() => window as unknown as Window)
+        .mockImplementation(() => window)
 
       const { subscribeDirect } = useSubscriptionWithScope()
 
@@ -544,7 +544,7 @@ describe('useSubscription', () => {
       } as Response)
       const windowOpenSpy = vi
         .spyOn(window, 'open')
-        .mockImplementation(() => window as unknown as Window)
+        .mockImplementation(() => window)
 
       const { subscribeDirect } = useSubscriptionWithScope()
 

@@ -10,6 +10,7 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
       'Comfy.Workflow.WorkflowTabsPosition',
       'Topbar'
     )
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -21,7 +22,7 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await test.step('Ctrl+Z undoes the last graph change', async () => {
       await comfyPage.page.evaluate(() => {
         const node = window.LiteGraph!.createNode('Note')
-        window.app!.graph!.add(node)
+        window.app!.graph.add(node)
       })
       await comfyPage.nextFrame()
       await expect
@@ -90,10 +91,8 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await comfyPage.page.keyboard.press('ControlOrMeta+a')
 
     const totalNodes = await comfyPage.nodeOps.getNodeCount()
-    const selectedNodes = await comfyPage.page.evaluate(() =>
-      window.app!.canvas?.selected_nodes
-        ? Object.keys(window.app!.canvas.selected_nodes).length
-        : 0
+    const selectedNodes = await comfyPage.page.evaluate(
+      () => Object.keys(window.app!.canvas.selected_nodes).length
     )
 
     expect(selectedNodes).toBe(totalNodes)

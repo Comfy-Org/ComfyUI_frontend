@@ -25,16 +25,18 @@ const items = computed<CardArticleGalleryItem[]>(() =>
       {
         id: event.id,
         category: t(`events.category.${event.category}`, locale),
-        title: event.title[locale],
+        title: event.title[locale] || event.title.en,
         media: {
           type: media.type,
           src: media.src,
-          alt: media.alt[locale],
+          alt: media.alt[locale] || media.alt.en,
           poster: media.type === 'video' ? media.poster : undefined
         },
         cta: {
           label: t('events.past.watchNow', locale),
-          href: external ? (event.link?.href[locale] ?? pageHref) : pageHref,
+          href: external
+            ? event.link?.href[locale] || event.link?.href.en || pageHref
+            : pageHref,
           newTab: external ? event.link?.newTab : undefined
         }
       }

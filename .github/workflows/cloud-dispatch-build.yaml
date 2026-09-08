@@ -59,6 +59,10 @@ jobs:
           PR_EVENT_NUMBER: ${{ github.event.pull_request.number }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
           GH_TOKEN: ${{ github.token }}
+          # Persistent asset cache-bust salt. Set as a repo variable so it
+          # applies to every subsequent build, not just one manual run —
+          # clearing it would revert filenames to the names that were poisoned.
+          ASSET_CACHE_BUST: ${{ vars.ASSET_CACHE_BUST }}
         run: |
           set -euo pipefail
 
@@ -123,7 +127,8 @@ jobs:
               --arg branch "${BRANCH}" \
               --arg pr_number "${PR_NUMBER}" \
               --arg variant "${VARIANT}" \
-              '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant}')"
+              --arg asset_cache_bust "${ASSET_CACHE_BUST}" \
+              '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant, asset_cache_bust: $asset_cache_bust}')"
             echo "json=${payload}" >> "${GITHUB_OUTPUT}"
           fi
 

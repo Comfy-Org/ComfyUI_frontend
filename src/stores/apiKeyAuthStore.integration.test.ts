@@ -20,23 +20,7 @@ vi.mock('vue-i18n', () => ({
   createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
-vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    }
-  }
-})
+vi.mock('firebase/auth')
 
 vi.mock('@/platform/distribution/types', () => ({
   DISTRIBUTION: 'cloud',

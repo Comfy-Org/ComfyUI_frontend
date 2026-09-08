@@ -126,7 +126,7 @@ export function hasActivePaidPlan(
 }
 
 const FOUNDER_MONTHLY_PRICE = 20
-const FOUNDER_MONTHLY_CREDITS = 5460
+const FOUNDER_MONTHLY_CREDITS = 5461
 
 export function getTierPrice(tierKey: TierKey, isYearly = false): number {
   if (tierKey === 'free') return 0
@@ -138,7 +138,7 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
 export function getTierCredits(tierKey: TierKey): number | null {
   if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? null
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
-  return TIER_PRICING[tierKey]?.credits ?? null
+  return TIER_PRICING[tierKey]?.credits
 }
 
 export function getTierFeatures(tierKey: TierKey): TierFeatures {

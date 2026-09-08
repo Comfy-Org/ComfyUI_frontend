@@ -897,3 +897,46 @@ describe('layoutStore link layout updates', () => {
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
   })
 })
+
+describe('layoutStore content-size performance contract', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  it.for([1, 100, 500])(
+    'keeps unchanged and changed reports geometry-neutral at %i nodes',
+    (count) => {
+      const geometryChanged = vi.fn()
+      const stop = layoutStore.onGeometryChange(geometryChanged)
+      const geometryVersion = layoutStore.geometryVersion
+      const nodeGeometryVersion = layoutStore.nodeGeometryVersion
+
+      for (let index = 0; index < count; index++) {
+        const nodeId = toNodeId(`content-size-${count}-${index}`)
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 240,
+          height: 150
+        })
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 240,
+          height: 150
+        })
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 241,
+          height: 151
+        })
+      }
+
+      expect(layoutStore.geometryVersion).toBe(geometryVersion)
+      expect(layoutStore.nodeGeometryVersion).toBe(nodeGeometryVersion)
+      expect(geometryChanged).not.toHaveBeenCalled()
+      expect(
+        layoutStore.contentSizeOf(
+          GRAPH,
+          toNodeId(`content-size-${count}-${count - 1}`)
+        )
+      ).toEqual({ width: 241, height: 151 })
+      stop()
+    }
+  )
+})

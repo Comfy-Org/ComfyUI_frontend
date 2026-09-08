@@ -56,7 +56,7 @@ function calculateInputSlotPos(
   context: SlotPositionContext,
   slot: number
 ): Point {
-  const input = context.inputs[slot]
+  const input = context.inputs.at(slot)
   if (!input) return [context.nodeX, context.nodeY]
 
   return calculateInputSlotPosFromSlot(context, input)
@@ -89,11 +89,8 @@ export function calculateInputSlotPosFromSlot(
   const nodeOffsetY = context.slotStartY || 0
   let slotIndex = -1
   const inputIndex = context.inputs.indexOf(input)
-  if (
-    inputIndex !== -1 &&
-    !input.pos &&
-    !(context.widgets?.length && isWidgetInputSlot(input))
-  ) {
+  if (inputIndex === -1) return [nodeX, nodeY]
+  if (!input.pos && !(context.widgets?.length && isWidgetInputSlot(input))) {
     slotIndex = 0
     for (const [index, slot] of context.inputs.entries()) {
       if (index >= inputIndex) break
@@ -127,7 +124,7 @@ function calculateOutputSlotPos(
     return [nodeX + width, nodeY - halfTitle]
   }
 
-  const outputSlot = outputs[slot]
+  const outputSlot = outputs.at(slot)
   if (!outputSlot) return [nodeX + nodeWidth, nodeY]
 
   // Handle hard-coded positions
@@ -241,7 +238,7 @@ function calculateVueInputSlotPosition(
   nodeX: number,
   nodeY: number
 ): Point {
-  const input = node.inputs[slotIndex]
+  const input = node.inputs.at(slotIndex)
   if (!input) return [nodeX, nodeY]
 
   const widgetSlotY = getWidgetSlotY(node, input)
@@ -278,7 +275,7 @@ function calculateVueOutputSlotPosition(
   nodeY: number,
   nodeWidth: number
 ): Point {
-  if (!node.outputs[slotIndex]) {
+  if (!node.outputs.at(slotIndex)) {
     return [nodeX + nodeWidth, nodeY]
   }
 
@@ -306,7 +303,7 @@ export function getSlotLayout(
   slotIndex: number,
   isInput: boolean
 ): SlotLayout | null {
-  const slot = isInput ? node.inputs[slotIndex] : node.outputs[slotIndex]
+  const slot = isInput ? node.inputs.at(slotIndex) : node.outputs.at(slotIndex)
   if (!slot) return null
 
   return createSlotLayout(

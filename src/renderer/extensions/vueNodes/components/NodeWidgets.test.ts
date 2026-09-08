@@ -25,9 +25,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 const WidgetStub = {
   name: 'WidgetStub',
-  props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
+  props: ['widget', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name">{{ nodeType }}</div>'
+    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined">{{ nodeType }}</div>'
 }
 
 const AppInputStub = {
@@ -38,13 +38,11 @@ const AppInputStub = {
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
-  async (importOriginal) => {
-    const original = await importOriginal()
-    return {
-      ...(original as Record<string, unknown>),
-      getComponent: () => WidgetStub
-    }
-  }
+  () => ({
+    getComponent: () => WidgetStub,
+    shouldExpand: () => false,
+    shouldRenderAsVue: () => true
+  })
 )
 
 function createMockNodeData(

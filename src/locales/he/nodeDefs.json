@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "מחיל קשב דליל-בלוקים על שכבות קשב מתאימות במודל, ומפחית את החישוב עבור רצפים ארוכים. שיפור המהירות גדל עם אורך הרצף, שכן רצפים קצרים בדרך כלל מהירים יותר עם קשב צפוף. מחוץ לטווח start/end_percent, עבור dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב הצפוף של המודל. השתמשו בצומת Model Attention Backend כדי לבחור מנגנון חלופי זה.",
+    "display_name": "קשב דליל-בלוקים למודל",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "בלוקי Transformer שפועלים תמיד במצב צפוף, לדוגמה '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "נקודת האחוז שבה מסתיים הקשב הדליל. לאחר נקודה זו, הקשב חוזר להיות צפוף."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "אסימונים נוספים בעלי הדירוג הגבוה ביותר, שכל בלוק שאילתה מבצע עליהם קשב מעבר לבלוקים שנבחרו עבורו. קרוב יותר לצפוף תמורת יותר זמן חישוב קשב; 256 מומלץ, 0 משבית. לא חל על VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "רצפים קצרים מערך זה נשארים בחישוב צפוף."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל להחלת התיקון עליו."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "השיטה המשמשת לבחירת בלוקי מפתח עבור קשב מלא ברמת הטוקן. sol-attn: Sparsifying Online Attention משתמש בסף אדפטיבי ללא אימון לכל ראש קשב ובלוק שאילתה. sla: Sparse-Linear Attention שומר על אחוז קבוע מבלוקי המפתח בעלי הציון הגבוה ביותר; יש להשתמש בו רק עם משקלי מודל שאומנו עבור תבנית זו. vsa: Video Sparse Attention ‏(FastVideo) משתמש בריצוף קוביות וידאו תלת-ממדיות ובענף קשב גס נלמד; דורש משקלי מודל FastH3."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "ל-MiniMax-H3 בלבד. exact_kv: כל שאילתה מבצעת קשב מדויק על שורות הטקסט/השמע/הייחוס הארוזות (עלות של כ-3%). exact_kv_and_rows: בנוסף, מריץ בצפיפות את שורות שאילתת שמע היעד (שומר על השמע שנוצר ללא פגע)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "נקודת האחוז שבה מתחיל הקשב הדליל. לפני נקודה זו, הקשב נשאר צפוף."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "רושם ביומן אם כל צורת קשב השתמשה בקשב דליל או מדוע נותרה צפופה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "המודל שעליו הוחל קשב דליל-בלוקים."
+      }
+    }
+  },
   "BriaEraser": {
     "description": "הסרת אובייקטים או אזורים המסומנים באמצעות מסכה מתמונה בעזרת Bria.",
     "display_name": "מחק Bria",
@@ -1459,96 +1510,6 @@
       "last_frame": {
         "name": "last_frame",
         "tooltip": "הפריים האחרון שישמש לוידאו."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת הוידאו."
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "הרזולוציה של הוידאו המופק."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע (seed) לשימוש ביצירה."
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "האם להוסיף סימן מים \"AI generated\" לוידאו."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "יצירת תמונות באמצעות מודלים של ByteDance דרך API על בסיס פרומפט",
-    "display_name": "ByteDance Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "ערך גבוה יותר יגרום לתמונה לעקוב אחרי הפרומפט בצורה מדויקת יותר"
-      },
-      "height": {
-        "name": "height",
-        "tooltip": "גובה מותאם אישית לתמונה. ערך זה פעיל רק אם 'size_preset' מוגדר כ-'Custom'"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הפרומפט הטקסטואלי המשמש ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "זרע (seed) לשימוש ביצירה"
-      },
-      "size_preset": {
-        "name": "size_preset",
-        "tooltip": "בחר גודל מומלץ. בחר Custom כדי להשתמש ברוחב ובגובה למטה"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "האם להוסיף סימן מים \"AI generated\" לתמונה"
-      },
-      "width": {
-        "name": "width",
-        "tooltip": "רוחב מותאם אישית לתמונה. ערך זה פעיל רק אם 'size_preset' מוגדר כ-'Custom'"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "יצירת וידאו באמצעות פרומפט ותמונות ייחוס.",
-    "display_name": "ByteDance הפניות תמונה לוידאו",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של הוידאו המופק."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration",
-        "tooltip": "משך הוידאו המופק בשניות."
-      },
-      "images": {
-        "name": "images",
-        "tooltip": "תמונה אחת עד ארבע תמונות."
       },
       "model": {
         "name": "model"
@@ -2755,6 +2716,260 @@
     "inputs": {
       "values": {
         "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר תמונה מפרומפט טקסט באמצעות Flux 2 dev. מצב Turbo מחליף ל-LoRA הנבחר וללוח זמנים קצר, תוך ויתור קל על נאמנות לטובת הרצה מהירה בהרבה; יש לכבות אותו למעבר dev מלא ללא LoRA. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud Flux 2 טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בערך 1024x1024 ביחס ריבועי."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "הפעלת Turbo LoRA בלוח זמנים קצר, תוך ויתור קל על נאמנות לטובת הרצה מהירה בהרבה. במצב כבוי מתבצע מעבר dev מלא ללא LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר תמונה מפרומפט טקסט באמצעות Mage-Flow במעבר מלא של 30 צעדים. מקבל פרומפט שלילי, שבו הגרסה המזוקקת Turbo אינה יכולה להשתמש היטב. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud Mage Flow טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בערך 1024x1024 ביחס ריבועי."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "יש להשאיר ריק כדי לשמור על הפרומפט השלילי שעבורו צינור עיבוד זה כוונן."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר תמונה מפרומפט טקסט באמצעות Mage-Flow מזוקק ב-4 צעדים ב-cfg 1. זמן ה-GPU הוא בערך שביעית מזה של מעבר מלא, ולכן זו האפשרות המתאימה לאיטרציות. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Turbo טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בערך 1024x1024 ביחס ריבועי."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "יש להשאיר ריק כדי לשמור על הפרומפט השלילי שעבורו צינור עיבוד זה כוונן."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: ייתכן שיתווספו או יוסרו אפשרויות, וייתכן שתהליך עבודה יופסק. יוצר את התנועה בין שני פריימי מפתח, עם פסקול תואם, באמצעות MiniMax H3. יש לספק את פריימי הפתיחה והסגירה, והמודל ימלא את הקטע שביניהם. הפריים האחרון אופציונלי: אם משמיטים אותו, התנועה ממשיכה הרחק מהפריים הראשון במקום זאת. פועל על GPU של Comfy Cloud, והחיוב הוא לפי משך ההרצה, בתעריף {'$'}0.001295 לשניית GPU‏ (0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במינוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 מפריים ראשון ואחרון לווידאו [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "משך בשניות. צינור העיבוד מכמת לצעדים של 17 פריימים ב-24fps, לכן אורך הקליפ יהיה בטווח של כשני שלישים השנייה מערך זה."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "תקציב גודל הפריים. עלות 720p היא בערך פי שניים בשניות GPU לעומת 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. מנפיש תמונה סטטית לסרטון עם פסקול תואם באמצעות MiniMax H3. הזינו את מסגרת הסיום של clip והוא ימשיך את הרצף, כך ששרשור של כמה מהם יוצר שוט ארוך יותר. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 תמונה לווידאו [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "אורך בשניות. תהליך העיבוד מכמת לצעדים של 17 מסגרות ב-24fps, ולכן אורך ה-clip יהיה בטווח של כשני שלישים השנייה מערך זה."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "תקציב גודל מסגרת. 720p עולה בערך פי שניים בשניות GPU לעומת 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. יוצר סרטון עם פסקול תואם מפרומפט טקסט באמצעות MiniMax H3. התמונה והשמע נוצרים באותו מעבר, במקום שהשמע ידובב לאחר מכן. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 טקסט לווידאו [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "אורך בשניות. תהליך העיבוד מכמת לצעדים של 17 מסגרות ב-24fps, ולכן אורך ה-clip יהיה בטווח של כשני שלישים השנייה מערך זה."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "תקציב גודל מסגרת. 720p עולה בערך פי שניים בשניות GPU לעומת 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. יוצר שיר מלא מתיאור באמצעות MiniMax Music 3. הפרומפט מגדיר את הסגנון, הכלים והאווירה; המילים מושרות ולא מתוארות, והשארת שדה המילים ריק יוצרת רצועה אינסטרומנטלית. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud MiniMax Music 3 טקסט לשמע [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "קצב סיביות של mp3. ‏V0 משתנה והוא האיכות הגבוהה ביותר מבין השלושה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים",
+        "tooltip": "מילים לשירה. השאירו ריק ליצירה אינסטרומנטלית."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "משך הזמן המרבי של הרצועה. המודל עשוי לסיים את השיר מוקדם יותר."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. ערכת הצמתים של Comfy Cloud עדיין משתנה: אפשרויות עשויות להתווסף או להימחק, ותהליך עבודה עשוי לצאת משימוש. יוצר תמונה מפרומפט טקסט באמצעות Z-Image Turbo ב-8 צעדים. זהו אחד הצמתים המהירים והזולים ביותר כאן, ולכן הוא המתאים ביותר לאיטרציה. פועל על GPU של Comfy Cloud, והחיוב הוא לפי זמן הפעולה בתעריף של {'$'}0.001295 לכל שניית GPU ‏(0.27 קרדיטים). התשלום בקרדיטים, ללא צורך במנוי Cloud.",
+    "display_name": "Comfy Cloud Z-Image Turbo טקסט לתמונה [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "megapixels": {
+        "name": "מגה-פיקסלים",
+        "tooltip": "תקציב הפיקסלים הכולל. 1.0 הוא בקירוב 1024x1024 ביחס ממדים ריבועי."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -6433,7 +6648,7 @@
     }
   },
   "GetImageSize": {
-    "description": "מחזיר את רוחב וגובה התמונה, ומעביר אותה ללא שינוי.",
+    "description": "מחזיר את הרוחב, הגובה וגודל האצווה של התמונה.",
     "display_name": "קבל גודל תמונה",
     "inputs": {
       "image": {
@@ -7133,7 +7348,7 @@
       },
       "mode": {
         "name": "מצב",
-        "tooltip": "'speed' מהיר יותר; 'precision' מספק סנכרון שפתיים איכותי יותר במחיר כפול."
+        "tooltip": "‏'speed' מהיר יותר; 'precision' מפיק סנכרון שפתיים באיכות גבוהה יותר, במחיר גבוה יותר."
       },
       "output_language": {
         "name": "שפת יעד",
@@ -7201,12 +7416,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "צרף 1-10 תמונות ייחוס להתניה, אחת להנחיית עריכה או מספר תמונות להתאמה אישית מבוססת נושא.",
+    "description": "צרף תמונות ייחוס ממוינות להתניה חיובית ושלילית.",
     "display_name": "HiDream-O1 תמונות ייחוס",
     "inputs": {
       "images": {
         "name": "תמונות",
-        "tooltip": "תמונות ייחוס. תמונה אחת = עריכת הנחיה; 2-10 תמונות = ייחוס מרובה."
+        "tooltip": "תמונות הייחוס משמשות לפי הסדר המספרי של השקעים."
       },
       "negative": {
         "name": "שלילי"
@@ -7761,6 +7976,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "ממיר בין sRGB (Rec.709), HDR (Rec.2020 HLG) ו-HDR PQ (Rec.2020 PQ). משתמש בלבן SDR של 203 ניט ובתצוגת ייחוס HLG של 1000 ניט. בעת צמצום, מתבצע מיפוי גוונים של בהיקות עודפת על פני האצווה ודחיסה של צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת ה-dtype הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "display_name": "המרת מרחב הצבע של תמונה",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "מרחב הצבע של פיקסלי הפלט. הגדר את צומת השמירה לאותו מרחב צבע."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "מרחב הצבע של פיקסלי הקלט."
       }
     },
     "outputs": {
@@ -9331,40 +9568,6 @@
     },
     "outputs": {
       "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVideoExtendNode": {
-    "description": "צומת הרחבת וידאו Kling. הרחב סרטונים שנוצרו על ידי צמתים אחרים של Kling. ה-video_id נוצר באמצעות צמתים אחרים של Kling.",
-    "display_name": "Kling הרחבת וידאו",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "פרומפט שלילי (הנחיה שלילית) לאלמנטים שיש להימנע מהם בווידאו המורחב"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט חיובי (הנחיה חיובית) להכוונת הרחבת הווידאו"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "מזהה הווידאו להרחבה. תומך בסרטונים שנוצרו על ידי טקסט-לווידאו, תמונה-לווידאו, ופעולות הרחבה קודמות. לא ניתן לעבור את משך הזמן הכולל של 3 דקות לאחר ההרחבה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
         "tooltip": null
       }
     }
@@ -11177,70 +11380,6 @@
       }
     }
   },
-  "LtxvApiImageToVideo": {
-    "description": "סרטונים באיכות מקצועית עם משך ורזולוציה מותאמים אישית על בסיס תמונת התחלה.",
-    "display_name": "LTXV Image To Video",
-    "inputs": {
-      "duration": {
-        "name": "משך"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "יצירת אודיו",
-        "tooltip": "כאשר מאופשר, הווידאו שיווצר יכלול אודיו שנוצר ב-AI בהתאמה לסצנה."
-      },
-      "image": {
-        "name": "תמונה",
-        "tooltip": "הפריים הראשון שישמש לווידאו."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט"
-      },
-      "resolution": {
-        "name": "רזולוציה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "סרטונים באיכות מקצועית עם משך ורזולוציה מותאמים אישית.",
-    "display_name": "LTXV Text To Video",
-    "inputs": {
-      "duration": {
-        "name": "משך"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "יצירת אודיו",
-        "tooltip": "כאשר מאופשר, הווידאו שיווצר יכלול אודיו שנוצר ב-AI בהתאמה לסצנה."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט"
-      },
-      "resolution": {
-        "name": "רזולוציה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaConceptsNode": {
     "description": "קונספטים של מצלמה לשימוש עם Luma Text to Video ו-Luma Image to Video צמתים.",
     "display_name": "Luma Concepts",
@@ -12710,6 +12849,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "עורך או משלב עד 10 תמונות ייחוס בהנחיית פרומפט טקסט, באמצעות מודל Muse Image של Meta.",
+    "display_name": "Meta Muse: עריכת תמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות מודל Muse Image של Meta, המבצע הסקה על הפרומפט לפני העיבוד.",
+    "display_name": "Meta Muse: טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "עגן תמונה, clip קצר, שמע או clip עם פסקולו בכל פריים של סרטון MiniMax H3. שרשר מספר צמתים כדי לעגן מספר פריימים.",
     "display_name": "הוספת הנחיה עבור MiniMax H3",
@@ -12744,6 +12961,46 @@
     "outputs": {
       "0": {
         "name": "חיובי",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "החל MiniMax H3 Fun ControlNet על מודל מטקסט לווידאו כתיקון מודל.",
+    "display_name": "החל MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "הערך 1 מסמן את האזורים שיש ליצור מחדש."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "הווידאו שמאחורי המסכה; נקרא רק כאשר ניתנת מסכה."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12792,7 +13049,8 @@
     "display_name": "MiniMax H3 Reference to Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE לשמע. בלעדיו, שמע הייחוס מתנה רק את מקודד הטקסט."
       },
       "clip": {
         "name": "clip"
@@ -12824,7 +13082,8 @@
         "name": "ref_videos"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE לווידאו. בלעדיו, תמונות/סרטוני הייחוס מתנים רק את מקודד הטקסט."
       },
       "width": {
         "name": "width"
@@ -12933,7 +13192,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "יוצר וידאו מתמונה של פריים ראשון ואופציונלית גם פריים אחרון באמצעות מודל MiniMax H3. יחס הגובה-רוחב של הווידאו תואם לתמונות שסופקו.",
+    "description": "יצירת וידאו מתמונת פריים ראשון ומתמונת פריים אחרון אופציונלית באמצעות מודלי MiniMax H3. יחס הממדים של הווידאו נקבע לפי התמונות שסופקו.",
     "display_name": "MiniMax H3 יצירת וידאו מפריים ראשון ואחרון",
     "inputs": {
       "control_after_generate": {
@@ -12976,7 +13235,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו בהתבסס על תמונות רפרנס, סרטונים ואודיו באמצעות מודל MiniMax H3. התייחסו לרפרנסים בהנחיה לפי הסדר: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת וידאו המותנה בתמונות, סרטונים ושמע של ייחוס באמצעות מודלי MiniMax H3. התייחסו להפניות בפרומפט לפי סדרן: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -13051,7 +13310,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "יצירת וידאו מהנחיה טקסטואלית באמצעות מודל MiniMax H3.",
+    "description": "יצירת וידאו מפרומפט טקסט באמצעות מודלי MiniMax H3.",
     "display_name": "MiniMax H3 טקסט לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -13330,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "בוחר את מימוש הקשב הצפוף עבור המודל. בעת שימוש עם Block Sparse Attention, מנגנון זה משמש בכל פעם שהקשב הדליל אינו פעיל או אינו נתמך.",
+    "display_name": "מנגנון הקשב של המודל",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "מנגנון הקשב הצפוף. הקשב של Comfy Kitchen משתמש בקשב INT8 מקוונטט וזמין רק במעבדי GPU של Nvidia ו-AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "המודל להחלת התיקון עליו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "המודל עם מנגנון הקשב שנבחר."
       }
     }
   },
@@ -15810,7 +16078,11 @@
       },
       "max_output_tokens": {
         "name": "max_output_tokens",
-        "tooltip": "גבול עליון למספר הטוקנים שניתן להפיק בתגובה, כולל טוקנים גלויים"
+        "tooltip": "גבול עליון למספר הטוקנים שניתן להפיק עבור תשובה, לרבות טוקני פלט גלויים וטוקני הסקה"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת ההסקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; ל-GPT-4.1 אין יכולת הסקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
       },
       "truncation": {
         "name": "truncation",
@@ -15850,78 +16122,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "קלטי טקסט למודל, המשמשים להפקת תגובה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של DALL·E 2 של OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "תמונת ייחוס אופציונלית לעריכת תמונה."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "מסכה אופציונלית ל-inpainting (אזורים לבנים יוחלפו)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "כמה תמונות ליצור"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט טקסט עבור DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "עדיין לא נתמך ב-backend"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "גודל התמונה"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של OpenAI DALL·E 3.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "הנחיה טקסטואלית עבור DALL·E"
-      },
-      "quality": {
-        "name": "quality",
-        "tooltip": "איכות התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "עדיין לא נתמך בצד השרת"
-      },
-      "size": {
-        "name": "size",
-        "tooltip": "גודל התמונה"
-      },
-      "style": {
-        "name": "style",
-        "tooltip": "Vivid גורם למודל להעדיף יצירת תמונות דרמטיות והיפר-ריאליסטיות. Natural גורם למודל להפיק תמונות טבעיות ופחות היפר-ריאליסטיות."
       }
     },
     "outputs": {
@@ -16932,7 +17132,7 @@
   },
   "Preview3D": {
     "description": "תצוגה מקדימה של קובץ מודל תלת-ממדי מבלי לשמור אותו בתיקיית הפלט של ComfyUI.",
-    "display_name": "תצוגה מקדימה בתלת-ממד ואנימציה",
+    "display_name": "תצוגה מקדימה של 3D והנפשה (מיושן)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17945,7 +18145,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "סוג הפלט שעבורו נוצר הסגנון: recraftv4_styles לתמונות רסטר, recraftv4_styles_vector עבור SVG."
+        "tooltip": "המודל שעבורו נוצר הסגנון. Standard ו-Pro חולקים מאגר סגנונות אחד: סגנונות רסטר פועלים עם כל מודל רסטר של Recraft V4 ו-V4.1, וסגנונות וקטוריים (*_vector) עם כל מודל וקטורי של V4 ו-V4.1."
       }
     },
     "outputs": {
@@ -18641,6 +18841,10 @@
       "multiple": {
         "name": "multiple",
         "tooltip": "המכפלה הקרובה ביותר של התוצאה לקביעת הרזולוציה הנבחרת."
+      },
+      "preview": {
+        "name": "preview",
+        "tooltip": "תצוגה מקדימה חיה של רזולוציית הפלט המחושבת."
       }
     },
     "outputs": {
@@ -21121,6 +21325,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "הגדר את הסטת הזרימה של SenseNova.",
+    "display_name": "אפשרויות דגימה של SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "הגדר CLIP Hooks",
     "inputs": {
@@ -23429,10 +23650,12 @@
         "name": "animate_in_place"
       },
       "bake": {
-        "name": "bake"
+        "name": "bake",
+        "tooltip": "אפה חומרים מתקדמים אל המרקמים הבסיסיים לתאימות רחבה יותר."
       },
       "export_orientation": {
-        "name": "export_orientation"
+        "name": "export_orientation",
+        "tooltip": "הציר הקדמי של המודל המיוצא. default שומר על ‎+x של Tripo."
       },
       "export_vertex_colors": {
         "name": "export_vertex_colors"
@@ -23441,13 +23664,15 @@
         "name": "face_limit"
       },
       "fbx_preset": {
-        "name": "fbx_preset"
+        "name": "fbx_preset",
+        "tooltip": "הגדרת תאימות מראש של FBX. bake_scale אופה את שינוי קנה המידה אל הגאומטריה."
       },
       "flatten_bottom": {
         "name": "flatten_bottom"
       },
       "flatten_bottom_threshold": {
-        "name": "flatten_bottom_threshold"
+        "name": "flatten_bottom_threshold",
+        "tooltip": "עומק השטחה לשימוש עם flatten_bottom."
       },
       "force_symmetry": {
         "name": "force_symmetry"
@@ -23480,15 +23705,66 @@
         "name": "texture_size"
       },
       "with_animation": {
-        "name": "with_animation"
+        "name": "with_animation",
+        "tooltip": "שמור על השלד וההנפשה של מודלים עם rig או שעברו retargeting."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "מודל שהומר בפורמט המבוקש. OBJ נמסר על־ידי Tripo כארכיון ZIP ‏(mesh, material ו-textures)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "עורך את התצוגות של תוצאת Tripo: Image to Multiview באמצעות הנחיות טקסט לכל תצוגה. תצוגות ללא הנחיה נשארות ללא שינוי. הזן את התמונות אל Tripo: Multiview to Model; לא ניתן לערוך שוב ערכה שעברה עריכה.",
+    "display_name": "Tripo: עריכת תצוגות מרובות",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שמאל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "אחורי",
+        "tooltip": null
+      },
+      "3": {
+        "name": "ימין",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: תמונה למודל",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "התאמת מודלים בעלי מרקם לגודלם האמיתי במטרים. Tripo שומרת את הגודל כהמרת הסצנה של המודל ומטמיעה אותו בעת המרה, rigging או retargeting של המודל; מתעלמת מכך ללא מרקם."
+      },
       "face_limit": {
-        "name": "מגבלת פאות"
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4 מיליון פאות ב-v3.x standard,‏ 2 מיליון ב-detailed).‏ Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -23507,22 +23783,31 @@
         "name": "כיוון"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). מחייב מרקם."
       },
       "quad": {
-        "name": "ריבוע"
+        "name": "ריבוע",
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאימה במיוחד לנושאים פשוטים; נושאים מורכבים עשויים להיכשל."
       },
       "style": {
-        "name": "סגנון"
+        "name": "סגנון",
+        "tooltip": "אינו נתמך עוד על ידי Tripo ומתוּעלם. נשמר עבור תהליכי עבודה ישנים יותר."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
       },
       "texture_alignment": {
         "name": "יישור מרקם"
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, ‏extreme = מרקמי 8K Ultra."
       },
       "texture_seed": {
         "name": "seed למרקם"
@@ -23539,6 +23824,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "יוצר מבטים קדמי, שמאלי, אחורי וימני של הנושא. הזינו אותם אל Tripo: Multiview to Model, או שפרו אותם תחילה באמצעות Tripo: Edit Multiview.",
+    "display_name": "Tripo: תמונה לריבוי מבטים",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id של ריבוי מבטים",
+        "tooltip": null
+      },
+      "1": {
+        "name": "קדמי",
+        "tooltip": null
+      },
+      "2": {
+        "name": "שמאל",
+        "tooltip": null
+      },
+      "3": {
+        "name": "אחורי",
+        "tooltip": null
+      },
+      "4": {
+        "name": "ימין",
         "tooltip": null
       }
     }
@@ -23559,11 +23879,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "משלים את חלקיו של מודל מפולח ומתקן אזורים חסרים.",
+    "display_name": "Tripo: השלמת חלקי רשת",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים להשלמה, מופרדים בפסיקים. השארה ריקה משלימה את כל החלקים."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id של המודל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: רב-תצוגה למודל",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "שנה קנה מידה של מודלים בעלי מרקם לגודלם בעולם האמיתי במטרים. Tripo שומרת את הגודל כהמרת סצנה של המודל ומטמיעה אותו בעת המרת המודל, יצירת rig או מיקוד מחדש; האפשרות מתעלמת ללא מרקם."
+      },
       "face_limit": {
-        "name": "מגבלת פאות"
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4 מיליון פאות ב-v3.x standard,‏ 2 מיליון ב-detailed).‏ Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -23591,20 +23943,27 @@
         "name": "כיוון"
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). מחייב מרקם."
       },
       "quad": {
         "name": "ריבוע",
-        "tooltip": "פרמטר זה אינו בשימוש יותר ואינו משפיע."
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאימה במיוחד לנושאים פשוטים; נושאים מורכבים עשויים להיכשל."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
       },
       "texture_alignment": {
         "name": "יישור מרקם"
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, ‏extreme = מרקמי 8K Ultra."
       },
       "texture_seed": {
         "name": "seed למרקם"
@@ -23621,7 +23980,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -23635,7 +23998,7 @@
       },
       "compress_geometry": {
         "name": "דחיסת גיאומטריה",
-        "tooltip": "הפעלת דחיסה מבוססת גיאומטריה. יש לבצע דחיסה הפוכה לפני עריכה."
+        "tooltip": "החל דחיסת גאומטריה meshopt ‏(EXT_meshopt_compression). הקבצים קטנים יותר, אך התצוגה המקדימה התלת־ממדית של ComfyUI אינה יכולה להציגם; יש לפרוס דחיסה לפני עריכה."
       },
       "enable_image_autofix": {
         "name": "תיקון תמונה אוטומטי",
@@ -23685,7 +24048,7 @@
       },
       "compress_geometry": {
         "name": "דחיסת גיאומטריה",
-        "tooltip": "הפעלת דחיסה מבוססת גיאומטריה. יש לבצע דחיסה הפוכה לפני עריכה."
+        "tooltip": "החל דחיסת גאומטריה meshopt ‏(EXT_meshopt_compression). הקבצים קטנים יותר, אך התצוגה המקדימה התלת־ממדית של ComfyUI אינה יכולה להציגם; יש לפרוס דחיסה לפני עריכה."
       },
       "export_uv": {
         "name": "ייצוא UV",
@@ -23744,7 +24107,7 @@
       },
       "compress_geometry": {
         "name": "דחיסת גיאומטריה",
-        "tooltip": "הפעל דחיסה מבוססת גיאומטריה. יש לבצע דקומפרסיה לפני עריכה."
+        "tooltip": "החל דחיסת גאומטריה meshopt ‏(EXT_meshopt_compression). הקבצים קטנים יותר, אך התצוגה המקדימה התלת־ממדית של ComfyUI אינה יכולה להציגם; יש לפרוס דחיסה לפני עריכה."
       },
       "export_uv": {
         "name": "ייצוא UV",
@@ -23791,11 +24154,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: התאמת מודל מרושת",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "נגן את ההנפשה במקומה, ללא הסטת שורש."
+      },
       "animation": {
-        "name": "אנימציה"
+        "name": "אנימציה",
+        "tooltip": "הנפשות preset:* פועלות עם שני דגמי ה-rig; הנפשות preset:biped:* דורשות rig שנוצר עם model v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "כלול את הרשת בייצוא; כאשר האפשרות כבויה, ייוצא רק השלד המונפש."
       },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "תבנית קובץ הפלט; התוצאה מגיעה בפלט התואם."
       }
     },
     "outputs": {
@@ -23809,15 +24185,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "מאוכלס כאשר out_format הוא glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס כאשר out_format הוא fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "בונה מחדש רשת low-poly בעלת טופולוגיה נקייה ממודל high-poly.",
+    "display_name": "Tripo: רטופולוגיה",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "הטמע את המרקמים של המקור ברשת ה-low-poly."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "מספר הפאות היעד: 500–20,000 משולשים או 500–10,000 מרובעים. הערך -1 מאפשר ל-Tripo לבחור."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים המופרדים בפסיקים מ-Tripo: Segment Model. השארת השדה ריק מעבדת את המודל כולו."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת מרובעת. Tripo מספקת רשתות מרובעות כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נשאר ריק."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "בודק אם ניתן ליצור rig למודל ואיזה סוג שלד Tripo ממליצה.",
+    "display_name": "Tripo: בדיקת rig",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "שלד מומלץ: biped, quadruped, hexapod, octopod, avian, serpentine או aquatic; ‏'others' כאשר לא ניתן ליצור rig למודל."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: ריג למודל",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: דמויות דמויות-אדם (דו-רגליות) בלבד, 90+ הגדרות קדם להנפשה. v2.5: יצורים שאינם דמויי-אדם (ארבע-רגליים, שש-רגליים, שמונה-רגליים, עופות, נחשיים, ימיים)."
+      },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "תבנית קובץ הפלט; התוצאה מתקבלת בפלט התואם."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "סוג שלד. 'auto' מפעיל תחילה את בדיקת ה-rig החינמית של Tripo ומשתמש בסוג המומלץ."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "מתן שמות לעצמות: מקורי של Tripo או תואם Mixamo. Tripo אינו יכול לבצע retarget להגדרות קדם ההנפשה שלו על rig מסוג v1.0 שנוצר עם מפרט mixamo; יש להשתמש ב-tripo עבור Tripo: Retarget rigged model."
       }
     },
     "outputs": {
@@ -23831,7 +24289,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "מאוכלס כאשר out_format הוא glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס כאשר out_format הוא fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "מפצל מודל לחלקים. שמות החלקים מוזנים אל Tripo: Complete Mesh Parts, Tripo: Retopology ו-Tripo: Convert model.",
+    "display_name": "Tripo: פילוח מודל",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "שמות החלקים, מופרדים בפסיקים."
       }
     }
   },
@@ -23933,8 +24422,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: טקסט למודל",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "שינוי קנה מידה של מודלים בעלי מרקם לגודלם בעולם האמיתי במטרים. Tripo שומר את הגודל כטרנספורמציית הסצנה של המודל ומטמיע אותו בעת המרת המודל, יצירת rig או retarget; מתעלם ממנו ללא texture."
+      },
       "face_limit": {
-        "name": "מגבלת פאות"
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4M פאות ב-v3.x standard, ‏2M ב-detailed). Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -23949,25 +24443,35 @@
         "name": "גרסת מודל"
       },
       "negative_prompt": {
-        "name": "פרומפט שלילי"
+        "name": "פרומפט שלילי",
+        "tooltip": "עד 255 תווים."
       },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). מחייב texture."
       },
       "prompt": {
         "name": "פרומפט"
       },
       "quad": {
-        "name": "ריבוע"
+        "name": "ריבוע",
+        "tooltip": "פלט רשת quad. ‏Tripo מספק רשתות quad כ-FBX, לכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, quad ‏500–10,000). מתאים במיוחד לנושאים פשוטים; נושאים מורכבים עלולים להיכשל."
       },
       "style": {
-        "name": "סגנון"
+        "name": "סגנון",
+        "tooltip": "אינו נתמך עוד על-ידי Tripo ומתעלמים ממנו. נשמר עבור תהליכי עבודה ישנים יותר."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ‏8K."
       },
       "texture_seed": {
         "name": "seed של מרקם"
@@ -23984,7 +24488,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -23994,21 +24502,40 @@
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "מודל מרקם: v3.0 עבור רשתות שנוצרו עם v3.x, ‏v2.5 עבור רשתות שנוצרו עם v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים מופרדים בפסיקים מ-Tripo: Segment Model ליצירת טקסטורות. אם ריק, נוצרים מרקמים לכל חלק."
+      },
       "pbr": {
-        "name": "PBR"
+        "name": "PBR",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל); כיבוי מספק מרקם בצבע אחיד."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "תמונות עזר המנחות את המרקמים. לא ניתן לשלב עם texture_prompt או style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "תמונת עזר לסגנון האמנותי של המרקמים. משמשת רק יחד עם texture_prompt."
       },
       "texture": {
-        "name": "מרקם"
+        "name": "מרקם",
+        "tooltip": "מתעלמים: צומת זה תמיד יוצר מרקמים. נשמר עבור תהליכי עבודה ישנים יותר."
       },
       "texture_alignment": {
         "name": "יישור מרקם"
       },
       "texture_prompt": {
         "name": "פרומפט מרקם",
-        "tooltip": "הנחיה טקסטואלית אופציונלית למרקם. נדרש בפועל עבור מודלים מיובאים (Tripo: Import Model), אשר אינם כוללים תמונת מקור להסקת צבעים."
+        "tooltip": "הנחיית טקסט אופציונלית ליצירת מרקם. נדרשת בפועל עבור מודלים מיובאים (Tripo: Import Model), שאינם כוללים תמונת מקור שממנה ניתן להסיק צבעים. לא ניתן לשלב עם תמונות ייחוס."
       },
       "texture_quality": {
-        "name": "איכות מרקם"
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ‏8K."
       },
       "texture_seed": {
         "name": "seed של מרקם"
@@ -24025,7 +24552,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "ריק כאשר המקור הוא רשת מרובעת או ייבוא FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבואי FBX; אחרת ריק."
       }
     }
   },
@@ -24755,6 +25286,23 @@
       }
     }
   },
+  "VideoCrop": {
+    "display_name": "חיתוך וידאו",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "אזור חיתוך בפיקסלים. רוחב/גובה אפס שומרים על המסגרת המלאה."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VideoFrameSample": {
     "description": "דגום מספר קבוע של פריימים מווידאו באמצעות אסטרטגיות שונות.",
     "display_name": "דגימת פריים מווידאו",
@@ -24856,6 +25404,27 @@
       },
       "model": {
         "name": "model"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "קיצוץ וידאו (מתקדם)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "אם הערך הוא True, וכאשר משך הזמן שצוין אינו אפשרי, תועלה שגיאה."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "חלון קיצוץ באמצעות פריימי התחלה/סיום."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

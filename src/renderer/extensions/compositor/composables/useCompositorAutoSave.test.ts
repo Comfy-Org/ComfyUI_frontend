@@ -1,15 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
+import { useCompositorAutoSave } from './useCompositorAutoSave'
 import {
   clearCompositorLayers,
   setCompositorLayers
 } from './useCompositorLayers'
-import { useCompositorAutoSave } from './useCompositorAutoSave'
+
+const GRAPH_ID = 'compositor-autosave-test'
+const NODE_ID = toNodeId(7)
 
 function makeSession() {
   const listeners = new Set<(mask: number) => void>()
@@ -32,21 +37,22 @@ function makeSession() {
   }
 }
 
-function makeNode() {
-  const compositorWidget = {
-    name: 'compositor',
-    value: {},
-    callback: vi.fn()
-  } as unknown as IBaseWidget
-  const node = {
-    id: toNodeId(7),
-    widgets: [compositorWidget],
-    widgets_values: [{}]
-  } as unknown as LGraphNode
-  return { node, compositorWidget }
+function makeNode(): LGraphNode {
+  useWidgetValueStore().registerWidget(
+    widgetId(GRAPH_ID, NODE_ID, 'compositor'),
+    { type: 'compositor', value: {}, options: {} }
+  )
+  return createMockLGraphNode({
+    id: NODE_ID,
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
 }
 
-const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
+const storedValue = () =>
+  useWidgetValueStore().getWidget(widgetId(GRAPH_ID, NODE_ID, 'compositor'))
+    ?.value
+
+const cacheNode = createMockLGraphNode({ id: NODE_ID })
 
 beforeEach(() => {
   setCompositorLayers(
@@ -64,34 +70,34 @@ describe('useCompositorAutoSave', () => {
   it('leaves the widget untouched when no fingerprint is cached', () => {
     clearCompositorLayers(cacheNode)
     const session = makeSession()
-    const { node, compositorWidget } = makeNode()
+    const node = makeNode()
     useCompositorAutoSave(session, node)
 
     session.emitHistoryChange()
     vi.advanceTimersByTime(2000)
 
-    expect(compositorWidget.callback).not.toHaveBeenCalled()
-    expect(node.widgets_values).toEqual([{}])
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
+    expect(storedValue()).toEqual({})
   })
 
   it('debounces history changes into a single widget write', () => {
     const session = makeSession()
-    const { node, compositorWidget } = makeNode()
+    const node = makeNode()
     useCompositorAutoSave(session, node)
 
     session.emitHistoryChange()
     session.emitHistoryChange()
     session.emitHistoryChange()
-    expect(compositorWidget.callback).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(300)
-    expect(compositorWidget.callback).toHaveBeenCalledTimes(1)
-    expect(compositorWidget.value).toMatchObject({ canvas: { w: 8, h: 8 } })
+    expect(useWidgetValueStore().setValue).toHaveBeenCalledTimes(1)
+    expect(storedValue()).toMatchObject({ canvas: { w: 8, h: 8 } })
   })
 
   it('saves again for edits after the debounce window', () => {
     const session = makeSession()
-    const { node, compositorWidget } = makeNode()
+    const node = makeNode()
     useCompositorAutoSave(session, node)
 
     session.emitHistoryChange()
@@ -99,23 +105,23 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange()
     vi.advanceTimersByTime(300)
 
-    expect(compositorWidget.callback).toHaveBeenCalledTimes(2)
+    expect(useWidgetValueStore().setValue).toHaveBeenCalledTimes(2)
   })
 
   it('ignores selection-only history changes', () => {
     const session = makeSession()
-    const { node, compositorWidget } = makeNode()
+    const node = makeNode()
     useCompositorAutoSave(session, node)
 
     session.emitHistoryChange(Dirty.SELECTION)
     vi.advanceTimersByTime(300)
 
-    expect(compositorWidget.callback).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
   })
 
   it('stop() cancels pending saves and unsubscribes', () => {
     const session = makeSession()
-    const { node, compositorWidget } = makeNode()
+    const node = makeNode()
     const autoSave = useCompositorAutoSave(session, node)
 
     session.emitHistoryChange()
@@ -125,6 +131,6 @@ describe('useCompositorAutoSave', () => {
     session.emitHistoryChange()
     vi.advanceTimersByTime(300)
 
-    expect(compositorWidget.callback).not.toHaveBeenCalled()
+    expect(useWidgetValueStore().setValue).not.toHaveBeenCalled()
   })
 })

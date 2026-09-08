@@ -23,7 +23,12 @@ const dirDescriptionKeys: Record<Model['directory'], TranslationKey> = {
   latent_upscale_models: 'models.dirDescription.latent_upscale_models',
   style_models: 'models.dirDescription.style_models',
   model_patches: 'models.dirDescription.model_patches',
-  partner_nodes: 'models.dirDescription.partner_nodes'
+  partner_nodes: 'models.dirDescription.partner_nodes',
+  geometry_estimation: 'models.dirDescription.geometry_estimation',
+  background_removal: 'models.dirDescription.background_removal',
+  detection: 'models.dirDescription.detection',
+  frame_interpolation: 'models.dirDescription.frame_interpolation',
+  optical_flow: 'models.dirDescription.optical_flow'
 }
 
 function fill(

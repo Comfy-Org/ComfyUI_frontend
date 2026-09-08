@@ -16,7 +16,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
 
   // When link is dropped on widget, it should automatically convert the widget
   // to input.
-  test('Can connect to widget', async ({ comfyPage }) => {
+  test('Can connect to widget without restoring a stale value', async ({
+    comfyPage
+  }) => {
     await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_node_unconnected'
     )
@@ -26,6 +28,8 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefById(2)
     // Connect the output of the primitive node to the input of first widget of the ksampler node
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
+    const primitiveWidget = await primitiveNode.getWidget(0)
+    expect(await primitiveWidget.getValue()).toBe(0)
     await expect(comfyPage.canvas).toHaveScreenshot(
       'primitive_node_connected.png'
     )
@@ -60,16 +64,16 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     )
   })
 
-  test('Preserves combo options after refreshing node definitions', async ({
+  test('Preserves combo options with a stale slot locator after refreshing node definitions', async ({
     comfyPage
   }) => {
     async function getPrimitiveComboState() {
       return comfyPage.page.evaluate(() => {
-        const primitive = window.app!.graph!.nodes.find(
+        const primitive = window.app!.graph.nodes.find(
           (node) => node.type === 'PrimitiveNode'
         )
         const widget = primitive?.widgets?.[0]
-        const values = widget?.options?.values
+        const values = widget?.options.values
         return {
           isArray: Array.isArray(values),
           length: Array.isArray(values) ? values.length : 0,
@@ -93,6 +97,22 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const before = await getPrimitiveComboState()
     expect(before.length).toBeGreaterThan(0)
 
+    // Simulates a stale slot-widget reference (e.g. left over from a node
+    // definition reload) by dropping every field except `name`, then
+    // confirms refreshComboInNodes() re-resolves it without losing state.
+    async function staleifyPrimitiveOutputWidget() {
+      return comfyPage.page.evaluate(() => {
+        const primitive = window.app!.graph.nodes.find(
+          (node) => node.type === 'PrimitiveNode'
+        )
+        const output = primitive?.outputs[0]
+        if (!output?.widget) throw new Error('Expected primitive output widget')
+
+        output.widget = { name: output.widget.name }
+      })
+    }
+
+    await staleifyPrimitiveOutputWidget()
     await comfyPage.page.evaluate(() => window.app!.refreshComboInNodes())
 
     const after = await getPrimitiveComboState()

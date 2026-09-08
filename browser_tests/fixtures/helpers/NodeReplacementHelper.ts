@@ -59,15 +59,15 @@ export async function setupNodeReplacement(
                   origin: msgEvent.origin,
                   lastEventId: msgEvent.lastEventId
                 })
-                return (listener as EventListener).call(this, patched)
+                return listener.call(this, patched)
               }
             } catch {
               // not JSON or not a feature_flags message - pass through
             }
           }
-          return (listener as EventListener).call(this, event)
+          return listener.call(this, event)
         }
-        return originalAdd.call(this, type, wrapped as EventListener, options)
+        return originalAdd.call(this, type, wrapped, options)
       }
       return originalAdd.call(
         this,

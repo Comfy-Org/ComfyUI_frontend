@@ -1,0 +1,363 @@
+---
+import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import BuildManifestSplit01 from '../../components/blocks/BuildManifestSplit01.vue'
+import CtaBands01 from '../../components/blocks/CtaBands01.vue'
+import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
+import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
+import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
+import { externalLinks } from '../../config/routes'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { absoluteUrl, pageContext } from '../../utils/jsonLd'
+import { buildFaqPageNode } from './_faqMetadata'
+
+const faqs = [
+  {
+    id: 'what-is-enterprise',
+    question: 'What is included in Comfy Enterprise?',
+    answer:
+      'Comfy Enterprise can combine ComfyUI Managed Builds, dedicated production capacity and support, commercial model licensing, and Forward Deployed Creatives. Teams that only need shared Cloud usage can start with the self-serve Team plan.',
+  },
+  {
+    id: 'where-runs',
+    question: 'Where can our Comfy Workflows run?',
+    answer:
+      'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
+  },
+  {
+    id: 'builds-vs-managed-builds',
+    question: 'How are Builds different from ComfyUI Managed Builds?',
+    answer:
+      'Builds are the self-serve way to package ComfyUI, custom nodes, models, and dependencies into a reproducible environment. ComfyUI Managed Builds add team distribution, governance, controlled rollout, enterprise terms, and support across the environments your organization runs.',
+  },
+  {
+    id: 'commercial-models',
+    question: 'Can we use models commercially?',
+    answer:
+      'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.',
+  },
+  {
+    id: 'security',
+    question: 'How does Comfy support security review?',
+    answer: `SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center](${externalLinks.trustCenter}).`,
+  },
+  {
+    id: 'usage',
+    question: 'What usage and audit information is available?',
+    answer:
+      'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
+  },
+  {
+    id: 'team-plan',
+    question: 'Is there a self-serve Team plan?',
+    answer:
+      'Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.',
+  },
+  {
+    id: 'capacity-and-support',
+    question: 'What production capacity and support are available?',
+    answer:
+      'Enterprise agreements can include dedicated GPU capacity, priority queueing, guided onboarding, direct access to Comfy engineers, and uptime and response commitments scoped to your requirements.',
+  },
+] as const
+
+const enterpriseOffers = [
+  {
+    id: 'team-plans',
+    label: 'SELF-SERVE FOR TEAMS',
+    title: 'Team plans',
+    description:
+      'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
+    cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
+  },
+  {
+    id: 'commercial-licensing',
+    label: 'COMMERCIAL RIGHTS',
+    title: 'Model licensing',
+    description:
+      'Commercial terms for MiniMax today, with local model terms available by provider on request.',
+    cta: {
+      label: 'VIEW MINIMAX LICENSING',
+      href: '/minimax/license/',
+    },
+  },
+  {
+    id: 'forward-deployed-creatives',
+    label: 'HANDS-ON DELIVERY',
+    title: 'Forward Deployed Creatives',
+    description:
+      'Work with ComfyUI specialists who design production Comfy Workflows alongside your creative and technical teams, then leave your team with workflows it can run, inspect, and extend.',
+    cta: {
+      label: 'VIEW THE OFFERING',
+      href: '/forward-deployed-creatives/',
+    },
+  },
+] as const
+
+const governanceBenefits = [
+  {
+    id: 'build-policy',
+    title: 'Build policy',
+    description:
+      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+  },
+  {
+    id: 'model-policy',
+    title: 'Model policy and BYOK',
+    description:
+      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+  },
+  {
+    id: 'people-access',
+    title: 'People and access',
+    description:
+      'Use company identity and SSO to assign approved environments, with App Mode for simplified, approved experiences.',
+  },
+  {
+    id: 'usage-records',
+    title: 'Usage visibility and audit requirements',
+    description:
+      'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+  },
+] as const
+
+const productionBenefits = [
+  {
+    id: 'dedicated-capacity',
+    title: 'Dedicated GPU capacity',
+    description:
+      'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.',
+  },
+  {
+    id: 'priority-queueing',
+    title: 'Priority queueing',
+    description:
+      'Production jobs run ahead of standard shared-capacity traffic when demand spikes.',
+  },
+  {
+    id: 'deployment',
+    title: 'Flexible deployment',
+    description:
+      'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.',
+  },
+  {
+    id: 'support',
+    title: 'Custom SLAs and support',
+    description:
+      'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.',
+  },
+] as const
+
+const industries = [
+  {
+    id: 'games',
+    title: 'Game studios',
+    description:
+      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+  },
+  {
+    id: 'vfx',
+    title: 'VFX and animation',
+    description:
+      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+  },
+  {
+    id: 'onboarding',
+    title: 'Studios you onboard',
+    description:
+      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+  },
+] as const
+
+const { url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const faqPage = buildFaqPageNode(url, faqs)
+---
+
+<BaseLayout
+  title="Comfy Enterprise | Govern visual AI across every team"
+  description="Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery."
+  pageType="WebPage"
+  breadcrumbs={[
+    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
+    { name: 'Enterprise' },
+  ]}
+  extraJsonLd={[faqPage]}
+>
+  <HeroSplit01
+    badgeText="ENTERPRISE"
+    title={'Govern ComfyUI across\nevery team and runtime.'}
+    subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, commercial licensing, and hands-on implementation support."
+    features={[
+      'Approved, reproducible ComfyUI Managed Builds',
+      'Dedicated GPU capacity, priority queueing, and enterprise SLAs',
+      'Commercial licensing, security review, and hands-on delivery',
+    ]}
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    secondaryCta={{
+      label: 'VIEW TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
+  >
+    <EnterpriseHeroScene slot="media" client:load />
+  </HeroSplit01>
+
+  <OfferGrid01
+    eyebrow="WAYS TO SCALE WITH COMFY"
+    heading="The open standard for visual AI, ready for your organization."
+    description="Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself."
+    featuredOffer={{
+      id: 'managed-builds',
+      title: 'ComfyUI Managed Builds',
+      description:
+        'Self-serve Builds package a reproducible environment. ComfyUI Managed Builds add team distribution, model and custom-node governance, controlled rollout, enterprise terms, and support across the fleet.',
+      cta: {
+        label: 'VIEW MANAGED BUILDS',
+        href: '/enterprise/managed-builds/',
+      },
+    }}
+    offers={enterpriseOffers}
+  />
+
+  <BuildManifestSplit01
+    eyebrow="COMFYUI MANAGED BUILDS"
+    heading={'One approved build\nacross the fleet.'}
+    body="Keep ComfyUI. Let Comfy manage the versioned distribution, governance, and release layer around it. Replace machine-by-machine setup with deliberate assignment, rollout, and updates."
+    features={[
+      'Pin and approve the nodes each build needs across ComfyUI’s 5,000+ extensions and 60,000+ community nodes',
+      'Use supported provider keys and existing contracts',
+      'Run on workstations, GPU servers, or customer infrastructure',
+    ]}
+    primaryCta={{
+      label: 'VIEW MANAGED BUILDS',
+      href: '/enterprise/managed-builds/',
+    }}
+    secondaryCta={{
+      label: 'SEE THE DEVELOPER PLATFORM',
+      href: '/api/',
+    }}
+    manifestLabel="APPROVED BUILD"
+    manifestName="Production environment"
+    manifestVersion="CURRENT"
+    manifestItems={[
+      {
+        id: 'dependencies',
+        label: 'ComfyUI and dependencies',
+        value: 'Pinned',
+      },
+      { id: 'nodes', label: 'Custom nodes', value: 'Allowlisted' },
+      { id: 'models', label: 'Models', value: 'Approved and private' },
+      { id: 'providers', label: 'Provider access', value: 'BYOK' },
+    ]}
+    releaseLabels={[
+      { id: 'previous', label: 'Previous release' },
+      { id: 'current', label: 'Current release', current: true },
+    ]}
+    deploymentTargets={[
+      { id: 'workstations', label: 'Workstations' },
+      { id: 'servers', label: 'GPU servers' },
+      { id: 'infrastructure', label: 'Customer infrastructure' },
+    ]}
+  />
+
+  <BenefitsGrid01
+    heading="Govern the build, models, people, and usage."
+    benefits={governanceBenefits}
+    footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
+  />
+
+  <CtaBands01
+    bands={[
+      {
+        id: 'team-plans',
+        label: 'TEAM PLANS',
+        text: 'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
+        cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
+      },
+      {
+        id: 'commercial-rights',
+        label: 'COMMERCIAL RIGHTS',
+        text: 'Every model on Cloud is licensed for commercial use. Local terms vary by provider, and Comfy is an official reseller for MiniMax commercial-use licenses.',
+        cta: {
+          label: 'VIEW MINIMAX LICENSING',
+          href: '/minimax/license/',
+        },
+      },
+      {
+        id: 'fdc',
+        label: 'FORWARD DEPLOYED CREATIVES',
+        text: 'Builders, not advisors. Work directly with Comfy specialists to design, validate, and operationalize production Comfy Workflows your team owns and extends.',
+        cta: {
+          label: 'VIEW THE OFFERING',
+          href: '/forward-deployed-creatives/',
+        },
+      },
+    ]}
+  />
+
+  <BenefitsGrid01
+    heading="Capacity and support for production."
+    benefits={productionBenefits}
+    footnote="Enterprise includes a 99.5% workflow-execution uptime SLA. Dedicated capacity, response commitments, and custom SLA terms are defined in your agreement."
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  />
+
+  <ReasonsSplit01
+    heading={'Built with studios\n'}
+    headingHighlight="in the room."
+    highlightClass="text-primary-comfy-yellow"
+    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
+    reasons={industries}
+  />
+
+  <BenefitsGrid01
+    heading="A clearer path through security review."
+    benefits={[
+      {
+        id: 'soc2',
+        title: 'SOC 2',
+        description: 'Type II audit in progress.',
+      },
+      {
+        id: 'sso',
+        title: 'Identity',
+        description: 'Single Sign-On is available for enterprise teams.',
+      },
+      {
+        id: 'data',
+        title: 'Data control',
+        description:
+          'For local deployments, Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.',
+      },
+      {
+        id: 'dpa',
+        title: 'Procurement',
+        description: 'A DPA and enterprise agreement are available.',
+      },
+    ]}
+    footnote="Processing is in the United States on Google Cloud. Enterprise includes a 99.5% workflow-execution uptime SLA."
+    primaryCta={{
+      label: 'VIEW TRUST CENTER',
+      href: externalLinks.trustCenter,
+      target: '_blank',
+    }}
+  />
+
+  <FAQSplit01
+    id="faq"
+    heading="Enterprise, answered."
+    faqs={faqs}
+    client:visible
+  />
+  <CtaCenter01
+    heading={'Bring the open standard for visual AI\nto your organization.'}
+    subtitle="Bring one known-good environment or the production requirement your team needs to scale. We will map deployment, governance, capacity, commercial terms, and the right implementation path."
+    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+  />
+</BaseLayout>

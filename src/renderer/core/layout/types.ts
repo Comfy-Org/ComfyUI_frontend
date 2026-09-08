@@ -14,7 +14,8 @@ import type { UUID } from '@/utils/uuid'
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
-  Vue = 'vue'
+  Vue = 'vue',
+  AgentRemote = 'agent-remote'
 }
 
 // Basic geometric types
@@ -117,6 +118,8 @@ interface OperationMeta {
   timestamp: number
   /** Actor who performed the operation (for CRDT) */
   actor?: string
+  /** Originating semantic op identity when applied by a remote follower. */
+  opId?: string
   /** Source system that initiated the operation */
   source: LayoutSource
   graphId: UUID
@@ -174,6 +177,16 @@ export interface SetNodeZIndexOperation extends NodeOpBase {
  */
 export interface CreateNodeOperation extends NodeOpBase {
   type: 'createNode'
+  /**
+   * Graph that directly contains the node (root or subgraph); equal to
+   * `graphId` for a root-scoped node. Every production emitter sets it —
+   * `layoutMintPort`'s human-edit gate fails closed instead of minting when
+   * it is missing (see `reportUnrepresentableInteriorChange`). Left optional
+   * here, not required, because a large body of pre-existing layout-store
+   * test fixtures construct root-scoped operations without it and are
+   * exercising the store directly, not the mint gate.
+   */
+  ownerGraphId?: UUID
   layout: NodeLayout
 }
 
@@ -182,6 +195,16 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
+  /**
+   * Graph that directly contained the node (root or subgraph); equal to
+   * `graphId` for a root-scoped node. Every production emitter sets it —
+   * `layoutMintPort`'s human-edit gate fails closed instead of minting when
+   * it is missing (see `reportUnrepresentableInteriorChange`). Left optional
+   * here, not required, because a large body of pre-existing layout-store
+   * test fixtures construct root-scoped operations without it and are
+   * exercising the store directly, not the mint gate.
+   */
+  ownerGraphId?: UUID
 }
 
 /**
