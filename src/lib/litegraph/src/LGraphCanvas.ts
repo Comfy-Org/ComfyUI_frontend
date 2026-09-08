@@ -2315,7 +2315,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    // console.log("pointerevents: unbindEvents");
+    this._finishDragZoom()
+    this.pointer.reset()
+
     const { document } = this.getCanvasWindow()
     const { canvas } = this
 
@@ -3203,10 +3205,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             this._dirty()
           }
 
-          pointer.onDragEnd = () => {
+          const finishResize = () => {
             this._dirty()
             graph.afterChange(node)
           }
+          pointer.onDragEnd = finishResize
+          pointer.onDragCancel = finishResize
           pointer.finally = () => {
             this.resizing_node = null
             pointer.resizeDirection = undefined
@@ -3802,6 +3806,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.graph?.afterChange()
       this.emitAfterChange()
     }
+    pointer.onDragCancel = () => this._finalizeDraggedItems()
 
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
@@ -3848,6 +3853,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
       graph?.snapToGrid(this.selectedItems)
 
+    this._finalizeDraggedItems()
+  }
+
+  private _finalizeDraggedItems(): void {
     this.dirty_canvas = true
     this.dirty_bgcanvas = true
 
