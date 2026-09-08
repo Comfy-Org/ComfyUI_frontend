@@ -245,7 +245,7 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   dispatchPendingCheckoutChangeEvent()
 }
 
-const getPendingSubscriptionCheckoutAttempt =
+export const getPendingSubscriptionCheckoutAttempt =
   (): PendingSubscriptionCheckoutAttempt | null => {
     const storage = getStorage()
     if (!storage) {
