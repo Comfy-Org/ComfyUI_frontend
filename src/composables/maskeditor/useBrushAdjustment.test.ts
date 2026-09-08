@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/composables/maskeditor/useCoordinateTransform', () => ({
-  useCoordinateTransform: () => ({
-    screenToCanvas: vi.fn(({ x, y }: { x: number; y: number }) => ({ x, y }))
+vi.mock<unknown>(
+  import('@/composables/maskeditor/useCoordinateTransform'),
+  () => ({
+    useCoordinateTransform: () => ({
+      screenToCanvas: vi.fn(({ x, y }: { x: number; y: number }) => ({ x, y }))
+    })
   })
-}))
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { registerExtension: vi.fn() }
 }))
 

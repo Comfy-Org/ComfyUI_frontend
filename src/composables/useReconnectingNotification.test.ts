@@ -8,12 +8,16 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 const mockToastAdd = vi.fn()
 const mockToastRemove = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd,
-    remove: mockToastRemove
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd,
+      remove: mockToastRemove
+    })
   })
-}))
+)
 
 function setupComposable(): ReturnType<typeof useReconnectingNotification> {
   const i18n = createI18n({
@@ -43,7 +47,7 @@ const settingMocks = vi.hoisted(() => ({
   disableToast: false
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.Toast.DisableReconnectingToast')

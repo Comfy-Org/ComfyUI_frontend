@@ -5,7 +5,7 @@ import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     t: (key: string) => key
   }))
@@ -60,34 +60,40 @@ const mockFeatureFlags = vi.hoisted(() => ({
   flags: { linearToggleEnabled: false }
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => mockWorkflowStore),
-  useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => mockWorkflowStore),
+    useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
+  })
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: vi.fn(() => mockWorkflowService)
+  })
+)
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: vi.fn(() => mockCommandStore)
 }))
 
-vi.mock('@/stores/subgraphStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
   useSubgraphStore: vi.fn(() => mockSubgraphStore)
 }))
 
-vi.mock('@/stores/menuItemStore', () => ({
+vi.mock<unknown>(import('@/stores/menuItemStore'), () => ({
   useMenuItemStore: vi.fn(() => mockMenuItemStore)
 }))
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({}))
+vi.mock(import('@/composables/useErrorHandling'), () => ({}))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
 

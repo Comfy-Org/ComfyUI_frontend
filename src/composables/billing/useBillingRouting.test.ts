@@ -20,7 +20,7 @@ const {
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get legacyBillingMigrationEnabled() {
@@ -30,22 +30,25 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspace() {
-      return mockActiveWorkspace.value
-    },
-    get activeWorkspaceBillingRail() {
-      return mockActiveWorkspaceBillingRail.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspace() {
+        return mockActiveWorkspace.value
+      },
+      get activeWorkspaceBillingRail() {
+        return mockActiveWorkspaceBillingRail.value
+      }
+    })
   })
-}))
+)
 
 const personal = { id: 'w-personal', type: 'personal' as const }
 const team = { id: 'w-team', type: 'team' as const }

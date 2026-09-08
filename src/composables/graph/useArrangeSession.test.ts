@@ -4,7 +4,7 @@ import { useArrangeSession } from '@/composables/graph/useArrangeSession'
 
 const mockArrangeNodes = vi.fn()
 
-vi.mock('@/composables/graph/useArrangeNodes', () => ({
+vi.mock<unknown>(import('@/composables/graph/useArrangeNodes'), () => ({
   DEFAULT_ARRANGE_GAP: 12,
   useArrangeNodes: () => ({ arrangeNodes: mockArrangeNodes })
 }))

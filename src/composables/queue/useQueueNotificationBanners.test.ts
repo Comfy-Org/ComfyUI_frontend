@@ -8,7 +8,7 @@ import { useQueueStore } from '@/stores/queueStore'
 
 const mockApi = vi.hoisted(() => new EventTarget())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
@@ -21,7 +21,7 @@ type MockTask = {
   }
 }
 
-vi.mock('@/stores/queueStore', () => {
+vi.mock<unknown>(import('@/stores/queueStore'), () => {
   const state = reactive({
     pendingTasks: [] as MockTask[],
     runningTasks: [] as MockTask[],
@@ -33,7 +33,7 @@ vi.mock('@/stores/queueStore', () => {
   }
 })
 
-vi.mock('@/stores/executionStore', () => {
+vi.mock<unknown>(import('@/stores/executionStore'), () => {
   const state = reactive({
     isIdle: true
   })

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useVideoEditFormats } from './useVideoEditFormats'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, unknown>) =>
       params ? `${key}|${Object.values(params).join(',')}` : key

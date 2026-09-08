@@ -8,11 +8,11 @@ const { mockStartDrag, mockGetNodeProvider } = vi.hoisted(() => ({
   mockGetNodeProvider: vi.fn()
 }))
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => ({
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
   useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
 }))
 

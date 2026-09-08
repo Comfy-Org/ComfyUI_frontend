@@ -40,10 +40,13 @@ const { ViewportMock, instances, addAlert } = vi.hoisted(() => {
   return { ViewportMock, instances, addAlert: vi.fn() }
 })
 
-vi.mock('@/extensions/core/cameraInfo/CameraInfoViewport', () => ({
-  CameraInfoViewport: ViewportMock
-}))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(
+  import('@/extensions/core/cameraInfo/CameraInfoViewport'),
+  () => ({
+    CameraInfoViewport: ViewportMock
+  })
+)
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ addAlert })
 }))
 

@@ -11,15 +11,18 @@ const { mockActiveWorkflow, statusMap } = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return mockActiveWorkflow.value
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     getWorkflowStatus: (workflow: object | null | undefined) =>
       workflow ? statusMap.value.get(workflow) : undefined,
