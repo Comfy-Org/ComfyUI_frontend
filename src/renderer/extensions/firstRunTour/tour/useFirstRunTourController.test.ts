@@ -1003,6 +1003,162 @@ describe('useFirstRunTourController', () => {
       ).toBe('late.png')
     })
 
+    it.for([
+      { order: ['end', 'output', 'accept'] },
+      { order: ['end', 'accept', 'output'] },
+      { order: ['output', 'end', 'accept'] }
+    ])('keeps pending correlation across $order', async ({ order }) => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      const { api } = await import('@/scripts/api')
+
+      for (const event of order) {
+        if (event === 'end') await endTour(COMPLETED)
+        if (event === 'accept') await acceptRun(TOUR_WORKFLOW, 'tour-job')
+        if (event === 'output') {
+          api.dispatchCustomEvent('executed', {
+            prompt_id: 'tour-job',
+            node: 1,
+            display_node: 1,
+            output: { images: [{ filename: 'late.png', type: 'output' }] }
+          })
+          await nextTick()
+        }
+      }
+
+      expect(controller.nudgeArmed.value).toBe(true)
+      expect(controller.nudgeOutput.value?.filename).toBe('late.png')
+    })
+
+    it('matches the original workflow after dismissal and rejects other jobs', async () => {
+      const { controller } = await tourOnRunStep()
+      await acceptRun(TOUR_WORKFLOW, 'old-job')
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(skippedBecause('user'))
+      mocks.activeWorkflow.value = OTHER_WORKFLOW
+      const { api } = await import('@/scripts/api')
+
+      for (const jobId of ['old-job', 'other-job', 'tour-job']) {
+        api.dispatchCustomEvent('executed', {
+          prompt_id: jobId,
+          node: 1,
+          display_node: 1,
+          output: { images: [{ filename: `${jobId}.png`, type: 'output' }] }
+        })
+      }
+      await acceptRun(OTHER_WORKFLOW, 'other-job')
+      expect(controller.nudgeOutput.value).toBeNull()
+      await acceptThenRemoveRun(TOUR_WORKFLOW, 'tour-job')
+
+      expect(controller.nudgeOutput.value?.filename).toBe('tour-job.png')
+    })
+
+    it('expires an unresolved submission after the tour ends', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(COMPLETED)
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it('expires a refused submission with no acceptance after tour end', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(COMPLETED)
+      mocks.executionErrors.hasPromptError = true
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it('keeps pending correlation when an unrelated run reports an error', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(COMPLETED)
+      await finishRun(OTHER_WORKFLOW, 'failed')
+      mocks.executionErrors.hasPromptError = true
+      await nextTick()
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+    })
+
+    it('waits past the acceptance deadline once metadata arrives after tour end', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(COMPLETED)
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS - 1)
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+    })
+
+    it('stops correlating a cancelled job after the tour ends', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      await endTour(COMPLETED)
+      await removeRun()
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it('releases pending correlation when the nudge is dismissed', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(COMPLETED)
+      controller.dismissNudge()
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it('releases accepted correlation when the connection stays offline after tour end', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('reconnecting')
+      await endTour(COMPLETED)
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it('discards pending output when a new tour starts', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: { images: [{ filename: 'old.png', type: 'output' }] }
+      })
+      await endTour(COMPLETED)
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
     it('continues from a video run through the template browser only', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
