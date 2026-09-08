@@ -52,6 +52,30 @@ describe('parseFaqAnswer', () => {
     expect(parseFaqAnswer('')).toEqual([])
   })
 
+  it('emphasises a bold phrase without its markers', () => {
+    expect(parseFaqAnswer('No. **We match their price**, always.')).toEqual([
+      { type: 'text', value: 'No. ' },
+      { type: 'strong', value: 'We match their price' },
+      { type: 'text', value: ', always.' }
+    ])
+  })
+
+  it('keeps a bold phrase and a link in the same answer', () => {
+    expect(
+      parseFaqAnswer('**Acquire it** at https://platform.minimax.io/h3-license')
+    ).toEqual([
+      { type: 'strong', value: 'Acquire it' },
+      { type: 'text', value: ' at ' },
+      { type: 'link', value: 'https://platform.minimax.io/h3-license' }
+    ])
+  })
+
+  it('leaves an unclosed bold marker as plain text', () => {
+    expect(parseFaqAnswer('No. **We match their price')).toEqual([
+      { type: 'text', value: 'No. **We match their price' }
+    ])
+  })
+
   it('leaves unfinished link markup as plain text', () => {
     expect(parseFaqAnswer('See [the docs](')).toEqual([
       { type: 'text', value: 'See [the docs](' }
@@ -90,6 +114,12 @@ describe('faqAnswerPlainText', () => {
   it('leaves a bare URL in place', () => {
     expect(faqAnswerPlainText('See https://docs.comfy.org/a')).toBe(
       'See https://docs.comfy.org/a'
+    )
+  })
+
+  it('drops bold markers so structured data carries no markup', () => {
+    expect(faqAnswerPlainText('No. **We match their price**, always.')).toBe(
+      'No. We match their price, always.'
     )
   })
 })

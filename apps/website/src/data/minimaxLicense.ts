@@ -19,6 +19,8 @@ const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 const MINIMAX_H3_DESIGN_HREF =
   'https://design.minimax.io/tools/minimax-h3-comfyui'
+const MINIMAX_H3_COMMUNITY_LICENSE_HREF =
+  'https://platform.minimax.io/h3-license'
 
 // Rows and figures come from the tier table supplied for this page
 // (2026-09-02); the pricing numbers live only here, so a deal change means
@@ -222,9 +224,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '谁需要 MiniMax H3 商业许可？'
         },
         answer: {
-          en: 'Anyone running MiniMax models locally for commercial work: business use, client work, or products you ship. Open weights let anyone download the models and start creating; the license is what makes commercial use of your local outputs legal.',
-          'zh-CN':
-            '任何在本地运行 MiniMax 模型进行商业创作的人：商业用途、客户项目，或你要发布的产品。开源权重让任何人都能下载模型开始创作；许可让你本地产出的商业使用合法合规。'
+          en: `The H3 Community License generally permits commercial use, provided your commercial products and services generate no more than $20 million in yearly revenue and you comply with its other terms. Businesses above that threshold must obtain separate written authorization from MiniMax.\n\nYou need to explicitly acquire a MiniMax H3 community license if you want to use MiniMax H3 in the United States, European Union, United Kingdom, or South Korea, which are excluded from the H3 Community License. You can acquire them here: ${MINIMAX_H3_COMMUNITY_LICENSE_HREF}`,
+          'zh-CN': `H3 社区许可通常允许商业使用，前提是你的商业产品和服务年收入不超过 2000 万美元，并且你遵守其他条款。超过该门槛的企业必须另行获得 MiniMax 的书面授权。\n\n如果你想在美国、欧盟、英国或韩国使用 MiniMax H3，则需要明确获取 MiniMax H3 社区许可，这些地区不在 H3 社区许可的覆盖范围内。你可以在此获取：${MINIMAX_H3_COMMUNITY_LICENSE_HREF}`
         }
       },
       {
@@ -261,6 +262,18 @@ export const minimaxLicensePage: ModelLaunchPage = {
           en: 'Professional is a fixed-price monthly license for studios and teams shipping client work, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom volume pricing, no user cap, and every model version, undistilled weights included. Request a license and we will help you pick.',
           'zh-CN':
             '专业版是面向交付客户项目的工作室和团队的固定价格月度许可，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版是年度协议，提供定制批量定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会帮你选择。'
+        }
+      },
+      {
+        id: 'pricing-parity',
+        question: {
+          en: 'Is the Commercial License more expensive through Comfy?',
+          'zh-CN': '通过 Comfy 购买商业许可会更贵吗？'
+        },
+        answer: {
+          en: 'No. **MiniMax requires pricing parity across its Commercial License resellers**, so purchasing the license through Comfy does not come with a reseller markup or a higher license price compared with other authorized channels.',
+          'zh-CN':
+            '不会。**MiniMax 要求其商业许可经销商之间保持价格一致**，因此通过 Comfy 购买许可不会产生经销商加价，价格也不会高于其他授权渠道。'
         }
       },
       {
