@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { Check, ChevronDown, ListFilter } from '@lucide/vue'
-import {
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger,
-  TabsContent,
-  TabsList,
-  TabsRoot,
-  TabsTrigger
-} from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue'
+
+import { onClickOutside, useMediaQuery } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -46,6 +39,21 @@ const modalities = defineModel<string[]>('modalities', { required: true })
 const useCases = defineModel<string[]>('useCases', { default: () => [] })
 
 const open = ref(false)
+// A dropdown anchored to a crowded toolbar leaves a phone no room, so there
+// the panel rises from the bottom of the screen instead.
+const isPhone = useMediaQuery('(max-width: 639px)')
+const panel = useTemplateRef<HTMLElement>('panel')
+onClickOutside(panel, () => (open.value = false), {
+  ignore: ['[data-testid="workshop-filter"]']
+})
+
+watchEffect((onCleanup) => {
+  if (!open.value || !isPhone.value) return
+  const previous = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  onCleanup(() => (document.body.style.overflow = previous))
+})
+
 const activeFacet = ref<Facet>('provider')
 const search = ref<Record<Facet, string>>({
   provider: '',
@@ -130,20 +138,26 @@ function clearAll() {
 </script>
 
 <template>
-  <PopoverRoot v-model:open="open">
-    <PopoverTrigger
+  <div class="relative" @keydown.escape="open = false">
+    <button
+      type="button"
       data-testid="workshop-filter"
+      :aria-expanded="open"
+      :aria-label="t('workshop.filter.label', locale)"
       :class="
         cn(
-          'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3',
+          'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
           selectedCount
             ? 'text-primary-warm-white'
             : 'text-primary-comfy-canvas'
         )
       "
+      @click="open = !open"
     >
-      <ListFilter class="size-4" aria-hidden="true" />
-      {{ t('workshop.filter.label', locale) }}
+      <ListFilter class="size-4 shrink-0" aria-hidden="true" />
+      <span class="max-sm:hidden">
+        {{ t('workshop.filter.label', locale) }}
+      </span>
       <span
         v-if="selectedCount"
         class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-primary-comfy-ink tabular-nums"
@@ -154,19 +168,26 @@ function clearAll() {
       <ChevronDown
         :class="
           cn(
-            'size-4 transition-transform duration-300 ease-out',
+            'size-4 transition-transform duration-300 ease-out max-sm:hidden',
             open && 'rotate-180'
           )
         "
         aria-hidden="true"
       />
-    </PopoverTrigger>
-    <PopoverPortal>
-      <PopoverContent
-        align="end"
-        :side-offset="8"
+    </button>
+
+    <Teleport to="body" :disabled="!isPhone">
+      <div
+        v-if="open"
+        class="fixed inset-0 z-40 bg-black/60 sm:hidden"
+        data-testid="workshop-filter-backdrop"
+        @click="open = false"
+      />
+      <div
+        v-if="open"
+        ref="panel"
         data-testid="workshop-filter-menu"
-        class="bg-site-dropdown z-50 max-h-(--reka-popover-content-available-height) w-96 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl shadow-black/50 outline-none"
+        class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
       >
         <TabsRoot v-model="activeFacet" class="flex flex-col">
           <TabsList
@@ -283,7 +304,7 @@ function clearAll() {
             {{ t('workshop.filter.clearAll', locale) }}
           </button>
         </div>
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+      </div>
+    </Teleport>
+  </div>
 </template>

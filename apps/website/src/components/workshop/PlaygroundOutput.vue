@@ -241,7 +241,7 @@ const earlierClass = (active: boolean) =>
             :src="currentUrl"
             :locale
             :aria-label="t('workshop.output.title', locale)"
-            class="aspect-auto h-auto w-full max-h-[70vh]"
+            class="aspect-auto h-auto max-h-[70vh] w-full"
             fit="contain"
             autoplay
             loop
@@ -250,7 +250,7 @@ const earlierClass = (active: boolean) =>
             v-else-if="currentUrl && shown.kind !== 'text'"
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
-            class="h-auto w-full max-h-[70vh] object-contain"
+            class="h-auto max-h-[70vh] w-full object-contain"
           />
           <pre
             v-else-if="shown.kind === 'text'"

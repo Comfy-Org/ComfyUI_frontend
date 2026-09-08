@@ -197,34 +197,21 @@ const isFiltered = computed(
 
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
-const browsing = computed(
-  () =>
-    version.value === 'v1.1' &&
-    query.value === '' &&
-    useCase.value === 'all' &&
-    capabilities.value.length + providers.value.length === 0
-)
+const browsing = computed(() => version.value === 'v1.1' && !isFiltered.value)
 const inSection = computed(
   () => version.value === 'v1.1' && useCase.value !== 'all'
 )
 // V1.1 navigates through its section rows and the way back out of one, so the
 // row of use cases would be a second, competing way to move around.
 const showRail = computed(() => version.value !== 'v1.1')
-const sectionProviders = computed<FacetMenuOption[]>(() =>
-  countByFacet(
-    filterWorkshopModels(models, { useCase: useCase.value }),
-    'provider'
-  ).map((option) => ({ ...option, label: option.value }))
+// Wherever the use cases have no row of their own on screen, the filter menu
+// carries them.
+const useCasesInFilter = computed(
+  () => !showRail.value || (onPhone.value && railBeside.value)
 )
 
 function openSection(value: UseCase) {
   useCase.value = value
-}
-
-function toggleProvider(value: string) {
-  providers.value = providers.value.includes(value)
-    ? providers.value.filter((provider) => provider !== value)
-    : [value]
 }
 
 function clearFilters() {
@@ -253,14 +240,6 @@ const tabClass = (current: boolean) =>
 
 const navRef = useTemplateRef<HTMLElement>('nav')
 const underline = useSlidingUnderline(navRef, () => [useCase.value, rail.value])
-
-const chipClass = (active: boolean) =>
-  cn(
-    'focus-visible:ring-primary-comfy-yellow/50 inline-flex h-9 cursor-pointer items-center gap-2 rounded-2xl border px-4 text-sm transition-colors outline-none focus-visible:ring-3',
-    active
-      ? 'border-primary-comfy-yellow text-primary-warm-white'
-      : 'border-transparency-white-t20 text-primary-comfy-canvas hover:text-primary-warm-white'
-  )
 
 const menuItemClass =
   'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t4'
@@ -325,7 +304,7 @@ const menuItemClass =
 
     <div class="min-w-0">
       <div
-        class="bg-page sticky top-20 z-30 mb-8 flex flex-col gap-4 py-4 lg:top-26 lg:flex-row lg:items-center lg:justify-between"
+        class="bg-page sticky top-20 z-30 mb-8 flex items-center justify-end gap-3 py-4 lg:top-26"
       >
         <WorkshopSearchField
           v-model="query"
@@ -333,10 +312,11 @@ const menuItemClass =
           v-model:capabilities="capabilities"
           :models
           :locale
-          class="w-full lg:max-w-xl"
+          compact
+          class="sm:mr-auto sm:w-full sm:max-w-xl"
         />
 
-        <div class="flex flex-wrap gap-2" data-testid="workshop-filters">
+        <div class="flex items-center gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu
             v-model:capabilities="capabilities"
             v-model:providers="providers"
@@ -345,9 +325,7 @@ const menuItemClass =
             :capability-options="capabilityOptions"
             :provider-options="providerOptions"
             :modality-options="modalityOptions"
-            :use-case-options="
-              onPhone && railBeside ? useCaseOptions : undefined
-            "
+            :use-case-options="useCasesInFilter ? useCaseOptions : undefined"
             :locale
           />
 
@@ -355,12 +333,14 @@ const menuItemClass =
             <DropdownMenuTrigger
               data-testid="workshop-sort"
               :aria-label="t('workshop.sort.label', locale)"
-              class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3"
+              class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 group inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0"
             >
-              <ArrowUpDown class="size-4" aria-hidden="true" />
-              {{ t(sortLabelKey[sort], locale) }}
+              <ArrowUpDown class="size-4 shrink-0" aria-hidden="true" />
+              <span class="max-sm:hidden">{{
+                t(sortLabelKey[sort], locale)
+              }}</span>
               <ChevronDown
-                class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180"
+                class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180 max-sm:hidden"
                 aria-hidden="true"
               />
             </DropdownMenuTrigger>
@@ -419,34 +399,6 @@ const menuItemClass =
           <h2 class="text-2xl font-bold text-primary-warm-white">
             {{ t(useCaseLabelKey[useCase], locale) }}
           </h2>
-        </div>
-
-        <div
-          v-if="inSection"
-          class="mb-6 flex flex-wrap items-center gap-2"
-          data-testid="section-providers"
-        >
-          <button
-            type="button"
-            :aria-pressed="providers.length === 0"
-            :class="chipClass(providers.length === 0)"
-            data-testid="section-provider-all"
-            @click="providers = []"
-          >
-            {{ t('workshop.sections.provider', locale) }}
-          </button>
-          <button
-            v-for="option in sectionProviders"
-            :key="option.value"
-            type="button"
-            :aria-pressed="providers.includes(option.value)"
-            :class="chipClass(providers.includes(option.value))"
-            :data-testid="`section-provider-${option.value}`"
-            @click="toggleProvider(option.value)"
-          >
-            {{ option.label }}
-            <span class="tabular-nums opacity-60">{{ option.count }}</span>
-          </button>
         </div>
 
         <div v-if="visible.length">

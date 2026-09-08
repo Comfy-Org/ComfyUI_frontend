@@ -71,7 +71,7 @@ test.describe('Workshop catalog', () => {
   test('lists partner models by what they do and filters by search', async ({
     page
   }) => {
-    await page.goto('/workshop/')
+    await page.goto('/workshop/?version=v1.2')
     const grid = page.getByTestId('workshop-models-grid')
     const cards = grid.getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
@@ -96,7 +96,7 @@ test.describe('Workshop catalog', () => {
   test('the rows listing browses category rows and drills into one', async ({
     page
   }) => {
-    await page.goto('/workshop/?version=v1.1')
+    await page.goto('/workshop/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
@@ -145,7 +145,7 @@ test.describe('Workshop catalog', () => {
     ).toHaveText('1')
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await page.getByTestId('workshop-filter-clear').click()
-    await expect(cards).toHaveCount(84)
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
