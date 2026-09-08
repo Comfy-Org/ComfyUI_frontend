@@ -203,6 +203,23 @@ describe('reportError', () => {
     )
   })
 
+  it('logs a warning-level report through console.warn', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+
+    reportError(new Error('cookie denied'), {
+      errorType: 'session_cookie_creation_failure',
+      level: 'warning'
+    })
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure`,
+      expect.any(Error)
+    )
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
   it('skips the console line for a caller that already logged', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError } = await loadReportError()

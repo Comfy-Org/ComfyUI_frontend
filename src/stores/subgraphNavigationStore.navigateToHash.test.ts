@@ -346,7 +346,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         expect.stringContaining('workflow load failed')
       )
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'workflow_navigation_failure'
+        errorType: 'workflow_navigation_failure',
+        level: 'warning',
+        context: { stage: 'recovery' }
       })
     })
     warnSpy.mockRestore()

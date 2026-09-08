@@ -213,6 +213,9 @@ describe('bootstrapStore', () => {
 
     it('gives up after a second timeout, reports it, and continues bootstrap unauthenticated', async () => {
       vi.useFakeTimers()
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
       try {
         const store = useBootstrapStore()
         const settingStore = useSettingStore()
@@ -226,6 +229,9 @@ describe('bootstrapStore', () => {
         expect(mockReportError).toHaveBeenCalledWith(expect.anything(), {
           errorType: 'bootstrap_auth_wait_timeout'
         })
+        // reportError owns the console line; a local one would double-log
+        // and hand Datadog a second, untagged event for the same failure.
+        expect(consoleError).not.toHaveBeenCalled()
         // Bootstrap must not stay stuck: stores load even when Firebase never fires.
         expect(settingStore.isReady).toBe(true)
       } finally {

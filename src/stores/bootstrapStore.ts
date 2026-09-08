@@ -66,10 +66,6 @@ async function waitForCloudAuth(): Promise<void> {
     try {
       await waitForResolution()
     } catch (retryError) {
-      console.error(
-        '[bootstrapStore] Auth still unresolved after retry; continuing bootstrap without confirmed auth',
-        retryError
-      )
       reportError(retryError, { errorType: 'bootstrap_auth_wait_timeout' })
     }
   }

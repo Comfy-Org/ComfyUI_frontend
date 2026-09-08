@@ -123,7 +123,8 @@ export function flushErrorReports(): void {
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
     if (options.logToConsole !== false) {
-      console.error(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+      const log = options.level === 'warning' ? console.warn : console.error
+      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
     }
     flushErrorReports()
 

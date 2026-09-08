@@ -345,11 +345,11 @@ export const useSubgraphNavigationStore = defineStore(
             )
           } catch (err) {
             if (navigationId !== navigationIntentId) return
-            console.warn(
-              '[subgraphNavigation] openWorkflow rejected during recovery',
-              err
-            )
-            reportError(err, { errorType: 'workflow_navigation_failure' })
+            reportError(err, {
+              errorType: 'workflow_navigation_failure',
+              level: 'warning',
+              context: { stage: 'recovery' }
+            })
             return redirectToRoot('workflow load failed', navigationId)
           }
           if (navigationId !== navigationIntentId) return
