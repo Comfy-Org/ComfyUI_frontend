@@ -9,7 +9,7 @@
     :can-select-inputs
     :node-id="nodeData?.id"
     :class="
-      shouldHandleNodePointerEvents
+      shouldHandleNodePointerEvents || dragState.active
         ? 'pointer-events-auto'
         : 'pointer-events-none'
     "
@@ -27,6 +27,7 @@ import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -42,6 +43,7 @@ const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+const { state: dragState } = useSlotLinkDragUIState()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
