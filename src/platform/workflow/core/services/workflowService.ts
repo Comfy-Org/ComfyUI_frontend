@@ -2,13 +2,14 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import { adaptComfyWorkflowToSerialisableGraph } from '@/platform/workflow/core/utils/adaptComfyWorkflowToSerialisableGraph'
 import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
 import {
   areWorkflowIdsEquivalent,
@@ -781,11 +782,21 @@ export const useWorkflowService = () => {
   ) => {
     const loadedWorkflow = await workflow.load()
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema.
-    const items = workflowToClipboardItems(
-      workflowJSON as unknown as SerialisableGraph
-    )
+    let graph: ReturnType<typeof adaptComfyWorkflowToSerialisableGraph>
+    try {
+      graph = adaptComfyWorkflowToSerialisableGraph(workflowJSON)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'workflow_insert_adaptation_failure'
+      })
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('workflowService.insertWorkflowFailed')
+      })
+      return
+    }
+    const items = workflowToClipboardItems(graph)
     app.canvas._deserializeItems(items, options)
   }
 
