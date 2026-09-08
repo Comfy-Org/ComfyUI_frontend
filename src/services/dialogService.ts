@@ -703,6 +703,7 @@ export const useDialogService = () => {
   }): Promise<DowngradeToPersonalResult | null> {
     const {
       useDowngradeToPersonal,
+      DowngradeNotAllowedError,
       ReactivationConfirmationRequiredError,
       ReactivationAmountChangedError
     } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
@@ -717,12 +718,6 @@ export const useDialogService = () => {
     let chargeCents = 0
     try {
       await refreshMembers()
-      const preview = await previewDowngrade(options.planSlug)
-      requiresReactivation = preview.requiresReactivationConfirmation
-      chargeCents = preview.preview.cost_today_cents
-      if (!hasOtherMembers.value && !requiresReactivation) {
-        return await downgradeToPersonal(options.planSlug)
-      }
     } catch (error) {
       useToastStore().add({
         severity: 'error',
@@ -730,6 +725,32 @@ export const useDialogService = () => {
         detail: error instanceof Error ? error.message : t('g.unknownError')
       })
       return null
+    }
+
+    try {
+      const preview = await previewDowngrade(options.planSlug)
+      requiresReactivation = preview.requiresReactivationConfirmation
+      chargeCents = preview.preview.cost_today_cents
+      if (!hasOtherMembers.value && !requiresReactivation) {
+        return await downgradeToPersonal(options.planSlug)
+      }
+    } catch (error) {
+      // A typed refusal on a still-populated workspace is the very case this
+      // dialog exists to resolve: fall through carrying the server's own
+      // priced preview. Anything else stays a dead end.
+      if (
+        !(error instanceof DowngradeNotAllowedError) ||
+        !hasOtherMembers.value
+      ) {
+        useToastStore().add({
+          severity: 'error',
+          summary: t('subscription.downgrade.failed'),
+          detail: error instanceof Error ? error.message : t('g.unknownError')
+        })
+        return null
+      }
+      requiresReactivation = error.details.requiresReactivationConfirmation
+      chargeCents = error.details.preview.cost_today_cents
     }
 
     const { default: component } =
