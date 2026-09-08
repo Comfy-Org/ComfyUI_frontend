@@ -7563,6 +7563,10 @@ Enterprise`
     en: 'About Builder',
     'zh-CN': '了解 Builder'
   },
+  'enterprise.managedBuilds.closing.headingAfterBadge': {
+    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
+    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+  },
   'enterprise.managedBuilds.1.title': {
     en: 'Open Source Models',
     'zh-CN': '开源模型'
