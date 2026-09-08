@@ -27,12 +27,22 @@ async function bootSignedIn(page: Page): Promise<void> {
 // route exists only in the cloud SPA's own vue-router; this harness's
 // ComfyUI backend serves static files (aiohttp `web.static('/', ...)`) with
 // no fallback, so the navigation 404s, and Chromium renders its own error
-// interstitial in place of the app. Confirmed directly: blocking only this
-// one navigation leaves every other part of sign-out (the in-app state
-// clear, both tabs' reaction) working immediately and correctly, so the
+// interstitial in place of the app. Aborting the request (an earlier
+// version of this fix) produces net::ERR_FAILED, which Chromium treats the
+// same as any other failed top-level navigation: it still renders the
+// interstitial, reason notwithstanding. The navigation itself has to
+// succeed, so the request is fulfilled with a real, if trivial, page
+// instead. Confirmed directly: with a real response here, the in-app state
+// clear and both tabs' reaction happen immediately and correctly, so the
 // propagation this spec exists to prove was never the problem.
 async function clickLogout(page: Page): Promise<void> {
-  await page.route('**/cloud/login', (route) => route.abort())
+  await page.route('**/cloud/login', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<!doctype html><html><body></body></html>'
+    })
+  )
   await page.getByTestId('current-user-button').click()
   await page.getByTestId('logout-menu-item').click()
 }
