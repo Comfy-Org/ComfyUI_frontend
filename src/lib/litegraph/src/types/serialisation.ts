@@ -1,4 +1,5 @@
 import type { UUID } from '@/utils/uuid'
+import type { LinkPresentation } from '@/types/linkPresentation'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
 import type { IGraphGroupFlags } from '../LGraphGroup'
@@ -218,7 +219,7 @@ export interface SerialisableReroute {
   floating?: FloatingRerouteSlot
 }
 
-export interface SerialisableLLink {
+export interface SerialisableLLink extends LinkPresentation {
   /** Link ID */
   id: number
   /** Output node ID */
@@ -233,10 +234,6 @@ export interface SerialisableLLink {
   type: ISlotType
   /** ID of the last reroute (from input to output) that this link passes through, otherwise `undefined` */
   parentId?: number
-  /** Whether the link is replaced by endpoint badges. */
-  hidden?: boolean
-  /** Custom text shown in the endpoint badges. */
-  label?: string
 }
 
 export interface ExportedSubgraphIONode {

@@ -801,6 +801,8 @@ export default defineConfig({
 
   resolve: {
     alias: {
+      '@/base/credits/comfyCredits':
+        '/packages/shared-frontend-utils/src/creditsUtil.ts',
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',

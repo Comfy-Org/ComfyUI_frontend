@@ -102,6 +102,8 @@ describe('graphMutations', () => {
         context
       )
     ).toBe(true)
+    const presentation = useLinkPresentationStore()
+    presentation.patch(scope, toLinkId(9), { hidden: true, label: 'Replaced' })
     expect(
       graph.connect(
         {
@@ -121,6 +123,42 @@ describe('graphMutations', () => {
     expect(links.getTopology(scope.rootGraphId, toLinkId(10))).toMatchObject({
       originNodeId: '2',
       targetNodeId: '3'
+    })
+    expect(presentation.getPresentation(scope, toLinkId(9))).toBeUndefined()
+    expect(presentation.getPresentation(scope, toLinkId(10))).toBeUndefined()
+  })
+
+  it('preserves presentation when a remote batch reconnects the same link id', () => {
+    const graph = mutations()
+    const link = {
+      id: 9,
+      originNodeId: 1,
+      originSlot: 0,
+      targetNodeId: 2,
+      targetSlot: 0,
+      type: 'IMAGE'
+    }
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode(node(1))
+        batch.addNode(node(2))
+        batch.connect(link)
+      })
+    ).toBe(true)
+    const presentation = useLinkPresentationStore()
+    presentation.patch(scope, toLinkId(9), { hidden: true, label: 'Retained' })
+
+    expect(graph.batch(context, (batch) => batch.connect(link))).toBe(true)
+
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toMatchObject({
+      originNodeId: '1',
+      targetNodeId: '2'
+    })
+    expect(presentation.getPresentation(scope, toLinkId(9))).toEqual({
+      hidden: true,
+      label: 'Retained'
     })
   })
 

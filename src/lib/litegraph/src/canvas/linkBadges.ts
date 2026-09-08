@@ -3,6 +3,7 @@ import { textOnColor } from '@/utils/colorUtil'
 import type { Point, ReadOnlyRect, Rect } from '../interfaces'
 import { LGraphBadge } from '../LGraphBadge'
 import type { LinkId, LLink } from '../LLink'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { overlapBounding } from '../measure'
 
 export const BADGE_GAP = 14
@@ -20,7 +21,7 @@ interface BadgeHitArea {
   height: number
 }
 
-interface BadgeLayout {
+export interface LinkBadgeLayout {
   linkId: LinkId
   badge: LGraphBadge
   color: string
@@ -31,20 +32,16 @@ interface BadgeLayout {
   inputSocket: Point
   inputBadgeX: number
   inputBadgeY: number
-}
-
-export interface LinkBadgeFrameState {
-  readonly hitAreas: BadgeHitArea[]
-  readonly pendingBadges: BadgeLayout[]
-}
-
-export interface LinkBadgeTips {
   outputTip: Point
   inputTip: Point
 }
 
+export interface LinkBadgeFrameState {
+  readonly hitAreas: BadgeHitArea[]
+}
+
 export function createLinkBadgeFrameState(): LinkBadgeFrameState {
-  return { hitAreas: [], pendingBadges: [] }
+  return { hitAreas: [] }
 }
 
 const frameStates = new WeakMap<object, LinkBadgeFrameState>()
@@ -63,7 +60,6 @@ export function getLinkBadgeFrameState(host: object): LinkBadgeFrameState {
 
 export function clearLinkBadgeFrameState(state: LinkBadgeFrameState): void {
   state.hitAreas.length = 0
-  state.pendingBadges.length = 0
 }
 
 export function queryLinkBadgeAtPoint(
@@ -80,11 +76,14 @@ export function queryLinkBadgeAtPoint(
   )?.linkId
 }
 
-export function linkBadgeText(link: Pick<LLink, 'label' | 'type'>): string {
-  const label = link.label?.trim()
+export function linkBadgeText(
+  type: LLink['type'],
+  presentation: Readonly<LinkPresentation>
+): string {
+  const label = presentation.label?.trim()
   if (label) return label
-  if (typeof link.type === 'number') return '*'
-  return String(link.type ?? '') || '*'
+  if (typeof type === 'number') return '*'
+  return type || '*'
 }
 
 function makeBadge(text: string, color: string): LGraphBadge {
@@ -151,15 +150,16 @@ function createHitArea(
   }
 }
 
-function layoutHiddenLinkBadges(
+export function layoutHiddenLinkBadges(
   state: LinkBadgeFrameState,
   ctx: CanvasRenderingContext2D,
   link: LLink,
+  presentation: Readonly<LinkPresentation>,
   startPos: Point,
   endPos: Point,
   color: string
-): BadgeLayout {
-  const text = linkBadgeText(link)
+): LinkBadgeLayout {
+  const text = linkBadgeText(link.type, presentation)
 
   const badge = makeBadge(text, color)
   const width = badge.getWidth(ctx)
@@ -187,7 +187,7 @@ function layoutHiddenLinkBadges(
     width
   )
 
-  return {
+  const layout: LinkBadgeLayout = {
     linkId: link.id,
     badge,
     color,
@@ -197,11 +197,17 @@ function layoutHiddenLinkBadges(
     outputBadgeY,
     inputSocket: endPos,
     inputBadgeX,
-    inputBadgeY
+    inputBadgeY,
+    outputTip: [outputBadgeX + width, outputBadgeY],
+    inputTip: [inputBadgeX, inputBadgeY]
   }
+  state.hitAreas.push(...getBadgeHitAreas(layout))
+  return layout
 }
 
-function getBadgeHitAreas(layout: BadgeLayout): [BadgeHitArea, BadgeHitArea] {
+function getBadgeHitAreas(
+  layout: LinkBadgeLayout
+): [BadgeHitArea, BadgeHitArea] {
   return [
     createHitArea(
       layout.linkId,
@@ -218,23 +224,11 @@ function getBadgeHitAreas(layout: BadgeLayout): [BadgeHitArea, BadgeHitArea] {
   ]
 }
 
-function getBadgeBounds(
-  layout: BadgeLayout,
-  connectionPoints: readonly Point[]
-): Rect {
-  const hitAreas = getBadgeHitAreas(layout)
-  let left = Math.min(...connectionPoints.map(([x]) => x))
-  let top = Math.min(...connectionPoints.map(([, y]) => y))
-  let right = Math.max(...connectionPoints.map(([x]) => x))
-  let bottom = Math.max(...connectionPoints.map(([, y]) => y))
-
-  for (const area of hitAreas) {
-    left = Math.min(left, area.x)
-    top = Math.min(top, area.y)
-    right = Math.max(right, area.x + area.width)
-    bottom = Math.max(bottom, area.y + area.height)
-  }
-
+function getConnectorBounds(socket: Point, area: BadgeHitArea): Rect {
+  const left = Math.min(socket[0], area.x)
+  const top = Math.min(socket[1], area.y)
+  const right = Math.max(socket[0], area.x + area.width)
+  const bottom = Math.max(socket[1], area.y + area.height)
   return [left, top, right - left, bottom - top]
 }
 
@@ -257,7 +251,7 @@ function drawConnector(
 
 function drawBadgeLayout(
   ctx: CanvasRenderingContext2D,
-  layout: BadgeLayout
+  layout: LinkBadgeLayout
 ): void {
   drawConnector(
     ctx,
@@ -286,50 +280,22 @@ function drawBadgeLayout(
   )
 }
 
-export function enqueueHiddenLinkBadges(
-  state: LinkBadgeFrameState,
+export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
-  link: LLink,
-  connectionPoints: readonly Point[],
-  color: string,
+  layout: LinkBadgeLayout,
   visibleArea: ReadOnlyRect
-): LinkBadgeTips {
-  const layout = layoutHiddenLinkBadges(
-    state,
-    ctx,
-    link,
-    connectionPoints[0],
-    connectionPoints[connectionPoints.length - 1],
-    color
-  )
-  const paint = overlapBounding(
-    getBadgeBounds(layout, connectionPoints),
-    visibleArea
-  )
-  return enqueueBadgeLayout(state, layout, paint)
-}
-
-/**
- * Hit areas are always recorded so stacking is viewport-independent (badges
- * keep their rows while panning); only painting is culled.
- */
-function enqueueBadgeLayout(
-  state: LinkBadgeFrameState,
-  layout: BadgeLayout,
-  paint: boolean
-): LinkBadgeTips {
-  state.hitAreas.push(...getBadgeHitAreas(layout))
-  if (paint) state.pendingBadges.push(layout)
-  return {
-    outputTip: [layout.outputBadgeX + layout.width, layout.outputBadgeY],
-    inputTip: [layout.inputBadgeX, layout.inputBadgeY]
-  }
-}
-
-export function drawPendingLinkBadges(
-  state: LinkBadgeFrameState,
-  ctx: CanvasRenderingContext2D
 ): void {
-  for (const layout of state.pendingBadges) drawBadgeLayout(ctx, layout)
-  state.pendingBadges.length = 0
+  const hitAreas = getBadgeHitAreas(layout)
+  if (
+    overlapBounding(
+      getConnectorBounds(layout.outputSocket, hitAreas[0]),
+      visibleArea
+    ) ||
+    overlapBounding(
+      getConnectorBounds(layout.inputSocket, hitAreas[1]),
+      visibleArea
+    )
+  ) {
+    drawBadgeLayout(ctx, layout)
+  }
 }

@@ -1,4 +1,7 @@
-import type { LLink } from '../LLink'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { GraphScope } from '@/types/graphScopeId'
+import type { LinkId } from '@/types/linkId'
+
 import type { CanvasPointerEvent } from '../types/events'
 
 interface LinkMutationHost {
@@ -26,31 +29,49 @@ function mutateLink(host: LinkMutationHost, mutation: () => void): void {
   }
 }
 
-export function hideLink(host: LinkMutationHost, link: LLink): void {
-  mutateLink(host, () => (link.hidden = true))
+export function hideLink(
+  host: LinkMutationHost,
+  scope: GraphScope,
+  linkId: LinkId
+): void {
+  mutateLink(host, () =>
+    useLinkPresentationStore().patch(scope, linkId, { hidden: true })
+  )
 }
 
-export function showLink(host: LinkMutationHost, link: LLink): void {
-  mutateLink(host, () => (link.hidden = false))
+export function showLink(
+  host: LinkMutationHost,
+  scope: GraphScope,
+  linkId: LinkId
+): void {
+  mutateLink(host, () =>
+    useLinkPresentationStore().patch(scope, linkId, { hidden: false })
+  )
 }
 
 export function renameLink(
   host: LinkMutationHost,
-  link: LLink,
+  scope: GraphScope,
+  linkId: LinkId,
   value: string
 ): void {
-  mutateLink(host, () => (link.label = value.trim() || undefined))
+  mutateLink(host, () =>
+    useLinkPresentationStore().patch(scope, linkId, {
+      label: value.trim() || undefined
+    })
+  )
 }
 
 export function promptRenameLinkBadge(
   host: LinkRenameHost,
-  link: LLink,
+  scope: GraphScope,
+  linkId: LinkId,
   event: CanvasPointerEvent
 ): void {
   host.prompt(
     'Rename',
-    link.label ?? '',
-    (value) => renameLink(host, link, value),
+    useLinkPresentationStore().getPresentation(scope, linkId)?.label ?? '',
+    (value) => renameLink(host, scope, linkId, value),
     event
   )
 }

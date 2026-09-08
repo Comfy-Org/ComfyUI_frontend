@@ -3,7 +3,7 @@ import { onScopeDispose } from 'vue'
 import {
   clearRevealedLinks,
   setRevealedLinks
-} from '@/renderer/core/canvas/links/linkRevealState'
+} from '@/lib/litegraph/src/canvas/linkRevealState'
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -18,12 +18,13 @@ interface SlotLinkRevealOptions {
 export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
   const owner = {}
 
-  function hiddenLinkIds() {
-    const graph = app.canvas?.graph
-    if (!graph || options.nodeId === undefined) return []
+  function revealLinks(): void {
+    const graph = app.canvas.graph
+    if (!graph || options.nodeId === undefined) return
 
-    return useLinkPresentationStore()
-      .graphHiddenLinkIds(graphScopeOf(graph))
+    const scope = graphScopeOf(graph)
+    const linkIds = useLinkPresentationStore()
+      .graphHiddenLinkIds(scope)
       .filter((linkId) => {
         const link = graph.getLink(linkId)
         if (!link) return false
@@ -33,18 +34,13 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
           : link.target_id === options.nodeId &&
               link.target_slot === options.index
       })
-  }
-
-  function revealLinks(): void {
-    const rootGraphId = app.canvas?.graph?.rootGraph.id
-    if (rootGraphId === undefined) return
-    if (setRevealedLinks(rootGraphId, hiddenLinkIds(), owner)) {
-      app.canvas?.setDirty(false, true)
+    if (setRevealedLinks(scope.rootGraphId, linkIds, owner)) {
+      app.canvas.setDirty(false, true)
     }
   }
 
   function unrevealLinks(): void {
-    if (clearRevealedLinks(owner)) app.canvas?.setDirty(false, true)
+    if (clearRevealedLinks(owner)) app.canvas.setDirty(false, true)
   }
 
   onScopeDispose(unrevealLinks)

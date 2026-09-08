@@ -15,8 +15,6 @@ import type { SeveranceLog } from './linkMintPort'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
-export const AGENT_REMOTE_ACTOR = 'agent-remote'
-
 /**
  * The structural slice of the layout store's LayoutChange this port reads.
  * Structural on purpose: the real feed passes the store's own change objects
@@ -79,15 +77,15 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
-    return shouldMint({
-      flagEnabled: deps.isEnabled(),
-      docBound: deps.isDocBound(),
-      localProvenance:
-        change.operation.source !== AGENT_REMOTE_ACTOR &&
-        actor !== undefined &&
-        actor.startsWith(deps.localActorPrefix),
-      teardown
-    })
+    return (
+      change.operation.source !== 'agent-remote' &&
+      actor?.startsWith(deps.localActorPrefix) === true &&
+      shouldMint({
+        flagEnabled: deps.isEnabled(),
+        docBound: deps.isDocBound(),
+        teardown
+      })
+    )
   }
 
   function reportUnrepresentableInteriorChange(
@@ -160,7 +158,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
           {
             op: 'add_node',
             node_id: operation.nodeId,
-            class_type: String(node.type),
+            class_type: node.type,
             pos: [operation.layout.position.x, operation.layout.position.y],
             node
           }

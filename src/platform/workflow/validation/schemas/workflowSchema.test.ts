@@ -252,6 +252,18 @@ describe('parseComfyWorkflow', () => {
     })
   })
 
+  it.for(['01', '1e0', '1.5', 'NaN', '9007199254740992'])(
+    'rejects noncanonical link presentation key %s',
+    async (linkId) => {
+      const workflow = {
+        ...structuredClone(defaultGraph),
+        extra: { linkPresentation: { [linkId]: { hidden: true } } }
+      }
+
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+    }
+  )
+
   function schema1WorkflowWithLink(fields: Record<string, unknown>) {
     return {
       version: 1,

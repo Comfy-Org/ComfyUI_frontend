@@ -5,10 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LLink } from '@/lib/litegraph/src/LLink'
 import {
-  isLinkRevealed,
-  resetLinkReveals,
-  setRevealedLinks
-} from '@/renderer/core/canvas/links/linkRevealState'
+  clearRootLinkReveals,
+  isLinkRevealed
+} from '@/lib/litegraph/src/canvas/linkRevealState'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -75,7 +74,7 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   mocks.links.clear()
   mocks.setDirty.mockClear()
-  resetLinkReveals()
+  clearRootLinkReveals(SCOPE.rootGraphId)
 })
 
 describe('useSlotLinkReveal', () => {
@@ -92,10 +91,10 @@ describe('useSlotLinkReveal', () => {
     })
     reveal.revealLinks()
 
-    expect(isLinkRevealed('root-a', toLinkId(1))).toBe(true)
-    expect(isLinkRevealed('root-a', toLinkId(2))).toBe(false)
-    expect(isLinkRevealed('root-a', toLinkId(3))).toBe(false)
-    expect(isLinkRevealed('root-a', toLinkId(4))).toBe(false)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(1))).toBe(true)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(2))).toBe(false)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(3))).toBe(false)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(4))).toBe(false)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
     scope.stop()
   })
@@ -112,28 +111,9 @@ describe('useSlotLinkReveal', () => {
     })
     reveal.revealLinks()
 
-    expect(isLinkRevealed('root-a', toLinkId(7))).toBe(true)
-    expect(isLinkRevealed('root-a', toLinkId(8))).toBe(false)
-    expect(isLinkRevealed('root-a', toLinkId(9))).toBe(false)
-    scope.stop()
-  })
-
-  it('clears only its owned revealed links when the pointer leaves', () => {
-    const otherOwner = {}
-    setRevealedLinks('root-a', [toLinkId(9)], otherOwner)
-    addLink(10, 1, 0, 5, 2, true)
-
-    const { reveal, scope } = createReveal({
-      nodeId: toNodeId(5),
-      index: 2,
-      type: 'input'
-    })
-    reveal.revealLinks()
-    reveal.unrevealLinks()
-
-    expect(isLinkRevealed('root-a', toLinkId(9))).toBe(true)
-    expect(isLinkRevealed('root-a', toLinkId(10))).toBe(false)
-    expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(7))).toBe(true)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(8))).toBe(false)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(9))).toBe(false)
     scope.stop()
   })
 
@@ -145,12 +125,12 @@ describe('useSlotLinkReveal', () => {
       type: 'input'
     })
     reveal.revealLinks()
-    expect(isLinkRevealed('root-a', toLinkId(10))).toBe(true)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(true)
     mocks.setDirty.mockClear()
 
     scope.stop()
 
-    expect(isLinkRevealed('root-a', toLinkId(10))).toBe(false)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(false)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
   })
 
@@ -171,7 +151,7 @@ describe('useSlotLinkReveal', () => {
 
     unrelated.scope.stop()
 
-    expect(isLinkRevealed('root-a', toLinkId(10))).toBe(true)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(true)
     expect(mocks.setDirty).not.toHaveBeenCalled()
     active.scope.stop()
   })

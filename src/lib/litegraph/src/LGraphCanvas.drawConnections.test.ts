@@ -15,10 +15,11 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   isLinkRevealed,
-  resetLinkReveals,
   setRevealedLinks
-} from '@/renderer/core/canvas/links/linkRevealState'
+} from '@/lib/litegraph/src/canvas/linkRevealState'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,
@@ -622,7 +623,6 @@ describe('drawConnections hidden links', () => {
     canvas = createTestCanvas(graph, createMockCtx())
     canvas.visible_area.set([0, 0, 800, 600])
     LiteGraph.vueNodesMode = false
-    resetLinkReveals()
   })
 
   afterEach(() => {
@@ -643,7 +643,9 @@ describe('drawConnections hidden links', () => {
     graph.add(targetNode)
 
     const link = createTestLink(graph, sourceNode, 0, targetNode, 0)
-    link.hidden = true
+    useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+      hidden: true
+    })
     return link
   }
 
@@ -664,10 +666,11 @@ describe('drawConnections hidden links', () => {
     source.pos = [-1000, -1000]
     target.pos = [-700, -1000]
 
-    canvas.drawConnections(createMockCtx())
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
 
     expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
-    expect(getLinkBadgeFrameState(canvas).pendingBadges).toHaveLength(0)
+    expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
   it('reveals on badge hover and clears the reveal on canvas leave', () => {
@@ -683,11 +686,11 @@ describe('drawConnections hidden links', () => {
       })
     )
 
-    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(true)
+    expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(true)
 
     canvas.processMouseOut(new PointerEvent('pointerout'))
 
-    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
+    expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
   })
 
   it('releases the badge-hover reveal after the last badge disappears', () => {
@@ -702,9 +705,11 @@ describe('drawConnections hidden links', () => {
         isPrimary: false
       })
     )
-    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(true)
+    expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(true)
 
-    link.hidden = false
+    useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+      hidden: false
+    })
     canvas.drawConnections(createMockCtx())
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
@@ -714,7 +719,7 @@ describe('drawConnections hidden links', () => {
       })
     )
 
-    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
+    expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
   })
 
   it('does not reveal an occluded badge', () => {
@@ -733,7 +738,7 @@ describe('drawConnections hidden links', () => {
       })
     )
 
-    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
+    expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
   })
 
   it('skips node occlusion lookup in Vue mode when there are no badges', () => {
@@ -749,6 +754,22 @@ describe('drawConnections hidden links', () => {
     )
 
     expect(getNodeOnPos).not.toHaveBeenCalled()
+  })
+
+  it('keeps legacy node hit testing active when badges exist', () => {
+    createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const getNodeOnPos = vi.spyOn(graph, 'getNodeOnPos')
+
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: 100,
+        clientY: 100,
+        isPrimary: false
+      })
+    )
+
+    expect(getNodeOnPos).toHaveBeenCalled()
   })
 
   it('opens rename from a badge double-click', () => {
@@ -775,7 +796,10 @@ describe('drawConnections hidden links', () => {
       event
     )
     prompt.mock.calls[0][2]('Checkpoint')
-    expect(link.label).toBe('Checkpoint')
+    expect(
+      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+        ?.label
+    ).toBe('Checkpoint')
   })
 
   it('pans when dragging from a badge', () => {
@@ -797,15 +821,15 @@ describe('drawConnections hidden links', () => {
     expect(canvas.dragging_canvas).toBe(false)
   })
 
-  it('clears revealed links and badge hit areas when the graph changes', () => {
+  it('clears slot-owned reveals and badge hit areas when the graph changes', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    setRevealedLinks(graph.rootGraph.id, [link.id], canvas)
+    setRevealedLinks(graphScopeOf(graph).rootGraphId, [link.id], {})
     expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
 
     canvas.setGraph(new LGraph())
 
-    expect(isLinkRevealed(graph.rootGraph.id, link.id)).toBe(false)
+    expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
     expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(0)
   })
 
@@ -828,14 +852,12 @@ describe('drawConnections hidden links', () => {
       firstImageTarget,
       0
     )
-    firstImageLink.hidden = true
 
     const maskTarget = new LGraphNode('Mask target')
     maskTarget.pos = [500, 200]
     maskTarget.addInput('mask', 'MASK')
     graph.add(maskTarget)
     const maskLink = createTestLink(graph, sourceNode, 1, maskTarget, 0)
-    maskLink.hidden = true
 
     const secondImageTarget = new LGraphNode('Second image target')
     secondImageTarget.pos = [500, 300]
@@ -848,7 +870,6 @@ describe('drawConnections hidden links', () => {
       secondImageTarget,
       0
     )
-    secondImageLink.hidden = true
 
     const thirdImageTarget = new LGraphNode('Third image target')
     thirdImageTarget.pos = [500, 400]
@@ -861,7 +882,16 @@ describe('drawConnections hidden links', () => {
       thirdImageTarget,
       0
     )
-    thirdImageLink.hidden = true
+    const scope = graphScopeOf(graph)
+    const presentationStore = useLinkPresentationStore()
+    for (const link of [
+      thirdImageLink,
+      secondImageLink,
+      maskLink,
+      firstImageLink
+    ]) {
+      presentationStore.patch(scope, link.id, { hidden: true })
+    }
 
     canvas.drawConnections(createMockCtx())
 
@@ -901,7 +931,7 @@ describe('drawConnections hidden links', () => {
 
     vi.stubGlobal('Path2D', StubPath2D)
     const revealOwner = {}
-    setRevealedLinks(graph.rootGraph.id, [link.id], revealOwner)
+    setRevealedLinks(graphScopeOf(graph).rootGraphId, [link.id], revealOwner)
     canvas.drawConnections(createMockCtx())
 
     expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
@@ -918,7 +948,7 @@ describe('drawConnections hidden links', () => {
     const inputTip = [inputBadge.x, inputBadge.y + inputBadge.height / 2]
     const firstRender = renderLink.mock.calls[0]
     const lastRender = renderLink.mock.calls.at(-1)
-    expect(firstRender?.[1]).toEqual(outputTip)
+    expect(firstRender[1]).toEqual(outputTip)
     expect(lastRender?.[2]).toEqual(inputTip)
   })
 })

@@ -1,9 +1,13 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 
 import {
@@ -29,42 +33,57 @@ function createHost(events: string[] = []) {
 }
 
 describe('link visibility mutations', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
   it('brackets hide and show mutations and redraws the background', () => {
     const link = createLink()
+    const scope = graphScopeOf(new LGraph())
     const hideEvents: string[] = []
     const hideHost = createHost(hideEvents)
 
-    hideLink(hideHost, link)
+    hideLink(hideHost, scope, link.id)
 
-    expect(link.hidden).toBe(true)
+    expect(
+      useLinkPresentationStore().getPresentation(scope, link.id)?.hidden
+    ).toBe(true)
     expect(hideEvents).toEqual(['before', 'dirty:false:true', 'after'])
 
     const showEvents: string[] = []
     const showHost = createHost(showEvents)
 
-    showLink(showHost, link)
+    showLink(showHost, scope, link.id)
 
-    expect(link.hidden).toBeFalsy()
+    expect(
+      useLinkPresentationStore().getPresentation(scope, link.id)?.hidden
+    ).toBeFalsy()
     expect(showEvents).toEqual(['before', 'dirty:false:true', 'after'])
   })
 
   it('trims a renamed label and clears it when blank', () => {
     const link = createLink()
+    const scope = graphScopeOf(new LGraph())
     const host = createHost()
 
-    renameLink(host, link, '  Backbone  ')
-    expect(link.label).toBe('Backbone')
+    renameLink(host, scope, link.id, '  Backbone  ')
+    expect(
+      useLinkPresentationStore().getPresentation(scope, link.id)?.label
+    ).toBe('Backbone')
 
-    renameLink(host, link, '   ')
-    expect(link.label).toBeUndefined()
+    renameLink(host, scope, link.id, '   ')
+    expect(
+      useLinkPresentationStore().getPresentation(scope, link.id)?.label
+    ).toBeUndefined()
   })
 
   it('seeds the rename prompt with the stored label', () => {
     const link = createLink()
+    const scope = graphScopeOf(new LGraph())
     const host = createHost()
     const event = fromPartial<CanvasPointerEvent>({})
 
-    promptRenameLinkBadge(host, link, event)
+    promptRenameLinkBadge(host, scope, link.id, event)
 
     expect(host.prompt).toHaveBeenCalledWith(
       'Rename',
@@ -76,18 +95,20 @@ describe('link visibility mutations', () => {
     const callback = host.prompt.mock.calls[0][2]
     callback('  Checkpoint  ')
 
-    expect(link.label).toBe('Checkpoint')
+    expect(
+      useLinkPresentationStore().getPresentation(scope, link.id)?.label
+    ).toBe('Checkpoint')
   })
 
   it('produces a reversible graph serialization change', () => {
     const graph = new LGraph()
     const link = createLink()
-    link.hidden = false
     graph.links.set(link.id, link)
+    const scope = graphScopeOf(graph)
     const host = createHost()
     const before = graph.serialize()
 
-    hideLink(host, link)
+    hideLink(host, scope, link.id)
     const hidden = graph.serialize()
 
     expect(hidden).not.toEqual(before)
@@ -96,9 +117,11 @@ describe('link visibility mutations', () => {
       [String(link.id)]: { hidden: true }
     })
 
-    showLink(host, link)
+    showLink(host, scope, link.id)
 
-    expect(link.hidden).toBeFalsy()
+    expect(
+      useLinkPresentationStore().getPresentation(scope, link.id)?.hidden
+    ).toBeFalsy()
     expect(graph.serialize()).toEqual(before)
   })
 })

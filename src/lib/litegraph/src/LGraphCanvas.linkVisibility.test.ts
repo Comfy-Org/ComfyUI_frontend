@@ -14,6 +14,8 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import {
   createMockCanvas2DContext,
   createTestCanvas,
@@ -89,7 +91,10 @@ describe('LGraphCanvas link visibility interactions', () => {
       null
     ])
     void menuOptions.callback?.('Hide Link')
-    expect(link.hidden).toBe(true)
+    expect(
+      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+        ?.hidden
+    ).toBe(true)
 
     canvas.showLinkMenu(link, event)
 
@@ -103,7 +108,10 @@ describe('LGraphCanvas link visibility interactions', () => {
       null
     ])
     void menuOptions.callback?.('Show Link')
-    expect(link.hidden).toBeFalsy()
+    expect(
+      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+        ?.hidden
+    ).toBeFalsy()
   })
 
   it('does not add visibility actions for a floating link', () => {
@@ -116,7 +124,6 @@ describe('LGraphCanvas link visibility interactions', () => {
       -1
     )
     graph.addFloatingLink(floating)
-    floating.hidden = true
 
     canvas.showLinkMenu(floating, event)
 
@@ -130,8 +137,10 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   it('opens the seeded rename prompt from the hidden-link menu', () => {
-    link.hidden = true
-    link.label = 'Checkpoint'
+    useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+      hidden: true,
+      label: 'Checkpoint'
+    })
     const prompt = vi
       .spyOn(canvas, 'prompt')
       .mockReturnValue(document.createElement('div'))
@@ -146,7 +155,10 @@ describe('LGraphCanvas link visibility interactions', () => {
       event
     )
     prompt.mock.calls[0][2]('Backbone')
-    expect(link.label).toBe('Backbone')
+    expect(
+      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+        ?.label
+    ).toBe('Backbone')
   })
 
   it('routes a visible curve right-click to the link menu', () => {

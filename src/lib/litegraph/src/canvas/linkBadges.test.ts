@@ -9,8 +9,8 @@ import {
   BADGE_GAP,
   clearLinkBadgeFrameState,
   createLinkBadgeFrameState,
-  drawPendingLinkBadges,
-  enqueueHiddenLinkBadges,
+  drawHiddenLinkBadges,
+  layoutHiddenLinkBadges,
   linkBadgeText,
   queryLinkBadgeAtPoint
 } from './linkBadges'
@@ -28,7 +28,7 @@ function createLink(id: number, type: LLink['type'] = 'MODEL'): LLink {
   return new LLink(toLinkId(id), type, 4, 0, 5, 0)
 }
 
-function enqueueBadgesInView(
+function drawBadgesInView(
   state: ReturnType<typeof createLinkBadgeFrameState>,
   ctx: CanvasRenderingContext2D,
   link: LLink,
@@ -36,41 +36,45 @@ function enqueueBadgesInView(
   endPos: Point,
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
-  return enqueueHiddenLinkBadges(
+  const layout = layoutHiddenLinkBadges(
     state,
     ctx,
     link,
-    [startPos, endPos],
-    BADGE_COLOR,
-    visibleArea
+    { hidden: true },
+    startPos,
+    endPos,
+    BADGE_COLOR
   )
+  drawHiddenLinkBadges(ctx, layout, visibleArea)
+  return layout
 }
 
 describe('linkBadgeText', () => {
   it('uses a trimmed label before the link type', () => {
     const link = createLink(1)
-    link.label = '  Checkpoint  '
 
-    expect(linkBadgeText(link)).toBe('Checkpoint')
+    expect(linkBadgeText(link.type, { label: '  Checkpoint  ' })).toBe(
+      'Checkpoint'
+    )
   })
 
   it('falls back to the link type', () => {
-    expect(linkBadgeText(createLink(1))).toBe('MODEL')
+    expect(linkBadgeText(createLink(1).type, {})).toBe('MODEL')
   })
 
   it('falls back to an asterisk for a typeless link', () => {
-    expect(linkBadgeText(createLink(1, ''))).toBe('*')
+    expect(linkBadgeText(createLink(1, '').type, {})).toBe('*')
   })
 
   it('falls back to an asterisk for a numeric link type', () => {
-    expect(linkBadgeText(createLink(1, -1))).toBe('*')
+    expect(linkBadgeText(createLink(1, -1).type, {})).toBe('*')
   })
 })
 
 describe('link badge frame layout', () => {
-  it('registers two endpoint hit areas and returns their outer tips', () => {
+  it('registers two endpoint hit areas', () => {
     const state = createLinkBadgeFrameState()
-    const tips = enqueueBadgesInView(
+    drawBadgesInView(
       state,
       createContext(),
       createLink(7),
@@ -78,21 +82,15 @@ describe('link badge frame layout', () => {
       [400, 200]
     )
 
-    expect(tips).toBeDefined()
-    if (!tips) throw new Error('Expected badges to be visible')
     expect(state.hitAreas).toHaveLength(2)
     expect(queryLinkBadgeAtPoint(state, 120, 100)).toBe(toLinkId(7))
     expect(queryLinkBadgeAtPoint(state, 360, 200)).toBe(toLinkId(7))
     expect(queryLinkBadgeAtPoint(state, 250, 150)).toBeUndefined()
-    expect(tips.outputTip[0]).toBeGreaterThan(100)
-    expect(tips.outputTip[1]).toBe(100)
-    expect(tips.inputTip[0]).toBeLessThan(400)
-    expect(tips.inputTip[1]).toBe(200)
   })
 
   it('offsets an unstacked output badge from its socket by the badge gap', () => {
     const state = createLinkBadgeFrameState()
-    enqueueBadgesInView(
+    drawBadgesInView(
       state,
       createContext(),
       createLink(7),
@@ -105,9 +103,9 @@ describe('link badge frame layout', () => {
     )
   })
 
-  it('clears hit areas and pending paint between frames', () => {
+  it('clears hit areas between frames', () => {
     const state = createLinkBadgeFrameState()
-    enqueueBadgesInView(
+    drawBadgesInView(
       state,
       createContext(),
       createLink(7),
@@ -118,13 +116,12 @@ describe('link badge frame layout', () => {
     clearLinkBadgeFrameState(state)
 
     expect(state.hitAreas).toHaveLength(0)
-    expect(state.pendingBadges).toHaveLength(0)
   })
 
   it('keeps frame state isolated between canvases', () => {
     const firstState = createLinkBadgeFrameState()
     const secondState = createLinkBadgeFrameState()
-    enqueueBadgesInView(
+    drawBadgesInView(
       firstState,
       createContext(),
       createLink(7),
@@ -138,47 +135,20 @@ describe('link badge frame layout', () => {
 
   it('creates fallback badges for a typeless link', () => {
     const state = createLinkBadgeFrameState()
+    const ctx = createContext()
 
-    const tips = enqueueBadgesInView(
-      state,
-      createContext(),
-      createLink(7, ''),
-      [100, 100],
-      [400, 200]
-    )
+    drawBadgesInView(state, ctx, createLink(7, ''), [100, 100], [400, 200])
 
-    expect(tips).toBeDefined()
-    if (!tips) throw new Error('Expected fallback badges to be visible')
-    expect(tips.outputTip[0]).toBeGreaterThan(100)
-    expect(tips.inputTip[0]).toBeLessThan(400)
     expect(state.hitAreas).toHaveLength(2)
-    expect(state.pendingBadges).toHaveLength(1)
+    expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
   it('stacks overlapping endpoint badges into disjoint bands', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
-    enqueueBadgesInView(
-      state,
-      ctx,
-      createLink(1, 'IMAGE'),
-      [100, 100],
-      [400, 200]
-    )
-    enqueueBadgesInView(
-      state,
-      ctx,
-      createLink(2, 'IMAGE'),
-      [100, 100],
-      [400, 300]
-    )
-    enqueueBadgesInView(
-      state,
-      ctx,
-      createLink(3, 'MASK'),
-      [100, 118],
-      [400, 400]
-    )
+    drawBadgesInView(state, ctx, createLink(1, 'IMAGE'), [100, 100], [400, 200])
+    drawBadgesInView(state, ctx, createLink(2, 'IMAGE'), [100, 100], [400, 300])
+    drawBadgesInView(state, ctx, createLink(3, 'MASK'), [100, 118], [400, 400])
 
     const outputAreas = state.hitAreas.filter((area) => {
       const centerX = area.x + area.width / 2
@@ -202,9 +172,9 @@ describe('link badge frame layout', () => {
   it('culls using reversed and stacked badge extents', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
-    enqueueBadgesInView(state, ctx, createLink(1), [400, 100], [100, 100])
+    drawBadgesInView(state, ctx, createLink(1), [400, 100], [100, 100])
 
-    const tips = enqueueBadgesInView(
+    drawBadgesInView(
       state,
       ctx,
       createLink(2),
@@ -213,7 +183,6 @@ describe('link badge frame layout', () => {
       [414, 113, 10, 18]
     )
 
-    expect(tips).toBeDefined()
     expect(state.hitAreas).toHaveLength(4)
   })
 
@@ -221,7 +190,7 @@ describe('link badge frame layout', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
 
-    const tips = enqueueBadgesInView(
+    drawBadgesInView(
       state,
       ctx,
       createLink(1),
@@ -230,21 +199,15 @@ describe('link badge frame layout', () => {
       [5000, 5000, 10, 10]
     )
 
-    expect(tips).toBeDefined()
     expect(state.hitAreas).toHaveLength(2)
-    expect(state.pendingBadges).toHaveLength(0)
+    expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
-  it('defers badge painting until the frame flush', () => {
+  it('paints visible badges immediately', () => {
     const state = createLinkBadgeFrameState()
     const ctx = createContext()
-    enqueueBadgesInView(state, ctx, createLink(9), [100, 100], [400, 200])
-
-    expect(ctx.fillText).not.toHaveBeenCalled()
-
-    drawPendingLinkBadges(state, ctx)
+    drawBadgesInView(state, ctx, createLink(9), [100, 100], [400, 200])
 
     expect(ctx.fillText).toHaveBeenCalledTimes(2)
-    expect(state.pendingBadges).toHaveLength(0)
   })
 })
