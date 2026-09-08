@@ -1,31 +1,4 @@
-/**
- * QA-12: fuzz the FE op-ingestion boundary with malformed `connect` payloads
- * (slot gaps: negatives, floats, NaN, wrong types).
- *
- * Two seams, both exercised end to end rather than mocked:
- *
- *  1. `attachLinkMintPort` (litegraph → `GraphOperation`, `linkMintPort.ts`):
- *     litegraph is untyped at the FE/native boundary, so a corrupted
- *     `originSlot`/`targetSlot` (e.g. a reroute-chain edge case, a stale
- *     topology snapshot) can reach `onPlaced` at runtime even though
- *     `LinkTopologyView` declares `number`. This port has no runtime guard
- *     today; it forwards whatever it is given straight into the mint queue. The fuzz asserts that forwarding
- *     never throws and never silently coerces to a different in-range value.
- *
- *  2. `mintWireOps` (`opEnvelope.ts`) → `applyOps` (the pinned
- *     `@comfyorg/comfy-multi-player` applier, same code the doc host runs):
- *     the sender attaches wire identity but performs no payload validation
- *     (`opEnvelope.ts`, `opSender.ts` — grep confirms no slot check anywhere
- *     in the FE write leg). The applier is the actual gate. This fuzz proves
- *     that gate holds for malformed source and target slots: every malformed
- *     `connect` comes back as a typed `rejected` outcome carrying the slot
- *     reason code (never a thrown `OpRejectedError` escaping `applyOps`),
- *     and, mirroring the existing abort-remainder vector in
- *     `applierConformance.test.ts`, a malformed op inside a batch aborts
- *     only the remainder, never the valid prefix already applied. A
- *     well-formed control on the same seed is asserted `applied` so the
- *     rejections are caused by the slot and not by the fixture.
- */
+import { fromAny } from '@total-typescript/shoehorn'
 import * as fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
@@ -35,6 +8,8 @@ import type {
   SetWidgetOp,
   WidgetCatalog
 } from '@comfyorg/comfy-multi-player'
+
+import { OP_INGESTION_FUZZ_CONFIG } from '@/testing/opIngestionFuzzConfig'
 import {
   applyOps,
   hasAppliedOp,
@@ -93,16 +68,17 @@ function envelope(actor = 'human:u1:tab', baseVersion = 1) {
   }
 }
 
-/** The slot gap generator: negatives, floats, NaN, and wrong types. */
 const arbMalformedSlot = fc.oneof(
   fc.integer({ min: -1000, max: -1 }),
   fc
     .double({ noNaN: false, noDefaultInfinity: false })
     .filter((n) => !Number.isInteger(n)),
   fc.string(),
+  fc.constant('0'),
   fc.constant(null),
   fc.constant(undefined),
   fc.boolean(),
+  fc.constant([0]),
   fc.array(fc.integer(), { maxLength: 3 })
 )
 
@@ -117,9 +93,9 @@ function connectOp(fromSlot: unknown, toSlot: unknown): GraphOperation {
     op: 'connect',
     link_id: 41,
     from_node: 1,
-    from_slot: fromSlot as number,
+    from_slot: fromAny<number, unknown>(fromSlot),
     to_node: 2,
-    to_slot: toSlot as number,
+    to_slot: fromAny<number, unknown>(toSlot),
     link_type: 'IMAGE'
   }
 }
@@ -170,22 +146,19 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
               enqueue: (operations) => minted.push(...operations)
             })
 
-            const malformedTopology = {
+            const malformedTopology: LinkTopologyView = fromAny({
               id: 41,
               originNodeId: 1,
-              originSlot: originSlot as unknown as number,
+              originSlot,
               targetNodeId: 2,
-              targetSlot: targetSlot as unknown as number,
+              targetSlot,
               type: 'IMAGE'
-            } as LinkTopologyView
+            })
 
             try {
               expect(() =>
                 placed?.(ROOT_SCOPE, malformedTopology)
               ).not.toThrow()
-              // Forwarding never coerces: whatever reached the port is what
-              // reaches the mint queue verbatim, never silently repaired into
-              // a different, wrong slot.
               expect(minted).toHaveLength(1)
               const op = minted[0] as Extract<GraphOperation, { op: 'connect' }>
               expect(op.from_slot).toBe(originSlot)
@@ -195,7 +168,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
             }
           }
         ),
-        { numRuns: 200 }
+        OP_INGESTION_FUZZ_CONFIG
       )
     })
   })
@@ -233,8 +206,6 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
             }).not.toThrow()
 
             expect(result!.outcomes).toHaveLength(1)
-            // Never a raw TypeError escaping: a typed rejection carrying the
-            // slot reason code is the only failure mode.
             expectSlotRejection(
               result!.outcomes[0],
               expectedSlotRejectionCode(endpoint, badSlot)
@@ -242,7 +213,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
             expect(readGraph(doc)).toEqual(before)
           }
         ),
-        { numRuns: 200 }
+        OP_INGESTION_FUZZ_CONFIG
       )
     })
 
@@ -285,12 +256,15 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
               result.outcomes[1],
               expectedSlotRejectionCode(endpoint, badSlot)
             )
-            // The tail after the failure is the abort-remainder protocol's
-            // territory, never applied in the same batch as the failure.
+            const tail = result.outcomes[2]
+            expect(tail.outcome).toBe('rejected')
+            if (tail.outcome === 'rejected') {
+              expect(tail.reason.code).toBe('batch_aborted')
+            }
             expect(hasAppliedOp(doc, good2.op_id)).toBe(false)
           }
         ),
-        { numRuns: 100 }
+        OP_INGESTION_FUZZ_CONFIG
       )
     })
   })
@@ -326,7 +300,7 @@ describe('QA-12: FE op-ingestion boundary fuzz — malformed connect slot payloa
             )
           }
         ),
-        { numRuns: 100 }
+        OP_INGESTION_FUZZ_CONFIG
       )
     })
   })

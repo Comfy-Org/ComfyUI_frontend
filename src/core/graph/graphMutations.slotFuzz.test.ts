@@ -1,28 +1,4 @@
-/**
- * QA-12: fuzz the FE op-ingestion boundary with malformed `connect` payloads
- * (the from_slot-class gaps: negatives, floats, NaN, wrong types).
- *
- * `createGraphMutations(...).connect()` is where an incoming remote `connect`
- * op (already read off the shared Yjs doc by `ecsFollowerAdapter`'s
- * `readSemanticLink`) is committed into the app's node/link stores. It is the
- * last gate before slot values become store state, and until this test its
- * `'connect requires non-negative integer ids and slots'` rejection branch
- * had zero coverage.
- *
- * `readSemanticLink` coerces with `Number(...)` before its `Number.isInteger`
- * guard, so a negative integer survives it as a well-typed `number` and this
- * boundary is the only thing that catches it. Wrong-typed slots (`null`,
- * booleans, empty strings, small arrays) do NOT reach here at all: `Number()`
- * repairs them into in-range integers upstream. That coercion is the
- * adapter's problem and is out of scope for this file; the fuzz below covers
- * what does arrive.
- *
- * Assert: `connect()` never throws for any malformed slot value, always
- * returns `false` via the slot-validation branch (rejection here is a
- * boolean plus a logged reason, never a raw TypeError escaping), and never
- * mutates the stores on rejection. A well-formed control shows the rejection
- * is caused by the slot and not by the fixture.
- */
+import { fromAny } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import * as fc from 'fast-check'
 import { setActivePinia } from 'pinia'
@@ -30,8 +6,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { OP_INGESTION_FUZZ_CONFIG } from '@/testing/opIngestionFuzzConfig'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import { createGraphMutations } from './graphMutations'
 
@@ -62,16 +41,17 @@ function node(id: number) {
   }
 }
 
-/** The from_slot-class gap generator: negatives, floats, NaN, and wrong types. */
 const arbMalformedSlot = fc.oneof(
   fc.integer({ min: -1000, max: -1 }),
   fc
     .double({ noNaN: false, noDefaultInfinity: false })
     .filter((n) => !Number.isInteger(n)),
   fc.string(),
+  fc.constant('0'),
   fc.constant(null),
   fc.constant(undefined),
   fc.boolean(),
+  fc.constant([0]),
   fc.array(fc.integer(), { maxLength: 3 })
 )
 
@@ -95,9 +75,9 @@ function link(originSlot: unknown, targetSlot: unknown) {
   return {
     id: 99,
     originNodeId: 1,
-    originSlot: originSlot as number,
+    originSlot: fromAny<number, unknown>(originSlot),
     targetNodeId: 2,
-    targetSlot: targetSlot as number,
+    targetSlot: fromAny<number, unknown>(targetSlot),
     type: 'IMAGE'
   }
 }
@@ -109,7 +89,7 @@ function expectSlotRejection(
   expect(accepted).toBe(false)
   expect(error).toHaveBeenCalledWith(expect.stringContaining(SLOT_REJECTION))
   expect(
-    useLinkStore().getTopology(scope.rootGraphId, 99 as never)
+    useLinkStore().getTopology(scope.rootGraphId, toLinkId(99))
   ).toBeUndefined()
 }
 
@@ -120,7 +100,7 @@ describe('QA-12: graphMutations.connect slot fuzz (op-ingestion boundary)', () =
 
     expect(graph.connect(link(0, 0), context)).toBe(true)
     expect(
-      useLinkStore().getTopology(scope.rootGraphId, 99 as never)
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(99))
     ).toBeDefined()
   })
 
@@ -128,18 +108,21 @@ describe('QA-12: graphMutations.connect slot fuzz (op-ingestion boundary)', () =
     fc.assert(
       fc.property(arbMalformedSlot, (badSlot) => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-        const graph = freshGraph()
-        seedNodes(graph)
+        try {
+          const graph = freshGraph()
+          seedNodes(graph)
 
-        let accepted: boolean | undefined
-        expect(() => {
-          accepted = graph.connect(link(badSlot, 0), context)
-        }).not.toThrow()
+          let accepted: boolean | undefined
+          expect(() => {
+            accepted = graph.connect(link(badSlot, 0), context)
+          }).not.toThrow()
 
-        expectSlotRejection(error, accepted)
-        error.mockRestore()
+          expectSlotRejection(error, accepted)
+        } finally {
+          error.mockRestore()
+        }
       }),
-      { numRuns: 200 }
+      OP_INGESTION_FUZZ_CONFIG
     )
   })
 
@@ -147,18 +130,21 @@ describe('QA-12: graphMutations.connect slot fuzz (op-ingestion boundary)', () =
     fc.assert(
       fc.property(arbMalformedSlot, (badSlot) => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-        const graph = freshGraph()
-        seedNodes(graph)
+        try {
+          const graph = freshGraph()
+          seedNodes(graph)
 
-        let accepted: boolean | undefined
-        expect(() => {
-          accepted = graph.connect(link(0, badSlot), context)
-        }).not.toThrow()
+          let accepted: boolean | undefined
+          expect(() => {
+            accepted = graph.connect(link(0, badSlot), context)
+          }).not.toThrow()
 
-        expectSlotRejection(error, accepted)
-        error.mockRestore()
+          expectSlotRejection(error, accepted)
+        } finally {
+          error.mockRestore()
+        }
       }),
-      { numRuns: 200 }
+      OP_INGESTION_FUZZ_CONFIG
     )
   })
 
@@ -166,24 +152,24 @@ describe('QA-12: graphMutations.connect slot fuzz (op-ingestion boundary)', () =
     fc.assert(
       fc.property(arbMalformedSlot, (badSlot) => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-        const graph = freshGraph()
+        try {
+          const graph = freshGraph()
 
-        const applied = graph.batch(context, (batch) => {
-          batch.addNode(node(1))
-          batch.addNode(node(2))
-          batch.connect(link(badSlot, 0))
-        })
+          const applied = graph.batch(context, (batch) => {
+            batch.addNode(node(1))
+            batch.addNode(node(2))
+            batch.connect(link(badSlot, 0))
+          })
 
-        // A malformed op anywhere in the batch means nothing in that batch
-        // commits, so a fuzzed connect can never leave a half-applied
-        // add_node behind.
-        expectSlotRejection(error, applied)
-        const nodes = useNodeDataStore()
-        expect(nodes.getNode(scope.rootGraphId, 1 as never)).toBeUndefined()
-        expect(nodes.getNode(scope.rootGraphId, 2 as never)).toBeUndefined()
-        error.mockRestore()
+          expectSlotRejection(error, applied)
+          const nodes = useNodeDataStore()
+          expect(nodes.getNode(scope.rootGraphId, toNodeId(1))).toBeUndefined()
+          expect(nodes.getNode(scope.rootGraphId, toNodeId(2))).toBeUndefined()
+        } finally {
+          error.mockRestore()
+        }
       }),
-      { numRuns: 100 }
+      OP_INGESTION_FUZZ_CONFIG
     )
   })
 })
