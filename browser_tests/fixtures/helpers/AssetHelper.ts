@@ -21,8 +21,8 @@ interface MutationRecord {
 }
 
 interface PaginationOptions {
-  limit?: number
   hasMore?: boolean
+  limit?: number
   total?: number
 }
 interface AssetConfig {
