@@ -730,6 +730,22 @@ describe('host-driven invalidation', () => {
     ).toBe('post-invalidate-jwt')
   })
 
+  it('invalidate() clears the credential cache, not only memory', async () => {
+    const { client, storage } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    expect(storage.raw()).not.toBeNull()
+
+    client.invalidate()
+
+    expect(
+      storage.raw(),
+      'ensureCore reads storage before memory, so a revoked credential left cached is served straight back'
+    ).toBeNull()
+  })
+
   it('a mint outliving invalidation must not write the credential cache', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
