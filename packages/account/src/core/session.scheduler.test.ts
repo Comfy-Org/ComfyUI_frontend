@@ -549,6 +549,47 @@ describe('cross-tab refresh coordination', () => {
     ])
   })
 
+  it('a synchronously granted lease arms exactly one refresh chain', async () => {
+    const outcomes: string[] = []
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    // An uncontended real Web Lock is effectively a synchronous grant: the
+    // onAcquired re-arm fires from inside armScheduledRefresh itself.
+    const port: CrossTabRefreshPort = {
+      requestLeadership: (_key, onAcquired) => {
+        onAcquired()
+        return vi.fn()
+      },
+      publishCredential: vi.fn(),
+      onCredential: () => vi.fn()
+    }
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: { port },
+        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+
+    expect(client.getToken()).toBe('jwt-2')
+    expect(
+      outcomes,
+      'a reentrant double-arm leaks a second timer and reports the one refresh twice'
+    ).toEqual(['succeeded'])
+  })
+
   it('ignores a leadership grant for an abandoned same-key request', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
     const tab = fakeCrossTabPort()
