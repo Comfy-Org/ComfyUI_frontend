@@ -9,71 +9,65 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <div
-      ref="panelRef"
-      :style="style"
-      :class="cn('pointer-events-auto', panelClass)"
-    >
-      <div :class="isDocked ? 'p-0' : 'p-1'">
-        <div class="relative flex items-center gap-2 select-none">
-          <span
-            ref="dragHandleRef"
-            :class="
-              cn(
-                'drag-handle h-max w-3 cursor-grab',
-                isDragging && 'cursor-grabbing'
-              )
-            "
+    <div ref="panelRef" :style="style" :class="panelClass">
+      <div class="relative flex items-center gap-2 select-none">
+        <span
+          ref="dragHandleRef"
+          :class="
+            cn(
+              'drag-handle h-max w-3 cursor-grab',
+              isDragging && 'cursor-grabbing'
+            )
+          "
+        />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
+        </Suspense>
+        <Button
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          variant="destructive"
+          size="icon"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </Button>
+        <Button
+          v-tooltip.bottom="queueHistoryTooltipConfig"
+          variant="secondary"
+          size="md"
+          :aria-pressed="
+            isQueuePanelV2Enabled
+              ? activeSidebarTabId === 'job-history'
+              : queueOverlayExpanded
+          "
+          class="relative px-3"
+          data-testid="queue-overlay-toggle"
+          @click="toggleQueueOverlay"
+          @contextmenu.stop.prevent="showQueueContextMenu"
+        >
+          <span class="text-sm font-normal tabular-nums">
+            {{ activeJobsLabel }}
+          </span>
+          <StatusBadge
+            v-if="activeJobsCount > 0"
+            data-testid="active-jobs-indicator"
+            variant="dot"
+            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
           />
-          <Suspense @resolve="comfyRunButtonResolved">
-            <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
-          </Suspense>
-          <Button
-            v-tooltip.bottom="cancelJobTooltipConfig"
-            variant="destructive"
-            size="icon"
-            :disabled="isExecutionIdle"
-            :aria-label="t('menu.interrupt')"
-            @click="cancelCurrentJob"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </Button>
-          <Button
-            v-tooltip.bottom="queueHistoryTooltipConfig"
-            variant="secondary"
-            size="md"
-            :aria-pressed="
+          <span class="sr-only">
+            {{
               isQueuePanelV2Enabled
-                ? activeSidebarTabId === 'job-history'
-                : queueOverlayExpanded
-            "
-            class="relative px-3"
-            data-testid="queue-overlay-toggle"
-            @click="toggleQueueOverlay"
-            @contextmenu.stop.prevent="showQueueContextMenu"
-          >
-            <span class="text-sm font-normal tabular-nums">
-              {{ activeJobsLabel }}
-            </span>
-            <StatusBadge
-              v-if="activeJobsCount > 0"
-              data-testid="active-jobs-indicator"
-              variant="dot"
-              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-            />
-            <span class="sr-only">
-              {{
-                isQueuePanelV2Enabled
-                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-              }}
-            </span>
-          </Button>
-          <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
-        </div>
-        <FreeTierQuota v-if="!isDocked" />
-        <PartnerNodesRunCaption v-if="!isDocked" />
+                ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+            }}
+          </span>
+        </Button>
+        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
+      <FreeTierQuota v-if="!isDocked" />
+      <PartnerNodesRunCaption v-if="!isDocked" />
     </div>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
@@ -149,14 +143,13 @@ const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 
 const panelRef = ref<HTMLElement | null>(null)
-const panelElement = computed(() => panelRef.value)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelElement, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
@@ -173,7 +166,7 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -255,7 +248,7 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -336,13 +329,13 @@ const inlineProgressTarget = computed(() => {
     return null
   }
   if (isDocked.value) return dockedProgressContainer ?? null
-  return panelElement.value
+  return panelRef.value
 })
 const shouldHideInlineProgress = computed(
   () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
 )
 watch(
-  panelElement,
+  panelRef,
   (target) => {
     emit('update:progressTarget', target)
   },
@@ -436,9 +429,8 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    isDocked.value
-      ? 'static border-none bg-transparent p-0'
-      : ['fixed z-1300 shadow-interface', 'border-interface-stroke']
+    !isDocked.value &&
+      'fixed z-1300 rounded-lg border border-interface-stroke bg-interface-panel-surface p-1 shadow-interface'
   )
 )
 </script>

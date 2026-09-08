@@ -75,13 +75,6 @@ describe('UserAvatar', () => {
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
   })
 
-  it('renders provided fallback initials', () => {
-    renderComponent({ initials: 'CU' })
-
-    expect(screen.getByText('CU')).toBeInTheDocument()
-    expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
-  })
-
   it('uses provided ariaLabel', () => {
     renderComponent({
       photoUrl: 'https://example.com/avatar.jpg',

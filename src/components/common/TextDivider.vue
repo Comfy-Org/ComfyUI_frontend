@@ -4,8 +4,7 @@
     <div
       :class="
         cn(
-          'grow border-interface-stroke',
-          layout === 'horizontal' ? 'border-t' : 'h-full border-l',
+          'grow border-t border-interface-stroke',
           type === 'dashed' && 'border-dashed',
           type === 'dotted' && 'border-dotted'
         )
@@ -21,12 +20,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   text,
   position = 'left',
-  type = 'solid',
-  layout = 'horizontal'
+  type = 'solid'
 } = defineProps<{
   text: string
   position?: 'left' | 'right'
   type?: 'solid' | 'dashed' | 'dotted'
-  layout?: 'horizontal' | 'vertical'
 }>()
 </script>

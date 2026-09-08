@@ -1,8 +1,6 @@
 <template>
   <div class="flex h-full flex-col overflow-auto">
-    <div
-      class="flex items-center border-b border-(--p-divider-color) px-3 py-2"
-    >
+    <div class="flex items-center border-b border-interface-stroke px-3 py-2">
       <Button
         v-tooltip.bottom="$t('g.back')"
         variant="muted-textonly"

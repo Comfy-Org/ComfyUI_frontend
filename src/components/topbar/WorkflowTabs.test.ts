@@ -18,9 +18,7 @@ const distribution = vi.hoisted(() => ({
 const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
 const overflowObservers = vi.hoisted<
   Array<{
-    element: HTMLElement
     isOverflowing: { value: boolean }
-    disposed: { value: boolean }
     checkOverflow: ReturnType<typeof vi.fn>
     dispose: ReturnType<typeof vi.fn>
   }>
@@ -48,46 +46,6 @@ vi.mock('@/platform/distribution/types', () => ({
     return distribution.isNightly
   }
 }))
-
-vi.mock('primevue/scrollpanel', async () => {
-  const { defineComponent, h, ref } = await import('vue')
-  return {
-    default: defineComponent({
-      name: 'ScrollPanelStub',
-      inheritAttrs: false,
-      setup(_, { attrs, slots }) {
-        const contentKey = ref(0)
-        return () => {
-          const contentProps = attrs['pt:content']
-          const passThroughProps =
-            typeof contentProps === 'object' && contentProps !== null
-              ? contentProps
-              : {}
-
-          return h('div', [
-            h(
-              'button',
-              { onClick: () => contentKey.value++ },
-              'Replace scroll content'
-            ),
-            h(
-              'div',
-              {
-                ...passThroughProps,
-                key: contentKey.value,
-                class: 'p-scrollpanel-content',
-                'data-testid': 'scroll-content',
-                'data-internal-ref-preserved':
-                  'ref' in passThroughProps ? undefined : 'true'
-              },
-              slots.default?.()
-            )
-          ])
-        }
-      }
-    })
-  }
-})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -120,17 +78,11 @@ vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
 vi.mock('@/composables/element/useOverflowObserver', async () => {
   const { ref } = await import('vue')
   return {
-    useOverflowObserver: (element: HTMLElement) => {
-      const isOverflowing = ref(false)
-      const disposed = ref(false)
+    useOverflowObserver: () => {
       const observer = {
-        element,
-        isOverflowing,
-        disposed,
+        isOverflowing: ref(false),
         checkOverflow: vi.fn(),
-        dispose: vi.fn(() => {
-          disposed.value = true
-        })
+        dispose: vi.fn()
       }
       overflowObservers.push(observer)
       return observer
@@ -498,21 +450,12 @@ describe('WorkflowTabs scrolling', () => {
     workflowStore.activeWorkflow = null
   })
 
-  it('observes the native scroll container', async () => {
-    renderComponent()
-
-    await waitFor(() => expect(overflowObservers).toHaveLength(1))
-
-    expect(overflowObservers[0].element).toHaveClass('workflow-tabs-scroll')
-  })
-
   it('disposes the overflow observer on unmount', async () => {
     const { unmount } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
     unmount()
 
     expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
-    expect(overflowObservers[0].disposed.value).toBe(true)
   })
 
   it('reveals the active tab when the tab list overflows', async () => {

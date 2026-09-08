@@ -6,7 +6,6 @@ import type { NodeId } from '@/types/nodeId'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import {
   PREVIEW3D_CAMERA_AXIS_RESTORE_EPS,
@@ -220,22 +219,7 @@ export class Preview3DPipelineContext {
 
   async reloadPageAndWaitForAppShell(): Promise<void> {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-    await this.comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager,
-      { timeout: 30_000 }
-    )
-    const loadingOverlay = this.comfyPage.page.getByTestId(
-      TestIds.app.loadingOverlay
-    )
-    await loadingOverlay.waitFor({
-      state: 'attached',
-      timeout: 30_000
-    })
-    await loadingOverlay.waitFor({
-      state: 'hidden',
-      timeout: 30_000
-    })
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.waitForAppReady()
   }
 
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {

@@ -9,9 +9,7 @@
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
-        :pt:icon:class="{
-          'text-2xl!': !userPhotoUrl
-        }"
+        icon-class="size-6"
         size="large"
       />
 

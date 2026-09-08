@@ -259,8 +259,9 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
-      /static/
+    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveCSS(
+      'position',
+      'static'
     )
   })
 })

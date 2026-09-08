@@ -180,7 +180,9 @@ onBeforeUnmount(() => {
         }"
       >
         <div v-for="(log, index) in focusedLogs" :key="index">
-          <div class="shadow-elevation-1 mt-2 rounded-lg">
+          <div
+            class="shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
+          >
             <div class="flex w-full items-center justify-between px-4 py-2">
               <div class="flex flex-col text-sm/normal font-medium">
                 <span>{{ log.taskName }}</span>

@@ -162,11 +162,6 @@ describe('SelectionToolbox', () => {
           [Symbol.for('SelectionOverlay')]: mockProvide
         },
         stubs: {
-          Panel: {
-            template:
-              '<div class="panel selection-toolbox absolute left-1/2 rounded-lg"><slot /></div>',
-            props: ['pt', 'style', 'class']
-          },
           NodeContextMenu: { template: '<div class="node-context-menu" />' },
           InfoButton: { template: '<div class="info-button" />' },
           ColorPickerButton: {

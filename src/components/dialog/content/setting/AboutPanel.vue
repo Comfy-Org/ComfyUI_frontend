@@ -22,7 +22,7 @@
       </a>
     </div>
 
-    <div class="border-t border-interface-stroke" />
+    <div class="my-4 border-t border-interface-stroke" />
 
     <SystemStatsPanel
       v-if="systemStatsStore.systemStats"

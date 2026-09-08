@@ -3,7 +3,7 @@
     :class="
       cn(
         'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full bg-interface-panel-selected-surface',
-        size === 'small' ? 'size-6' : size === 'large' ? 'size-12' : 'size-8'
+        size === 'large' ? 'size-12' : 'size-8'
       )
     "
   >
@@ -15,14 +15,12 @@
       class="size-full object-cover"
       @error="handleImageError"
     />
-    <span
+    <i
       v-else
+      data-testid="avatar-icon"
       :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
-      class="flex size-full items-center justify-center"
-    >
-      <span v-if="initials" class="font-medium uppercase">{{ initials }}</span>
-      <i v-else data-testid="avatar-icon" class="icon-[lucide--user] size-4" />
-    </span>
+      :class="cn('icon-[lucide--user]', iconClass)"
+    />
   </span>
 </template>
 
@@ -33,13 +31,13 @@ import { computed, ref } from 'vue'
 const {
   photoUrl,
   ariaLabel,
-  initials,
+  iconClass = 'size-4',
   size = 'normal'
 } = defineProps<{
   photoUrl?: string | null
   ariaLabel?: string
-  initials?: string
-  size?: 'small' | 'normal' | 'large'
+  iconClass?: string
+  size?: 'normal' | 'large'
 }>()
 
 const imageError = ref(false)

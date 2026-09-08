@@ -11,7 +11,7 @@
       <h2 class="mb-2 text-2xl font-bold">
         {{ $t('credits.credits') }}
       </h2>
-      <div class="border-t border-interface-stroke" />
+      <div class="my-4 border-t border-interface-stroke" />
     </div>
 
     <div v-if="embedded" class="rounded-2xl border border-interface-stroke p-6">

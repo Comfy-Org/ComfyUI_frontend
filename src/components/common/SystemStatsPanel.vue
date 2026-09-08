@@ -23,7 +23,7 @@
     </div>
 
     <template v-if="hasDevices">
-      <div class="border-t border-interface-stroke" />
+      <div class="my-4 border-t border-interface-stroke" />
 
       <div>
         <h2 class="mb-4 text-2xl font-semibold">

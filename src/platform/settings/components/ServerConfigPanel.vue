@@ -38,7 +38,7 @@
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
     >
-      <div v-if="i > 0" class="border-t border-interface-stroke" />
+      <div v-if="i > 0" class="my-4 border-t border-interface-stroke" />
       <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
