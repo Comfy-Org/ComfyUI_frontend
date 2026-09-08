@@ -471,7 +471,6 @@ describe('useSubscriptionCheckout', () => {
     mockFetchPlans.mockReset()
     mockFetchStatus.mockReset()
     mockStartOperation.mockReset()
-    mockReportError.mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
