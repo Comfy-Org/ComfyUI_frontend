@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildStory, parseStory, verifyStory } from './story'
+import { buildStory, parseStory, splitStoryBody, verifyStory } from './story'
 
 const ENGLISH = parseStory(
   'en/ual-cci',
@@ -30,6 +30,8 @@ Comfy Org announced a Creative Campus partnership today.
 <Quote name="Prof Mick Grierson, Research Leader">ComfyUI is part of how we teach.</Quote>
 
 </Section>
+
+<AuthorBio label="About the author" />
 `
 )
 
@@ -38,21 +40,46 @@ const JAPANESE = {
   category: 'クリエイティブ・キャンパス・パートナーシップ',
   description: '教育と研究を支援します。',
   sections: { 'topic-1': 'はじめに', 'topic-2': 'パートナーシップ' },
-  body: `<Section id="topic-1" title="概要">
+  sectionBodies: {
+    'topic-1': `<Section id="topic-1" title="概要">
 
 Comfy Org は本日、クリエイティブ・キャンパス・パートナーシップを発表しました。
 
 <Figure src="https://media.comfy.org/a.png" alt="図" caption="キャプション" />
 
-</Section>
-
-<Section id="topic-2">
+</Section>`,
+    'topic-2': `<Section id="topic-2">
 
 <Quote name="Mick Grierson 教授、リサーチリーダー">ComfyUI は私たちの教育の一部です。</Quote>
 
-</Section>
-`
+</Section>`
+  },
+  between: ['<AuthorBio label="著者について" />\n']
 }
+
+/**
+ * A body is keyed per section rather than as one string, so a typo fixed in one
+ * paragraph does not re-translate and re-bill 2,117 words. The seam is the
+ * markup's own, and splitting on it is lossless.
+ */
+describe('splitStoryBody', () => {
+  it('splits into sections and the prose between them', () => {
+    const pieces = splitStoryBody(ENGLISH.body)
+    const sections = pieces.filter((piece) => piece.kind === 'section')
+
+    expect(sections.map((piece) => piece.id)).toEqual(['topic-1', 'topic-2'])
+  })
+
+  it('rejoins to exactly what it was given', () => {
+    // If this were lossy every regeneration would reformat the file, which is a
+    // worse problem than the one splitting solves.
+    const rejoined = splitStoryBody(ENGLISH.body)
+      .map((piece) => piece.text)
+      .join('')
+
+    expect(rejoined).toBe(ENGLISH.body)
+  })
+})
 
 describe('buildStory', () => {
   const built = buildStory(ENGLISH, JAPANESE)
@@ -69,6 +96,30 @@ describe('buildStory', () => {
       { id: 'topic-1', label: 'はじめに' },
       { id: 'topic-2', label: 'パートナーシップ' }
     ])
+  })
+
+  it('reassembles every section body in order', () => {
+    expect(parsed.body).toContain(
+      'クリエイティブ・キャンパス・パートナーシップを発表'
+    )
+    expect(parsed.body).toContain('私たちの教育の一部です')
+    expect(parsed.body.indexOf('topic-1')).toBeLessThan(
+      parsed.body.indexOf('topic-2')
+    )
+  })
+
+  it('carries the prose between sections across', () => {
+    expect(parsed.body).toContain('著者について')
+  })
+
+  it('falls back to English for a section with no translation', () => {
+    const partial = buildStory(ENGLISH, {
+      ...JAPANESE,
+      sectionBodies: { 'topic-1': JAPANESE.sectionBodies['topic-1'] }
+    })
+
+    // Better a section in English than a hole where one used to be.
+    expect(partial).toContain('ComfyUI is part of how we teach.')
   })
 
   it('carries cover and order across untouched', () => {
@@ -89,25 +140,32 @@ describe('buildStory', () => {
  * anything but a page that quietly looks wrong.
  */
 describe('verifyStory', () => {
-  const good = buildStory(ENGLISH, JAPANESE)
-
   it('passes a faithful translation', () => {
-    expect(verifyStory(ENGLISH, good)).toEqual([])
+    expect(verifyStory(ENGLISH, buildStory(ENGLISH, JAPANESE))).toEqual([])
   })
 
   it('catches a section id that was translated', () => {
     const broken = buildStory(ENGLISH, {
       ...JAPANESE,
-      body: JAPANESE.body.replace('id="topic-1"', 'id="トピック1"')
+      sectionBodies: {
+        ...JAPANESE.sectionBodies,
+        'topic-1': JAPANESE.sectionBodies['topic-1'].replace(
+          'id="topic-1"',
+          'id="トピック1"'
+        )
+      }
     })
 
-    expect(verifyStory(ENGLISH, broken).join(' ')).toContain('topic-1')
+    expect(verifyStory(ENGLISH, broken)).not.toEqual([])
   })
 
   it('catches an image source that changed', () => {
     const broken = buildStory(ENGLISH, {
       ...JAPANESE,
-      body: JAPANESE.body.replace('a.png', 'b.png')
+      sectionBodies: {
+        ...JAPANESE.sectionBodies,
+        'topic-1': JAPANESE.sectionBodies['topic-1'].replace('a.png', 'b.png')
+      }
     })
 
     expect(verifyStory(ENGLISH, broken).join(' ')).toContain('src')
@@ -116,23 +174,24 @@ describe('verifyStory', () => {
   it('catches a component the translation dropped', () => {
     const broken = buildStory(ENGLISH, {
       ...JAPANESE,
-      body: JAPANESE.body.replace(/<Figure[^>]*\/>/, '')
+      sectionBodies: {
+        ...JAPANESE.sectionBodies,
+        'topic-1': JAPANESE.sectionBodies['topic-1'].replace(
+          /<Figure[^>]*\/>/,
+          ''
+        )
+      }
     })
 
     expect(verifyStory(ENGLISH, broken).join(' ')).toContain('Figure')
   })
 
-  it('catches a section missing from the body', () => {
+  it('catches a body left in English', () => {
     const broken = buildStory(ENGLISH, {
       ...JAPANESE,
-      body: JAPANESE.body.replace('<Section id="topic-2">', '<Section>')
+      sectionBodies: {},
+      between: []
     })
-
-    expect(verifyStory(ENGLISH, broken)).not.toEqual([])
-  })
-
-  it('catches a body left in English', () => {
-    const broken = buildStory(ENGLISH, { ...JAPANESE, body: ENGLISH.body })
 
     expect(verifyStory(ENGLISH, broken).join(' ')).toContain('English')
   })

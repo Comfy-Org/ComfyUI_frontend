@@ -24,8 +24,8 @@ describe('verifyWrite', () => {
 ]
 `
   const JAPANESE = {
-    'events.events.live.title': 'ComfyUI ライブ',
-    'events.events.live.description': '毎週の配信'
+    'events.live.title': 'ComfyUI ライブ',
+    'events.live.description': '毎週の配信'
   }
 
   const good = () => {

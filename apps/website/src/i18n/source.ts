@@ -3079,6 +3079,33 @@ Enterprise`
   'enterprise.managedBuilds.industries.onboarding.description': {
     en: 'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.'
   },
+  // Alt text for the careers photo strip. It lived in the component as
+  // literal data, so a screen reader announced it in English whatever the
+  // page language was.
+  'careers.teamPhotos.team0.alt': {
+    en: 'Team dinner'
+  },
+  'careers.teamPhotos.team1.alt': {
+    en: 'Team working'
+  },
+  'careers.teamPhotos.team2.alt': {
+    en: 'Team offsite'
+  },
+  'careers.teamPhotos.team3.alt': {
+    en: 'Team on a boat'
+  },
+  'careers.teamPhotos.team4.alt': {
+    en: 'Teammates posing at a restaurant'
+  },
+  'careers.teamPhotos.team5.alt': {
+    en: 'Teammates at a social gathering'
+  },
+  'careers.teamPhotos.team6.alt': {
+    en: 'Team sailing at golden hour'
+  },
+  'careers.teamPhotos.team7.alt': {
+    en: 'Team on a sailboat at sunset'
+  },
   'meta.defaultDescription': {
     en: 'Comfy is the AI creation engine for visual professionals who demand control.'
   },

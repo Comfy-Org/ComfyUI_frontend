@@ -169,7 +169,12 @@ export function forEachLocalizedText(
       if (!declaration.initializer || !isIdentifier(declaration.name)) {
         continue
       }
-      walk(declaration.initializer, [], `${fileKey}.${declaration.name.text}`)
+      // `affiliateBenefits.ts` exports `affiliateBenefits`, and repeating the
+      // name helped nobody read the key. Collapsed when the two match; both
+      // are kept when they differ, which is what keeps `drops.ts` unique.
+      const declared = declaration.name.text
+      const scope = declared === fileKey ? fileKey : `${fileKey}.${declared}`
+      walk(declaration.initializer, [], scope)
     }
   }
 }

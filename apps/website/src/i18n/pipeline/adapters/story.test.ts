@@ -73,10 +73,12 @@ describe('entriesFromStories', () => {
       .map((entry) => entry.key.replace('story.golan-levin.', ''))
       .sort()
 
+    // topic-2 has a label but no <Section> in this fixture, so it contributes a
+    // label key and no body key — which is the point of keying them separately.
     expect(keys).toEqual([
-      'body',
       'category',
       'description',
+      'section.topic-1.body',
       'section.topic-1.label',
       'section.topic-2.label',
       'title'

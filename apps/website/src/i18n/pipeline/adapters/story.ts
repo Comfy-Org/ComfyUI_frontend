@@ -23,8 +23,12 @@ import { join } from 'node:path'
 import { DEFAULT_LOCALE, isLocale } from '../../../config/locales'
 import type { Locale } from '../../../config/locales'
 import type { SourceAdapter, SourceEntry } from '../types'
+import { localizeMarkdownLinks } from '../validate'
 
 const CUSTOMERS_DIR = join(process.cwd(), 'src', 'content', 'customers')
+
+/** The only locale this pipeline generates today. */
+const TARGET_LOCALE = 'ja' as const
 
 /** One story, in one language. */
 export interface Story {
@@ -89,6 +93,53 @@ export function parseStory(id: string, text: string): Story {
   }
 }
 
+const SECTION_BLOCK = /<Section\b[^>]*>[\s\S]*?<\/Section>/g
+
+/** One piece of a story body: a section, or the prose between two of them. */
+export interface BodyPiece {
+  kind: 'section' | 'between'
+  /** Present on every section; the body anchors to it. */
+  id?: string
+  text: string
+}
+
+/**
+ * Split a story body into sections and the prose between them.
+ *
+ * Lossless by construction — the pieces concatenate back to the original — so
+ * a translated story can be reassembled without reformatting the file. Checked
+ * against all eleven stories before this was built on.
+ */
+export function splitStoryBody(body: string): BodyPiece[] {
+  const pieces: BodyPiece[] = []
+  let taken = 0
+
+  for (const match of body.matchAll(SECTION_BLOCK)) {
+    const start = match.index
+    if (start > taken) {
+      pieces.push({ kind: 'between', text: body.slice(taken, start) })
+    }
+    pieces.push({
+      kind: 'section',
+      id: /<Section\b[^>]*\bid="([^"]+)"/.exec(match[0])?.[1],
+      text: match[0]
+    })
+    taken = start + match[0].length
+  }
+
+  if (taken < body.length) {
+    pieces.push({ kind: 'between', text: body.slice(taken) })
+  }
+  return pieces
+}
+
+/** The between-pieces that hold prose rather than blank lines. */
+export function proseBetween(pieces: readonly BodyPiece[]): BodyPiece[] {
+  return pieces.filter(
+    (piece) => piece.kind === 'between' && piece.text.trim() !== ''
+  )
+}
+
 /**
  * Every translatable string in the English stories, with each other locale's
  * file supplying the approved translation.
@@ -136,7 +187,25 @@ export function entriesFromStories(stories: readonly Story[]): SourceEntry[] {
     add(`story.${slug}.title`, english.title, (s) => s.title)
     add(`story.${slug}.category`, english.category, (s) => s.category)
     add(`story.${slug}.description`, english.description, (s) => s.description)
-    add(`story.${slug}.body`, english.body, (s) => s.body)
+    // One key per section rather than one per document: fixing a typo in one
+    // paragraph should not re-translate and re-bill 2,117 words.
+    const englishPieces = splitStoryBody(english.body)
+    for (const piece of englishPieces) {
+      if (piece.kind !== 'section' || !piece.id) continue
+      const id = piece.id
+      add(`story.${slug}.section.${id}.body`, piece.text, (story) => {
+        const match = splitStoryBody(story.body).find(
+          (other) => other.kind === 'section' && other.id === id
+        )
+        return match?.text
+      })
+    }
+
+    proseBetween(englishPieces).forEach((piece, index) => {
+      add(`story.${slug}.between.${index}`, piece.text, (story) => {
+        return proseBetween(splitStoryBody(story.body))[index]?.text
+      })
+    })
 
     for (const section of english.sections) {
       add(
@@ -157,7 +226,10 @@ export interface StoryTranslation {
   description: string
   /** Section label by section id, never by position. */
   sections: Readonly<Record<string, string>>
-  body: string
+  /** Whole `<Section>` block by section id. */
+  sectionBodies: Readonly<Record<string, string>>
+  /** Prose between sections, in the order it appears. */
+  between: readonly string[]
 }
 
 /** Attributes that name a thing rather than say something to a reader. */
@@ -241,7 +313,32 @@ export function buildStory(
     )
   }
 
-  lines.push('---', '', translation.body.trim(), '')
+  // Rebuilt from the English pieces so the separators between sections are the
+  // original ones. A translated piece is substituted where there is one; a
+  // missing piece falls back to English rather than leaving a hole.
+  let betweenIndex = 0
+  const body = splitStoryBody(english.body)
+    .map((piece) => {
+      if (piece.kind === 'section') {
+        return piece.id
+          ? (translation.sectionBodies[piece.id] ?? piece.text)
+          : piece.text
+      }
+      if (piece.text.trim() === '') return piece.text
+      const translated = translation.between[betweenIndex]
+      betweenIndex += 1
+      if (translated === undefined) return piece.text
+      // The key holds the prose alone, so the validator can compare line counts
+      // against the English. The whitespace around it is structure, and comes
+      // back from the English piece — without it a translated <AuthorBio> ends
+      // up glued to the </Section> above it.
+      const leading = /^\s*/.exec(piece.text)?.[0] ?? ''
+      const trailing = /\s*$/.exec(piece.text)?.[0] ?? ''
+      return `${leading}${translated.trim()}${trailing}`
+    })
+    .join('')
+
+  lines.push('---', '', localizeMarkdownLinks(body.trim(), TARGET_LOCALE), '')
   return lines.join('\n')
 }
 

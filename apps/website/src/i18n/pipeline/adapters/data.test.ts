@@ -20,7 +20,7 @@ describe('entriesFromSource', () => {
     )
 
     expect(entry).toEqual({
-      key: 'events.events.live.title',
+      key: 'events.live.title',
       english: 'Live',
       approved: { 'zh-CN': '直播' }
     })
@@ -51,9 +51,27 @@ describe('entriesFromSource', () => {
     ).toEqual(['drops.EXPLORE', 'drops.PLATFORM'])
   })
 
+  it('does not repeat the file name when the declaration matches it', () => {
+    //  exports , which produced
+    // . 186 of 459 keys
+    // read like that. Collapsing the repeat keeps them unique and readable.
+    expect(
+      keys(
+        'affiliateBenefits.ts',
+        "export const affiliateBenefits = [{ id: 'a', description: { en: 'X' } }]"
+      )
+    ).toEqual(['affiliateBenefits.a.description'])
+  })
+
+  it('still keeps both segments when they differ', () => {
+    expect(keys('drops.ts', "const EXPLORE = { en: 'Explore' }")).toEqual([
+      'drops.EXPLORE'
+    ])
+  })
+
   it('falls back to the index only when an item has no id', () => {
     expect(keys('d.ts', `export const d = [{ label: { en: 'One' } }]`)).toEqual(
-      ['d.d.0.label']
+      ['d.0.label']
     )
   })
 

@@ -82,13 +82,10 @@ function main(): void {
     const title = machine[`${prefix}.title`]
     const category = machine[`${prefix}.category`]
     const description = machine[`${prefix}.description`]
-    const body = machine[`${prefix}.body`]
-
     if (
       title === undefined ||
       category === undefined ||
-      description === undefined ||
-      body === undefined
+      description === undefined
     ) {
       untranslated.push(story.slug)
       continue
@@ -100,10 +97,33 @@ function main(): void {
       continue
     }
 
+    // Every section must have a translation. A missing one would fall back to
+    // English inside an otherwise Japanese story, which reads worse than the
+    // whole page falling back.
     const sections: Record<string, string> = {}
+    const sectionBodies: Record<string, string> = {}
     for (const section of story.sections) {
       const label = machine[`${prefix}.section.${section.id}.label`]
       if (label !== undefined) sections[section.id] = label
+      const sectionBody = machine[`${prefix}.section.${section.id}.body`]
+      if (sectionBody !== undefined) sectionBodies[section.id] = sectionBody
+    }
+
+    const between: string[] = []
+    for (let index = 0; ; index += 1) {
+      const piece = machine[`${prefix}.between.${index}`]
+      if (piece === undefined) break
+      between.push(piece)
+    }
+
+    // A section without a translation would leave English inside an otherwise
+    // Japanese story, which reads worse than the page falling back whole.
+    const missing = story.sections.filter(
+      (section) => sectionBodies[section.id] === undefined
+    )
+    if (missing.length > 0 && story.sections.length > 0) {
+      untranslated.push(story.slug)
+      continue
     }
 
     const contents = buildStory(story, {
@@ -111,7 +131,8 @@ function main(): void {
       category,
       description,
       sections,
-      body
+      sectionBodies,
+      between
     })
     planned.push({
       slug: story.slug,

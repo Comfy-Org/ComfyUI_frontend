@@ -20,9 +20,12 @@ import { join } from 'node:path'
 import { DEFAULT_LOCALE, isLocale } from '../../../config/locales'
 import type { Locale } from '../../../config/locales'
 import type { SourceAdapter, SourceEntry } from '../types'
-import { linkTargets } from '../validate'
+import { linkTargets, localizeMarkdownLinks } from '../validate'
 
 const FAQ_DIR = join(process.cwd(), 'src', 'content', 'faq')
+
+/** The only locale this pipeline generates today. */
+const TARGET_LOCALE = 'ja' as const
 
 /** One answer, in one language. */
 export interface FaqDocument {
@@ -153,7 +156,7 @@ export function buildFaqDocument(
     'translatedBy: machine',
     '---',
     '',
-    translation.body.trim(),
+    localizeMarkdownLinks(translation.body.trim(), TARGET_LOCALE),
     ''
   ].join('\n')
 }
@@ -191,13 +194,17 @@ export function verifyFaqDocument(
     )
   }
 
-  const before = [...linkTargets(english.body)].sort()
-  const after = [...linkTargets(generated.body)].sort()
-  for (const target of before) {
-    if (!after.includes(target)) problems.push(`link target lost: ${target}`)
+  // Each link must point where this locale serves: the English path for a
+  // route it does not publish, the prefixed path for one it does.
+  const expected = [
+    ...linkTargets(localizeMarkdownLinks(english.body, TARGET_LOCALE))
+  ].sort()
+  const actual = [...linkTargets(generated.body)].sort()
+  for (const target of expected) {
+    if (!actual.includes(target)) problems.push(`link target lost: ${target}`)
   }
-  for (const target of after) {
-    if (!before.includes(target))
+  for (const target of actual) {
+    if (!expected.includes(target))
       problems.push(`link target invented: ${target}`)
   }
 

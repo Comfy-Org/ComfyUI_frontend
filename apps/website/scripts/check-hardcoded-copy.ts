@@ -3,6 +3,10 @@
  *
  * Run: `pnpm check:hardcoded-copy` (no build required — it reads source).
  *
+ * Reads both Astro frontmatter and Vue script blocks. Both are data above a
+ * template, and both can hold copy with no key; scanning only the first missed
+ * eight alt texts in a component.
+ *
  * A string typed into a page file has no key, so it reaches no adapter and
  * appears in no report or coverage number. It renders English in every locale
  * and nothing says so. `/zh-CN/enterprise` shipped an English FAQ this way, on
@@ -32,11 +36,12 @@ const EXEMPT = [
   'pages/platform/serverless-animation.astro'
 ]
 
-function astroFiles(dir: string, found: string[] = []): string[] {
+function pageFiles(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
-    if (statSync(full).isDirectory()) astroFiles(full, found)
-    else if (entry.endsWith('.astro')) found.push(full)
+    if (statSync(full).isDirectory()) pageFiles(full, found)
+    else if (entry.endsWith('.astro') || entry.endsWith('.vue'))
+      found.push(full)
   }
   return found
 }
@@ -44,7 +49,7 @@ function astroFiles(dir: string, found: string[] = []): string[] {
 function main(): void {
   const offenders: { file: string; phrases: string[] }[] = []
 
-  for (const file of astroFiles(SRC).sort()) {
+  for (const file of pageFiles(SRC).sort()) {
     const name = relative(SRC, file)
     if (EXEMPT.includes(name)) continue
 

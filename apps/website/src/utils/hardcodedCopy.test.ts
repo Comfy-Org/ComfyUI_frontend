@@ -73,6 +73,21 @@ const c = 'workflows/try-on.json'`)
     ).toEqual([])
   })
 
+  it('reads a Vue script block as well as Astro frontmatter', () => {
+    // The guard shipped scanning .astro only, and missed eight hardcoded alt
+    // texts in a .vue island — announced in English by a screen reader on
+    // /zh-CN/careers, which is the one place untranslated copy is not merely
+    // untidy.
+    const component = [
+      '<script setup lang="ts">',
+      "const photos = [{ alt: 'Team sailing at golden hour' }]",
+      '</script>',
+      '<template><img :alt="photos[0].alt" /></template>'
+    ].join('\n')
+
+    expect(hardcodedProse(component)).toEqual(['Team sailing at golden hour'])
+  })
+
   it('returns nothing for a file with no frontmatter', () => {
     expect(hardcodedProse('<h1>Hello there everyone</h1>')).toEqual([])
   })

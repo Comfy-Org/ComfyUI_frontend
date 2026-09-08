@@ -24,7 +24,7 @@ describe('planJapanese', () => {
 `
 
   it('plans one edit per translated key and none for the rest', () => {
-    const plan = planJapanese(FILE, SOURCE, { 'd.d.title': 'ライブ' })
+    const plan = planJapanese(FILE, SOURCE, { 'd.title': 'ライブ' })
 
     expect(plan).toHaveLength(1)
     expect(plan[0].length).toBe(0)
@@ -34,13 +34,13 @@ describe('planJapanese', () => {
     // Without the marker a machine value reads back as approved, and approved
     // values are never re-sent to the model — so the next English edit would
     // leave Japanese frozen at the old wording, silently.
-    const [edit] = planJapanese(FILE, SOURCE, { 'd.d.title': 'ライブ' })
+    const [edit] = planJapanese(FILE, SOURCE, { 'd.title': 'ライブ' })
 
     expect(edit.text).toBe(",\n    ja: 'ライブ' /* machine */")
   })
 
   it('indents to match the property it follows', () => {
-    const [edit] = planJapanese(FILE, SOURCE, { 'd.d.note': 'まもなく' })
+    const [edit] = planJapanese(FILE, SOURCE, { 'd.note': 'まもなく' })
 
     expect(edit.text).toBe(",\n    ja: 'まもなく' /* machine */")
   })
@@ -51,7 +51,7 @@ describe('planJapanese', () => {
     // diff — and a `//` marker here would comment out the closing brace.
     const inline = `export const d = { t: { en: 'A', 'zh-CN': 'B' } }\n`
 
-    const [edit] = planJapanese(FILE, inline, { 'd.d.t': 'あ' })
+    const [edit] = planJapanese(FILE, inline, { 'd.t': 'あ' })
 
     expect(edit.text).toBe(", ja: 'あ' /* machine */")
   })
@@ -61,7 +61,7 @@ describe('planJapanese', () => {
   title: { en: 'Live', 'zh-CN': '直播', ja: 'ライブ' }
 }
 `
-    expect(planJapanese(FILE, human, { 'd.d.title': 'べつ' })).toEqual([])
+    expect(planJapanese(FILE, human, { 'd.title': 'べつ' })).toEqual([])
   })
 
   it('replaces its own earlier output when the English moved on', () => {
@@ -73,7 +73,7 @@ describe('planJapanese', () => {
   }
 }
 `
-    const [edit] = planJapanese(FILE, mine, { 'd.d.title': 'あたらしい' })
+    const [edit] = planJapanese(FILE, mine, { 'd.title': 'あたらしい' })
 
     // Only the string literal's own bytes are named for replacement.
     expect(mine.slice(edit.offset, edit.offset + edit.length)).toBe("'ふるい'")
@@ -85,16 +85,16 @@ describe('planJapanese', () => {
   title: { en: 'Live', 'zh-CN': '直播', ja: 'ライブ' /* machine */ }
 }
 `
-    expect(planJapanese(FILE, mine, { 'd.d.title': 'ライブ' })).toEqual([])
+    expect(planJapanese(FILE, mine, { 'd.title': 'ライブ' })).toEqual([])
   })
 
   it('plans nothing for a key the file does not contain', () => {
-    expect(planJapanese(FILE, SOURCE, { 'd.d.missing': 'x' })).toEqual([])
+    expect(planJapanese(FILE, SOURCE, { 'd.missing': 'x' })).toEqual([])
   })
 
   it('escapes a backslash and a newline', () => {
     const [edit] = planJapanese(FILE, SOURCE, {
-      'd.d.note': 'a \\ back\nslash'
+      'd.note': 'a \\ back\nslash'
     })
 
     expect(edit.text).toBe(
@@ -105,14 +105,14 @@ describe('planJapanese', () => {
   it('switches to double quotes rather than escape an apostrophe', () => {
     // What oxfmt does anyway. Matching it keeps `pnpm format` a no-op on the
     // writer's output, so the diff a reviewer reads is the diff we made.
-    const [edit] = planJapanese(FILE, SOURCE, { 'd.d.note': "it's here" })
+    const [edit] = planJapanese(FILE, SOURCE, { 'd.note': "it's here" })
 
     expect(edit.text).toBe(`,\n    ja: "it's here" /* machine */`)
   })
 
   it('escapes the quote it chose when the value contains both kinds', () => {
     const [edit] = planJapanese(FILE, SOURCE, {
-      'd.d.note': `it's a "quote"`
+      'd.note': `it's a "quote"`
     })
 
     expect(edit.text).toBe(`,\n    ja: 'it\\'s a "quote"' /* machine */`)
@@ -167,8 +167,8 @@ describe('a written file re-reads as the same file plus Japanese', () => {
 
   it('adds Japanese without disturbing English or Chinese', () => {
     const japanese = {
-      'events.events.live.title': 'ComfyUI ライブ',
-      'events.events.live.description': '毎週の配信'
+      'events.live.title': 'ComfyUI ライブ',
+      'events.live.description': '毎週の配信'
     }
 
     const written = applyEdits(SOURCE, planJapanese(FILE, SOURCE, japanese))
@@ -194,7 +194,7 @@ describe('a written file re-reads as the same file plus Japanese', () => {
     const written = applyEdits(
       SOURCE,
       planJapanese(FILE, SOURCE, {
-        'events.events.live.title': 'ComfyUI ライブ'
+        'events.live.title': 'ComfyUI ライブ'
       })
     )
 

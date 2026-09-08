@@ -1,4 +1,12 @@
 {
+  "careers.teamPhotos.team0.alt": "团队聚餐",
+  "careers.teamPhotos.team1.alt": "团队工作中",
+  "careers.teamPhotos.team2.alt": "团队外出活动",
+  "careers.teamPhotos.team3.alt": "团队在船上",
+  "careers.teamPhotos.team4.alt": "团队成员在餐厅合影",
+  "careers.teamPhotos.team5.alt": "团队成员参加社交聚会",
+  "careers.teamPhotos.team6.alt": "团队在黄金时刻扬帆航行",
+  "careers.teamPhotos.team7.alt": "团队在日落时的帆船上",
   "cli.meta.keywords": "Comfy CLI、ComfyUI CLI、ComfyUI 命令行、ComfyUI 终端、ComfyUI 自动化、ComfyUI CI、面向编程智能体的 AI CLI、Claude Code 图像生成、ComfyUI 批量生成",
   "enterprise.faq.builds-vs-managed-builds.answer": "构建是一种自助方式，可将 ComfyUI、自定义节点、模型和依赖项打包为可复现环境。ComfyUI 托管构建还可在组织运行的各类环境中提供团队分发、治理、受控发布、企业级条款和支持。",
   "enterprise.faq.builds-vs-managed-builds.question": "构建与 ComfyUI 托管构建有何不同？",

@@ -11,6 +11,7 @@
  * absence is normal between runs and is handled by the indexing predicate: an
  * untranslated page de-indexes rather than blocking anyone.
  */
+import { localizeHref } from '../../config/routes'
 import type { Locale } from '../../config/locales'
 import type { EnglishSource, TranslationLayer } from './types'
 
@@ -84,6 +85,28 @@ const MARKDOWN_LINK = /\]\(([^)\s]+)/g
  */
 export function linkTargets(markdown: string): string[] {
   return [...markdown.matchAll(MARKDOWN_LINK)].map((match) => match[1])
+}
+
+/**
+ * Point every internal markdown link where the locale actually serves.
+ *
+ * The Chinese files localize theirs by hand, so leaving a Japanese link
+ * unprefixed would be inconsistent with them — and prefixing it blindly would
+ * point at a page Japanese does not publish. `localizeHref` answers both,
+ * because it already refuses to prefix a route the locale does not serve.
+ *
+ * Applied by the writer rather than asked of the model: the model is told to
+ * leave link targets alone, and the correct target is then computed here, where
+ * it cannot be got wrong.
+ */
+export function localizeMarkdownLinks(
+  markdown: string,
+  locale: Locale
+): string {
+  return markdown.replace(
+    /\]\((\/[^)\s]*)\)/g,
+    (_match, href: string) => `](${localizeHref(href, locale)})`
+  )
 }
 
 export function containsTerm(value: string, term: string): boolean {

@@ -16,6 +16,7 @@
  */
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---/
+const VUE_SCRIPT = /<script[^>]*>([\s\S]*?)<\/script>/
 
 /**
  * A quoted string of four or more words that starts like a sentence.
@@ -42,11 +43,14 @@ const NOT_PROSE = [
  * would translate.
  */
 export function hardcodedProse(source: string): string[] {
-  const frontmatter = FRONTMATTER.exec(source)
-  if (!frontmatter) return []
+  // Astro keeps its logic in frontmatter, Vue in a script block. Both are the
+  // same problem: data above a template, holding copy with no key. The guard
+  // shipped reading only the first and missed eight alt texts in a component.
+  const logic = FRONTMATTER.exec(source)?.[1] ?? VUE_SCRIPT.exec(source)?.[1]
+  if (logic === undefined) return []
 
   const found = new Set<string>()
-  for (const [, , phrase] of frontmatter[1].matchAll(SENTENCE)) {
+  for (const [, , phrase] of logic.matchAll(SENTENCE)) {
     const text = phrase.trim()
     // A Tailwind class list is long, space-separated and entirely lowercase.
     if (text === text.toLowerCase()) continue
