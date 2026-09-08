@@ -266,7 +266,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[0])
 
       expect(emitted()['edit']).toBeDefined()
-      expect(emitted()['edit']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['edit'].length).toBeGreaterThanOrEqual(1)
     })
 
     it('emits delete event when delete button clicked', async () => {
@@ -278,7 +278,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[1])
 
       expect(emitted()['delete']).toBeDefined()
-      expect(emitted()['delete']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['delete'].length).toBeGreaterThanOrEqual(1)
     })
   })
 })

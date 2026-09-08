@@ -5,7 +5,7 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
-import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
+import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
@@ -236,20 +236,19 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('never mints an agent-remote echo (KA-6 sender half)', () => {
-    deliver(createNodeChange('1', AGENT_REMOTE_ACTOR))
+  it.for([
+    ['create', createNodeChange('1', LOCAL_ACTOR)],
+    ['delete', deleteChange('1', LOCAL_ACTOR)]
+  ] as const)(
+    'uses call-carried source to suppress an echoed %s',
+    ([_operation, change]) => {
+      change.operation.source = 'agent-remote'
 
-    expect(minted).toEqual([])
-  })
+      deliver(change)
 
-  it('uses call-carried source to suppress an echoed local actor', () => {
-    const change = createNodeChange('1', LOCAL_ACTOR)
-    change.operation.source = 'agent-remote'
-
-    deliver(change)
-
-    expect(minted).toEqual([])
-  })
+      expect(minted).toEqual([])
+    }
+  )
 
   it('never mints an actor-less change (no call-carried provenance)', () => {
     const change = createNodeChange('1')
@@ -306,11 +305,10 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
-  it('never mints a teardown-bracketed or agent-remote deleteNode', () => {
+  it('never mints a teardown-bracketed deleteNode', () => {
     session.beginGraphTeardown()
     deliver(deleteChange('1'))
     session.endGraphTeardown()
-    deliver(deleteChange('2', AGENT_REMOTE_ACTOR))
 
     expect(minted).toEqual([])
   })

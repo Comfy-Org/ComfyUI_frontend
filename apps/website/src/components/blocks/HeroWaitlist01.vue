@@ -3,6 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
+import type { Locale } from '../../i18n/translations'
 import { isDownloadLinkRequestEnabled } from '../../scripts/customerio'
 import AgentBetaWaitlistForm from '../agent/AgentBetaWaitlistForm.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
@@ -13,6 +14,7 @@ const {
   subtitle,
   footnote,
   signupEvent,
+  locale = 'en',
   class: className
 } = defineProps<{
   badgeText?: string
@@ -25,6 +27,7 @@ const {
   footnote?: string
   /** Customer.io event tracked on a successful signup. */
   signupEvent: string
+  locale?: Locale
   class?: HTMLAttributes['class']
 }>()
 </script>
@@ -81,7 +84,7 @@ const {
         {{ subtitle }}
       </p>
 
-      <AgentBetaWaitlistForm :signup-event="signupEvent" />
+      <AgentBetaWaitlistForm :signup-event="signupEvent" :locale="locale" />
 
       <p
         v-if="footnote && isDownloadLinkRequestEnabled"

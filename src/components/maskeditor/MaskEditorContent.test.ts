@@ -41,7 +41,7 @@ const mockCanvasHistory = vi.hoisted(() => ({
 
 const initialMockStore = () =>
   reactive({
-    activeLayer: 'mask' as 'mask' | 'rgb',
+    activeLayer: 'mask',
     maskCanvas: null as HTMLCanvasElement | null,
     rgbCanvas: null as HTMLCanvasElement | null,
     imgCanvas: null as HTMLCanvasElement | null,
@@ -163,8 +163,7 @@ describe('MaskEditorContent', () => {
     mockPanZoom.initializeCanvasPanZoom.mockResolvedValue(undefined)
     mockBrushDrawing.initGPUResources.mockResolvedValue(undefined)
     originalResizeObserver = globalThis.ResizeObserver
-    globalThis.ResizeObserver =
-      MockResizeObserver as unknown as typeof ResizeObserver
+    globalThis.ResizeObserver = MockResizeObserver
   })
 
   afterEach(() => {

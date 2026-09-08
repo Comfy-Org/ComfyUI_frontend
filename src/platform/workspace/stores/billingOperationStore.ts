@@ -1,4 +1,5 @@
 import type { ToastMessageOptions } from 'primevue/toast'
+import type { PaymentIntent } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
@@ -39,6 +40,17 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
+// Statuses that mean the resumed challenge left the intent exactly where it
+// started, so the attempt needs a fresh start rather than a poll. A denylist
+// fails toward the server rather than toward the customer: an unlisted or
+// future Stripe status reports optimistically as processing, which the next
+// poll's own authentication_state corrects if that guess was wrong — unlike
+// an allowlist, where the same gap would report a live payment as failed.
+const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
+  'requires_payment_method',
+  'requires_action',
+  'canceled'
+])
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus =
@@ -92,6 +104,11 @@ interface BillingOperation {
   paymentIntentSource?: PaymentIntentSource
   autoHandleRequiresAction: boolean
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
+  // Set when the customer walked away from this operation in the UI (e.g.
+  // "Start over" after a failed challenge). The operation itself is not
+  // over — only the server decides that — so it keeps polling and can still
+  // resolve normally; this only hides it from the selectors a dialog reads.
+  dismissed: boolean
 }
 
 type TerminalResolver = (operation: BillingOperation) => void
@@ -132,6 +149,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     [...operations.value.values()].some(
       (op) =>
         op.status === 'pending' &&
+        op.authenticationState !== 'failed_retryable' &&
+        !op.dismissed &&
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId
     )
@@ -155,8 +174,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.type === 'topup' &&
         op.workspaceId === workspaceStore.activeWorkspaceId &&
+        !op.dismissed &&
         ((op.status === 'pending' &&
-          (op.actionUrl !== null || op.canRetryAuthentication)) ||
+          (op.actionUrl !== null ||
+            op.authenticationState === 'requires_action' ||
+            op.authenticationState === 'failed_retryable')) ||
           op.status === 'reconciliation_needed')
     )
   )
@@ -229,7 +251,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkoutType: metadata?.checkoutType,
       paymentIntentSource: metadata?.paymentIntentSource,
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
-      downgradeToPersonal: metadata?.downgradeToPersonal
+      downgradeToPersonal: metadata?.downgradeToPersonal,
+      dismissed: false
     }
 
     operations.value = new Map(operations.value).set(opId, operation)
@@ -415,25 +438,27 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (clientSecret) paymentIntentClientSecrets.set(opId, clientSecret)
     const secret = clientSecret ?? knownSecret
     // requires_action after a failed browser attempt is the same challenge the
-    // customer just abandoned — the intent has not moved. Keeping the retry
-    // presentation stops the failure alert and button label flapping between
-    // polls; a state that actually advanced (processing, succeeded, failed)
-    // still flows through and resolves the UI.
+    // customer just abandoned — the intent has not moved. Keeping the failure
+    // presentation stops the alert flapping between polls; a state that
+    // actually advanced (processing, succeeded, failed) still flows through and
+    // resolves the UI. A different client secret is a genuinely new challenge
+    // and still flows through — same rule the echo check below applies.
     //
     // Likewise after a browser attempt that SUCCEEDED: the server can keep
     // reporting requires_action for the same intent until it observes the
     // completion, and downgrading processing back to requires_action reopened
-    // the pay button mid-payment. A different client secret is a genuinely
-    // new challenge and still flows through.
+    // the pay button mid-payment.
+    const isStaleFailure =
+      state === 'requires_action' &&
+      operation.authenticationState === 'failed_retryable' &&
+      (!clientSecret || clientSecret === knownSecret)
     const isEchoOfHandledChallenge =
       state === 'requires_action' &&
       operation.authenticationState === 'processing' &&
       autoHandledPaymentActions.has(opId) &&
       (!clientSecret || clientSecret === knownSecret)
     const displayState =
-      state === 'requires_action' &&
-      (operation.authenticationState === 'failed_retryable' ||
-        isEchoOfHandledChallenge)
+      isStaleFailure || isEchoOfHandledChallenge
         ? operation.authenticationState
         : state
     const declineDetail =
@@ -443,9 +468,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperation(opId, {
       authenticationState: displayState,
       canRetryAuthentication:
-        Boolean(secret) &&
-        (displayState === 'requires_action' ||
-          displayState === 'failed_retryable'),
+        Boolean(secret) && displayState === 'requires_action',
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || state === 'requires_action',
       ...(declineDetail && { errorMessage: declineDetail })
@@ -478,7 +501,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       !operation ||
       operation.status !== 'pending' ||
       !paymentIntentClientSecrets.has(opId) ||
-      !operation.canRetryAuthentication
+      operation.authenticationState !== 'requires_action'
     ) {
       return false
     }
@@ -501,19 +524,28 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
       const stripe = publishableKey ? await loadStripe(publishableKey) : null
       if (!stripe) {
-        setAuthenticationRetry(
+        setAuthenticationFailed(
           opId,
-          t('billingOperation.authenticationUnavailable'),
-          false
+          t('billingOperation.authenticationUnavailable')
         )
         return false
       }
-      const result = await stripe.handleNextAction({ clientSecret })
-      if (result.error) {
-        setAuthenticationRetry(
+      const { error, paymentIntent } = await stripe.handleNextAction({
+        clientSecret
+      })
+      if (error) {
+        setAuthenticationFailed(
           opId,
-          result.error.message ||
-            t('billingOperation.authenticationFailedDetail')
+          error.message || t('billingOperation.authenticationFailedDetail')
+        )
+        return false
+      }
+      // With no action left to resume the call succeeds and changes nothing, so
+      // an intent still sitting on its pre-challenge status has not paid.
+      if (paymentIntent && UNMOVED_INTENT_STATUSES.has(paymentIntent.status)) {
+        setAuthenticationFailed(
+          opId,
+          t('billingOperation.authenticationFailedDetail')
         )
         return false
       }
@@ -528,7 +560,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       intervals.set(opId, INITIAL_INTERVAL_MS)
       return true
     } catch (error) {
-      setAuthenticationRetry(
+      setAuthenticationFailed(
         opId,
         error instanceof Error
           ? error.message
@@ -538,25 +570,20 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function setAuthenticationRetry(
-    opId: string,
-    errorMessage: string,
-    canRetry = true
-  ) {
+  function setAuthenticationFailed(opId: string, errorMessage: string) {
     const operation = operations.value.get(opId)
     if (!operation) return
     updateOperation(opId, {
       authenticationState: 'failed_retryable',
       isAuthenticating: false,
-      canRetryAuthentication: canRetry && paymentIntentClientSecrets.has(opId),
+      canRetryAuthentication: false,
       errorMessage
     })
     // A browser-step error is not a verdict on the payment: the challenge may
     // have completed server-side despite the client error (observed: the
     // intent succeeded seconds after handleNextAction reported failure, and a
     // paused UI stayed on "failed" for a live subscription). Keep polling so
-    // the server's state resolves the presentation; the retry button remains
-    // the manual path while it is genuinely parked.
+    // the server's state resolves the presentation.
     scheduleNextPoll(opId)
   }
 
@@ -1099,6 +1126,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     terminalPromises.delete(opId)
   }
 
+  // Unlike clearOperation, this keeps the operation live: polling continues
+  // and a late success or failure still resolves normally. It only removes
+  // the operation from the selectors a dialog reads, since whether the
+  // customer wants to see it is a view concern — whether it is over is not.
+  // A server-side cancel (BE-10064/BE-11559) would let a dismissal actually
+  // end the operation instead of merely hiding it; call that here once it
+  // exists.
+  function dismissOperation(opId: string) {
+    updateOperation(opId, { dismissed: true })
+  }
+
   return {
     operations,
     hasPendingOperations,
@@ -1110,6 +1148,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     startOperation,
     retryPaymentAuthentication,
     pollPendingOperations,
-    clearOperation
+    clearOperation,
+    dismissOperation
   }
 })

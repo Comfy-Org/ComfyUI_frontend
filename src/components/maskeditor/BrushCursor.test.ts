@@ -156,6 +156,37 @@ describe('BrushCursor', () => {
       expect(getBoundingClientRect).toHaveBeenCalledTimes(2)
     })
 
+    it('should read the container rect once per position, not once per axis', async () => {
+      const container = document.createElement('div')
+      const readRect = vi
+        .spyOn(container, 'getBoundingClientRect')
+        .mockReturnValue(DOMRect.fromRect({ x: 30, y: 60 }))
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      // left and top are both derived from the same underlying rect; reading
+      // it once per rendered position (rather than once per axis) is what
+      // keeps a mousemove down to a single forced layout.
+      expect(
+        readRect,
+        'left and top come from the same rect; reading it twice is two forced layouts per mousemove'
+      ).toHaveBeenCalledTimes(1)
+
+      mockStore.cursorPoint = { x: 101, y: 51 }
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 51px')
+      })
+
+      // A moved cursor must re-read the rect exactly once more, not once per
+      // axis: this is the same guarantee restated for the useElementBounding
+      // implementation that replaced the hand-rolled rect read.
+      expect(readRect).toHaveBeenCalledTimes(2)
+    })
+
     it('updates when the container moves under a stationary cursor', async () => {
       const container = document.createElement('div')
       vi.spyOn(container, 'getBoundingClientRect')

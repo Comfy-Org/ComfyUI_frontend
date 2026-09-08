@@ -26,7 +26,7 @@ export const useReleaseStore = defineStore('release', () => {
   const onboardingTourStore = useOnboardingTourStore()
 
   const currentVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+    () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
   )
 
   // Release data from settings
@@ -44,7 +44,7 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Most recent release
   const recentRelease = computed(() => {
-    return releases.value[0] ?? null
+    return releases.value.at(0) ?? null
   })
 
   // 3 most recent releases
@@ -139,7 +139,9 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    const { version } = recentRelease.value
+    const release = recentRelease.value
+    if (!release) return false
+    const { version } = release
 
     // Changelog seen → clear dot
     if (
@@ -255,9 +257,7 @@ export const useReleaseStore = defineStore('release', () => {
 
     // Skip fetching if API nodes are disabled via argv
     if (
-      systemStatsStore.systemStats?.system?.argv?.includes(
-        '--disable-api-nodes'
-      )
+      systemStatsStore.systemStats?.system.argv?.includes('--disable-api-nodes')
     ) {
       return
     }
@@ -279,7 +279,7 @@ export const useReleaseStore = defineStore('release', () => {
         },
         {
           deployEnvironment:
-            systemStatsStore.systemStats?.system?.deploy_environment
+            systemStatsStore.systemStats?.system.deploy_environment
         }
       )
 

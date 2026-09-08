@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
@@ -31,7 +33,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
     options: SimplifiedWidget<string>['options'] = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_markdown',
       type: 'string',

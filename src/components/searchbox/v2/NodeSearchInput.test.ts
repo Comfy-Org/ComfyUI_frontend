@@ -30,15 +30,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
 function createFilter(
   id: string,
   value: string
-): FuseFilterWithValue<ComfyNodeDefImpl, string> {
+): FuseFilterWithValue<ComfyNodeDefImpl> {
   return {
     filterDef: {
       id,
       matches: vi.fn(() => true)
-    } as Partial<FuseFilter<ComfyNodeDefImpl, string>> as FuseFilter<
-      ComfyNodeDefImpl,
-      string
-    >,
+    } as Partial<FuseFilter<ComfyNodeDefImpl>> as FuseFilter<ComfyNodeDefImpl>,
     value
   }
 }
@@ -50,7 +47,7 @@ describe('NodeSearchInput', () => {
 
   function createRender(
     props: Partial<{
-      filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
+      filters: FuseFilterWithValue<ComfyNodeDefImpl>[]
       searchQuery: string
     }> = {}
   ) {

@@ -111,6 +111,7 @@ interface TargetSession {
   readonly mutations: GraphMutations
   readonly nodeActions: Map<string, NodeRootAction>
   readonly changedWidgets: Map<string, Set<string>>
+  readonly replacedWidgetMaps: Set<string>
   readonly changedLinks: Set<string>
   readonly frameQueue: DocUpdate[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
@@ -154,15 +155,18 @@ export class EcsFollowerAdapter {
     session.frameQueue.push(update)
     if (session.applying) return true
     session.applying = true
+    let updateCommitted = false
     try {
       while (session.frameQueue.length > 0) {
         const frame = session.frameQueue.shift()
-        if (frame) this.applyQueuedFrame(session, frame)
+        if (!frame) continue
+        const committed = this.applyQueuedFrame(session, frame)
+        if (frame === update) updateCommitted = committed
       }
     } finally {
       session.applying = false
     }
-    return true
+    return updateCommitted
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
@@ -197,6 +201,7 @@ export class EcsFollowerAdapter {
           : this.mutations,
       nodeActions: new Map<string, NodeRootAction>(),
       changedWidgets: new Map<string, Set<string>>(),
+      replacedWidgetMaps: new Set<string>(),
       changedLinks: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
@@ -210,11 +215,12 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): void {
+  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])
     )
+    const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
     this.discardSessionPending(session)
@@ -270,14 +276,23 @@ export class EcsFollowerAdapter {
         if (!payload) continue
         batch.addNode(payload)
       }
-      for (const [id, names] of changedWidgets) {
+      for (const id of replacedWidgetMaps) {
         if (nodeActions.has(id)) continue
+        const payload = readSemanticNode(session.follower.doc, id)
+        if (payload) batch.reconcileNode(payload)
+      }
+      for (const [id, names] of changedWidgets) {
+        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
         const node = session.nodes.get(id)
         const widgets = node?.get('widgets')
         if (!(widgets instanceof Y.Map)) continue
+        if ([...names].some((name) => !widgets.has(name))) {
+          const payload = readSemanticNode(session.follower.doc, id)
+          if (payload) batch.reconcileNode(payload)
+          continue
+        }
         for (const name of names) {
-          if (widgets.has(name))
-            batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
         }
       }
       for (const id of changedLinkIds) {
@@ -292,11 +307,13 @@ export class EcsFollowerAdapter {
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
     if (committed) session.reconcileNextFrame = false
+    return committed
   }
 
   private discardSessionPending(session: TargetSession): void {
     session.nodeActions.clear()
     session.changedWidgets.clear()
+    session.replacedWidgetMaps.clear()
     session.changedLinks.clear()
   }
 
@@ -321,11 +338,8 @@ export class EcsFollowerAdapter {
         continue
       }
 
-      if (event.path.length === 1 && event.keysChanged.has('widgets')) {
-        const widgets = session.nodes.get(id)?.get('widgets')
-        if (widgets instanceof Y.Map)
-          session.changedWidgets.set(id, new Set(widgets.keys()))
-      }
+      if (event.path.length === 1 && event.keysChanged.has('widgets'))
+        session.replacedWidgetMaps.add(id)
     }
   }
 
