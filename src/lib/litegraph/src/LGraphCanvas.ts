@@ -341,7 +341,12 @@ function getLinkEndpointPositions(
     return [startPos, subgraphOutput.pos]
   }
 
-  if (!inputNode || !input || input.link !== link.id) return
+  if (
+    !inputNode ||
+    !input ||
+    inputLinkId(graph, inputNode.id, link.target_slot) !== link.id
+  )
+    return
   if (!outputNode || !output) return
 
   const endPos: Point = LiteGraph.vueNodesMode
