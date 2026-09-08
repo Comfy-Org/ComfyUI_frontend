@@ -1,13 +1,13 @@
 <template>
   <div
     ref="rootEl"
-    class="pointer-events-none absolute inset-0 overflow-hidden"
+    class="pointer-events-none absolute inset-0"
     data-testid="video-crop-overlay"
   >
     <div
       :class="
         cn(
-          'pointer-events-auto absolute cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
+          'pointer-events-auto absolute -m-0.5 box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
           disabled && 'pointer-events-none opacity-60'
         )
       "
@@ -17,11 +17,26 @@
       @pointerdown.stop="startDrag('move', $event)"
     />
     <div
-      v-for="handle in HANDLES"
+      v-for="handle in edgeHandles"
       :key="handle.dir"
       :class="
         cn(
-          'pointer-events-auto absolute size-2.5 -translate-1/2 border border-black/40 bg-white',
+          'pointer-events-auto absolute',
+          handle.strip,
+          handle.cursor,
+          disabled && 'pointer-events-none'
+        )
+      "
+      :style="edgeStyle(handle.dir)"
+      :data-testid="`crop-handle-${handle.dir}`"
+      @pointerdown.stop="startDrag(handle.dir, $event)"
+    />
+    <div
+      v-for="handle in CORNER_HANDLES"
+      :key="handle.dir"
+      :class="
+        cn(
+          'pointer-events-auto absolute size-2.5 -translate-1/2 rounded-sm bg-white/80',
           handle.cursor,
           disabled && 'pointer-events-none opacity-60'
         )
@@ -41,15 +56,22 @@ import type { CropResizeDir } from '@/composables/video/useCropBoxEditor'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const HANDLES: Array<{ dir: CropResizeDir; cursor: string }> = [
+const CORNER_HANDLES: Array<{ dir: CropResizeDir; cursor: string }> = [
   { dir: 'nw', cursor: 'cursor-nwse-resize' },
-  { dir: 'n', cursor: 'cursor-ns-resize' },
   { dir: 'ne', cursor: 'cursor-nesw-resize' },
-  { dir: 'e', cursor: 'cursor-ew-resize' },
   { dir: 'se', cursor: 'cursor-nwse-resize' },
-  { dir: 's', cursor: 'cursor-ns-resize' },
-  { dir: 'sw', cursor: 'cursor-nesw-resize' },
-  { dir: 'w', cursor: 'cursor-ew-resize' }
+  { dir: 'sw', cursor: 'cursor-nesw-resize' }
+]
+
+const EDGE_HANDLES: Array<{
+  dir: CropResizeDir
+  cursor: string
+  strip: string
+}> = [
+  { dir: 'n', cursor: 'cursor-ns-resize', strip: 'h-2 -translate-y-1/2' },
+  { dir: 'e', cursor: 'cursor-ew-resize', strip: 'w-2 -translate-x-1/2' },
+  { dir: 's', cursor: 'cursor-ns-resize', strip: 'h-2 -translate-y-1/2' },
+  { dir: 'w', cursor: 'cursor-ew-resize', strip: 'w-2 -translate-x-1/2' }
 ]
 
 const {
@@ -100,5 +122,23 @@ function handleStyle(dir: CropResizeDir) {
       ? y + height
       : y + height / 2
   return { left: pct(cx, sourceWidth), top: pct(cy, sourceHeight) }
+}
+
+const edgeHandles = computed(() => (lockedRatio != null ? [] : EDGE_HANDLES))
+
+function edgeStyle(dir: CropResizeDir) {
+  const { x, y, width, height } = bounds.value
+  if (dir === 'n' || dir === 's') {
+    return {
+      left: pct(x, sourceWidth),
+      top: pct(dir === 'n' ? y : y + height, sourceHeight),
+      width: pct(width, sourceWidth)
+    }
+  }
+  return {
+    left: pct(dir === 'w' ? x : x + width, sourceWidth),
+    top: pct(y, sourceHeight),
+    height: pct(height, sourceHeight)
+  }
 }
 </script>

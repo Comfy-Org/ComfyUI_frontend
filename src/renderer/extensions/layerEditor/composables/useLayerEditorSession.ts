@@ -14,6 +14,7 @@ import {
   findNode
 } from '@/renderer/extensions/layerEditor/engine/document'
 import { createEditor } from '@/renderer/extensions/layerEditor/engine/editor/editor'
+import type { AlphaSampler } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
 import { pickLayerAt } from '@/renderer/extensions/layerEditor/engine/editor/pickOps'
 import { Dirty } from '@/renderer/extensions/layerEditor/engine/history'
 import type { FillSpec } from '@/renderer/extensions/layerEditor/engine/fill'
@@ -42,7 +43,6 @@ import { registerBuiltinTools } from '@/renderer/extensions/layerEditor/engine/t
 import { canTransformNode } from '@/renderer/extensions/layerEditor/engine/tools/transformTool'
 import {
   hitHandle,
-  insideBox,
   unionBounds
 } from '@/renderer/extensions/layerEditor/engine/tools/transformMath'
 import { createPanZoom } from '@/renderer/extensions/layerEditor/panZoom'
@@ -66,6 +66,7 @@ const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 export interface LayerEditorSessionOptions {
   createCompositor?: () => Compositor
   loadImage?: (url: string) => Promise<HTMLCanvasElement>
+  alphaSampler?: AlphaSampler
 }
 
 export interface LayerEditorElements {
@@ -183,7 +184,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   })
   const backgroundLayer = computed<FillData | null>(() => {
     const first = layers.value[0]
-    return first?.kind === 'fill' ? { ...first } : null
+    return first.kind === 'fill' ? { ...first } : null
   })
   const imageLayers = computed<SceneNode[]>(() =>
     layers.value.filter((n) => n.kind !== 'fill')
@@ -216,7 +217,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
 
   function backgroundNode(): FillData | null {
     const first = editor.document().root.children[0]
-    return first?.kind === 'fill' ? first : null
+    return first.kind === 'fill' ? first : null
   }
 
   function onChange(): void {
@@ -578,6 +579,12 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     })
   }
 
+  function moveLayerTo(id: string, toIndex: number): void {
+    const bg = backgroundLayer.value
+    if (bg && (id === bg.id || toIndex < 1)) return
+    editor.moveNodeTo(id, undefined, toIndex)
+  }
+
   function moveLayer(id: string, dir: 1 | -1): void {
     const bg = backgroundLayer.value
     if (bg) {
@@ -840,11 +847,15 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     }
   }
 
-  function selectionGizmo(): Transform | null {
+  function selectedTransformTargets(): SceneNode[] {
     const root = editor.document().root
-    const targets = filterTopmost(root, editor.selectedNodeIds())
+    return filterTopmost(root, editor.selectedNodeIds())
       .map((id) => findNode(root, id)?.node ?? null)
       .filter((n): n is SceneNode => canTransformNode(n))
+  }
+
+  function selectionGizmo(): Transform | null {
+    const targets = selectedTransformTargets()
     if (!targets.length) return null
     return targets.length === 1
       ? { ...targets[0].transform }
@@ -857,10 +868,14 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     if (!additive) {
       const gizmo = selectionGizmo()
       const tol = 8 / Math.max(1e-3, panZoom.zoom())
-      if (gizmo && (hitHandle(gizmo, pt, tol) || insideBox(gizmo, pt)))
-        return true
+      if (gizmo && hitHandle(gizmo, pt, tol)) return true
     }
-    const picked = pickLayerAt(editor.document().root.children, pt, content)
+    const picked = pickLayerAt(
+      editor.document().root.children,
+      pt,
+      content,
+      opts.alphaSampler
+    )
     if (!picked) {
       if (!additive) editor.setSelectedNodes([])
       return false
@@ -881,7 +896,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   function onPointerDown(e: PointerEvent): void {
     const zone = viewportEl
     if (!zone) return
-    zone.focus?.()
+    zone.focus()
     pendingMoves = []
     if (
       e.button === 1 ||
@@ -904,7 +919,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     moveRaf = null
     const events = pendingMoves
     pendingMoves = []
-    const e = events[events.length - 1]
+    const e = events.at(-1)
     if (!e) return
     if (panning.value) {
       panZoom.panBy(e.offsetX - panLast.x, e.offsetY - panLast.y)
@@ -1049,6 +1064,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     toggleVisible,
     renameLayer,
     moveLayer,
+    moveLayerTo,
     setLayerOrder,
     inputLayerIds,
     setActiveNode,

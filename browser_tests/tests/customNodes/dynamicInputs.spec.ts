@@ -51,7 +51,7 @@ async function consumerShape(
     )
     const root = document.querySelector(`[data-node-id="${id}"]`)
     return {
-      inputCount: node?.inputs?.length ?? -1,
+      inputCount: node?.inputs.length ?? -1,
       domSlotDots:
         root?.querySelectorAll('[data-testid="slot-connection-dot"]').length ??
         -1
@@ -194,7 +194,7 @@ for (const { autogrowCase } of applicableAutogrowCases) {
                     const node = window.app!.graph.nodes.find(
                       (candidate) => String(candidate.id) === id
                     )
-                    return node?.inputs?.[Number(index)]?.link != null
+                    return node?.inputs[Number(index)]?.link != null
                   },
                   [consumerId, String(lastIndex)] as const
                 ),

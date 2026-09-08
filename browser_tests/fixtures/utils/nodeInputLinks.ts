@@ -45,14 +45,12 @@ export async function getConnectedInputs(
       const node = graph.getNodeById(nodeId)
       if (!node) throw new Error(`Node ${nodeId} not found`)
 
-      return node.inputs
-        .filter((input) => input.name.startsWith(namePrefix))
-        .flatMap((input) => {
-          if (input.link == null) return []
-          const link = graph.links[input.link]
-          if (!link) return []
-          return [{ name: input.name, originNodeId: String(link.origin_id) }]
-        })
+      return node.inputs.flatMap((input, index) => {
+        if (!input.name.startsWith(namePrefix)) return []
+        const link = node.getInputLink(index)
+        if (!link) return []
+        return [{ name: input.name, originNodeId: String(link.origin_id) }]
+      })
     },
     { nodeId: toNodeId(nodeId), namePrefix }
   )

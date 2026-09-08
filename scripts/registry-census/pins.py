@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Corpus pins: which commit of each pack the matrix measures.
 
-The matrix is a PR advisory, so the corpus has to be a constant. Tracking pack
-HEADs makes every pack author a committer to this repo's CI: one of them pushes
-a bug and the next unrelated PR goes red for it.
+The matrix is a required PR and merge-queue gate, so the corpus has to be a
+constant. Tracking pack HEADs makes every pack author a committer to this
+repo's CI: one of them pushes a bug and the next unrelated PR goes red for it.
 
 `corpus.pins.json` is checked in, so a pack only changes when someone bumps
 the pins in a reviewed PR - and that PR is the one place ecosystem churn is

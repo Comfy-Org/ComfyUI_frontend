@@ -27,6 +27,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+const mockReportError = vi.fn()
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -120,6 +125,24 @@ describe('useSessionCookie', () => {
     await expect(useSessionCookie().ensureSessionCookie()).rejects.toThrow(
       'session denied'
     )
+  })
+
+  it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
+    mockGetIdToken.mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'session denied' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    await useSessionCookie().createSession()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'session_cookie_creation_failure'
+    })
   })
 
   it('serializes strict session creation after the previous user response', async () => {

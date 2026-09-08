@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type {
+  BillingOpStatusResponse,
+  SavedPaymentMethod
+} from './workspaceApi'
+
 const {
   mockAxiosInstance,
   mockGetWorkspaceAuthHeaderOrThrow,
@@ -377,6 +382,33 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getBillingCapabilities() sends GET /billing/capabilities', async () => {
+      const controller = new AbortController()
+      const data = {
+        resolved_for: { user_id: 'user-1', workspace_id: 'workspace-1' },
+        capabilities: {
+          can_subscribe_self_serve: true,
+          can_top_up: false,
+          can_cancel: true,
+          can_reactivate: true,
+          can_change_seats: true,
+          can_invite_members: true,
+          can_downgrade_to_personal: false
+        }
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getBillingCapabilities(
+        controller.signal
+      )
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/capabilities',
+        { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })
@@ -439,7 +471,123 @@ describe('workspaceApi', () => {
   })
 
   describe('subscription', () => {
-    it('previewSubscribe() sends only fields defined by the ingest contract', async () => {
+    it('listSavedPaymentMethods() returns masked methods from GET', async () => {
+      const data: SavedPaymentMethod[] = [
+        {
+          type: 'card',
+          id: 'pm_saved',
+          brand: 'visa',
+          last4: '4242',
+          is_default: true
+        }
+      ]
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.listSavedPaymentMethods()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/payment-methods',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('previewSubscribe() sends the promotion code only when applied', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: { allowed: true } })
+
+      await workspaceApi.previewSubscribe('pro-monthly', {
+        promotionCode: 'SAVE20'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/preview-subscribe',
+        expect.objectContaining({ promotion_code: 'SAVE20' }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('subscribe() echoes the quote and selected saved method', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { billing_op_id: 'op-quote', status: 'subscribed' }
+      })
+
+      await workspaceApi.subscribe('pro-monthly', {
+        promotionCode: 'SAVE20',
+        quoteId: 'quote_123',
+        quoteVersion: 2,
+        savedPaymentMethodId: 'pm_saved'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({
+          promotion_code: 'SAVE20',
+          quote_id: 'quote_123',
+          quote_version: 2,
+          saved_payment_method_id: 'pm_saved'
+        }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('subscribe() omits a promotion code when none is applied', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { billing_op_id: 'op-no-promo', status: 'subscribed' }
+      })
+
+      await workspaceApi.subscribe('pro-monthly')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        expect.objectContaining({ promotion_code: undefined }),
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('subscribe() rejects mutually exclusive payment credentials', async () => {
+      await expect(
+        workspaceApi.subscribe('pro-monthly', {
+          confirmationToken: 'ctoken_1',
+          savedPaymentMethodId: 'pm_saved'
+        })
+      ).rejects.toThrow(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
+    it('subscribe() omits an empty credential from the request', async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+
+      await workspaceApi.subscribe('pro-monthly', { confirmationToken: '' })
+
+      const body = mockAxiosInstance.post.mock.calls[0][1]
+      expect(body).not.toHaveProperty('confirmation_token', '')
+      expect(body.confirmation_token).toBeUndefined()
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+      await workspaceApi.subscribe('pro-monthly', { savedPaymentMethodId: '' })
+
+      const savedBody = mockAxiosInstance.post.mock.calls[1][1]
+      expect(savedBody).not.toHaveProperty('saved_payment_method_id', '')
+      expect(savedBody.saved_payment_method_id).toBeUndefined()
+    })
+
+    it('subscribe() rejects an empty credential alongside a saved one', async () => {
+      await expect(
+        workspaceApi.subscribe('pro-monthly', {
+          confirmationToken: '',
+          savedPaymentMethodId: 'pm_saved'
+        })
+      ).rejects.toThrow(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
+    it('previewSubscribe() sends fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
@@ -466,6 +614,7 @@ describe('workspaceApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data })
 
       const result = await workspaceApi.subscribe('pro-monthly', {
+        confirmationToken: 'ctoken_1',
         returnUrl: 'https://return.url',
         cancelUrl: 'https://cancel.url'
       })
@@ -474,6 +623,7 @@ describe('workspaceApi', () => {
         '/api/billing/subscribe',
         {
           plan_slug: 'pro-monthly',
+          confirmation_token: 'ctoken_1',
           return_url: 'https://return.url',
           cancel_url: 'https://cancel.url',
           team_credit_stop_id: undefined,
@@ -497,6 +647,7 @@ describe('workspaceApi', () => {
         '/api/billing/subscribe',
         {
           plan_slug: 'team_per_credit_annual',
+          confirmation_token: undefined,
           return_url: undefined,
           cancel_url: undefined,
           team_credit_stop_id: 'team_700',
@@ -617,9 +768,12 @@ describe('workspaceApi', () => {
     it('getBillingOpStatus() sends GET /billing/ops/:id', async () => {
       const data = {
         id: 'op-1',
-        status: 'succeeded',
-        started_at: '2026-01-01'
-      }
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        decline_reason: 'card_declined',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: '2026-01-01T00:00:00Z'
+      } satisfies BillingOpStatusResponse
       mockAxiosInstance.get.mockResolvedValue({ data })
 
       const result = await workspaceApi.getBillingOpStatus('op-1')

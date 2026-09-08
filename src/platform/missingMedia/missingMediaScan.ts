@@ -70,8 +70,6 @@ export function scanAllMediaCandidates(
   rootGraph: LGraph,
   isCloud: boolean
 ): MissingMediaCandidate[] {
-  if (!rootGraph) return []
-
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingMediaCandidate[] = []
 
@@ -225,8 +223,8 @@ export async function verifyMediaCandidates(
     pathOptions
   )
 
-  let inputAssets: AssetItem[]
-  let generatedAssets: AssetItem[]
+  let inputAssets: readonly AssetItem[]
+  let generatedAssets: readonly AssetItem[]
   try {
     const assetSources = await resolveAssetSources({
       signal,
@@ -342,7 +340,7 @@ function getMediaPathBasename(value: string): string {
 
 function addAssetIdentifiers(
   identifiers: Set<string>,
-  assets: AssetItem[],
+  assets: readonly AssetItem[],
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {
@@ -354,7 +352,7 @@ function addAssetIdentifiers(
 
 function addAssetHashIdentifiers(
   identifiers: Set<string>,
-  assets: AssetItem[],
+  assets: readonly AssetItem[],
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {

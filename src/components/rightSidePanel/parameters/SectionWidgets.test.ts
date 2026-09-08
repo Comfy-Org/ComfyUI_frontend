@@ -112,7 +112,7 @@ function createHostWithPromotedModel(): {
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget).ok
   ).toBe(true)
 
-  const promotedWidget = host.widgets?.find(
+  const promotedWidget = host.widgets.find(
     (widget) => widget.name === sourceWidget.name
   )
   if (!promotedWidget) throw new Error('Expected promoted widget')

@@ -23,7 +23,7 @@ export function useSelectedNodeActions() {
     })
 
     app.canvas.setDirty(true, true)
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const toggleNodeCollapse = () => {
@@ -33,7 +33,7 @@ export function useSelectedNodeActions() {
     })
 
     app.canvas.setDirty(true, true)
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const toggleNodePin = () => {
@@ -43,7 +43,7 @@ export function useSelectedNodeActions() {
     })
 
     app.canvas.setDirty(true, true)
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const toggleNodeBypass = () => {

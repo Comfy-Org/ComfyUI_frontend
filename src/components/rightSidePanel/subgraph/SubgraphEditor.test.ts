@@ -56,8 +56,7 @@ describe('SubgraphEditor', () => {
     const host = createTestSubgraphNode(subgraph)
     const firstNode = new LGraphNode('FirstNode')
     const secondNode = new LGraphNode('SecondNode')
-    const previewNode = new LGraphNode('PreviewImage')
-    previewNode.type = 'PreviewImage'
+    const previewNode = new LGraphNode('PreviewImage', 'PreviewImage')
     subgraph.add(firstNode)
     subgraph.add(secondNode)
     subgraph.add(previewNode)
@@ -97,12 +96,12 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second', '$$canvas-image-preview'])
     expect(
       within(screen.getByTestId('draggable-list'))
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second'])
     expect(
       within(shown).getAllByTestId('subgraph-widget-drag-handle')
@@ -158,7 +157,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second'])
 
     const rowFor = (sourceNode: LGraphNode) => {
@@ -181,7 +180,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['second', 'first'])
   })
 
@@ -217,7 +216,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first'])
   })
 
@@ -322,8 +321,7 @@ describe('SubgraphEditor', () => {
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
-    const orphanedSourceNode = new LGraphNode('OrphanedNode')
-    orphanedSourceNode.type = 'OrphanedNode'
+    const orphanedSourceNode = new LGraphNode('OrphanedNode', 'OrphanedNode')
     subgraph.add(orphanedSourceNode)
 
     const previewStore = usePreviewExposureStore()

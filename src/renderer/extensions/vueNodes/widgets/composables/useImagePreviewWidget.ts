@@ -82,8 +82,6 @@ const renderPreview = (
   imgs: HTMLImageElement[],
   width: number
 ) => {
-  if (!node.size) return
-
   if (node.isUploading) {
     renderUploadSpinner(ctx, node, shiftY, computedHeight)
     return
@@ -207,6 +205,8 @@ const renderPreview = (
         h: imgHeight - cell_padding * 2
       }
       deferredImageRenders.push(() => {
+        if (!drawParams.img.naturalWidth || !drawParams.img.naturalHeight)
+          return
         ctx.save()
         ctx.setTransform(transform)
         ctx.filter = filter
@@ -244,7 +244,7 @@ const renderPreview = (
     return
   }
   // Draw individual
-  const img = imgs[imageIndex]
+  const img = imgs.at(imageIndex)
   if (!img) return
   let w = img.naturalWidth
   let h = img.naturalHeight
@@ -262,6 +262,7 @@ const renderPreview = (
   // Defer image rendering to work around Chrome GPU bug
   const transform = ctx.getTransform()
   deferredImageRenders.push(() => {
+    if (!img.naturalWidth || !img.naturalHeight) return
     ctx.save()
     ctx.setTransform(transform)
     ctx.drawImage(img, x, y, w, h)

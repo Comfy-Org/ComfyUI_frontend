@@ -95,10 +95,10 @@ const i18n = createI18n({
         }
       },
       loadWorkflowWarning: {
-        outdatedVersion:
-          'Some nodes require a newer version of ComfyUI (current: {version}).',
-        outdatedVersionGeneric:
-          'Some nodes require a newer version of ComfyUI.',
+        newerVersionRequired:
+          'Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.',
+        newerVersionRequiredGeneric:
+          'Some nodes require a newer version of ComfyUI. Please update to use all nodes.',
         coreNodesFromVersion: 'Requires ComfyUI {version}:',
         unknownVersion: 'unknown'
       }
@@ -311,7 +311,9 @@ describe('MissingNodeCard', () => {
       }
       renderCard()
       expect(
-        screen.getByText('Some nodes require a newer version of ComfyUI.')
+        screen.getByText(
+          'Some nodes require a newer version of ComfyUI. Please update to use all nodes.'
+        )
       ).toBeInTheDocument()
     })
 
@@ -335,7 +337,7 @@ describe('MissingNodeCard', () => {
       const { container } = renderCard()
       expect(container.textContent).toContain('AlphaNode, ZebraNode')
       // eslint-disable-next-line testing-library/no-container
-      expect(container.textContent?.match(/ZebraNode/g)).toHaveLength(1)
+      expect(container.textContent.match(/ZebraNode/g)).toHaveLength(1)
     })
 
     it('sorts versions in descending order', () => {
@@ -345,7 +347,7 @@ describe('MissingNodeCard', () => {
         '1.2.0': [{ type: 'Node2' }]
       }
       const { container } = renderCard()
-      const text = container.textContent ?? ''
+      const text = container.textContent
       const v13 = text.indexOf('1.3.0')
       const v12 = text.indexOf('1.2.0')
       const v11 = text.indexOf('1.1.0')

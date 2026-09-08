@@ -1,18 +1,28 @@
-import { render } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
-import type * as DistTypes from '@/platform/distribution/types'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
 const apiMock = vi.hoisted(() => new EventTarget())
+const distribution = vi.hoisted(
+  (): {
+    isCloud: typeof DistributionTypes.isCloud
+    isDesktop: typeof DistributionTypes.isDesktop
+  } => ({
+    isCloud: false,
+    isDesktop: false
+  })
+)
 
-vi.mock('@/scripts/api', () => ({ api: apiMock }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: { getNodeById: vi.fn(), nodes: [] },
     ui: {
@@ -22,12 +32,12 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/composables/useReconnectQueueRefresh', () => {
+vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
   return { useReconnectQueueRefresh: () => refreshOnReconnect }
 })
 
-vi.mock('@/composables/useReconnectingNotification', () => {
+vi.mock(import('@/composables/useReconnectingNotification'), () => {
   const onReconnected = vi.fn()
   const onReconnecting = vi.fn()
   return {
@@ -35,49 +45,56 @@ vi.mock('@/composables/useReconnectingNotification', () => {
   }
 })
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal<typeof VueUseCore>()
   return { ...actual, useIntervalFn: vi.fn(() => ({ pause: vi.fn() })) }
 })
 
-vi.mock('@/base/common/async', () => ({ runWhenGlobalIdle: vi.fn() }))
-vi.mock('@/composables/useBrowserTabTitle', () => ({
+vi.mock(import('@/base/common/async'), () => ({ runWhenGlobalIdle: vi.fn() }))
+vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
   useBrowserTabTitle: vi.fn()
 }))
-vi.mock('@/composables/useCoreCommands', () => ({ useCoreCommands: () => [] }))
-vi.mock('@/platform/remote/comfyui/useQueuePolling', () => ({
+vi.mock(import('@/composables/useCoreCommands'), () => ({
+  useCoreCommands: () => []
+}))
+vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandling: (f: unknown) => f,
     wrapWithErrorHandlingAsync: (f: unknown) => f
   })
 }))
-vi.mock('@/composables/useProgressFavicon', () => ({
+vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
-vi.mock('@/i18n', async (importOriginal) => {
+vi.mock(import('@/i18n'), async (importOriginal) => {
   const actual = await importOriginal<typeof I18nModule>()
   return { ...actual, loadLocale: vi.fn().mockResolvedValue(undefined) }
 })
-vi.mock('@/platform/distribution/types', async (importOriginal) => {
-  const actual = await importOriginal<typeof DistTypes>()
-  return { ...actual, isCloud: false, isDesktop: false }
-})
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: vi.fn(() => undefined), set: vi.fn() })
 }))
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
-vi.mock('@/platform/updates/common/useFrontendVersionMismatchWarning', () => ({
-  useFrontendVersionMismatchWarning: vi.fn()
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
 }))
-vi.mock('@/platform/updates/common/versionCompatibilityStore', () => ({
-  useVersionCompatibilityStore: () => ({
-    initialize: vi.fn().mockResolvedValue(undefined)
+vi.mock(
+  import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
+  () => ({
+    useFrontendVersionMismatchWarning: vi.fn()
   })
-}))
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+)
+vi.mock<unknown>(
+  import('@/platform/updates/common/versionCompatibilityStore'),
+  () => ({
+    useVersionCompatibilityStore: () => ({
+      initialize: vi.fn().mockResolvedValue(undefined)
+    })
+  })
+)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
   const { defineStore } = await import('pinia')
   return {
     useCanvasStore: defineStore('canvas-test-stub', () => ({
@@ -85,25 +102,25 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
     }))
   }
 })
-vi.mock('@/services/autoQueueService', () => ({
+vi.mock(import('@/services/autoQueueService'), () => ({
   setupAutoQueueHandler: vi.fn()
 }))
-vi.mock('@/platform/keybindings/keybindingService', () => ({
+vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     registerCoreKeybindings: vi.fn(),
     keybindHandler: vi.fn()
   })
 }))
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({ isBuilderMode: ref(false) })
 }))
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({ updateHistory: vi.fn() })
 }))
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ registerCommands: vi.fn() })
 }))
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     bindExecutionEvents: vi.fn(),
     unbindExecutionEvents: vi.fn(),
@@ -111,18 +128,20 @@ vi.mock('@/stores/executionStore', () => ({
     clearActiveJobIfStale: vi.fn()
   })
 }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({ isAuthenticated: false })
 }))
-vi.mock('@/stores/menuItemStore', () => ({
+vi.mock<unknown>(import('@/stores/menuItemStore'), () => ({
   useMenuItemStore: () => ({ registerCoreMenuCommands: vi.fn() })
 }))
-vi.mock('@/stores/modelStore', () => ({ useModelStore: () => ({}) }))
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/modelStore'), () => ({
+  useModelStore: () => ({})
+}))
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({}),
   useNodeFrequencyStore: () => ({})
 }))
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: () => ({
     update: vi.fn(),
     runningTasks: [],
@@ -132,26 +151,26 @@ vi.mock('@/stores/queueStore', () => ({
   }),
   useQueuePendingTaskCountStore: () => ({ update: vi.fn() })
 }))
-vi.mock('@/stores/serverConfigStore', () => ({
+vi.mock<unknown>(import('@/stores/serverConfigStore'), () => ({
   useServerConfigStore: () => ({})
 }))
-vi.mock('@/stores/workspace/bottomPanelStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/bottomPanelStore'), () => ({
   useBottomPanelStore: () => ({
     registerCoreBottomPanelTabs: vi.fn().mockResolvedValue(undefined)
   })
 }))
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: () => ({
     completedActivePalette: { light_theme: true, colors: { comfy_base: {} } }
   })
 }))
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
   useSidebarTabStore: () => ({
     registerCoreSidebarTabs: vi.fn(),
     activeSidebarTabId: null
   })
 }))
-vi.mock('@/utils/envUtil', () => ({
+vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => ({
     changeTheme: vi.fn(),
     Events: { incrementUserProperty: vi.fn(), trackEvent: vi.fn() }
@@ -160,36 +179,62 @@ vi.mock('@/utils/envUtil', () => ({
 
 // Module-mock heavy child components so we don't pay their import cost.
 const stubModule = { default: { template: '<div />' } }
-vi.mock('@/components/graph/GraphCanvas.vue', () => stubModule)
-vi.mock('@/views/LinearView.vue', () => stubModule)
-vi.mock('@/components/builder/BuilderToolbar.vue', () => stubModule)
-vi.mock('@/components/builder/BuilderMenu.vue', () => stubModule)
-vi.mock('@/components/builder/BuilderFooterToolbar.vue', () => stubModule)
-vi.mock(
-  '@/workbench/extensions/manager/components/ManagerProgressToast.vue',
+vi.mock<unknown>(
+  import('@/components/actionbar/PartnerNodesEducationCard.vue'),
+  () => ({
+    default: { template: '<div data-testid="education-card-stub" />' }
+  })
+)
+vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
+vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
+vi.mock<unknown>(
+  import('@/components/builder/BuilderToolbar.vue'),
   () => stubModule
 )
-vi.mock(
-  '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue',
+vi.mock<unknown>(
+  import('@/components/builder/BuilderMenu.vue'),
   () => stubModule
 )
-vi.mock(
-  '@/platform/assets/components/ModelImportProgressDialog.vue',
+vi.mock<unknown>(
+  import('@/components/builder/BuilderFooterToolbar.vue'),
   () => stubModule
 )
-vi.mock(
-  '@/platform/assets/components/AssetExportProgressDialog.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+
   () => stubModule
 )
-vi.mock(
-  '@/platform/workspace/components/toasts/InviteAcceptedToast.vue',
+vi.mock<unknown>(
+  import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),
   () => stubModule
 )
-vi.mock('@/components/toast/GlobalToast.vue', () => stubModule)
-vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
-vi.mock('@/components/MenuHamburger.vue', () => stubModule)
-vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)
-vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
+vi.mock<unknown>(
+  import('@/platform/assets/components/ModelImportProgressDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/AssetExportProgressDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
+  import('@/platform/workspace/components/toasts/InviteAcceptedToast.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(import('@/components/toast/GlobalToast.vue'), () => stubModule)
+vi.mock<unknown>(
+  import('@/components/toast/RerouteMigrationToast.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(import('@/components/MenuHamburger.vue'), () => stubModule)
+vi.mock<unknown>(
+  import('@/components/dialog/UnloadWindowConfirmDialog.vue'),
+  () => stubModule
+)
+vi.mock<unknown>(
+  import('@/renderer/extensions/firstRunTour/FirstRunTour.vue'),
+
+  () => stubModule
+)
 
 // Imported at module scope, not inside the test. `vi.mock` is hoisted above
 // every import, so the stubs above still apply — but compiling GraphView.vue
@@ -198,9 +243,11 @@ vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 // loaded worker pool while it passed in isolation (#14666).
 const { default: GraphView } = await import('./GraphView.vue')
 
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
 describe('GraphView - reconnect wiring', () => {
   it('wires the reconnected event to the toast and queue refresh', () => {
-    render(GraphView)
+    render(GraphView, { global: { plugins: [i18n] } })
 
     apiMock.dispatchEvent(new Event('reconnected'))
 
@@ -211,5 +258,25 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('GraphView - partner nodes education card', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it('mounts the card on local builds', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.getByTestId('education-card-stub')).toBeInTheDocument()
+  })
+
+  it('never mounts the card on cloud', () => {
+    distribution.isCloud = true
+
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
   })
 })

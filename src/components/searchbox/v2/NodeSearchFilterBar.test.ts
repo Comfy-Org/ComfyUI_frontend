@@ -52,7 +52,7 @@ describe(NodeSearchFilterBar, () => {
   }
 
   const buttonTexts = () =>
-    screen.getAllByRole('button').map((b) => b.textContent?.trim())
+    screen.getAllByRole('button').map((b) => b.textContent.trim())
 
   it.for([
     { prop: 'hasFavorites', label: 'Bookmarked' },

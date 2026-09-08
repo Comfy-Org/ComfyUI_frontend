@@ -14,6 +14,7 @@ import {
   EMPTY_BILLING_PLANS,
   LEGACY_PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   UNSUBSCRIBED,
   ZERO_BALANCE
@@ -154,7 +155,7 @@ class ComfyMenu {
     await this.modeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {
-        const settings = window.app?.ui?.settings
+        const settings = window.app?.ui.settings
         return (
           settings &&
           settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
@@ -327,10 +328,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
+    initialLocalStorage = {},
     mockReleases = true,
     url
   }: {
     clearStorage?: boolean
+    initialLocalStorage?: Record<string, string>
     mockReleases?: boolean
     url?: string
   } = {}) {
@@ -362,6 +365,9 @@ export class ComfyPage {
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
+
+      for (const [k, v] of Object.entries(initialLocalStorage))
+        await this.page.localStorage.setItem(k, v)
     }
 
     await this.goto({ url })
@@ -415,7 +421,7 @@ export class ComfyPage {
         signInVisible: !!document.querySelector(
           '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
         ),
-        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
+        bodyText: document.body.innerText.slice(0, 300)
       }))
       return (
         `url=${state.url} title=${JSON.stringify(state.title)} ` +
@@ -556,6 +562,7 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
   initialFeatureFlags: Record<string, unknown>
+  initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
@@ -564,6 +571,8 @@ export const comfyPageFixture = base.extend<{
   // Allows configuring feature flags for tests with before initial setup:
   // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
+
+  initialLocalStorage: [{}, { option: true }],
   // Allows seeding user settings before initial page load:
   // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
   // the fixture's defaults so per-test values win.
@@ -588,7 +597,13 @@ export const comfyPageFixture = base.extend<{
   },
 
   comfyPage: async (
-    { page, request, initialFeatureFlags, initialSettings },
+    {
+      page,
+      request,
+      initialFeatureFlags,
+      initialLocalStorage,
+      initialSettings
+    },
     use,
     testInfo
   ) => {
@@ -645,11 +660,7 @@ export const comfyPageFixture = base.extend<{
         ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
         ...initialSettings
       }
-      try {
-        await comfyPage.setupSettings(startupSettings)
-      } catch (e) {
-        console.error(e)
-      }
+      await comfyPage.setupSettings(startupSettings)
       if (testInfo.tags.includes('@cloud')) {
         const context = page.context()
         await context.route('**/api/auth/session', (route) =>
@@ -657,6 +668,9 @@ export const comfyPageFixture = base.extend<{
         )
         await context.route('**/api/billing/status', (route) =>
           route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+        )
+        await context.route('**/api/billing/capabilities', (route) =>
+          route.fulfill({ json: createBillingCapabilities('ws-personal') })
         )
         await context.route('**/api/billing/balance', (route) =>
           route.fulfill({ json: EMPTY_BILLING_BALANCE })
@@ -683,7 +697,7 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup()
+      await comfyPage.setup({ initialLocalStorage })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()
@@ -694,6 +708,12 @@ export const comfyPageFixture = base.extend<{
         await comfyExpect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
           .toBe(0)
+      }
+
+      if (testInfo.tags.includes('@cloud')) {
+        await comfyPage.featureFlags.setServerFlagsPersistent({
+          asset_deletion_enabled: true
+        })
       }
 
       if (isVueNodes) {

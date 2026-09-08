@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
 
-const { mockFetchApi, mockAddAlert, mockUpdateInputs } = vi.hoisted(() => ({
+const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
   mockFetchApi: vi.fn(),
   mockAddAlert: vi.fn(),
-  mockUpdateInputs: vi.fn()
+  mockInvalidateInputs: vi.fn()
 }))
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
@@ -42,7 +42,9 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ updateInputs: mockUpdateInputs })
+  useAssetsStore: () => ({
+    inputAssets: { invalidate: mockInvalidateInputs }
+  })
 }))
 
 function createMockNode(): LGraphNode {
@@ -127,10 +129,24 @@ describe('useNodeImageUpload', () => {
     expect(onUploadStart).toHaveBeenCalledWith(files)
   })
 
-  it('calls onUploadComplete with valid paths on success', async () => {
+  it('invalidates input assets and only then calls onUploadComplete on success', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    let invalidateResolve!: () => void
+    mockInvalidateInputs.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          invalidateResolve = resolve
+        })
+    )
 
-    await capturedDragOnDrop([createFile()])
+    const drop = capturedDragOnDrop([createFile()])
+    await vi.waitFor(() =>
+      expect(mockInvalidateInputs).toHaveBeenCalledTimes(1)
+    )
+    expect(onUploadComplete).not.toHaveBeenCalled()
+
+    invalidateResolve()
+    await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
   })
 

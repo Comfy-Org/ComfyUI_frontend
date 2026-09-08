@@ -1,4 +1,6 @@
+// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
+// eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
 import { toError } from '@/utils/errorUtil'
@@ -6,8 +8,8 @@ import { toError } from '@/utils/errorUtil'
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
-   * `error_type` Sentry tag and the `error_type` RUM context field, so the
-   * same query works against either console.
+   * native RUM `error.type`, the `error_type` Sentry tag, and the legacy
+   * `error_type` RUM context field.
    */
   errorType: string
   tags?: Record<string, string | number | boolean | undefined>
@@ -53,7 +55,12 @@ function dispatch(error: Error, options: ReportErrorOptions): boolean {
     })
   }
   if (datadogLive) {
-    datadogRum.addError(error, {
+    const datadogError = Object.assign(
+      new Error(error.message, { cause: error.cause }),
+      error,
+      { name: errorType, stack: error.stack }
+    )
+    datadogRum.addError(datadogError, {
       ...context,
       ...tags,
       error_type: errorType,

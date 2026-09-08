@@ -15,12 +15,12 @@ runs:
         PLAYWRIGHT_VERSION=$(pnpm ls @playwright/test --json | jq --raw-output '.[0].devDependencies["@playwright/test"].version')
         echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
-    - name: Cache Playwright Browsers
-      uses: actions/cache@v5 # v5.0.2
+    - name: Restore Playwright Browsers
+      uses: actions/cache/restore@v5 # v5.0.2
       id: cache-playwright-browsers
       with:
         path: '~/.cache/ms-playwright'
-        key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
+        key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}
 
     - name: Bound Playwright dependency downloads
       if: inputs.install_deps == 'true'
@@ -52,3 +52,10 @@ runs:
           [ "$attempt" -lt 2 ] || exit 1
           sleep 2
         done
+
+    - name: Save Playwright Browsers
+      if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5 # v5.0.2
+      with:
+        path: '~/.cache/ms-playwright'
+        key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}

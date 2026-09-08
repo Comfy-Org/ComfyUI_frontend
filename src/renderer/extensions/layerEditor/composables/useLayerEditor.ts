@@ -4,12 +4,14 @@ import {
   LayerEditorDialogHeader,
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 export function useLayerEditor() {
-  const openLayerEditor = (node: LGraphNode) => {
+  const openLayerEditor = (node: LGraphNode | null | undefined) => {
     if (!node) {
       console.error('[LayerEditor] No node provided')
       return
@@ -17,7 +19,11 @@ export function useLayerEditor() {
 
     const imageUrls = useNodeOutputStore().getNodeImageUrls(node)
     if (!imageUrls || imageUrls.length < 2) {
-      console.error('[LayerEditor] Node needs at least 2 output images')
+      useToastStore().add({
+        severity: 'info',
+        summary: t('layerEditor.title'),
+        detail: t('layerEditor.needsTwoImages')
+      })
       return
     }
 

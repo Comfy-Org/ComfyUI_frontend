@@ -58,7 +58,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 
 vi.mock('@/utils/litegraphUtil', () => ({
   addToComboValues: (widget: IComboWidget, value: string) => {
-    const values = widget.options?.values
+    const values = widget.options.values
     if (Array.isArray(values) && !values.includes(value)) {
       values.push(value)
     }
@@ -67,8 +67,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
 
 function createUploadNode(initialValue: string = 'missing.png') {
   const onWidgetChanged = vi.fn()
-  const node = new LGraphNode('LoadImage')
-  node.type = 'LoadImage'
+  const node = new LGraphNode('LoadImage', 'LoadImage')
   node.onWidgetChanged = onWidgetChanged
   const fileComboWidget = node.addWidget(
     'combo',

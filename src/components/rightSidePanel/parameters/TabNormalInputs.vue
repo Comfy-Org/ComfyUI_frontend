@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { nodes, mustShowNodeTitle } = defineProps<{
@@ -20,10 +17,7 @@ const { nodes, mustShowNodeTitle } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const workflowStore = useWorkflowStore()
-
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const { widgetsSectionDataList, includesAdvanced } = computedSectionDataList(
   () => nodes
@@ -62,16 +56,6 @@ const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
 const advancedCollapsed = ref(true)
-
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
-    advancedCollapsed.value = true
-  }
-)
 
 function isSectionCollapsed(nodeId: NodeId): boolean {
   // When not explicitly set, sections are collapsed if multiple nodes are selected
@@ -124,15 +108,11 @@ const advancedLabel = computed(() => {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  <PanelSearchHeader
+    v-model="searchQuery"
+    :searcher
+    :update-key="widgetsSectionDataList"
   >
-    <AsyncSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsSectionDataList"
-      class="flex-1"
-    />
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="
@@ -141,7 +121,7 @@ const advancedLabel = computed(() => {
           1
       "
     />
-  </div>
+  </PanelSearchHeader>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
       v-if="searchedWidgetsSectionDataList.length === 0"

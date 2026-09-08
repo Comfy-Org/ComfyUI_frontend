@@ -29,6 +29,7 @@ def row(pack: str, **over: object) -> dict:
     base: dict = {
         'pack': pack,
         'selfCheck': 'OK',
+        'vueNodesMode': False,
         'load': {'./a.js': 'OK', './b.js': 'OK'},
         'loadedOk': 2,
         'registerNodeDef': 'OK',
@@ -208,6 +209,24 @@ class HarnessGates(unittest.TestCase):
         self.assertEqual(verdict.code, 2)
         self.assertIn('selfCheck: 99 row(s)', report)
         self.assertIsNone(verdict.metrics)
+
+    def test_renderer_mode_must_match_the_verdict_arm(self) -> None:
+        legacy = sm.evaluate(population(), {}, renderer='legacy')
+        self.assertEqual(legacy.code, 0)
+        self.assertIn(
+            'renderer: legacy (vueNodesMode = false)', legacy.lines
+        )
+
+        vue_rows = population()
+        for r in vue_rows:
+            r['vueNodesMode'] = True
+        vue = sm.evaluate(vue_rows, {}, renderer='vue')
+        self.assertEqual(vue.code, 0)
+        self.assertIn('renderer: vue (vueNodesMode = true)', vue.lines)
+
+        mismatch = sm.evaluate(population(), {}, renderer='vue')
+        self.assertEqual(mismatch.code, 2)
+        self.assertIn('RENDERER MODE MISMATCH', '\n'.join(mismatch.lines))
 
     def test_empty_operation_maps_fail_closed(self) -> None:
         rows = population()
@@ -425,6 +444,21 @@ class MainIO(unittest.TestCase):
     def test_non_numeric_shard_expectation_is_withheld(self) -> None:
         code, _, _ = self.run_main(population(), MATRIX_EXPECT_SHARDS='four')
         self.assertEqual(code, 2)
+
+    def test_renderer_is_read_from_the_environment(self) -> None:
+        rows = population()
+        for r in rows:
+            r['vueNodesMode'] = True
+        code, metrics, output = self.run_main(rows, MATRIX_RENDERER='vue')
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(metrics)['renderer'], 'vue')
+        self.assertIn('vueNodesMode = true', output)
+
+        code, metrics, _ = self.run_main(
+            population(), MATRIX_RENDERER='invalid'
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(metrics, '')
 
     def test_stale_marker_is_read_from_the_environment(self) -> None:
         with tempfile.NamedTemporaryFile('w', suffix='.json') as fh:
