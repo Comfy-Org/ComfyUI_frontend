@@ -396,9 +396,6 @@ function processWidget(
     name: widgetState.name,
     type,
     value,
-    borderStyle: widgetOptions.advanced
-      ? 'ring ring-component-node-widget-advanced'
-      : undefined,
     callback: updateHandler,
     controlWidget,
     label: widgetState.label,

@@ -47,6 +47,36 @@ function widget(name: string, type: string, index: number): WidgetGridItem {
 }
 
 describe('WidgetGrid', () => {
+  it('dims only advanced widget rows while the advanced toggle is hovered', () => {
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        isAdvancedHovered: true,
+        processedWidgets: [
+          {
+            ...widget('advanced', 'number', 0),
+            simplified: {
+              name: 'advanced',
+              type: 'number',
+              value: 0,
+              options: { advanced: true }
+            }
+          },
+          widget('regular', 'number', 1)
+        ]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    const [advancedRow, regularRow] = screen.getAllByTestId('node-widget')
+    expect(advancedRow).toHaveClass('opacity-30')
+    expect(regularRow).not.toHaveClass('opacity-30')
+  })
+
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
