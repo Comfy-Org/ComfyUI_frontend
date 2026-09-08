@@ -1,5 +1,7 @@
 <template>
+  <slot v-if="!items.length && slots.placeholder" name="placeholder" />
   <div
+    v-else
     ref="container"
     class="h-full scrollbar-thin scrollbar-thumb-(--dialog-surface) scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto [overflow-anchor:none]"
   >
@@ -32,6 +34,11 @@ type GridState = {
   start: number
   end: number
 }
+
+const slots = defineSlots<{
+  item(props: { item: T; index: number }): unknown
+  placeholder(): unknown
+}>()
 
 const {
   items,
