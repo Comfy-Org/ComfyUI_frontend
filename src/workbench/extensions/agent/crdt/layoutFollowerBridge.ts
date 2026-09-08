@@ -236,6 +236,11 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
 
+    // The first incompatible frame is already in the Y.Doc. Same-lineage
+    // updates cannot remove those CRDT bytes, so keep the read gate latched
+    // until an explicit doc_reset replaces the lineage.
+    if (this.schemaError !== null) return
+
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
@@ -280,11 +285,11 @@ export class LayoutFollowerBridge extends EventTarget {
     if (isCatchUp) this.catchUpPending = false
     this.follower.applyRemoteUpdate(update.update)
 
-    // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
-    // integrated or they are not — but nothing downstream may READ a doc whose
-    // declared schema this build was not written against. Failing closed here,
-    // before the frame is re-dispatched, is what keeps a v2 doc from being
-    // half-projected onto the canvas by a v1 reader.
+    // KA-11 read-time gate. The frame must merge before its schema can be
+    // checked, but nothing downstream may READ a doc whose declared schema
+    // this build was not written against. Failing closed here, before the
+    // frame is re-dispatched, is what keeps a v2 doc from being half-projected
+    // onto the canvas by a v1 reader.
     try {
       assertReadableSchema(this.follower.doc)
     } catch (error) {
