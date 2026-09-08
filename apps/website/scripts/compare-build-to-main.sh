@@ -1,19 +1,44 @@
 #!/bin/bash
-# compare-build-to-main.sh -- prove a change leaves existing pages untouched.
-# Usage: scripts/compare-build-to-main.sh <baseline-dist> <candidate-dist> [label]
-#   baseline = a build of main at `git merge-base origin/main HEAD`
-#   candidate = a build of your branch (release shape: WORKSHOP_IN_BUILD=0)
+#/ Usage: compare-build-to-main.sh <baseline-dist> <candidate-dist> [label]
+#/
+#/ Prove a change leaves existing pages untouched. Compares every rendered page
+#/ between a baseline build and a candidate build, after stripping build noise
+#/ that differs run-to-run without meaning anything:
+#/
+#/   - hashed asset filenames   /_astro/name.Bx7f3kQ.css  ->  /_astro/name.HASH.css
+#/   - astro-island uids        uid="Z1abc23"             ->  uid="UID"
+#/   - island render timings
+#/
+#/ Everything else must be byte-identical or it is reported.
+#/
+#/ Arguments:
+#/   baseline-dist   build of main at `git merge-base origin/main HEAD`
+#/   candidate-dist  build of your branch (release shape: WORKSHOP_IN_BUILD=0)
+#/   label           name for the candidate in the report (default: candidate)
+#/
+#/ Options:
+#/   -h, --help      show this help and exit
+#/
+#/ Exit status:
+#/   0  no existing page changed and none were removed
+#/   1  differences found, see the report
+#/   2  usage error
+#/
+#/ Example:
+#/   scripts/compare-build-to-main.sh /tmp/main-dist apps/website/dist workshop
 #
-# Compare every rendered page between a baseline build and a candidate build,
-# after stripping build noise that differs run-to-run without meaning anything:
-#   - hashed asset filenames   /_astro/name.Bx7f3kQ.css  ->  /_astro/name.HASH.css
-#   - astro-island uids        uid="Z1abc23"             ->  uid="UID"
-#   - island render timings
-# Everything else must be byte-identical or it is reported.
 set -euo pipefail
 export LC_ALL=C
+
+usage() { grep '^#/' "$0" | cut -c4-; }
+
+case "${1:-}" in
+  -h|--help|help) usage; exit 0 ;;
+esac
+
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-  echo 'Usage: compare-build-to-main.sh <baseline-dist> <candidate-dist> [label]' >&2
+  usage | sed -n '1p' >&2
+  echo "Run 'scripts/compare-build-to-main.sh --help' for details." >&2
   exit 2
 fi
 BASE=$(cd "$1" && pwd)

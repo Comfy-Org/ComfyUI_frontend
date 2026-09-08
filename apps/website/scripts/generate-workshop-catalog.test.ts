@@ -92,14 +92,25 @@ describe('buildWorkshopCatalog', () => {
     )
   })
 
+  it('rejects malformed role extras instead of silently dropping them', () => {
+    expect(() =>
+      buildWorkshopCatalog([
+        {
+          ...validModel,
+          roles: [{ ...validModel.roles[0], extras: 'invalid' }]
+        }
+      ])
+    ).toThrow(/index 0 \(provider\/model-v1\): roles\.0\.extras/)
+  })
+
   it('produces the same lexically ordered output for every input order', () => {
     const models = [
-      { ...validModel, id: 'p/z', display_name: 'Z' },
-      { ...validModel, id: 'p/ae', display_name: 'A' }
+      { ...validModel, id: 'p/a_a', display_name: 'Underscore' },
+      { ...validModel, id: 'p/a0', display_name: 'Zero' }
     ]
     expect(buildWorkshopCatalog(models).map((m) => m.id)).toEqual([
-      'p/ae',
-      'p/z'
+      'p/a0',
+      'p/a_a'
     ])
     expect(buildWorkshopCatalog(models.toReversed())).toEqual(
       buildWorkshopCatalog(models)
