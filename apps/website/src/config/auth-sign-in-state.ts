@@ -4,7 +4,15 @@
  * listener also fires, a provisioning failure after the popup succeeded —
  * are decided in one tested place instead of by handler timing.
  */
-import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
+import {
+  authErrorMessage,
+  classifyAuthError,
+  unauthorizedDomainMessage
+} from '@comfyorg/account/firebaseAuthError'
+import type {
+  AuthCopyLocale,
+  AuthErrorClassification
+} from '@comfyorg/account/firebaseAuthError'
 
 import type { TranslationKey } from '../i18n/translations'
 
@@ -14,7 +22,10 @@ export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
   | { readonly step: 'minting'; readonly email: string }
-  | { readonly step: 'error'; readonly messageKey: TranslationKey }
+  | {
+      readonly step: 'error'
+      readonly classification: AuthErrorClassification
+    }
   | {
       readonly step: 'signedIn'
       readonly email: string
@@ -32,43 +43,24 @@ export type AuthSignInEvent =
   | { readonly type: 'mintRetried' }
   | { readonly type: 'signedOut' }
 
-const ERROR_KEYS: Record<
-  ReturnType<typeof classifyAuthError>['kind'],
-  TranslationKey
-> = {
-  'popup-dismissed': 'auth.signIn.error.popupClosed',
-  'unauthorized-domain': 'auth.signIn.error.domain',
-  'signup-blocked': 'auth.signIn.error.blocked',
-  auth: 'auth.signIn.error.generic',
-  unknown: 'auth.signIn.error.generic'
-}
+const SUPPORT_EMAIL = 'support@comfy.org'
 
 /**
- * Email failures a visitor can act on get their own copy. Firebase collapses
- * wrong-password and user-not-found into invalid-credential when email
- * enumeration protection is on, so all three read the same.
+ * The copy for a failed attempt, from the package tables the cloud app's
+ * own strings are pinned to. Only the unauthorized-domain line needs this
+ * host's values.
  */
-const EMAIL_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
-  'auth/invalid-credential': 'auth.signIn.error.invalidCredentials',
-  'auth/wrong-password': 'auth.signIn.error.invalidCredentials',
-  'auth/user-not-found': 'auth.signIn.error.invalidCredentials',
-  'auth/invalid-email': 'auth.signIn.error.invalidCredentials',
-  // Deliberate UX tradeoff: signup identifies an existing account so the
-  // visitor can switch to sign-in. Password reset itself remains neutral and
-  // never reveals whether an address exists.
-  'auth/email-already-in-use': 'auth.signIn.error.emailInUse',
-  // The second accepted, narrower oracle: a throttled visitor retrying
-  // against generic copy just creates support load, and the limit is
-  // enforced server-side regardless of what the copy reveals.
-  'auth/too-many-requests': 'auth.signIn.error.tooManyRequests'
-}
-
-// Each dismissal shape gets the cloud app's own copy for it; the closed
-// message is the fallback for any future code in the family.
-const POPUP_DISMISSED_KEYS: Partial<Record<string, TranslationKey>> = {
-  'auth/popup-closed-by-user': 'auth.signIn.error.popupClosed',
-  'auth/cancelled-popup-request': 'auth.signIn.error.popupCancelled',
-  'auth/popup-blocked': 'auth.signIn.error.popupBlocked'
+export function signInErrorMessage(
+  classification: AuthErrorClassification,
+  locale: AuthCopyLocale,
+  hostname: string
+): string {
+  return classification.kind === 'unauthorized-domain'
+    ? unauthorizedDomainMessage(
+        { domain: hostname, email: SUPPORT_EMAIL },
+        locale
+      )
+    : authErrorMessage(classification, locale)
 }
 
 export function authSignInTransition(
@@ -83,21 +75,8 @@ export function authSignInTransition(
         : { step: 'pending', provider: event.provider }
     case 'credentialSucceeded':
       return { step: 'minting', email: event.email }
-    case 'signInFailed': {
-      const classified = classifyAuthError(event.error)
-      const emailKey =
-        classified.kind === 'auth'
-          ? EMAIL_ERROR_KEYS[classified.code]
-          : undefined
-      const popupKey =
-        classified.kind === 'popup-dismissed'
-          ? POPUP_DISMISSED_KEYS[classified.code]
-          : undefined
-      return {
-        step: 'error',
-        messageKey: emailKey ?? popupKey ?? ERROR_KEYS[classified.kind]
-      }
-    }
+    case 'signInFailed':
+      return { step: 'error', classification: classifyAuthError(event.error) }
     case 'provisioningFailed':
       return {
         step: 'signedIn',

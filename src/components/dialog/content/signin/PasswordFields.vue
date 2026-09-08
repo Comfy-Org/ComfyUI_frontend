@@ -103,6 +103,8 @@ import { computed, ref, useTemplateRef } from 'vue'
 import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { passwordRuleChecks } from '@comfyorg/account/signInSchemas'
+
 const { fieldClass = 'h-10' } = defineProps<{
   fieldClass?: HTMLAttributes['class']
 }>()
@@ -112,13 +114,5 @@ const password = ref('')
 const passwordField = useTemplateRef<ComponentPublicInstance>('passwordField')
 const { focused: isPasswordFocused } = useFocusWithin(passwordField)
 
-// TODO: Use dynamic form to better organize the password checks.
-// Ref: https://primevue.org/forms/#dynamic
-const passwordChecks = computed(() => ({
-  length: password.value.length >= 8 && password.value.length <= 32,
-  uppercase: /[A-Z]/.test(password.value),
-  lowercase: /[a-z]/.test(password.value),
-  number: /\d/.test(password.value),
-  special: /[^A-Za-z0-9]/.test(password.value)
-}))
+const passwordChecks = computed(() => passwordRuleChecks(password.value))
 </script>

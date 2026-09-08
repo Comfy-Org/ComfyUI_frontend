@@ -8,7 +8,10 @@ import type {
   AuthSignInProvider,
   AuthSignInState
 } from '../../config/auth-sign-in-state'
-import { authSignInTransition } from '../../config/auth-sign-in-state'
+import {
+  authSignInTransition,
+  signInErrorMessage
+} from '../../config/auth-sign-in-state'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -30,6 +33,7 @@ const {
   signOut: signOutWorkshopSession
 } = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
+const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
 type AuthenticatedUser = WorkshopSessionUser & {
@@ -280,7 +284,7 @@ onMounted(() => {
         role="alert"
         class="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-primary-comfy-canvas"
       >
-        {{ t(state.messageKey, locale) }}
+        {{ signInErrorMessage(state.classification, locale, hostname) }}
       </p>
 
       <p class="mt-6 text-center text-sm text-primary-comfy-canvas/55">

@@ -166,31 +166,6 @@ const translations = {
     en: 'Back to Workshop',
     'zh-CN': '返回 Workshop'
   },
-  'auth.signIn.error.popupClosed': {
-    en: 'The sign-in window closed before sign-in finished. Please try again.',
-    'zh-CN': '登录完成前登录窗口已关闭。请重试。'
-  },
-  'auth.signIn.error.popupCancelled': {
-    en: 'Another sign-in window was already open, so this one was cancelled. Please try again.',
-    'zh-CN': '另一个登录窗口已打开，因此此窗口已取消。请重试。'
-  },
-  'auth.signIn.error.popupBlocked': {
-    en: 'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
-    'zh-CN': '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。'
-  },
-  'auth.signIn.error.domain': {
-    en: 'Sign-in is not available on this address yet.',
-    'zh-CN': '当前地址暂不支持登录。'
-  },
-  'auth.signIn.error.blocked': {
-    en: "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org.",
-    'zh-CN':
-      '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。'
-  },
-  'auth.signIn.error.generic': {
-    en: 'Something went wrong while signing you in. Please try again.',
-    'zh-CN': '登录时出现问题，请重试。'
-  },
   'auth.signIn.error.provisioning': {
     en: 'You are signed in, but account setup did not finish. Please try again shortly.',
     'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
@@ -280,18 +255,6 @@ const translations = {
   'auth.signIn.forgotPassword': {
     en: 'Forgot password?',
     'zh-CN': '忘记密码？'
-  },
-  'auth.signIn.error.invalidCredentials': {
-    en: 'Invalid login credentials. Please check your email and password.',
-    'zh-CN': '登录凭据无效。请检查您的邮箱和密码。'
-  },
-  'auth.signIn.error.emailInUse': {
-    en: 'An account with this email already exists. Try signing in instead.',
-    'zh-CN': '已存在使用此电子邮件的账户。请尝试登录。'
-  },
-  'auth.signIn.error.tooManyRequests': {
-    en: 'Too many login attempts. Please wait a moment and try again.',
-    'zh-CN': '登录尝试次数过多。请稍等片刻再试。'
   },
   'auth.turnstile.expired': {
     en: 'The verification expired. Please solve it again.',
