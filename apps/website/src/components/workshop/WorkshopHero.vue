@@ -24,14 +24,16 @@ const slots = useSlots()
   <header
     :class="
       cn(
-        'relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
-        slots.default ? 'mb-8' : 'mb-10 pb-8'
+        'relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 max-sm:-mt-10 max-sm:pt-10 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
+        slots.default
+          ? 'mb-8 max-sm:mb-5'
+          : 'mb-10 pb-8 max-sm:mb-6 max-sm:pb-0'
       )
     "
     data-testid="workshop-hero"
   >
     <p
-      class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase"
+      class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase max-sm:mb-2"
     >
       <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
     </p>

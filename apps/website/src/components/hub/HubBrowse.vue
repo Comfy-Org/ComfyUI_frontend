@@ -276,7 +276,7 @@ const filteredTemplates = computed(() => {
     >
       <aside
         v-if="railBeside"
-        class="mb-8 lg:sticky lg:top-28 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4"
+        class="mb-8 max-sm:mb-4 lg:sticky lg:top-28 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4"
       >
         <HubUseCaseNav
           rail-beside

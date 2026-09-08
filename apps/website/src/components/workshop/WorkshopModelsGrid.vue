@@ -291,7 +291,7 @@ const menuItemClass =
         ref="nav"
         :class="
           cn(
-            'relative mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8',
+            'relative mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8 max-sm:mb-4',
             railBeside && 'max-sm:hidden',
             railBeside &&
               'lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0'
@@ -329,7 +329,7 @@ const menuItemClass =
 
     <div class="min-w-0">
       <div
-        class="bg-page sticky top-20 z-30 mb-8 flex items-center justify-end gap-3 py-4 lg:top-26"
+        class="bg-page sticky top-20 z-30 mb-8 flex items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       >
         <WorkshopSearchField
           v-model="query"

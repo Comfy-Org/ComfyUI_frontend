@@ -8462,7 +8462,7 @@ Enterprise`
     en: 'Browse and run partner models and curated workflows on Comfy.',
     'zh-CN': '在 Comfy 上浏览并运行合作伙伴模型和精选工作流。'
   },
-  'workshop.hero.eyebrow': { en: 'Browse models', 'zh-CN': '浏览模型' },
+  'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
     en: 'Run the best models',
     'zh-CN': '运行顶尖模型'
