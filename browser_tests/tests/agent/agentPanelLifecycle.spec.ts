@@ -150,7 +150,7 @@ test.describe(
       await openButton.click()
 
       const panel = page.getByTestId('docked-agent-panel')
-      const tabs = page.locator('.workflow-tabs .p-togglebutton')
+      const tabs = page.locator('.workflow-tabs .workflow-tab-button')
       await expect(panel).toBeVisible()
       await expect(tabs).toHaveCount(1)
 
