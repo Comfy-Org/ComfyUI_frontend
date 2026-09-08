@@ -7,6 +7,7 @@ import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
 import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -160,6 +161,7 @@ test.describe('Signin dialog', () => {
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
     await comfyPage.cloudAuth.mockFirebaseEndpoints('test@example.com')
     await mockWorkspace(comfyPage.page, workspace('personal', 'owner'), [])
+    await mockBilling(comfyPage.page)
     await comfyPage.page.route(
       '**/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?*',
       (route) =>
@@ -190,9 +192,17 @@ test.describe('Signin dialog', () => {
     await dialog.passwordInput.fill('TestPassword123!')
     await expect(dialog.root).toBeVisible()
 
+    const billingResponses = Promise.all(
+      ['status', 'balance', 'plans'].map((endpoint) =>
+        comfyPage.page.waitForResponse(`**/api/billing/${endpoint}`)
+      )
+    )
     await dialog.signInButton.click()
     await expect(dialog.root).toBeHidden()
     expect(await dialogResult).toBe(true)
+    for (const response of await billingResponses) {
+      expect(response.ok()).toBe(true)
+    }
   })
 
   test('Sign-in dialog resolves false when closed without sign-in', async ({
