@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import {
   classifyAuthError,
   isFirebaseAuthErrorLike
-} from '@comfyorg/auth-core/firebaseAuthError'
+} from '@comfyorg/account/firebaseAuthError'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
@@ -85,6 +85,14 @@ export const useAuthActions = () => {
           `auth.errors.${classification.code}`,
           t('auth.errors.generic')
         )
+      })
+    } else if (error instanceof FirebaseError) {
+      // classifyAuthError only knows auth/ codes; an app/ or installations/
+      // FirebaseError still gets the localized copy, never the raw SDK text.
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
       })
     } else {
       toastErrorHandler(error)

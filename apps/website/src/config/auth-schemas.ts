@@ -3,8 +3,8 @@
  * site's `t` has no parameter interpolation, so the `{length}`-style tokens
  * the schema messages carry are filled in here.
  */
-import type { AuthSchemaTranslate } from '@comfyorg/auth-core/signInSchemas'
-import { createAuthSchemas } from '@comfyorg/auth-core/signInSchemas'
+import type { AuthSchemaTranslate } from '@comfyorg/account/signInSchemas'
+import { createAuthSchemas } from '@comfyorg/account/signInSchemas'
 
 import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'

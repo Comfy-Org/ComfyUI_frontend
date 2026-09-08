@@ -24,7 +24,7 @@ const mockedGetServerFeature = vi.mocked(api.getServerFeature)
 const mockedSiteKey = vi.mocked(getTurnstileSiteKey)
 
 // The resolution rules themselves (normalizeTurnstileMode, isTurnstileEnabled,
-// useTurnstileGate) live in @comfyorg/auth-core and are tested there; this
+// useTurnstileGate) live in @comfyorg/account and are tested there; this
 // suite covers their binding to this app's config sources.
 describe('useTurnstile', () => {
   beforeEach(() => {

@@ -4,7 +4,7 @@
  * listener also fires, a provisioning failure after the popup succeeded —
  * are decided in one tested place instead of by handler timing.
  */
-import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
+import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
 
 import type { TranslationKey } from '../i18n/translations'
 
@@ -36,7 +36,7 @@ const ERROR_KEYS: Record<
   ReturnType<typeof classifyAuthError>['kind'],
   TranslationKey
 > = {
-  'popup-dismissed': 'auth.signIn.error.popupDismissed',
+  'popup-dismissed': 'auth.signIn.error.popupClosed',
   'unauthorized-domain': 'auth.signIn.error.domain',
   'signup-blocked': 'auth.signIn.error.blocked',
   auth: 'auth.signIn.error.generic',
@@ -57,7 +57,18 @@ const EMAIL_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
   // visitor can switch to sign-in. Password reset itself remains neutral and
   // never reveals whether an address exists.
   'auth/email-already-in-use': 'auth.signIn.error.emailInUse',
+  // The second accepted, narrower oracle: a throttled visitor retrying
+  // against generic copy just creates support load, and the limit is
+  // enforced server-side regardless of what the copy reveals.
   'auth/too-many-requests': 'auth.signIn.error.tooManyRequests'
+}
+
+// Each dismissal shape gets the cloud app's own copy for it; the closed
+// message is the fallback for any future code in the family.
+const POPUP_DISMISSED_KEYS: Partial<Record<string, TranslationKey>> = {
+  'auth/popup-closed-by-user': 'auth.signIn.error.popupClosed',
+  'auth/cancelled-popup-request': 'auth.signIn.error.popupCancelled',
+  'auth/popup-blocked': 'auth.signIn.error.popupBlocked'
 }
 
 export function authSignInTransition(
@@ -78,9 +89,13 @@ export function authSignInTransition(
         classified.kind === 'auth'
           ? EMAIL_ERROR_KEYS[classified.code]
           : undefined
+      const popupKey =
+        classified.kind === 'popup-dismissed'
+          ? POPUP_DISMISSED_KEYS[classified.code]
+          : undefined
       return {
         step: 'error',
-        messageKey: emailKey ?? ERROR_KEYS[classified.kind]
+        messageKey: emailKey ?? popupKey ?? ERROR_KEYS[classified.kind]
       }
     }
     case 'provisioningFailed':

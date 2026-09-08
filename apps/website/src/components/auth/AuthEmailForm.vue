@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 
-import TurnstileWidget from '@comfyorg/auth-core/TurnstileWidget.vue'
+import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
 import {
   isTurnstileEnabled,
   useTurnstileGate
-} from '@comfyorg/auth-core/turnstile'
+} from '@comfyorg/account/turnstile'
 
 import { authSchemasFor } from '../../config/auth-schemas'
+import { AUTH_FIELD_CLASS } from './authFieldClass'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -54,9 +55,6 @@ const turnstileEnabled = computed(
 const { token, unavailable, waiting } = useTurnstileGate(turnstileEnabled)
 
 const submitDisabled = computed(() => disabled || waiting.value)
-
-const FIELD_CLASS =
-  'focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus-visible:ring-3'
 
 function submit() {
   const schemas = authSchemasFor(locale)
@@ -107,7 +105,7 @@ defineExpose({ resetTurnstile })
         v-model="email"
         type="email"
         autocomplete="email"
-        :class="FIELD_CLASS"
+        :class="AUTH_FIELD_CLASS"
         :aria-invalid="Boolean(fieldErrors.email)"
       />
       <span v-if="fieldErrors.email" role="alert" class="text-xs text-red-400">
@@ -123,7 +121,7 @@ defineExpose({ resetTurnstile })
         v-model="password"
         type="password"
         :autocomplete="mode === 'signUp' ? 'new-password' : 'current-password'"
-        :class="FIELD_CLASS"
+        :class="AUTH_FIELD_CLASS"
         :aria-invalid="Boolean(fieldErrors.password)"
       />
       <span
@@ -150,7 +148,7 @@ defineExpose({ resetTurnstile })
         v-model="confirmPassword"
         type="password"
         autocomplete="new-password"
-        :class="FIELD_CLASS"
+        :class="AUTH_FIELD_CLASS"
         :aria-invalid="Boolean(fieldErrors.confirmPassword)"
       />
       <span

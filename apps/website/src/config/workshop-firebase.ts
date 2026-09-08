@@ -1,29 +1,20 @@
 /**
- * The Workshop's Firebase surface: one lazily-created auth instance bound to
- * the env-selected project, plus the sign-in actions. The sequencing rules
- * (social always provisions a customer; a failed provision during sign-up
- * rolls the user back) live tested in @comfyorg/auth-core — this module only
- * supplies the Firebase and network effects.
- *
- * Popup, never `signInWithRedirect`: the redirect flow is broken under
- * Safari's ITP for cross-origin helper domains, which is why the platform
- * app is popup-only too.
+ * The Workshop's Firebase surface: the package-owned identity entry bound
+ * to the env-selected project, plus the sign-in actions composed with
+ * customer provisioning. The sequencing rules (social always provisions a
+ * customer; a failed provision during sign-up rolls the user back) live
+ * tested in @comfyorg/account — this module only supplies the network
+ * effects and wires them to the package identity.
  */
-import { getApps, initializeApp } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
-import {
-  GithubAuthProvider,
-  GoogleAuthProvider,
-  getAuth,
-  onAuthStateChanged,
-  signInWithPopup
-} from 'firebase/auth'
 
+import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
-} from '@comfyorg/auth-core/provisioning'
+} from '@comfyorg/account/provisioning'
 
+import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL
@@ -35,12 +26,10 @@ const WORKSHOP_APP_NAME = 'workshop'
 /** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
 const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
 
-function workshopAuth() {
-  const existing = getApps().find((app) => app.name === WORKSHOP_APP_NAME)
-  return getAuth(
-    existing ?? initializeApp(WORKSHOP_FIREBASE_OPTIONS, WORKSHOP_APP_NAME)
-  )
-}
+const identity = createFirebaseIdentity({
+  options: WORKSHOP_FIREBASE_OPTIONS,
+  appName: WORKSHOP_APP_NAME
+})
 
 /**
  * Whether a `POST /customers` response means the customer is provisioned. A
@@ -101,13 +90,13 @@ export async function provisionCustomer(
 }
 
 async function socialSignIn(
-  provider: GoogleAuthProvider | GithubAuthProvider
+  signIn: () => Promise<UserCredential>
 ): Promise<UserCredential> {
   let credential: UserCredential | undefined
   try {
     return await socialSignInWithProvisioning({
       signIn: async () => {
-        credential = await signInWithPopup(workshopAuth(), provider)
+        credential = await signIn()
         return credential
       },
       provisionCustomer: (result) => provisionCustomer(result.user)
@@ -121,49 +110,43 @@ async function socialSignIn(
 }
 
 export function signInWorkshopWithGoogle(): Promise<UserCredential> {
-  return socialSignIn(new GoogleAuthProvider())
+  return socialSignIn(identity.signInWithGoogle)
 }
 
 export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return socialSignIn(new GithubAuthProvider())
+  return socialSignIn(identity.signInWithGitHub)
 }
 
-export async function signInWorkshopWithEmail(
+export function signInWorkshopWithEmail(
   email: string,
   password: string
 ): Promise<UserCredential> {
-  const [auth, { signInWithEmailAndPassword }] = await Promise.all([
-    workshopAuth(),
-    import('firebase/auth')
-  ])
   // Sign-in provisions too, mirroring the platform app: an account created
   // elsewhere may reach billing surfaces here first.
   return socialSignInWithProvisioning({
-    signIn: () => signInWithEmailAndPassword(auth, email, password),
+    signIn: () => identity.signInWithEmail(email, password),
     provisionCustomer: (credential) => provisionCustomer(credential.user)
   })
 }
 
 /**
- * Creation and provisioning as one sequence: the tested auth-core rollback
- * deletes the just-created Firebase user when provisioning fails, so a
- * rejected Turnstile token can never orphan an account that then bricks
- * every retry with email-already-in-use.
+ * Creation and provisioning as one sequence: a provisioning failure (e.g. a
+ * rejected Turnstile token) deletes the just-created Firebase user, with one
+ * retried delete, so a single blip cannot orphan an account that then bricks
+ * every retry with email-already-in-use. A double delete failure still
+ * orphans; the rollback hook is the signal for that case.
  */
-export async function signUpWorkshopWithEmail(
+export function signUpWorkshopWithEmail(
   email: string,
   password: string,
   turnstileToken?: string
 ): Promise<UserCredential> {
-  const [auth, { createUserWithEmailAndPassword }] = await Promise.all([
-    workshopAuth(),
-    import('firebase/auth')
-  ])
   return signUpWithProvisioning({
-    createUser: () => createUserWithEmailAndPassword(auth, email, password),
+    createUser: () => identity.createUserWithEmail(email, password),
     provisionCustomer: (credential) =>
       provisionCustomer(credential.user, { turnstileToken }),
     onRollbackFailure: (error) => {
+      captureSignupRollbackFailure()
       console.warn(
         'Failed to roll back orphaned Firebase user after customer creation failed',
         error
@@ -172,25 +155,17 @@ export async function signUpWorkshopWithEmail(
   })
 }
 
-export async function sendWorkshopPasswordReset(email: string): Promise<void> {
-  const [auth, { sendPasswordResetEmail }] = await Promise.all([
-    workshopAuth(),
-    import('firebase/auth')
-  ])
-  return sendPasswordResetEmail(auth, email)
+export function sendWorkshopPasswordReset(email: string): Promise<void> {
+  return identity.sendPasswordReset(email)
 }
 
-export async function signOutWorkshop(): Promise<void> {
-  const [auth, { signOut }] = await Promise.all([
-    workshopAuth(),
-    import('firebase/auth')
-  ])
-  return signOut(auth)
+export function signOutWorkshop(): Promise<void> {
+  return identity.signOut()
 }
 
 /** Fires with the restored user (or null) once Firebase settles, then on every change. */
 export function onWorkshopUserChanged(
   callback: (user: User | null) => void
 ): () => void {
-  return onAuthStateChanged(workshopAuth(), callback)
+  return identity.onUserChanged(callback)
 }

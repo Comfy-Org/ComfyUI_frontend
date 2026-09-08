@@ -91,10 +91,8 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await comfyPage.page.keyboard.press('ControlOrMeta+a')
 
     const totalNodes = await comfyPage.nodeOps.getNodeCount()
-    const selectedNodes = await comfyPage.page.evaluate(() =>
-      window.app!.canvas?.selected_nodes
-        ? Object.keys(window.app!.canvas.selected_nodes).length
-        : 0
+    const selectedNodes = await comfyPage.page.evaluate(
+      () => Object.keys(window.app!.canvas.selected_nodes).length
     )
 
     expect(selectedNodes).toBe(totalNodes)

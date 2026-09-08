@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { classifyAuthError } from '@comfyorg/auth-core/firebaseAuthError'
-import { onMounted, ref } from 'vue'
+import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
+import { computed, ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
-import { sendWorkshopPasswordReset } from '../../config/workshop-firebase'
+import { AUTH_FIELD_CLASS } from './authFieldClass'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -16,7 +16,6 @@ const { locale = 'en' } = defineProps<{
 const enabled = useWorkshopAuthFlag()
 const email = ref('')
 const fieldError = ref('')
-const signInHref = ref('/login/')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
@@ -33,6 +32,8 @@ async function submit() {
   fieldError.value = ''
   state.value = 'sending'
   try {
+    const { sendWorkshopPasswordReset } =
+      await import('../../config/workshop-firebase')
     await sendWorkshopPasswordReset(email.value)
     state.value = 'sent'
   } catch (error) {
@@ -52,11 +53,12 @@ function isUnknownEmailError(error: unknown): boolean {
   )
 }
 
-onMounted(() => {
+const signInHref = computed(() => {
+  if (typeof window === 'undefined') return '/login/'
   const destination = requestedReturnPath(window.location.search)
-  if (destination) {
-    signInHref.value = `/login/?returnTo=${encodeURIComponent(destination)}`
-  }
+  return destination
+    ? `/login/?returnTo=${encodeURIComponent(destination)}`
+    : '/login/'
 })
 </script>
 
@@ -88,7 +90,7 @@ onMounted(() => {
           v-model="email"
           type="email"
           autocomplete="email"
-          class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 px-4 text-sm text-primary-comfy-canvas outline-none focus-visible:ring-3"
+          :class="AUTH_FIELD_CLASS"
           :aria-invalid="Boolean(fieldError)"
         />
         <span v-if="fieldError" role="alert" class="text-xs text-red-400">

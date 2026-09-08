@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -13,15 +13,17 @@ const { locale = 'en' } = defineProps<{
 }>()
 
 const enabled = useWorkshopAuthFlag()
-const { user, session, ensureFresh, signOut } = useWorkshopSession()
+const { user, session, sessionFailure, ensureFresh, signOut } =
+  useWorkshopSession()
 const { balance } = useWorkshopCredits()
 
-const signInHref = ref('/login/')
-onMounted(() => {
-  signInHref.value = `/login/?returnTo=${encodeURIComponent(
-    window.location.pathname + window.location.search
-  )}`
-})
+const signInHref = computed(() =>
+  typeof window === 'undefined'
+    ? '/login/'
+    : `/login/?returnTo=${encodeURIComponent(
+        window.location.pathname + window.location.search
+      )}`
+)
 
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
@@ -78,7 +80,7 @@ async function signOutFromMenu() {
     </a>
 
     <button
-      v-else-if="!session"
+      v-else-if="!session && sessionFailure"
       type="button"
       :aria-busy="sessionRetryPending"
       :disabled="sessionRetryPending"
@@ -94,6 +96,15 @@ async function signOutFromMenu() {
         )
       }}
     </button>
+
+    <span
+      v-else-if="!session"
+      role="status"
+      aria-busy="true"
+      class="flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas/70 uppercase"
+    >
+      {{ t('auth.header.signingIn', locale) }}
+    </span>
 
     <div v-else ref="menuRoot" class="relative">
       <button

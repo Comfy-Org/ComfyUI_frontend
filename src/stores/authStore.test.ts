@@ -269,35 +269,35 @@ describe('useAuthStore', () => {
     })
 
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
       mockFeatureFlags.unifiedCloudAuthEnabled = true
-      idTokenCallback?.(mockUser) // initial event (always skipped)
-      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      idTokenCallback(mockUser) // initial event (always skipped)
+      idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
@@ -1393,6 +1393,24 @@ describe('useAuthStore', () => {
         expect(store.loading).toBe(false)
       })
     })
+
+    it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+      '%s aborts provisioning with the explicit gate error when no ID token can be minted',
+      async (method) => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+        mockUser.getIdToken.mockResolvedValue('')
+
+        await expect(store[method]()).rejects.toThrow(
+          'Cannot create customer: User not authenticated'
+        )
+        expect(
+          customerRequestBody(),
+          'provisioning must be gated on a mintable ID token, not attempted and left to fail downstream'
+        ).toBeUndefined()
+      }
+    )
 
     it('should handle concurrent social login attempts correctly', async () => {
       const mockUserCredential = { user: mockUser }

@@ -1,11 +1,13 @@
 {
-  "name": "@comfyorg/auth-core",
-  "version": "1.0.0",
+  "name": "@comfyorg/account",
+  "version": "1.0.0-alpha.0",
   "private": true,
-  "description": "Framework-light auth building blocks shared by the app and the website: sign-in/sign-up validation schemas, the Turnstile widget and its gating state, Firebase auth error classification, and customer-provisioning orchestration",
+  "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, a credits read client, and the package-owned Firebase identity entry",
   "keywords": [],
   "type": "module",
   "exports": {
+    "./core": "./src/core/index.ts",
+    "./firebase": "./src/firebase/index.ts",
     "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./signInSchemas": "./src/signInSchemas.ts",
     "./turnstile": "./src/turnstile.ts",
@@ -19,15 +21,23 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@vueuse/core": "catalog:",
-    "vue": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@testing-library/vue": "catalog:",
+    "@types/node": "catalog:",
+    "@vueuse/core": "catalog:",
+    "firebase": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "vue": "catalog:",
     "vue-tsc": "catalog:"
+  },
+  "peerDependencies": {
+    "@vueuse/core": "^14.4.0",
+    "firebase": "^11.6.0",
+    "vue": "^3.5.40"
   }
 }
