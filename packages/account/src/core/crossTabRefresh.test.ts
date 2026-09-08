@@ -63,6 +63,37 @@ afterEach(() => {
   FakeBroadcastChannel.all.length = 0
 })
 
+describe('createWebCrossTabRefreshPort leadership hold', () => {
+  it('releasing from inside the grant callback still releases the lock', async () => {
+    let holdSettled = false
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: (
+          _key: string,
+          _options: unknown,
+          grant: () => Promise<void> | undefined
+        ) =>
+          // Grant on a microtask, as the real lock manager does, so the
+          // disposer exists by the time onAcquired fires.
+          Promise.resolve().then(() => {
+            void Promise.resolve(grant()).then(() => {
+              holdSettled = true
+            })
+          })
+      }
+    })
+    const port = makePort()
+
+    const dispose = port.requestLeadership('key-1', () => dispose())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      holdSettled,
+      'abort() cannot cancel a granted lock and releaseHeld is not wired yet, so a synchronous release must not pin the lock for the page lifetime'
+    ).toBe(true)
+  })
+})
+
 describe('createWebCrossTabRefreshPort channel lifecycle', () => {
   it('publishing without a subscriber leaves no channel open', () => {
     const port = makePort()
