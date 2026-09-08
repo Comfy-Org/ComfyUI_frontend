@@ -723,7 +723,22 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const startInvalidation = invalidationEpoch
     const { mintId, response } = core(user, options)
     const result = await response
-    if (invalidationEpoch !== startInvalidation || mintId !== mintSequence) {
+    if (invalidationEpoch !== startInvalidation) {
+      return undefined
+    }
+    if (mintId !== mintSequence) {
+      // The newest mint won, but when it committed a credential for this
+      // caller's exact target, that credential answers the request — a lost
+      // race is not a failure. A different target (or none) stays undefined.
+      const requestedTarget = options.workspaceId ?? clientOptions.workspaceId
+      if (
+        credential !== undefined &&
+        credential.uid === user.uid &&
+        currentUser?.uid === user.uid &&
+        requestedTarget === credentialTarget
+      ) {
+        return { status: 'ok', session: credential }
+      }
       return undefined
     }
     if (
