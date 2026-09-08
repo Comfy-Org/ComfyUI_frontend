@@ -375,6 +375,27 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(7)
     })
 
+    it('keeps canonical layout geometry when configuring a materialized node', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      layoutStore.applyOperation({
+        type: 'moveNode',
+        graphId: scope.rootGraphId,
+        nodeId: toNodeId(1),
+        position: { x: 400, y: 500 },
+        source: LayoutSource.AgentRemote,
+        timestamp: Date.now()
+      })
+
+      reconcileAgentAdapters(graph)
+
+      expect({
+        live: [...graph.getNodeById(toNodeId(1))!.pos],
+        stored: layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
+          ?.position
+      }).toEqual({ live: [400, 500], stored: { x: 400, y: 500 } })
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
@@ -423,6 +444,51 @@ describe('reconcileAgentAdapters', () => {
       expect(reconcileAgentAdapters(graph)).toEqual([])
       expect(graph._nodes).toHaveLength(1)
       expect(graph.getNodeById(toNodeId(1))).toBe(live)
+    })
+
+    it('adopts canonical node and widget state across materialization and reconcile', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      const addedNodeState = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )
+      reconcileAgentAdapters(graph)
+      const live = graph.getNodeById(toNodeId(1))!
+      const materializedNodeState = live._state
+
+      mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 9 }
+        })
+      )
+      reconcileAgentAdapters(graph)
+
+      expect({
+        adoptedAddedNodeState: materializedNodeState === addedNodeState,
+        keptMaterializedNodeState: live._state === materializedNodeState,
+        liveWidget: live.widgets?.[0].value,
+        storedWidget: useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      }).toEqual({
+        adoptedAddedNodeState: true,
+        keptMaterializedNodeState: true,
+        liveWidget: 9,
+        storedWidget: 9
+      })
+      live.widgets![0].value = 10
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(10)
     })
 
     it('replaces a node whose record was re-created under the same id', () => {
@@ -944,6 +1010,29 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.subgraphs.get(definition.id)).toBe(subgraph)
       expect(graph.getNodeById(toNodeId(1))).toBe(instance)
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('retires each node lifetime once on document reset', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7)] as never
+      })
+      const { adapter, follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const instance = graph.getNodeById(toNodeId(1))!
+      const interior = graph.subgraphs.get(definition.id)!.nodes[0]
+      const instanceRemoved = vi.spyOn(instance, 'onRemoved')
+      const interiorRemoved = vi.fn()
+      interior.onRemoved = interiorRemoved
+
+      adapter.clearForReset('workflow', REMOTE)
+      reconcileAgentAdapters(graph)
+
+      expect(instanceRemoved).toHaveBeenCalledOnce()
+      expect(interiorRemoved).toHaveBeenCalledOnce()
     })
 
     it('does not treat a definition payload as an edit to an existing subgraph', () => {
