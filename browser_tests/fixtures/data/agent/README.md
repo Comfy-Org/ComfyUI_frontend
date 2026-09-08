@@ -86,8 +86,9 @@ Environment. Five values are required: the two provenance values and the three t
 | `AGENT_FULLSTACK_URL`                 | agent base URL, default `http://127.0.0.1:8086`                        |
 | `AGENT_M2M_SECRET_FILE`               | path to the shared secret, read at runtime and never printed; required |
 | `AGENT_WORKSPACE_ID`, `AGENT_USER_ID` | identity headers, as seeded by the launcher; required                  |
-| `AGENT_REDIS_EXEC`, `AGENT_PG_EXEC`   | commands that reach the stack's Redis and Postgres (the launcher       |
-|                                       | prints `docker exec` forms when the CLIs are not on PATH)              |
+| `AGENT_REDIS_EXEC`, `AGENT_PG_EXEC`   | commands that reach the stack's Redis and Postgres, split on spaces;   |
+|                                       | default `redis-cli` and `psql -U postgres -d postgres -At -c` (the     |
+|                                       | launcher prints `docker exec` forms when the CLIs are not on PATH)     |
 | `AGENT_ATTEMPT`                       | attempt label in every artifact name; defaults to a UTC stamp          |
 | `AGENT_TURN_TIMEOUT`                  | milliseconds to wait for the turn, default 180000                      |
 

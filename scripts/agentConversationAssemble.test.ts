@@ -186,6 +186,16 @@ describe('assembleConversation', () => {
     ).toThrow('cancel was not accepted')
   })
 
+  it('refuses a cancel that landed before the first frame', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          raw: cancelledTurn({ status: 202, body: {} }, 1_699_999_999_000)
+        })
+      )
+    ).toThrow('was cancelled before any frame arrived')
+  })
+
   it('records the cancel marker only for an accepted cancel', () => {
     const { conversation } = assembleConversation(
       input({ raw: cancelledTurn({ status: 202, body: {} }) })
@@ -1039,7 +1049,7 @@ describe('zRowsDump', () => {
   })
 
   it('refuses a result that is not a JSON object', () => {
-    expect(() => zRowsDump.parse(dump([1, 2]))).toThrow()
+    expect(() => zRowsDump.parse(dump([1, 2]))).toThrow('received array')
   })
 
   it('refuses a result string that is not JSON', () => {
@@ -1049,12 +1059,12 @@ describe('zRowsDump', () => {
   it('refuses a parent row without a tool call id', () => {
     expect(() =>
       zRowsDump.parse(dump({ ok: true }, { tool_call_id: null }))
-    ).toThrow()
+    ).toThrow('tool_call_id')
   })
 
   it('refuses a dump that did not come from postgres', () => {
     expect(() =>
       zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
-    ).toThrow()
+    ).toThrow('postgres')
   })
 })
