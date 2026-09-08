@@ -110,6 +110,40 @@ describe('parseFaqAnswer', () => {
     ])
   })
 
+  it('emphasises the intended phrase when a stray marker precedes it', () => {
+    expect(parseFaqAnswer('Star ** alone and **real bold** after')).toEqual([
+      { type: 'text', value: 'Star  alone and ' },
+      { type: 'strong', value: 'real bold' },
+      { type: 'text', value: ' after' }
+    ])
+  })
+
+  it('does not pair markers that trail word characters', () => {
+    expect(parseFaqAnswer('Tiers cost $10**, $20**')).toEqual([
+      { type: 'text', value: 'Tiers cost $10, $20' }
+    ])
+  })
+
+  it('does not treat spaced asterisks as emphasis', () => {
+    expect(parseFaqAnswer('2 ** 8 = 256')).toEqual([
+      { type: 'text', value: '2  8 = 256' }
+    ])
+  })
+
+  it('emphasises a phrase abutting CJK punctuation', () => {
+    expect(parseFaqAnswer('各处**价格一致**。')).toEqual([
+      { type: 'text', value: '各处' },
+      { type: 'strong', value: '价格一致' },
+      { type: 'text', value: '。' }
+    ])
+  })
+
+  it('falls back to the url when a label is only delimiters', () => {
+    expect(parseFaqAnswer('[**](https://x.com/a)')).toEqual([
+      { type: 'link', value: 'https://x.com/a' }
+    ])
+  })
+
   it('does not pair bold markers across a paragraph break', () => {
     expect(parseFaqAnswer('One **stray.\n\nTwo** stray.')).toEqual([
       { type: 'text', value: 'One stray.\n\nTwo stray.' }

@@ -12,7 +12,11 @@ interface MarkupSpan {
 
 const MARKDOWN_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
 const BARE_URL = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
-const BOLD = /\*\*([^*\n]+)\*\*/g
+// Group 1 is the character preceding `**` — captured, not looked behind, so the
+// pattern still parses on Safari < 16.4. Opening away from a word character and
+// refusing whitespace just inside the delimiters stops a stray `**` pairing with
+// a later one and emphasising everything between (e.g. `$10**, $20**`).
+const BOLD = /(^|[^\w])\*\*(?![\s*])([^*\n]*[^\s*])\*\*/g
 const BOLD_DELIMITER = '**'
 
 const withoutBoldDelimiters = (text: string) =>
@@ -38,7 +42,7 @@ export function parseFaqAnswer(answer: string): FaqAnswerPart[] {
       part: {
         type: 'link',
         value: match[2],
-        label: withoutBoldDelimiters(match[1])
+        label: withoutBoldDelimiters(match[1]) || undefined
       }
     })
   }
@@ -52,10 +56,10 @@ export function parseFaqAnswer(answer: string): FaqAnswerPart[] {
   }
 
   for (const match of answer.matchAll(BOLD)) {
-    const start = match.index
-    const end = start + match[0].length
+    const start = match.index + match[1].length
+    const end = start + match[0].length - match[1].length
     if (overlapsClaimed(start, end)) continue
-    spans.push({ start, end, part: { type: 'strong', value: match[1] } })
+    spans.push({ start, end, part: { type: 'strong', value: match[2] } })
   }
 
   spans.sort((a, b) => a.start - b.start)

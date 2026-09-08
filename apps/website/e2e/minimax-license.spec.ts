@@ -7,6 +7,7 @@ import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { faqAnswerPlainText, parseFaqAnswer } from '../src/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
@@ -32,16 +33,11 @@ function faqAnswer(id: string, locale: Locale) {
   }
 }
 
-// The Q&A section is client:visible, so a click can land before it hydrates.
 async function openFaq(page: Page, question: string): Promise<Locator> {
   const trigger = page.getByRole('button', { name: question })
-  await trigger.scrollIntoViewIfNeeded()
-  await expect(async () => {
-    await trigger.click()
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true', {
-      timeout: 1000
-    })
-  }).toPass()
+  await waitForIsland(page, trigger)
+  await trigger.click()
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true')
   return page.getByRole('region', { name: question })
 }
 
@@ -106,6 +102,7 @@ test.describe('MiniMax license page @smoke', () => {
 
     const answer = await openFaq(page, question)
 
+    await expect(answer.locator('strong')).toBeVisible()
     await expect(answer.locator('strong')).toHaveText(emphasised[0])
     await expect(answer).toHaveText(plainText)
   })
@@ -163,6 +160,7 @@ test.describe('MiniMax license page — zh-CN', () => {
 
     const answer = await openFaq(page, question)
 
+    await expect(answer.locator('strong')).toBeVisible()
     await expect(answer.locator('strong')).toHaveText(emphasised[0])
     await expect(answer).toHaveText(plainText)
   })
