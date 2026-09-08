@@ -138,6 +138,21 @@ describe('bootstrapTracer', () => {
     expect(trackBootstrapComplete).not.toHaveBeenCalled()
   })
 
+  it('reaches Datadog directly for a terminal outcome with no registry', () => {
+    useTelemetry.mockReturnValue(null)
+
+    new BootstrapTracer().complete()
+    new BootstrapTracer().complete('failed')
+
+    expect(
+      reportBootstrapToRum.mock.calls.map(([, metadata]) => metadata.outcome)
+    ).toEqual(['completed', 'failed'])
+    expect(trackBootstrapComplete).not.toHaveBeenCalled()
+    expect(markViewLoaded).toHaveBeenCalledOnce()
+
+    useTelemetry.mockReturnValue({ trackBootstrapComplete })
+  })
+
   it('sets the view loading time only for a startup that reached a working app', () => {
     const completed = new BootstrapTracer()
     completed.complete()
