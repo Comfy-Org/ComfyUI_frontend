@@ -1,13 +1,5 @@
-import {
-  DEFAULT_LOCALE,
-  LOCALE_CODES,
-  LOCALE_PREFIXES,
-  LOCALES,
-  isPageIndexable,
-  localePrefix,
-  isLocale,
-  type Locale
-} from '../config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALE_PREFIXES, LOCALES, isPageIndexable, localePrefix, isLocale } from '../config/locales';
+import type { Locale } from '../config/locales';
 import { isLocaleInvariantPath, localizeHref } from '../config/routes'
 
 export interface Alternate {
@@ -76,7 +68,7 @@ export function hreflangAlternates(
   const alternates: Alternate[] = LOCALE_CODES.filter((locale) =>
     isPageIndexable(locale, en)
   ).map((locale) => ({
-    hreflang: LOCALES[locale].hreflang as Locale,
+    hreflang: LOCALES[locale].hreflang,
     href: locale === DEFAULT_LOCALE ? enHref : twin(locale)
   }))
   alternates.push({ hreflang: 'x-default', href: enHref })
@@ -154,6 +146,13 @@ export function ogLocaleAlternate(
   locale: string,
   alternates: Alternate[]
 ): string | null {
-  if (alternates.length === 0) return null
-  return locale === 'en' ? 'zh_CN' : 'en_US'
+  // The target has to be in this page's own cluster. A non-empty cluster was
+  // not enough: an English-only route still carries `en` and `x-default`, so
+  // every one of them advertised a Chinese alternate for a page that does not
+  // exist. No page does that today, but nothing stopped it.
+  const target = locale === 'en' ? 'zh-CN' : 'en'
+  if (!alternates.some((alternate) => alternate.hreflang === target)) {
+    return null
+  }
+  return target === 'zh-CN' ? 'zh_CN' : 'en_US'
 }

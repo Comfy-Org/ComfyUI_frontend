@@ -92,7 +92,11 @@ export function localePrefix(locale: Locale): string {
 }
 
 export function isLocale(value: string | undefined): value is Locale {
-  return value !== undefined && value in LOCALES
+  // Own keys only. `in` also finds inherited names, so `isLocale('toString')`
+  // was true and narrowed to Locale, after which every lookup keyed on it —
+  // prefix, hreflang, og locale — came back undefined instead of falling to
+  // DEFAULT_LOCALE.
+  return value !== undefined && Object.hasOwn(LOCALES, value)
 }
 
 /**

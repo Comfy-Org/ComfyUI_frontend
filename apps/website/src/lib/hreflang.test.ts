@@ -9,6 +9,7 @@ import { PARTIAL_LOCALE_ROUTES } from '../config/locales'
 import { isLocaleInvariantPath } from '../config/routes'
 import { redirects } from '../config/redirects'
 import { routeOf } from '../utils/hreflangRoutes'
+import type { Alternate } from './hreflang'
 import {
   canonicalPath,
   hreflangAlternates,
@@ -164,6 +165,35 @@ describe('og locale', () => {
  * Static routes only. A dynamic route's `getStaticPaths` can produce any slug
  * set, which the file tree cannot see.
  */
+describe('ogLocaleAlternate', () => {
+  const alt = (...codes: Alternate['hreflang'][]): Alternate[] =>
+    codes.map((hreflang) => ({ hreflang, href: 'https://comfy.org/x/' }))
+
+  it('names the Chinese twin when the page has one', () => {
+    expect(ogLocaleAlternate('en', alt('en', 'zh-CN', 'x-default'))).toBe(
+      'zh_CN'
+    )
+  })
+
+  /**
+   * An English-only route still carries `en` and `x-default`, so a non-empty
+   * cluster was never evidence that a Chinese page exists.
+   */
+  it('names nothing when the target locale is not published', () => {
+    expect(ogLocaleAlternate('en', alt('en', 'x-default'))).toBeNull()
+  })
+
+  it('names nothing for a page outside any cluster', () => {
+    expect(ogLocaleAlternate('en', [])).toBeNull()
+  })
+
+  it('points a localized page back at English', () => {
+    expect(ogLocaleAlternate('zh-CN', alt('en', 'zh-CN', 'x-default'))).toBe(
+      'en_US'
+    )
+  })
+})
+
 describe('the allowlist agrees with the page tree', () => {
   const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
 
