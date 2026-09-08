@@ -18,15 +18,6 @@ interface AgentPaywallPresentationInput {
   canSubscribeSelfServe: boolean
 }
 
-const TIERS_WITH_HIGHER_PERSONAL_TIER: ReadonlySet<SubscriptionTier> = new Set([
-  'STANDARD',
-  'CREATOR'
-])
-
-function hasHigherPersonalTier(tier: SubscriptionTier | null): boolean {
-  return tier !== null && TIERS_WITH_HIGHER_PERSONAL_TIER.has(tier)
-}
-
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
   kind: 'subscribed',
   showUpgrade: true
@@ -46,6 +37,7 @@ export function resolveAgentPaywallPresentation({
   }
   return {
     kind: 'subscribed',
-    showUpgrade: canSubscribeSelfServe && hasHigherPersonalTier(tier)
+    showUpgrade:
+      canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
   }
 }

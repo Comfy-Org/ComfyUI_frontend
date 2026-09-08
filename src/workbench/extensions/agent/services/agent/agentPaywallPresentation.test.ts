@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { resolveAgentPaywallPresentation } from './agentPaywallPresentation'
 
-const resolveServerCapabilities = resolveAgentPaywallPresentation
-
 describe('resolveAgentPaywallPresentation', () => {
   it.for([
     {
@@ -32,7 +30,7 @@ describe('resolveAgentPaywallPresentation', () => {
     }
   ])('maps the ready server pair for $name', (testCase) => {
     expect(
-      resolveServerCapabilities({
+      resolveAgentPaywallPresentation({
         role: 'owner',
         tier: 'STANDARD',
         canTopUp: testCase.canTopUp,
@@ -53,7 +51,7 @@ describe('resolveAgentPaywallPresentation', () => {
     'offers Upgrade plan only from a personal tier with a higher tier ($tier)',
     ({ tier, showUpgrade }) => {
       expect(
-        resolveServerCapabilities({
+        resolveAgentPaywallPresentation({
           role: 'owner',
           tier,
           canTopUp: true,
@@ -65,7 +63,7 @@ describe('resolveAgentPaywallPresentation', () => {
 
   it('keeps the member override ahead of the server pair', () => {
     expect(
-      resolveServerCapabilities({
+      resolveAgentPaywallPresentation({
         role: 'member',
         tier: 'STANDARD',
         canTopUp: true,
