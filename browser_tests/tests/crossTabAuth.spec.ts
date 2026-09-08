@@ -22,6 +22,21 @@ async function bootSignedIn(page: Page): Promise<void> {
   await gotoAndWaitSignedIn(page)
 }
 
+// Sign-out's cloud branch (useAuthActions.ts) does a real, unconditional
+// `window.location.href = '/cloud/login'` after clearing in-app state. That
+// route exists only in the cloud SPA's own vue-router; this harness's
+// ComfyUI backend serves static files (aiohttp `web.static('/', ...)`) with
+// no fallback, so the navigation 404s, and Chromium renders its own error
+// interstitial in place of the app. Confirmed directly: blocking only this
+// one navigation leaves every other part of sign-out (the in-app state
+// clear, both tabs' reaction) working immediately and correctly, so the
+// propagation this spec exists to prove was never the problem.
+async function clickLogout(page: Page): Promise<void> {
+  await page.route('**/cloud/login', (route) => route.abort())
+  await page.getByTestId('current-user-button').click()
+  await page.getByTestId('logout-menu-item').click()
+}
+
 async function expectSignedOut(page: Page, message: string): Promise<void> {
   await expect(async () => {
     expect(
@@ -62,8 +77,7 @@ test.describe('cross-tab auth', { tag: ['@cloud'] }, () => {
     await bootSignedIn(pageA)
     await bootSignedIn(pageB)
 
-    await pageA.getByTestId('current-user-button').click()
-    await pageA.getByTestId('logout-menu-item').click()
+    await clickLogout(pageA)
 
     await expectSignedOut(pageA, 'the signing-out tab must land signed out')
     await expectSignedOut(
