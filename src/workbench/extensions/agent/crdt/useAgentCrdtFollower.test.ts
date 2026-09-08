@@ -8,10 +8,11 @@
  */
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref, shallowRef } from 'vue'
+import { computed, defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
+import { createI18n } from 'vue-i18n'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -165,7 +166,10 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  schemaErrorFallback: Readonly<Ref<string>> = ref(
+    'Document schema version mismatch'
+  )
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -183,7 +187,7 @@ function mountFollower(
         () => null,
         isTargetActive,
         getGraph,
-        'Document schema version mismatch'
+        schemaErrorFallback
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -394,6 +398,35 @@ describe('useAgentCrdtFollower', () => {
     })
 
     expect(status().schemaError).toBe('Document schema version mismatch')
+    unmount()
+  })
+
+  it('uses the current locale when a malformed schema error arrives', () => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: { schemaMismatch: 'English fallback' },
+        fr: { schemaMismatch: 'Texte français' }
+      }
+    })
+    const fallback = computed(() => i18n.global.t('schemaMismatch'))
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      fallback
+    )
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', message: 123 })
+    expect(status().schemaError).toBe('English fallback')
+
+    i18n.global.locale.value = 'fr'
+    expect(status().schemaError).toBe('Texte français')
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', message: 123 })
+
+    expect(status().schemaError).toBe('Texte français')
     unmount()
   })
 

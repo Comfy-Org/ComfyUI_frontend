@@ -62,15 +62,19 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
-function readSchemaErrorMessage(detail: unknown, fallback: string): string {
+type SchemaErrorState =
+  | { kind: 'fallback' }
+  | { kind: 'message'; message: string }
+
+function readSchemaError(detail: unknown): SchemaErrorState {
   if (
     detail !== null &&
     typeof detail === 'object' &&
     'message' in detail &&
-    typeof (detail as { message?: unknown }).message === 'string'
+    typeof detail.message === 'string'
   )
-    return (detail as { message: string }).message
-  return fallback
+    return { kind: 'message', message: detail.message }
+  return { kind: 'fallback' }
 }
 
 function safeSessionStorage(): Storage | null {
@@ -213,12 +217,17 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  schemaErrorFallback = ''
+  schemaErrorFallback: Readonly<Ref<string>> = ref('')
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
-  const schemaError = ref<string | null>(null)
+  const schemaError = ref<SchemaErrorState | null>(null)
+  const schemaErrorMessage = computed(() => {
+    const error = schemaError.value
+    if (error === null) return null
+    return error.kind === 'message' ? error.message : schemaErrorFallback.value
+  })
   const subscribedWorkflowId = ref<string | null>(null)
   // Set to the workflow id a `schema_version_mismatch` refusal was reported
   // for; cleared only when the watch rebinds to a different workflow (or the
@@ -419,10 +428,7 @@ export function useAgentCrdtFollower(
       if (event.detail?.code === 'schema_version_mismatch') {
         clearSubscribeRetry()
         permanentSchemaMismatchWorkflowId = subscribedWorkflowId.value
-        schemaError.value = readSchemaErrorMessage(
-          event.detail,
-          schemaErrorFallback
-        )
+        schemaError.value = readSchemaError(event.detail)
       } else {
         scheduleSubscribeRetry()
       }
@@ -565,7 +571,7 @@ export function useAgentCrdtFollower(
         : null
     const workflowId =
       typeof detail?.workflowId === 'string' ? detail.workflowId : null
-    schemaError.value = readSchemaErrorMessage(detail, schemaErrorFallback)
+    schemaError.value = readSchemaError(detail)
     if (workflowId !== null) adapter.discardPending(workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
@@ -769,7 +775,7 @@ export function useAgentCrdtFollower(
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
-    schemaError: schemaError.value,
+    schemaError: schemaErrorMessage.value,
     outcomes: outcomes.value
   }))
 

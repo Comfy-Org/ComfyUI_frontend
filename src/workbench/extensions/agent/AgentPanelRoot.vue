@@ -465,7 +465,7 @@ const {
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
   () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
-  t('agent.schemaMismatchDetail')
+  computed(() => t('agent.schemaMismatchDetail'))
 )
 watch(
   () => crdtStatus.value.schemaError,
