@@ -179,6 +179,26 @@ describe('useBillingPlans', () => {
       })
     })
 
+    it('reports an outright failure when no catalog was ever cached', async () => {
+      mockGetBillingPlans.mockRejectedValue(new Error('network down'))
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, error, plans } = useBillingPlans()
+
+      await fetchPlans()
+
+      expect(error.value).toBe('network down')
+      expect(plans.value).toEqual([])
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ outcome: 'failed' }),
+          context: expect.objectContaining({ has_cached_plans: false }),
+          level: 'error'
+        })
+      )
+    })
+
     it('uses a fallback message when rejection is not an Error instance', async () => {
       mockGetBillingPlans.mockRejectedValue('boom')
 
