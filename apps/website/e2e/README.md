@@ -1,28 +1,15 @@
 # Website browser tests
 
 Use `test` from `./fixtures/blockExternalMedia`, not `@playwright/test`.
-Use the fixture's `page` and `context`; use scoped `test.use` options for
-user-agent variants rather than creating another browser context.
+Use its `page` and `context`. Set user-agent variants with scoped `test.use`
+options instead of creating browser contexts.
 
 ## No external requests
 
-The context routes allow only the configured preview origin to reach the
-network. Known analytics requests are aborted; media, fonts, and embeds receive
-local responses. Unexpected URLs are blocked and fail the owning test.
-Service workers are disabled. WebSockets are blocked and reported too.
-
-A local deny proxy rejects traffic that bypasses routing, including preconnects.
-It never forwards requests. Playwright's request fixture also uses that proxy.
-Do not use Node network clients in these tests.
-
 Register test-specific `context.route` responses before navigation. They override
-the shared routes, including for a popup's first request. Use `route.fulfill` or
-`route.abort`, never `route.fetch` or external `route.continue`. Assert the real
-destination URL and application behavior without contacting that destination.
-
-`network-isolation.spec.ts` runs isolated failing probes to verify that unknown
-navigations, popup requests, and WebSockets fail their tests. It also verifies
-that an HTTP route bypass receives the deny proxy's 502 response.
+the shared routes, including a popup's first request. Use `route.fulfill` or
+`route.abort`, never `route.fetch` or external `route.continue`. Do not use Node
+network clients. Assert destination URLs without contacting them.
 
 ## Verify without outbound connectivity
 
@@ -46,15 +33,15 @@ sudo unshare --net sh -c '
 ' sh "$(id -un)" "$PATH" "$(command -v pnpm)"
 ```
 
-The namespace has no external interface or default route. The dummy interface
-keeps `navigator.onLine` true so the email SDK exercises submission rather than
-offline queuing. Both Astro preview and Playwright run inside the namespace.
+The dummy interface keeps `navigator.onLine` true so the email SDK submits
+instead of queueing offline. Astro preview and Playwright both run inside the
+namespace.
 
 ## Font fixture
 
-`assets/inter-latin.woff2` is the unmodified Inter Latin font served by the
-website's [Google Fonts stylesheet](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap),
-downloaded for Chromium on September 7, 2026. The fixture embeds it in the CSS
-response so tests never download fonts. Its [source file](https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2)
+`assets/inter-latin.woff2` is the unmodified Inter Latin font from the website's
+[Google Fonts stylesheet](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap),
+downloaded for Chromium on September 7, 2026. Its
+[source file](https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2)
 has SHA-256 `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62`.
 The SIL Open Font License is in `assets/Inter-OFL.txt`.

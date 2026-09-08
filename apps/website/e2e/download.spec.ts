@@ -126,7 +126,6 @@ test.describe('Download page @smoke', () => {
 
       await expect(hero.getByRole('textbox')).toHaveCount(0)
 
-      // Desktop must never load the CDP SDK — settle the network, then assert silence.
       await page.waitForLoadState('networkidle')
       expect(captured).toHaveLength(0)
     })
@@ -203,8 +202,6 @@ test.describe('Download page @smoke', () => {
         captured.filter((capture) => capture.method === 'POST')
       const paths = () => events().map((capture) => capture.path)
 
-      // Poll until both expected calls arrive; tolerate unrelated SDK posts
-      // (e.g. sampled /m metrics), but keep identify-before-track ordering.
       await expect
         .poll(() => paths())
         .toEqual(expect.arrayContaining(['/v1/i', '/v1/t']))
@@ -257,8 +254,6 @@ test.describe('Download page @smoke', () => {
       await hero
         .getByRole('textbox', { name: /Email address/i })
         .fill('someone@example.com')
-      // Bots fill the hidden decoy via script — mimic that, since Playwright
-      // refuses to fill invisible elements.
       await hero.locator('input[name="company"]').evaluate((decoy) => {
         const input = decoy as HTMLInputElement
         input.value = 'spam corp'
