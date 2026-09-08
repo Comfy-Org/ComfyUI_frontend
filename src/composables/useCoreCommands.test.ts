@@ -60,9 +60,7 @@ vi.mock('@/scripts/app', () => {
     app: {
       clean: vi.fn(() => {
         // Simulate app.clean() calling graph.clear() only when not in subgraph
-        if (!mockCanvas.subgraph) {
-          mockGraphClear()
-        }
+        mockGraphClear()
       }),
       openClipspace: vi.fn(),
       queuePrompt: vi.fn().mockResolvedValue(true),
@@ -297,7 +295,7 @@ describe('useCoreCommands', () => {
       getNodeById: vi.fn(),
       setDirtyCanvas: vi.fn(),
       sendActionToCanvas: vi.fn(),
-      extra: {} as Record<string, unknown>
+      extra: {}
     } as Partial<typeof app.canvas.subgraph> as typeof app.canvas.subgraph
   }
 
@@ -388,7 +386,7 @@ describe('useCoreCommands', () => {
       expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       // Should only remove user nodes, not input/output nodes
-      const subgraph = app.canvas.subgraph!
+      const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
       expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2]) // user1
       expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3]) // user2
@@ -811,9 +809,7 @@ describe('useCoreCommands', () => {
     let openSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
-      openSpy = vi
-        .spyOn(window, 'open')
-        .mockImplementation(() => null as unknown as Window)
+      openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     })
 
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {

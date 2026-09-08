@@ -61,9 +61,7 @@ function getPromotedInputValue(
 ): TWidgetValue | undefined {
   const input = host.inputs.find((input) => input.name === name)
   if (!input?.widgetId) return undefined
-  return useWidgetValueStore().getWidget(input.widgetId)?.value as
-    | TWidgetValue
-    | undefined
+  return useWidgetValueStore().getWidget(input.widgetId)?.value
 }
 
 function addPrimitiveWithTargets(

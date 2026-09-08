@@ -11,7 +11,7 @@ const mockStoreDef = vi.hoisted(() => ({
     hardness: 0.9,
     opacity: 1,
     stepSize: 5,
-    type: 'arc' as string
+    type: 'arc'
   },
   currentTool: 'pen' as string,
   activeLayer: 'mask' as string,

@@ -105,6 +105,33 @@ export interface ImageLoadFailureMetadata {
 }
 
 /**
+ * One row per session describing how long startup took and where the time
+ * went. `total_ms` is measured from navigation start, so it is directly
+ * comparable to what a user experiences and can be percentiled across sessions
+ * without joining per-phase events.
+ *
+ * `outcome` keeps the bad sessions in the data:
+ * - `completed` — the loading screen came down normally.
+ * - `failed` — startup threw; the loading screen came down anyway.
+ * - `timed_out` — startup was still running at the watchdog deadline. Emitted
+ *   *in addition to* whichever terminal row eventually follows, so a load that
+ *   hangs is counted even when it never finishes. `pending` names the phases
+ *   still open, which is where the session is stuck.
+ *
+ * Without the `timed_out` row the sessions users complain about are precisely
+ * the ones absent from the data.
+ */
+export interface BootstrapCompleteMetadata {
+  total_ms: number
+  outcome: 'completed' | 'failed' | 'timed_out'
+  phase_count: number
+  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  phases: Record<string, number>
+  /** Phases still running when this row was emitted. Only set for `timed_out`. */
+  pending?: string[]
+}
+
+/**
  * Survey field ids mapped to answers. Fields are backend-overridable, so all
  * are optional.
  */
@@ -975,6 +1002,8 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagEvaluation?(key: string, value: unknown): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
@@ -983,6 +1012,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
+  trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -1135,6 +1165,7 @@ export const TelemetryEvents = {
   UNIFIED_AUTH_REFRESH_SUCCEEDED: 'auth.unified.refresh.succeeded',
   UNIFIED_AUTH_REFRESH_FAILED: 'auth.unified.refresh.failed',
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1326,6 +1357,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | ImageLoadFailureMetadata
+  | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

@@ -193,9 +193,9 @@ function isLiteGraphSingleton(
   if (!variable) return false
 
   return variable.defs.some((definition) => {
-    const source = definition.parent?.source?.value
+    if (definition.type !== 'ImportBinding') return false
+    const source = definition.parent.source?.value
     return (
-      definition.type === 'ImportBinding' &&
       definition.node.imported?.name === 'LiteGraph' &&
       typeof source === 'string' &&
       ((source.startsWith('.') && source.endsWith('/litegraph')) ||
@@ -328,7 +328,7 @@ function runsDirectlyInVitestCallback(
   const parent = ancestors[boundaryIndex - 1]
   return (
     isVitestCallbackCall(context, parent, callbackImports) &&
-    parent.arguments.includes(callback as Expression)
+    parent.arguments.includes(callback)
   )
 }
 

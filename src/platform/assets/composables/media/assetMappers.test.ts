@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { mapInputFileToAssetItem } from './assetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+
+import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -54,5 +57,40 @@ describe('mapInputFileToAssetItem', () => {
 
     expect(asset.preview_url).toBe('/api/view?filename=clip.mp4&type=output')
     expect(asset.tags).toEqual(['output'])
+  })
+})
+
+describe('unflattenOutputAssets', () => {
+  it('preserves each output directory type', () => {
+    const asset = {
+      job_id: 'job-id',
+      size: 1,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      {
+        ...asset,
+        id: 'temp-id',
+        name: 'preview.png',
+        tags: ['temp']
+      },
+      {
+        ...asset,
+        id: 'output-id',
+        name: 'saved.png',
+        created_at: '2026-01-01T00:00:01Z',
+        updated_at: '2026-01-01T00:00:01Z',
+        tags: ['output']
+      }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
+      'temp',
+      'output'
+    ])
   })
 })

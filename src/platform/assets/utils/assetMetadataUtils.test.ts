@@ -7,6 +7,7 @@ import {
   MISSING_TAG,
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import {
   buildModelTypeTagUpdate,
   getAssetAdditionalTags,
@@ -35,16 +36,11 @@ import {
   toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
 
-const { isCloudRef } = vi.hoisted(() => ({
-  isCloudRef: { value: true }
-}))
+const mockDistribution = vi.hoisted(
+  (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: true })
+)
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  get isCloud() {
-    return isCloudRef.value
-  }
-}))
+vi.mock('@/platform/distribution/types', () => mockDistribution)
 
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {
@@ -336,22 +332,22 @@ describe('assetMetadataUtils', () => {
 
   describe('getAssetStoredFilename', () => {
     afterEach(() => {
-      isCloudRef.value = true
+      mockDistribution.isCloud = true
     })
 
     it('returns the content hash on cloud when present', () => {
-      isCloudRef.value = true
+      mockDistribution.isCloud = true
       expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
     })
 
     it('falls back to name on cloud when no hash is present', () => {
-      isCloudRef.value = true
+      mockDistribution.isCloud = true
       const asset = { ...mockAsset, hash: undefined }
       expect(getAssetStoredFilename(asset)).toBe('test-model')
     })
 
     it('returns name on OSS regardless of hash', () => {
-      isCloudRef.value = false
+      mockDistribution.isCloud = false
       expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
     })
   })
