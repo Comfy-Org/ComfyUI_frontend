@@ -20,8 +20,9 @@ usable for deciding what to test next, for three reasons.
    subscription UI, video edit panel, and compositor are all in that set. Raw
    source lines are not comparable to lcov's executable-line count. Applying
    the loaded files' executable-to-raw ratio (0.27) to the absent files gives
-   about 17.5k executable lines and a corrected figure near 54%. The exact
-   number arrives when those files enter the report.
+   about 17.5k executable lines and a corrected figure near 54.5%:
+   `48,026 / (70,520 + 17,500)`. The exact number arrives when those files
+   enter the report.
 2. Only the `chromium` project sets `COLLECT_COVERAGE`. The 154 `cloud`
    tests that exercise sign-in, workspaces, billing, and the agent panel are
    never credited.
