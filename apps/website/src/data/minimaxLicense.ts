@@ -19,8 +19,7 @@ const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 const MINIMAX_H3_DESIGN_HREF =
   'https://design.minimax.io/tools/minimax-h3-comfyui'
-const MINIMAX_H3_COMMUNITY_LICENSE_HREF =
-  'https://platform.minimax.io/h3-license'
+const MINIMAX_H3_LICENSE_REQUEST_HREF = 'https://platform.minimax.io/h3-license'
 
 // Rows and figures come from the tier table supplied for this page
 // (2026-09-02); the pricing numbers live only here, so a deal change means
@@ -224,8 +223,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '谁需要 MiniMax H3 商业许可？'
         },
         answer: {
-          en: `The H3 Community License generally permits commercial use, provided your commercial products and services generate no more than $20 million in yearly revenue and you comply with its other terms. Businesses above that threshold must obtain separate written authorization from MiniMax.\n\nYou need to explicitly acquire a MiniMax H3 community license if you want to use MiniMax H3 in the United States, European Union, United Kingdom, or South Korea, which are excluded from the H3 Community License. You can acquire them here: ${MINIMAX_H3_COMMUNITY_LICENSE_HREF}`,
-          'zh-CN': `H3 社区许可通常允许商业使用，前提是你的商业产品和服务年收入不超过 2000 万美元，并且你遵守其他条款。超过该门槛的企业必须另行获得 MiniMax 的书面授权。\n\n如果你想在美国、欧盟、英国或韩国使用 MiniMax H3，则需要明确获取 MiniMax H3 社区许可，这些地区不在 H3 社区许可的覆盖范围内。你可以在此获取：${MINIMAX_H3_COMMUNITY_LICENSE_HREF}`
+          en: `The H3 Community License generally permits commercial use, provided your commercial products and services generate no more than $20 million in yearly revenue and you comply with its other terms. Businesses above that threshold must obtain separate written authorization from MiniMax.\n\nYou need to explicitly acquire a MiniMax H3 community license if you want to use MiniMax H3 in the United States, European Union, United Kingdom, or South Korea, which are excluded from the H3 Community License. You can acquire them here: ${MINIMAX_H3_LICENSE_REQUEST_HREF}`,
+          'zh-CN': `H3 社区许可通常允许商业使用，前提是你的商业产品和服务年收入不超过 2000 万美元，并且你遵守其他条款。超过该门槛的企业必须另行获得 MiniMax 的书面授权。\n\n如果你想在美国、欧盟、英国或韩国使用 MiniMax H3，则需要明确获取 MiniMax H3 社区许可，这些地区不在 H3 社区许可的覆盖范围内。你可以在此获取：${MINIMAX_H3_LICENSE_REQUEST_HREF}`
         }
       },
       {

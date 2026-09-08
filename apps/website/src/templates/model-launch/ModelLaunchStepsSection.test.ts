@@ -30,4 +30,27 @@ describe('ModelLaunchStepsSection', () => {
 
     expect(screen.getByRole('list').className).toContain('md:grid-cols-3')
   })
+
+  it('renders a bold phrase in a step description as emphasis', () => {
+    render(ModelLaunchStepsSection, {
+      props: {
+        steps: {
+          ...steps(2),
+          items: [
+            {
+              id: 'parity',
+              title: { en: 'Parity', 'zh-CN': '价格一致' },
+              description: {
+                en: 'Priced **at parity** everywhere.',
+                'zh-CN': '各处**价格一致**。'
+              }
+            }
+          ]
+        }
+      }
+    })
+
+    expect(screen.getByText('at parity').tagName).toBe('STRONG')
+    expect(screen.queryByText(/\*\*/)).toBeNull()
+  })
 })

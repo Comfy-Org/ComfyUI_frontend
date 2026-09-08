@@ -7,18 +7,25 @@ export interface FaqAnswerPart {
 interface MarkupSpan {
   start: number
   end: number
-  part: FaqAnswerPart
+  part?: FaqAnswerPart
 }
 
 const MARKDOWN_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
 const BARE_URL = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
 const BOLD = /\*\*([^*]+)\*\*/g
+const BOLD_DELIMITER = '**'
+
+const discardedDelimiter = (start: number): MarkupSpan => ({
+  start,
+  end: start + BOLD_DELIMITER.length
+})
 
 // FAQ answers are plain strings so they stay translatable in one place. A link
 // can be written as `[label](url)`, which reads better as anchor text, or as a
 // bare URL, which keeps existing answers working. `**phrase**` emphasises a
-// phrase. Markup is claimed in that order, and a span overlapping one already
-// claimed stays literal text, so nothing nests.
+// phrase. Markup is claimed in that order; nothing nests, so a bold span
+// wrapping a link loses its emphasis rather than its delimiters leaking into
+// the page or the structured data.
 export function parseFaqAnswer(answer: string): FaqAnswerPart[] {
   const spans: MarkupSpan[] = []
   const overlapsClaimed = (start: number, end: number) =>
@@ -36,7 +43,13 @@ export function parseFaqAnswer(answer: string): FaqAnswerPart[] {
   for (const match of answer.matchAll(BOLD)) {
     const start = match.index
     const end = start + match[0].length
-    if (overlapsClaimed(start, end)) continue
+    if (overlapsClaimed(start, end)) {
+      spans.push(
+        discardedDelimiter(start),
+        discardedDelimiter(end - BOLD_DELIMITER.length)
+      )
+      continue
+    }
     spans.push({ start, end, part: { type: 'strong', value: match[1] } })
   }
 
@@ -56,7 +69,7 @@ export function parseFaqAnswer(answer: string): FaqAnswerPart[] {
     if (span.start > lastIndex) {
       parts.push({ type: 'text', value: answer.slice(lastIndex, span.start) })
     }
-    parts.push(span.part)
+    if (span.part) parts.push(span.part)
     lastIndex = span.end
   }
   if (lastIndex < answer.length) {

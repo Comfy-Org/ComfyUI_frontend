@@ -76,6 +76,16 @@ describe('parseFaqAnswer', () => {
     ])
   })
 
+  it('drops the delimiters of a bold span wrapping a link', () => {
+    expect(
+      parseFaqAnswer('Use **[docs](https://docs.comfy.org/a)** now')
+    ).toEqual([
+      { type: 'text', value: 'Use ' },
+      { type: 'link', value: 'https://docs.comfy.org/a', label: 'docs' },
+      { type: 'text', value: ' now' }
+    ])
+  })
+
   it('leaves unfinished link markup as plain text', () => {
     expect(parseFaqAnswer('See [the docs](')).toEqual([
       { type: 'text', value: 'See [the docs](' }
@@ -121,5 +131,11 @@ describe('faqAnswerPlainText', () => {
     expect(faqAnswerPlainText('No. **We match their price**, always.')).toBe(
       'No. We match their price, always.'
     )
+  })
+
+  it('emits no markdown when bold wraps a link', () => {
+    expect(
+      faqAnswerPlainText('Use **[docs](https://docs.comfy.org/a)** now')
+    ).toBe('Use docs now')
   })
 })
