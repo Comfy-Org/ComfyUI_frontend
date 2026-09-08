@@ -12,6 +12,7 @@ interface CommonWireData {
 
 interface DocUpdateWireData extends CommonWireData {
   seq?: unknown
+  lineage_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -20,6 +21,7 @@ interface DocUpdateWireData extends CommonWireData {
 interface DocSubscribedWireData extends CommonWireData {
   ok?: unknown
   seq?: unknown
+  lineage_seq?: unknown
   code?: unknown
   message?: unknown
 }
@@ -32,6 +34,7 @@ interface DocOpsResultWireData extends DocSubscribedWireData {
 
 interface DocResetWireData extends CommonWireData {
   seq?: unknown
+  lineage_seq?: unknown
   actor?: unknown
 }
 
@@ -49,7 +52,12 @@ function serverFrame<T extends ServerFrameType>(type: T, data: CommonWireData) {
 }
 
 export function docUpdateFrame(data: DocUpdateWireData = {}) {
-  return serverFrame('doc_update', { seq: 1, update_b64: 'AQ==', ...data })
+  return serverFrame('doc_update', {
+    seq: 1,
+    lineage_seq: 1,
+    update_b64: 'AQ==',
+    ...data
+  })
 }
 
 export function docSubscribedFrame(data: DocSubscribedWireData = {}) {
@@ -61,7 +69,12 @@ export function docOpsResultFrame(data: DocOpsResultWireData = {}) {
 }
 
 export function docResetFrame(data: DocResetWireData = {}) {
-  return serverFrame('doc_reset', { seq: 1, actor: 'system:mint', ...data })
+  return serverFrame('doc_reset', {
+    seq: 1,
+    lineage_seq: 1,
+    actor: 'system:mint',
+    ...data
+  })
 }
 
 export function awarenessFrame(data: AwarenessWireData = {}) {
