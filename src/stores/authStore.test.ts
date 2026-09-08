@@ -382,8 +382,10 @@ describe('useAuthStore', () => {
 
   describe('unified identity push', () => {
     it('pushes the identity sync into the workspace store on every auth-state event', () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
       const workspaceAuth = useWorkspaceAuthStore()
       const syncSpy = vi.spyOn(workspaceAuth, 'syncUnifiedIdentity')
+      const clearSpy = vi.spyOn(workspaceAuth, 'clearWorkspaceContext')
 
       authStateCallback(mockUser)
       expect(
@@ -397,6 +399,10 @@ describe('useAuthStore', () => {
         syncSpy,
         'sign-out must push the identity diff too, so the client can never hold a stale user'
       ).toHaveBeenCalled()
+      expect(
+        Math.max(...clearSpy.mock.invocationCallOrder),
+        'teardown must precede delivery on sign-out, or the client re-learns the dying identity'
+      ).toBeLessThan(Math.min(...syncSpy.mock.invocationCallOrder))
     })
   })
 

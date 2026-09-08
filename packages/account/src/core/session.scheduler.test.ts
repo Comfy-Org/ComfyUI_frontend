@@ -436,7 +436,10 @@ describe('cross-tab refresh coordination', () => {
       tab.published.map((credential) => credential.token),
       'siblings adopt the refresh from the leader instead of minting their own'
     ).toEqual(['jwt-2'])
-    expect(tab.keys[0]).toContain('uid-1')
+    expect(
+      tab.keys[0],
+      'the key scopes the lease and channel by user AND workspace; a broader key mixes scopes'
+    ).toBe('comfy-account-refresh:uid-1:')
   })
 
   it('a follower adopts the published credential instead of minting', async () => {
@@ -495,7 +498,10 @@ describe('cross-tab refresh coordination', () => {
       client.getToken(),
       'a quiet leader must never strand the follower on an expiring token'
     ).toBe('jwt-2')
-    expect(tab.published, 'followers never publish').toEqual([])
+    expect(
+      tab.published.map((credential) => credential.token),
+      'the fallback mint is published so the rest of a leaderless cohort adopts instead of stampeding'
+    ).toEqual(['jwt-2'])
   })
 
   it('a promoted follower retakes the schedule without jitter', async () => {
@@ -531,6 +537,79 @@ describe('cross-tab refresh coordination', () => {
     expect(tab.published.map((credential) => credential.token)).toEqual([
       'jwt-2'
     ])
+  })
+
+  it('never adopts a credential minted for a different workspace', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            token: 'jwt-team',
+            permissions: ['workspace:read'],
+            expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+            workspace: { id: 'ws-team', name: 'Team', type: 'team' },
+            role: 'member'
+          }),
+          { status: 200 }
+        )
+    )
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+    await client.ensureFresh(user, { workspaceId: 'ws-team' })
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-team')
+    })
+
+    tab.receive(
+      publishedCredential({
+        token: 'jwt-cross-workspace',
+        expiresAt: Date.now() + NINETY_MINUTES_MS * 2
+      })
+    )
+
+    expect(
+      client.getToken(),
+      'a published credential scoped to another workspace must never switch this tab'
+    ).toBe('jwt-team')
+    const snapshot = client.getSnapshot()
+    expect(
+      snapshot.phase === 'authenticated' && snapshot.session.workspace.id
+    ).toBe('ws-team')
+  })
+
+  it('the leader publishes a reactive re-mint, not only scheduled ones', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    tab.grantLeadership()
+
+    await client.remint(user, {})
+
+    expect(
+      tab.published.map((credential) => credential.token),
+      'a 401-driven re-mint rotates the token; siblings left unpublished keep serving the rotated-out one'
+    ).toEqual(['jwt-2'])
   })
 
   it('never adopts a credential for another user or a malformed message', async () => {
