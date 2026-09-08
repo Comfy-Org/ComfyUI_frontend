@@ -59,11 +59,14 @@ const mockCanvas = vi.hoisted(
   })
 )
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LiteGraph: { NO_TITLE: 1, registered_node_types: {} },
-  isOverNodeInput: mockIsOverNodeInput,
-  isOverNodeOutput: mockIsOverNodeOutput
-}))
+vi.mock('@/lib/litegraph/src/litegraph', async () => {
+  const { TitleMode } = await import('@/lib/litegraph/src/types/globalEnums')
+  return {
+    LiteGraph: { NO_TITLE: TitleMode.NO_TITLE, registered_node_types: {} },
+    isOverNodeInput: mockIsOverNodeInput,
+    isOverNodeOutput: mockIsOverNodeOutput
+  }
+})
 
 vi.mock('@/stores/subgraphStore', () => ({
   useSubgraphStore: () => ({ subgraphBlueprints: [] })
