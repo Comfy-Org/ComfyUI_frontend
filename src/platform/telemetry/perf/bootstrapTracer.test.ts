@@ -30,9 +30,6 @@ const {
 })
 
 vi.mock('@/platform/telemetry', () => ({ useTelemetry }))
-// The tracer derives its timings from the real perfMark/perfPoint; only the
-// two sink publishers are stubbed, so the durations under assertion are
-// measured rather than invented.
 vi.mock('./perfMark', async (importOriginal) => {
   const { perfMark, perfPoint } = await importOriginal<typeof PerfMarkModule>()
   return { perfMark, perfPoint, markViewLoaded, reportBootstrapToRum }
@@ -43,7 +40,8 @@ describe('bootstrapTracer', () => {
     markViewLoaded.mockReset()
     reportBootstrapToRum.mockReset()
     trackBootstrapComplete.mockReset()
-    useTelemetry.mockClear()
+    useTelemetry.mockReset()
+    useTelemetry.mockImplementation(() => ({ trackBootstrapComplete }))
   })
 
   it('records a phase under its own name, not a doubled prefix', async () => {
@@ -130,52 +128,28 @@ describe('bootstrapTracer', () => {
     tracer.armWatchdog(30_000)
     await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(reportBootstrapToRum).toHaveBeenCalledWith(
-      'app:bootstrap_complete',
-      expect.objectContaining({
-        outcome: 'timed_out',
-        pending: ['startup/remote-config']
-      })
-    )
+    expect(reportBootstrapToRum.mock.calls).toMatchObject([
+      [{ outcome: 'timed_out', pending: ['startup/remote-config'] }]
+    ])
     expect(trackBootstrapComplete).not.toHaveBeenCalled()
+    expect(markViewLoaded).not.toHaveBeenCalled()
   })
 
   it('reaches Datadog directly for a terminal outcome with no registry', () => {
     useTelemetry.mockReturnValue(null)
 
     new BootstrapTracer().complete()
-    new BootstrapTracer().complete('failed')
-
-    expect(
-      reportBootstrapToRum.mock.calls.map(([, metadata]) => metadata.outcome)
-    ).toEqual(['completed', 'failed'])
-    expect(trackBootstrapComplete).not.toHaveBeenCalled()
-    expect(markViewLoaded).toHaveBeenCalledOnce()
-
-    useTelemetry.mockReturnValue({ trackBootstrapComplete })
-  })
-
-  it('sets the view loading time only for a startup that reached a working app', () => {
-    const completed = new BootstrapTracer()
-    completed.complete()
     expect(markViewLoaded).toHaveBeenCalledOnce()
 
     markViewLoaded.mockReset()
     new BootstrapTracer().complete('failed')
     expect(markViewLoaded).not.toHaveBeenCalled()
-  })
 
-  it('does not set the view loading time for a startup still running', async () => {
-    const tracer = new BootstrapTracer()
-
-    tracer.armWatchdog(30_000)
-    await vi.advanceTimersByTimeAsync(30_000)
-
-    expect(reportBootstrapToRum).toHaveBeenCalledWith(
-      'app:bootstrap_complete',
-      expect.objectContaining({ outcome: 'timed_out' })
-    )
-    expect(markViewLoaded).not.toHaveBeenCalled()
+    expect(reportBootstrapToRum.mock.calls).toMatchObject([
+      [{ outcome: 'completed' }],
+      [{ outcome: 'failed' }]
+    ])
+    expect(trackBootstrapComplete).not.toHaveBeenCalled()
   })
 
   it('still reports the terminal row after a watchdog row', async () => {
