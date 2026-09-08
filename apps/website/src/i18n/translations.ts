@@ -103,44 +103,44 @@ const translations = {
     'zh-CN': '创建你的 Comfy 账户。'
   },
   'auth.signIn.heading': {
-    en: 'Sign in to Comfy',
-    'zh-CN': '登录 Comfy'
-  },
-  'auth.signIn.body': {
-    en: 'Use your Comfy account across the Workshop, Cloud, and Platform.',
-    'zh-CN': '一个 Comfy 账户，通用于 Workshop、Cloud 和 Platform。'
+    en: 'Log in to your account',
+    'zh-CN': '登录您的账户',
+    ja: 'アカウントにログインする'
   },
   'auth.signUp.heading': {
-    en: 'Create your Comfy account',
-    'zh-CN': '创建 Comfy 账户'
-  },
-  'auth.signUp.body': {
-    en: 'One account for the Workshop, Cloud, and Platform.',
-    'zh-CN': '一个账户，通用于 Workshop、Cloud 和 Platform。'
+    en: 'Create an account',
+    'zh-CN': '创建一个账户',
+    ja: 'アカウントを作成する'
   },
   'auth.signIn.newHere': {
     en: 'New to Comfy?',
-    'zh-CN': '第一次使用 Comfy？'
+    'zh-CN': '初次使用 Comfy？',
+    ja: 'Comfyを初めてご利用ですか？'
   },
   'auth.signIn.signUpLink': {
-    en: 'Create an account',
-    'zh-CN': '创建账户'
+    en: 'Sign up here',
+    'zh-CN': '在这里注册',
+    ja: 'こちらからサインアップ'
   },
   'auth.signUp.haveAccount': {
     en: 'Already have an account?',
-    'zh-CN': '已经有账户？'
+    'zh-CN': '已经有账户了？',
+    ja: 'すでにアカウントをお持ちですか？'
   },
   'auth.signUp.signInLink': {
     en: 'Sign in',
-    'zh-CN': '登录'
+    'zh-CN': '登录',
+    ja: 'サインイン'
   },
   'auth.signIn.google': {
-    en: 'Continue with Google',
-    'zh-CN': '使用 Google 继续'
+    en: 'Log in with Google',
+    'zh-CN': '使用Google登录',
+    ja: 'Googleでログイン'
   },
   'auth.signIn.github': {
-    en: 'Continue with GitHub',
-    'zh-CN': '使用 GitHub 继续'
+    en: 'Log in with Github',
+    'zh-CN': '使用Github登录',
+    ja: 'Githubでログイン'
   },
   'auth.signIn.pending': {
     en: 'Finish signing in from the pop-up window.',
@@ -165,6 +165,71 @@ const translations = {
   'auth.signIn.backToWorkshop': {
     en: 'Back to Workshop',
     'zh-CN': '返回 Workshop'
+  },
+  'auth.signUp.google': {
+    en: 'Sign up with Google',
+    'zh-CN': '使用Google注册',
+    ja: 'Googleでサインアップ'
+  },
+  'auth.signUp.github': {
+    en: 'Sign up with Github',
+    'zh-CN': '使用Github注册',
+    ja: 'Githubでサインアップ'
+  },
+  'auth.signIn.useEmailInstead': {
+    en: 'Use email instead',
+    'zh-CN': '改用邮箱',
+    ja: 'メールアドレスを使用する'
+  },
+  'auth.signIn.backToSocialLogin': {
+    en: 'Sign up with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github 注册',
+    ja: 'GoogleまたはGithubでサインアップする'
+  },
+  'auth.signIn.insecureContextWarning': {
+    en: 'This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.',
+    'zh-CN': '此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。',
+    ja: 'この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。'
+  },
+  'auth.email.placeholder': {
+    en: 'Enter your email',
+    'zh-CN': '输入您的电子邮件',
+    ja: 'メールアドレスを入力してください'
+  },
+  'auth.password.placeholder': {
+    en: 'Enter your password',
+    'zh-CN': '输入您的密码',
+    ja: 'パスワードを入力してください'
+  },
+  'auth.password.newPlaceholder': {
+    en: 'Enter new password',
+    'zh-CN': '输入新密码',
+    ja: '新しいパスワードを入力してください'
+  },
+  'auth.password.show': {
+    en: 'Show password',
+    'zh-CN': '显示密码',
+    ja: 'パスワードを表示'
+  },
+  'auth.password.hide': {
+    en: 'Hide password',
+    'zh-CN': '隐藏密码',
+    ja: 'パスワードを非表示'
+  },
+  'auth.confirmPassword.placeholder': {
+    en: 'Enter the same password again',
+    'zh-CN': '再次输入相同的密码',
+    ja: 'もう一度同じパスワードを入力してください'
+  },
+  'validation.password.requirements': {
+    en: 'Password requirements',
+    'zh-CN': '密码要求',
+    ja: 'パスワードの要件'
+  },
+  'validation.password.lengthRange': {
+    en: 'Must be between 8 and 32 characters',
+    'zh-CN': '必须在8到32个字符之间',
+    ja: '8文字から32文字の間でなければなりません'
   },
   'auth.shell.logoAlt': {
     en: 'ComfyOrg Logo',
@@ -312,20 +377,19 @@ const translations = {
     'zh-CN': '密码'
   },
   'auth.confirmPassword.label': {
-    en: 'Confirm password',
-    'zh-CN': '确认密码'
+    en: 'Confirm Password',
+    'zh-CN': '确认密码',
+    ja: 'パスワードの確認'
   },
   'auth.signIn.submit': {
-    en: 'Sign in with email',
-    'zh-CN': '使用邮箱登录'
+    en: 'Sign in',
+    'zh-CN': '登录',
+    ja: 'ログイン'
   },
   'auth.signUp.submit': {
-    en: 'Create account',
-    'zh-CN': '创建账户'
-  },
-  'auth.signIn.or': {
-    en: 'or',
-    'zh-CN': '或'
+    en: 'Sign up',
+    'zh-CN': '注册',
+    ja: 'サインアップ'
   },
   'auth.signIn.forgotPassword': {
     en: 'Forgot password?',

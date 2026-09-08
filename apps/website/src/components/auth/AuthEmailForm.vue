@@ -2,6 +2,7 @@
 import { computed, ref, useTemplateRef } from 'vue'
 
 import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
+import { passwordRuleChecks } from '@comfyorg/account/signInSchemas'
 import {
   TURNSTILE_MESSAGES,
   isTurnstileEnabled,
@@ -9,20 +10,22 @@ import {
 } from '@comfyorg/account/turnstile'
 
 import { authSchemasFor } from '../../config/auth-schemas'
-import { AUTH_FIELD_CLASS } from './authFieldClass'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopTurnstileMode } from '../../scripts/posthog'
+import AuthPasswordField from './AuthPasswordField.vue'
+import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
+import { AUTH_BRAND_SOLID_BUTTON_CLASS, AUTH_FIELD_CLASS } from './authClasses'
 
 const {
   mode,
   locale = 'en',
-  disabled = false
+  loading = false
 } = defineProps<{
   mode: 'signIn' | 'signUp'
   locale?: Locale
-  disabled?: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -36,10 +39,17 @@ const emit = defineEmits<{
   ]
 }>()
 
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const fieldErrors = ref<Partial<Record<string, string>>>({})
+type Field = 'email' | 'password' | 'confirmPassword'
+
+const values = ref<Record<Field, string>>({
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
+/** Only fields validated so far carry an entry, so an untouched field never blocks submit. */
+const fieldErrors = ref<Partial<Record<Field, string | null>>>({})
+const passwordDirty = ref(false)
+const passwordFocused = ref(false)
 const turnstileWidget =
   useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
 
@@ -54,36 +64,60 @@ const turnstileEnabled = computed(
 )
 const { token, unavailable, waiting } = useTurnstileGate(turnstileEnabled)
 
-const submitDisabled = computed(() => disabled || waiting.value)
+const formValid = computed(() =>
+  Object.values(fieldErrors.value).every((error) => !error)
+)
+const submitDisabled = computed(
+  () => loading || waiting.value || !formValid.value
+)
 
-function submit() {
+/** Cloud's sign-up form lists every rule while the password is being typed. */
+const passwordChecks = computed(() => passwordRuleChecks(values.value.password))
+
+const fieldId = (field: Field) => `workshop-${mode}-${field}`
+
+function issuesByField() {
   const schemas = authSchemasFor(locale)
   const parsed =
     mode === 'signUp'
-      ? schemas.signUpSchema.safeParse({
-          email: email.value,
-          password: password.value,
-          confirmPassword: confirmPassword.value
-        })
+      ? schemas.signUpSchema.safeParse(values.value)
       : schemas.signInSchema.safeParse({
-          email: email.value,
-          password: password.value
+          email: values.value.email,
+          password: values.value.password
         })
-
+  const collected: Partial<Record<Field, string>> = {}
   if (!parsed.success) {
-    const collected: Partial<Record<string, string>> = {}
     for (const issue of parsed.error.issues) {
-      const field = String(issue.path[0] ?? '')
-      collected[field] ??= issue.message
+      const field = issue.path[0] as Field | undefined
+      if (field) collected[field] ??= issue.message
     }
-    fieldErrors.value = collected
-    return
   }
+  return collected
+}
 
-  fieldErrors.value = {}
+/** PrimeVue Forms validates the edited field on every value update. */
+function validateField(field: Field) {
+  if (field === 'password') passwordDirty.value = true
+  fieldErrors.value = {
+    ...fieldErrors.value,
+    [field]: issuesByField()[field] ?? null
+  }
+}
+
+function submit() {
+  const issues = issuesByField()
+  const fields: Field[] =
+    mode === 'signUp'
+      ? ['email', 'password', 'confirmPassword']
+      : ['email', 'password']
+  fieldErrors.value = Object.fromEntries(
+    fields.map((field) => [field, issues[field] ?? null])
+  )
+  if (Object.keys(issues).length > 0) return
+
   emit('submit', {
-    email: email.value,
-    password: password.value,
+    email: values.value.email,
+    password: values.value.password,
     ...(token.value ? { turnstileToken: token.value } : {})
   })
 }
@@ -96,70 +130,127 @@ defineExpose({ resetTurnstile })
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" novalidate @submit.prevent="submit">
-    <label class="flex flex-col gap-1.5">
-      <span class="text-sm text-primary-comfy-canvas/70">
+  <form class="flex flex-col gap-6" novalidate @submit.prevent="submit">
+    <div class="flex flex-col gap-2">
+      <label
+        :for="fieldId('email')"
+        :class="
+          mode === 'signUp'
+            ? 'mb-2 text-base font-medium opacity-80'
+            : 'mb-1 text-base text-primary-comfy-canvas/70'
+        "
+      >
         {{ t('auth.email.label', locale) }}
-      </span>
+      </label>
       <input
-        v-model="email"
-        type="email"
+        :id="fieldId('email')"
+        v-model="values.email"
+        :type="mode === 'signUp' ? 'email' : 'text'"
         autocomplete="email"
+        :placeholder="t('auth.email.placeholder', locale)"
         :class="AUTH_FIELD_CLASS"
         :aria-invalid="Boolean(fieldErrors.email)"
+        @input="validateField('email')"
       />
-      <span v-if="fieldErrors.email" role="alert" class="text-xs text-red-400">
+      <small v-if="fieldErrors.email" role="alert" class="text-red-500">
         {{ fieldErrors.email }}
-      </span>
-    </label>
+      </small>
+    </div>
 
-    <label class="flex flex-col gap-1.5">
-      <span class="text-sm text-primary-comfy-canvas/70">
-        {{ t('auth.password.label', locale) }}
-      </span>
-      <input
-        v-model="password"
-        type="password"
-        :autocomplete="mode === 'signUp' ? 'new-password' : 'current-password'"
-        :class="AUTH_FIELD_CLASS"
-        :aria-invalid="Boolean(fieldErrors.password)"
-      />
-      <span
-        v-if="fieldErrors.password"
-        role="alert"
-        class="text-xs text-red-400"
-      >
-        {{ fieldErrors.password }}
-      </span>
-    </label>
-    <a
-      v-if="mode === 'signIn'"
-      href="/forgot-password/"
-      class="hover:text-primary-comfy-yellow -mt-2 self-start text-xs text-primary-comfy-canvas/55 underline"
-      @click="emit('forgotPassword', $event)"
+    <div
+      class="flex flex-col gap-2"
+      @focusin="passwordFocused = true"
+      @focusout="passwordFocused = false"
     >
-      {{ t('auth.signIn.forgotPassword', locale) }}
-    </a>
-
-    <label v-if="mode === 'signUp'" class="flex flex-col gap-1.5">
-      <span class="text-sm text-primary-comfy-canvas/70">
-        {{ t('auth.confirmPassword.label', locale) }}
-      </span>
-      <input
-        v-model="confirmPassword"
-        type="password"
-        autocomplete="new-password"
-        :class="AUTH_FIELD_CLASS"
-        :aria-invalid="Boolean(fieldErrors.confirmPassword)"
+      <label
+        :for="fieldId('password')"
+        :class="
+          mode === 'signUp'
+            ? 'mb-2 text-base font-medium opacity-80'
+            : 'mb-1 text-base text-primary-comfy-canvas/70'
+        "
+      >
+        {{ t('auth.password.label', locale) }}
+      </label>
+      <AuthPasswordField
+        :id="fieldId('password')"
+        v-model="values.password"
+        :autocomplete="mode === 'signUp' ? 'new-password' : 'current-password'"
+        :placeholder="
+          t(
+            mode === 'signUp'
+              ? 'auth.password.newPlaceholder'
+              : 'auth.password.placeholder',
+            locale
+          )
+        "
+        :invalid="Boolean(fieldErrors.password)"
+        :show-label="t('auth.password.show', locale)"
+        :hide-label="t('auth.password.hide', locale)"
+        @input="validateField('password')"
       />
-      <span
+      <small
+        v-if="mode === 'signUp' && passwordDirty && passwordFocused"
+        class="text-sm"
+      >
+        {{ t('validation.password.requirements', locale) }}:
+        <ul class="mt-1 space-y-1">
+          <li :class="{ 'text-red-500': !passwordChecks.length }">
+            {{ t('validation.password.lengthRange', locale) }}
+          </li>
+          <li :class="{ 'text-red-500': !passwordChecks.uppercase }">
+            {{ t('validation.password.uppercase', locale) }}
+          </li>
+          <li :class="{ 'text-red-500': !passwordChecks.lowercase }">
+            {{ t('validation.password.lowercase', locale) }}
+          </li>
+          <li :class="{ 'text-red-500': !passwordChecks.number }">
+            {{ t('validation.password.number', locale) }}
+          </li>
+          <li :class="{ 'text-red-500': !passwordChecks.special }">
+            {{ t('validation.password.special', locale) }}
+          </li>
+        </ul>
+      </small>
+      <small v-else-if="fieldErrors.password" role="alert" class="text-red-500">
+        {{ fieldErrors.password }}
+      </small>
+
+      <a
+        v-if="mode === 'signIn'"
+        href="/forgot-password/"
+        class="mt-1 self-start text-sm text-primary-comfy-canvas/70 underline"
+        @click="emit('forgotPassword', $event)"
+      >
+        {{ t('auth.signIn.forgotPassword', locale) }}
+      </a>
+    </div>
+
+    <div v-if="mode === 'signUp'" class="flex flex-col gap-2">
+      <label
+        :for="fieldId('confirmPassword')"
+        class="mb-2 text-base font-medium opacity-80"
+      >
+        {{ t('auth.confirmPassword.label', locale) }}
+      </label>
+      <AuthPasswordField
+        :id="fieldId('confirmPassword')"
+        v-model="values.confirmPassword"
+        autocomplete="new-password"
+        :placeholder="t('auth.confirmPassword.placeholder', locale)"
+        :invalid="Boolean(fieldErrors.confirmPassword)"
+        :show-label="t('auth.password.show', locale)"
+        :hide-label="t('auth.password.hide', locale)"
+        @input="validateField('confirmPassword')"
+      />
+      <small
         v-if="fieldErrors.confirmPassword"
         role="alert"
-        class="text-xs text-red-400"
+        class="text-red-500"
       >
         {{ fieldErrors.confirmPassword }}
-      </span>
-    </label>
+      </small>
+    </div>
 
     <TurnstileWidget
       v-if="turnstileEnabled"
@@ -171,25 +262,33 @@ defineExpose({ resetTurnstile })
       :expired-message="TURNSTILE_MESSAGES[locale].expired"
       :failed-message="TURNSTILE_MESSAGES[locale].failed"
     />
-    <p
-      v-if="waiting"
+    <small
+      v-show="waiting"
+      :id="fieldId('email') + '-turnstile-hint'"
       role="status"
       aria-live="polite"
-      class="text-xs text-primary-comfy-canvas/55"
+      class="opacity-80"
     >
       {{ TURNSTILE_MESSAGES[locale].submitBlockedHint }}
-    </p>
+    </small>
 
     <button
       type="submit"
       :disabled="submitDisabled"
-      class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      :aria-busy="loading || undefined"
+      :aria-describedby="
+        waiting ? fieldId('email') + '-turnstile-hint' : undefined
+      "
+      :class="[AUTH_BRAND_SOLID_BUTTON_CLASS, 'mt-2 w-full']"
     >
-      {{
-        mode === 'signUp'
-          ? t('auth.signUp.submit', locale)
-          : t('auth.signIn.submit', locale)
-      }}
+      <AuthSpinnerIcon v-if="loading" />
+      <span :class="{ 'sr-only': loading }">
+        {{
+          mode === 'signUp'
+            ? t('auth.signUp.submit', locale)
+            : t('auth.signIn.submit', locale)
+        }}
+      </span>
     </button>
   </form>
 </template>

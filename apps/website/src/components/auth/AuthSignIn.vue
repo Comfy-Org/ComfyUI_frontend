@@ -4,7 +4,7 @@ import {
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
-import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
 
@@ -25,7 +25,12 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'
-import { AUTH_LINK_BUTTON_CLASS, AUTH_MESSAGE_ERROR_CLASS } from './authClasses'
+import {
+  AUTH_BRAND_GHOST_BUTTON_CLASS,
+  AUTH_LINK_BUTTON_CLASS,
+  AUTH_MESSAGE_ERROR_CLASS,
+  AUTH_MESSAGE_WARN_CLASS
+} from './authClasses'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{
   /** Same flow either way for social providers; only the copy differs. */
@@ -33,9 +38,13 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
+const HOME = '/'
+
 const enabled = useWorkshopAuthFlag()
 const { user, session, ensureFresh } = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
+const showEmailForm = ref(false)
+const isSecureContext = ref(true)
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
@@ -50,8 +59,6 @@ function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
 }
 
-const HOME = '/'
-
 /**
  * A signed-in visitor has no business on the sign-in page, same as the cloud
  * app's guard. `replace`, not `assign`: with the page left in history, Back
@@ -59,6 +66,22 @@ const HOME = '/'
  */
 function leaveSignInPage(): void {
   window.location.replace(requestedReturnPath(window.location.search) ?? HOME)
+}
+
+/**
+ * The return destination is only known in the browser, and hydration never
+ * repairs a server-rendered href, so the links stay plain in markup and the
+ * destination is carried over when the visitor actually clicks. Modified
+ * clicks keep their native open-in-new-tab behaviour.
+ */
+function goTo(path: string, event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
+    return
+  event.preventDefault()
+  const destination = requestedReturnPath(window.location.search)
+  window.location.assign(
+    destination ? `${path}?returnTo=${encodeURIComponent(destination)}` : path
+  )
 }
 
 function toastSignInFailure(classification: AuthErrorClassification) {
@@ -181,110 +204,35 @@ const stopSessionWatch = watch(session, (active) => {
 })
 onBeforeUnmount(stopSessionWatch)
 
-/**
- * The return destination is only known in the browser, and hydration never
- * repairs a server-rendered href, so the links stay plain in markup and the
- * destination is carried over when the visitor actually clicks. Modified
- * clicks keep their native open-in-new-tab behaviour.
- */
-function goTo(path: string, event: MouseEvent): void {
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
-    return
-  event.preventDefault()
-  const destination = requestedReturnPath(window.location.search)
-  window.location.assign(
-    destination ? `${path}?returnTo=${encodeURIComponent(destination)}` : path
-  )
-}
+onMounted(() => {
+  isSecureContext.value = window.isSecureContext !== false
+})
 </script>
 
 <template>
   <section
     v-if="enabled"
-    class="mx-auto w-full max-w-md rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
+    class="flex w-full flex-col"
     :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >
-    <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
+    <h1
+      class="mt-8 mb-0 text-2xl/snug font-light tracking-tighter text-primary-comfy-canvas sm:text-3xl/snug lg:text-4xl/snug xl:text-5xl/snug 2xl:text-6xl/snug"
+    >
       {{
         mode === 'signUp'
           ? t('auth.signUp.heading', locale)
           : t('auth.signIn.heading', locale)
       }}
     </h1>
-    <p class="mt-3 text-sm text-primary-comfy-canvas/70">
-      {{
-        mode === 'signUp'
-          ? t('auth.signUp.body', locale)
-          : t('auth.signIn.body', locale)
-      }}
-    </p>
-
-    <div class="mt-6 flex flex-col gap-3">
-      <SocialAuthButtons
-        :google-label="t('auth.signIn.google', locale)"
-        :github-label="t('auth.signIn.github', locale)"
-        :disabled="state.step === 'pending' || state.step === 'minting'"
-        button-class="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 text-sm font-semibold text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow/60 disabled:cursor-not-allowed disabled:opacity-40"
-        @google="signInWith('google')"
-        @github="signInWith('github')"
-      />
-    </div>
-
-    <div
-      class="my-6 flex items-center gap-3 text-xs text-primary-comfy-canvas/45 uppercase"
-      aria-hidden="true"
-    >
-      <span class="h-px flex-1 bg-primary-comfy-canvas/15"></span>
-      {{ t('auth.signIn.or', locale) }}
-      <span class="h-px flex-1 bg-primary-comfy-canvas/15"></span>
-    </div>
-
-    <AuthEmailForm
-      ref="emailForm"
-      :mode="mode"
-      :locale="locale"
-      :disabled="state.step === 'pending' || state.step === 'minting'"
-      @forgot-password="goTo('/forgot-password/', $event)"
-      @submit="submitEmail"
-    />
 
     <p
-      v-if="state.step === 'pending' || state.step === 'minting'"
-      aria-live="polite"
-      class="mt-4 text-sm text-primary-comfy-canvas/55"
+      class="mt-8 mb-0 text-base/snug font-medium text-primary-comfy-canvas xl:text-lg/snug"
     >
-      {{
-        state.step === 'pending'
-          ? t(
-              state.provider === 'email'
-                ? 'auth.signIn.pendingEmail'
-                : 'auth.signIn.pending',
-              locale
-            )
-          : t('auth.signIn.starting', locale)
-      }}
-    </p>
-
-    <template v-if="state.step === 'signedIn' && state.messageKey">
-      <div role="alert" :class="['mt-4', AUTH_MESSAGE_ERROR_CLASS]">
-        {{ t(state.messageKey, locale) }}
-      </div>
-      <button
-        v-if="state.messageKey === 'auth.signIn.error.session'"
-        type="button"
-        :class="['flex', AUTH_LINK_BUTTON_CLASS]"
-        @click="retryMint"
-      >
-        {{ t('auth.signIn.retry', locale) }}
-      </button>
-    </template>
-
-    <p class="mt-6 text-center text-sm text-primary-comfy-canvas/55">
       <template v-if="mode === 'signUp'">
         {{ t('auth.signUp.haveAccount', locale) }}
         <a
           href="/login/"
-          class="text-primary-comfy-yellow hover:underline"
+          class="text-brand-yellow no-underline transition-all duration-300 hover:underline"
           @click="goTo('/login/', $event)"
         >
           {{ t('auth.signUp.signInLink', locale) }}
@@ -294,12 +242,101 @@ function goTo(path: string, event: MouseEvent): void {
         {{ t('auth.signIn.newHere', locale) }}
         <a
           href="/signup/"
-          class="text-primary-comfy-yellow hover:underline"
+          class="text-brand-yellow no-underline transition-all duration-300 hover:underline"
           @click="goTo('/signup/', $event)"
         >
           {{ t('auth.signIn.signUpLink', locale) }}
         </a>
       </template>
     </p>
+
+    <div
+      v-if="!isSecureContext"
+      role="alert"
+      :class="['mt-4 w-full', AUTH_MESSAGE_WARN_CLASS]"
+    >
+      {{ t('auth.signIn.insecureContextWarning', locale) }}
+    </div>
+
+    <div class="mt-12 flex flex-col gap-4 xl:gap-6">
+      <template v-if="!showEmailForm">
+        <SocialAuthButtons
+          :google-label="
+            t(
+              mode === 'signUp' ? 'auth.signUp.google' : 'auth.signIn.google',
+              locale
+            )
+          "
+          :github-label="
+            t(
+              mode === 'signUp' ? 'auth.signUp.github' : 'auth.signIn.github',
+              locale
+            )
+          "
+          :button-class="`${AUTH_BRAND_GHOST_BUTTON_CLASS} w-full gap-3`"
+          label-class="relative top-[0.15em] inline-block"
+          @google="signInWith('google')"
+          @github="signInWith('github')"
+        />
+
+        <button
+          type="button"
+          :class="AUTH_LINK_BUTTON_CLASS"
+          @click="showEmailForm = true"
+        >
+          {{ t('auth.signIn.useEmailInstead', locale) }}
+        </button>
+      </template>
+
+      <template v-else>
+        <AuthEmailForm
+          ref="emailForm"
+          :mode="mode"
+          :locale="locale"
+          :loading="state.step === 'pending' || state.step === 'minting'"
+          @forgot-password="goTo('/forgot-password/', $event)"
+          @submit="submitEmail"
+        />
+
+        <button
+          type="button"
+          :class="AUTH_LINK_BUTTON_CLASS"
+          @click="showEmailForm = false"
+        >
+          {{ t('auth.signIn.backToSocialLogin', locale) }}
+        </button>
+      </template>
+
+      <p
+        v-if="state.step === 'pending' || state.step === 'minting'"
+        aria-live="polite"
+        class="sr-only"
+      >
+        {{
+          state.step === 'pending'
+            ? t(
+                state.provider === 'email'
+                  ? 'auth.signIn.pendingEmail'
+                  : 'auth.signIn.pending',
+                locale
+              )
+            : t('auth.signIn.starting', locale)
+        }}
+      </p>
+
+      <template v-if="state.step === 'signedIn' && state.messageKey">
+        <div role="alert" :class="AUTH_MESSAGE_ERROR_CLASS">
+          {{ t(state.messageKey, locale) }}
+        </div>
+        <button
+          v-if="state.messageKey === 'auth.signIn.error.session'"
+          type="button"
+          :class="AUTH_LINK_BUTTON_CLASS"
+          @click="retryMint"
+        >
+          {{ t('auth.signIn.retry', locale) }}
+        </button>
+      </template>
+    </div>
   </section>
 </template>

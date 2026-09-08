@@ -105,7 +105,10 @@ beforeEach(() => {
 const clickGoogle = () =>
   userEvent
     .setup()
-    .click(screen.getByRole('button', { name: /continue with google/i }))
+    .click(screen.getByRole('button', { name: /log in with google/i }))
+
+const openEmailForm = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole('button', { name: /use email instead/i }))
 
 describe('AuthSignIn', () => {
   it('does not render sign-in controls when the auth flag is off', () => {
@@ -122,7 +125,7 @@ describe('AuthSignIn', () => {
     handles.flag!.value = true
 
     expect(
-      await screen.findByRole('button', { name: /continue with google/i })
+      await screen.findByRole('button', { name: /log in with google/i })
     ).toBeTruthy()
   })
 
@@ -185,7 +188,7 @@ describe('AuthSignIn', () => {
 
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: /continue with github/i }))
+      .click(screen.getByRole('button', { name: /log in with github/i }))
 
     const alert = await screen.findByRole('alert')
     expect(alert.getAttribute('data-severity')).toBe('warn')
@@ -205,11 +208,10 @@ describe('AuthSignIn', () => {
     render(AuthToast)
     const user = userEvent.setup()
 
+    await openEmailForm(user)
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
-    await user.click(
-      screen.getByRole('button', { name: /sign in with email/i })
-    )
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     const alert = await screen.findByRole('alert')
     expect(alert.getAttribute('data-severity')).toBe('error')
@@ -244,10 +246,11 @@ describe('AuthSignIn', () => {
     render(AuthSignIn, { props: { mode: 'signUp' } })
     const user = userEvent.setup()
 
+    await openEmailForm(user)
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
-    await user.type(screen.getByLabelText('Confirm password'), 'Password1!')
-    await user.click(screen.getByRole('button', { name: /create account/i }))
+    await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign up$/i }))
 
     await waitFor(() => expect(handles.emailSignUp).toHaveBeenCalledOnce())
     expect(handles.emailSignUp).toHaveBeenCalledWith(
@@ -263,11 +266,10 @@ describe('AuthSignIn', () => {
     render(AuthSignIn)
     const user = userEvent.setup()
 
+    await openEmailForm(user)
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
-    await user.click(
-      screen.getByRole('button', { name: /sign in with email/i })
-    )
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
     await waitFor(() => expect(handles.emailSignIn).toHaveBeenCalledOnce())
     expect(
@@ -275,6 +277,12 @@ describe('AuthSignIn', () => {
       'no pop-up exists in the email flow; the copy must not tell users to look for one'
     ).toBeNull()
     expect(screen.getByText(/signing you in/i)).toBeTruthy()
+    expect(
+      screen
+        .getByRole('button', { name: /^sign in$/i })
+        .getAttribute('aria-busy'),
+      'the cloud form shows the spinner on the submit button while signing in'
+    ).toBe('true')
   })
 
   it('carries a safe return destination into the forgot-password flow on click', async () => {
@@ -284,23 +292,26 @@ describe('AuthSignIn', () => {
       '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
     )
     render(AuthSignIn)
+    const user = userEvent.setup()
 
-    await userEvent
-      .setup()
-      .click(await screen.findByRole('link', { name: /forgot password/i }))
+    await openEmailForm(user)
+    await user.click(
+      await screen.findByRole('link', { name: /forgot password/i })
+    )
 
     expect(assign).toHaveBeenCalledWith(
       '/forgot-password/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
     )
   })
 
-  it('keeps the plain href in markup so a pre-hydration click still reaches the page', () => {
+  it('keeps the plain href in markup so a pre-hydration click still reaches the page', async () => {
     window.history.replaceState(
       {},
       '',
       '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
     )
     render(AuthSignIn)
+    await openEmailForm(userEvent.setup())
 
     expect(
       screen
@@ -308,6 +319,36 @@ describe('AuthSignIn', () => {
         .getAttribute('href'),
       'hydration never repairs a server-rendered href, so the destination is added at click time instead'
     ).toBe('/forgot-password/')
+  })
+
+  it('shows either the social buttons or the email form, never both', async () => {
+    render(AuthSignIn)
+    const user = userEvent.setup()
+
+    expect(screen.queryByLabelText('Email')).toBeNull()
+
+    await openEmailForm(user)
+    expect(screen.getByLabelText('Email')).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: /log in with google/i })
+    ).toBeNull()
+
+    await user.click(
+      screen.getByRole('button', { name: /google or github instead/i })
+    )
+    expect(screen.queryByLabelText('Email')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /log in with google/i })
+    ).toBeTruthy()
+  })
+
+  it('uses sign-up copy for the providers on the sign-up page', () => {
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    expect(
+      screen.getByRole('button', { name: 'Sign up with Google' })
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy()
   })
 
   it('stays on the page with an inline message when provisioning fails', async () => {
@@ -383,7 +424,7 @@ describe('AuthSignIn', () => {
     try {
       render(FreshAuthSignIn)
       const button = screen.getByRole('button', {
-        name: /continue with google/i
+        name: /log in with google/i
       }) as HTMLButtonElement
       await userEvent.setup().click(button)
 

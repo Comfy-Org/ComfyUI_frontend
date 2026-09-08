@@ -3,7 +3,7 @@ import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
 import { ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
-import { AUTH_FIELD_CLASS } from './authFieldClass'
+import { AUTH_FIELD_CLASS } from './authClasses'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
