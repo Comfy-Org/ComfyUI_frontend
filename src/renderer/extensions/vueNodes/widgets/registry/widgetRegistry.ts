@@ -321,23 +321,20 @@ export const getComponent = (type: string): Component | null => {
 }
 
 export function getLinkedWidgetDisplay(
-  type: string,
-  options: IWidgetOptions
+  type: string
 ): LinkedWidgetDisplay | undefined {
-  if (type === 'gradientslider' || type === 'asset') return
+  if (type === 'gradientslider') return
 
   const component = getComponent(type)
   if (
     component === WidgetInputText ||
     component === WidgetInputNumber ||
-    component === WidgetSelect
+    component === WidgetSelect ||
+    component === WidgetToggleSwitch
   ) {
     return 'control'
   }
-  if (component === WidgetTextarea) return 'expanding'
-  if (component === WidgetToggleSwitch) {
-    return options.on == null && options.off == null ? 'switch' : 'control'
-  }
+  if (component === WidgetTextarea) return 'multiline'
 }
 
 export const isEssential = (type: string): boolean => {

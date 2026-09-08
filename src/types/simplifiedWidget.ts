@@ -52,7 +52,7 @@ export interface LinkedUpstreamInfo {
   outputName?: string
 }
 
-export type LinkedWidgetDisplay = 'control' | 'switch' | 'expanding'
+export type LinkedWidgetDisplay = 'control' | 'multiline'
 
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,

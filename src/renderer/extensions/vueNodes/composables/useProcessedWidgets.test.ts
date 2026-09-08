@@ -432,10 +432,10 @@ describe('promoted subgraph widgets', () => {
   it.for([
     ['number', 'control'],
     ['number', 'control', true],
-    ['boolean', 'switch'],
-    ['customtext', 'expanding'],
+    ['boolean', 'control'],
+    ['customtext', 'multiline'],
     ['combo', 'control'],
-    ['asset', undefined],
+    ['asset', 'control'],
     ['color', undefined],
     ['gradientslider', undefined],
     ['curve', undefined]

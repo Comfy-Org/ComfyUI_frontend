@@ -63,8 +63,9 @@ const borderStyle = computed(() =>
       </div>
       <LinkedWidgetStatus
         v-if="widget.linkedDisplay"
-        :display="widget.linkedDisplay"
+        :display="noBorder ? 'switch' : widget.linkedDisplay"
         :widget
+        :class="widget.borderStyle"
       />
     </div>
   </div>

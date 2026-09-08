@@ -8,32 +8,35 @@ import type {
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { display, widget } = defineProps<{
-  display: LinkedWidgetDisplay
+  display: LinkedWidgetDisplay | 'switch'
   widget: Pick<SimplifiedWidget, 'name' | 'label'>
 }>()
 
 const { t } = useI18n()
+
+const displayClasses: Record<LinkedWidgetDisplay | 'switch', string> = {
+  control: 'inset-0 justify-start rounded-md px-3',
+  multiline: 'inset-0 justify-start rounded-lg px-3',
+  switch:
+    'top-1/2 right-0.5 h-5 w-9 -translate-y-1/2 justify-center rounded-full'
+}
 </script>
 
 <template>
   <div
-    data-testid="linked-widget-placeholder"
     role="img"
-    :aria-label="`${widget.label || widget.name}: ${t('widgets.linkedInput')}`"
-    :title="t('widgets.linkedInput')"
+    :aria-label="
+      t('widgets.linkedInputFor', { name: widget.label || widget.name })
+    "
     :class="
       cn(
-        'absolute z-20 flex cursor-default items-center overflow-hidden bg-component-node-widget-background/40 select-none',
-        display === 'switch'
-          ? 'top-1/2 right-0.5 h-5 w-9 -translate-y-1/2 justify-center rounded-full'
-          : display === 'expanding'
-            ? 'inset-0 justify-start rounded-lg px-3'
-            : 'inset-0 justify-start rounded-md px-3'
+        'absolute z-20 flex cursor-default items-center overflow-hidden bg-component-node-widget-background-disabled select-none',
+        displayClasses[display]
       )
     "
   >
     <i
-      class="icon-[lucide--link] size-4 text-component-node-foreground-secondary opacity-40"
+      class="icon-[lucide--link] size-4 text-component-node-foreground-secondary"
       aria-hidden="true"
     />
   </div>

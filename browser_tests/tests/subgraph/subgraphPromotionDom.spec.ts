@@ -159,7 +159,7 @@ test.describe(
           await expect(interiorTextareas.nth(0)).toBeHidden()
           await expect(interiorTextareas.nth(1)).toBeHidden()
           await expect(
-            comfyPage.page.getByTestId('linked-widget-placeholder')
+            comfyPage.page.getByRole('img', { name: 'text: Linked input' })
           ).toHaveCount(2)
 
           const interiorNodes = comfyPage.vueNodes.getNodeByTitle(

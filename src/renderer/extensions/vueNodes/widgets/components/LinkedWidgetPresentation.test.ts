@@ -50,6 +50,9 @@ describe('linked widget presentation', () => {
     expect(
       screen.getByRole('img', { name: 'seed: Linked input' })
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'seed: Linked input' })
+    ).not.toHaveAttribute('title')
     expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', {
@@ -133,21 +136,34 @@ describe('linked widget presentation', () => {
     await user.click(input)
     expect(input).toHaveFocus()
 
+    await rerender({ widget: { ...widget, options: { read_only: true } } })
+    expect(
+      screen.getByRole('button', { name: messages.g.copyToClipboard })
+    ).toBeInTheDocument()
+
     await rerender({
       widget: {
         ...widget,
-        linkedDisplay: 'expanding',
-        options: { disabled: true }
+        linkedDisplay: 'multiline',
+        options: { read_only: true, disabled: true }
       }
     })
     expect(
       screen.getByRole('img', { name: 'Prompt: Linked input' })
     ).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: messages.g.copyToClipboard })
+    ).not.toBeInTheDocument()
     expect(input).toBeInTheDocument()
     expect(input).toHaveValue('Local draft')
     expect(input).toHaveAttribute('inert')
     expect(onUpdate).not.toHaveBeenCalled()
+
+    await rerender({ widget: { ...widget, options: { read_only: true } } })
+    expect(
+      screen.getByRole('button', { name: messages.g.copyToClipboard })
+    ).toBeInTheDocument()
 
     await rerender({ widget })
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
@@ -173,7 +189,7 @@ describe('linked widget presentation', () => {
     await rerender({
       widget: {
         ...widget,
-        linkedDisplay: 'switch',
+        linkedDisplay: 'control',
         options: { disabled: true }
       }
     })
@@ -187,5 +203,43 @@ describe('linked widget presentation', () => {
     expect(screen.getByRole('switch')).toBe(control)
     expect(control.matches('[inert], [inert] *')).toBe(false)
     expect(control).toBeChecked()
+  })
+
+  it('hides labeled toggle choices and restores the selected option', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn()
+    const widget: SimplifiedWidget<boolean> = {
+      name: 'mode',
+      type: 'boolean',
+      value: true,
+      options: { on: 'Enabled', off: 'Disabled' }
+    }
+    const { rerender } = render(WidgetToggleSwitch, {
+      global: { plugins: widgetPlugins() },
+      props: { widget, modelValue: true, 'onUpdate:modelValue': onUpdate }
+    })
+    const enabled = screen.getByRole('button', { name: 'Enabled' })
+    const disabled = screen.getByRole('button', { name: 'Disabled' })
+
+    await rerender({
+      widget: {
+        ...widget,
+        linkedDisplay: 'control',
+        options: { ...widget.options, disabled: true }
+      }
+    })
+    expect(
+      screen.getByRole('img', { name: 'mode: Linked input' })
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(enabled.matches('[inert], [inert] *')).toBe(true)
+    expect(disabled.matches('[inert], [inert] *')).toBe(true)
+    expect(onUpdate).not.toHaveBeenCalled()
+
+    await rerender({ widget })
+    expect(screen.getByRole('button', { name: 'Enabled' })).toBe(enabled)
+    expect(enabled).toHaveAttribute('aria-pressed', 'true')
+    await user.click(disabled)
+    expect(onUpdate).toHaveBeenLastCalledWith(false)
   })
 })

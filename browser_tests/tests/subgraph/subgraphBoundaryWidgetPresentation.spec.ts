@@ -102,57 +102,44 @@ test.describe(
         await routeObjectInfoFromSetupApi(page, (objectInfo) =>
           setStringInputTooltip(
             objectInfo,
-            'CLIPTextEncode',
-            'text',
-            'Describe the image to generate.'
+            'DevToolsNodeWithStringInput',
+            'string_input',
+            'Enter a string.'
           )
         )
       })
 
-      test.describe('boundary-linked text', () => {
-        test.beforeEach(async ({ comfyPage }) => {
-          await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-with-promoted-text-widget'
-          )
-          await comfyPage.page.evaluate(
-            ({ hostId, interiorId }) => {
-              const host = window.app!.graph.getNodeById(hostId)
-              if (!host?.isSubgraphNode())
-                throw new Error('Missing subgraph host')
-              const widget = host.subgraph
-                .getNodeById(interiorId)
-                ?.widgets?.find((widget) => widget.name === 'text')
-              if (!widget) throw new Error('Missing interior text widget')
-              widget.value =
-                'A stale local value that must not appear in the tooltip'
-              window.app!.graph.setDirtyCanvas(true, true)
-            },
-            { hostId: toNodeId('11'), interiorId: toNodeId('10') }
-          )
-          await comfyPage.nextFrame()
-          await comfyPage.vueNodes.enterSubgraph('11')
-          await comfyPage.vueNodes.waitForNodes(2)
-        })
+      test('preserves help while omitting a linked single-line input value', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('inputs/string_input')
+        await fitToViewInstant(comfyPage)
+        const node = comfyPage.vueNodes.getNodeLocator('1')
+        const editor = node.getByRole('textbox', { includeHidden: true })
+        const localValue = 'A stale local value'
+        await editor.fill(localValue)
+        await editor.press('Tab')
+        await editor.hover()
+        await expect(comfyPage.vueNodes.getVisibleWidgetTooltip()).toHaveText(
+          `Enter a string.\n\n${localValue}`
+        )
 
-        test('preserves help while omitting the hidden local value', async ({
-          comfyPage
-        }) => {
-          const node = comfyPage.vueNodes.getNodeLocator('10')
-          const editor = node.getByRole('textbox', { includeHidden: true })
-          const indicator = node.getByRole('img', {
-            name: 'text: Linked input'
-          })
+        const nodeRef = await comfyPage.nodeOps.getNodeRefById('1')
+        const host = await nodeRef.convertToSubgraph()
+        await comfyPage.vueNodes.enterSubgraph(String(host.id))
+        await comfyPage.vueNodes.waitForNodes(1)
+        await comfyPage.subgraph.promoteWidget(node, 'string_input')
 
-          await expect(editor).toBeAttached()
-          await expect(editor).toBeHidden()
-          await expect(editor).toHaveValue(
-            'A stale local value that must not appear in the tooltip'
-          )
-          await indicator.hover()
-          await expect(comfyPage.vueNodes.getVisibleWidgetTooltip()).toHaveText(
-            'Describe the image to generate.'
-          )
+        const indicator = node.getByRole('img', {
+          name: 'string_input: Linked input'
         })
+        await expect(editor).toBeAttached()
+        await expect(editor).toBeHidden()
+        await expect(editor).toHaveValue(localValue)
+        await indicator.hover()
+        await expect(comfyPage.vueNodes.getVisibleWidgetTooltip()).toHaveText(
+          'Enter a string.'
+        )
       })
     })
 

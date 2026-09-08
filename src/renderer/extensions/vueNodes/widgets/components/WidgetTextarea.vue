@@ -11,7 +11,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
+      class="pointer-events-none absolute top-1.5 left-3 z-30 text-2xs text-muted-foreground"
     >
       {{ displayName }}
     </label>

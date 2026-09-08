@@ -377,7 +377,7 @@ function processWidget(
   const isBoundaryLinked = slotInfo?.originNodeId === SUBGRAPH_INPUT_ID
   const linkedDisplay =
     isBoundaryLinked && vueComponent !== WidgetLegacy
-      ? getLinkedWidgetDisplay(type, options)
+      ? getLinkedWidgetDisplay(type)
       : undefined
   const visible = isWidgetVisible(
     options,

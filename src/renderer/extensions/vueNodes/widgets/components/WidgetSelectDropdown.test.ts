@@ -179,33 +179,66 @@ describe('WidgetSelectDropdown', () => {
     )
   })
 
-  it('renders in cloud asset mode', () => {
-    mockAssetsData.items = [
-      fromPartial({
-        id: 'asset-1',
-        name: 'model_a.safetensors',
-        preview_url: 'https://example.com/a.jpg',
-        tags: []
+  it.for(['combo', 'asset'])(
+    'preserves the cloud %s selection through boundary display transitions',
+    async (type) => {
+      mockAssetsData.items = [
+        fromPartial({
+          id: 'asset-1',
+          name: 'model_a.safetensors',
+          preview_url: 'https://example.com/a.jpg',
+          tags: []
+        })
+      ]
+      mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
+      mockSelectedSetRef.value = new Set(['asset-1'])
+      const widget = createMockWidget<string | undefined>({
+        value: 'model_a.safetensors',
+        name: 'test_model',
+        type,
+        options: {
+          values: [],
+          nodeType: 'CheckpointLoaderSimple'
+        }
       })
-    ]
-    mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
-    mockSelectedSetRef.value = new Set(['asset-1'])
-    const widget = createMockWidget<string | undefined>({
-      value: 'model_a.safetensors',
-      name: 'test_model',
-      type: 'combo',
-      options: {
-        values: [],
-        nodeType: 'CheckpointLoaderSimple'
-      }
-    })
-    renderComponent(widget, 'model_a.safetensors', {
-      assetKind: 'model',
-      isAssetMode: true,
-      nodeType: 'CheckpointLoaderSimple'
-    })
-    expect(screen.getByText('model_a.safetensors')).toBeDefined()
-  })
+      const { rerender, emitted } = renderComponent(
+        widget,
+        'model_a.safetensors',
+        {
+          assetKind: 'model',
+          isAssetMode: true,
+          nodeType: 'CheckpointLoaderSimple'
+        }
+      )
+      expect(screen.getByText('model_a.safetensors')).toBeDefined()
+      const trigger = screen.getByRole('button', {
+        name: 'model_a.safetensors'
+      })
+
+      await rerender({
+        widget: {
+          ...widget,
+          linkedDisplay: 'control',
+          options: { ...widget.options, disabled: true }
+        }
+      })
+      expect(screen.getByRole('img')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'model_a.safetensors' })
+      ).not.toBeInTheDocument()
+      expect(trigger).toBeInTheDocument()
+      expect(trigger.matches('[inert], [inert] *')).toBe(true)
+      expect(emitted('update:modelValue')).toBeUndefined()
+      expect(mockUpdateSelectedItems).not.toHaveBeenCalled()
+
+      await rerender({ widget })
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'model_a.safetensors' })).toBe(
+        trigger
+      )
+      expect(trigger.matches('[inert], [inert] *')).toBe(false)
+    }
+  )
 
   describe('composable wiring', () => {
     const items: FormDropdownItem[] = [
