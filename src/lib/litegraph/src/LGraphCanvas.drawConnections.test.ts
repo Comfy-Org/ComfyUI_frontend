@@ -10,7 +10,11 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { getLinkBadgeFrameState } from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  BADGE_GAP,
+  queryLinkBadgeAtPoint
+} from '@/lib/litegraph/src/canvas/linkBadges'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -644,13 +648,24 @@ describe('drawConnections hidden links', () => {
     return link
   }
 
+  function outputBadgePoint(link: LLink): Point {
+    const source = graph.getNodeById(link.origin_id)
+    if (!source) throw new Error('Missing hidden link source node')
+    const [x, y] = source.getOutputPos(link.origin_slot)
+    return [x + BADGE_GAP + 4, y]
+  }
+
   it('draws two endpoint badges instead of a curve', () => {
     const link = createHiddenLink()
 
-    canvas.drawConnections(createMockCtx())
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
 
     expect(canvas.renderedPaths.has(link)).toBe(false)
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
+    expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
   it('keeps offscreen badge rows for stable stacking but skips their paint', () => {
@@ -664,7 +679,9 @@ describe('drawConnections hidden links', () => {
     const ctx = createMockCtx()
     canvas.drawConnections(ctx)
 
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
     expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
@@ -702,11 +719,11 @@ describe('drawConnections hidden links', () => {
   it('opens rename from a badge double-click', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
     const event = new PointerEvent('pointerdown', {
       button: 0,
-      clientX: badge.x + badge.width / 2,
-      clientY: badge.y + badge.height / 2,
+      clientX: badgeX,
+      clientY: badgeY,
       isPrimary: false
     })
     const prompt = vi
@@ -730,13 +747,13 @@ describe('drawConnections hidden links', () => {
   })
 
   it('pans when dragging from a badge', () => {
-    createHiddenLink()
+    const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
     const event = new PointerEvent('pointerdown', {
       button: 0,
-      clientX: badge.x + badge.width / 2,
-      clientY: badge.y + badge.height / 2,
+      clientX: badgeX,
+      clientY: badgeY,
       isPrimary: false
     })
 
@@ -808,19 +825,18 @@ describe('drawConnections hidden links', () => {
       presentationStore.patch(scope, link.id, { hidden: true })
     }
 
-    canvas.drawConnections(createMockCtx())
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
 
     const outputSocketX = sourceNode.getOutputPos(0)[0]
     const inputSocketX = firstImageTarget.getInputPos(0)[0]
-    const outputBadgeLinkIds = getLinkBadgeFrameState(canvas)
-      .hitAreas.filter((area) => {
-        const centerX = area.x + area.width / 2
-        return (
-          Math.abs(centerX - outputSocketX) < Math.abs(centerX - inputSocketX)
-        )
-      })
-      .sort((first, second) => first.y - second.y)
-      .map((area) => area.linkId)
+    const outputBadgeLinkIds = vi
+      .mocked(ctx.fillText)
+      .mock.calls.filter(
+        ([, x]) => Math.abs(x - outputSocketX) < Math.abs(x - inputSocketX)
+      )
+      .sort((first, second) => first[2] - second[2])
+      .map(([, x, y]) => queryLinkBadgeAtPoint(canvas, x, y))
 
     expect(outputBadgeLinkIds).toEqual([
       firstImageLink.id,

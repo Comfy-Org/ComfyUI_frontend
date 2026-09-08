@@ -8,7 +8,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
 import { findRerouteAtPoint } from './findRerouteAtPoint'
-import { getLinkBadgeFrameState, queryLinkBadgeAtPoint } from './linkBadges'
+import { queryLinkBadgeAtPoint } from './linkBadges'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
@@ -83,11 +83,7 @@ export function getCanvasContextMenuTarget(
     )
 
     if (!reroute) {
-      const badgeLinkId = queryLinkBadgeAtPoint(
-        getLinkBadgeFrameState(canvas),
-        x,
-        y
-      )
+      const badgeLinkId = queryLinkBadgeAtPoint(canvas, x, y)
       const badgeLink =
         badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
       if (

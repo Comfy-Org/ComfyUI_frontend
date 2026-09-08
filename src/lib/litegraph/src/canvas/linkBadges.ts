@@ -2,7 +2,8 @@ import { textOnColor } from '@/utils/colorUtil'
 
 import type { Point, ReadOnlyRect, Rect } from '../interfaces'
 import { LGraphBadge } from '../LGraphBadge'
-import type { LinkId, LLink } from '../LLink'
+import type { LLink } from '../LLink'
+import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { overlapBounding } from '../measure'
 
@@ -34,44 +35,26 @@ interface BadgeLayout {
   inputBadgeY: number
 }
 
-export interface LinkBadgeFrameState {
-  readonly hitAreas: BadgeHitArea[]
-}
+const hitAreasByHost = new WeakMap<object, BadgeHitArea[]>()
 
-export function createLinkBadgeFrameState(): LinkBadgeFrameState {
-  return { hitAreas: [] }
-}
-
-const frameStates = new WeakMap<object, LinkBadgeFrameState>()
-
-/**
- * Per-canvas badge frame state, owned by this module rather than the canvas
- * (ADR 0008: no new state on the god object).
- */
-export function getLinkBadgeFrameState(host: object): LinkBadgeFrameState {
-  const existing = frameStates.get(host)
-  if (existing) return existing
-  const created = createLinkBadgeFrameState()
-  frameStates.set(host, created)
-  return created
-}
-
-export function clearLinkBadgeFrameState(state: LinkBadgeFrameState): void {
-  state.hitAreas.length = 0
+export function clearLinkBadgeHitAreas(host: object): void {
+  hitAreasByHost.delete(host)
 }
 
 export function queryLinkBadgeAtPoint(
-  state: LinkBadgeFrameState,
+  host: object,
   x: number,
   y: number
 ): LinkId | undefined {
-  return state.hitAreas.find(
-    (area) =>
-      x >= area.x &&
-      x <= area.x + area.width &&
-      y >= area.y &&
-      y <= area.y + area.height
-  )?.linkId
+  return hitAreasByHost
+    .get(host)
+    ?.find(
+      (area) =>
+        x >= area.x &&
+        x <= area.x + area.width &&
+        y >= area.y &&
+        y <= area.y + area.height
+    )?.linkId
 }
 
 export function linkBadgeText(
@@ -149,7 +132,7 @@ function createHitArea(
 }
 
 function layoutHiddenLinkBadges(
-  state: LinkBadgeFrameState,
+  hitAreas: readonly BadgeHitArea[],
   ctx: CanvasRenderingContext2D,
   link: LLink,
   presentation: Readonly<LinkPresentation>,
@@ -164,7 +147,7 @@ function layoutHiddenLinkBadges(
   const [outputSocketX, outputSocketY] = startPos
   const outputBadgeX = outputSocketX + BADGE_GAP
   const outputBadgeY = freeBadgeCenterY(
-    state.hitAreas,
+    hitAreas,
     outputBadgeX,
     outputSocketY,
     width
@@ -179,7 +162,7 @@ function layoutHiddenLinkBadges(
   const [inputSocketX, inputSocketY] = endPos
   const inputBadgeX = inputSocketX - BADGE_GAP - width
   const inputBadgeY = freeBadgeCenterY(
-    [...state.hitAreas, outputHitArea],
+    [...hitAreas, outputHitArea],
     inputBadgeX,
     inputSocketY,
     width
@@ -273,32 +256,35 @@ function drawBadgeLayout(
 }
 
 export function drawHiddenLinkBadges(
-  state: LinkBadgeFrameState,
+  host: object,
   ctx: CanvasRenderingContext2D,
   link: LLink,
   presentation: Readonly<LinkPresentation>,
-  connectionPoints: readonly Point[],
+  startPos: Point,
+  endPos: Point,
   color: string,
   visibleArea: ReadOnlyRect
 ): void {
+  const hitAreas = hitAreasByHost.get(host) ?? []
   const layout = layoutHiddenLinkBadges(
-    state,
+    hitAreas,
     ctx,
     link,
     presentation,
-    connectionPoints[0],
-    connectionPoints[connectionPoints.length - 1],
+    startPos,
+    endPos,
     color
   )
-  const hitAreas = getBadgeHitAreas(layout)
-  state.hitAreas.push(...hitAreas)
+  const endpointHitAreas = getBadgeHitAreas(layout)
+  hitAreas.push(...endpointHitAreas)
+  hitAreasByHost.set(host, hitAreas)
   if (
     overlapBounding(
-      getConnectorBounds(layout.outputSocket, hitAreas[0]),
+      getConnectorBounds(layout.outputSocket, endpointHitAreas[0]),
       visibleArea
     ) ||
     overlapBounding(
-      getConnectorBounds(layout.inputSocket, hitAreas[1]),
+      getConnectorBounds(layout.inputSocket, endpointHitAreas[1]),
       visibleArea
     )
   ) {

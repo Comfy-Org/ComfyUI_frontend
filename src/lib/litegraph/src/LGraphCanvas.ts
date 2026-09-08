@@ -52,9 +52,8 @@ import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
-  clearLinkBadgeFrameState,
+  clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
-  getLinkBadgeFrameState,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
 import {
@@ -1921,7 +1920,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
     if (newGraph === graph) return
-    clearLinkBadgeFrameState(getLinkBadgeFrameState(this))
+    clearLinkBadgeHitAreas(this)
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
@@ -2515,11 +2514,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
-      const badgeLinkId = queryLinkBadgeAtPoint(
-        getLinkBadgeFrameState(this),
-        x,
-        y
-      )
+      const badgeLinkId = queryLinkBadgeAtPoint(this, x, y)
       const badgeLink =
         badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
       if (
@@ -6126,8 +6121,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     nodesGraph: LGraph | Subgraph | null = this.graph
   ): void {
     this.renderedPaths.clear()
-    const badgeFrameState = getLinkBadgeFrameState(this)
-    clearLinkBadgeFrameState(badgeFrameState)
+    clearLinkBadgeHitAreas(this)
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
     const { graph, subgraph } = this
@@ -6332,11 +6326,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       const [startPos, endPos] = endpoints
       drawHiddenLinkBadges(
-        badgeFrameState,
+        this,
         ctx,
         link,
         presentation,
-        [startPos, endPos],
+        startPos,
+        endPos,
         (typeof link.color === 'string' && link.color) ||
           LGraphCanvas.link_type_colors[link.type] ||
           this.default_link_color,
