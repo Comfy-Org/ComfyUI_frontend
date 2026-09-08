@@ -331,10 +331,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Returns the workspace-scoped auth header. An API-key session has no
+   * Firebase token to exchange for a workspace token; the key itself is the
+   * workspace credential (the server resolves the key's bound workspace), so
+   * it is sent directly instead of minting a token.
+   */
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
       return token ? { Authorization: `Bearer ${token}` } : null
+    }
+
+    if (currentUser.value === null) {
+      const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+      if (apiKeyHeader) return apiKeyHeader
     }
 
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
@@ -380,6 +391,10 @@ export const useAuthStore = defineStore('auth', () => {
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
       return useWorkspaceAuthStore().getUnifiedToken()
+    }
+
+    if (currentUser.value === null && useApiKeyAuthStore().isAuthenticated) {
+      return undefined
     }
 
     const teamWorkspaceStore = useTeamWorkspaceStore()
@@ -520,7 +535,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const createCustomerResJson: CreateCustomerResponse =
       await createCustomerRes.json()
-    if (!createCustomerResJson?.id) {
+    if (!createCustomerResJson.id) {
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: 'No customer ID returned'
@@ -596,7 +611,7 @@ export const useAuthStore = defineStore('auth', () => {
         typeof body === 'object' &&
         body !== null &&
         'message' in body &&
-        (body as { message: unknown }).message === MISSING_CUSTOMER_MESSAGE
+        body.message === MISSING_CUSTOMER_MESSAGE
       )
     } catch {
       return false
@@ -671,7 +686,7 @@ export const useAuthStore = defineStore('auth', () => {
       const result = await action(auth)
 
       // Create customer if needed
-      if (options?.createCustomer) {
+      if (options.createCustomer) {
         const token = await getIdToken()
         if (!token) {
           throw new Error('Cannot create customer: User not authenticated')

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const canvasMocks = vi.hoisted(() => ({
   canvas: {
     graph: {
-      getNodeById: vi.fn(() => null as unknown)
+      getNodeById: vi.fn((): unknown => null)
     }
   },
   linearMode: false

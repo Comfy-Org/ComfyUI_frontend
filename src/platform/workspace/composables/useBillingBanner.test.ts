@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 
 const mocks = vi.hoisted(() => ({
   billing: null as {
-    isActiveSubscription: { value: boolean }
+    canAccessSubscriptionFeatures: { value: boolean }
     isTeamPlan: { value: boolean }
     billingStatus: { value: string | null }
     subscription: { value: { hasFunds: boolean } | null }
@@ -39,7 +39,7 @@ vi.mock('@/composables/useFeatureFlags', async () => {
 vi.mock('@/composables/billing/useBillingContext', async () => {
   const { ref } = await import('vue')
   const billing = {
-    isActiveSubscription: ref(true),
+    canAccessSubscriptionFeatures: ref(true),
     isTeamPlan: ref(true),
     billingStatus: ref<string | null>('paid'),
     subscription: ref<{ hasFunds: boolean } | null>({ hasFunds: true }),
@@ -56,8 +56,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
     useWorkspaceUI: () => ({
       permissions: computed(() => ({
         canManageSubscription: true,
-        canManageSubscriptionLifecycle: true,
-        canTopUp: true
+        canManageSubscriptionLifecycle: true
       }))
     })
   }
@@ -68,7 +67,7 @@ import { useBillingBanner } from './useBillingBanner'
 describe('useBillingBanner', () => {
   beforeEach(() => {
     const b = mocks.billing!
-    b.isActiveSubscription.value = true
+    b.canAccessSubscriptionFeatures.value = true
     b.isTeamPlan.value = true
     b.billingStatus.value = 'paid'
     b.subscription.value = { hasFunds: true }

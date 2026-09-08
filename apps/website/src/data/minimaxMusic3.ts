@@ -284,8 +284,9 @@ export const minimaxMusic3Page: ModelLaunchPage = {
           'zh-CN': 'MiniMax Music 3 可以免费使用吗？'
         },
         answer: {
-          en: 'Yes, MiniMax Music 3 is open weight and comes under the Apache-2 license.',
-          'zh-CN': '可以。MiniMax Music 3 采用开源权重，遵循 Apache-2 许可。'
+          en: 'Yes. MiniMax Music 3 is open weight under the [MiniMax Community License](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE), free to use, including commercially, for companies under 20 million US dollars in yearly revenue.',
+          'zh-CN':
+            '可以。MiniMax Music 3 依据 [MiniMax 社区许可](https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE)提供开源权重，年收入低于 2000 万美元的公司可免费使用，包括商业用途。'
         }
       },
       {
@@ -295,8 +296,9 @@ export const minimaxMusic3Page: ModelLaunchPage = {
           'zh-CN': '我可以将 MiniMax Music 3 用于商业用途吗？'
         },
         answer: {
-          en: 'Yes, the Apache-2 license allows commercial use.',
-          'zh-CN': '可以。Apache-2 许可允许商业使用。'
+          en: 'Yes, for companies under 20 million US dollars in yearly revenue, under the MiniMax Community License. Above that threshold you need MiniMax authorization, which [a MiniMax commercial license through Comfy](https://comfy.org/minimax/license) covers.',
+          'zh-CN':
+            '可以。依据 MiniMax 社区许可，年收入低于 2000 万美元的公司可以商用。超过该门槛需要 MiniMax 授权，[通过 Comfy 获取的 MiniMax 商业许可](https://comfy.org/zh-CN/minimax/license)即涵盖这一授权。'
         }
       }
     ]
@@ -351,7 +353,8 @@ export const minimaxMusic3Page: ModelLaunchPage = {
     highlight: {
       titleKey: 'minimaxMusic3.reviews.highlightTitle',
       descriptionKey: 'minimaxMusic3.reviews.highlightDescription',
-      ctaKey: 'minimaxMusic3.reviews.highlightCta'
+      ctaKey: 'minimaxMusic3.reviews.highlightCta',
+      route: 'minimaxLicense'
     }
   }
 }

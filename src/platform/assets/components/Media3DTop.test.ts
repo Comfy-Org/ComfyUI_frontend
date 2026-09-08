@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import type * as VueUseCore from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
@@ -15,13 +14,9 @@ const {
   mockIsAssetPreviewSupported: vi.fn(() => true)
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof VueUseCore>()
-  return {
-    ...actual,
-    useIntersectionObserver: mockUseIntersectionObserver
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  useIntersectionObserver: mockUseIntersectionObserver
+}))
 
 vi.mock('../utils/assetPreviewUtil', () => ({
   findServerPreviewUrl: mockFindServerPreviewUrl,

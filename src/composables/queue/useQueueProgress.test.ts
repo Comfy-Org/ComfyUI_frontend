@@ -8,7 +8,7 @@ import { formatPercent0 } from '@/utils/numberUtil'
 
 type ProgressValue = number | null
 
-const localeRef: Ref<string> = ref('en-US') as Ref<string>
+const localeRef: Ref<string> = ref('en-US')
 const executionProgressRef: Ref<ProgressValue> = ref(null)
 const executingNodeProgressRef: Ref<ProgressValue> = ref(null)
 
@@ -134,11 +134,11 @@ describe('useQueueProgress', () => {
     const { composable } = mountUseQueueProgress()
 
     expect(composable.totalProgressStyle.value).toEqual({
-      width: '10%',
+      transform: 'scaleX(0.1)',
       background: 'var(--color-interface-panel-job-progress-primary)'
     })
     expect(composable.currentNodeProgressStyle.value).toEqual({
-      width: '25%',
+      transform: 'scaleX(0.25)',
       background: 'var(--color-interface-panel-job-progress-secondary)'
     })
 
@@ -146,7 +146,9 @@ describe('useQueueProgress', () => {
     setExecutingNodeProgress(0.02)
     await nextTick()
 
-    expect(composable.totalProgressStyle.value.width).toBe('76%')
-    expect(composable.currentNodeProgressStyle.value.width).toBe('2%')
+    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(0.76)')
+    expect(composable.currentNodeProgressStyle.value.transform).toBe(
+      'scaleX(0.02)'
+    )
   })
 })

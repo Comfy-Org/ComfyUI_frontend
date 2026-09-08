@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import {
   onRekaFocusOutside,
@@ -40,8 +41,6 @@ vi.mock(
         activeCheckoutActionUrl: ref(null),
         authenticationState: ref(null),
         authenticationError: ref(null),
-        canRetryAuthentication: ref(false),
-        isAuthenticating: ref(false),
         reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
@@ -55,7 +54,6 @@ vi.mock(
         handleTeamSubscribe: vi.fn(),
         handleSubscriptionPayment: vi.fn(),
         handleTeamSubscriptionPayment: vi.fn(),
-        retryPaymentAuthentication: vi.fn(),
         applyPromotionCode: vi.fn(),
         invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
@@ -72,7 +70,17 @@ const i18n = createI18n({
       g: {
         cancel: 'Cancel',
         close: 'Close',
-        maximizeDialog: 'Maximize'
+        maximizeDialog: 'Maximize',
+        save: 'Save'
+      },
+      builderToolbar: {
+        app: 'App',
+        appDescription: 'Opens as an app by default',
+        defaultViewLabel: 'By default, this workflow will open as:',
+        filename: 'Filename',
+        nodeGraph: 'Node graph',
+        nodeGraphDescription: 'Opens as node graph by default',
+        saveAs: 'Save as'
       },
       workspacePanel: {
         members: {
@@ -261,6 +269,28 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
         name: 'Set a monthly credit limit for Jane'
       })
     ).toBeInTheDocument()
+  })
+
+  it('opens the save dialog with an accessible name and description', async () => {
+    const warn = vi.spyOn(console, 'warn')
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'builder-save',
+      component: BuilderSaveDialogContent,
+      props: { defaultFilename: 'workflow.json' },
+      dialogComponentProps: {
+        renderer: 'reka',
+        headless: true,
+        useAutomaticLabeling: true
+      }
+    })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Save as' })
+    expect(dialog).toHaveAccessibleDescription('Filename')
+    expect(screen.getByLabelText('Filename')).toHaveFocus()
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('closes the dialog on Escape by default', async () => {

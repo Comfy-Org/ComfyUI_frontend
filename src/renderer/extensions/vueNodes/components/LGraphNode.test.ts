@@ -70,7 +70,9 @@ vi.mock(
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
-    canvas: { setDirty: vi.fn() }
+    canvas: { setDirty: vi.fn() },
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
@@ -177,7 +179,8 @@ const mockNodeData: NodeState = {
   mode: 0,
   flags: {},
   inputs: [],
-  outputs: []
+  outputs: [],
+  properties: {}
 }
 
 const mockRerouteNodeData: NodeState = {
@@ -196,6 +199,7 @@ describe('LGraphNode', () => {
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
+    canvasStore.currentGraph = null
     const settingStore = useSettingStore(pinia)
     useNodeOutputStore().nodeOutputs = {}
     useWidgetValueStore().clearGraph('graph-test')
@@ -235,6 +239,48 @@ describe('LGraphNode', () => {
     })
 
     expect(container.textContent).toContain('Test Node')
+  })
+
+  it('renders a customtext widget registered by graph mutations', async () => {
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => null,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+    useWidgetValueStore().registerWidget(
+      widgetId('graph-test', mockNodeData.id, 'prompt'),
+      {
+        name: 'prompt',
+        type: 'customtext',
+        value: 'A projected prompt',
+        options: {},
+        label: 'prompt'
+      },
+      {}
+    )
+
+    render(LGraphNode, {
+      props: {
+        nodeData: { ...mockNodeData, graphId: 'graph-test' }
+      },
+      global: {
+        plugins: [pinia, i18n],
+        stubs: {
+          AsyncComponentWrapper: {
+            props: ['modelValue'],
+            template: '<textarea :value="modelValue" />'
+          },
+          NodeHeader: true,
+          NodeSlots: true,
+          NodeContent: true,
+          SlotConnectionDot: true
+        }
+      }
+    })
+
+    expect(await screen.findByRole('textbox')).toHaveValue('A projected prompt')
   })
 
   it('should apply selected styling when selected prop is true', async () => {
@@ -326,6 +372,16 @@ describe('LGraphNode', () => {
       isInputConnected: vi.fn(() => isAudioLinked.value),
       isSubgraphNode: () => false
     }
+    // widgetIds/nodeLocatorId derive from canvasStore.rootGraphId
+    // (currentGraph.rootGraph.id), so this test needs a minimal root graph.
+    // Scoped to this test only; beforeEach resets currentGraph to null.
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => mockData.mockLgraphNode,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(
       widgetId('graph-test', mockNodeData.id, 'audio'),
@@ -339,6 +395,9 @@ describe('LGraphNode', () => {
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
+        // graphId must match the root graph id, or locatorIdFromState treats
+        // it as a (non-UUID) subgraph id and resolves no lgraphNode.
+        graphId: 'graph-test',
         type: 'LoadAudio'
       }
     })

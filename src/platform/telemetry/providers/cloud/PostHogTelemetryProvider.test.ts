@@ -3,6 +3,8 @@ import type * as VueModule from 'vue'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
 import type { BillingTelemetryEvent, OnboardingTourStage } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -33,7 +35,7 @@ const hoisted = vi.hoisted(() => {
   }
   const refs = {
     tier: null as unknown as Ref<string | null>,
-    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+    remoteConfig: null as unknown as Ref<RemoteConfig>
   }
 
   return {
@@ -70,7 +72,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
+  hoisted.refs.remoteConfig = ref<RemoteConfig>({})
   return { remoteConfig: hoisted.refs.remoteConfig }
 })
 
@@ -100,13 +102,13 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig.value = null
+    hoisted.refs.remoteConfig.value = {}
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
-    } as typeof window.__CONFIG__
+    }
   })
 
   describe('initialization', () => {
@@ -152,6 +154,29 @@ describe('PostHogTelemetryProvider', () => {
           debug: true,
           api_host: 'https://custom.host.com'
         })
+      )
+    })
+
+    it("lets the server's person_profiles win over the client default", async () => {
+      hoisted.refs.remoteConfig.value = {
+        posthog_config: { person_profiles: 'always' }
+      }
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'always' })
+      )
+    })
+
+    it('defaults person_profiles to identified_only when the server omits it', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockInit).toHaveBeenCalledWith(
+        'phc_test_token',
+        expect.objectContaining({ person_profiles: 'identified_only' })
       )
     })
 
@@ -381,6 +406,22 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
+      )
+    })
+
     it('captures auth failure events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -396,6 +437,46 @@ describe('PostHogTelemetryProvider', () => {
           error_code: 'auth/user-not-found',
           auth_action: 'email_sign_in'
         }
+      )
+    })
+
+    it('captures unified auth retry and refresh outcomes', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackUnifiedAuthRetry({
+        transport: 'ws',
+        outcome: 'failed',
+        failure_reason: 'token_unavailable'
+      })
+      provider.trackUnifiedAuthRefresh({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
+        {
+          transport: 'ws',
+          outcome: 'failed',
+          failure_reason: 'token_unavailable'
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+        { outcome: 'retry_scheduled', retry_count: 1 }
+      )
+    })
+
+    it('captures image load failures', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackImageLoadFailed({ source: 'node_image_preview' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.IMAGE_LOAD_FAILED,
+        { source: 'node_image_preview' }
       )
     })
 
@@ -1202,12 +1283,11 @@ describe('PostHogTelemetryProvider', () => {
       expect(result.$set_once).toHaveProperty('plan', 'free')
     })
 
-    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+    it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {
       const remoteBefore_send = vi.fn()
       hoisted.refs.remoteConfig.value = {
         posthog_config: {
-          before_send: remoteBefore_send,
-          person_profiles: 'always'
+          before_send: remoteBefore_send
         }
       }
 
@@ -1217,7 +1297,6 @@ describe('PostHogTelemetryProvider', () => {
       const initConfig = hoisted.mockInit.mock.calls[0][1]
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
-      expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
 })

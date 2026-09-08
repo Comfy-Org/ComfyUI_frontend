@@ -9,7 +9,7 @@ import { isValueControlWidget, nextValueForLinkedTarget } from './valueControl'
 /**
  * A promoted subgraph host widget whose interior source widget is driven by a
  * `control_after_generate` widget. The host owns the value (store-backed), while
- * the interior linked widgets supply the control mode and filter (ADR 0009).
+ * the interior linked widgets supply the control mode and filter (ADR-SUBGRAPH-PROMOTION-0009).
  */
 interface PromotedControlTarget {
   hostWidget: IBaseWidget
@@ -52,16 +52,11 @@ function collectPromotedControlTargets(
   return targets
 }
 
-function applyTarget(
-  target: PromotedControlTarget,
-  nodeId: unknown,
-  isPartialExecution: boolean | undefined
-): void {
+function applyTarget(target: PromotedControlTarget, nodeId: unknown): void {
   const next = nextValueForLinkedTarget({
     target: target.hostWidget,
     linkedWidgets: target.linkedWidgets,
-    nodeId,
-    isPartialExecution
+    nodeId
   })
   if (next === undefined) return
 
@@ -92,8 +87,7 @@ const executedWidgets = new WeakSet<IBaseWidget>()
  */
 export function applyPromotedWidgetControl(
   node: LGraphNode,
-  phase: 'beforeQueued' | 'afterQueued',
-  { isPartialExecution }: { isPartialExecution?: boolean } = {}
+  phase: 'beforeQueued' | 'afterQueued'
 ): void {
   const runBefore = controlValueRunBefore()
   if (phase === 'beforeQueued' && !runBefore) return
@@ -101,12 +95,12 @@ export function applyPromotedWidgetControl(
 
   for (const target of collectPromotedControlTargets(node)) {
     if (phase === 'afterQueued') {
-      applyTarget(target, node.id, isPartialExecution)
+      applyTarget(target, node.id)
       continue
     }
 
     if (executedWidgets.has(target.hostWidget)) {
-      applyTarget(target, node.id, isPartialExecution)
+      applyTarget(target, node.id)
     }
     executedWidgets.add(target.hostWidget)
   }

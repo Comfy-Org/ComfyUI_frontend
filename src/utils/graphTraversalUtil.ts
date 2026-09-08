@@ -1,7 +1,8 @@
 import type {
   LGraph,
   LGraphNode,
-  Subgraph
+  Subgraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
@@ -17,6 +18,13 @@ import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
+
+type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
+  Partial<Pick<LGraphNode, 'isSubgraphNode'>>
+
+function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
+  return node.isSubgraphNode?.call(node) ?? false
+}
 
 /**
  * The containing subgraph's id, or `null` when the node belongs to the root
@@ -123,7 +131,7 @@ export function traverseSubgraphPath(
     if (!localNodeId) return null
 
     const node = currentGraph.getNodeById(localNodeId)
-    if (!node?.isSubgraphNode?.() || !node.subgraph) return null
+    if (!node || !isSubgraphNode(node)) return null
     currentGraph = node.subgraph
   }
 
@@ -165,7 +173,7 @@ export function mapAllNodes<T>(
 
   visitGraphNodes(graph, (node) => {
     // Recursively map over subgraphs first
-    if (node.isSubgraphNode?.() && node.subgraph) {
+    if (isSubgraphNode(node)) {
       results.push(...mapAllNodes(node.subgraph, mapFn))
     }
 
@@ -192,7 +200,7 @@ export function mapUniqueNodes<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
-  return mapUnvisitedNodes(graph, mapFn, new Set([String(graph.id)]))
+  return mapUnvisitedNodes(graph, mapFn, new Set([graph.id]))
 }
 
 function mapUnvisitedNodes<T>(
@@ -203,8 +211,8 @@ function mapUnvisitedNodes<T>(
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
-    if (node.isSubgraphNode?.() && node.subgraph) {
-      const subgraphId = String(node.subgraph.id)
+    if (isSubgraphNode(node)) {
+      const subgraphId = node.subgraph.id
       if (!visited.has(subgraphId)) {
         visited.add(subgraphId)
         results.push(...mapUnvisitedNodes(node.subgraph, mapFn, visited))
@@ -233,7 +241,7 @@ export function forEachNode(
 ): void {
   visitGraphNodes(graph, (node) => {
     // Recursively process subgraphs first
-    if (node.isSubgraphNode?.() && node.subgraph) {
+    if (isSubgraphNode(node)) {
       forEachNode(node.subgraph, fn)
     }
 
@@ -281,7 +289,7 @@ export function findNodeInHierarchy(
 
   // Search in subgraphs
   for (const node of graph.nodes) {
-    if (node.isSubgraphNode?.() && node.subgraph) {
+    if (isSubgraphNode(node)) {
       const found = findNodeInHierarchy(node.subgraph, nodeId)
       if (found) return found
     }
@@ -308,7 +316,7 @@ export function findSubgraphByUuid(
 
   // Fallback: recursive traversal for non-root graphs without the registry.
   for (const node of graph.nodes) {
-    if (node.isSubgraphNode?.() && node.subgraph) {
+    if (isSubgraphNode(node)) {
       if (node.subgraph.id === targetUuid) {
         return node.subgraph
       }
@@ -337,14 +345,44 @@ export function findSubgraphPathById(
     const { graph, path } = stack.pop()!
 
     // Check if graph exists and has _nodes property
-    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
-      continue
-    }
-
     for (const node of graph._nodes) {
-      if (node.isSubgraphNode?.() && node.subgraph) {
-        const newPath = [...path, String(node.subgraph.id)]
+      if (isSubgraphNode(node)) {
+        const newPath = [...path, node.subgraph.id]
         if (node.subgraph.id === targetId) {
+          return newPath
+        }
+        stack.push({ graph: node.subgraph, path: newPath })
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Iteratively finds the path of subgraph NODE ids (not subgraph UUIDs) to a
+ * target subgraph - the address form node-scoped consumers need (e.g. the
+ * agent write leg's interior `set_widget`, whose wire `path` is a resolved
+ * node-id chain).
+ * @param rootGraph The graph to start searching from.
+ * @param targetUuid The UUID of the subgraph to find.
+ * @returns Subgraph-node ids from the root down to the node whose definition
+ * is the target, or `null` if not found.
+ */
+export function findSubgraphNodePathById(
+  rootGraph: LGraph,
+  targetUuid: string
+): string[] | null {
+  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
+    { graph: rootGraph, path: [] }
+  ]
+
+  while (stack.length > 0) {
+    const { graph, path } = stack.pop()!
+    for (const node of graph._nodes) {
+      if (isSubgraphNode(node)) {
+        const newPath = [...path, String(node.id)]
+        if (node.subgraph.id === targetUuid) {
           return newPath
         }
         stack.push({ graph: node.subgraph, path: newPath })
@@ -372,8 +410,6 @@ export function getRootParentNode(
   if (!parts || parts.length < 2) return null
 
   const parentId = parts[0]
-  if (!rootGraph) return null
-
   const localParentId = parseNodeId(parentId)
   if (!localParentId) return null
 
@@ -392,8 +428,6 @@ export function getNodeByExecutionId(
   rootGraph: LGraph,
   executionId: string
 ): LGraphNode | null {
-  if (!rootGraph) return null
-
   const localNodeId = getLocalNodeIdFromExecutionId(executionId)
   if (!localNodeId) return null
 
@@ -435,10 +469,7 @@ export function getExecutionIdByNode(
     return createNodeExecutionId([node.id])
   }
 
-  const parentPath = findPartialExecutionPathToGraph(
-    node.graph as LGraph,
-    rootGraph
-  )
+  const parentPath = findPartialExecutionPathToGraph(node.graph, rootGraph)
   if (parentPath === undefined) return null
 
   return createExecutionIdFromPath(parentPath, node.id)
@@ -554,7 +585,7 @@ export function getExecutionIdForNodeInGraph(
   const localExecutionId = createNodeExecutionId([localNodeId])
   if (graph === rootGraph || graph.isRootGraph) return localExecutionId
 
-  const parentPath = findPartialExecutionPathToGraph(graph as LGraph, rootGraph)
+  const parentPath = findPartialExecutionPathToGraph(graph, rootGraph)
   if (parentPath === undefined) return localExecutionId
 
   return createExecutionIdFromPath(parentPath, localNodeId) ?? localExecutionId
@@ -596,8 +627,6 @@ export function getNodeByLocatorId(
   rootGraph: LGraph,
   locatorId: string
 ): LGraphNode | null {
-  if (!rootGraph) return null
-
   const parsedIds = parseNodeLocatorId(locatorId)
   if (!parsedIds) return null
 
@@ -624,7 +653,7 @@ export function getNodeByLocatorId(
  * @returns The NodeLocatorId, or undefined if resolution fails
  */
 export function executionIdToNodeLocatorId(
-  rootGraph: LGraph,
+  rootGraph: LGraph | undefined,
   nodeId: string | number
 ): NodeLocatorId | undefined {
   const nodeIdStr = String(nodeId)
@@ -634,10 +663,11 @@ export function executionIdToNodeLocatorId(
     const localNodeId = parseNodeId(nodeIdStr)
     if (!localNodeId) return undefined
 
-    return createNodeLocatorId(null, localNodeId) ?? undefined
+    return createNodeLocatorId(null, localNodeId)
   }
 
   // It's an execution node ID — resolve subgraph path
+  if (!rootGraph) return undefined
   const parts = nodeIdStr.split(':')
   const localNodeId = parts.at(-1)!
   const subgraphPath = parts.slice(0, -1)
@@ -648,7 +678,7 @@ export function executionIdToNodeLocatorId(
   const parsedLocalNodeId = parseNodeId(localNodeId)
   if (!parsedLocalNodeId) return undefined
 
-  return createNodeLocatorId(targetGraph.id, parsedLocalNodeId) ?? undefined
+  return createNodeLocatorId(targetGraph.id, parsedLocalNodeId)
 }
 
 /**
@@ -659,7 +689,7 @@ export function executionIdToNodeLocatorId(
  */
 export function getRootGraph(graph: LGraph | Subgraph): LGraph | Subgraph {
   let current: LGraph | Subgraph = graph
-  while ('rootGraph' in current && current.rootGraph) {
+  while ('rootGraph' in current) {
     current = current.rootGraph
   }
   return current
@@ -745,11 +775,12 @@ export function traverseNodesDepthFirst<T = void>(
   nodes: LGraphNode[],
   options?: TraverseNodesOptions<T>
 ): void {
-  const {
-    visitor = () => undefined as T,
-    initialContext = undefined as T,
-    expandSubgraphs = true
-  } = options || {}
+  const visitor = options?.visitor ?? (() => undefined as T)
+  const initialContext =
+    options?.initialContext === undefined
+      ? (undefined as T)
+      : options.initialContext
+  const expandSubgraphs = options?.expandSubgraphs ?? true
   type StackItem = { node: LGraphNode; context: T }
   const stack: StackItem[] = []
 
@@ -766,7 +797,7 @@ export function traverseNodesDepthFirst<T = void>(
     const childContext = visitor(node, context)
 
     // If it's a subgraph and we should expand, add children to stack
-    if (expandSubgraphs && node.isSubgraphNode?.() && node.subgraph) {
+    if (expandSubgraphs && isSubgraphNode(node)) {
       // Process children in reverse order to maintain left-to-right DFS processing
       // when popping from stack (LIFO). Iterate backwards to avoid array reversal.
       const children = node.subgraph.nodes
@@ -827,7 +858,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined as C,
+    initialContext = undefined,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []
@@ -912,7 +943,7 @@ function findPartialExecutionPathToGraph(
   for (const node of root.nodes) {
     if (!node.isSubgraphNode()) continue
 
-    if (node.subgraph === target) return `${node.id}`
+    if (node.subgraph === target) return node.id
 
     const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
     if (subpath !== undefined) return node.id + ':' + subpath

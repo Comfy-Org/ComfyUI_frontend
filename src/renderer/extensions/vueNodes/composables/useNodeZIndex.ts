@@ -14,10 +14,10 @@ export function useNodeZIndex() {
   const canvasStore = useCanvasStore()
 
   function bringNodeToFront(nodeId: NodeId) {
-    const { rootGraphId } = canvasStore
-    if (!rootGraphId) return
+    const { currentGraph } = canvasStore
+    if (!currentGraph) return
 
-    layoutMutations.bringNodeToFront(rootGraphId, nodeId)
+    layoutMutations.setNodeOrder(currentGraph, nodeId, 'front')
   }
 
   return {

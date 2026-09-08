@@ -193,14 +193,8 @@ describe('load3dService', () => {
       const viewer = makeViewer()
       const factory = vi.fn().mockReturnValue(viewer)
 
-      const first = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
-      const second = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
+      const first = svc.getOrCreateViewerSync(node, factory)
+      const second = svc.getOrCreateViewerSync(node, factory)
 
       expect(first).toBe(viewer)
       expect(second).toBe(viewer)
@@ -423,7 +417,7 @@ describe('load3dService', () => {
         scene.add(o)
       })
       const modelManager = {
-        currentModel: existingModel as THREE.Object3D | null,
+        currentModel: existingModel,
         originalModel: null as unknown,
         materialMode: 'original',
         currentUpDirection: 'original',

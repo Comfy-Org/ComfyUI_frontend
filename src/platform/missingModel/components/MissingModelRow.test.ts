@@ -55,7 +55,8 @@ vi.mock('@/scripts/api', () => ({
       }
     ),
     apiURL: vi.fn((path: string) => path),
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 

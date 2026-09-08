@@ -16,67 +16,72 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-describe('getComfyApiBaseUrl', () => {
-  const originalConfig = remoteConfig.value
+interface BaseUrlCase {
+  label: string
+  getBaseUrl: () => string
+  setOverride: (value: string) => void
+  defaultUrl: string
+}
 
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
+const baseUrlCases: BaseUrlCase[] = [
+  {
+    label: 'API',
+    getBaseUrl: getComfyApiBaseUrl,
+    setOverride: (value) => {
+      remoteConfig.value = { comfy_api_base_url: value }
+    },
+    defaultUrl: 'https://stagingapi.comfy.org'
+  },
+  {
+    label: 'Cloud',
+    getBaseUrl: getComfyCloudBaseUrl,
+    setOverride: (value) => {
+      remoteConfig.value = { comfy_cloud_base_url: value }
+    },
+    defaultUrl: 'https://testcloud.comfy.org'
+  },
+  {
+    label: 'Platform',
+    getBaseUrl: getComfyPlatformBaseUrl,
+    setOverride: (value) => {
+      remoteConfig.value = { comfy_platform_base_url: value }
+    },
+    defaultUrl: 'https://stagingplatform.comfy.org'
+  }
+]
 
-  afterEach(() => {
-    remoteConfig.value = originalConfig
-  })
+describe.for(baseUrlCases)(
+  '$label base URL',
+  ({ getBaseUrl, setOverride, defaultUrl }) => {
+    const originalConfig = remoteConfig.value
 
-  it('honors the server-provided override', () => {
-    remoteConfig.value = { comfy_api_base_url: 'https://my-ephem.example.com' }
-    expect(getComfyApiBaseUrl()).toBe('https://my-ephem.example.com')
-  })
+    beforeEach(() => {
+      remoteConfig.value = {}
+    })
 
-  it('falls back to the build-time default when the key is absent', () => {
-    expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
-  })
+    afterEach(() => {
+      remoteConfig.value = originalConfig
+    })
 
-  it('falls back to the build-time default when the value is empty', () => {
-    remoteConfig.value = { comfy_api_base_url: '' }
-    expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
-  })
-})
+    it('honors a server-provided HTTPS override', () => {
+      setOverride('https://custom.example.com')
+      expect(getBaseUrl()).toBe('https://custom.example.com')
+    })
 
-describe('getComfyCloudBaseUrl', () => {
-  it('matches the non-production Firebase environment', () => {
-    expect(getComfyCloudBaseUrl()).toBe('https://testcloud.comfy.org')
-  })
-})
+    it('removes a trailing slash from the override', () => {
+      setOverride('https://custom.example.com/')
+      expect(getBaseUrl()).toBe('https://custom.example.com')
+    })
 
-describe('getComfyPlatformBaseUrl', () => {
-  const originalConfig = remoteConfig.value
-
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
-
-  afterEach(() => {
-    remoteConfig.value = originalConfig
-  })
-
-  it('honors the server-provided override', () => {
-    remoteConfig.value = {
-      comfy_platform_base_url: 'https://my-ephem-platform.example.com'
-    }
-    expect(getComfyPlatformBaseUrl()).toBe(
-      'https://my-ephem-platform.example.com'
+    it.for([undefined, '', 'not-a-url', 'http://custom.example.com'])(
+      'falls back to the build-time default for %s',
+      (override) => {
+        if (override !== undefined) setOverride(override)
+        expect(getBaseUrl()).toBe(defaultUrl)
+      }
     )
-  })
-
-  it('falls back to the build-time default when the key is absent', () => {
-    expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
-  })
-
-  it('falls back to the build-time default when the value is empty', () => {
-    remoteConfig.value = { comfy_platform_base_url: '' }
-    expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
-  })
-})
+  }
+)
 
 describe('compatibility with comfyui servers that predate the override keys', () => {
   const originalConfig = remoteConfig.value
@@ -92,7 +97,7 @@ describe('compatibility with comfyui servers that predate the override keys', ()
 
   it('falls back to build-time defaults when /features omits the URL keys', async () => {
     // An older comfyui server has /features but doesn't know about
-    // comfy_api_base_url / comfy_platform_base_url yet.
+    // comfy_api_base_url / comfy_cloud_base_url / comfy_platform_base_url yet.
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -104,6 +109,7 @@ describe('compatibility with comfyui servers that predate the override keys', ()
     await refreshRemoteConfig({ useAuth: false })
 
     expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
+    expect(getComfyCloudBaseUrl()).toBe('https://testcloud.comfy.org')
     expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
   })
 })

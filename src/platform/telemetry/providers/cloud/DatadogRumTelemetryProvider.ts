@@ -3,8 +3,11 @@ import { datadogRum } from '@datadog/browser-rum'
 
 import type {
   BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
+  ImageLoadFailureMetadata,
   TelemetryProvider,
+  UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata
 } from '../../types'
 import {
@@ -20,6 +23,37 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
         ? TelemetryEvents.UNIFIED_AUTH_RETRY_SUCCEEDED
         : TelemetryEvents.UNIFIED_AUTH_RETRY_FAILED,
       metadata
+    )
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    datadogRum.addAction(
+      metadata.outcome === 'succeeded'
+        ? TelemetryEvents.UNIFIED_AUTH_REFRESH_SUCCEEDED
+        : TelemetryEvents.UNIFIED_AUTH_REFRESH_FAILED,
+      metadata
+    )
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
+    if (metadata.outcome === 'timed_out') return
+
+    datadogRum.addDurationVital('bootstrap', {
+      startTime: performance.timeOrigin,
+      duration: metadata.total_ms,
+      context: { outcome: metadata.outcome }
+    })
+  }
+
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    datadogRum.addFeatureFlagEvaluation(
+      key.replace(/[.:+\-=&|><!(){}[\]^"“”~*?\\\s]/g, '_'),
+      value
     )
   }
 

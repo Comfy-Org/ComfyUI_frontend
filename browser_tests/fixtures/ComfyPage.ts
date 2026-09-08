@@ -14,6 +14,7 @@ import {
   EMPTY_BILLING_PLANS,
   LEGACY_PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   UNSUBSCRIBED,
   ZERO_BALANCE
@@ -154,7 +155,7 @@ class ComfyMenu {
     await this.modeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {
-        const settings = window.app?.ui?.settings
+        const settings = window.app?.ui.settings
         return (
           settings &&
           settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
@@ -415,7 +416,7 @@ export class ComfyPage {
         signInVisible: !!document.querySelector(
           '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
         ),
-        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
+        bodyText: document.body.innerText.slice(0, 300)
       }))
       return (
         `url=${state.url} title=${JSON.stringify(state.title)} ` +
@@ -654,6 +655,9 @@ export const comfyPageFixture = base.extend<{
         await context.route('**/api/billing/status', (route) =>
           route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
         )
+        await context.route('**/api/billing/capabilities', (route) =>
+          route.fulfill({ json: createBillingCapabilities('ws-personal') })
+        )
         await context.route('**/api/billing/balance', (route) =>
           route.fulfill({ json: EMPTY_BILLING_BALANCE })
         )
@@ -690,6 +694,12 @@ export const comfyPageFixture = base.extend<{
         await comfyExpect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
           .toBe(0)
+      }
+
+      if (testInfo.tags.includes('@cloud')) {
+        await comfyPage.featureFlags.setServerFlagsPersistent({
+          asset_deletion_enabled: true
+        })
       }
 
       if (isVueNodes) {

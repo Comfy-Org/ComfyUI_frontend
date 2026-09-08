@@ -52,6 +52,18 @@ describe('LGraphGroup', () => {
     expect(link.serialize()).toMatchSnapshot('Basic')
   })
 
+  test('clears a color option', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(932))
+    graph.add(group)
+    group.color = '#123456'
+
+    group.setColorOption(null)
+
+    expect(group.color).toBeUndefined()
+    expect(group.serialize().color).toBeUndefined()
+  })
+
   describe('recomputeInsideNodes', () => {
     test('uses visited set to avoid redundant computation', () => {
       const graph = new LGraph()

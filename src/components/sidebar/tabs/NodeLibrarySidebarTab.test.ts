@@ -20,9 +20,9 @@ const {
   mockOrganizeNodes,
   mockToggleNodeOnEvent
 } = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode<unknown> | null = null
+  let capturedRoot: TreeExplorerNode | null = null
   return {
-    captureRoot: (root: TreeExplorerNode<unknown>) => {
+    captureRoot: (root: TreeExplorerNode) => {
       capturedRoot = root
     },
     getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
@@ -98,7 +98,7 @@ vi.mock('@/components/common/TreeExplorer.vue', () => ({
     name: 'TreeExplorer',
     template: '<div data-testid="tree-explorer" />',
     props: ['root', 'expandedKeys'],
-    setup(props: { root: TreeExplorerNode<unknown> }) {
+    setup(props: { root: TreeExplorerNode }) {
       captureRoot(props.root)
     }
   }

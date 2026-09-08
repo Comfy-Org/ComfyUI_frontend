@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
-import { nextTick, reactive } from 'vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import BrushCursor from '@/components/maskeditor/BrushCursor.vue'
@@ -113,7 +113,7 @@ describe('BrushCursor', () => {
       expect(style).toContain('top: 305px')
     })
 
-    it('should subtract container offset when containerRef is provided', () => {
+    it('should subtract container offset when containerRef is provided', async () => {
       mockStore.cursorPoint = { x: 200, y: 300 }
       mockStore.panOffset = { x: 0, y: 0 }
       mockStore.brushSettings.size = 20
@@ -121,69 +121,89 @@ describe('BrushCursor', () => {
       mockStore.zoomRatio = 1
 
       const container = document.createElement('div')
-      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
-        left: 30,
-        top: 60,
-        right: 0,
-        bottom: 0,
-        width: 0,
-        height: 0,
-        x: 0,
-        y: 0,
-        toJSON: () => ({})
-      } as DOMRect)
+      vi.spyOn(container, 'getBoundingClientRect').mockReturnValue(
+        DOMRect.fromRect({ x: 30, y: 60 })
+      )
 
       renderCursor(container)
 
       // left = 200 + 0 - 20 - 30 = 150; top = 300 + 0 - 20 - 60 = 220
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 150px')
+      })
       const style = styleOf(getBrushEl())
-      expect(style).toContain('left: 150px')
       expect(style).toContain('top: 220px')
     })
 
-    it('should read the container rect once per position, not once per axis', async () => {
-      mockStore.cursorPoint = { x: 200, y: 300 }
-      mockStore.panOffset = { x: 0, y: 0 }
-      mockStore.brushSettings.size = 20
-      mockStore.brushSettings.hardness = 1
-      mockStore.zoomRatio = 1
+    it('should re-read the container offset when the cursor moves', async () => {
+      const container = document.createElement('div')
+      const getBoundingClientRect = vi
+        .spyOn(container, 'getBoundingClientRect')
+        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
+        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
 
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      mockStore.cursorPoint = { x: 101, y: 51 }
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 1px')
+      })
+      expect(styleOf(getBrushEl())).toContain('top: -79px')
+      expect(getBoundingClientRect).toHaveBeenCalledTimes(2)
+    })
+
+    it('should read the container rect once per position, not once per axis', async () => {
       const container = document.createElement('div')
       const readRect = vi
         .spyOn(container, 'getBoundingClientRect')
-        .mockReturnValue({
-          left: 30,
-          top: 60,
-          right: 0,
-          bottom: 0,
-          width: 0,
-          height: 0,
-          x: 0,
-          y: 0,
-          toJSON: () => ({})
-        } as DOMRect)
+        .mockReturnValue(DOMRect.fromRect({ x: 30, y: 60 }))
 
       renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
 
-      // `getBoundingClientRect` forces a synchronous layout and the cursor
-      // moves on every mousemove, so reading it per axis doubled the cost for
-      // one rect.
+      // left and top are both derived from the same underlying rect; reading
+      // it once per rendered position (rather than once per axis) is what
+      // keeps a mousemove down to a single forced layout.
       expect(
         readRect,
         'left and top come from the same rect; reading it twice is two forced layouts per mousemove'
       ).toHaveBeenCalledTimes(1)
 
-      mockStore.cursorPoint = { x: 201, y: 301 }
-      await nextTick()
+      mockStore.cursorPoint = { x: 101, y: 51 }
 
-      // The other half of the guarantee, and the one that keeps the offset
-      // correct while the dialog is dragged: a DOMRect is not reactive, so
-      // caching it across moves would pass the assertion above and silently
-      // stop tracking the container.
-      expect(
-        readRect,
-        'a moved cursor must re-read the rect; a cached one goes stale the moment the dialog moves'
-      ).toHaveBeenCalledTimes(2)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 51px')
+      })
+
+      // A moved cursor must re-read the rect exactly once more, not once per
+      // axis: this is the same guarantee restated for the useElementBounding
+      // implementation that replaced the hand-rolled rect read.
+      expect(readRect).toHaveBeenCalledTimes(2)
+    })
+
+    it('updates when the container moves under a stationary cursor', async () => {
+      const container = document.createElement('div')
+      vi.spyOn(container, 'getBoundingClientRect')
+        .mockReturnValueOnce(DOMRect.fromRect({ x: 30, y: 60 }))
+        .mockReturnValue(DOMRect.fromRect({ x: 80, y: 110 }))
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      await fireEvent.scroll(window)
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 0px')
+      })
+      expect(styleOf(getBrushEl())).toContain('top: -80px')
     })
   })
 

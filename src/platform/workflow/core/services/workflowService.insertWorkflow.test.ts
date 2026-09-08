@@ -1,14 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -132,11 +124,8 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
   } as unknown as ComfyWorkflow
 }
 
-beforeAll(() => {
-  LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
-})
-
 beforeEach(() => {
+  LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
   const canvasPrototype: {
     getContext(
       contextId: '2d',
@@ -146,10 +135,6 @@ beforeEach(() => {
   vi.spyOn(canvasPrototype, 'getContext').mockReturnValue(
     createMockCanvasRenderingContext2D()
   )
-})
-
-afterAll(() => {
-  LiteGraph.unregisterNodeType(PROBE_NODE_TYPE)
 })
 
 describe('insertWorkflow scratch graph isolation', () => {
