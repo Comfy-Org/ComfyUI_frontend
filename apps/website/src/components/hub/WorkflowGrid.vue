@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useHubStore } from '../../composables/useHubStore'
 import { badgesAvailableIn, templatesInTab } from '../../lib/hub/hub-tabs'
 import type { HubTemplate } from '../../lib/hub/types'
+import type { Locale } from '../../i18n/translations'
 import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
 import BrowseToolbar from './BrowseToolbar.vue'
 import HubWorkflowCard from './HubWorkflowCard.vue'
@@ -22,7 +23,8 @@ const {
   facetsConfig,
   toolbarLabels,
   labels,
-  hrefFor
+  hrefFor,
+  locale = 'en'
 } = defineProps<{
   templates: readonly HubTemplate[]
   facetTemplates: readonly HubTemplate[]
@@ -30,6 +32,7 @@ const {
   toolbarLabels: ToolbarLabels
   labels: GridLabels
   hrefFor: (template: HubTemplate) => string
+  locale?: Locale
 }>()
 
 const PAGE = 30
@@ -104,6 +107,7 @@ const showingText = computed(() =>
         :template="tmpl"
         :href="hrefFor(tmpl)"
         :try-now-label="labels.tryNow"
+        :locale
       />
     </div>
 

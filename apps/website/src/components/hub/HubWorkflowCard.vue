@@ -7,12 +7,20 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { resolveTemplateLogos } from '../../lib/hub/model-logos'
 import { hubCreatorUrl } from '../../lib/hub/routes'
 import type { HubTemplate } from '../../lib/hub/types'
+import type { Locale } from '../../i18n/translations'
+import HubTypeBadge from './HubTypeBadge.vue'
 import TagRow from './TagRow.vue'
 
-const { template, href, tryNowLabel } = defineProps<{
+const {
+  template,
+  href,
+  tryNowLabel,
+  locale = 'en'
+} = defineProps<{
   template: HubTemplate
   href: string
   tryNowLabel: string
+  locale?: Locale
 }>()
 
 const MEDIA_TYPE_LABELS: Record<string, string> = {
@@ -87,6 +95,7 @@ function openCard() {
     <div
       class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
     >
+      <HubTypeBadge :kind="template.isApp ? 'comfyApp' : 'nodeGraph'" :locale />
       <div
         v-if="showCompare"
         ref="compareRoot"

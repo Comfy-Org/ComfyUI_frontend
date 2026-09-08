@@ -12,6 +12,7 @@ import type {
 import { modalityOf, splitTask } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
 import TagRow from '../hub/TagRow.vue'
 
@@ -87,6 +88,7 @@ const pillClass =
     <div
       class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
     >
+      <HubTypeBadge kind="model" :locale />
       <img
         v-if="model.thumbnailUrl"
         :src="model.thumbnailUrl"
