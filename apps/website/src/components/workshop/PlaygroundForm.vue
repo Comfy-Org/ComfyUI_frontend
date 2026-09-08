@@ -93,7 +93,7 @@ const groups = computed(() => {
       data-testid="playground-advanced"
     >
       <summary
-        class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
+        class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"
       >
         {{ t('workshop.form.advanced', locale) }}
         <ChevronDown

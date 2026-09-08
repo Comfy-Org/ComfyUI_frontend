@@ -123,28 +123,19 @@ const pillClass =
         aria-hidden="true"
       />
       <h3
-        class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md sm:text-base lg:text-lg"
+        class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md lg:text-base"
       >
         {{ model.name }}
       </h3>
 
-      <!-- The mark alone identifies the provider; hovering the card spells it
-        out, the way every other card in the grid does. -->
+      <!-- The mark names its provider on hover, as a tooltip: spelled out on
+        the card it crossed the title. -->
       <span
         v-if="providerBadge"
         class="pointer-events-none absolute right-5 bottom-5 z-10 inline-flex items-center gap-1.5 text-white drop-shadow-md"
         :title="providerName"
         data-testid="model-card-provider-badge"
       >
-        <span
-          class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-hover:grid-cols-[1fr]"
-        >
-          <span class="overflow-hidden">
-            <span class="max-w-40 truncate pr-1.5 text-sm whitespace-nowrap">
-              {{ providerName }}
-            </span>
-          </span>
-        </span>
         <span
           v-if="logo"
           class="size-5 shrink-0 bg-white mask-contain mask-center mask-no-repeat"
@@ -201,7 +192,7 @@ const pillClass =
             {{ providerName.charAt(0).toUpperCase() }}
           </span>
           <span
-            class="ppformula-text-center-sm truncate text-base"
+            class="ppformula-text-center-sm truncate text-sm"
             data-testid="model-card-provider"
           >
             {{ providerName }}

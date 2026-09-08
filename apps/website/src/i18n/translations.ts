@@ -8512,6 +8512,7 @@ Enterprise`
     en: 'Search models, providers, categories...',
     'zh-CN': '搜索模型、提供商、分类...'
   },
+  'workshop.search.short': { en: 'Search models…', 'zh-CN': '搜索模型…' },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
   'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
@@ -8995,7 +8996,6 @@ Enterprise`
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
-  'workshop.workflow.crumb': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
   'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },

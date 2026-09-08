@@ -457,9 +457,7 @@ const menuItemClass =
             :class="
               cn(
                 'grid grid-cols-1 gap-5 sm:grid-cols-2',
-                railBeside
-                  ? 'xl:grid-cols-3 2xl:grid-cols-4'
-                  : 'min-[2200px]:grid-cols-5 lg:grid-cols-3 xl:grid-cols-4'
+                railBeside ? 'xl:grid-cols-3' : 'lg:grid-cols-3'
               )
             "
             aria-labelledby="workshop-models-heading"

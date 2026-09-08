@@ -4,7 +4,6 @@
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 16 16"
     fill="none"
-    class="size-3.5 shrink-0"
     aria-hidden="true"
   >
     <path

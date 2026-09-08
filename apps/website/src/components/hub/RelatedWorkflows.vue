@@ -46,7 +46,7 @@ const {
       <li
         v-for="template in templates"
         :key="template.name"
-        class="w-72 shrink-0 snap-start lg:w-[calc((100%-3.75rem)/4)]"
+        class="w-72 shrink-0 snap-start lg:w-[calc((100%-2.5rem)/3)]"
       >
         <HubWorkflowCard
           :template="template"

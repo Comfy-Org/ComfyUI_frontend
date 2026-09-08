@@ -167,9 +167,7 @@ const unplaced = computed(() =>
           {{ unplaced.length }}
         </span>
       </h2>
-      <ul
-        class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5"
-      >
+      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <li v-for="family in unplaced" :key="family.key">
           <WorkshopModelCard
             :model="family.latest"

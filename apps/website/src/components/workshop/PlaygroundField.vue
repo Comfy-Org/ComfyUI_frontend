@@ -109,7 +109,7 @@ function acceptHint(accept: readonly string[]): string {
       <div class="flex items-baseline justify-between gap-3">
         <label
           :for="`field-${field.name}`"
-          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+          class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
         >
           {{ field.label }}
           <span
@@ -127,7 +127,7 @@ function acceptHint(accept: readonly string[]): string {
           {{ numberValue(field.defaultValue) }}
         </span>
       </div>
-      <p v-if="field.hint" class="text-xs text-primary-warm-gray/80">
+      <p v-if="field.hint" class="text-xs text-primary-warm-gray">
         {{ field.hint }}
       </p>
     </div>
@@ -276,7 +276,7 @@ function acceptHint(accept: readonly string[]): string {
         <span class="font-bold tracking-wider uppercase">
           {{ t('workshop.field.upload', locale) }}
         </span>
-        <span class="text-[11px] text-primary-warm-gray/70">
+        <span class="text-[11px] text-primary-warm-gray">
           {{ acceptHint(field.accept) }} ·
           {{ t('workshop.field.uploadLimit', locale) }}
         </span>

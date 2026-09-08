@@ -55,7 +55,7 @@ const price =
     : undefined
 
 const pillClass =
-  'inline-flex h-8 items-center rounded-full border border-transparency-white-t20 px-4 text-sm leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 
 // The provider already leads the hero, so the chip row is capabilities only.
 const tags = model.capabilities.map((capability) => ({
@@ -80,8 +80,8 @@ const tags = model.capabilities.map((capability) => ({
         </li>
         <li aria-hidden="true">›</li>
         <li>
-          <a href={routes.workshop} class="hover:text-primary-warm-white">
-            {t('workshop.models.heading')}
+          <a href={`${routes.workshop}?tab=models`} class="hover:text-primary-warm-white">
+            {t('workshop.title')}
           </a>
         </li>
         <li aria-hidden="true">›</li>
@@ -137,7 +137,7 @@ const tags = model.capabilities.map((capability) => ({
               <li>
                 <a
                   href={`${routes.workshop}${tag.search}`}
-                  class="inline-flex h-8 shrink-0 items-center rounded-full bg-transparency-white-t8 px-4 text-sm leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                  class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
                 >
                   {tag.label}
                 </a>
@@ -176,7 +176,7 @@ const tags = model.capabilities.map((capability) => ({
           <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
         </a>
       </div>
-      <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {
           related.map((other) => (
             <li>

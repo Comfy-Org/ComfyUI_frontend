@@ -200,8 +200,8 @@ function openCard() {
       <h3
         :class="
           cn(
-            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md sm:text-base lg:text-lg',
-            modelLogos.length > 1 ? 'right-32' : 'right-16'
+            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md lg:text-base',
+            modelLogos.length > 1 ? 'right-28' : 'right-16'
           )
         "
       >
@@ -216,39 +216,15 @@ function openCard() {
           {{ template.title }}
         </a>
       </h3>
-      <!-- The marks say which models the workflow runs; hovering the card
-        names them, stacked upward so they never cross the title. -->
+      <!-- The marks say which models the workflow runs, and their names are
+        a tooltip away; spelled out on the card they crossed the title. -->
       <span
         v-if="firstLogo"
         class="pointer-events-none absolute right-5 bottom-5 z-10 flex flex-col items-end text-white drop-shadow-md"
         :title="modelNames"
         data-testid="hub-card-models"
       >
-        <span
-          class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]"
-        >
-          <span class="overflow-hidden">
-            <span class="flex flex-col items-end gap-0.5 pb-1.5 text-sm">
-              <span
-                v-for="logo in modelLogos"
-                :key="logo.name"
-                class="max-w-40 truncate whitespace-nowrap"
-              >
-                {{ logo.name }}
-              </span>
-            </span>
-          </span>
-        </span>
-
-        <!-- With the names open, the marks beside them only say it twice. -->
-        <span
-          :class="
-            cn(
-              'flex items-center gap-1.5',
-              modelLogos.length > 1 && 'group-hover:hidden'
-            )
-          "
-        >
+        <span class="flex items-center gap-1.5">
           <span
             v-for="logo in shownLogos"
             :key="logo.name"
@@ -280,7 +256,7 @@ function openCard() {
           >
             {{ authorName.charAt(0).toUpperCase() }}
           </span>
-          <span class="ppformula-text-center-sm truncate text-base">{{
+          <span class="ppformula-text-center-sm truncate text-sm">{{
             authorName
           }}</span>
         </a>

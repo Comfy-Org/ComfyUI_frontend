@@ -330,7 +330,7 @@ function useInCode() {
         data-testid="playground-input"
       >
         <header
-          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+          class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
         >
           <span>{{ t('workshop.input.title', locale) }}</span>
         </header>
@@ -491,21 +491,18 @@ function useInCode() {
         />
 
         <!-- Once the result is in view, taking the workflow home is the other
-          thing to do with it. -->
-        <Button
+          thing to do with it, and it should not shout over the run's own
+          buttons. -->
+        <a
           v-if="clone"
-          as="a"
-          variant="outline"
           :href="clone.href"
           download
-          class="w-fit self-end px-5"
+          class="inline-flex w-fit items-center gap-2 self-end text-xs text-primary-warm-gray transition-colors hover:text-primary-warm-white"
           data-testid="clone-button"
         >
-          <template #prepend>
-            <Download class="size-4" aria-hidden="true" />
-          </template>
+          <Download class="size-3.5" aria-hidden="true" />
           {{ t('workshop.workflow.cloneCta', locale) }}
-        </Button>
+        </a>
       </div>
     </section>
 

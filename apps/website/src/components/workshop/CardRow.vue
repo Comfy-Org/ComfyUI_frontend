@@ -14,11 +14,15 @@ const row = useTemplateRef<HTMLElement>('row')
 const atStart = ref(true)
 const atEnd = ref(true)
 
+// The row carries a little padding so focus rings are not clipped, and snapping
+// rests inside it, so "at the start" is a few pixels wide.
+const EDGE = 8
+
 function measure() {
   const el = row.value
   if (!el) return
-  atStart.value = el.scrollLeft <= 1
-  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+  atStart.value = el.scrollLeft <= EDGE
+  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - EDGE
 }
 
 function page(direction: 1 | -1) {
@@ -48,47 +52,44 @@ const arrowClass = (disabled: boolean) =>
       <slot name="heading" />
       <div class="flex items-center gap-3">
         <slot name="actions" />
-        <div
-          v-if="!atStart || !atEnd"
-          class="flex shrink-0 gap-2"
-          data-testid="card-row-arrows"
-        >
-          <button
-            type="button"
-            :disabled="atStart"
-            :aria-label="t('workshop.sections.scrollBack', locale)"
-            :class="arrowClass(atStart)"
-            data-testid="card-row-prev"
-            @click="page(-1)"
-          >
-            <ChevronLeft class="size-4" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            :disabled="atEnd"
-            :aria-label="t('workshop.sections.scrollForward', locale)"
-            :class="arrowClass(atEnd)"
-            data-testid="card-row-next"
-            @click="page(1)"
-          >
-            <ChevronRight class="size-4" aria-hidden="true" />
-          </button>
-        </div>
       </div>
     </div>
 
     <ul
       ref="row"
-      :class="
-        cn(
-          '-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2',
-          !atStart && 'mask-l-from-85%',
-          !atEnd && 'mask-r-from-85%'
-        )
-      "
+      class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
       @scroll="measure"
     >
       <slot />
     </ul>
+
+    <!-- The link to everything sits in the heading, so the arrows take the
+      other end of the row rather than crowding it. -->
+    <div
+      v-if="!atStart || !atEnd"
+      class="mt-4 flex justify-end gap-2"
+      data-testid="card-row-arrows"
+    >
+      <button
+        type="button"
+        :disabled="atStart"
+        :aria-label="t('workshop.sections.scrollBack', locale)"
+        :class="arrowClass(atStart)"
+        data-testid="card-row-prev"
+        @click="page(-1)"
+      >
+        <ChevronLeft class="size-4" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        :disabled="atEnd"
+        :aria-label="t('workshop.sections.scrollForward', locale)"
+        :class="arrowClass(atEnd)"
+        data-testid="card-row-next"
+        @click="page(1)"
+      >
+        <ChevronRight class="size-4" aria-hidden="true" />
+      </button>
+    </div>
   </div>
 </template>

@@ -98,7 +98,10 @@ const clearButtonClass =
         :id="inputId"
         v-model="query"
         type="search"
-        :placeholder="t('workshop.search.label', locale)"
+        :placeholder="
+          t(compact ? 'workshop.search.short' : 'workshop.search.label', locale)
+        "
+        :aria-label="t('workshop.search.label', locale)"
         data-testid="workshop-search"
         :class="fieldClass"
         role="combobox"

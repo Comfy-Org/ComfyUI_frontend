@@ -130,7 +130,7 @@ const earlierClass = (active: boolean) =>
     :data-state="state.status"
   >
     <header
-      class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+      class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
       <span>{{ t('workshop.output.title', locale) }}</span>
       <span
@@ -241,7 +241,7 @@ const earlierClass = (active: boolean) =>
             :src="currentUrl"
             :locale
             :aria-label="t('workshop.output.title', locale)"
-            class="size-full max-h-128"
+            class="aspect-auto h-auto w-full max-h-[70vh]"
             fit="contain"
             autoplay
             loop
@@ -250,7 +250,7 @@ const earlierClass = (active: boolean) =>
             v-else-if="currentUrl && shown.kind !== 'text'"
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
-            class="size-full max-h-128 object-contain"
+            class="h-auto w-full max-h-[70vh] object-contain"
           />
           <pre
             v-else-if="shown.kind === 'text'"
@@ -273,7 +273,7 @@ const earlierClass = (active: boolean) =>
           is marked once, on the result. -->
         <span
           v-if="state.status === 'example'"
-          class="absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-xl bg-black/40 px-3 text-xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
+          class="absolute top-3 right-3 z-20 inline-flex h-6 items-center rounded-lg bg-black/40 px-2 text-2xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
           data-testid="output-example"
         >
           {{ t('workshop.output.example', locale) }}
@@ -289,7 +289,7 @@ const earlierClass = (active: boolean) =>
           "
           type="button"
           :aria-label="t('workshop.output.expand', locale)"
-          :class="cn(mediaControlClass, 'absolute top-3 right-3')"
+          :class="cn(mediaControlClass, 'absolute right-3 bottom-3')"
           data-testid="output-expand"
           @click="expanded = true"
         >
