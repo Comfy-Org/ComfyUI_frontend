@@ -362,17 +362,23 @@ describe('opt-in refresh scheduler', () => {
 })
 
 function fakeCrossTabPort() {
-  let acquire: (() => void) | undefined
+  const leadershipRequests: Array<{
+    key: string
+    onAcquired: () => void
+    abandoned: boolean
+  }> = []
   let feed: ((message: unknown) => void) | undefined
-  const abandonLeadership = vi.fn()
   const stopFeed = vi.fn()
   const published: AccountCredential[] = []
   const keys: string[] = []
   const port: CrossTabRefreshPort = {
     requestLeadership: (key, onAcquired) => {
+      const request = { key, onAcquired, abandoned: false }
+      leadershipRequests.push(request)
       keys.push(key)
-      acquire = onAcquired
-      return abandonLeadership
+      return () => {
+        request.abandoned = true
+      }
     },
     publishCredential: (_key, credential) => {
       published.push(credential)
@@ -384,11 +390,14 @@ function fakeCrossTabPort() {
   }
   return {
     port,
-    grantLeadership: () => acquire?.(),
+    // Grants the latest request by default; pass an index to grant a
+    // specific (possibly abandoned) one, as the real lock manager may.
+    grantLeadership: (index?: number) =>
+      leadershipRequests[index ?? leadershipRequests.length - 1]?.onAcquired(),
     receive: (message: unknown) => feed?.(message),
+    leadershipRequests,
     published,
     keys,
-    abandonLeadership,
     stopFeed
   }
 }
@@ -438,8 +447,8 @@ describe('cross-tab refresh coordination', () => {
     ).toEqual(['jwt-1', 'jwt-2'])
     expect(
       tab.keys[0],
-      'the key scopes the lease and channel by user AND workspace; a broader key mixes scopes'
-    ).toBe('comfy-account-refresh:uid-1:')
+      'the key must carry the SERVER-RESOLVED workspace: target-based keys collide across workspaces minted via the personal {} body'
+    ).toBe('comfy-account-refresh:uid-1:ws-1')
   })
 
   it('a follower adopts the published credential instead of minting', async () => {
@@ -538,6 +547,76 @@ describe('cross-tab refresh coordination', () => {
       'jwt-1',
       'jwt-2'
     ])
+  })
+
+  it('ignores a leadership grant for an abandoned same-key request', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-1'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    identity.fire(null)
+    identity.fire(user)
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    expect(tab.leadershipRequests).toHaveLength(2)
+    expect(tab.leadershipRequests[0].abandoned).toBe(true)
+
+    tab.grantLeadership(0)
+    tab.receive(
+      publishedCredential({
+        token: 'jwt-from-real-leader',
+        expiresAt: Date.now() + NINETY_MINUTES_MS * 2
+      })
+    )
+
+    expect(
+      client.getToken(),
+      'an abandoned request winning the grant race must not promote this tab into an adoption-deaf false leader'
+    ).toBe('jwt-from-real-leader')
+  })
+
+  it('re-arms the refresh on promotion even after retries exhausted the timer', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
+      .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
+      .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
+      .mockImplementationOnce(async () => new Response('{}', { status: 503 }))
+      .mockImplementation(async () => mintResponse('jwt-2'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port, followerJitterMs: 0 } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 2)
+    expect(fetchImpl).toHaveBeenCalledTimes(5)
+
+    tab.grantLeadership()
+    await vi.advanceTimersByTimeAsync(10)
+
+    expect(
+      client.getToken(),
+      'a promoted leader with a dead retry chain must retake the schedule, not sit refreshless and adoption-deaf'
+    ).toBe('jwt-2')
   })
 
   it('never adopts a credential minted for a different workspace', async () => {
