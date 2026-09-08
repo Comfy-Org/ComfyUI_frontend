@@ -4272,7 +4272,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           afterRerouteId
         )
         if (link) {
-          transferLinkPresentation(graphScopeOf(graph), info, link.id)
+          transferLinkPresentation(
+            graphScopeOf(graph),
+            {
+              hidden: info.hidden === true,
+              label: typeof info.label === 'string' ? info.label : undefined
+            },
+            link.id
+          )
           links.set(toLinkId(info.id), link)
         }
       }
