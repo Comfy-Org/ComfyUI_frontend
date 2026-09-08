@@ -404,28 +404,54 @@ const translations = {
     'zh-CN': '重置你的 Comfy 账户密码。'
   },
   'auth.forgot.heading': {
-    en: 'Reset your password',
-    'zh-CN': '重置密码'
+    en: 'Forgot Password',
+    'zh-CN': '忘记密码',
+    ja: 'パスワードを忘れた場合'
   },
   'auth.forgot.body': {
-    en: 'Enter your account email and we will send a reset link.',
-    'zh-CN': '输入你的账户邮箱，我们将发送重置链接。'
+    en: "Enter your email address and we'll send you a link to reset your password.",
+    'zh-CN': '请输入您的电子邮件地址，我们将向您发送重置密码的链接。',
+    ja: 'メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。'
   },
   'auth.forgot.submit': {
     en: 'Send reset link',
-    'zh-CN': '发送重置链接'
+    'zh-CN': '发送重置链接',
+    ja: 'リセットリンクを送信'
   },
   'auth.forgot.sent': {
-    en: 'If an account exists for that email, a reset link is on its way.',
-    'zh-CN': '如果该邮箱已注册，重置链接已发送。'
+    en: 'Password reset sent',
+    'zh-CN': '密码重置邮件已发送',
+    ja: 'パスワードリセットを送信しました'
   },
   'auth.forgot.error': {
-    en: 'The reset link could not be sent. Try again.',
-    'zh-CN': '重置链接发送失败，请重试。'
+    en: 'Failed to send password reset email',
+    'zh-CN': '发送密码重置邮件失败',
+    ja: 'パスワードリセットメールの送信に失敗しました'
+  },
+  'auth.forgot.emailRequired': {
+    en: 'Email is required',
+    'zh-CN': '邮箱是必填项',
+    ja: 'メールアドレスは必須です'
+  },
+  'auth.forgot.didntReceive': {
+    en: "Didn't receive an email?",
+    'zh-CN': '没有收到邮件？',
+    ja: 'メールが届きませんでしたか？'
+  },
+  'auth.forgot.toastSummary': {
+    en: 'Password reset email sent',
+    'zh-CN': '重置密码邮件已发送',
+    ja: 'パスワードリセット用メールを送信しました'
+  },
+  'auth.forgot.toastDetail': {
+    en: 'Please check your email for a link to reset your password.',
+    'zh-CN': '请查收您的电子邮件，点击链接重置密码。',
+    ja: 'パスワードをリセットするためのリンクが記載されたメールをご確認ください。'
   },
   'auth.forgot.backToSignIn': {
-    en: 'Back to sign in',
-    'zh-CN': '返回登录'
+    en: 'Back to login',
+    'zh-CN': '返回登录',
+    ja: 'ログインに戻る'
   },
   'auth.header.signIn': {
     en: 'Sign in',

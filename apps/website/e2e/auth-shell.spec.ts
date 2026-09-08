@@ -3,7 +3,11 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-const AUTH_PAGES = ['/login/', '/signup/'] as const
+const AUTH_PAGES = [
+  { path: '/login/', termsNotice: true },
+  { path: '/signup/', termsNotice: true },
+  { path: '/forgot-password/', termsNotice: false }
+] as const
 
 const siteChrome = (page: Page) =>
   page.locator(
@@ -11,13 +15,12 @@ const siteChrome = (page: Page) =>
   )
 
 test.describe('Auth shell', () => {
-  for (const path of AUTH_PAGES) {
+  for (const { path, termsNotice } of AUTH_PAGES) {
     test(`${path} renders the bare onboarding shell`, async ({ page }) => {
       await page.setViewportSize({ width: 1536, height: 864 })
       await page.goto(path)
 
       await expect(siteChrome(page)).toHaveCount(0)
-      await expect(page.locator('footer')).toHaveCount(0)
       await expect(
         page.getByRole('img', { name: 'ComfyOrg Logo' })
       ).toBeVisible()
@@ -27,6 +30,10 @@ test.describe('Auth shell', () => {
       await expect(
         page.getByRole('group', { name: 'Featured models' })
       ).toBeVisible()
+      await expect(page.locator('footer')).toHaveCount(termsNotice ? 0 : 1)
+      await expect(page.getByText(/Questions\? Contact us/)).toHaveCount(
+        termsNotice ? 1 : 0
+      )
     })
   }
 
