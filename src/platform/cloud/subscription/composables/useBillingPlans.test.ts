@@ -167,7 +167,7 @@ describe('useBillingPlans', () => {
         errorType: 'cloud_billing_plan_catalog_fallback',
         tags: {
           failure_kind: 'degraded',
-          feature_area: 'cloud',
+          feature_area: 'billing',
           operation: 'load',
           outcome: 'recovered',
           assert_mode: 'soft'

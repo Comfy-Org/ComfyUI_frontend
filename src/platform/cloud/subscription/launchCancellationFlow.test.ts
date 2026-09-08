@@ -179,7 +179,7 @@ describe('launchCancellationFlow', () => {
       errorType: 'cloud_cancellation_vendor_fallback',
       tags: {
         failure_kind: 'degraded',
-        feature_area: 'cloud',
+        feature_area: 'billing',
         operation: 'navigate',
         outcome: 'recovered',
         assert_mode: 'soft'
