@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "קשב דליל-בלוקים באמצעות comfy_kitchen: כל בלוק שאילתה מבצע קשב מדויק על תת-קבוצה נבחרת של בלוקי מפתח, ובכך מפחית את עלות חישוב הקשב. שיפור המהירות היחסי גדל עם אורך הרצף, מאחר שרצפים קצרים בדרך כלל מהירים יותר בחישוב צפוף. מחוץ ללוח הזמנים הפעיל, עבור dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב של המודל הצפוף הפעיל.",
-    "display_name": "קשב דליל-בלוקים",
+    "description": "מחיל קשב דליל-בלוקים על שכבות קשב מתאימות במודל, ומפחית את החישוב עבור רצפים ארוכים. שיפור המהירות גדל עם אורך הרצף, שכן רצפים קצרים בדרך כלל מהירים יותר עם קשב צפוף. מחוץ לטווח start/end_percent, עבור dense_blocks ומתחת ל-min_tokens, המודל משתמש במנגנון הקשב הצפוף של המודל. השתמשו בצומת Model Attention Backend כדי לבחור מנגנון חלופי זה.",
+    "display_name": "קשב דליל-בלוקים למודל",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "קשב צפוף אחרי נקודה זו בלוח הזמנים."
+        "tooltip": "נקודת האחוז שבה מסתיים הקשב הדליל. לאחר נקודה זו, הקשב חוזר להיות צפוף."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "רצפים קצרים מערך זה נשארים בחישוב צפוף."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "המודל להחלת התיקון עליו."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "כיצד נבחרים בלוקי מפתח מדויקים. Sol-Attn: סף מסתגל לכל ראש/בלוק. top-k (SLA): keep_percent קבוע בכל מקום, מומלץ רק עם משקולות מאומנות. VSA (FastVideo): ריצוף הקוביות והענף הגס של FastH3-VSA, דורש משקולות שאומנו עבורו."
+        "tooltip": "השיטה המשמשת לבחירת בלוקי מפתח עבור קשב מלא ברמת הטוקן. sol-attn: Sparsifying Online Attention משתמש בסף אדפטיבי ללא אימון לכל ראש קשב ובלוק שאילתה. sla: Sparse-Linear Attention שומר על אחוז קבוע מבלוקי המפתח בעלי הציון הגבוה ביותר; יש להשתמש בו רק עם משקלי מודל שאומנו עבור תבנית זו. vsa: Video Sparse Attention ‏(FastVideo) משתמש בריצוף קוביות וידאו תלת-ממדיות ובענף קשב גס נלמד; דורש משקלי מודל FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "קשב צפוף לפני נקודה זו בלוח הזמנים."
+        "tooltip": "נקודת האחוז שבה מתחיל הקשב הדליל. לפני נקודה זו, הקשב נשאר צפוף."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "רושם ביומן אם כל צורת קשב השתמשה בקשב דליל או מדוע נותרה צפופה."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "המודל שעליו הוחל קשב דליל-בלוקים."
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "בוחר את מימוש הקשב הצפוף עבור המודל. בעת שימוש עם Block Sparse Attention, מנגנון זה משמש בכל פעם שהקשב הדליל אינו פעיל או אינו נתמך.",
+    "display_name": "מנגנון הקשב של המודל",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "מנגנון הקשב הצפוף. הקשב של Comfy Kitchen משתמש בקשב INT8 מקוונטט וזמין רק במעבדי GPU של Nvidia ו-AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "המודל להחלת התיקון עליו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "המודל עם מנגנון הקשב שנבחר."
       }
     }
   },
