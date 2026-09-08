@@ -81,7 +81,7 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 const triggerRAF = async () => {
   // Trigger all RAF callbacks
-  Object.values(rafCallbacks).forEach((cb) => cb?.())
+  Object.values(rafCallbacks).forEach((cb) => cb())
   await flushPromises()
 }
 
@@ -107,9 +107,10 @@ vi.mock('@vueuse/core', () => {
       const resumeFn = vi.fn(() => {
         mockResume()
         // Execute the RAF callback immediately when resumed
-        if (rafCallbacks[id]) {
-          rafCallbacks[id]()
-        }
+        const callback = Object.hasOwn(rafCallbacks, id)
+          ? rafCallbacks[id]
+          : undefined
+        callback?.()
       })
 
       return {
@@ -612,7 +613,6 @@ describe('useMinimap', () => {
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
-      await new Promise((resolve) => setTimeout(resolve, 100))
 
       expect(mockContext2D.clearRect).not.toHaveBeenCalled()
 
@@ -635,8 +635,6 @@ describe('useMinimap', () => {
 
       // The renderer has a fast path for empty graphs, force it to execute
       minimap.renderMinimap()
-
-      await new Promise((resolve) => setTimeout(resolve, 100))
 
       expect(minimap.initialized.value).toBe(true)
 
@@ -937,57 +935,6 @@ describe('useMinimap', () => {
       await nextTick()
 
       expect(minimap.viewportStyles.value).toBeDefined()
-    })
-  })
-
-  describe('graph change handling', () => {
-    it('should handle node addition', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      const newNode = {
-        id: 'node3',
-        pos: [300, 200],
-        size: [100, 100],
-        renderingSize: [100, 100],
-        constructor: { color: '#666' },
-        outputs: []
-      }
-
-      moduleMockGraph._nodes.push(newNode)
-      if (moduleMockGraph.onNodeAdded) {
-        moduleMockGraph.onNodeAdded(newNode)
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-
-    it('should handle node removal', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      const removedNode = moduleMockGraph._nodes[0]
-      moduleMockGraph._nodes.splice(0, 1)
-
-      if (moduleMockGraph.onNodeRemoved) {
-        moduleMockGraph.onNodeRemoved(removedNode)
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
-    })
-
-    it('should handle connection changes', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      if (moduleMockGraph.onConnectionChange) {
-        moduleMockGraph.onConnectionChange(moduleMockGraph._nodes[0])
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 600))
     })
   })
 

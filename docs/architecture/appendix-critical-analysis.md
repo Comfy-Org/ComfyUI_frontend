@@ -92,7 +92,7 @@ The desire for atomicity is healthy. The assumption that it comes free with the 
 
 ### The CRDT Question
 
-The `LayoutStore` is correctly identified as "the most architecturally advanced extraction." It wraps Y.js CRDTs — a technology chosen for collaborative editing, as noted in ADR 0003.
+The `LayoutStore` is correctly identified as "the most architecturally advanced extraction." It wraps Y.js CRDTs — a technology chosen for collaborative editing, as noted in ADR-CRDT-LAYOUT-0003.
 
 But the documents do not address the tension between Y.js and a pure ECS World. Would the World contain Y.js documents? Would it replace them? Would the Position component be a CRDT, a plain object, or a proxy that reads from one? This is not an implementation detail — it is a fundamental architectural question about whether the system's two most sophisticated subsystems (collaboration and ECS) can coexist or must be reconciled.
 

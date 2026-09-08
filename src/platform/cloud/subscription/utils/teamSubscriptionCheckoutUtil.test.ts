@@ -63,6 +63,8 @@ describe('performTeamSubscriptionCheckout', () => {
     Object.defineProperty(globalThis, 'location', {
       configurable: true,
       value: {
+        origin: 'https://app.test',
+        pathname: '/payment/success',
         set href(value: string) {
           assignedHref = value
         }

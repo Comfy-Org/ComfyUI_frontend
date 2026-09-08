@@ -28,11 +28,11 @@ const LOCATOR = 'loc-1'
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before
 // component modules construct their module-level observer at import time.
 vi.hoisted(() => {
-  globalThis.ResizeObserver ??= class {
+  globalThis.ResizeObserver = class {
     observe() {}
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver
+  }
 })
 
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
