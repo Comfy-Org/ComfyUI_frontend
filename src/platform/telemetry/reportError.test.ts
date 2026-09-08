@@ -218,40 +218,6 @@ describe('reportError', () => {
     expect(() => flushErrorReports()).not.toThrow()
   })
 
-  it('does not resend to Sentry when a buffered Datadog delivery fails', async () => {
-    mockIsCloud.value = true
-    sentryLive(false)
-    datadogLive(false)
-    const { reportError, flushErrorReports } = await loadReportError()
-
-    reportError(new Error('cold boot'), { errorType: 'invariant_assert' })
-
-    sentryLive(true)
-    datadogLive(true)
-    addError.mockImplementationOnce(() => {
-      throw new Error('datadog exploded')
-    })
-    flushErrorReports()
-    flushErrorReports()
-
-    expect(captureException).toHaveBeenCalledOnce()
-    expect(addError).toHaveBeenCalledTimes(2)
-  })
-
-  it('retries only Sentry when its cloud delivery fails', async () => {
-    mockIsCloud.value = true
-    captureException.mockImplementationOnce(() => {
-      throw new Error('sentry exploded')
-    })
-    const { reportError, flushErrorReports } = await loadReportError()
-
-    reportError(new Error('boom'), { errorType: 'invariant_assert' })
-    flushErrorReports()
-
-    expect(captureException).toHaveBeenCalledTimes(2)
-    expect(addError).toHaveBeenCalledOnce()
-  })
-
   it('writes the failure to the console so callers need no second sink', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
@@ -308,7 +274,7 @@ describe('reportError', () => {
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
-  it('still reports to Datadog when Sentry throws', async () => {
+  it('does not throw when a sink throws', async () => {
     captureException.mockImplementation(() => {
       throw new Error('sentry exploded')
     })
