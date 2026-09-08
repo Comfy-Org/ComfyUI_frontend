@@ -473,27 +473,12 @@ function useInCode() {
           >
             {{ t('workshop.run.degraded', locale) }}
           </p>
-          <!-- Running it here and taking it home are two ways to use the
-            same workflow, so the second one is a button too. -->
-          <Button
-            v-if="clone"
-            as="a"
-            variant="outline"
-            size="lg"
-            :href="clone.href"
-            download
-            class="w-full px-5"
-            data-testid="clone-button"
-          >
-            <template #prepend>
-              <Download class="size-5" aria-hidden="true" />
-            </template>
-            {{ t('workshop.workflow.cloneCta', locale) }}
-          </Button>
         </div>
       </div>
 
-      <div class="min-w-0 lg:sticky lg:top-26 lg:col-span-7 lg:self-start">
+      <div
+        class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
+      >
         <PlaygroundOutput
           v-model:revealed="revealed"
           :state="runState"
@@ -504,6 +489,23 @@ function useInCode() {
           @retry="reset"
           @use-in-code="useInCode"
         />
+
+        <!-- Once the result is in view, taking the workflow home is the other
+          thing to do with it. -->
+        <Button
+          v-if="clone"
+          as="a"
+          variant="outline"
+          :href="clone.href"
+          download
+          class="w-fit self-end px-5"
+          data-testid="clone-button"
+        >
+          <template #prepend>
+            <Download class="size-4" aria-hidden="true" />
+          </template>
+          {{ t('workshop.workflow.cloneCta', locale) }}
+        </Button>
       </div>
     </section>
 
