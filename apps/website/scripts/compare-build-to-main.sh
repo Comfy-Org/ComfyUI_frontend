@@ -62,30 +62,70 @@ fi
 removed=$(comm -23 "$compare_tmp/base" "$compare_tmp/candidate")
 added=$(comm -13 "$compare_tmp/base" "$compare_tmp/candidate")
 common=$(comm -12 "$compare_tmp/base" "$compare_tmp/candidate")
-changed=0; changed_list=""
+changed_files=()
 while IFS= read -r f; do
-  [ -z "$f" ] && continue
+  if [ -z "$f" ]; then
+    continue
+  fi
   norm "$BASE/$f" > "$compare_tmp/base-page"
   norm "$CAND/$f" > "$compare_tmp/candidate-page"
   if ! cmp -s "$compare_tmp/base-page" "$compare_tmp/candidate-page"; then
-    changed=$((changed+1)); changed_list="$changed_list$f"$'\n'
+    changed_files+=("$f")
   fi
 done <<< "$common"
+changed=${#changed_files[@]}
+
 n_base=$(wc -l < "$compare_tmp/base" | tr -d ' ')
 n_cand=$(wc -l < "$compare_tmp/candidate" | tr -d ' ')
 n_removed=$(printf '%s' "$removed" | grep -c . || true)
 n_added=$(printf '%s' "$added" | grep -c . || true)
 n_added_ws=$(printf '%s' "$added" | grep -c '^\./workshop/' || true)
+
 echo "=== $LABEL vs main ==="
 printf '  pages on main        %s\n  pages on %-12s %s\n' "$n_base" "$LABEL" "$n_cand"
 printf '  existing changed     %s\n  removed              %s\n  added                %s  (under /workshop: %s)\n' "$changed" "$n_removed" "$n_added" "$n_added_ws"
-[ "$changed" -gt 0 ] && { echo "  --- changed ---"; printf '%s' "$changed_list" | head -20; }
-[ "$n_removed" -gt 0 ] && { echo "  --- removed ---"; printf '%s\n' "$removed" | head -20; }
-[ "$n_added" -gt 0 ] && [ "$n_added" != "$n_added_ws" ] && { echo "  --- added OUTSIDE /workshop ---"; printf '%s\n' "$added" | grep -v '^\./workshop/' | head -20; }
+
+if [ "$changed" -gt 0 ]; then
+  echo "  --- changed ---"
+  printf '%s\n' "${changed_files[@]}" | sed -n '1,20p'
+fi
+
+if [ "$n_removed" -gt 0 ]; then
+  echo "  --- removed ---"
+  printf '%s\n' "$removed" | sed -n '1,20p'
+fi
+
+if [ "$n_added" -gt 0 ] && [ "$n_added" != "$n_added_ws" ]; then
+  echo "  --- added OUTSIDE /workshop ---"
+  printf '%s\n' "$added" | grep -v '^\./workshop/' | sed -n '1,20p'
+fi
+
 # shared CSS: token-level comparison (split on { } ;). Splitting on } alone
 # mis-reports a minified Tailwind v4 file as one giant rule.
-tok() { find "$1" -type f -name '*.css' \( -path '*/_website/*' -o -path '*/_astro/*' \) -exec cat {} + | tr '{};' '\n' | sed '/^[[:space:]]*$/d' | sort -u; }
-printf '  css tokens removed   %s\n  css tokens added     %s\n' "$(comm -23 <(tok "$BASE") <(tok "$CAND") | grep -c . || true)" "$(comm -13 <(tok "$BASE") <(tok "$CAND") | grep -c . || true)"
-b=$(find "$BASE" -type f -path '*/_website/*.css' -print -quit); c=$(find "$CAND" -type f -path '*/_website/*.css' -print -quit)
-[ -n "$b" ] && [ -n "$c" ] && printf '  css gzipped          %s -> %s bytes (%+d)\n' "$(gzip -c "$b" | wc -c | tr -d ' ')" "$(gzip -c "$c" | wc -c | tr -d ' ')" "$(( $(gzip -c "$c" | wc -c) - $(gzip -c "$b" | wc -c) ))"
-test "$changed" -eq 0 && test "$n_removed" -eq 0
+tok() {
+  find "$1" -type f -name '*.css' \
+    \( -path '*/_website/*' -o -path '*/_astro/*' \) \
+    -exec cat {} + |
+    tr '{};' '\n' |
+    sed '/^[[:space:]]*$/d' |
+    sort -u
+}
+
+css_tokens_removed=$(comm -23 <(tok "$BASE") <(tok "$CAND") | grep -c . || true)
+css_tokens_added=$(comm -13 <(tok "$BASE") <(tok "$CAND") | grep -c . || true)
+printf '  css tokens removed   %s\n  css tokens added     %s\n' \
+  "$css_tokens_removed" "$css_tokens_added"
+
+baseline_css=$(find "$BASE" -type f -path '*/_website/*.css' -print -quit)
+candidate_css=$(find "$CAND" -type f -path '*/_website/*.css' -print -quit)
+if [ -n "$baseline_css" ] && [ -n "$candidate_css" ]; then
+  baseline_gzip=$(gzip -c "$baseline_css" | wc -c | tr -d ' ')
+  candidate_gzip=$(gzip -c "$candidate_css" | wc -c | tr -d ' ')
+  printf '  css gzipped          %s -> %s bytes (%+d)\n' \
+    "$baseline_gzip" "$candidate_gzip" \
+    "$((candidate_gzip - baseline_gzip))"
+fi
+
+if [ "$changed" -gt 0 ] || [ "$n_removed" -gt 0 ]; then
+  exit 1
+fi
