@@ -32,12 +32,24 @@ import { OUTPUT_LOCALES, preserveTerms } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 
+/**
+ * An absent file is fine. An unreadable one is not.
+ *
+ * `enforce` merges what it reads here with what it just kept and writes the
+ * result back. Treating a malformed `content/{locale}.json` as empty would
+ * therefore rewrite the published layer with only this run's keys and discard
+ * every translation already in it — silently, with a success message. The first
+ * run legitimately has no file yet, so only that case takes the fallback.
+ */
 function readJson<T>(file: string, fallback: T): T {
+  let text: string
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
-  } catch {
-    return fallback
+    text = fs.readFileSync(file, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback
+    throw error
   }
+  return JSON.parse(text) as T
 }
 
 function writeJson(file: string, value: Record<string, string>): void {

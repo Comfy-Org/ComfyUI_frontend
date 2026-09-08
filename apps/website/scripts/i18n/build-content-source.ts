@@ -33,11 +33,7 @@ import {
   staleKeys,
   translatableEntries
 } from '../../src/i18n/pipeline/source'
-import type {
-  Manifest,
-  SourceAdapter,
-  TranslationLayer
-} from '../../src/i18n/pipeline/types'
+import type { SourceAdapter } from '../../src/i18n/pipeline/types'
 
 /**
  * Sources, in the order their keys are collected. `translations.ts` is the only
@@ -59,12 +55,21 @@ function writeJson(file: string, value: Record<string, string>): void {
   fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
-function readJson<T extends Record<string, string>>(file: string): T {
+/**
+ * An absent file is fine — the first run has no machine layer yet. A file that
+ * exists but does not parse is not: the caller transforms what it reads and
+ * writes the result back, so treating a malformed file as empty overwrites it
+ * with nothing and discards every translation it held.
+ */
+function readJson(file: string): Record<string, string> {
+  let text: string
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
-  } catch {
-    return {} as T
+    text = fs.readFileSync(file, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
+    throw error
   }
+  return JSON.parse(text) as Record<string, string>
 }
 
 function main(): void {
@@ -88,7 +93,7 @@ function main(): void {
 
   const english = buildEnglishSource(entriesToTranslate)
   const nextManifest = buildManifest(entriesToTranslate)
-  const previousManifest = readJson<Manifest>(MANIFEST_FILE)
+  const previousManifest = readJson(MANIFEST_FILE)
   const stale = staleKeys(previousManifest, nextManifest)
 
   writeJson(path.join(CONTENT_DIR, 'en.json'), english)
@@ -98,7 +103,7 @@ function main(): void {
 
   for (const locale of LOCALIZED_CODES) {
     const machineFile = path.join(CONTENT_DIR, `${locale}.json`)
-    const before = readJson<TranslationLayer>(machineFile)
+    const before = readJson(machineFile)
     const machine = pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale)
     writeJson(machineFile, machine)
 

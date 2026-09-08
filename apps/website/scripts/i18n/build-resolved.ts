@@ -35,14 +35,22 @@ const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
 const RESOLVED_DIR = path.join(I18N_DIR, 'resolved')
 
+/**
+ * An absent file is fine — a locale with no machine layer resolves to English,
+ * which is the designed fallback. A file that exists but does not parse is not:
+ * it would resolve the same way and quietly ship English on every page of that
+ * locale, with the build green.
+ */
 function readMachineLayer(locale: string): TranslationLayer {
+  const file = path.join(CONTENT_DIR, `${locale}.json`)
+  let text: string
   try {
-    return JSON.parse(
-      fs.readFileSync(path.join(CONTENT_DIR, `${locale}.json`), 'utf8')
-    ) as TranslationLayer
-  } catch {
-    return {}
+    text = fs.readFileSync(file, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
+    throw error
   }
+  return JSON.parse(text) as TranslationLayer
 }
 
 function main(): void {
