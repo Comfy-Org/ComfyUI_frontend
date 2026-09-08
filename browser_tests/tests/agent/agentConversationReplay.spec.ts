@@ -23,11 +23,10 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
       test.use({ conversationCase })
 
       test('replays every recorded turn onto the panel and the canvas', async ({
-        agentConversation,
-        page
+        agentConversation
       }) => {
         test.setTimeout(90_000)
-        const { panel, vueNodes } = agentConversation
+        const { panel } = agentConversation
         const streams = panel.getByTestId('markdown-stream')
         let turnsWithText = 0
 
@@ -57,44 +56,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
 
           // The state after this turn, not only the end state: a node added
           // now and deleted later must be on the canvas now.
-          for (const id of agentConversation.addedNodeIds(turn))
-            await expect(page.locator(`[data-node-id="${id}"]`)).toBeVisible()
-          for (const id of agentConversation.removedNodeIds(turn))
-            await expect(page.locator(`[data-node-id="${id}"]`)).toHaveCount(0)
-          for (const {
-            nodeId,
-            widget,
-            value
-          } of agentConversation.recordedWidgetValues(turn)) {
-            const field = page
-              .locator(`[data-node-id="${nodeId}"]`)
-              .getByLabel(widget, { exact: true })
-            if (typeof value === 'number') {
-              // Number widgets format their input (0.5 renders as 0.50), so compare the number.
-              await expect
-                .poll(async () =>
-                  Number(await field.locator('input').first().inputValue())
-                )
-                .toBe(value)
-              continue
-            }
-            const tag = await field.evaluate((el) => el.tagName.toLowerCase())
-            if (tag === 'button') await expect(field).toContainText(value)
-            else await expect(field).toHaveValue(value)
-          }
-          // The canvas shows exactly what the multi-player document holds.
-          await expect
-            .poll(() => agentConversation.renderedNodeIds())
-            .toEqual(agentConversation.documentNodeIds())
-          for (const connect of agentConversation.recordedConnects(turn)) {
-            await expect(
-              vueNodes.getOutputSlotRow(connect.fromNode, connect.fromSlot)
-            ).toHaveClass(/lg-slot--connected/)
-            if (!connect.targetWidgetBacked)
-              await expect(
-                vueNodes.getInputSlotRow(connect.toNode, connect.toSlot)
-              ).toHaveClass(/lg-slot--connected/)
-          }
+          await agentConversation.expectCanvasReplayed(turn)
         }
 
         const calls = agentConversation.recordedToolCalls()

@@ -1,7 +1,6 @@
 import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
 import type {
   GraphSnapshot,
-  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -61,28 +60,6 @@ export class HostDoc {
   catchUp(stateVectorB64: string): HostFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])
-  }
-
-  // Client batches arrive already minted; the real host folds them into the same
-  // doc and broadcasts the result, so every subscriber converges on them.
-  applyClient(ops: Op[]): { applied: string[]; update: HostFrame } {
-    const before = Y.encodeStateVector(this.doc)
-    const result = applyOps(this.doc, ops, this.catalog)
-    const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
-    if (rejected.length > 0)
-      throw new Error(
-        `client doc_ops did not apply: ${JSON.stringify(rejected)}`
-      )
-    this.seq += 1
-    const applied = ops.map((op) => op.op_id)
-    return {
-      applied,
-      update: this.updateFrame(
-        Y.encodeStateAsUpdate(this.doc, before),
-        ops[0]?.actor ?? HOST_ACTOR,
-        applied
-      )
-    }
   }
 
   apply(operations: GraphOperation[]): HostFrame {
