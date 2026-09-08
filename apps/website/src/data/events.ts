@@ -256,14 +256,13 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-09-10T10:00:00-07:00',
     liveVideoId: '6ZT9y3rdvFg',
-    media: eventVideo(
-      '09.10-agent-beta.mp4',
-      {
-        en: 'Comfy Agent Beta: What It Does & How We Built It livestream',
-        'zh-CN': 'Comfy Agent Beta 直播'
-      },
-      '09.10-agent-beta-still.png'
-    ),
+    // No dedicated still exists for this card yet; eventVideo() falls back
+    // to no poster, which the directory list already renders as no image
+    // rather than a broken one.
+    media: eventVideo('09.10-agent-beta.mp4', {
+      en: 'Comfy Agent Beta: What It Does & How We Built It livestream',
+      'zh-CN': 'Comfy Agent Beta 直播'
+    }),
     featured: {
       order: 5,
       media: eventVideo(
@@ -297,14 +296,13 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-09-15T10:00:00-07:00',
     liveVideoId: '3pBDHdgVD1E',
-    media: eventVideo(
-      '09.15-agent-ga.mp4',
-      {
-        en: 'Comfy Agent: Live Demos, VFX, 3D & Marketing livestream',
-        'zh-CN': 'Comfy Agent 现场演示直播'
-      },
-      '09.15-agent-ga-still.png'
-    ),
+    // No dedicated still exists for this card yet; eventVideo() falls back
+    // to no poster, which the directory list already renders as no image
+    // rather than a broken one.
+    media: eventVideo('09.15-agent-ga.mp4', {
+      en: 'Comfy Agent: Live Demos, VFX, 3D & Marketing livestream',
+      'zh-CN': 'Comfy Agent 现场演示直播'
+    }),
     featured: {
       order: 6,
       media: eventVideo(
