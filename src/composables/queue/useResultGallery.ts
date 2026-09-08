@@ -28,9 +28,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     // Use target's outputs if available, otherwise fall back to all previews
     const items = targetOutputs?.length
       ? targetOutputs
-      : tasks
-          .map((t) => t.previewOutput)
-          .filter((o): o is AugmentedResultItem => !!o)
+      : tasks.map((t) => t.previewOutput).filter((o) => !!o)
 
     if (!items.length) return
 

@@ -30,7 +30,7 @@ const { textContent } = useTextFileContent(() =>
     ? { content: output.content, url: resultItemUrl(output) }
     : undefined
 )
-const url = computed(() => resultItemUrl(output))
+const src = computed(() => resultItemUrl(output))
 </script>
 <template>
   <template v-if="mediaType === 'images' || mediaType === 'video'">
@@ -38,12 +38,12 @@ const url = computed(() => resultItemUrl(output))
       v-if="mediaType === 'images'"
       :class="attrs.class as string"
       :mobile
-      :src="url"
+      :src
       :label="outputLabel"
     />
     <VideoPreview
       v-else
-      :src="url"
+      :src
       :label="outputLabel"
       :class="
         cn(
@@ -58,7 +58,7 @@ const url = computed(() => resultItemUrl(output))
       v-if="mediaType === 'audio'"
       :class="cn('m-auto w-full', attrs.class as string)"
       controls
-      :src="url"
+      :src
     />
     <article
       v-else-if="mediaType === 'text'"
@@ -73,7 +73,7 @@ const url = computed(() => resultItemUrl(output))
     <Preview3d
       v-else-if="mediaType === '3d'"
       :class="attrs.class as string"
-      :model-url="url"
+      :model-url="src"
     />
     <span v-if="outputLabel" class="self-center text-sm">
       {{ outputLabel }}

@@ -34,7 +34,7 @@ export function resultItemVhsAdvancedPreviewUrl(
 }
 
 export function resultItemUrlWithTimestamp(item: AugmentedResultItem): string {
-  return `${resultItemUrl(item)}&t=${+new Date()}`
+  return `${resultItemUrl(item)}${(item.urlTimestamp ??= `&t=${+new Date()}`)}`
 }
 
 export function findResultIndexByUrl(

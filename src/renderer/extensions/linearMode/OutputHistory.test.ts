@@ -154,7 +154,7 @@ function makeResult(filename: string): AugmentedResultItem {
     nodeId: '1',
     mediaType: 'images',
     url: `http://localhost/${filename}`
-  } as unknown as AugmentedResultItem
+  }
 }
 
 function makeInProgressItem(

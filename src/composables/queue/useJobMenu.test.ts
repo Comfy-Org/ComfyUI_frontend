@@ -4,7 +4,6 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
-import type * as FormatUtil from '@/utils/formatUtil'
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
@@ -129,15 +128,6 @@ vi.mock('@/stores/executionStore', () => ({
 const getJobWorkflowMock = vi.fn()
 vi.mock('@/services/jobOutputCache', () => ({
   getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
-}))
-
-const appendJsonExtMock = vi.fn((value: string) =>
-  value.toLowerCase().endsWith('.json') ? value : `${value}.json`
-)
-vi.mock('@/utils/formatUtil', async (importOriginal) => ({
-  ...(await importOriginal<typeof FormatUtil>()),
-  appendJsonExt: (...args: Parameters<typeof appendJsonExtMock>) =>
-    appendJsonExtMock(...args)
 }))
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
@@ -688,7 +678,6 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    expect(appendJsonExtMock).toHaveBeenCalledWith('existing.json')
     const [filename] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('existing.json')
   })

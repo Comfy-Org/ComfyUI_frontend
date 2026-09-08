@@ -15,7 +15,7 @@ const { output } = defineProps<{
   output: AugmentedResultItem
 }>()
 
-const url = computed(() => resultItemUrl(output))
+const src = computed(() => resultItemUrl(output))
 </script>
 <template>
   <img
@@ -25,7 +25,7 @@ const url = computed(() => resultItemUrl(output))
     loading="lazy"
     width="40"
     height="40"
-    :src="url"
+    :src
   />
   <template v-else-if="getMediaType(output) === 'video'">
     <video
@@ -34,7 +34,7 @@ const url = computed(() => resultItemUrl(output))
       preload="metadata"
       width="40"
       height="40"
-      :src="url"
+      :src
     />
     <VideoPlayOverlay size="sm" />
   </template>

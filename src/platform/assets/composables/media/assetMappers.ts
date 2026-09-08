@@ -80,7 +80,7 @@ function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder ?? '',
+    subfolder: metadata?.subfolder,
     type: asset.tags.includes('temp') ? 'temp' : 'output',
     url,
     previewUrl: asset.thumbnail_url ?? url
