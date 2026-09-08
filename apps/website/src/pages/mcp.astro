@@ -28,10 +28,10 @@ const { locale } = pageContext(
 // hide script is needed the way BaseLayout wires one up for the sitewide banner.
 const agentBannerData: BannerData = {
   id: 'mcp-agent-waitlist',
-  title: 'The Comfy Agent is in beta. Get early access.',
+  title: t('mcp.agentBanner.title', locale),
   link: {
     href: '/agent',
-    title: 'Join the waitlist',
+    title: t('mcp.agentBanner.linkTitle', locale),
     buttonVariant: 'underlineLink'
   }
 }

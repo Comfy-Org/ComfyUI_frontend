@@ -31,6 +31,7 @@
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
     "check:localized-pages": "tsx ./scripts/check-localized-pages.ts",
+    "check:hardcoded-copy": "tsx ./scripts/check-hardcoded-copy.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
   },
   "dependencies": {

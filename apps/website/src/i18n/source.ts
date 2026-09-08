@@ -2842,6 +2842,252 @@ Enterprise`
     en: 'Where do my outputs go?',
     'zh-CN': '我的输出会保存到哪里？'
   },
+  // The Comfy Agent beta banner, shown above the MCP page. Its copy lived in
+  // `mcp.astro` as literal strings, so it rendered English on /zh-CN/mcp and
+  // /ja/mcp with nothing to report it.
+  // The meta description a page falls back to when it supplies none. It was a
+  // literal default in BaseLayout, so /zh-CN/case-studies and /zh-CN/videos
+  // described themselves in English.
+  // Enterprise page copy. It lived in the page files as literal data, so it
+  // rendered English on /zh-CN/enterprise and /ja/enterprise with nothing to
+  // report it — no key means no adapter, no coverage number, no warning.
+  'enterprise.faq.what-is-enterprise.question': {
+    en: 'What is included in Comfy Enterprise?'
+  },
+  'enterprise.faq.what-is-enterprise.answer': {
+    en: 'Comfy Enterprise can combine ComfyUI Managed Builds, dedicated production capacity and support, commercial model licensing, and Forward Deployed Creatives. Teams that only need shared Cloud usage can start with the self-serve Team plan.'
+  },
+  'enterprise.faq.where-runs.question': {
+    en: 'Where can our Comfy Workflows run?'
+  },
+  'enterprise.faq.where-runs.answer': {
+    en: 'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.'
+  },
+  'enterprise.faq.builds-vs-managed-builds.question': {
+    en: 'How are Builds different from ComfyUI Managed Builds?'
+  },
+  'enterprise.faq.builds-vs-managed-builds.answer': {
+    en: 'Builds are the self-serve way to package ComfyUI, custom nodes, models, and dependencies into a reproducible environment. ComfyUI Managed Builds add team distribution, governance, controlled rollout, enterprise terms, and support across the environments your organization runs.'
+  },
+  'enterprise.faq.commercial-models.question': {
+    en: 'Can we use models commercially?'
+  },
+  'enterprise.faq.commercial-models.answer': {
+    en: 'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.'
+  },
+  'enterprise.faq.security.question': {
+    en: 'How does Comfy support security review?'
+  },
+  'enterprise.faq.usage.question': {
+    en: 'What usage and audit information is available?'
+  },
+  'enterprise.faq.usage.answer': {
+    en: 'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.'
+  },
+  'enterprise.faq.team-plan.question': {
+    en: 'Is there a self-serve Team plan?'
+  },
+  'enterprise.faq.team-plan.answer': {
+    en: 'Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.'
+  },
+  'enterprise.faq.capacity-and-support.question': {
+    en: 'What production capacity and support are available?'
+  },
+  'enterprise.faq.capacity-and-support.answer': {
+    en: 'Enterprise agreements can include dedicated GPU capacity, priority queueing, guided onboarding, direct access to Comfy engineers, and uptime and response commitments scoped to your requirements.'
+  },
+  'enterprise.offers.team-plans.label': {
+    en: 'SELF-SERVE FOR TEAMS'
+  },
+  'enterprise.offers.team-plans.title': {
+    en: 'Team plans'
+  },
+  'enterprise.offers.team-plans.description': {
+    en: 'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.'
+  },
+  'enterprise.offers.commercial-licensing.label': {
+    en: 'COMMERCIAL RIGHTS'
+  },
+  'enterprise.offers.commercial-licensing.title': {
+    en: 'Model licensing'
+  },
+  'enterprise.offers.commercial-licensing.description': {
+    en: 'Commercial terms for MiniMax today, with local model terms available by provider on request.'
+  },
+  'enterprise.offers.commercial-licensing.cta.label': {
+    en: 'VIEW MINIMAX LICENSING'
+  },
+  'enterprise.offers.forward-deployed-creatives.label': {
+    en: 'HANDS-ON DELIVERY'
+  },
+  'enterprise.offers.forward-deployed-creatives.title': {
+    en: 'Forward Deployed Creatives'
+  },
+  'enterprise.offers.forward-deployed-creatives.description': {
+    en: 'Work with ComfyUI specialists who design production Comfy Workflows alongside your creative and technical teams, then leave your team with workflows it can run, inspect, and extend.'
+  },
+  'enterprise.offers.forward-deployed-creatives.cta.label': {
+    en: 'VIEW THE OFFERING'
+  },
+  'enterprise.governance.build-policy.title': {
+    en: 'Build policy'
+  },
+  'enterprise.governance.build-policy.description': {
+    en: 'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.'
+  },
+  'enterprise.governance.model-policy.title': {
+    en: 'Model policy and BYOK'
+  },
+  'enterprise.governance.model-policy.description': {
+    en: 'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.'
+  },
+  'enterprise.governance.people-access.title': {
+    en: 'People and access'
+  },
+  'enterprise.governance.people-access.description': {
+    en: 'Use company identity and SSO to assign approved environments, with App Mode for simplified, approved experiences.'
+  },
+  'enterprise.governance.usage-records.title': {
+    en: 'Usage visibility and audit requirements'
+  },
+  'enterprise.governance.usage-records.description': {
+    en: 'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.'
+  },
+  'enterprise.production.dedicated-capacity.title': {
+    en: 'Dedicated GPU capacity'
+  },
+  'enterprise.production.dedicated-capacity.description': {
+    en: 'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.'
+  },
+  'enterprise.production.priority-queueing.title': {
+    en: 'Priority queueing'
+  },
+  'enterprise.production.priority-queueing.description': {
+    en: 'Production jobs run ahead of standard shared-capacity traffic when demand spikes.'
+  },
+  'enterprise.production.deployment.title': {
+    en: 'Flexible deployment'
+  },
+  'enterprise.production.deployment.description': {
+    en: 'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.'
+  },
+  'enterprise.production.support.title': {
+    en: 'Custom SLAs and support'
+  },
+  'enterprise.production.support.description': {
+    en: 'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.'
+  },
+  'enterprise.industries.games.title': {
+    en: 'Game studios'
+  },
+  'enterprise.industries.games.description': {
+    en: 'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.'
+  },
+  'enterprise.industries.vfx.title': {
+    en: 'VFX and animation'
+  },
+  'enterprise.industries.vfx.description': {
+    en: 'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.'
+  },
+  'enterprise.industries.onboarding.title': {
+    en: 'Studios you onboard'
+  },
+  'enterprise.industries.onboarding.description': {
+    en: 'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.'
+  },
+  'enterprise.managedBuilds.faq.what.question': {
+    en: 'What is a ComfyUI Managed Build?'
+  },
+  'enterprise.managedBuilds.faq.what.answer': {
+    en: 'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.'
+  },
+  'enterprise.managedBuilds.faq.where.question': {
+    en: 'Where do Managed Builds run?'
+  },
+  'enterprise.managedBuilds.faq.where.answer': {
+    en: 'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.'
+  },
+  'enterprise.managedBuilds.faq.models.question': {
+    en: 'Can we use private models and our own provider keys?'
+  },
+  'enterprise.managedBuilds.faq.models.answer': {
+    en: 'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.'
+  },
+  'enterprise.managedBuilds.faq.nodes.question': {
+    en: 'How are custom nodes governed?'
+  },
+  'enterprise.managedBuilds.faq.nodes.answer': {
+    en: 'Administrators choose which custom nodes belong in each build, then pin them with the rest of the environment for controlled rollout.'
+  },
+  'enterprise.managedBuilds.faq.access.question': {
+    en: 'How are users and teams assigned?'
+  },
+  'enterprise.managedBuilds.faq.access.answer': {
+    en: 'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.'
+  },
+  'enterprise.managedBuilds.faq.usage.question': {
+    en: 'What usage and audit information is available?'
+  },
+  'enterprise.managedBuilds.faq.usage.answer': {
+    en: 'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.'
+  },
+  'enterprise.managedBuilds.faq.start.question': {
+    en: 'How do we get started?'
+  },
+  'enterprise.managedBuilds.faq.start.answer': {
+    en: 'Request a demo and bring one known-good environment. Comfy engineers will map the current setup, deployment targets, governance requirements, onboarding plan, and path to the first approved build.'
+  },
+  'enterprise.managedBuilds.governance.build-policy.title': {
+    en: 'Build policy'
+  },
+  'enterprise.managedBuilds.governance.build-policy.description': {
+    en: 'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.'
+  },
+  'enterprise.managedBuilds.governance.model-policy.title': {
+    en: 'Model policy and BYOK'
+  },
+  'enterprise.managedBuilds.governance.model-policy.description': {
+    en: 'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.'
+  },
+  'enterprise.managedBuilds.governance.people-access.title': {
+    en: 'People and access'
+  },
+  'enterprise.managedBuilds.governance.people-access.description': {
+    en: 'Use company identity and SSO to assign approved environments to the teams that need them.'
+  },
+  'enterprise.managedBuilds.governance.usage-records.title': {
+    en: 'Usage visibility and audit requirements'
+  },
+  'enterprise.managedBuilds.governance.usage-records.description': {
+    en: 'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.'
+  },
+  'enterprise.managedBuilds.industries.games.title': {
+    en: 'Game studios'
+  },
+  'enterprise.managedBuilds.industries.games.description': {
+    en: 'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.'
+  },
+  'enterprise.managedBuilds.industries.vfx.title': {
+    en: 'VFX and animation'
+  },
+  'enterprise.managedBuilds.industries.vfx.description': {
+    en: 'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.'
+  },
+  'enterprise.managedBuilds.industries.onboarding.title': {
+    en: 'Studios you onboard'
+  },
+  'enterprise.managedBuilds.industries.onboarding.description': {
+    en: 'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.'
+  },
+  'meta.defaultDescription': {
+    en: 'Comfy is the AI creation engine for visual professionals who demand control.'
+  },
+  'mcp.agentBanner.title': {
+    en: 'The Comfy Agent is in beta. Get early access.'
+  },
+  'mcp.agentBanner.linkTitle': {
+    en: 'Join the waitlist'
+  },
   'mcp.faq.9.a': {
     en: 'On the cloud connection, into your Comfy Cloud asset library, so you can reuse, remix, and share them — and open any run on the canvas to keep editing. You can also ask your agent to download the assets locally for you. On the local connection, outputs land in your ComfyUI output folder, and your agent can copy them anywhere you name.',
     'zh-CN':

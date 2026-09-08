@@ -14,84 +14,90 @@ import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 import { t } from '../../i18n/translations'
 
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
+
 const faqs = [
   {
     id: 'what-is-enterprise',
-    question: 'What is included in Comfy Enterprise?',
+    question: t('enterprise.faq.what-is-enterprise.question', locale),
     answer:
-      'Comfy Enterprise can combine ComfyUI Managed Builds, dedicated production capacity and support, commercial model licensing, and Forward Deployed Creatives. Teams that only need shared Cloud usage can start with the self-serve Team plan.',
+      t('enterprise.faq.what-is-enterprise.answer', locale),
   },
   {
     id: 'where-runs',
-    question: 'Where can our Comfy Workflows run?',
+    question: t('enterprise.faq.where-runs.question', locale),
     answer:
-      'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
+      t('enterprise.faq.where-runs.answer', locale),
   },
   {
     id: 'builds-vs-managed-builds',
-    question: 'How are Builds different from ComfyUI Managed Builds?',
+    question: t('enterprise.faq.builds-vs-managed-builds.question', locale),
     answer:
-      'Builds are the self-serve way to package ComfyUI, custom nodes, models, and dependencies into a reproducible environment. ComfyUI Managed Builds add team distribution, governance, controlled rollout, enterprise terms, and support across the environments your organization runs.',
+      t('enterprise.faq.builds-vs-managed-builds.answer', locale),
   },
   {
     id: 'commercial-models',
-    question: 'Can we use models commercially?',
+    question: t('enterprise.faq.commercial-models.question', locale),
     answer:
-      'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.',
+      t('enterprise.faq.commercial-models.answer', locale),
   },
   {
     id: 'security',
-    question: 'How does Comfy support security review?',
+    question: t('enterprise.faq.security.question', locale),
     answer: `SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center](${externalLinks.trustCenter}).`,
   },
   {
     id: 'usage',
-    question: 'What usage and audit information is available?',
+    question: t('enterprise.faq.usage.question', locale),
     answer:
-      'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
+      t('enterprise.faq.usage.answer', locale),
   },
   {
     id: 'team-plan',
-    question: 'Is there a self-serve Team plan?',
+    question: t('enterprise.faq.team-plan.question', locale),
     answer:
-      'Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.',
+      t('enterprise.faq.team-plan.answer', locale),
   },
   {
     id: 'capacity-and-support',
-    question: 'What production capacity and support are available?',
+    question: t('enterprise.faq.capacity-and-support.question', locale),
     answer:
-      'Enterprise agreements can include dedicated GPU capacity, priority queueing, guided onboarding, direct access to Comfy engineers, and uptime and response commitments scoped to your requirements.',
+      t('enterprise.faq.capacity-and-support.answer', locale),
   },
 ] as const
 
 const enterpriseOffers = [
   {
     id: 'team-plans',
-    label: 'SELF-SERVE FOR TEAMS',
-    title: 'Team plans',
+    label: t('enterprise.offers.team-plans.label', locale),
+    title: t('enterprise.offers.team-plans.title', locale),
     description:
-      'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
+      t('enterprise.offers.team-plans.description', locale),
     cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
   },
   {
     id: 'commercial-licensing',
-    label: 'COMMERCIAL RIGHTS',
-    title: 'Model licensing',
+    label: t('enterprise.offers.commercial-licensing.label', locale),
+    title: t('enterprise.offers.commercial-licensing.title', locale),
     description:
-      'Commercial terms for MiniMax today, with local model terms available by provider on request.',
+      t('enterprise.offers.commercial-licensing.description', locale),
     cta: {
-      label: 'VIEW MINIMAX LICENSING',
+      label: t('enterprise.offers.commercial-licensing.cta.label', locale),
       href: '/minimax/license/',
     },
   },
   {
     id: 'forward-deployed-creatives',
-    label: 'HANDS-ON DELIVERY',
-    title: 'Forward Deployed Creatives',
+    label: t('enterprise.offers.forward-deployed-creatives.label', locale),
+    title: t('enterprise.offers.forward-deployed-creatives.title', locale),
     description:
-      'Work with ComfyUI specialists who design production Comfy Workflows alongside your creative and technical teams, then leave your team with workflows it can run, inspect, and extend.',
+      t('enterprise.offers.forward-deployed-creatives.description', locale),
     cta: {
-      label: 'VIEW THE OFFERING',
+      label: t('enterprise.offers.forward-deployed-creatives.cta.label', locale),
       href: '/forward-deployed-creatives/',
     },
   },
@@ -100,85 +106,79 @@ const enterpriseOffers = [
 const governanceBenefits = [
   {
     id: 'build-policy',
-    title: 'Build policy',
+    title: t('enterprise.governance.build-policy.title', locale),
     description:
-      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+      t('enterprise.governance.build-policy.description', locale),
   },
   {
     id: 'model-policy',
-    title: 'Model policy and BYOK',
+    title: t('enterprise.governance.model-policy.title', locale),
     description:
-      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+      t('enterprise.governance.model-policy.description', locale),
   },
   {
     id: 'people-access',
-    title: 'People and access',
+    title: t('enterprise.governance.people-access.title', locale),
     description:
-      'Use company identity and SSO to assign approved environments, with App Mode for simplified, approved experiences.',
+      t('enterprise.governance.people-access.description', locale),
   },
   {
     id: 'usage-records',
-    title: 'Usage visibility and audit requirements',
+    title: t('enterprise.governance.usage-records.title', locale),
     description:
-      'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+      t('enterprise.governance.usage-records.description', locale),
   },
 ] as const
 
 const productionBenefits = [
   {
     id: 'dedicated-capacity',
-    title: 'Dedicated GPU capacity',
+    title: t('enterprise.production.dedicated-capacity.title', locale),
     description:
-      'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.',
+      t('enterprise.production.dedicated-capacity.description', locale),
   },
   {
     id: 'priority-queueing',
-    title: 'Priority queueing',
+    title: t('enterprise.production.priority-queueing.title', locale),
     description:
-      'Production jobs run ahead of standard shared-capacity traffic when demand spikes.',
+      t('enterprise.production.priority-queueing.description', locale),
   },
   {
     id: 'deployment',
-    title: 'Flexible deployment',
+    title: t('enterprise.production.deployment.title', locale),
     description:
-      'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.',
+      t('enterprise.production.deployment.description', locale),
   },
   {
     id: 'support',
-    title: 'Custom SLAs and support',
+    title: t('enterprise.production.support.title', locale),
     description:
-      'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.',
+      t('enterprise.production.support.description', locale),
   },
 ] as const
 
 const industries = [
   {
     id: 'games',
-    title: 'Game studios',
+    title: t('enterprise.industries.games.title', locale),
     description:
-      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+      t('enterprise.industries.games.description', locale),
   },
   {
     id: 'vfx',
-    title: 'VFX and animation',
+    title: t('enterprise.industries.vfx.title', locale),
     description:
-      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+      t('enterprise.industries.vfx.description', locale),
   },
   {
     id: 'onboarding',
-    title: 'Studios you onboard',
+    title: t('enterprise.industries.onboarding.title', locale),
     description:
-      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+      t('enterprise.industries.onboarding.description', locale),
   },
 ] as const
 
-const { locale, canonicalUrl, canonicalLocale } = pageContext(
-  Astro.site,
-  Astro.originPathname,
-  Astro.currentLocale,
-)
-const faqPage = buildFaqPageNode(canonicalUrl, faqs)
----
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)---
 
 <BaseLayout
   title={t('enterprise.meta.title', locale)}

@@ -15,106 +15,106 @@ import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 import { t } from '../../i18n/translations'
 
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
+  Astro.site,
+  Astro.originPathname,
+  Astro.currentLocale,
+)
+
 const faqs = [
   {
     id: 'what',
-    question: 'What is a ComfyUI Managed Build?',
+    question: t('enterprise.managedBuilds.faq.what.question', locale),
     answer:
-      'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.',
+      t('enterprise.managedBuilds.faq.what.answer', locale),
   },
   {
     id: 'where',
-    question: 'Where do Managed Builds run?',
+    question: t('enterprise.managedBuilds.faq.where.question', locale),
     answer:
-      'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.',
+      t('enterprise.managedBuilds.faq.where.answer', locale),
   },
   {
     id: 'models',
-    question: 'Can we use private models and our own provider keys?',
+    question: t('enterprise.managedBuilds.faq.models.question', locale),
     answer:
-      'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.',
+      t('enterprise.managedBuilds.faq.models.answer', locale),
   },
   {
     id: 'nodes',
-    question: 'How are custom nodes governed?',
+    question: t('enterprise.managedBuilds.faq.nodes.question', locale),
     answer:
-      'Administrators choose which custom nodes belong in each build, then pin them with the rest of the environment for controlled rollout.',
+      t('enterprise.managedBuilds.faq.nodes.answer', locale),
   },
   {
     id: 'access',
-    question: 'How are users and teams assigned?',
+    question: t('enterprise.managedBuilds.faq.access.question', locale),
     answer:
-      'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.',
+      t('enterprise.managedBuilds.faq.access.answer', locale),
   },
   {
     id: 'usage',
-    question: 'What usage and audit information is available?',
+    question: t('enterprise.managedBuilds.faq.usage.question', locale),
     answer:
-      'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
+      t('enterprise.managedBuilds.faq.usage.answer', locale),
   },
   {
     id: 'start',
-    question: 'How do we get started?',
+    question: t('enterprise.managedBuilds.faq.start.question', locale),
     answer:
-      'Request a demo and bring one known-good environment. Comfy engineers will map the current setup, deployment targets, governance requirements, onboarding plan, and path to the first approved build.',
+      t('enterprise.managedBuilds.faq.start.answer', locale),
   },
 ] as const
 
 const governanceBenefits = [
   {
     id: 'build-policy',
-    title: 'Build policy',
+    title: t('enterprise.managedBuilds.governance.build-policy.title', locale),
     description:
-      'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+      t('enterprise.managedBuilds.governance.build-policy.description', locale),
   },
   {
     id: 'model-policy',
-    title: 'Model policy and BYOK',
+    title: t('enterprise.managedBuilds.governance.model-policy.title', locale),
     description:
-      'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+      t('enterprise.managedBuilds.governance.model-policy.description', locale),
   },
   {
     id: 'people-access',
-    title: 'People and access',
+    title: t('enterprise.managedBuilds.governance.people-access.title', locale),
     description:
-      'Use company identity and SSO to assign approved environments to the teams that need them.',
+      t('enterprise.managedBuilds.governance.people-access.description', locale),
   },
   {
     id: 'usage-records',
-    title: 'Usage visibility and audit requirements',
+    title: t('enterprise.managedBuilds.governance.usage-records.title', locale),
     description:
-      'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+      t('enterprise.managedBuilds.governance.usage-records.description', locale),
   },
 ] as const
 
 const industries = [
   {
     id: 'games',
-    title: 'Game studios',
+    title: t('enterprise.managedBuilds.industries.games.title', locale),
     description:
-      'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.',
+      t('enterprise.managedBuilds.industries.games.description', locale),
   },
   {
     id: 'vfx',
-    title: 'VFX and animation',
+    title: t('enterprise.managedBuilds.industries.vfx.title', locale),
     description:
-      'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.',
+      t('enterprise.managedBuilds.industries.vfx.description', locale),
   },
   {
     id: 'onboarding',
-    title: 'Studios you onboard',
+    title: t('enterprise.managedBuilds.industries.onboarding.title', locale),
     description:
-      'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.',
+      t('enterprise.managedBuilds.industries.onboarding.description', locale),
   },
 ] as const
 
-const { locale, canonicalUrl, canonicalLocale } = pageContext(
-  Astro.site,
-  Astro.originPathname,
-  Astro.currentLocale,
-)
-const faqPage = buildFaqPageNode(canonicalUrl, faqs)
----
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)---
 
 <BaseLayout
   title={t('enterprise.managedBuilds.meta.title', locale)}
