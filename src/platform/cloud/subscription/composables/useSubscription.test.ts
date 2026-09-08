@@ -570,7 +570,6 @@ describe('useSubscription', () => {
 
   describe('pending checkout recovery', () => {
     it('does not report while the checkout could still plausibly complete', async () => {
-      vi.useFakeTimers()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -597,7 +596,6 @@ describe('useSubscription', () => {
     })
 
     it('reports once when a checkout has missed its completion deadline', async () => {
-      vi.useFakeTimers()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -641,7 +639,6 @@ describe('useSubscription', () => {
     })
 
     it('closes the billing funnel when the completion never lands', async () => {
-      vi.useFakeTimers()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -676,7 +673,6 @@ describe('useSubscription', () => {
     })
 
     it('separates an unreachable billing API from a missing completion', async () => {
-      vi.useFakeTimers()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -708,7 +704,6 @@ describe('useSubscription', () => {
     })
 
     it('does not report a missing completion after recovery succeeds', async () => {
-      vi.useFakeTimers()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
