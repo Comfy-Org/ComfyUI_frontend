@@ -4,22 +4,27 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const METADATA_KEYS = new Set(['animated', 'text'])
 
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value)
+}
+
 /**
  * Validates that an unknown value is a well-formed ResultItem.
  *
  * Requires `filename` (string) since it is needed for a valid URL.
  * `subfolder` is optional here — URL building falls back to ''.
  */
-function isResultItem(item: unknown): item is ResultItem {
+function isResultItem(
+  item: unknown
+): item is ResultItem & { filename: string } {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false
 
-  const candidate = item as Record<string, unknown>
-
-  if (typeof candidate.filename !== 'string') return false
+  if (!('filename' in item) || typeof item.filename !== 'string') return false
 
   if (
-    candidate.type !== undefined &&
-    !resultItemType.safeParse(candidate.type).success
+    'type' in item &&
+    item.type !== undefined &&
+    !resultItemType.safeParse(item.type).success
   ) {
     return false
   }
@@ -33,13 +38,12 @@ export function parseNodeOutput(
 ): AugmentedResultItem[] {
   if (!nodeOutput) return []
 
-  return Object.entries(nodeOutput)
-    .filter(([key, value]) => !METADATA_KEYS.has(key) && Array.isArray(value))
-    .flatMap(([mediaType, items]) =>
-      (items as unknown[])
-        .filter(isResultItem)
-        .map((item) => ({ ...item, mediaType, nodeId }))
-    )
+  return Object.entries(nodeOutput).flatMap(([mediaType, items]) => {
+    if (METADATA_KEYS.has(mediaType) || !isUnknownArray(items)) return []
+    return items
+      .filter(isResultItem)
+      .map((item) => ({ ...item, mediaType, nodeId }))
+  })
 }
 
 export function parseTaskOutput(

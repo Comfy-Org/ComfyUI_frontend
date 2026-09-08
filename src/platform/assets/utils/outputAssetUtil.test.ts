@@ -39,10 +39,12 @@ type OutputOverrides = Partial<{
 }>
 
 function createOutput(overrides: OutputOverrides = {}): AugmentedResultItem {
-  const merged = {
+  const merged: AugmentedResultItem = {
     filename: 'file.png',
     subfolder: 'sub',
+    type: 'output',
     nodeId: '1',
+    mediaType: 'images',
     url: 'https://example.com/file.png',
     ...overrides
   }
@@ -50,7 +52,7 @@ function createOutput(overrides: OutputOverrides = {}): AugmentedResultItem {
     ...merged,
     previewUrl: merged.url,
     display_name: merged.display_name
-  } as AugmentedResultItem
+  }
 }
 
 function createAsset(

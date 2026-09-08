@@ -3,6 +3,7 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 export interface AugmentedResultItem extends ResultItem {
+  filename: string
   mediaType: string
   nodeId: SerializedNodeId
   assetId?: string
@@ -67,9 +68,9 @@ export function isTextResult(item: AugmentedResultItem): boolean {
 export function resultItemHtmlVideoType(
   item: AugmentedResultItem
 ): string | undefined {
-  if (item.filename?.endsWith('.webm')) return 'video/webm'
-  if (item.filename?.endsWith('.mp4')) return 'video/mp4'
-  if (item.filename?.endsWith('.mov')) return 'video/quicktime'
+  if (item.filename.endsWith('.webm')) return 'video/webm'
+  if (item.filename.endsWith('.mp4')) return 'video/mp4'
+  if (item.filename.endsWith('.mov')) return 'video/quicktime'
   if (isVhsFormat(item)) {
     if (item.format?.endsWith('webm')) return 'video/webm'
     if (item.format?.endsWith('mp4')) return 'video/mp4'
@@ -80,10 +81,10 @@ export function resultItemHtmlVideoType(
 export function resultItemHtmlAudioType(
   item: AugmentedResultItem
 ): string | undefined {
-  if (item.filename?.endsWith('.mp3')) return 'audio/mpeg'
-  if (item.filename?.endsWith('.wav')) return 'audio/wav'
-  if (item.filename?.endsWith('.ogg')) return 'audio/ogg'
-  if (item.filename?.endsWith('.flac')) return 'audio/flac'
+  if (item.filename.endsWith('.mp3')) return 'audio/mpeg'
+  if (item.filename.endsWith('.wav')) return 'audio/wav'
+  if (item.filename.endsWith('.ogg')) return 'audio/ogg'
+  if (item.filename.endsWith('.flac')) return 'audio/flac'
   return undefined
 }
 

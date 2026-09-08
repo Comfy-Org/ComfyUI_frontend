@@ -164,7 +164,7 @@ describe('buildJobDisplay', () => {
             nodeId: '0',
             mediaType: 'images',
             url: '/api/view?filename=preview.png&type=output&subfolder='
-          } as const
+          }
         }),
         'completed',
         createCtx()

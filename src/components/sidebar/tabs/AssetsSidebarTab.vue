@@ -243,6 +243,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -454,13 +455,13 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed(() => {
+const galleryItems = computed<AugmentedResultItem[]>(() => {
   return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     return {
       filename: asset.name,
       subfolder: getAssetSubfolder(asset),
-      type: 'output' as const,
+      type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
       url: asset.preview_url || ''

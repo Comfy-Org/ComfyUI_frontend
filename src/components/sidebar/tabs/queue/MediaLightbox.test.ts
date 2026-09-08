@@ -5,7 +5,6 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import type { SerializedNodeId } from '@/types/nodeId'
 
 import MediaLightbox from './MediaLightbox.vue'
 
@@ -36,17 +35,8 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = Partial<AugmentedResultItem> & {
-  filename: string
-  subfolder: string
-  type: string
-  nodeId: SerializedNodeId
-  mediaType: string
+type MockResultItem = AugmentedResultItem & {
   id?: string
-  url?: string
-  isImage?: boolean
-  isVideo?: boolean
-  isAudio?: boolean
 }
 
 describe('MediaLightbox', () => {
@@ -77,9 +67,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '123',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image1.jpg',
       id: '1'
     },
@@ -89,9 +76,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '456',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image2.jpg',
       id: '2'
     },
@@ -101,9 +85,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '789',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image3.jpg',
       id: '3'
     }
@@ -126,7 +107,7 @@ describe('MediaLightbox', () => {
         }
       },
       props: {
-        allGalleryItems: mockGalleryItems as AugmentedResultItem[],
+        allGalleryItems: mockGalleryItems,
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -155,7 +136,7 @@ describe('MediaLightbox', () => {
 
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]] as AugmentedResultItem[]
+      allGalleryItems: [mockGalleryItems[0]]
     })
     await nextTick()
 
@@ -171,7 +152,7 @@ describe('MediaLightbox', () => {
     /* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
     await rerender({
-      allGalleryItems: mockGalleryItems as AugmentedResultItem[],
+      allGalleryItems: mockGalleryItems,
       activeIndex: 0
     })
     await nextTick()
@@ -206,7 +187,7 @@ describe('MediaLightbox', () => {
             mediaType: 'text',
             url: '/api/view?filename=failed.txt'
           }
-        ] as AugmentedResultItem[]
+        ]
       },
       { ResultText: false }
     )
@@ -279,9 +260,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: `${n}`,
       mediaType: 'video',
-      isImage: false,
-      isVideo: true,
-      isAudio: false,
       url: `http://assets.test/v${n}.mp4`,
       id: `v${n}`
     })
@@ -290,13 +268,13 @@ describe('MediaLightbox', () => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items as AugmentedResultItem[],
+          allGalleryItems: items,
           activeIndex: 0
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
-          allGalleryItems: items as AugmentedResultItem[],
+          allGalleryItems: items,
           activeIndex
         })
         await nextTick()

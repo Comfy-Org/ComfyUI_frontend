@@ -4,19 +4,29 @@ import { ref } from 'vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-type MockItem = Pick<AugmentedResultItem, 'filename' | 'url'>
-
-const SAMPLE_IMAGES: MockItem[] = [
+const SAMPLE_IMAGES: AugmentedResultItem[] = [
   {
     filename: 'landscape.jpg',
+    subfolder: '',
+    type: 'output',
+    nodeId: 'node-1',
+    mediaType: 'images',
     url: 'https://i.imgur.com/OB0y6MR.jpg'
   },
   {
     filename: 'portrait.jpg',
+    subfolder: '',
+    type: 'output',
+    nodeId: 'node-1',
+    mediaType: 'images',
     url: 'https://i.imgur.com/CzXTtJV.jpg'
   },
   {
     filename: 'nature.jpg',
+    subfolder: '',
+    type: 'output',
+    nodeId: 'node-1',
+    mediaType: 'images',
     url: 'https://farm9.staticflickr.com/8505/8441256181_4e98d8bff5_z_d.jpg'
   }
 ]
@@ -34,7 +44,7 @@ export const MultipleImages: Story = {
     components: { MediaLightbox },
     setup() {
       const activeIndex = ref(0)
-      const items = SAMPLE_IMAGES as AugmentedResultItem[]
+      const items = SAMPLE_IMAGES
       return { activeIndex, items }
     },
     template: `
@@ -66,7 +76,7 @@ export const SingleImage: Story = {
     components: { MediaLightbox },
     setup() {
       const activeIndex = ref(-1)
-      const items = [SAMPLE_IMAGES[0]] as AugmentedResultItem[]
+      const items = SAMPLE_IMAGES.slice(0, 1)
       return { activeIndex, items }
     },
     template: `
@@ -94,7 +104,7 @@ export const Closed: Story = {
     components: { MediaLightbox },
     setup() {
       const activeIndex = ref(-1)
-      const items = SAMPLE_IMAGES as AugmentedResultItem[]
+      const items = SAMPLE_IMAGES
       return { activeIndex, items }
     },
     template: `
