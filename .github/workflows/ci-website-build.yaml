@@ -44,15 +44,6 @@ jobs:
       - name: Check for copy the translation pipeline cannot see
         run: pnpm --filter @comfyorg/website check:hardcoded-copy
 
-      # Reads src/i18n/content only, never dist, so it runs before the build:
-      # a build broken for an unrelated reason should not stop a bad
-      # translation being reported. Preserve terms, placeholders, URLs, line
-      # structure and target script are all checked here. The nightly job gates
-      # its own PR on this too, but a hand-edited translation would otherwise
-      # reach main without it ever running.
-      - name: Validate translations
-        run: pnpm --filter @comfyorg/website i18n:validate
-
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}

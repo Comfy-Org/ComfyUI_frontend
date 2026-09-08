@@ -51,8 +51,13 @@ export function enforceTranslations(
 /**
  * Above this share of a run being dropped, the model or the config is broken
  * rather than the tail being weak.
+ *
+ * Matches the hub's `DEFAULT_MAX_PRUNE_FRACTION`, and for its reason: a locale
+ * failing more than this is systemic, and publishing it would silently revert
+ * most of a language to English. This sat at 0.5 — three times as tolerant —
+ * which would have accepted a run that lost a third of a locale without a word.
  */
-const SYSTEMIC_DROP_SHARE = 0.5
+const SYSTEMIC_DROP_SHARE = 0.15
 
 /**
  * Below this many dropped keys, a share is not evidence of anything.

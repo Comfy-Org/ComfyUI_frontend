@@ -82,6 +82,15 @@ describe('isSystemicFailure', () => {
     expect(isSystemicFailure({ dropped: 40, total: 500 })).toBe(false)
   })
 
+  /**
+   * The hub sets this at 0.15 and calls anything above it systemic rather than
+   * a weak tail. Ours sat at 0.5, which would have published a run that reverted
+   * a third of a locale to English without complaining.
+   */
+  it('refuses a run that lost a fifth of its keys', () => {
+    expect(isSystemicFailure({ dropped: 100, total: 500 })).toBe(true)
+  })
+
   it('allows a small run even when nearly all of it failed', () => {
     // The real case: nine chronic failures and one good new key. Refusing here
     // discarded a correct translation and published nothing.

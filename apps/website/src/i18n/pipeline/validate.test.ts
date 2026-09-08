@@ -58,6 +58,24 @@ describe('collectViolations', () => {
     })
   })
 
+  /**
+   * A key the translation has and the English does not.
+   *
+   * The validator walks the English, so such a key was never looked at: no
+   * contract to check it against, and nothing to say it was there. The hub
+   * flags these as stale or hallucinated for exactly that reason. Ours are
+   * pruned by `pruneOrphanKeys` on the next source build, but only after a
+   * cycle, and silently.
+   */
+  it('flags a translated key that has no English', () => {
+    expect(
+      kinds(
+        { 'a.b': 'Hello there' },
+        { 'a.b': 'こんにちは', 'a.ghost': 'まぼろし' }
+      )
+    ).toContain('unknown-key')
+  })
+
   it('catches a mangled URL', () => {
     expect(
       kinds(

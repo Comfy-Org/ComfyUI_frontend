@@ -1,0 +1,62 @@
+# Runs the deterministic translation validator on any PR that touches the
+# website's translation artifacts or their pipeline.
+#
+# The nightly job in i18n-update-website.yaml already gates its own pull request
+# on this validator, but ordinary website CI does not run it, so a hand-edited
+# translation could reach main all-green while failing the deterministic gate.
+# This closes that gap, and mirrors the hub's i18n-validate.yml, which exists
+# for the same reason.
+#
+# Path-filtered on purpose: this checks translations, so it should not run on a
+# pull request that only moves a stylesheet. The complementary check for copy
+# typed straight into a page lives in ci-website-build.yaml instead, because
+# that problem is introduced by editing a page, never by editing a translation.
+name: 'i18n: Validate Website Translations'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'apps/website/src/i18n/**'
+      - 'apps/website/src/content/**'
+      - 'apps/website/scripts/i18n/**'
+      - '.github/workflows/i18n-validate-website.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Translations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      # Reads src/i18n/content and the glossary, never dist, so no build is
+      # needed: preserve terms, placeholders, URLs, line structure, target
+      # script, banned words, and keys present in a translation but absent from
+      # the English source.
+      - name: Validate translations
+        run: pnpm --filter @comfyorg/website i18n:validate
+
+      # The English source the validator checks against is generated. If it is
+      # stale, the validator is answering a question about yesterday's copy.
+      #
+      # Scoped to the generated artifacts only. `src/i18n` also holds the
+      # pipeline's own hand-written code, and diffing all of it would report
+      # every ordinary change to the pipeline as staleness.
+      - name: Check the content source is current
+        run: |
+          pnpm --filter @comfyorg/website i18n:build-source
+          if ! git diff --quiet -- apps/website/src/i18n/content apps/website/src/i18n/manifest.json; then
+            echo "::error::The content source is stale. Run 'pnpm --filter @comfyorg/website i18n:build-source' and commit the result."
+            git --no-pager diff --stat -- apps/website/src/i18n/content apps/website/src/i18n/manifest.json
+            exit 1
+          fi

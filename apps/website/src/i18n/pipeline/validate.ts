@@ -25,6 +25,7 @@ export interface Violation {
     | 'structure'
     | 'script'
     | 'brand-voice'
+    | 'unknown-key'
   detail: string
 }
 
@@ -149,10 +150,22 @@ export function collectViolations(
     violations.push({ key, locale, kind, detail })
   }
 
+  // A key the translation has and the English does not has no contract to be
+  // checked against, so the loop below would never see it. The hub flags these
+  // as stale or hallucinated; ours are pruned on the next source build, but
+  // only after a cycle and without saying so.
+  for (const key of Object.keys(translated)) {
+    if (!(key in english)) {
+      add(key, 'unknown-key', 'translated but absent from the English source')
+    }
+  }
+
   for (const [key, source] of Object.entries(english)) {
+    // Asked of the object rather than of its type: a `Record` says every key is
+    // present, which is exactly what the loop above disproves. Not yet
+    // translated is not a defect — see the module comment.
+    if (!Object.hasOwn(translated, key)) continue
     const value = translated[key]
-    // Not yet translated is not a defect. See the module comment.
-    if (value === undefined) continue
 
     const sourceTokens = matches(source, PLACEHOLDER)
     const valueTokens = matches(value, PLACEHOLDER)
