@@ -647,6 +647,41 @@ describe('useSubscription', () => {
       })
     })
 
+    it('closes the billing funnel when the completion never lands', async () => {
+      vi.useFakeTimers()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-funnel',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          failure_category: 'reconciliation_needed',
+          checkout_type: 'new'
+        })
+      )
+    })
+
     it('separates an unreachable billing API from a missing completion', async () => {
       vi.useFakeTimers()
       localStorage.setItem(

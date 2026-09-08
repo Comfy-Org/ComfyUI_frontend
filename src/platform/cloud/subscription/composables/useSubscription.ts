@@ -199,6 +199,18 @@ function useSubscriptionInternal() {
         level: 'warning'
       }
     )
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: didLastRecoveryAttemptThrow
+        ? 'network'
+        : 'reconciliation_needed',
+      tier: attempt.tier,
+      cycle: attempt.cycle,
+      checkout_type: attempt.checkout_type,
+      duration_ms: attemptAgeMs
+    })
     hasReportedPendingCheckoutRecoveryExhaustion = true
   }
 
