@@ -148,7 +148,8 @@ test.describe(
       await expect(outputSlot).toBeVisible()
 
       const midpointHandle = await comfyPage.page.waitForFunction(() => {
-        const graph = window.app!.graph
+        const graph = window.app?.graph
+        if (!graph) return null
         const source = graph.nodes.find(
           (node) => node.title === 'Load Checkpoint'
         )
