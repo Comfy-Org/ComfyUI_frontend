@@ -4,7 +4,6 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { cardBadgeClass } from '../../lib/hub/badge'
 import { resolveTemplateLogos } from '../../lib/hub/model-logos'
 import { hubCreatorUrl } from '../../lib/hub/routes'
 import type { HubTemplate } from '../../lib/hub/types'
@@ -35,7 +34,15 @@ const modelLogos = computed(() =>
   resolveTemplateLogos({
     logos: template.logos,
     models: template.models
-  }).slice(0, 3)
+  })
+)
+// A workflow can run half a dozen models, and a row of logos in a corner reads
+// as noise, so the badge shows the first and names the rest on hover.
+const firstLogo = computed(() => modelLogos.value[0])
+const SHOWN_LOGOS = 3
+const shownLogos = computed(() => modelLogos.value.slice(0, SHOWN_LOGOS))
+const modelNames = computed(() =>
+  modelLogos.value.map((logo) => logo.name).join(', ')
 )
 const authorName = computed(() => template.username || 'ComfyUI')
 const creatorUrl = computed(() => hubCreatorUrl(authorName.value))
@@ -191,7 +198,12 @@ function openCard() {
         aria-hidden="true"
       />
       <h3
-        class="text-content-bright pointer-events-none absolute inset-x-5 bottom-5 z-10 line-clamp-2 text-base leading-[1.3] font-medium drop-shadow-md sm:text-lg lg:text-xl"
+        :class="
+          cn(
+            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-base leading-[1.3] font-medium drop-shadow-md sm:text-lg lg:text-xl',
+            modelLogos.length > 1 ? 'right-32' : 'right-16'
+          )
+        "
       >
         <a
           :href="href"
@@ -204,20 +216,45 @@ function openCard() {
           {{ template.title }}
         </a>
       </h3>
-      <div
-        v-if="modelLogos.length"
-        :class="cn(cardBadgeClass, 'right-4', modelLogos.length > 1 && 'px-2')"
+      <!-- The marks say which models the workflow runs; hovering the card
+        names them, stacked upward so they never cross the title. -->
+      <span
+        v-if="firstLogo"
+        class="pointer-events-none absolute right-5 bottom-5 z-10 flex flex-col items-end text-white drop-shadow-md"
+        :title="modelNames"
+        data-testid="hub-card-models"
       >
         <span
-          v-for="logo in modelLogos"
-          :key="logo.name"
-          :title="logo.name"
-          role="img"
-          :aria-label="logo.name"
-          class="size-5 bg-white mask-contain mask-center mask-no-repeat"
-          :style="{ maskImage: `url(${logo.src})` }"
-        />
-      </div>
+          class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-300 ease-out group-hover:grid-rows-[1fr]"
+        >
+          <span class="overflow-hidden">
+            <span class="flex flex-col items-end gap-0.5 pb-1.5 text-sm">
+              <span
+                v-for="logo in modelLogos"
+                :key="logo.name"
+                class="max-w-40 truncate whitespace-nowrap"
+              >
+                {{ logo.name }}
+              </span>
+            </span>
+          </span>
+        </span>
+
+        <span class="flex items-center gap-1.5">
+          <span
+            v-for="logo in shownLogos"
+            :key="logo.name"
+            class="size-5 shrink-0 bg-white mask-contain mask-center mask-no-repeat"
+            :style="{ maskImage: `url(${logo.src})` }"
+          />
+          <span
+            v-if="modelLogos.length > SHOWN_LOGOS"
+            class="text-xs font-bold tabular-nums"
+          >
+            +{{ modelLogos.length - SHOWN_LOGOS }}
+          </span>
+        </span>
+      </span>
     </div>
 
     <div class="flex flex-col gap-4 px-4">

@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { cardBadgeClass } from '../../lib/hub/badge'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
@@ -31,13 +28,22 @@ const labels: Record<Kind, TranslationKey> = {
 </script>
 
 <template>
+  <!-- The icon alone does not say "app" or "graph", so hovering the card opens
+    the badge into its name. -->
   <span
-    :class="cn(cardBadgeClass, 'left-4')"
-    :title="t(labels[kind], locale)"
+    class="absolute top-4 left-4 z-10 inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-black/40 px-2.5 text-white backdrop-blur-md"
     data-testid="hub-type-badge"
     :data-kind="kind"
   >
-    <span class="sr-only">{{ t(labels[kind], locale) }}</span>
-    <component :is="icons[kind]" class="size-5" />
+    <component :is="icons[kind]" class="size-5 shrink-0" />
+    <span
+      class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-hover:grid-cols-[1fr]"
+    >
+      <span class="overflow-hidden">
+        <span class="ppformula-text-center-sm pl-1.5 text-xs whitespace-nowrap">
+          {{ t(labels[kind], locale) }}
+        </span>
+      </span>
+    </span>
   </span>
 </template>
