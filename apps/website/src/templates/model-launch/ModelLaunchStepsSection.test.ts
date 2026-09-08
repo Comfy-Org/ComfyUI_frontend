@@ -35,7 +35,7 @@ describe('ModelLaunchStepsSection', () => {
     render(ModelLaunchStepsSection, {
       props: {
         steps: {
-          ...steps(2),
+          ...steps(1),
           items: [
             {
               id: 'parity',
@@ -51,6 +51,6 @@ describe('ModelLaunchStepsSection', () => {
     })
 
     expect(screen.getByText('at parity').tagName).toBe('STRONG')
-    expect(screen.queryByText(/\*\*/)).toBeNull()
+    expect(screen.queryAllByText(/\*\*/)).toEqual([])
   })
 })

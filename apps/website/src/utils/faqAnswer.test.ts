@@ -70,19 +70,43 @@ describe('parseFaqAnswer', () => {
     ])
   })
 
-  it('leaves an unclosed bold marker as plain text', () => {
+  it('drops an unclosed bold marker rather than showing it', () => {
     expect(parseFaqAnswer('No. **We match their price')).toEqual([
-      { type: 'text', value: 'No. **We match their price' }
+      { type: 'text', value: 'No. We match their price' }
     ])
   })
 
-  it('drops the delimiters of a bold span wrapping a link', () => {
+  it('keeps the link and drops the emphasis when bold wraps a link', () => {
     expect(
       parseFaqAnswer('Use **[docs](https://docs.comfy.org/a)** now')
     ).toEqual([
       { type: 'text', value: 'Use ' },
       { type: 'link', value: 'https://docs.comfy.org/a', label: 'docs' },
       { type: 'text', value: ' now' }
+    ])
+  })
+
+  it('keeps the link and drops the emphasis when bold sits inside a label', () => {
+    expect(
+      parseFaqAnswer('Read [**the docs**](https://docs.comfy.org/a) now')
+    ).toEqual([
+      { type: 'text', value: 'Read ' },
+      { type: 'link', value: 'https://docs.comfy.org/a', label: 'the docs' },
+      { type: 'text', value: ' now' }
+    ])
+  })
+
+  it('keeps a bare URL clickable when bold wraps it', () => {
+    expect(parseFaqAnswer('**See https://x.com/a**')).toEqual([
+      { type: 'text', value: 'See ' },
+      { type: 'link', value: 'https://x.com/a' }
+    ])
+  })
+
+  it('emits no duplicated text when bold straddles a link boundary', () => {
+    expect(parseFaqAnswer('[docs **bold](https://x.com/a) tail**')).toEqual([
+      { type: 'link', value: 'https://x.com/a', label: 'docs bold' },
+      { type: 'text', value: ' tail' }
     ])
   })
 
@@ -133,9 +157,12 @@ describe('faqAnswerPlainText', () => {
     )
   })
 
-  it('emits no markdown when bold wraps a link', () => {
+  it('emits no markdown when bold and a link overlap', () => {
     expect(
       faqAnswerPlainText('Use **[docs](https://docs.comfy.org/a)** now')
     ).toBe('Use docs now')
+    expect(
+      faqAnswerPlainText('Read [**the docs**](https://docs.comfy.org/a) now')
+    ).toBe('Read the docs now')
   })
 })
