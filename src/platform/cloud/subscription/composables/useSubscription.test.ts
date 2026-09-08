@@ -632,10 +632,9 @@ describe('useSubscription', () => {
         errorType: 'cloud_checkout_completion_missing',
         tags: {
           failure_kind: 'missing_event',
-          feature_area: 'cloud',
+          feature_area: 'billing',
           operation: 'sync',
-          outcome: 'timed_out',
-          assert_mode: 'soft'
+          outcome: 'timed_out'
         },
         context: {
           checkout_attempt_id: 'attempt-timeout',

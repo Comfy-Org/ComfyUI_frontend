@@ -182,10 +182,9 @@ function useSubscriptionInternal() {
           failure_kind: didLastRecoveryAttemptThrow
             ? 'degraded'
             : 'missing_event',
-          feature_area: 'cloud',
+          feature_area: 'billing',
           operation: 'sync',
-          outcome: didLastRecoveryAttemptThrow ? 'failed' : 'timed_out',
-          assert_mode: 'soft'
+          outcome: didLastRecoveryAttemptThrow ? 'failed' : 'timed_out'
         },
         context: {
           checkout_attempt_id: attempt.attempt_id,
