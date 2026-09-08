@@ -8,6 +8,7 @@ import FormSection from './FormSection.vue'
 
 const stubs = {
   SectionLabel: true,
+  SocialProofBarSection: true,
   HubspotFormEmbed: {
     props: ['formId'],
     template: '<div data-testid="hubspot-form" :data-form-id="formId" />'

@@ -71,6 +71,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.comfyEnterprise', locale),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds', locale),
+              href: routes.managedBuilds
             }
           ]
         },
@@ -193,7 +197,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '/customers#hero-video'
+          href: routes.customerVideoBlackMath
         }
       },
       columns: [

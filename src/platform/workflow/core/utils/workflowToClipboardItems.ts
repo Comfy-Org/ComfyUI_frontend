@@ -33,29 +33,29 @@ function getLinks(
 ): SerialisableLLink[] {
   if (graph.version !== 0.4) return graph.links ?? []
 
+  const presentation = graph.extra?.linkPresentation
   const parentIds = new Map<number, number | undefined>(
-    graph.extra?.linkExtensions?.map(({ id, parentId }) => [
-      Number(id),
+    graph.extra?.linkExtensions?.map(({ id: extensionId, parentId }) => [
+      Number(extensionId),
       parentId
     ])
   )
   return (graph.links ?? []).map(
-    ([
-      id,
-      origin_id,
-      origin_slot,
-      target_id,
-      target_slot,
-      type
-    ]): SerialisableLLink => ({
-      id,
-      origin_id,
-      origin_slot,
-      target_id,
-      target_slot,
-      type,
-      parentId: parentIds.get(id)
-    })
+    ([id, origin_id, origin_slot, target_id, target_slot, type]) => {
+      const link: SerialisableLLink = {
+        id,
+        origin_id,
+        origin_slot,
+        target_id,
+        target_slot,
+        type,
+        parentId: parentIds.get(id)
+      }
+      const entry = presentation?.[id]
+      if (entry?.hidden === true) link.hidden = true
+      if (typeof entry?.label === 'string') link.label = entry.label
+      return link
+    }
   )
 }
 

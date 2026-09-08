@@ -1,4 +1,7 @@
 import { remove } from 'es-toolkit'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
@@ -374,7 +377,10 @@ export class LinkConnector {
             const renderLink = new ToOutputFromIoNodeLink(
               network,
               subgraphTarget.node,
-              subgraphTarget.output
+              subgraphTarget.output,
+              undefined,
+              undefined,
+              link
             )
             renderLink.fromDirection = LinkDirection.NONE
             renderLinks.push(renderLink)
@@ -618,7 +624,9 @@ export class LinkConnector {
         network,
         network.outputNode,
         output,
-        reroute
+        reroute,
+        undefined,
+        reroute.firstLink
       )
       renderLink.fromDirection = LinkDirection.NONE
       this.renderLinks.push(renderLink)
@@ -1033,13 +1041,21 @@ export class LinkConnector {
           link instanceof MovingOutputLink &&
           link.link.parentId !== undefined
         ) {
+          const graph = link.inputNode.graph
+          if (!graph) continue
+          const scope = graphScopeOf(graph)
+          const presentation = useLinkPresentationStore().getPresentation(
+            scope,
+            link.link.id
+          )
           // Reconnect link without reroutes
-          link.outputNode.connectSlots(
+          const reconnected = link.outputNode.connectSlots(
             link.outputSlot,
             link.inputNode,
             link.inputSlot,
             undefined
           )
+          transferLinkPresentation(scope, presentation, reconnected?.id)
         }
         continue
       }
