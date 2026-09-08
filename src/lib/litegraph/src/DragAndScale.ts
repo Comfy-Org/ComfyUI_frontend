@@ -194,6 +194,7 @@ export class DragAndScale {
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
         : [this.element.width, this.element.height]
+    if (width <= 0 || height <= 0) return
     const cw = width / window.devicePixelRatio
     const ch = height / window.devicePixelRatio
     let targetScale = this.scale
