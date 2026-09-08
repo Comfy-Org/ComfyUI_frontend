@@ -608,10 +608,10 @@ defineExpose({
           <button
             type="button"
             :aria-label="t('agent.openWorkflowTab', { name: workflow.name })"
-            class="inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
+            class="inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
             @click="emit('openReferenceWorkflow', workflow.id, workflow.name)"
           >
-            <span class="icon-[comfy--workflow] size-3.5 shrink-0" />
+            <span class="icon-[comfy--workflow] size-3 shrink-0" />
             <span class="max-w-40 truncate">{{ workflow.name }}</span>
           </button>
           <button

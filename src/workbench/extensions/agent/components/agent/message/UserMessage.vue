@@ -122,10 +122,10 @@ const splitAttachments = computed(() => {
         type="button"
         :aria-label="t('agent.openWorkflowTab', { name: workflow.name })"
         data-testid="workflow-reference-chip"
-        class="inline-flex max-w-40 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
+        class="inline-flex max-w-40 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
         @click="emit('openReferenceWorkflow', workflow.id, workflow.name)"
       >
-        <span class="icon-[comfy--workflow] size-3.5 shrink-0" />
+        <span class="icon-[comfy--workflow] size-3 shrink-0" />
         <span class="truncate">{{ workflow.name }}</span>
       </button>
       <span>{{ text }}</span>
