@@ -60,22 +60,25 @@ const mockCanvas = vi.hoisted(
   })
 )
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<typeof LiteGraphModule>()
-  return {
-    ...actual,
-    isOverNodeInput: mockIsOverNodeInput,
-    isOverNodeOutput: mockIsOverNodeOutput
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/litegraph'),
+  async (importOriginal) => {
+    const actual = await importOriginal<typeof LiteGraphModule>()
+    return {
+      ...actual,
+      isOverNodeInput: mockIsOverNodeInput,
+      isOverNodeOutput: mockIsOverNodeOutput
+    }
   }
-})
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: mockCanvas
   }
 }))
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: mockIsDOMWidget
 }))
 

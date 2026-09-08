@@ -6,7 +6,7 @@ import { nextTick, ref } from 'vue'
 import SelectionRectangle from './SelectionRectangle.vue'
 
 const rafCallbacks: Array<() => void> = []
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useRafFn: (cb: () => void) => {
     rafCallbacks.push(cb)
     return { pause: vi.fn(), resume: vi.fn() }
@@ -14,7 +14,7 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 const mockCanvas = ref<unknown>(null)
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     get canvas() {
       return mockCanvas.value

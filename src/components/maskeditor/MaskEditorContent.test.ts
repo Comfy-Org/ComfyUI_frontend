@@ -61,39 +61,39 @@ const mockDialogStore = vi.hoisted(() => ({
   closeDialog: vi.fn()
 }))
 
-vi.mock('@/composables/maskeditor/useKeyboard', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useKeyboard'), () => ({
   useKeyboard: () => mockKeyboard
 }))
 
-vi.mock('@/composables/maskeditor/usePanAndZoom', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/usePanAndZoom'), () => ({
   usePanAndZoom: () => mockPanZoom
 }))
 
-vi.mock('@/composables/maskeditor/useToolManager', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useToolManager'), () => ({
   useToolManager: () => mockToolManager
 }))
 
-vi.mock('@/composables/maskeditor/useImageLoader', () => ({
+vi.mock(import('@/composables/maskeditor/useImageLoader'), () => ({
   useImageLoader: () => mockImageLoader
 }))
 
-vi.mock('@/composables/maskeditor/useMaskEditorLoader', () => ({
+vi.mock(import('@/composables/maskeditor/useMaskEditorLoader'), () => ({
   useMaskEditorLoader: () => mockMaskEditorLoader
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/stores/maskEditorDataStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorDataStore'), () => ({
   useMaskEditorDataStore: () => mockDataStore
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => mockDialogStore
 }))
 
-vi.mock('@/components/common/LoadingOverlay.vue', () => ({
+vi.mock<unknown>(import('@/components/common/LoadingOverlay.vue'), () => ({
   default: {
     name: 'LoadingOverlayStub',
     props: ['loading', 'size'],
@@ -101,7 +101,7 @@ vi.mock('@/components/common/LoadingOverlay.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/ToolPanel.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/ToolPanel.vue'), () => ({
   default: {
     name: 'ToolPanelStub',
     props: ['toolManager'],
@@ -109,7 +109,7 @@ vi.mock('@/components/maskeditor/ToolPanel.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/PointerZone.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/PointerZone.vue'), () => ({
   default: {
     name: 'PointerZoneStub',
     props: ['toolManager', 'panZoom'],
@@ -117,7 +117,7 @@ vi.mock('@/components/maskeditor/PointerZone.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/SidePanel.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/SidePanel.vue'), () => ({
   default: {
     name: 'SidePanelStub',
     props: ['toolManager'],
@@ -125,7 +125,7 @@ vi.mock('@/components/maskeditor/SidePanel.vue', () => ({
   }
 }))
 
-vi.mock('@/components/maskeditor/BrushCursor.vue', () => ({
+vi.mock<unknown>(import('@/components/maskeditor/BrushCursor.vue'), () => ({
   default: {
     name: 'BrushCursorStub',
     props: ['containerRef'],

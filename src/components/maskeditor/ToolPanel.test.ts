@@ -21,7 +21,7 @@ const initialMock = () =>
 
 let mockStore: ReturnType<typeof initialMock>
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
