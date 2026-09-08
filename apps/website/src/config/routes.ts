@@ -115,6 +115,14 @@ export function localizeHref(
   locale: Locale = DEFAULT_LOCALE
 ): string {
   if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
+  // A query or fragment is not part of the route. `/customers#hero-video` was
+  // compared against a route list holding `/customers`, missed, and returned
+  // unprefixed — so a link into a section of a published page would leave the
+  // locale. The suffix is set aside for the checks and put back afterwards.
+  const suffixAt = href.search(/[?#]/)
+  if (suffixAt !== -1) {
+    return `${localizeHref(href.slice(0, suffixAt), locale)}${href.slice(suffixAt)}`
+  }
   // The same predicate the hreflang emitter uses. It matched whole paths here
   // and prefixes there, so a page nested under an invariant route was localized
   // by one and not the other: /zh-CN/models linked to

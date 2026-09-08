@@ -43,6 +43,26 @@ describe('localizeHref', () => {
   })
 
   /**
+   * A query or fragment is not part of the route. Checking it as one sent a
+   * link into a section of a published page back to the English tree.
+   */
+  it('keeps a query or fragment while localizing the path', () => {
+    expect(localizeHref('/cloud#pricing', 'zh-CN')).toBe('/zh-CN/cloud#pricing')
+    expect(localizeHref('/cloud?ref=nav', 'zh-CN')).toBe('/zh-CN/cloud?ref=nav')
+    expect(localizeHref('/about#team', 'ja')).toBe('/ja/about#team')
+  })
+
+  it('still refuses to localize a held-back route that carries one', () => {
+    expect(localizeHref('/cli#install', 'ja')).toBe('/cli#install')
+  })
+
+  it('still refuses to localize an invariant route that carries one', () => {
+    expect(localizeHref('/terms-of-service#scope', 'zh-CN')).toBe(
+      '/terms-of-service#scope'
+    )
+  })
+
+  /**
    * Japanese publishes tier 1 and holds the long tail back. A held-back route
    * is left unprefixed so nothing on the site links to a page that is not
    * published, which is the same predicate the hreflang emitter reads.
