@@ -24,6 +24,7 @@ const mockEnsureWorkspaceAuthHeader = vi.fn()
 const mockEnsureWorkspaceToken = vi.fn()
 const mockClearWorkspaceContext = vi.fn()
 const mockMintAtLogin = vi.fn().mockResolvedValue(false)
+const mockSyncUnifiedIdentity = vi.fn()
 let mockUnifiedToken: string | null = null
 const mockResetForIdentityChange = vi.fn()
 const mockInitializeWorkspaces = vi.fn().mockResolvedValue(undefined)
@@ -39,6 +40,7 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
     getUnifiedToken: () => mockUnifiedToken ?? undefined,
     clearWorkspaceContext: mockClearWorkspaceContext,
     mintAtLogin: mockMintAtLogin,
+    syncUnifiedIdentity: mockSyncUnifiedIdentity,
     get unifiedToken() {
       return mockUnifiedToken
     }
