@@ -7,6 +7,7 @@ import type { AccountUser, SessionErrorCode } from '@comfyorg/account/core'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
+  createWebCrossTabRefreshPort,
   isPermanentSessionError
 } from '@comfyorg/account/core'
 
@@ -819,6 +820,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
+  // One tab per (uid, workspace) proactively refreshes; the rest adopt its
+  // published credential. Undefined where the browser lacks the APIs, which
+  // falls back to per-tab refresh.
+  const crossTabRefreshPort = createWebCrossTabRefreshPort()
+
   const unifiedSessionClient = createSessionClient({
     exchangeUrl: workspaceApiUrl('/auth/token'),
     // In-memory only: a persisted JWT can outlive its server expiry, so a
@@ -832,7 +838,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       bufferMs: TOKEN_REFRESH_BUFFER_MS,
       retryBaseMs: UNIFIED_REFRESH_RETRY_BASE_MS,
       maxRetries: MAX_SCHEDULED_REFRESH_RETRIES,
-      onScheduledOutcome: handleScheduledRefreshOutcome
+      onScheduledOutcome: handleScheduledRefreshOutcome,
+      ...(crossTabRefreshPort && {
+        crossTab: { port: crossTabRefreshPort }
+      })
     }
   })
 
