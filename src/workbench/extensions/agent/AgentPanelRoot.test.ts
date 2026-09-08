@@ -151,6 +151,7 @@ const hostStores = vi.hoisted(() => ({
       graph?: { id?: string }
       id: string | number
     }) => string
+    closeWorkflow: ReturnType<typeof vi.fn>
     createNewTemporary: ReturnType<typeof vi.fn>
   },
   canvas: null as unknown as {
@@ -2479,6 +2480,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(minted?.filename).toBe('Video test')
     expect(minted?.activeState?.nodes).toHaveLength(0)
     expect(minted?.activeState?.links).toHaveLength(0)
+    expect(minted?.activeState?.extra).toEqual({
+      ds: { offset: [0, 0], scale: 1 }
+    })
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
@@ -2516,6 +2520,29 @@ describe('AgentPanelRoot workflow binding', () => {
         hostStores.workflow.tabs.get('workflows/Unsaved Workflow.json')
       ).toBeDefined()
     )
+  })
+
+  it('agent_active_tab closes the minted tab when opening it fails', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('work here')
+    workflowService.openWorkflow.mockRejectedValueOnce(new Error('disk full'))
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(hostStores.workflow.closeWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'workflows/Video test.json' })
+      )
+    )
+    expect(
+      hostStores.workflow.openTabPaths.has('workflows/Video test.json')
+    ).toBe(false)
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
