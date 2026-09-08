@@ -107,7 +107,12 @@ export function createAgentRestClient() {
       retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
         ? Number(retryAfterHeader)
         : undefined
-    return new AgentApiError(message, response.status, body, retryAfterSeconds)
+    return new AgentApiError(
+      message,
+      response.status,
+      body,
+      Number.isSafeInteger(retryAfterSeconds) ? retryAfterSeconds : undefined
+    )
   }
 
   async function request<T>(
