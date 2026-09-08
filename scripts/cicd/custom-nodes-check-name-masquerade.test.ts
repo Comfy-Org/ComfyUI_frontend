@@ -475,6 +475,22 @@ describe('custom-node check-run names cannot masquerade as the ref grade', () =>
           rendered,
           `proof row ${proofRow} reports the caller grep`
         ).not.toBe(grep)
+
+        // A proof row outranks `record_interactions`, not the other way round:
+        // the proof gate derives its expected collected count from the tier
+        // tests that row's own regex selects (custom-node-results.ts), so any
+        // other filter fails the gate on a count mismatch rather than proving
+        // anything. A dispatch that sets both still runs the proof.
+        expect(
+          renderName(
+            assignment,
+            dispatchContext(
+              { grep, record_interactions: true },
+              { proof_row: proofRow }
+            )
+          ),
+          `proof row ${proofRow} yields its regex to record_interactions`
+        ).toBe(rendered)
       }
     }
   })
