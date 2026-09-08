@@ -2,13 +2,19 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-dist="$(realpath "${PLAYWRIGHT_OFFLINE_DIST:-$repo_root/dist}")"
+dist="$(realpath -m "${PLAYWRIGHT_OFFLINE_DIST:-$repo_root/dist}")"
 image="${COMFYUI_TEST_IMAGE:-ghcr.io/comfy-org/comfyui-ci-container:0.0.22}"
 
-test -f "$dist/index.html"
-test -d "$repo_root/node_modules"
+test -f "$dist/index.html" || {
+  echo "No build at $dist. Run pnpm build or set PLAYWRIGHT_OFFLINE_DIST." >&2
+  exit 1
+}
+test -d "$repo_root/node_modules" || {
+  echo "No node_modules. Run pnpm install --frozen-lockfile on Linux." >&2
+  exit 1
+}
 
-exec docker run --rm --pull never --network none --ipc host --user 0:0 \
+exec docker run --rm --pull never --network none --shm-size=2g --user 0:0 \
   --mount "type=bind,src=$repo_root,dst=$repo_root" \
   --mount "type=bind,src=$dist,dst=/frontend,readonly" \
   --mount "type=bind,src=$repo_root/tools/devtools,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
@@ -23,5 +29,5 @@ exec docker run --rm --pull never --network none --ipc host --user 0:0 \
       cat /tmp/comfyui.log
       exit 1
     }
-    node node_modules/@playwright/test/cli.js test --retries=0 "$@"
+    node node_modules/@playwright/test/cli.js test "$@" --retries=0
   ' bash "$@"

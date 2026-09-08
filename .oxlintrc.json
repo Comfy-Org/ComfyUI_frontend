@@ -175,6 +175,31 @@
     },
     {
       "files": ["browser_tests/**/*.ts"],
+      "excludeFiles": ["browser_tests/fixtures/networkIsolationFixture.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@playwright/test",
+                "importNames": ["test"],
+                "message": "Use a fixture based on networkIsolationFixture instead of raw Playwright test."
+              }
+            ]
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "continue",
+            "message": "Use route.fallback() so requests pass through the network policy."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["browser_tests/**/*.ts"],
       "jsPlugins": ["eslint-plugin-playwright"],
       "rules": {
         "typescript/no-explicit-any": "error",

@@ -195,10 +195,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       }
     )
 
-    await comfyPage.page.route('**/templates/index.json', (route) =>
-      route.continue()
-    )
-
     await comfyPage.settings.setSetting('Comfy.Locale', locale)
 
     const localeRequestPromise = comfyPage.page.waitForRequest(

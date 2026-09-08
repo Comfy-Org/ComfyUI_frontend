@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
 import type {

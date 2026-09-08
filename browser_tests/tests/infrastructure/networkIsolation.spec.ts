@@ -1,6 +1,11 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { apiKeyAuthFixture } from '@e2e/fixtures/apiKeyAuthFixture'
+import { cloudAppFixture } from '@e2e/fixtures/cloudAppFixture'
+import { localAuthFixture } from '@e2e/fixtures/localAuthFixture'
+import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
+import { workspaceRailAuthFixture } from '@e2e/fixtures/workspaceRailAuthFixture'
 
 test.describe('Network isolation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page }) => {
@@ -143,3 +148,33 @@ test.describe('Network isolation', { tag: '@smoke' }, () => {
     )
   })
 })
+
+for (const [name, fixture] of [
+  ['cloudAppFixture', cloudAppFixture],
+  ['localAuthFixture', localAuthFixture],
+  ['templateApiFixture', templateApiFixture],
+  ['workspaceRailAuthFixture', workspaceRailAuthFixture],
+  ['apiKeyAuthFixture', apiKeyAuthFixture]
+] as const) {
+  fixture(
+    `${name} reports external requests at teardown`,
+    { tag: '@smoke' },
+    async ({ page }) => {
+      const frontend =
+        process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+      await page.goto(`${frontend}/api/users`)
+      expect(
+        await page.evaluate(() =>
+          fetch('https://network-test.invalid/data').then(
+            () => 'loaded',
+            () => 'blocked'
+          )
+        )
+      ).toBe('blocked')
+      fixture.fail(
+        true,
+        'The fixture must report the blocked request at teardown'
+      )
+    }
+  )
+}

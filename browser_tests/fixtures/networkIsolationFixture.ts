@@ -125,7 +125,6 @@ export const networkIsolationFixture = base.extend<{
     )
 
     await use(context)
-    await context.close()
     restore()
   }
 })

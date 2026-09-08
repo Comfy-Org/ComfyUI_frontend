@@ -80,7 +80,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     await page.route('**/templates/default.json', async (route) => {
       notifyWorkflowRequested()
       await requestUnblocked
-      return route.continue()
+      return route.fallback()
     })
 
     await comfyPage.goto({ url: `${comfyPage.url}/?template=default` })

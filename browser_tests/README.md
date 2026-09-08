@@ -135,7 +135,9 @@ even if the app catches the network error. Popup mocks belong on `context`,
 not `page`, so they cover the first navigation.
 
 Use `route.fallback()` for unmatched requests. `route.continue()` bypasses
-other handlers. Keep auth mocks in the existing auth helpers; shared mocks
+other handlers. Oxlint bans raw Playwright `test` imports and `continue()`
+outside `networkIsolationFixture.ts`. Extend that fixture for custom test roots.
+Keep auth mocks in the existing auth helpers; shared mocks
 only replace third-party scripts, model metadata lookups, and carousel media.
 Use scoped `test.use({ userAgent })` rather than `browser.newContext()` so
 custom user agents retain the fixture's isolation.
@@ -159,6 +161,13 @@ and a cached CI image. `COMFYUI_TEST_IMAGE` selects a source-built image;
 `PLAYWRIGHT_OFFLINE_DIST` selects another built distribution, such as a cloud
 build for `--project=cloud` or `--project=mobile-safari`. Remote backend runs
 still use the regular test commands, not the offline runner.
+
+The container runs as root so the bundled backend can write to `/ComfyUI`.
+Generated reports are root-owned on the host. Before running tests outside the
+container, restore ownership of each generated output directory with
+`sudo chown -R "$(id -u):$(id -g)" test-results`, substituting
+`playwright-report`, `blob-report`, `coverage`, or your `--output` directory
+when used.
 
 ## Recording Tests (For Non-Developers)
 
