@@ -3474,6 +3474,7 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "linkedInputFor": "{name}: Linked input",
     "boolean": {
       "true": "true",
       "false": "false"

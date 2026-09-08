@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
+  createTestSubgraphData,
+  createTestSubgraphNode,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -15,6 +17,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -355,6 +358,114 @@ describe('promoted subgraph widgets', () => {
 
     expect(processHostWidget(graph, hostNode).hasError).toBe(true)
   })
+
+  it('shows a link indicator only for subgraph input connections', () => {
+    const { graph, subgraph } = setupComplexPromotionFixture()
+    const node = subgraph.getNodeById(INTERIOR_ID)
+    if (!node) throw new Error('Expected the interior node')
+    const widget = node.widgets?.find((widget) => widget.name === 'string_a')
+    if (!widget) throw new Error('Expected the interior widget')
+    widget.value = 'Local text that should not appear while linked'
+
+    function processInteriorWidget(node: LGraphNode) {
+      return computeProcessedWidgets({
+        nodeData: node._state,
+        graphId: graph.id,
+        showAdvanced: false,
+        isGraphReady: true,
+        rootGraph: graph,
+        ui: {
+          ...noopUi,
+          getTooltipConfig: (_widget, fullValue) => ({
+            value: ['Input description', fullValue].filter(Boolean).join('\n\n')
+          })
+        }
+      }).find((widget) => widget.simplified.name === 'string_a')
+    }
+
+    expect(processInteriorWidget(node)?.simplified.linkedDisplay).toBe(
+      'control'
+    )
+    expect(processInteriorWidget(node)?.tooltipConfig).toEqual({
+      value: 'Input description'
+    })
+    node.disconnectInput(0)
+    expect(
+      processInteriorWidget(node)?.simplified.linkedDisplay
+    ).toBeUndefined()
+    expect(processInteriorWidget(node)?.tooltipConfig).toEqual({
+      value: `Input description\n\n${widget.value}`
+    })
+
+    const source = new LGraphNode('Source')
+    subgraph.add(source)
+    source.addOutput('text', 'STRING')
+    expect(source.connect(0, node, 0)).toBeTruthy()
+    expect(processInteriorWidget(node)?.slotMetadata?.linked).toBe(true)
+    expect(
+      processInteriorWidget(node)?.simplified.linkedDisplay
+    ).toBeUndefined()
+
+    node.disconnectInput(0)
+    subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+    expect(processInteriorWidget(node)?.simplified.linkedDisplay).toBe(
+      'control'
+    )
+  })
+
+  it('shows a link indicator on a nested host only when connected to its containing subgraph input', () => {
+    const { graph, subgraph } = setupComplexPromotionFixture()
+    const outer = graph.createSubgraph(createTestSubgraphData())
+    outer.addInput('text', 'STRING')
+    const host = createTestSubgraphNode(subgraph, { parentGraph: outer })
+    outer.add(host)
+
+    expect(
+      processHostWidget(graph, host).simplified.linkedDisplay
+    ).toBeUndefined()
+    outer.inputNode.slots[0].connect(host.inputs[0], host)
+    expect(processHostWidget(graph, host).simplified.linkedDisplay).toBe(
+      'control'
+    )
+  })
+
+  it.for([
+    ['number', 'control'],
+    ['number', 'control', true],
+    ['boolean', 'control'],
+    ['customtext', 'multiline'],
+    ['combo', 'control'],
+    ['asset', 'control'],
+    ['color', undefined],
+    ['gradientslider', undefined],
+    ['curve', undefined]
+  ] as const)(
+    'limits the boundary link indicator for %s widgets (display: %s, auxiliary control: %s)',
+    ([type, display, hasControl]) => {
+      const { graph, subgraph } = setupComplexPromotionFixture()
+      const node = subgraph.getNodeById(INTERIOR_ID)
+      const widget = node?.widgets?.find((widget) => widget.name === 'string_a')
+      if (!node || !widget) throw new Error('Expected the interior widget')
+      widget.type = type
+      if (hasControl) {
+        widget.linkedWidgets = [
+          createMockWidget({ value: 'randomize', [IS_CONTROL_WIDGET]: true })
+        ]
+      }
+
+      const result = computeProcessedWidgets({
+        nodeData: node._state,
+        graphId: graph.id,
+        showAdvanced: false,
+        isGraphReady: true,
+        rootGraph: graph,
+        ui: noopUi
+      }).find((widget) => widget.simplified.name === 'string_a')
+
+      expect(result).toBeDefined()
+      expect(result?.simplified.linkedDisplay).toBe(display)
+    }
+  )
 
   it('resolves the widget locator to the interior source node', () => {
     const { graph, subgraph, hostNode } = setupComplexPromotionFixture()

@@ -154,8 +154,27 @@ test.describe(
 
           const interiorTextareas = comfyPage.page
             .locator('[data-node-id]')
-            .getByRole('textbox')
+            .getByRole('textbox', { includeHidden: true })
           await expect(interiorTextareas).toHaveCount(2)
+          await expect(interiorTextareas.nth(0)).toBeHidden()
+          await expect(interiorTextareas.nth(1)).toBeHidden()
+          await expect(
+            comfyPage.page.getByRole('img', { name: 'text: Linked input' })
+          ).toHaveCount(2)
+
+          const interiorNodes = comfyPage.vueNodes.getNodeByTitle(
+            'CLIP Text Encode (Prompt)'
+          )
+          await expect(interiorNodes).toHaveCount(2)
+          const firstInteriorNode = interiorNodes.nth(0)
+          const secondInteriorNode = interiorNodes.nth(1)
+          const sampler = comfyPage.vueNodes.getNodeByTitle('KSampler')
+          await firstInteriorNode.getByTestId('node-collapse-button').focus()
+          await comfyPage.page.keyboard.press('Tab')
+          await expect(secondInteriorNode).toBeFocused()
+          await secondInteriorNode.getByTestId('node-collapse-button').focus()
+          await comfyPage.page.keyboard.press('Tab')
+          await expect(sampler).toBeFocused()
 
           await comfyPage.subgraph.exitViaBreadcrumb()
 
