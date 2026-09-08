@@ -53,8 +53,8 @@ answers "did this PR regress a scenario on a fixed identity." It cannot answer
 
 ## Decision
 
-Production startup telemetry is a separate lane from ADR 0022's lab
-measurement, and uses the native RUM primitive for each question rather than
+Production startup telemetry is a separate lane from
+ADR-PERF-BENCHMARKS-0022's lab measurement, and uses the native RUM primitive for each question rather than
 reconstructing one.
 
 ### Which primitive carries what
@@ -96,14 +96,15 @@ loading-time percentiles down. Failures are counted through the action's
 
 ### Datadog is reached directly; PostHog through the registry
 
-ADR 0013 routes dual-emission through `TelemetryRegistry`. This signal
+ADR-TELEMETRY-ROUTING-0013 routes dual-emission through `TelemetryRegistry`.
+This signal
 deviates for Datadog only: the registry does not exist during early startup,
 which is precisely when the signal matters. `reportError()` already bypasses
 the registry for the same reason and the same sink. `perfMark.ts` sits under
 `src/platform/telemetry/**`, which `no-restricted-imports` permits to import
 the sinks behind an explicit disable comment.
 
-PostHog receives the same row through the registry, preserving ADR 0013's
+PostHog receives the same row through the registry, preserving that ADR's
 split: Datadog for alerting, PostHog for exploration.
 
 ## Consequences
@@ -131,12 +132,14 @@ split: Datadog for alerting, PostHog for exploration.
   system of record.
 - Emitting to Datadog directly rather than through the registry means a future
   sink added to the registry does not automatically receive this signal.
-- Datadog and PostHog will disagree on volume, as ADR 0013 already notes for
-  every dual-emitted event. Build monitors on rates, not absolute counts.
+- Datadog and PostHog will disagree on volume, as ADR-TELEMETRY-ROUTING-0013
+  already notes for every dual-emitted event. Build monitors on rates, not
+  absolute counts.
 
 ### Neutral
 
-- This lane's numbers are not comparable to an ADR 0022 benchmark sample:
+- This lane's numbers are not comparable to an ADR-PERF-BENCHMARKS-0022
+  benchmark sample:
   real sessions have no controlled execution identity. It is not a CI gate. A
   regression surfaced here is reproduced in the lab lane before it is acted on.
 
@@ -161,7 +164,8 @@ cannot answer the affected-user-count question that motivated the work.
 `view.loading_time` and a misuse of a primitive meant for discrete in-view
 operations.
 
-**Extend ADR 0022's harness to production.** Rejected: it depends on a fixed
+**Extend ADR-PERF-BENCHMARKS-0022's harness to production.** Rejected: it
+depends on a fixed
 execution identity — pinned browser, runner image, GPU, viewport — that real
 sessions do not have.
 
