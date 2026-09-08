@@ -505,17 +505,20 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot>
-          <Tooltip
-            :config="buildAgentTooltipConfig(t('agent.addToPrompt'))"
-            side="top"
-          >
-            <DropdownMenuTrigger
-              :aria-label="t('agent.addToPrompt')"
-              class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+          <DropdownMenuTrigger as-child>
+            <Tooltip
+              :config="buildAgentTooltipConfig(t('agent.addToPrompt'))"
+              side="top"
             >
-              <span class="icon-[lucide--plus] size-4" />
-            </DropdownMenuTrigger>
-          </Tooltip>
+              <button
+                type="button"
+                :aria-label="t('agent.addToPrompt')"
+                class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+              >
+                <span class="icon-[lucide--plus] size-4" />
+              </button>
+            </Tooltip>
+          </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent
               side="top"

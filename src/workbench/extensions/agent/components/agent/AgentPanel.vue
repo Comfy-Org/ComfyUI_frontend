@@ -256,17 +256,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             }}</span>
           </button>
           <DropdownMenuRoot v-if="sessionId">
-            <Tooltip
-              :config="buildAgentTooltipConfig(t('agent.chatOptions'))"
-              side="bottom"
-            >
-              <DropdownMenuTrigger
-                :aria-label="t('agent.chatOptions')"
-                class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
+            <DropdownMenuTrigger as-child>
+              <Tooltip
+                :config="buildAgentTooltipConfig(t('agent.chatOptions'))"
+                side="bottom"
               >
-                <span class="icon-[lucide--chevron-down] size-3" />
-              </DropdownMenuTrigger>
-            </Tooltip>
+                <button
+                  type="button"
+                  :aria-label="t('agent.chatOptions')"
+                  class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
+                >
+                  <span class="icon-[lucide--chevron-down] size-3" />
+                </button>
+              </Tooltip>
+            </DropdownMenuTrigger>
             <DropdownMenuPortal>
               <DropdownMenuContent
                 side="bottom"
