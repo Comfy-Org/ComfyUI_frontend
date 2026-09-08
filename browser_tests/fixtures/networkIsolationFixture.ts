@@ -104,6 +104,9 @@ export const networkIsolationFixture = base.extend<{
     await context.route('https://apis.google.com/js/api.js**', (route) =>
       route.fulfill({ status: 503, body: '' })
     )
+    await context.route('https://cloud.comfy.org/cdn-cgi/trace', (route) =>
+      route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' })
+    )
     for (const slide of HERO_SLIDES) {
       await context.route(slide.poster, (route) =>
         route.fulfill({ path: assetPath('image32x32.webp') })

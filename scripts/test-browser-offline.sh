@@ -14,8 +14,8 @@ exec docker run --rm --pull never --network none --ipc host --user 0:0 \
   --mount "type=bind,src=$repo_root/tools/devtools,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
   --workdir "$repo_root" \
   --env CI=true \
-  --env PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 \
-  --env PLAYWRIGHT_SETUP_API_URL=http://127.0.0.1:8188 \
+  --env PLAYWRIGHT_TEST_URL=http://localhost:8188 \
+  --env PLAYWRIGHT_SETUP_API_URL=http://localhost:8188 \
   "$image" bash -euc '
     python3 /ComfyUI/main.py --cpu --multi-user --front-end-root /frontend \
       >/tmp/comfyui.log 2>&1 &

@@ -2,7 +2,10 @@ import { expect } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
-import type { components as RegistryComponents } from '@comfyorg/registry-types'
+import type {
+  components as RegistryComponents,
+  operations as RegistryOperations
+} from '@comfyorg/registry-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -231,6 +234,26 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       async (route) => {
         await route.fulfill({ json: registryListResponse })
       }
+    )
+
+    await comfyPage.page.route(
+      'https://api.comfy.org/bulk/nodes/versions',
+      (route) =>
+        route.fulfill({
+          json: {
+            node_versions: []
+          } satisfies RegistryComponents['schemas']['BulkNodeVersionsResponse']
+        })
+    )
+    await comfyPage.page.route(
+      'https://api.comfy.org/nodes/test-pack-a/versions/1.0.0/comfy-nodes**',
+      (route) =>
+        route.fulfill({
+          json: {
+            comfy_nodes: [],
+            totalNumberOfPages: 0
+          } satisfies RegistryOperations['ListComfyNodes']['responses'][200]['content']['application/json']
+        })
     )
 
     await comfyPage.page.route(

@@ -58,6 +58,9 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
     await page.goto(`${comfyPage.url}/api/users`)
     await page.evaluate((id) => {
       localStorage.clear()
