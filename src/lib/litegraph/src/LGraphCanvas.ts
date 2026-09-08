@@ -4027,15 +4027,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           const graph = this.graph
           const link = graph?.links.get(linkId)
-          if (graph && link) {
-            serialisable.links.push({
-              ...link.asSerialisable(),
-              ...useLinkPresentationStore().getPresentation(
-                graphScopeOf(graph),
-                linkId
-              )
-            })
-          }
+          if (!graph || !link) continue
+
+          serialisable.links.push({
+            ...link.asSerialisable(),
+            ...useLinkPresentationStore().getPresentation(
+              graphScopeOf(graph),
+              linkId
+            )
+          })
         }
 
         // Find all unique referenced subgraphs
