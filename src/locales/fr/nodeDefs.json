@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Attention clairsemée par blocs via comfy_kitchen : chaque bloc de requêtes porte attention exactement à un sous-ensemble sélectionné de blocs de clés, réduisant les calculs d’attention. Le gain de vitesse relatif augmente avec la longueur de séquence, car les séquences courtes sont généralement plus rapides en dense. En dehors de la plage active, pour dense_blocks et sous min_tokens, le modèle utilise le backend d’attention dense du modèle actif.",
-    "display_name": "Attention clairsemée par blocs",
+    "description": "Applique une attention clairsemée par blocs aux couches d’attention éligibles du modèle, réduisant le calcul pour les longues séquences. Le gain de vitesse augmente avec la longueur de la séquence, car les séquences courtes sont généralement plus rapides en mode dense. En dehors de start/end_percent, dans dense_blocks et sous min_tokens, le modèle utilise le backend d’attention dense du modèle. Utilisez le nœud Backend d’attention du modèle pour sélectionner cette solution de repli.",
+    "display_name": "Attention clairsemée du modèle",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Dense après ce point de la planification."
+        "tooltip": "Pourcentage auquel l’attention clairsemée se termine. Après ce point, l’attention redevient dense."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Les séquences plus courtes que cette valeur restent denses."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Le modèle à modifier."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Détermine comment les blocs de clés exacts sont choisis. Sol-Attn : seuil adaptatif par tête/bloc. top-k (SLA) : keep_percent fixe partout, recommandé uniquement avec des poids entraînés. VSA (FastVideo) : pavage en cubes et branche grossière de FastH3-VSA ; nécessite des poids entraînés pour cela."
+        "tooltip": "Méthode utilisée pour choisir les blocs de clés pour une attention complète au niveau des tokens. sol-attn : Sparsifying Online Attention utilise un seuil adaptatif sans entraînement pour chaque tête d’attention et bloc de requêtes. sla : Sparse-Linear Attention conserve un pourcentage fixe des blocs de clés ayant les meilleurs scores ; à utiliser uniquement avec des poids de modèle entraînés pour ce modèle. vsa : Video Sparse Attention (FastVideo) utilise un pavage de cubes vidéo 3D et une branche d’attention grossière apprise ; nécessite des poids de modèle FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Dense avant ce point de la planification."
+        "tooltip": "Pourcentage à partir duquel l’attention clairsemée commence. Avant ce point, l’attention reste dense."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Indique dans les journaux si chaque forme d’attention a utilisé l’attention clairsemée ou pourquoi elle est restée dense."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "Le modèle avec l’attention clairsemée par blocs appliquée."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Ajoute des images clés de détail à un latent vidéo. Chaque image clé est une trame latente de tokens dont la position RoPE couvre une seule image au niveau des pixels ; elles sont débruitées avec la vidéo et ne font pas partie de la sortie décodée. Le placement se fait à raison d’un emplacement tous les interval_frames pixels, en ignorant les trames I2V, les guides existants et les images clés de détail déjà présentes sur le cond. Les images clés connectées ne fournissent que le contenu et sont replacées sur ce canevas, sauf si frame_indices est défini. Extrayez-les avec LTXV Séparer les images clés générées. Nécessite un checkpoint entraîné pour les images clés générées (contenant keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Ajouter des images clés générées",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Indices facultatifs d’images au niveau des pixels. Laissez vide pour effectuer le placement à partir de interval_frames sur le canevas actuel. Lorsque défini, cette liste indique le placement (les images clés connectées sont associées dans l’ordre). La dernière image est autorisée ; l’image 0 ne l’est pas (elle est déjà un token autonome)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Intervalle en images au niveau des pixels pour le placement automatique. La valeur par défaut, 24, correspond à environ une image clé par seconde à 24 fps. Les pixels occupés sont ignorés. Ignoré lorsque frame_indices est défini."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Contenu facultatif pour initialiser les nouvelles images clés. Connectez des images clés d’un nœud Separate précédent (même taille spatiale), ou un latent vidéo brut pour copier l’image la plus proche dans chaque nouvel emplacement (par ex. après une mise à l’échelle temporelle). Elles sont toujours débruitées, et non épinglées comme guides. Les indices enregistrés sur un latent d’images clés sont ignorés sauf si frame_indices est défini. N’a d’effet que lorsque l’échantillonnage commence sous sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latent vidéo 5D brut avec lequel générer des images clés. Ajoutez-les avant Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif auquel les images clés sont associées."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif auquel les images clés sont associées."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Utilisé uniquement pour lire les facteurs d’échelle du latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif avec l’attention des images clés générées appliquée."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif avec l’attention des images clés générées appliquée."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vidéo avec les images clés générées ajoutées sur T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Définit noise_mask sur 0 afin que ce latent reste propre durant l’échantillonnage. Fonctionne sur la vidéo ou l’audio. Utilisations typiques : geler l’audio avant Concat AV afin qu’il fournisse uniquement l’attention croisée, ou geler tout latent qui ne doit pas être débruité.",
+    "display_name": "LTXV Geler le latent",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latent vidéo ou audio à geler. L’audio est 4D ; la vidéo est 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Épingle les images clés générées lors d’une étape précédente comme guides d’image gelés sur un canevas ultérieur. Elles sont décodées comme images autonomes, redimensionnées si nécessaire, et écrites avec noise_mask=0 afin de ne pas être débruitées à nouveau. Après une mise à l’échelle temporelle, les indices enregistrés sont mis à l’échelle depuis le canevas sur lequel ils ont été générés vers celui-ci (mêmes instants). Utilisez override_frame_indices pour définir explicitement les positions. Pour continuer à générer (et débruiter) des images clés à de nouvelles positions, utilisez plutôt Ajouter des images clés générées.",
+    "display_name": "LTXV Convertir les images clés générées en guides",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "La sortie keyframes de LTXV Separate Generated Keyframes, qui contient l'index de l'image pixel à laquelle chaque image clé a été générée."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Le latent vidéo cible auquel ajouter les guides, par exemple celui mis à l'échelle temporellement."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Facultatif — verrouille aux images pixel indiquées au lieu des positions enregistrées (ou mises à l'échelle automatiquement). Indiquez un index par image clé. Laissez vide pour réutiliser les positions enregistrées, ou les mettre à l'échelle lorsque le canevas cible a une longueur différente (p. ex. après un x2 temporel)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Force du guide. 1.0 correspond à un verrouillage strict ; des valeurs inférieures l'assouplissent."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif avec les images clés verrouillées comme guides d'image."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif avec les images clés verrouillées comme guides d'image."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vidéo cible avec les images clés ajoutées comme guides figés."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "latent_audio",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Extrait d'un latent échantillonné les images clés générées ajoutées par LTXV Add Generated Keyframes, puis les retire du conditionnement. Séparez-les avant de mettre à l'échelle spatialement le latent vidéo. N'exécutez pas d'abord LTXV Crop Guides — il traite les images clés générées comme des guides jetables et les supprime.",
+    "display_name": "LTXV Séparer les images clés générées",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Renvoie les images clés sous forme de lot de latents à image unique. Désactivez cette option pour les obtenir sous la forme d'un seul latent multi-image, attendu par l'upsampler de latent et un Add Generated Keyframes ultérieur."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif dont les métadonnées des images clés générées ont été supprimées."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif dont les métadonnées des images clés générées ont été supprimées."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vidéo dont les images clés générées ont été retirées."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Les images clés extraites, étiquetées avec generated_keyframe_indices et generated_keyframe_num_frames. Transmettez-les à un Add Generated Keyframes ultérieur pour initialiser de nouveaux emplacements, ou à Generated Keyframes To Guides pour les verrouiller comme guides d'image figés (les index sont remappés si la longueur du canevas a changé)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Sélectionne l'implémentation d'attention dense pour le modèle. Lorsqu'il est utilisé avec Block Sparse Attention, ce backend est utilisé chaque fois que l'attention creuse est inactive ou non prise en charge.",
+    "display_name": "Backend d'attention du modèle",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "Le backend d'attention dense. L'attention Comfy Kitchen utilise une attention INT8 quantifiée et est disponible uniquement sur les GPU Nvidia et AMD."
       },
       "model": {
-        "name": "modèle"
+        "name": "modèle",
+        "tooltip": "Le modèle à modifier."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Le modèle avec le backend d'attention sélectionné."
       }
     }
   },

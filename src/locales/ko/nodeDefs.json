@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "comfy_kitchen을 통한 블록 희소 어텐션: 각 쿼리 블록이 선택된 키 블록 하위 집합에 정확히 어텐션하여 어텐션 연산량을 줄입니다. 짧은 시퀀스는 일반적으로 밀집 방식이 더 빠르므로, 시퀀스 길이가 길수록 상대적인 속도 향상도 커집니다. 활성 스케줄 범위 밖, dense_blocks 및 min_tokens 미만에서는 모델이 활성 밀집 모델 어텐션 백엔드를 사용합니다.",
-    "display_name": "블록 희소 어텐션",
+    "description": "적합한 모델 어텐션 레이어에 블록 희소 어텐션을 적용하여 긴 시퀀스의 연산량을 줄입니다. 짧은 시퀀스에서는 일반적으로 밀집 연산이 더 빠르므로, 속도 향상은 시퀀스 길이에 따라 커집니다. start/end_percent 범위 밖, dense_blocks 및 min_tokens 미만에서는 모델이 밀집 모델 어텐션 백엔드를 사용합니다. 해당 대체 방식을 선택하려면 Model Attention Backend 노드를 사용하세요.",
+    "display_name": "모델 희소 어텐션",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "스케줄의 이 지점 이후 밀집 방식으로 처리합니다."
+        "tooltip": "희소 어텐션이 종료되는 백분율 지점입니다. 이 지점 후에는 어텐션이 다시 밀집 상태로 돌아갑니다."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "이보다 짧은 시퀀스는 밀집 방식으로 유지됩니다."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "패치할 모델입니다."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "정확한 키 블록을 선택하는 방식입니다. Sol-Attn: 헤드/블록별 적응형 임계값. top-k (SLA): 모든 위치에서 고정된 keep_percent를 사용하며, 학습된 가중치에서만 권장됩니다. VSA (FastVideo): FastH3-VSA의 큐브 타일링 및 거친 분기를 사용하며, 이를 위해 학습된 가중치가 필요합니다."
+        "tooltip": "전체 토큰 수준 어텐션에 사용할 키 블록을 선택하는 방법입니다. sol-attn: Sparsifying Online Attention은 각 어텐션 헤드와 쿼리 블록에 학습이 필요 없는 적응형 임곗값을 사용합니다. sla: Sparse-Linear Attention은 점수가 가장 높은 키 블록의 고정 비율을 유지합니다. 이 패턴으로 학습된 모델 가중치에서만 사용하세요. vsa: Video Sparse Attention (FastVideo)은 3D 비디오 큐브 타일링과 학습된 거친 어텐션 분기를 사용하며 FastH3 모델 가중치가 필요합니다."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "스케줄의 이 지점 전까지 밀집 방식으로 처리합니다."
+        "tooltip": "희소 어텐션이 시작되는 백분율 지점입니다. 이 지점 전에는 어텐션이 밀집 상태로 유지됩니다."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "각 어텐션 형태에서 희소 어텐션이 사용되었는지, 또는 밀집 상태로 유지된 이유를 기록합니다."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "블록 희소 어텐션이 적용된 모델입니다."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "비디오 latent에 디테일링 키프레임을 추가합니다. 각 키프레임은 RoPE 위치가 단일 픽셀 프레임에 걸친 토큰으로 구성된 하나의 latent 프레임입니다. 비디오와 함께 디노이즈되며 디코딩 출력에는 포함되지 않습니다. interval_frames 픽셀마다 하나의 슬롯에 배치하며, I2V 프레임, 기존 가이드 및 cond에 이미 있는 디테일링 키프레임은 건너뜁니다. 연결된 키프레임은 콘텐츠 전용이며 frame_indices가 설정되지 않은 경우 이 캔버스에 다시 배치됩니다. LTXV Separate Generated Keyframes로 다시 분리할 수 있습니다. 생성된 키프레임용으로 학습된 체크포인트(keyframes_abs_pos_embedding을 포함하는 체크포인트)가 필요합니다.",
+    "display_name": "LTXV 생성된 키프레임 추가",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "선택적 픽셀 프레임 인덱스입니다. 현재 캔버스에서 interval_frames를 기준으로 배치하려면 비워 두세요. 설정하면 이 목록이 배치를 지정하며, 연결된 키프레임은 순서대로 일치합니다. 마지막 프레임은 허용되지만 프레임 0은 허용되지 않습니다(이미 독립형 토큰이기 때문입니다)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "자동 배치를 위한 픽셀 프레임 간격입니다. 기본값 24는 24fps에서 초당 약 하나의 키프레임입니다. 이미 점유된 픽셀은 건너뜁니다. frame_indices가 설정되면 무시됩니다."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "새 키프레임을 초기화하는 데 사용할 선택적 콘텐츠입니다. 이전 Separate의 키프레임(동일한 공간 크기)을 연결하거나, 일반 비디오 latent를 연결하여 각 새 슬롯에서 가장 가까운 프레임을 복사할 수 있습니다(예: 시간 업스케일 후). 이들은 가이드로 고정되지 않고 계속 디노이즈됩니다. keyframes latent에 기록된 인덱스는 frame_indices가 설정되지 않은 경우 무시됩니다. 샘플링이 sigma 1 미만에서 시작할 때만 효과가 있습니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "키프레임을 함께 생성할 일반 5D 비디오 latent입니다. Concat AV Latent 전에 추가하세요."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "키프레임이 연결될 네거티브 컨디셔닝입니다."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "키프레임이 연결될 포지티브 컨디셔닝입니다."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "latent 스케일 계수를 읽는 용도로만 사용됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "생성된 키프레임 어텐션이 연결된 포지티브 컨디셔닝입니다."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "생성된 키프레임 어텐션이 연결된 네거티브 컨디셔닝입니다."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T에 생성된 키프레임이 추가된 비디오 latent입니다."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV 가이드 추가",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask를 0으로 설정하여 샘플링 중 이 latent가 깨끗하게 유지되도록 합니다. 비디오와 오디오에서 작동합니다. 일반적인 용도: Concat AV 전에 오디오를 고정하여 크로스 어텐션만 제공하게 하거나, 디노이즈하지 않아야 하는 latent를 고정합니다.",
+    "display_name": "LTXV Latent 고정",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "고정할 비디오 또는 오디오 latent입니다. 오디오는 4D이고 비디오는 5D입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "이전 단계에서 생성된 키프레임을 이후 캔버스의 고정 이미지 가이드로 고정합니다. 독립형 프레임으로 디코딩되고 필요 시 크기가 조정되며, 다시 디노이즈되지 않도록 noise_mask=0으로 기록됩니다. 시간 업스케일 후 기록된 인덱스는 생성된 캔버스에서 이 캔버스로 스케일링되어 동일한 시점에 배치됩니다. 위치를 명시적으로 설정하려면 override_frame_indices를 사용하세요. 새 위치에서 키프레임을 계속 생성하고 디노이즈하려면 Add Generated Keyframes를 대신 사용하세요.",
+    "display_name": "LTXV 생성된 키프레임을 가이드로 변환",
+    "inputs": {
+      "keyframes": {
+        "name": "키프레임",
+        "tooltip": "각 키프레임이 생성된 픽셀 프레임 인덱스를 포함하는 LTXV Separate Generated Keyframes의 키프레임 출력입니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "가이드를 추가할 대상 비디오 latent입니다. 예: 시간적으로 업스케일된 latent."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "선택 사항 — 기록된(또는 자동 조정된) 위치 대신 이 픽셀 프레임에 고정합니다. 키프레임당 하나의 인덱스를 지정하세요. 비워 두면 기록된 위치를 재사용하거나, 대상 캔버스의 길이가 다른 경우(예: 시간 x2 후) 위치를 조정합니다."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "가이드 강도입니다. 1.0은 강하게 고정하며, 값이 낮을수록 고정이 느슨해집니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": "키프레임이 이미지 가이드로 고정된 긍정 조건화입니다."
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": "키프레임이 이미지 가이드로 고정된 부정 조건화입니다."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "키프레임이 고정된 가이드로 추가된 대상 비디오 latent입니다."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV 비디오 생성 (이미지 → 비디오)",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Add Generated Keyframes로 추가된 생성 키프레임을 샘플링된 latent에서 다시 분리하고 조건화에서 제거합니다. 비디오 latent를 공간적으로 업스케일하기 전에 분리하세요. LTXV Crop Guides를 먼저 실행하지 마세요. 생성된 키프레임을 폐기 가능한 가이드로 처리하여 삭제합니다.",
+    "display_name": "LTXV 생성된 키프레임 분리",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "키프레임을 단일 프레임 latent 배치로 반환합니다. 비활성화하면 하나의 다중 프레임 latent로 반환되며, 이는 latent 업스케일러와 이후의 Add Generated Keyframes에서 필요로 하는 형식입니다."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "부정"
+      },
+      "positive": {
+        "name": "긍정"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": "생성 키프레임 메타데이터가 제거된 긍정 조건화입니다."
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": "생성 키프레임 메타데이터가 제거된 부정 조건화입니다."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "생성된 키프레임이 제거된 비디오 latent입니다."
+      },
+      "3": {
+        "name": "키프레임",
+        "tooltip": "분리된 키프레임이며, generated_keyframe_indices 및 generated_keyframe_num_frames로 레이블이 지정됩니다. 새 슬롯을 초기화하려면 이후의 Add Generated Keyframes에 연결하거나, 고정 이미지 가이드로 고정하려면 Generated Keyframes To Guides에 연결하세요(캔버스 길이가 변경된 경우 인덱스가 다시 매핑됩니다)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "모델의 밀집 어텐션 구현을 선택합니다. Block Sparse Attention과 함께 사용할 경우, 희소 어텐션이 비활성화되었거나 지원되지 않을 때 이 백엔드가 사용됩니다.",
+    "display_name": "모델 어텐션 백엔드",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "밀집 어텐션 백엔드입니다. Comfy Kitchen 어텐션은 양자화된 INT8 어텐션을 사용하며 Nvidia 및 AMD GPU에서만 사용할 수 있습니다."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "패치할 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델",
+        "tooltip": "선택한 어텐션 백엔드가 적용된 모델입니다."
       }
     }
   },

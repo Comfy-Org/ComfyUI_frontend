@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Atención dispersa por bloques mediante comfy_kitchen: cada bloque de consulta atiende exactamente a un subconjunto seleccionado de bloques clave, reduciendo el cálculo de atención. La mejora relativa de velocidad aumenta con la longitud de la secuencia, ya que las secuencias cortas suelen ser más rápidas con atención densa. Fuera de la programación activa, para dense_blocks y por debajo de min_tokens, el modelo usa el backend de atención densa activo.",
-    "display_name": "Atención dispersa por bloques",
+    "description": "Aplica atención dispersa por bloques a las capas de atención del modelo compatibles, lo que reduce el cómputo para secuencias largas. La mejora de velocidad aumenta con la longitud de la secuencia, ya que las secuencias cortas suelen ser más rápidas con atención densa. Fuera de start_percent/end_percent, con dense_blocks y por debajo de min_tokens, el modelo usa el backend de atención de modelo denso. Use el nodo Model Attention Backend para seleccionar esa alternativa.",
+    "display_name": "Atención dispersa del modelo",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Denso después de este punto de la programación."
+        "tooltip": "Punto porcentual en el que termina la atención dispersa. Después de este punto, la atención vuelve a ser densa."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Las secuencias más cortas que esto permanecen densas."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "El modelo que se va a parchear."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Cómo se eligen los bloques clave exactos. Sol-Attn: umbral adaptativo por cabeza/bloque. top-k (SLA): keep_percent fijo en todas partes, recomendado solo con pesos entrenados. VSA (FastVideo): teselado de cubos y rama gruesa de FastH3-VSA; requiere pesos entrenados para ello."
+        "tooltip": "Método usado para elegir bloques de claves para atención completa a nivel de token. sol-attn: Sparsifying Online Attention usa un umbral adaptativo sin entrenamiento para cada cabeza de atención y bloque de consulta. sla: Sparse-Linear Attention mantiene un porcentaje fijo de los bloques de claves con mayor puntuación; úselo solo con pesos de modelo entrenados para este patrón. vsa: Video Sparse Attention (FastVideo) usa mosaicos de cubos de vídeo 3D y una rama de atención gruesa aprendida; requiere pesos de modelo FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Denso antes de este punto de la programación."
+        "tooltip": "Punto porcentual en el que comienza la atención dispersa. Antes de este punto, la atención se mantiene densa."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Registra si cada forma de atención usó atención dispersa o por qué se mantuvo densa."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "El modelo con atención dispersa por bloques aplicada."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Añade fotogramas clave de detallado a un latent de vídeo. Cada fotograma clave es un fotograma latent de tokens cuya posición RoPE abarca un único fotograma de píxeles; se eliminan juntos con el vídeo y no forman parte de la salida decodificada. La colocación es una ranura cada interval_frames píxeles, omitiendo fotogramas I2V, guías existentes y fotogramas clave de detallado ya presentes en cond. Los fotogramas clave conectados solo aportan contenido y se vuelven a colocar en este lienzo, a menos que se establezca frame_indices. Extráigalos de nuevo con LTXV Separate Generated Keyframes. Requiere un checkpoint entrenado para fotogramas clave generados (uno que contenga keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Añadir fotogramas clave generados",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Índices opcionales de fotogramas de píxeles. Déjelo vacío para colocar desde interval_frames en el lienzo actual. Cuando se establece, esta lista determina la colocación (los fotogramas clave conectados se emparejan en orden). Se permite el último fotograma; el fotograma 0 no (ya es un token independiente)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Salto de fotogramas de píxeles para la colocación automática. El valor predeterminado, 24, equivale aproximadamente a un fotograma clave por segundo a 24 fps. Se omiten los píxeles ocupados. Se ignora cuando se establece frame_indices."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Contenido opcional para inicializar los nuevos fotogramas clave. Conecte fotogramas clave de un Separate anterior (con el mismo tamaño espacial), o un latent de vídeo simple para copiar el fotograma más cercano en cada nueva ranura (p. ej., después de un escalado temporal). Estos se siguen eliminando, no se fijan como guías. Los índices registrados en un latent de fotogramas clave se ignoran a menos que se establezca frame_indices. Solo tiene efecto cuando el muestreo comienza por debajo de sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent de vídeo 5D simple junto al que se generan los fotogramas clave. Agréguelos antes de Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Acondicionamiento negativo al que se adjuntan los fotogramas clave."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Acondicionamiento positivo al que se adjuntan los fotogramas clave."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Solo se usa para leer los factores de escala del latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Acondicionamiento positivo con atención de fotogramas clave generados adjunta."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Acondicionamiento negativo con atención de fotogramas clave generados adjunta."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent de vídeo con fotogramas clave generados añadidos en T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Establece noise_mask en 0 para que este latent se mantenga limpio durante el muestreo. Funciona con vídeo o audio. Usos habituales: congelar el audio antes de Concat AV para que solo proporcione atención cruzada, o congelar cualquier latent que no deba eliminarse.",
+    "display_name": "LTXV Congelar latent",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent de vídeo o audio que se va a congelar. El audio es 4D; el vídeo es 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fija los fotogramas clave generados de una etapa anterior como guías de imagen congeladas en un lienzo posterior. Se decodifican como fotogramas independientes, se redimensionan si es necesario y se escriben con noise_mask=0 para que no se eliminen de nuevo. Después de un escalado temporal, los índices registrados se escalan desde el lienzo en el que se generaron hasta este (los mismos momentos). Use override_frame_indices para establecer las posiciones explícitamente. Para seguir generando (y eliminando) fotogramas clave en nuevas posiciones, use Add Generated Keyframes en su lugar.",
+    "display_name": "LTXV Convertir fotogramas clave generados en guías",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "La salida keyframes de LTXV Separate Generated Keyframes, que contiene el índice de fotograma de píxeles en el que se generó cada fotograma clave."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "El latent de vídeo objetivo al que añadir las guías, por ejemplo, el escalado temporalmente."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Opcional: anclar en estos fotogramas de píxeles en lugar de las posiciones registradas (o escaladas automáticamente). Proporcione un índice por cada fotograma clave. Déjelo vacío para reutilizar las posiciones registradas o escalarlas cuando el lienzo objetivo tenga una duración distinta (p. ej., después de x2 temporal)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Intensidad de la guía. 1.0 es un anclaje rígido; los valores inferiores lo relajan."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Condicionamiento positivo con los fotogramas clave anclados como guías de imagen."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Condicionamiento negativo con los fotogramas clave anclados como guías de imagen."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent de vídeo objetivo con los fotogramas clave añadidos como guías congeladas."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "latente_audio",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Separa de un latent muestreado los fotogramas clave generados añadidos por LTXV Add Generated Keyframes y los elimina del condicionamiento. Sepárelos antes de escalar espacialmente el latent de vídeo. No ejecute primero LTXV Crop Guides: trata los fotogramas clave generados como guías descartables y los elimina.",
+    "display_name": "LTXV Separate Generated Keyframes",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Devuelve los fotogramas clave como un lote de latents de un solo fotograma. Déjelo desactivado para obtenerlos como un único latent de varios fotogramas, que es lo que esperan el escalador de latent y un posterior Add Generated Keyframes."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Condicionamiento positivo con los metadatos de los fotogramas clave generados eliminados."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Condicionamiento negativo con los metadatos de los fotogramas clave generados eliminados."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent de vídeo sin los fotogramas clave generados."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Los fotogramas clave extraídos, etiquetados con generated_keyframe_indices y generated_keyframe_num_frames. Conéctelos a un posterior Add Generated Keyframes para inicializar nuevas ranuras, o a Generated Keyframes To Guides para anclarlos como guías de imagen congeladas (los índices se reasignan si cambió la longitud del lienzo)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Selecciona la implementación de atención densa para el modelo. Cuando se usa con Block Sparse Attention, este backend se utiliza siempre que la atención dispersa esté inactiva o no sea compatible.",
+    "display_name": "Backend de atención del modelo",
     "inputs": {
       "attention": {
-        "name": "atención"
+        "name": "atención",
+        "tooltip": "El backend de atención densa. La atención Comfy Kitchen usa atención INT8 cuantizada y solo está disponible en GPU de Nvidia y AMD."
       },
       "model": {
-        "name": "modelo"
+        "name": "modelo",
+        "tooltip": "El modelo que se va a parchear."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "El modelo con el backend de atención seleccionado."
       }
     }
   },

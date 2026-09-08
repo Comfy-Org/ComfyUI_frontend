@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Attenzione sparsa a blocchi tramite comfy_kitchen: ogni blocco di query presta attenzione esattamente a un sottoinsieme selezionato di blocchi chiave, riducendo il calcolo dell'attenzione. Il guadagno di velocità relativo cresce con la lunghezza della sequenza, poiché le sequenze brevi sono solitamente più rapide in modalità densa. Al di fuori della pianificazione attiva, per dense_blocks e sotto min_tokens, il modello usa il backend di attenzione del modello denso attivo.",
-    "display_name": "Attenzione sparsa a blocchi",
+    "description": "Applica l'attenzione sparsa a blocchi ai livelli di attenzione idonei del modello, riducendo il calcolo per sequenze lunghe. Il guadagno di velocità aumenta con la lunghezza della sequenza, poiché le sequenze brevi sono generalmente più veloci con l'attenzione densa. Al di fuori di start_percent/end_percent, con dense_blocks e sotto min_tokens, il modello usa il backend di attenzione densa del modello. Usa il nodo Model Attention Backend per selezionare tale fallback.",
+    "display_name": "Attenzione sparsa del modello",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Denso dopo questo punto della pianificazione."
+        "tooltip": "Punto percentuale in cui termina l'attenzione sparsa. Dopo questo punto, l'attenzione torna densa."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Le sequenze più corte di questo valore restano dense."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Il modello da modificare."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Modalità di scelta esatta dei blocchi chiave. Sol-Attn: soglia adattiva per testa/blocco. top-k (SLA): keep_percent fisso ovunque, consigliato solo con pesi addestrati. VSA (FastVideo): tassellazione a cubi e ramo grossolano di FastH3-VSA, richiede pesi addestrati per questa modalità."
+        "tooltip": "Metodo usato per scegliere i blocchi chiave per l'attenzione completa a livello di token. sol-attn: Sparsifying Online Attention usa una soglia adattiva senza addestramento per ogni testa di attenzione e blocco di query. sla: Sparse-Linear Attention mantiene una percentuale fissa dei blocchi chiave con punteggio più alto; usare solo con pesi del modello addestrati per questo schema. vsa: Video Sparse Attention (FastVideo) usa tassellazione di cubi video 3D e un ramo di attenzione grossolana appreso; richiede pesi del modello FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Denso prima di questo punto della pianificazione."
+        "tooltip": "Punto percentuale in cui inizia l'attenzione sparsa. Prima di questo punto, l'attenzione resta densa."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Registra se ogni forma di attenzione ha usato l'attenzione sparsa o perché è rimasta densa."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "Il modello con l'attenzione sparsa a blocchi applicata."
       }
     }
   },
@@ -9703,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Aggiunge fotogrammi chiave di dettaglio a un latent video. Ogni fotogramma chiave è un fotogramma latent di token la cui posizione RoPE copre un singolo fotogramma in pixel; vengono denoised insieme al video e non fanno parte dell'output decodificato. Il posizionamento prevede uno slot ogni interval_frames pixel, saltando i fotogrammi I2V, le guide esistenti e i fotogrammi chiave di dettaglio già presenti sul cond. I fotogrammi chiave collegati sono solo contenuto e vengono riposizionati su questa tela a meno che frame_indices non sia impostato. Estraili di nuovo con LTXV Separate Generated Keyframes. Richiede un checkpoint addestrato per fotogrammi chiave generati (che includa keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Aggiungi fotogrammi chiave generati",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Indici facoltativi dei fotogrammi pixel. Lascia vuoto per posizionare in base a interval_frames sulla tela corrente. Se impostato, questo elenco determina il posizionamento (i fotogrammi chiave collegati vengono associati nell'ordine). L'ultimo fotogramma è consentito; il fotogramma 0 no (è già un token autonomo)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Passo in fotogrammi pixel per il posizionamento automatico. Il valore predefinito 24 corrisponde a circa un fotogramma chiave al secondo a 24 fps. I pixel occupati vengono saltati. Ignorato quando frame_indices è impostato."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Contenuto facoltativo con cui inizializzare i nuovi fotogrammi chiave. Collega i fotogrammi chiave da un precedente Separate (stesse dimensioni spaziali), oppure un latent video semplice per copiare il fotogramma più vicino in ogni nuovo slot (ad es. dopo un upscale temporale). Vengono comunque denoised e non fissati come guide. Gli indici registrati su un latent keyframes vengono ignorati a meno che frame_indices non sia impostato. Ha effetto solo quando il campionamento inizia sotto sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent video 5D semplice accanto al quale generare i fotogrammi chiave. Aggiungili prima di Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Condizionamento negativo a cui sono collegati i fotogrammi chiave."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Condizionamento positivo a cui sono collegati i fotogrammi chiave."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Usato solo per leggere i fattori di scala del latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Condizionamento positivo con l'attenzione dei fotogrammi chiave generati collegata."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Condizionamento negativo con l'attenzione dei fotogrammi chiave generati collegata."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent video con fotogrammi chiave generati aggiunti su T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10015,6 +10066,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Imposta noise_mask a 0 affinché questo latent resti pulito durante il campionamento. Funziona con video o audio. Usi tipici: bloccare l'audio prima di Concat AV affinché fornisca solo cross-attention, oppure bloccare qualsiasi latent che non debba essere denoised.",
+    "display_name": "LTXV Blocca latent",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent video o audio da bloccare. L'audio è 4D; il video è 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fissa i fotogrammi chiave generati in una fase precedente come guide immagine bloccate su una tela successiva. Vengono decodificati come fotogrammi autonomi, ridimensionati se necessario e scritti con noise_mask=0 affinché non vengano denoised di nuovo. Dopo un upscale temporale, gli indici registrati vengono scalati dalla tela su cui sono stati generati a questa (negli stessi istanti). Usa override_frame_indices per impostare esplicitamente le posizioni. Per continuare a generare (e denoising) fotogrammi chiave in nuove posizioni, usa invece Add Generated Keyframes.",
+    "display_name": "LTXV Fotogrammi chiave generati in guide",
+    "inputs": {
+      "keyframes": {
+        "name": "fotogrammi chiave",
+        "tooltip": "L'output dei fotogrammi chiave di LTXV Separate Generated Keyframes, che contiene l'indice del fotogramma pixel in corrispondenza del quale è stato generato ciascun fotogramma chiave."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Il latent video di destinazione a cui aggiungere le guide, ad esempio quello sottoposto a upscaling temporale."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Facoltativo — fissa in corrispondenza di questi fotogrammi pixel anziché delle posizioni registrate (o scalate automaticamente). Fornisci un indice per ogni fotogramma chiave. Lascia vuoto per riutilizzare le posizioni registrate o per scalarle quando la tela di destinazione ha una durata diversa (ad es. dopo x2 temporale)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "Intensità della guida. 1.0 è un vincolo rigido; valori inferiori lo allentano."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": "Condizionamento positivo con i fotogrammi chiave fissati come guide immagine."
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": "Condizionamento negativo con i fotogrammi chiave fissati come guide immagine."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent video di destinazione con i fotogrammi chiave aggiunti come guide fisse."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10242,6 +10354,43 @@
       "1": {
         "name": "audio_latente",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Separa nuovamente i fotogrammi chiave generati aggiunti da LTXV Add Generated Keyframes da un latent campionato e li rimuove dal condizionamento. Separali prima di eseguire l'upscaling spaziale del latent video. Non eseguire prima LTXV Crop Guides: tratta i fotogrammi chiave generati come guide eliminabili e li scarta.",
+    "display_name": "LTXV Separa fotogrammi chiave generati",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Restituisce i fotogrammi chiave come batch di latent a fotogramma singolo. Disattiva questa opzione per ottenerli come un unico latent multi-frame, previsto dall'upsampler di latent e da un successivo Add Generated Keyframes."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": "Condizionamento positivo con i metadati dei fotogrammi chiave generati rimossi."
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": "Condizionamento negativo con i metadati dei fotogrammi chiave generati rimossi."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent video senza i fotogrammi chiave generati."
+      },
+      "3": {
+        "name": "fotogrammi chiave",
+        "tooltip": "I fotogrammi chiave estratti, etichettati con generated_keyframe_indices e generated_keyframe_num_frames. Forniscili a un successivo Add Generated Keyframes per inizializzare nuovi slot, oppure a Generated Keyframes To Guides per fissarli come guide immagine fisse (gli indici vengono rimappati se la lunghezza della tela è cambiata)."
       }
     }
   },
@@ -13586,13 +13735,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Seleziona l'implementazione dell'attenzione densa per il modello. Se usato con Block Sparse Attention, questo backend viene usato ogni volta che l'attenzione sparsa è inattiva o non supportata.",
+    "display_name": "Backend di attenzione del modello",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "Il backend di attenzione densa. L'attenzione Comfy Kitchen utilizza attenzione INT8 quantizzata ed è disponibile solo su GPU Nvidia e AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Il modello a cui applicare la patch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modello",
+        "tooltip": "Il modello con il backend di attenzione selezionato."
       }
     }
   },
