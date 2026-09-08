@@ -1,7 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 
 type ImageCompareOutput = NodeOutputWith<{
@@ -24,11 +23,10 @@ useExtensionService().registerExtension({
       onExecuted?.call(this, output)
 
       const { a_images: aImages, b_images: bImages } = output
-      const rand = app.getRandParam()
 
       const toUrl = (record: Record<string, string>) => {
         const params = new URLSearchParams(record)
-        return api.apiURL(`/view?${params}${rand}`)
+        return api.apiURL(`/view?${params}`)
       }
 
       const beforeImages =
