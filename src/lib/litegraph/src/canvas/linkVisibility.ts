@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
@@ -69,7 +70,7 @@ export function promptRenameLinkBadge(
   event: CanvasPointerEvent
 ): void {
   host.prompt(
-    'Rename',
+    t('contextMenu.Rename'),
     useLinkPresentationStore().getPresentation(scope, linkId)?.label ?? '',
     (value) => renameLink(host, scope, linkId, value),
     event

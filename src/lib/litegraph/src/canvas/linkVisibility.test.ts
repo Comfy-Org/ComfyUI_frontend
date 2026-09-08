@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -86,7 +87,7 @@ describe('link visibility mutations', () => {
     promptRenameLinkBadge(host, scope, link.id, event)
 
     expect(host.prompt).toHaveBeenCalledWith(
-      'Rename',
+      t('contextMenu.Rename'),
       '',
       expect.any(Function),
       event
