@@ -487,7 +487,7 @@ export class LGraph
    * Ref-backed so the id reassignment on every workflow load ({@link configure})
    * propagates to reactive consumers keyed by root graph id.
    */
-  private readonly _id = shallowRef<UUID>(zeroUuid)
+  protected readonly _id = shallowRef<UUID>(zeroUuid)
   get id(): UUID {
     return toRaw(this)._id.value
   }
@@ -3372,18 +3372,36 @@ export class Subgraph
     // No-op: subgraphs share the root graph's state.
   }
 
-  constructor(rootGraph: LGraph | null | undefined, data: ExportedSubgraph) {
+  constructor(
+    rootGraph: LGraph | null | undefined,
+    data: ExportedSubgraph,
+    keepId = false
+  ) {
     if (!rootGraph) throw new Error('Root graph is required')
 
     super()
 
     this._rootGraph = rootGraph
     const cloned = structuredClone(data)
-    if (useGraphMetadataStore().has(rootGraph.id, cloned.id)) {
+    const idIsOccupied = useGraphMetadataStore().has(rootGraph.id, cloned.id)
+    if (keepId && idIsOccupied) {
+      this._id.value = cloned.id
+    } else if (idIsOccupied) {
       cloned.id = createUuidv4()
     }
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
+  }
+
+  /**
+   * Clones the subgraph, creating an identical copy with a new ID.
+   * @returns A new subgraph with the same configuration, but a new ID.
+   */
+  // fallow-ignore-next-line unused-class-member
+  clone(keepId: boolean = false): Subgraph {
+    const exported = this.asSerialisable()
+    if (!keepId) exported.id = createUuidv4()
+    return new Subgraph(this.rootGraph, exported, keepId)
   }
 
   getIoNodeOnPos(

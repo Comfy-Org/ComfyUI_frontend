@@ -66,6 +66,18 @@ describe('Subgraph Construction', () => {
     expect(subgraph.id).toBe(customId)
     expect(subgraph.name).toBe(customName)
   })
+
+  it('clones with a new ID unless preserving it is requested', () => {
+    const subgraph = createTestSubgraph({ name: 'Clone source' })
+
+    const clone = subgraph.clone()
+    const preservedIdClone = subgraph.clone(true)
+
+    expect(clone).not.toBe(subgraph)
+    expect(clone.id).not.toBe(subgraph.id)
+    expect(clone.name).toBe(subgraph.name)
+    expect(preservedIdClone.id).toBe(subgraph.id)
+  })
 })
 
 describe('Subgraph Input/Output Management', () => {
