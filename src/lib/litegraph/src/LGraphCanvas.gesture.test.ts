@@ -535,3 +535,68 @@ describe('LGraphCanvas pointer gestures', () => {
     })
   })
 })
+
+describe('LGraphCanvas interrupted gestures', () => {
+  let graph: LGraph
+  let canvas: LGraphCanvas
+  let a: LGraphNode
+  let gesture: Gesture
+
+  beforeEach(() => {
+    LiteGraph.vueNodesMode = false
+    LiteGraph.leftMouseClickBehavior = 'panning'
+    graph = new LGraph()
+    canvas = createCanvas(graph)
+    a = addNode(graph, 'A', 20, 40)
+    gesture = new Gesture(canvas)
+    recordCallbacks(canvas, a)
+  })
+
+  function hideDocument() {
+    const doc = canvas.canvas.ownerDocument
+    vi.spyOn(doc, 'visibilityState', 'get').mockReturnValue('hidden')
+    doc.dispatchEvent(new Event('visibilitychange'))
+  }
+
+  it('window blur while dragging ends the drag where it was', () => {
+    gesture.press(A_BODY)
+    gesture.move(shifted(A_BODY, FAR))
+    expect(canvas.isDragging).toBe(true)
+
+    canvas.canvas.ownerDocument.defaultView!.dispatchEvent(new Event('blur'))
+
+    expect(canvas.isDragging).toBe(false)
+    expect(posOf(a)).toEqual([40, 70])
+    gesture.move(shifted(A_BODY, [40, 60]))
+    expect(posOf(a)).toEqual([40, 70])
+  })
+
+  it('hidden document while pressed discards the click', () => {
+    gesture.press(A_BODY)
+    hideDocument()
+    gesture.release(A_BODY)
+
+    expect(selectedTitles(canvas)).toEqual([])
+  })
+
+  it('lost pointer capture while dragging ends the drag', () => {
+    gesture.press(A_BODY)
+    gesture.move(shifted(A_BODY, FAR))
+
+    canvas.canvas.dispatchEvent(new Event('lostpointercapture'))
+
+    expect(canvas.isDragging).toBe(false)
+    expect(canvas.pointer.isDown).toBe(false)
+  })
+
+  it('unbinding events while dragging ends the drag', () => {
+    canvas.bindEvents()
+    gesture.press(A_BODY)
+    gesture.move(shifted(A_BODY, FAR))
+
+    canvas.unbindEvents()
+
+    expect(canvas.isDragging).toBe(false)
+    expect(canvas.pointer.isDown).toBe(false)
+  })
+})
