@@ -2116,7 +2116,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    // console.log("pointerevents: unbindEvents");
+    this.pointer.reset()
+
     const { document } = this.getCanvasWindow()
     const { canvas } = this
 

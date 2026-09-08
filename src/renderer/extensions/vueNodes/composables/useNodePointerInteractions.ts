@@ -16,6 +16,7 @@ import {
   idleGesture,
   reduceGesture
 } from '@/lib/litegraph/src/canvas/reduceGesture'
+import { watchGestureInterrupts } from '@/lib/litegraph/src/canvas/watchGestureInterrupts'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -50,6 +51,7 @@ export function useNodePointerInteractions(
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
+  let stopWatchingInterrupts: (() => void) | undefined
 
   const gesturePolicy = () => ({
     clickDrift: CanvasPointer.maxClickDrift,
@@ -60,7 +62,14 @@ export function useNodePointerInteractions(
     const result = reduceGesture(gesture, gestureEvent, gesturePolicy())
     gesture = result.state
     for (const effect of result.effects) runEffect(effect, event)
-    if (gesture.phase === 'idle') press = null
+    if (gesture.phase !== 'idle') return
+    press = null
+    stopWatchingInterrupts?.()
+    stopWatchingInterrupts = undefined
+  }
+
+  function cancelPress() {
+    if (press) dispatch({ type: 'cancel' }, press.event)
   }
 
   function runEffect(effect: GestureEffect, event: PointerEvent) {
@@ -128,7 +137,12 @@ export function useNodePointerInteractions(
 
     if (event.button !== 0) return
 
+    cancelPress()
     press = { nodeId, event, selectOnly, pinned }
+    stopWatchingInterrupts = watchGestureInterrupts(
+      event.currentTarget instanceof Element ? event.currentTarget : undefined,
+      cancelPress
+    )
     dispatch(
       {
         type: 'down',
@@ -170,14 +184,12 @@ export function useNodePointerInteractions(
   }
 
   function onContextmenu(event: MouseEvent) {
-    if (gesture.phase !== 'dragging' || !press) return
+    if (gesture.phase !== 'dragging') return
     event.preventDefault()
-    dispatch({ type: 'cancel' }, press.event)
+    cancelPress()
   }
 
-  onScopeDispose(() => {
-    layoutStore.isDraggingVueNodes.value = false
-  })
+  onScopeDispose(cancelPress)
 
   const pointerHandlers = {
     onPointerdown,

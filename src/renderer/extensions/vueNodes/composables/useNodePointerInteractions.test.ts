@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 
 import {
   addNode,
@@ -249,6 +249,40 @@ describe('useNodePointerInteractions', () => {
     move(handlers, 200, 200, { shiftKey: true })
 
     expect(startDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('window blur while dragging ends the drag without snapping', () => {
+    const { endDrag } = useNodeDrag()
+    press(handlers, 10, 10)
+    move(handlers, 40, 10)
+
+    window.dispatchEvent(new Event('blur'))
+
+    expect(endDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('hidden document while pressed discards the click', () => {
+    press(handlers, 10, 10)
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    release(handlers, 10, 10)
+
+    expect(selectedTitles(canvas)).toEqual([])
+  })
+
+  it('disposing the scope while dragging ends the drag', () => {
+    const scope = effectScope()
+    const scoped = scope.run(() =>
+      useNodePointerInteractions(createNodeState({ id: second.id }))
+    )!
+    press(scoped.pointerHandlers, 310, 10)
+    move(scoped.pointerHandlers, 340, 10)
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    scope.stop()
+
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 })
