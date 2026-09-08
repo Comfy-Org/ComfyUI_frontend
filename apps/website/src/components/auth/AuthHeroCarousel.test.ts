@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { nextTick } from 'vue'
 
 import type { HeroSlide } from '../../config/hero-slides'
 
@@ -49,7 +51,9 @@ async function renderCarousel(count: number, viewportWidth = 1280) {
     buildSlide(`slide-${index}`, `Model ${index}`)
   )
   const { default: AuthHeroCarousel } = await import('./AuthHeroCarousel.vue')
-  return render(AuthHeroCarousel)
+  const view = render(AuthHeroCarousel)
+  await nextTick()
+  return view
 }
 
 beforeEach(() => {
@@ -82,10 +86,10 @@ describe('AuthHeroCarousel', () => {
     ).toBeNull()
   })
 
-  it('mounts every slide at xl and wider', async () => {
+  it('mounts every slide at xl and wider, only after mount', async () => {
     await renderCarousel(3, 1280)
 
-    expect(allSlides()).toHaveLength(3)
+    await waitFor(() => expect(allSlides()).toHaveLength(3))
   })
 
   it('moves to the next slide and wraps backwards from the first', async () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { breakpointsTailwind, useBreakpoints, useMounted } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { HERO_SLIDES, PROVIDER_ICON } from '../../config/hero-slides'
 import { useProgressBarPainter } from '../../composables/useProgressBarPainter'
@@ -11,8 +11,14 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-/** Mirrors the cloud shell: below `xl` the reel is never mounted, so no video downloads. */
-const showHero = useBreakpoints(breakpointsTailwind).greaterOrEqual('xl')
+/**
+ * Mirrors the cloud shell: below `xl` the reel is never mounted, so no video
+ * downloads. Waiting for mount keeps the server and first client render in
+ * agreement; the SSR'd column wrapper already holds the layout.
+ */
+const mounted = useMounted()
+const isWideViewport = useBreakpoints(breakpointsTailwind).greaterOrEqual('xl')
+const showHero = computed(() => mounted.value && isWideViewport.value)
 
 const rootEl = useTemplateRef<HTMLElement>('rootEl')
 const progressFillEl = useTemplateRef<HTMLElement>('progressFillEl')
