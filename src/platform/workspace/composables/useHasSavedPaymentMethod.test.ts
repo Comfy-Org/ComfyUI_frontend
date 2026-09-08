@@ -11,13 +11,13 @@ const mockListSavedPaymentMethods = vi.hoisted(() =>
 )
 const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     listSavedPaymentMethods: mockListSavedPaymentMethods
   }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

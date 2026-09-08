@@ -7,7 +7,7 @@ import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/use
 const query = vi.hoisted(() => ({ value: {} as Record<string, string> }))
 const replace = vi.hoisted(() => vi.fn())
 const push = vi.hoisted(() => vi.fn())
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ replace, push }),
   useRoute: () => ({ query: query.value })
 }))
@@ -15,12 +15,12 @@ vi.mock('vue-router', () => ({
 const resumeOAuthIfNeeded = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ kind: 'no-oauth' })
 )
-vi.mock('@/platform/cloud/oauth/useOAuthPostLoginRedirect', () => ({
+vi.mock(import('@/platform/cloud/oauth/useOAuthPostLoginRedirect'), () => ({
   useOAuthPostLoginRedirect: () => ({ resumeOAuthIfNeeded })
 }))
 
 const toasts = vi.hoisted(() => ({ add: vi.fn() }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => toasts
 }))
 

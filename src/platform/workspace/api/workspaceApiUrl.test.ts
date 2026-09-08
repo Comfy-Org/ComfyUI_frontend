@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => distributionMocks)
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/platform/distribution/types'), () => distributionMocks)
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
 }))
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: (route: string) => `/api${route}` }
 }))
 

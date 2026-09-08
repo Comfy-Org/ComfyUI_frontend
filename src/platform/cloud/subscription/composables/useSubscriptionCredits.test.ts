@@ -13,8 +13,8 @@ let mockBillingBalance: {
 } | null = null
 let mockBillingIsLoading = false
 
-vi.mock(
-  'vue-i18n',
+vi.mock<unknown>(
+  import('vue-i18n'),
   async (importOriginal: () => Promise<typeof VueI18nModule>) => {
     const actual = await importOriginal()
     return {
@@ -28,7 +28,7 @@ vi.mock(
 )
 
 // Mock useBillingContext - returns computed refs that read from module-level state
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     balance: computed(() => mockBillingBalance),
     isLoading: computed(() => mockBillingIsLoading)

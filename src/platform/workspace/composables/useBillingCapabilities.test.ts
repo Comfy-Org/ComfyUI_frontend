@@ -18,7 +18,7 @@ const mockScope = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member'
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   WorkspaceApiError: class WorkspaceApiError extends Error {
     constructor(
       message: string,
@@ -31,30 +31,33 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { getBillingCapabilities: mockGetBillingCapabilities }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockScope.workspaceId
-    },
-    get activeWorkspace() {
-      return mockScope.workspaceId
-        ? { id: mockScope.workspaceId, role: mockScope.role }
-        : null
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return mockScope.workspaceId
+      },
+      get activeWorkspace() {
+        return mockScope.workspaceId
+          ? { id: mockScope.workspaceId, role: mockScope.role }
+          : null
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     get currentUser() {
       return mockScope.authUid ? { uid: mockScope.authUid } : null

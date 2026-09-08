@@ -21,7 +21,7 @@ const {
   mockGetFirebaseAuthHeaderOrThrow: vi.fn()
 }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn((err: unknown) => {
@@ -35,21 +35,21 @@ vi.mock('axios', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) => key)
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((path: string) => `/api${path}`)
   }
 }))
 
-vi.mock('./workspaceApiUrl', () => ({
+vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     getWorkspaceAuthHeaderOrThrow: mockGetWorkspaceAuthHeaderOrThrow,
     getFirebaseAuthHeaderOrThrow: mockGetFirebaseAuthHeaderOrThrow

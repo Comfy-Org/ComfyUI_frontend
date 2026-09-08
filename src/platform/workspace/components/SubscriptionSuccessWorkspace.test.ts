@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key,
     n: (value: number) => String(value)
@@ -20,14 +20,14 @@ const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     maxSeats: mockMaxSeats,
     occupiedSeats: mockOccupiedSeats
   })
 }))
 
-vi.mock('./InviteMembersForm.vue', () => ({
+vi.mock<unknown>(import('./InviteMembersForm.vue'), () => ({
   default: {
     name: 'InviteMembersForm',
     props: [

@@ -14,31 +14,31 @@ const state = vi.hoisted(() => ({
   handleMessageSupport: vi.fn()
 }))
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return state.isCloud
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     manageSubscription: state.manageSubscription
   })
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: vi.fn(() => 'https://docs.comfy.org/partner-nodes'),
     docsPaths: { partnerNodesPricing: 'partner-nodes' }
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionActions',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionActions'),
   () => ({
     useSubscriptionActions: () => ({
       isLoadingSupport: ref(false),

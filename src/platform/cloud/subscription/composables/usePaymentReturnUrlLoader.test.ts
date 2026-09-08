@@ -9,11 +9,11 @@ const mocks = vi.hoisted(() => ({
   embeddedCheckoutEnabled: true
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ fetchStatus: mocks.fetchStatus })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get embeddedCheckoutEnabled() {

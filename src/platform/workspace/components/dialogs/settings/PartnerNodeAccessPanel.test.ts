@@ -51,7 +51,7 @@ const {
   }
 })
 
-vi.mock('pinia', async (importOriginal) => {
+vi.mock<unknown>(import('pinia'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
@@ -59,37 +59,43 @@ vi.mock('pinia', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
-  usePartnerNodeGovernanceStore: () => ({
-    governedWorkspaceId: mockGovernedWorkspaceId,
-    policy: mockPolicy,
-    providers: mockProviders,
-    status: mockStatus,
-    isSaving: mockIsSaving,
-    isProviderEnabled: mockIsProviderEnabled,
-    loadPolicy: mockLoadPolicy,
-    setAllProvidersEnabled: mockSetAllProvidersEnabled,
-    setEnforcementEnabled: mockSetEnforcementEnabled,
-    setProviderEnabled: mockSetProviderEnabled,
-    setProvidersEnabled: mockSetProvidersEnabled
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/partnerNodeGovernanceStore'),
+  () => ({
+    usePartnerNodeGovernanceStore: () => ({
+      governedWorkspaceId: mockGovernedWorkspaceId,
+      policy: mockPolicy,
+      providers: mockProviders,
+      status: mockStatus,
+      isSaving: mockIsSaving,
+      isProviderEnabled: mockIsProviderEnabled,
+      loadPolicy: mockLoadPolicy,
+      setAllProvidersEnabled: mockSetAllProvidersEnabled,
+      setEnforcementEnabled: mockSetEnforcementEnabled,
+      setProviderEnabled: mockSetProviderEnabled,
+      setProvidersEnabled: mockSetProvidersEnabled
+    })
   })
-}))
+)
 
-vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({ nodeDefsByName: mockNodeDefsByName })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
