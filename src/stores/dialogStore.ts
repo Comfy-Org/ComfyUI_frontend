@@ -173,7 +173,7 @@ export const useDialogStore = defineStore('dialog', () => {
       : dialogStack.value.find((d) => d.key === activeKey.value)
     if (!targetDialog) return
 
-    targetDialog.dialogComponentProps?.onClose?.()
+    targetDialog.dialogComponentProps.onClose?.()
     const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
     if (index !== -1) dialogStack.value.splice(index, 1)
 

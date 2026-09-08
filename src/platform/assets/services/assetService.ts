@@ -571,7 +571,7 @@ function createAssetService() {
    */
   function isAssetAPIEnabled(): boolean {
     if (!isCloud) return false
-    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+    return useSettingStore().get('Comfy.Assets.UseAssetAPI')
   }
 
   /**
@@ -672,9 +672,7 @@ function createAssetService() {
     const result = assetItemSchema.safeParse(data)
     if (result.success) return result.data
 
-    const error = result.error
-      ? fromZodError(result.error)
-      : 'Unknown validation error'
+    const error = fromZodError(result.error)
     throw new Error(
       `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
     )
@@ -759,7 +757,7 @@ function createAssetService() {
     let after: string | undefined
     let batchCount = 0
 
-    while (true) {
+    for (;;) {
       if (signal?.aborted) throw createAbortError()
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
         console.warn(
@@ -909,7 +907,7 @@ function createAssetService() {
     if (data.validation?.is_valid === false) {
       throw new Error(
         getLocalizedErrorMessage(
-          data.validation?.errors?.[0]?.code || 'UNKNOWN_ERROR'
+          data.validation.errors?.[0]?.code || 'UNKNOWN_ERROR'
         )
       )
     }
