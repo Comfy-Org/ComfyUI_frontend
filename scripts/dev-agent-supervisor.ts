@@ -90,7 +90,6 @@ export async function waitForHttp(
   throw new Error(`${label} did not become ready at ${url}`)
 }
 
-// One lifecycle for a spawned group: the first exit reason wins and teardown runs once.
 export function supervise(dataDir: string) {
   const children: ChildProcess[] = []
   let stopping = false
@@ -140,10 +139,15 @@ export function supervise(dataDir: string) {
         }
       }
       await Promise.all(newestFirst.map((child) => waitForExit(child, 1000)))
-      await rm(dataDir, { force: true, recursive: true })
-      process.removeListener('SIGINT', onSigint)
-      process.removeListener('SIGTERM', onSigterm)
-      process.removeListener('SIGHUP', onSighup)
+      try {
+        await rm(dataDir, { force: true, recursive: true })
+      } catch (error) {
+        console.warn(`[dev-agent] Could not remove ${dataDir}:`, error)
+      } finally {
+        process.removeListener('SIGINT', onSigint)
+        process.removeListener('SIGTERM', onSigterm)
+        process.removeListener('SIGHUP', onSighup)
+      }
     })()
     await stopPromise
     return exitCode

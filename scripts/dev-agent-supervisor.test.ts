@@ -183,6 +183,25 @@ describe('supervise', () => {
     expect(process.listenerCount('SIGHUP')).toBe(sighupBefore)
   })
 
+  it('preserves the exit code and removes signal handlers when cleanup fails', async () => {
+    const sigintBefore = process.listenerCount('SIGINT')
+    const sigtermBefore = process.listenerCount('SIGTERM')
+    const sighupBefore = process.listenerCount('SIGHUP')
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.mocked(rm).mockRejectedValueOnce(new Error('busy'))
+    const supervisor = supervise('/tmp/data')
+
+    await expect(supervisor.stop(7)).resolves.toBe(7)
+
+    expect(warning).toHaveBeenCalledWith(
+      '[dev-agent] Could not remove /tmp/data:',
+      expect.objectContaining({ message: 'busy' })
+    )
+    expect(process.listenerCount('SIGINT')).toBe(sigintBefore)
+    expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
+    expect(process.listenerCount('SIGHUP')).toBe(sighupBefore)
+  })
+
   it('kills children immediately when a signal repeats during teardown', async () => {
     const supervisor = supervise('/tmp/data')
     supervisor.spawn('stubborn', [], '/cwd', {})

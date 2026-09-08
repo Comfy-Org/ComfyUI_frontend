@@ -21,7 +21,6 @@ const PG_PORT = 54331
 const REDIS_PORT = 6379
 const CLOUD_QUICKSTART =
   'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
-// Fixed so a rerun seeds nothing and the printed recorder command never moves.
 const TEMPORAL_INSTALL =
   'brew install temporal, or: https://docs.temporal.io/cli#install'
 const RECORD_USER_ID = 'rec-local-user'
@@ -90,7 +89,7 @@ async function containerFor(
     .map((line) => line.split(' '))
     .filter(
       ([, imageName, ...ports]) =>
-        imageName?.includes(image) &&
+        imageName.includes(image) &&
         ports.join(' ').includes(`:${portNumber}->`)
     )
     .map(([name]) => name)
@@ -120,7 +119,7 @@ async function redisExecCommand(): Promise<string> {
 export function parseExecCommand(command: string): string[] {
   const parts = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map((part) => {
     const quoted = part.match(/^(?:"([^"]*)"|'([^']*)')$/)
-    return quoted ? (quoted[1] ?? quoted[2] ?? '') : part
+    return quoted ? quoted[1] || quoted[2] || '' : part
   })
   if (!parts?.length) throw new Error('--pg-exec must contain a command')
   return parts
@@ -236,12 +235,12 @@ export async function runRecord(options: Options): Promise<number> {
         agentDir,
         process.env
       )
-      const listening = await Promise.race([
-        waitForPort(options.temporalPort, 'Temporal', 60_000).then(() => true),
-        supervisor.exitRequested.then(() => false)
+      const startupResult = await Promise.race([
+        waitForPort(options.temporalPort, 'Temporal', 60_000).then(() => null),
+        supervisor.exitRequested
       ])
-      if (!listening) {
-        throw new Error('Temporal exited before it started listening')
+      if (startupResult !== null) {
+        return await supervisor.stop(startupResult)
       }
     }
     supervisor.spawn('bash', ['dochost/start.sh'], agentDir, {
