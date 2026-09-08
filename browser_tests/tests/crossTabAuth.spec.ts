@@ -24,6 +24,10 @@ async function expectSignedOut(page: Page, message: string): Promise<void> {
       page.isClosed(),
       'a torn-down page must fail this check, never satisfy it'
     ).toBe(false)
+    expect(
+      page.url().startsWith(APP_URL),
+      'a page that navigated off the app must fail this check, never satisfy it'
+    ).toBe(true)
     const atLogin = page.url().includes('/cloud/login')
     const loginButtonVisible = await page
       .getByTestId(TestIds.topbar.loginButton)
