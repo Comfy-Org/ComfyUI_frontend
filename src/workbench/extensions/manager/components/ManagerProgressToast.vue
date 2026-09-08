@@ -84,11 +84,6 @@ const currentTaskName = computed(() => {
   return task?.taskName ?? t('manager.installingDependencies')
 })
 
-const collapsedPanels = ref<Record<number, boolean>>({})
-function togglePanel(index: number) {
-  collapsedPanels.value[index] = !collapsedPanels.value[index]
-}
-
 const sectionsContainerRef = ref<HTMLElement | null>(null)
 const { y: scrollY } = useScroll(sectionsContainerRef, {
   eventListenerOptions: { passive: true }
@@ -179,64 +174,56 @@ onBeforeUnmount(() => {
           scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
         }"
       >
-        <div v-for="(log, index) in focusedLogs" :key="index">
-          <div
-            class="shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
+        <details
+          v-for="(log, index) in focusedLogs"
+          :key="log.taskId"
+          open
+          class="group/log shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
+        >
+          <summary
+            class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
           >
-            <div class="flex w-full items-center justify-between px-4 py-2">
-              <div class="flex flex-col text-sm/normal font-medium">
-                <span>{{ log.taskName }}</span>
-                <span class="text-muted">
-                  {{
-                    isTaskInProgress(index)
-                      ? t('g.inProgress')
-                      : t('g.completedWithCheckmark')
-                  }}
-                </span>
-              </div>
-              <Button
-                variant="textonly"
-                class="text-neutral-300"
-                :aria-expanded="!collapsedPanels[index]"
-                @click="togglePanel(index)"
+            <span class="flex flex-col text-sm/normal font-medium">
+              <span>{{ log.taskName }}</span>
+              <span class="text-muted">
+                {{
+                  isTaskInProgress(index)
+                    ? t('g.inProgress')
+                    : t('g.completedWithCheckmark')
+                }}
+              </span>
+            </span>
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
+            />
+          </summary>
+          <div
+            :ref="
+              index === focusedLogs.length - 1
+                ? (el) => (lastPanelRef = el as HTMLElement)
+                : undefined
+            "
+            class="h-64 overflow-y-auto rounded-lg bg-black"
+            :class="{
+              'h-64': index !== focusedLogs.length - 1,
+              grow: index === focusedLogs.length - 1
+            }"
+            @scroll="handleScroll"
+          >
+            <div class="h-full">
+              <div
+                v-for="(logLine, logIndex) in log.logs"
+                :key="logIndex"
+                class="text-muted"
               >
-                <i
-                  :class="
-                    collapsedPanels[index]
-                      ? 'pi pi-chevron-right'
-                      : 'pi pi-chevron-down'
-                  "
-                />
-              </Button>
-            </div>
-            <div
-              v-show="!collapsedPanels[index]"
-              :ref="
-                index === focusedLogs.length - 1
-                  ? (el) => (lastPanelRef = el as HTMLElement)
-                  : undefined
-              "
-              class="h-64 overflow-y-auto rounded-lg bg-black"
-              :class="{
-                'h-64': index !== focusedLogs.length - 1,
-                grow: index === focusedLogs.length - 1
-              }"
-              @scroll="handleScroll"
-            >
-              <div class="h-full">
-                <div
-                  v-for="(logLine, logIndex) in log.logs"
-                  :key="logIndex"
-                  class="text-muted"
-                >
-                  <pre class="wrap-break-word whitespace-pre-wrap">{{
-                    logLine
-                  }}</pre>
-                </div>
+                <pre class="wrap-break-word whitespace-pre-wrap">{{
+                  logLine
+                }}</pre>
               </div>
             </div>
           </div>
-        </div>
+        </details>
       </div>
     </template>
 

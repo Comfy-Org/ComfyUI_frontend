@@ -20,7 +20,6 @@ const overflowObservers = vi.hoisted<
   Array<{
     isOverflowing: { value: boolean }
     checkOverflow: ReturnType<typeof vi.fn>
-    dispose: ReturnType<typeof vi.fn>
   }>
 >(() => [])
 interface WorkflowFixture {
@@ -81,8 +80,7 @@ vi.mock('@/composables/element/useOverflowObserver', async () => {
     useOverflowObserver: () => {
       const observer = {
         isOverflowing: ref(false),
-        checkOverflow: vi.fn(),
-        dispose: vi.fn()
+        checkOverflow: vi.fn()
       }
       overflowObservers.push(observer)
       return observer
@@ -448,14 +446,6 @@ describe('WorkflowTabs scrolling', () => {
     overflowObservers.length = 0
     workflowStore.openWorkflows = []
     workflowStore.activeWorkflow = null
-  })
-
-  it('disposes the overflow observer on unmount', async () => {
-    const { unmount } = renderComponent()
-    await waitFor(() => expect(overflowObservers).toHaveLength(1))
-    unmount()
-
-    expect(overflowObservers[0].dispose).toHaveBeenCalledOnce()
   })
 
   it('reveals the active tab when the tab list overflows', async () => {

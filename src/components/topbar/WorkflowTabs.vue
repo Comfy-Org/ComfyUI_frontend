@@ -124,7 +124,7 @@
 <script setup lang="ts">
 import { useScroll, whenever } from '@vueuse/core'
 import SelectButton from 'primevue/selectbutton'
-import { computed, nextTick, onBeforeUnmount, onUpdated, ref, watch } from 'vue'
+import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -314,11 +314,8 @@ watch(
 const scrollState = useScroll(scrollContent)
 const leftArrowEnabled = computed(() => !scrollState.arrivedState.left)
 const rightArrowEnabled = computed(() => !scrollState.arrivedState.right)
-const {
-  isOverflowing: showOverflowArrows,
-  checkOverflow,
-  dispose
-} = useOverflowObserver(scrollContent)
+const { isOverflowing: showOverflowArrows, checkOverflow } =
+  useOverflowObserver(scrollContent)
 
 whenever(showOverflowArrows, () => {
   void nextTick(() => {
@@ -327,7 +324,6 @@ whenever(showOverflowArrows, () => {
   })
 })
 
-onBeforeUnmount(dispose)
 onUpdated(checkOverflow)
 </script>
 
