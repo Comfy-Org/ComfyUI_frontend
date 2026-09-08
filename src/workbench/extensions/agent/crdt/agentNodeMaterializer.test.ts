@@ -946,7 +946,7 @@ describe('reconcileAgentAdapters', () => {
       graph.events.addEventListener('subgraph-created', (event) => {
         const registered =
           LiteGraph.registered_node_types[event.detail.subgraph.id]
-        if (registered) registered.title = event.detail.subgraph.name
+        registered.title = event.detail.subgraph.name
       })
 
       const { host, follower, adapter } = seedDocument(graph, {
