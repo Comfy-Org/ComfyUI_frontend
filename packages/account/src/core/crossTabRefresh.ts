@@ -37,6 +37,10 @@ export function createWebCrossTabRefreshPort():
           // without holding releases the lock straight to the next tab.
           if (disposed) return
           onAcquired()
+          // onAcquired may dispose synchronously, and neither abort() (a
+          // no-op on a granted lock) nor releaseHeld (not wired yet) can
+          // observe that — re-check before committing to the hold.
+          if (disposed) return
           // Hold the lock until released; the browser releases it for us
           // when the tab dies, which is what promotes the next tab.
           return new Promise<void>((resolve) => {
