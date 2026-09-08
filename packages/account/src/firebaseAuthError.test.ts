@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  AUTH_ERROR_COPY,
   AUTH_ERROR_MESSAGES,
+  AUTH_TOAST_SUMMARIES,
+  UNAUTHORIZED_DOMAIN_MESSAGES,
+  authErrorMessage,
   classifyAuthError,
-  severityForAuthError
+  severityForAuthError,
+  unauthorizedDomainMessage
 } from './firebaseAuthError'
 
 const firebaseError = (code: string, message = 'Firebase: error.') => ({
@@ -101,6 +106,94 @@ describe('shared auth error copy and severity', () => {
       { kind: 'unknown' }
     ] as const) {
       expect(severityForAuthError(classification)).toBe('error')
+    }
+  })
+})
+
+describe('AUTH_ERROR_COPY', () => {
+  it.for(['zh-CN', 'ja'] as const)(
+    '%s carries every key the English table has, and nothing else',
+    (locale) => {
+      expect(Object.keys(AUTH_ERROR_COPY[locale]).sort()).toEqual(
+        Object.keys(AUTH_ERROR_MESSAGES).sort()
+      )
+    }
+  )
+
+  it('keeps the English table as the en entry', () => {
+    expect(AUTH_ERROR_COPY.en).toBe(AUTH_ERROR_MESSAGES)
+  })
+})
+
+describe('authErrorMessage', () => {
+  it('returns the coded line for a known code in the requested locale', () => {
+    expect(
+      authErrorMessage(
+        classifyAuthError(firebaseError('auth/popup-blocked')),
+        'ja'
+      )
+    ).toBe(AUTH_ERROR_COPY.ja['auth/popup-blocked'])
+  })
+
+  it('falls back to the generic line for an unknown auth code', () => {
+    expect(
+      authErrorMessage(classifyAuthError(firebaseError('auth/some-new-code')))
+    ).toBe(AUTH_ERROR_MESSAGES.generic)
+  })
+
+  it('uses the signup-blocked copy regardless of the collapsed code', () => {
+    expect(
+      authErrorMessage(
+        classifyAuthError(
+          firebaseError('auth/internal-error', 'SIGNUP_BLOCKED')
+        ),
+        'zh-CN'
+      )
+    ).toBe(AUTH_ERROR_COPY['zh-CN'].signupBlocked)
+  })
+
+  it('gives the generic line for a non-Firebase failure', () => {
+    expect(authErrorMessage(classifyAuthError(new Error('boom')))).toBe(
+      AUTH_ERROR_MESSAGES.generic
+    )
+  })
+
+  it('does not pretend to know the unauthorized-domain copy without the host values', () => {
+    expect(
+      authErrorMessage(
+        classifyAuthError(firebaseError('auth/unauthorized-domain'))
+      ),
+      'the domain line needs {domain} and {email}; hosts call unauthorizedDomainMessage'
+    ).toBe(AUTH_ERROR_MESSAGES.generic)
+  })
+})
+
+describe('unauthorizedDomainMessage', () => {
+  it('interpolates the host domain and support address', () => {
+    expect(
+      unauthorizedDomainMessage({
+        domain: 'comfy.org',
+        email: 'support@comfy.org'
+      })
+    ).toBe(
+      'Your domain comfy.org is not authorized to use this service. Please contact support@comfy.org to add your domain to the whitelist.'
+    )
+  })
+
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    '%s template carries both placeholders',
+    (locale) => {
+      expect(UNAUTHORIZED_DOMAIN_MESSAGES[locale]).toContain('{domain}')
+      expect(UNAUTHORIZED_DOMAIN_MESSAGES[locale]).toContain('{email}')
+    }
+  )
+})
+
+describe('AUTH_TOAST_SUMMARIES', () => {
+  it('pairs every severity with a summary in every locale', () => {
+    for (const locale of ['en', 'zh-CN', 'ja'] as const) {
+      expect(AUTH_TOAST_SUMMARIES[locale].error).toBeTruthy()
+      expect(AUTH_TOAST_SUMMARIES[locale].warn).toBeTruthy()
     }
   })
 })
