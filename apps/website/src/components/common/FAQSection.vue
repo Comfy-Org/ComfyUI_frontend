@@ -5,6 +5,7 @@ import { computed, reactive } from 'vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import SafeRichText from './SafeRichTextContent'
 
 const {
   locale = 'en',
@@ -98,17 +99,19 @@ function toggle(index: number) {
             :aria-labelledby="`faq-trigger-${index}`"
             class="pb-6"
           >
-            <p
+            <SafeRichText
+              as="p"
               class="[&_a]:text-primary-comfy-yellow text-sm whitespace-pre-line text-primary-comfy-canvas/70 [&_a]:underline"
-              v-html="faq.answer"
+              :html="faq.answer"
             />
           </section>
         </div>
 
-        <p
+        <SafeRichText
           v-if="footerKey"
+          as="p"
           class="[&_a]:text-primary-comfy-yellow mt-8 text-sm text-primary-comfy-canvas/70 [&_a]:underline"
-          v-html="t(footerKey, locale)"
+          :html="t(footerKey, locale)"
         />
       </div>
     </div>
