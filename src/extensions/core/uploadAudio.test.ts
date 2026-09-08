@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 
 const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
@@ -18,7 +19,11 @@ let capturedFileSelect:
   | undefined
 let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
 
-type AudioUploadWidget = (node: LGraphNode, inputName: string) => unknown
+type AudioUploadWidget = (
+  node: LGraphNode,
+  inputName: string,
+  inputData?: InputSpec
+) => unknown
 
 vi.mock('extendable-media-recorder', () => ({
   MediaRecorder: class MockMediaRecorder {}
@@ -112,9 +117,24 @@ function failResponse(status = 500) {
   }
 }
 
-function createAudioNode() {
+// Top-level dynamic import: a static import would be hoisted above the consts
+// the vi.mock factories close over.
+await import('./uploadAudio')
+const registeredExtensions = mockRegisterExtension.mock.calls.map(
+  ([extension]) => extension as ComfyExtension
+)
+
+function loadExtension(name: string) {
+  const extension = registeredExtensions.find(
+    (extension) => extension.name === name
+  )
+  if (!extension) throw new Error(`${name} extension was not registered`)
+  return extension
+}
+
+function createAudioNode(audioInputName = 'audio') {
   const audioWidget = {
-    name: 'audio',
+    name: audioInputName,
     value: 'previous.mp3',
     options: { values: ['previous.mp3'] },
     callback: vi.fn()
@@ -138,14 +158,7 @@ function createAudioNode() {
 }
 
 async function loadAudioUploadWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.UploadAudio')
-  if (!extension)
-    throw new Error('Comfy.UploadAudio extension was not registered')
+  const extension = loadExtension('Comfy.UploadAudio')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
   return (widgets as Record<string, AudioUploadWidget>).AUDIOUPLOAD
 }
@@ -256,6 +269,21 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
+  it('uploads through a custom audio input named by the node definition', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { audioWidget, node } = createAudioNode('reference_audio')
+    AUDIOUPLOAD(node, 'upload', [
+      'AUDIOUPLOAD',
+      { audioInputName: 'reference_audio' }
+    ])
+    mockFetchApi.mockResolvedValueOnce(successResponse('uploaded.mp3'))
+
+    await capturedFileSelect!([createFile()])
+
+    expect(audioWidget.value).toBe('uploaded.mp3')
+    expect(audioWidget.options.values).toContain('uploaded.mp3')
+  })
+
   it('returns early when no files are provided', async () => {
     const AUDIOUPLOAD = await loadAudioUploadWidget()
     const { node } = createAudioNode()
@@ -272,14 +300,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
 
 async function loadAudioUIWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.AudioWidget')
-  if (!extension)
-    throw new Error('Comfy.AudioWidget extension was not registered')
+  const extension = loadExtension('Comfy.AudioWidget')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
   return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
 }
@@ -300,5 +321,53 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+  })
+})
+
+function createNodeDef(
+  requiredInputs: Record<string, InputSpec>
+): ComfyNodeDef {
+  return fromAny<ComfyNodeDef, unknown>({ input: { required: requiredInputs } })
+}
+
+function createCustomAudioNodeDef(): ComfyNodeDef {
+  return createNodeDef({
+    reference_audio: [['clip.mp3'], { audio_upload: true }]
+  })
+}
+
+describe('audio node definition setup', () => {
+  it('injects audioUI for custom nodes declaring an audio_upload input', async () => {
+    const extension = loadExtension('Comfy.AudioWidget')
+    const nodeData = createCustomAudioNodeDef()
+
+    await extension.beforeRegisterNodeDef!(
+      fromAny({ prototype: { comfyClass: 'CustomLoadAudio' } }),
+      nodeData,
+      fromAny({})
+    )
+
+    expect(nodeData.input?.required?.audioUI).toEqual(['AUDIO_UI', {}])
+  })
+
+  it('passes the audio_upload input name to the AUDIOUPLOAD widget', async () => {
+    const extension = loadExtension('Comfy.UploadAudio')
+    const nodeData = createCustomAudioNodeDef()
+
+    await extension.beforeRegisterNodeDef!(fromAny({}), nodeData, fromAny({}))
+
+    expect(nodeData.input?.required?.upload).toEqual([
+      'AUDIOUPLOAD',
+      { audioInputName: 'reference_audio' }
+    ])
+  })
+
+  it('skips nodes without an audio_upload input', async () => {
+    const extension = loadExtension('Comfy.UploadAudio')
+    const nodeData = createNodeDef({ audio: [['clip.mp3'], {}] })
+
+    await extension.beforeRegisterNodeDef!(fromAny({}), nodeData, fromAny({}))
+
+    expect(nodeData.input?.required?.upload).toBeUndefined()
   })
 })
