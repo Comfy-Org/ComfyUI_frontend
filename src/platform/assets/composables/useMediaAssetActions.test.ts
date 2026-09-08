@@ -1,5 +1,7 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -8,9 +10,14 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
+import type * as assetsStoreModule from '@/stores/assetsStore'
+import { assetService } from '../services/assetService'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
@@ -56,27 +63,38 @@ const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 const mockInputAssets = vi.hoisted(() => ({ items: [] as AssetItem[] }))
+const mockAssetsStoreOverride = vi.hoisted(() => ({
+  value: undefined as
+    | ReturnType<typeof assetsStoreModule.useAssetsStore>
+    | undefined
+}))
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    setAssetDeleting: mockSetAssetDeleting,
-    inputAssets: {
-      get items() {
-        return mockInputAssets.items
+  useAssetsStore: () =>
+    mockAssetsStoreOverride.value ?? {
+      setAssetDeleting: mockSetAssetDeleting,
+      inputAssets: {
+        get items() {
+          return mockInputAssets.items
+        },
+        invalidate: (stale?: string[]) => {
+          const ids = new Set(stale)
+          mockInputAssets.items = mockInputAssets.items.filter(
+            (item) => !ids.has(item.id)
+          )
+        }
       },
-      invalidate: (stale?: string[]) => {
-        const ids = new Set(stale)
-        mockInputAssets.items = mockInputAssets.items.filter(
-          (item) => !ids.has(item.id)
-        )
-      }
-    },
-    invalidateModelsForCategory: mockInvalidateModelsForCategory,
-    hasCategory: mockHasCategory
-  })
+      invalidateModelsForCategory: mockInvalidateModelsForCategory,
+      hasCategory: mockHasCategory
+    }
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({})
+  useModelToNodeStore: () => ({
+    getAllNodeProviders: vi.fn(() => []),
+    getCategoryForNodeType: vi.fn((nodeType: string) =>
+      nodeType === 'CheckpointLoaderSimple' ? 'checkpoints' : undefined
+    )
+  })
 }))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
@@ -159,7 +177,9 @@ const mockCreateAssetExport = vi.hoisted(() =>
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
-    createAssetExport: mockCreateAssetExport
+    createAssetExport: mockCreateAssetExport,
+    getAssetsPageForNodeType: vi.fn(),
+    getAssetsPageByTag: vi.fn()
   }
 }))
 
@@ -300,6 +320,7 @@ function mountMediaActions(asset?: AssetMeta) {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
+    mockAssetsStoreOverride.value = undefined
     mockIsCloud.value = false
     vi.mocked(api.getServerFeature).mockImplementation(
       (_path: string, defaultValue?: unknown) => defaultValue
@@ -1253,6 +1274,66 @@ describe('useMediaAssetActions', () => {
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
       )
+    })
+
+    it('refetches only affected loaded model caches after deletion', async () => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const { useAssetsStore } = await vi.importActual<
+        typeof assetsStoreModule
+      >('@/stores/assetsStore')
+      const store = useAssetsStore()
+      mockAssetsStoreOverride.value = store
+
+      const page = (assets: AssetItem[]): AssetResponse => ({
+        assets,
+        total: assets.length,
+        has_more: false
+      })
+      const checkpoint = createMockAsset({
+        id: 'checkpoint-1',
+        tags: ['models', 'checkpoints', 'uncached-category']
+      })
+      const unrelatedLora = createMockAsset({
+        id: 'lora-1',
+        tags: ['models', 'loras']
+      })
+      const refreshedCheckpoint = createMockAsset({
+        id: 'checkpoint-2',
+        tags: ['models', 'checkpoints']
+      })
+
+      vi.mocked(assetService.getAssetsPageForNodeType)
+        .mockResolvedValueOnce(page([checkpoint]))
+        .mockResolvedValueOnce(page([refreshedCheckpoint]))
+      vi.mocked(assetService.getAssetsPageByTag)
+        .mockResolvedValueOnce(page([checkpoint, unrelatedLora]))
+        .mockResolvedValueOnce(page([unrelatedLora]))
+
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      await store.updateModelsForTag('models')
+      await store.updateModelsForTag('loras')
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) => {
+          props.onConfirm(true)
+        }
+      )
+
+      const { actions, unmount } = mountMediaActions()
+      await actions.deleteAssets(checkpoint)
+      unmount()
+
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+      expect(store.getAssets('tag:models')).toEqual([])
+      expect(store.getAssets('tag:loras')).toEqual([unrelatedLora])
+      expect(store.hasCategory('uncached-category')).toBe(false)
+
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([
+        refreshedCheckpoint
+      ])
+      expect(assetService.getAssetsPageForNodeType).toHaveBeenCalledTimes(2)
     })
   })
 
