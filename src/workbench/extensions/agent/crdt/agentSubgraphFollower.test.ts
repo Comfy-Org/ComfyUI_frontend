@@ -2,7 +2,7 @@ import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -43,6 +43,7 @@ class SourceNode extends LGraphNode {
   }
 }
 
+const INTERIOR_DEFAULT_VALUE = 1
 const HOST_INITIAL_VALUE = 3
 
 const CATALOG: WidgetCatalog = {
@@ -67,6 +68,13 @@ interface FixtureOptions {
   extraInput?: boolean
   /** Strip the host instance's serialized inputs (cmp claimPromotedInput premise). */
   stripHostInputs?: boolean
+  /**
+   * Serialize the host with `widgets_values: []`. cmp mints such a host with
+   * an empty named `widgets` map and converts it to opaque storage on the
+   * first promoted write (`hostWriteStorage`), deleting `widgets` and setting
+   * `__widgets_opaque` in one transaction.
+   */
+  emptyHostWidgets?: boolean
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -101,10 +109,9 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   source.id = toNodeId(2)
   graph.add(source)
   const serialized = graph.serialize()
-  if (options.stripHostInputs) {
-    const hostNode = serialized.nodes.find((n) => n.id === 1)
-    if (hostNode) hostNode.inputs = []
-  }
+  const hostNode = serialized.nodes.find((n) => n.id === 1)
+  if (options.stripHostInputs && hostNode) hostNode.inputs = []
+  if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
   // Same cast the production path takes: serialized litegraph JSON is the
   // workflow shape cmp mints from.
   return serialized as unknown as WorkflowJSON
@@ -130,10 +137,13 @@ function startFollower(options: FixtureOptions = {}) {
   reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
-  expect(instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+  expect(instance.widgets[0]?.value).toBe(
+    options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
+  )
   expect(instance.inputs.map((i) => i.name)).toEqual(
     options.extraInput ? ['extra', 'value'] : ['value']
   )
+  onTestFinished(disableSubgraphNodeCreation)
   return {
     graph,
     hostDoc,
@@ -208,6 +218,35 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
   })
 
+  it('S1b keeps the promoted widget when cmp retires the empty named map in the same transaction', () => {
+    // cmp `applyPromotedHostWrite` deletes the host's empty `widgets` Y.Map and
+    // sets `__widgets_opaque` in ONE transaction. The follower must treat that
+    // as an opaque promoted write, not as a named-map replacement that
+    // reconciles the host back to definition defaults.
+    const state = startFollower({ emptyHostWidgets: true })
+    deliver(
+      state,
+      {
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'value',
+        value: 42,
+        promoted: {
+          instance_path: [1],
+          value_index: 0,
+          host_widgets_values: [INTERIOR_DEFAULT_VALUE]
+        }
+      },
+      1
+    )
+
+    const widgetId = state.instance.inputs[0]?.widgetId
+    expect(widgetId).toBeDefined()
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(42)
+    expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
+  })
+
   it('S2 materializes and connects a declared promoted host input', () => {
     const state = startFollower()
     deliver(
@@ -269,5 +308,42 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       valueLink: 9,
       extraLink: null
     })
+  })
+
+  it('S2c skips a promoted connect whose slot name the definition does not declare', () => {
+    // cmp `claimPromotedInput` never validates `grow.name` against the
+    // definition: it appends a `{name: 'bogus'}` slot to the doc host. With the
+    // doc host otherwise slot-less, that slot sits at doc index 0, which is the
+    // live `extra` input. A positional fallback would silently wire the link
+    // onto the wrong input; the follower must refuse instead.
+    const state = startFollower({ extraInput: true, stripHostInputs: true })
+    deliver(
+      state,
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 2,
+        from_slot: 0,
+        to_node: 1,
+        link_type: 'NUMBER',
+        grow: {
+          side: 'input',
+          slot: 'bogus',
+          name: 'bogus',
+          type: 'NUMBER',
+          promoted: true
+        }
+      },
+      1
+    )
+
+    expect(state.graph.links.has(toLinkId(9))).toBe(false)
+    expect(state.instance.inputs.map((i) => [i.name, i.link ?? null])).toEqual([
+      ['extra', null],
+      ['value', null]
+    ])
+    expect(
+      state.graph.getNodeById(toNodeId(2))?.outputs[0]?.links ?? []
+    ).toEqual([])
   })
 })

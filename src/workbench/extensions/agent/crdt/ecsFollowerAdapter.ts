@@ -60,13 +60,18 @@ function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
  * grown slot into the host's doc `inputs`, and its `target_slot` indexes that
  * doc-local list. The live host orders its inputs by the subgraph definition,
  * so re-derive both the slot index and the full input list from it.
+ *
+ * Returns `null` when the doc slot names an input the definition does not
+ * declare (cmp's `claimPromotedInput` does not validate the grown name). The
+ * live host has no such slot, so wiring the link positionally would land it
+ * on an unrelated input; the caller skips the link instead.
  */
 function hostTarget(
   doc: Y.Doc,
   definitions: SubgraphDefinitionIndex,
   targetId: string,
   docSlot: number
-): Pick<SemanticLinkPayload, 'targetSlot' | 'targetInputs'> {
+): Pick<SemanticLinkPayload, 'targetSlot' | 'targetInputs'> | null {
   const docInputs = readNodeSlots(doc, targetId, 'inputs')
   const type = nodesMap(doc).get(targetId)?.get('type')
   const definition =
@@ -75,8 +80,9 @@ function hostTarget(
 
   const name = docInputs?.[docSlot]?.name
   const slot = name == null ? -1 : hostSlotIndex(definition, name)
+  if (slot < 0) return null
   return {
-    targetSlot: slot >= 0 ? slot : docSlot,
+    targetSlot: slot,
     targetInputs: hostInputs(definition, docInputs ?? [])
   }
 }
@@ -102,6 +108,8 @@ function readSemanticLink(
     return null
   }
   const targetNodeId = String(tuple[3])
+  const target = hostTarget(doc, definitions, targetNodeId, targetSlot)
+  if (!target) return null
   return {
     id: linkId,
     originNodeId: String(tuple[1]),
@@ -112,7 +120,7 @@ function readSemanticLink(
         ? tuple[5]
         : '*',
     originOutputs: readNodeSlots(doc, String(tuple[1]), 'outputs'),
-    ...hostTarget(doc, definitions, targetNodeId, targetSlot)
+    ...target
   }
 }
 
@@ -326,12 +334,15 @@ export class EcsFollowerAdapter {
         batch.addNode(payload)
       }
       for (const id of replacedWidgetMaps) {
-        if (nodeActions.has(id)) continue
+        // cmp retires the named `widgets` map and writes `__widgets_opaque`
+        // in the same transaction when a host's storage flips to opaque; the
+        // opaque loop below owns that node so the host is not reconciled.
+        if (nodeActions.has(id) || replacedOpaqueWidgets.has(id)) continue
         const payload = readSemanticNode(session.follower.doc, id)
         if (payload) batch.reconcileNode(payload)
       }
       for (const id of replacedOpaqueWidgets) {
-        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+        if (nodeActions.has(id)) continue
         const node = session.nodes.get(id)
         if (!(node instanceof Y.Map)) continue
         const type = node.get('type')
