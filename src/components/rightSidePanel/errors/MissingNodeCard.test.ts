@@ -337,7 +337,7 @@ describe('MissingNodeCard', () => {
       const { container } = renderCard()
       expect(container.textContent).toContain('AlphaNode, ZebraNode')
       // eslint-disable-next-line testing-library/no-container
-      expect(container.textContent?.match(/ZebraNode/g)).toHaveLength(1)
+      expect(container.textContent.match(/ZebraNode/g)).toHaveLength(1)
     })
 
     it('sorts versions in descending order', () => {
@@ -347,7 +347,7 @@ describe('MissingNodeCard', () => {
         '1.2.0': [{ type: 'Node2' }]
       }
       const { container } = renderCard()
-      const text = container.textContent ?? ''
+      const text = container.textContent
       const v13 = text.indexOf('1.3.0')
       const v12 = text.indexOf('1.2.0')
       const v11 = text.indexOf('1.1.0')

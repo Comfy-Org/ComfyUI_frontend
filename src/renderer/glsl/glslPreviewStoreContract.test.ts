@@ -63,7 +63,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 }))
 
 vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { id: 'root' } }
+  app: { rootGraph: { id: 'root', _nodes: [] } }
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -88,11 +88,12 @@ function seedShaderThroughWidget(nodeId: number, value: string): void {
 }
 
 function createGLSLNode(nodeId: number): LGraphNode {
+  const rootGraph = { id: GRAPH_ID, _nodes: [] }
   return fromAny<LGraphNode, unknown>({
     id: nodeId,
     type: 'GLSLShader',
     inputs: [],
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } },
+    graph: { id: GRAPH_ID, rootGraph },
     getInputNode: () => null,
     isSubgraphNode: () => false
   })
