@@ -1,0 +1,169 @@
+name: 'PR: Apply Lockfile Repair'
+
+on:
+  workflow_run:
+    workflows: ['CI: Repair PR Lockfile']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: lockfile-repair-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted workflow revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Resolve pull request
+        id: pr
+        uses: ./.github/actions/resolve-pr-from-workflow-run
+
+      - name: Validate repair target
+        id: target
+        if: steps.pr.outputs.skip != 'true'
+        env:
+          HEAD_REPOSITORY: ${{ steps.pr.outputs.head-repository }}
+          MAINTAINER_CAN_MODIFY: ${{ steps.pr.outputs.maintainer-can-modify }}
+        run: |
+          if [ "$HEAD_REPOSITORY" = "$GITHUB_REPOSITORY" ] || \
+             [ "$MAINTAINER_CAN_MODIFY" = 'true' ]; then
+            echo 'eligible=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'eligible=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download repair artifact
+        if: steps.target.outputs.eligible == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-lockfile-repair
+          path: ${{ runner.temp }}/lockfile-repair
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Validate repair artifact
+        if: steps.target.outputs.eligible == 'true'
+        id: artifact
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/lockfile-repair
+          BASE_SHA: ${{ steps.pr.outputs.base-sha }}
+          HEAD_SHA: ${{ steps.pr.outputs.head-sha }}
+        run: |
+          for file in pnpm-lock.yaml base-sha head-sha mode; do
+            test -f "$ARTIFACT_DIR/$file"
+            test ! -L "$ARTIFACT_DIR/$file"
+          done
+          if [ "$(cat "$ARTIFACT_DIR/base-sha")" != "$BASE_SHA" ] || \
+             [ "$(cat "$ARTIFACT_DIR/head-sha")" != "$HEAD_SHA" ]; then
+            echo 'valid=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          mode=$(cat "$ARTIFACT_DIR/mode")
+          case "$mode" in
+            merge|repair) ;;
+            *) exit 1 ;;
+          esac
+          echo 'valid=true' >> "$GITHUB_OUTPUT"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout validated pull request revision
+        if: steps.artifact.outputs.valid == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ steps.pr.outputs.head-repository }}
+          ref: ${{ steps.pr.outputs.head-sha }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Apply repaired lockfile
+        if: steps.artifact.outputs.valid == 'true'
+        id: repair
+        env:
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ steps.pr.outputs.base-sha }}
+          MODE: ${{ steps.artifact.outputs.mode }}
+          REPAIRED_LOCKFILE: ${{ runner.temp }}/lockfile-repair/pnpm-lock.yaml
+        run: |
+          test ! -L pnpm-lock.yaml
+
+          if [ "$MODE" = 'merge' ]; then
+            git remote add upstream "https://github.com/$BASE_REPOSITORY.git"
+            git fetch --no-tags upstream "$BASE_SHA"
+            set +e
+            git merge --no-commit --no-ff "$BASE_SHA"
+            merge_status=$?
+            set -e
+            test "$merge_status" -ne 0
+            test "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml'
+          fi
+
+          cp "$REPAIRED_LOCKFILE" pnpm-lock.yaml
+          git add pnpm-lock.yaml
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$MODE" = 'repair' ]; then
+            test "$(git diff --cached --name-only)" = 'pnpm-lock.yaml'
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Revalidate pull request before push
+        id: final-pr
+        if: steps.repair.outputs.changed == 'true'
+        uses: actions/github-script@v9
+        env:
+          EXPECTED_BASE_SHA: ${{ steps.pr.outputs.base-sha }}
+          EXPECTED_HEAD_REF: ${{ steps.pr.outputs.head-ref }}
+          EXPECTED_HEAD_REPOSITORY: ${{ steps.pr.outputs.head-repository }}
+          EXPECTED_HEAD_SHA: ${{ steps.pr.outputs.head-sha }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          script: |
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            });
+            const valid =
+              pull.state === 'open' &&
+              pull.base.sha === process.env.EXPECTED_BASE_SHA &&
+              pull.head.sha === process.env.EXPECTED_HEAD_SHA &&
+              pull.head.repo?.full_name === process.env.EXPECTED_HEAD_REPOSITORY &&
+              pull.head.ref === process.env.EXPECTED_HEAD_REF &&
+              (pull.head.repo.full_name === process.env.GITHUB_REPOSITORY ||
+                pull.maintainer_can_modify);
+            core.setOutput('valid', String(valid));
+
+      - name: Commit and push repaired lockfile
+        if: steps.final-pr.outputs.valid == 'true'
+        env:
+          HEAD_REF: ${{ steps.pr.outputs.head-ref }}
+          HEAD_SHA: ${{ steps.pr.outputs.head-sha }}
+          MODE: ${{ steps.artifact.outputs.mode }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if [ "$MODE" = 'merge' ]; then
+            git commit -m 'fix: resolve pnpm lockfile conflict'
+          else
+            git commit -m 'fix: repair pnpm lockfile'
+          fi
+          git push origin "HEAD:refs/heads/$HEAD_REF" \
+            --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA"

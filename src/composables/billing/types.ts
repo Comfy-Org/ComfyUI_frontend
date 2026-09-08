@@ -9,6 +9,7 @@ import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
+  ScheduledPlanChange,
   SubscribeOptions,
   SubscribeResponse,
   SubscriptionDuration,
@@ -24,9 +25,7 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
-  scheduledPlanSlug?: string | null
-  /** ISO 8601; format at the display site. */
-  changeAt?: string | null
+  scheduledChange: ScheduledPlanChange | null
   /** ISO 8601; format at the display site. */
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
