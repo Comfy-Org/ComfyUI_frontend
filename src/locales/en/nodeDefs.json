@@ -771,23 +771,24 @@
     }
   },
   "BlockSparseAttention": {
-    "display_name": "Block Sparse Attention",
-    "description": "Block-sparse attention through comfy_kitchen: each query block attends a selected subset of key blocks exactly, reducing attention compute. The relative speed gain grows with sequence length since short sequences are usually faster dense. Outside the active schedule, dense_blocks and under min_tokens, the model uses the active dense model attention backend.",
+    "display_name": "Model Sparse Attention",
+    "description": "Applies block-sparse attention to eligible model attention layers, reducing compute for long sequences. The speed gain grows with sequence length since short sequences are usually faster dense. Outside the start/end_percent, dense_blocks and under min_tokens, the model uses the dense model attention backend. Use the node Model Attention Backend to select that fallback.",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "The model to patch."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "How exact key blocks are chosen. Sol-Attn: per head/block adaptive threshold. top-k (SLA): fixed keep_percent everywhere, recommended only with trained weights. VSA (FastVideo): FastH3-VSA's cube tiling and coarse branch, requires weights trained for it."
+        "tooltip": "Method used to choose key blocks for full token-level attention. sol-attn: Sparsifying Online Attention uses a training-free adaptive threshold for each attention head and query block. sla: Sparse-Linear Attention keeps a fixed percentage of the highest-scoring key blocks; use only with model weights trained for this pattern. vsa: Video Sparse Attention (FastVideo) uses 3D video-cube tiling and a learned coarse attention branch; requires FastH3 model weights."
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Dense before this point of the schedule."
+        "tooltip": "Percentage point when sparse attention begins. Before this point, attention stays dense."
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Dense after this point of the schedule."
+        "tooltip": "Percentage point when sparse attention ends. After this point, attention returns to dense."
       },
       "dense_blocks": {
         "name": "dense_blocks",
@@ -806,7 +807,8 @@
         "tooltip": "MiniMax-H3 only. exact_kv: every query attends the packed text/audio/reference rows exactly (~3% cost). exact_kv_and_rows: additionally runs the target-audio query rows dense (keeps generated audio intact)."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Logs whether each attention shape used sparse attention or why it stayed dense."
       },
       "selection_tau": {
         "name": "tau"
@@ -814,7 +816,8 @@
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "The model with block-sparse attention applied."
       }
     }
   },
@@ -13439,13 +13442,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "display_name": "Model Attention Backend",
+    "description": "Selects the dense attention implementation for the model. When used with Block Sparse Attention, this backend is used whenever sparse attention is inactive or unsupported.",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "The model to patch."
       },
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "The dense attention backend. Comfy Kitchen attention uses quantized INT8 attention and is available only on Nvidia and AMD GPUs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "The model with the selected attention backend."
       }
     }
   },
