@@ -4,8 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-import { UnauthorizedError } from '@/scripts/api'
-
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
 
 let settingStore: ReturnType<typeof useSettingStore>
@@ -54,7 +52,8 @@ describe('DesktopCloudNotificationController', () => {
     vi.mocked(settingStore.load).mockResolvedValue(undefined)
     vi.mocked(settingStore.set).mockImplementation(
       async (_key: string, value: boolean) => {
-        settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = value
+        settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] =
+          value
       }
     )
     dialogService.showCloudNotification.mockResolvedValue(undefined)
@@ -110,7 +109,9 @@ describe('DesktopCloudNotificationController', () => {
       'Comfy.Desktop.CloudNotificationShown',
       true
     )
-    expect(vi.mocked(settingStore.set).mock.invocationCallOrder[0]).toBeLessThan(
+    expect(
+      vi.mocked(settingStore.set).mock.invocationCallOrder[0]
+    ).toBeLessThan(
       dialogService.showCloudNotification.mock.invocationCallOrder[0]
     )
 
@@ -130,7 +131,9 @@ describe('DesktopCloudNotificationController', () => {
     const { unmount } = render(DesktopCloudNotificationController)
     await vi.advanceTimersByTimeAsync(2000)
 
-    expect(settingStore.settingValues['Comfy.Desktop.CloudNotificationShown']).toBe(true)
+    expect(
+      settingStore.settingValues['Comfy.Desktop.CloudNotificationShown']
+    ).toBe(true)
     unmount()
     saveSettings.resolve()
     await vi.advanceTimersByTimeAsync(0)
@@ -139,53 +142,21 @@ describe('DesktopCloudNotificationController', () => {
       'Comfy.Desktop.CloudNotificationShown',
       false
     )
-    expect(settingStore.settingValues['Comfy.Desktop.CloudNotificationShown']).toBe(false)
+    expect(
+      settingStore.settingValues['Comfy.Desktop.CloudNotificationShown']
+    ).toBe(false)
     expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
   })
 
-  it.for([new Error('load failed'), new UnauthorizedError('session expired')])(
-    'aborts without reporting a stored settings error: %s',
-    async (error) => {
-      vi.spyOn(settingStore, 'error', 'get').mockReturnValue(error)
-
-      const { unmount } = render(DesktopCloudNotificationController)
-      await vi.advanceTimersByTimeAsync(2000)
-
-      expect(errorReporter).not.toHaveBeenCalled()
-      expect(settingStore.set).not.toHaveBeenCalled()
-      expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
-
-      unmount()
-    }
-  )
-
-  it('reports a rejected settings load without scheduling the notification', async () => {
-    const error = new Error('load rejected')
-    vi.mocked(settingStore.load).mockRejectedValue(error)
+  it('aborts without reporting a stored settings error', async () => {
+    vi.spyOn(settingStore, 'error', 'get').mockReturnValue(
+      new Error('load failed')
+    )
 
     const { unmount } = render(DesktopCloudNotificationController)
-    await vi.advanceTimersByTimeAsync(0)
-
-    expect(errorReporter).toHaveBeenCalledWith(
-      error,
-      expect.objectContaining({
-        errorType: 'cloud_notification_settings_load_failed',
-        tags: expect.objectContaining({
-          failure_kind: 'caught_unexpected',
-          feature_area: 'cloud',
-          operation: 'load',
-          outcome: 'failed',
-          assert_mode: 'soft'
-        }),
-        context: expect.objectContaining({
-          platform: 'darwin',
-          is_disposed: false
-        }),
-        level: 'error'
-      })
-    )
     await vi.advanceTimersByTimeAsync(2000)
 
+    expect(errorReporter).not.toHaveBeenCalled()
     expect(settingStore.set).not.toHaveBeenCalled()
     expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
 
@@ -276,7 +247,8 @@ describe('DesktopCloudNotificationController', () => {
         async (_key: string, value: boolean) => {
           if (!value) throw resetError
           if (failure === 'save') throw initialError
-          settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = value
+          settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] =
+            value
         }
       )
 

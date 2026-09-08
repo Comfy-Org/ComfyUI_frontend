@@ -14,8 +14,11 @@ let isDisposed = false
 let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 
 function reportNotificationFailure(
-  errorType: string,
-  operation: 'load' | 'save' | 'render',
+  errorType:
+    | 'cloud_notification_state_save_failed'
+    | 'cloud_notification_show_failed'
+    | 'cloud_notification_state_reset_failed',
+  operation: 'save' | 'render',
   cause: unknown,
   platform: string
 ) {
@@ -50,18 +53,7 @@ async function scheduleCloudNotification() {
   const platform = electronAPI()?.getPlatform()
   if (!isDesktop || platform !== 'darwin') return
 
-  try {
-    await settingStore.load()
-  } catch (error) {
-    reportNotificationFailure(
-      'cloud_notification_settings_load_failed',
-      'load',
-      error,
-      platform
-    )
-    return
-  }
-
+  await settingStore.load()
   if (settingStore.error !== undefined) return
   if (isDisposed) return
   if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
