@@ -687,6 +687,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       adoptPublishedCredential
     )
     releaseLeadership = crossTab.port.requestLeadership(key, () => {
+      // A real port grants asynchronously; a grant for a key this client
+      // has since re-keyed away from must not promote it. The same check
+      // bounds the onAcquired → armScheduledRefresh → ensureCoordination
+      // cycle for a synchronous port: the key matches, so ensureCoordination
+      // early-returns instead of recursing.
+      if (coordinationKey !== key) return
       isRefreshLeader = true
       // Promotion after a leader loss: the jittered follower timer is
       // waiting on a broadcast that will never come — retake the schedule.
@@ -696,18 +702,30 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     })
   }
 
+  /**
+   * Every committed mint is published while coordinated — the reactive
+   * 401 re-mint and a leaderless follower's fallback included, since those
+   * are exactly the rotations siblings must not miss. Adoption itself never
+   * republishes, and the monotonic-expiry guard makes redelivery a no-op,
+   * so the channel cannot loop.
+   */
+  function publishToSiblings(session: AccountCredential): void {
+    if (coordinationKey === undefined) return
+    crossTab?.port.publishCredential(coordinationKey, session)
+  }
+
   function adoptPublishedCredential(message: unknown): void {
     // Leaders publish; only followers adopt.
     if (isRefreshLeader) return
     const parsed = CachedCredentialSchema.safeParse(message)
     if (!parsed.success) return
     if (currentUser?.uid !== parsed.data.uid) return
-    if (
-      credential !== undefined &&
-      parsed.data.expiresAt <= credential.expiresAt
-    ) {
-      return
-    }
+    // Scope check: the channel key cannot fully encode the workspace (the
+    // personal target is server-resolved), so a same-user credential minted
+    // for a DIFFERENT workspace must never switch this tab.
+    if (credential === undefined) return
+    if (parsed.data.workspace.id !== credential.workspace.id) return
+    if (parsed.data.expiresAt <= credential.expiresAt) return
     const next: AccountCredential = {
       token: parsed.data.token,
       expiresAt: parsed.data.expiresAt,
@@ -783,9 +801,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       failure = undefined
       publish()
       armScheduledRefresh(result.session.expiresAt)
-      if (isRefreshLeader && coordinationKey !== undefined) {
-        crossTab?.port.publishCredential(coordinationKey, result.session)
-      }
+      publishToSiblings(result.session)
       reportOutcome?.('succeeded')
       return
     }
@@ -837,6 +853,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
       armScheduledRefresh(result.session.expiresAt)
+      publishToSiblings(result.session)
     } else if (
       options.preserveCredentialOnTransientFailure === true &&
       credential !== undefined &&

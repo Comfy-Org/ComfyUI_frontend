@@ -434,8 +434,8 @@ describe('cross-tab refresh coordination', () => {
     expect(client.getToken()).toBe('jwt-2')
     expect(
       tab.published.map((credential) => credential.token),
-      'siblings adopt the refresh from the leader instead of minting their own'
-    ).toEqual(['jwt-2'])
+      'every coordinated commit is published, so siblings adopt instead of minting their own'
+    ).toEqual(['jwt-1', 'jwt-2'])
     expect(
       tab.keys[0],
       'the key scopes the lease and channel by user AND workspace; a broader key mixes scopes'
@@ -501,7 +501,7 @@ describe('cross-tab refresh coordination', () => {
     expect(
       tab.published.map((credential) => credential.token),
       'the fallback mint is published so the rest of a leaderless cohort adopts instead of stampeding'
-    ).toEqual(['jwt-2'])
+    ).toEqual(['jwt-1', 'jwt-2'])
   })
 
   it('a promoted follower retakes the schedule without jitter', async () => {
@@ -535,6 +535,7 @@ describe('cross-tab refresh coordination', () => {
       'promotion must rearm at the refresh point, not the jittered fallback of the dead leader'
     ).toBe('jwt-2')
     expect(tab.published.map((credential) => credential.token)).toEqual([
+      'jwt-1',
       'jwt-2'
     ])
   })
@@ -609,7 +610,7 @@ describe('cross-tab refresh coordination', () => {
     expect(
       tab.published.map((credential) => credential.token),
       'a 401-driven re-mint rotates the token; siblings left unpublished keep serving the rotated-out one'
-    ).toEqual(['jwt-2'])
+    ).toEqual(['jwt-1', 'jwt-2'])
   })
 
   it('never adopts a credential for another user or a malformed message', async () => {

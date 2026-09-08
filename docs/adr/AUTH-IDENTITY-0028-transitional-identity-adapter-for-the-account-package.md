@@ -74,8 +74,9 @@ interleaving/race pins in `useWorkspaceAuth.test.ts`.
 ## Consequences
 
 - Identity reaches the unified client with the same timing guarantees the
-  rest of the app gets from the auth listener; teardown (which the listener
-  runs first) always precedes delivery.
+  rest of the app gets from the auth listener. On sign-out and identity
+  change, teardown (which the listener runs first) precedes delivery; a
+  first sign-in has nothing to tear down and delivers directly.
 - Hosts that CAN bind the package identity directly (Workshop) do so without
   this adapter; the adapter is cloud-app-only debt with a named successor
   (the single-authority migration).
