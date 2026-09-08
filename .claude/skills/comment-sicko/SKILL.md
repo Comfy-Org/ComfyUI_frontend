@@ -9,7 +9,7 @@ Dispatcher for the `comment-sicko` subagent (`.claude/agents/comment-sicko.md`),
 
 **Agent guardrail, not a CI gate** — never blocks a merge or fails a check, no opt-out label. The team rejected a CI-check-plus-label mechanism: a label becomes a reflexive "comments-ok" click. Runs only when invoked during review or on request.
 
-**Run this before a PR goes up for review, or before requesting re-review — not after review has started.** A comment-only cleanup can't introduce a logic defect, so re-reviewing one has near-zero yield against real cost, and it renumbers lines, silently stranding any inline review threads that anchored to them. If review is already underway, prefer leaving the comments alone until after merge rather than triggering a fresh pass over a diff with no logic risk.
+**Deletion/edit timing matters; posting findings does not.** Posting critique on someone else's PR — inline comments or a consolidated writeup — is fine at any point, including during active human review: it's ordinary review commentary and never touches the diff. The caution is narrower and applies only to the "your own pending changes" path below: don't auto-delete or edit comments there once the PR is already under active human review — that reflows lines and silently strands any inline threads anchored to them. Run that delete/edit path before the PR goes up for review, or before requesting re-review; if review is already active, leave the comments in place until merge instead.
 
 ## Process
 
