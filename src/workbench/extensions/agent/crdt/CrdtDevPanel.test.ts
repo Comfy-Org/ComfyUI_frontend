@@ -194,7 +194,7 @@ describe('CrdtDevPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
     expect(copy).toHaveBeenCalledOnce()
-    const copied = String(copy.mock.calls[0][0])
+    const copied = copy.mock.calls[0][0]
     expect(copied).toContain('Review before sharing')
     expect(copied).toContain('op-1')
     expect(copied).toContain('[redacted by the debug report]')
