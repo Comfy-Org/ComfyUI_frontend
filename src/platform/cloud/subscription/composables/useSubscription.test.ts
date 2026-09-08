@@ -638,9 +638,11 @@ describe('useSubscription', () => {
           assert_mode: 'soft'
         },
         context: {
-          recovery_attempt_count: 3,
-          has_pending_attempt: true,
-          is_logged_in: true
+          checkout_attempt_id: 'attempt-timeout',
+          checkout_type: 'new',
+          attempt_age_ms: 11 * 60 * 1000 + 43_000,
+          tier: 'standard',
+          cycle: 'monthly'
         },
         level: 'warning'
       })
