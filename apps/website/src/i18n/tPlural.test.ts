@@ -25,6 +25,15 @@ describe('tPlural', () => {
     )
   })
 
+  it('falls back to English plural rules when the locale has no translation', () => {
+    // ja selects 'other' for 1, so using it on the English fallback would read
+    // '1 nodes'.
+    expect(tPlural('cloudNodesLaunch.models.nodeCount', 1, 'ja')).toBe('1 node')
+    expect(tPlural('cloudNodesLaunch.models.nodeCount', 3, 'ja')).toBe(
+      '3 nodes'
+    )
+  })
+
   it('returns a single-form message unchanged', () => {
     expect(tPlural('cloudNodesLaunch.models.flux2', 2, 'en')).toBe('Flux 2')
   })

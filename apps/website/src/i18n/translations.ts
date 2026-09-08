@@ -8488,7 +8488,7 @@ Enterprise`
   },
   'cloudNodesLaunch.models.nodeCount': {
     en: '{count} node | {count} nodes',
-    'zh-CN': '{count} 个节点 | {count} 个节点'
+    'zh-CN': '{count} 个节点'
   },
   'cloudNodesLaunch.models.flux2': {
     en: 'Flux 2',
@@ -8677,9 +8677,16 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
+// Returns the message plus the locale it actually came from, which is 'en'
+// whenever the requested locale has no translation for the key.
+function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   const entry = translations[key] as LocalizedText
-  return entry[locale] ?? entry.en
+  const message = entry[locale]
+  return message === undefined ? [entry.en, 'en'] : [message, locale]
+}
+
+export function t(key: TranslationKey, locale: Locale = 'en'): string {
+  return resolve(key, locale)[0]
 }
 
 export function tPlural(
@@ -8687,9 +8694,10 @@ export function tPlural(
   count: number,
   locale: Locale = 'en'
 ): string {
-  const forms = t(key, locale).split('|')
+  const [message, messageLocale] = resolve(key, locale)
+  const forms = message.split('|')
   const form =
-    new Intl.PluralRules(locale).select(count) === 'one'
+    new Intl.PluralRules(messageLocale).select(count) === 'one'
       ? forms[0]
       : forms[forms.length - 1]
   return form.trim().replace('{count}', String(count))
