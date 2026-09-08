@@ -124,9 +124,9 @@ export type DirectoryRow = {
 }
 
 function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
-  // Events that became past before dedicated card art existed fall back to
-  // their carousel art, the same way the past gallery does.
-  const media = event.media ?? event.featured?.media
+  // Carousel art is sized and hosted for the hero slider only; an event
+  // without dedicated card art gets no image here rather than reusing it.
+  const media = event.media
   if (!media) return undefined
   const isVideo = media.type === 'video'
   return {

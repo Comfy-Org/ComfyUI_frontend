@@ -23,9 +23,9 @@ const PAGE_SIZE = 4
 
 const items = computed<CardArticleGalleryItem[]>(() =>
   pastEvents.flatMap((event) => {
-    // Card art falls back to the carousel art for events that became past
-    // before dedicated card art was added; a card cannot render without media.
-    const media = event.media ?? event.featured?.media
+    // Carousel art is sized and hosted for the hero slider only; a card
+    // cannot render without its own dedicated media.
+    const media = event.media
     if (!media) return []
     // Events with a recording open their own page (dialog over the directory);
     // the rest link out to the event's external page in a new tab.
