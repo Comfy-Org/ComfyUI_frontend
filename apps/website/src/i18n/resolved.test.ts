@@ -54,6 +54,21 @@ describe('resolved dictionaries match the source they came from', () => {
   })
 })
 
+/**
+ * A `t()` call with exactly one argument, whatever form that argument takes.
+ * Matching only `t('key')` let `t("key")`, `` t(`key`) `` and `t(key)` through —
+ * all of which default to English just the same. A second argument is the
+ * locale, so a comma means the call is fine.
+ */
+const SINGLE_ARG_T = /\bt\(\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[A-Za-z_$][\w$]*)\s*\)/
+
+/**
+ * A relative specifier from either import form. A side-effect import has no
+ * `from`, so matching on `from` alone missed `import '../../i18n/translations'`
+ * — which loads the client module just as thoroughly as a named import does.
+ */
+const RELATIVE_SPECIFIER = /(?:from|import)\s+'(\.[^']*)'/g
+
 describe('the per-locale split cannot be silently undone', () => {
   it('never asks the browser for a locale its page did not load', () => {
     // In the browser only the page's own locale is loaded, so `t(key)` with no
@@ -61,7 +76,7 @@ describe('the per-locale split cannot be silently undone', () => {
     // calls that name a locale literally are in `.astro` files, which run on
     // the server where every locale is present.
     const offenders = walk(srcDir, '.vue')
-      .filter((file) => /\bt\('[^']+'\)/.test(readFileSync(file, 'utf8')))
+      .filter((file) => SINGLE_ARG_T.test(readFileSync(file, 'utf8')))
       .map((file) => file.slice(websiteDir.length + 1))
 
     expect(
@@ -85,7 +100,7 @@ describe('the per-locale split cannot be silently undone', () => {
     ]
       .filter((file) => !file.endsWith('.test.ts'))
       .filter((file) =>
-        [...readFileSync(file, 'utf8').matchAll(/from '(\.[^']*)'/g)].some(
+        [...readFileSync(file, 'utf8').matchAll(RELATIVE_SPECIFIER)].some(
           ([, specifier]) => join(dirname(file), specifier) === clientModule
         )
       )
