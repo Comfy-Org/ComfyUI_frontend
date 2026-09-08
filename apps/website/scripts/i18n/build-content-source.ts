@@ -23,6 +23,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
+import { dataAdapter } from '../../src/i18n/pipeline/adapters/data'
 import { translationsAdapter } from '../../src/i18n/pipeline/adapters/translations'
 import {
   buildEnglishSource,
@@ -36,11 +37,10 @@ import {
 import type { SourceAdapter } from '../../src/i18n/pipeline/types'
 
 /**
- * Sources, in the order their keys are collected. `translations.ts` is the only
- * one at launch; `src/data/*.ts` and the MDX collections join here later without
- * anything else in this file changing.
+ * Sources, in the order their keys are collected. The MDX collections join here
+ * next, without anything else in this file changing.
  */
-const ADAPTERS: SourceAdapter[] = [translationsAdapter]
+const ADAPTERS: SourceAdapter[] = [translationsAdapter, dataAdapter]
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
