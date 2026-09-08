@@ -13,6 +13,11 @@ remain authoritative. This file adds only website-specific rules.
   requests after deployment.
 - Vue components are client islands only when an Astro page hydrates them with
   a `client:*` directive. Prefer Astro for static content.
+- Do not pass `v-model` from Astro to a Vue island. Astro's generated component
+  props expose `defineProps`, not `defineModel`; pass an initial prop and emit
+  changes instead.
+- Keep browser-only APIs out of Astro frontmatter and build-time modules.
+- External links opened in a new tab use `rel="noopener noreferrer"`.
 - `dist/` is build output and is never committed.
 - Website tests live in this package. Root `browser_tests/` and the root
   Vitest configuration test the ComfyUI application, not this site.
@@ -122,38 +127,6 @@ Vercel applies redirects from `vercel.json` before static files. Before adding
 a page, check both its slash and non-slash paths against redirects. Local
 `astro dev` and `astro preview` do not reproduce Vercel redirects.
 
-## Review priorities
-
-Review behavior and reachable impact before style. Use this order:
-
-1. **Deployability and exposure.** The release build exits zero; unreleased
-   routes and links are absent; no existing route is removed unintentionally.
-2. **Client security.** Only intentionally public values use Astro's
-   `PUBLIC_*` prefix. User-controlled values do not reach `set:html`, `v-html`,
-   URLs, or JSON-LD without the appropriate validation or escaping.
-3. **Data integrity.** Network and generated inputs are validated; generation
-   is lossless, deterministic, and covered by malformed-input tests.
-4. **Routing and SEO.** Pages, redirects, canonical links, hreflang entries,
-   sitemap entries, markdown twins, and JSON-LD agree on which routes exist.
-5. **Tests.** Run website unit tests, typecheck, build, and relevant E2E tests.
-   Do not use a green root test job as evidence that website tests ran.
-
-Treat grep output, generated-file size, asset deltas, and stale review comments
-as leads to verify, not findings by themselves. Conversely, a green merge
-button is not proof that every website-specific job passed; inspect the named
-website checks and their logs.
-
-## Astro and Vue conventions
-
-- Keep static rendering in `.astro` and hydrate only interactions that need a
-  browser runtime.
-- Do not pass `v-model` from Astro to a Vue island. Astro's generated component
-  props expose `defineProps`, not `defineModel`; pass an initial prop and emit
-  changes instead.
-- Keep browser-only APIs out of Astro frontmatter and build-time modules.
-- For external links opened in a new tab, include the repository's standard
-  relationship attributes.
-
 ## Structured data and i18n
 
 - Escape dynamic JSON-LD content with the shared JSON-LD helper before using
@@ -162,5 +135,6 @@ website checks and their logs.
 - Keep `src/i18n/translations.ts` keys present for every supported locale.
   Translation merge conflicts are usually additive: retain both additions and
   check for duplicate keys rather than choosing one side.
-- If a route exists only for the invariant locale, update the canonical route
-  configuration so hreflang validation does not advertise a missing twin.
+- If a route exists only for the invariant locale, add it to
+  `LOCALE_INVARIANT_EXTRA_PATHS` in `src/config/routes.ts` so hreflang
+  validation does not advertise a missing twin.
