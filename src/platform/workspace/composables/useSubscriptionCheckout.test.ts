@@ -157,6 +157,7 @@ const {
   mockOpen,
   mockGetBillingStatus,
   mockGetPaymentPortalUrl,
+  mockReportError,
   mockPlans,
   mockResubscribe,
   mockToastAdd,
@@ -188,6 +189,7 @@ const {
     mockOpen: vi.fn(),
     mockGetBillingStatus: vi.fn(),
     mockGetPaymentPortalUrl: vi.fn(),
+    mockReportError: vi.fn(),
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
@@ -392,6 +394,10 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
   AuthStoreError: class AuthStoreError extends Error {
@@ -465,6 +471,7 @@ describe('useSubscriptionCheckout', () => {
     mockFetchPlans.mockReset()
     mockFetchStatus.mockReset()
     mockStartOperation.mockReset()
+    mockReportError.mockReset()
     mockListSavedPaymentMethods.mockReset()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
@@ -979,13 +986,15 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('shows the server guidance when payment recovery cannot open', async () => {
-      mockGetPaymentPortalUrl.mockRejectedValueOnce(
-        new Error('Portal unavailable')
-      )
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
       await submitRejectedPreview(
         'SUBSCRIPTION_PAYMENT_REQUIRED',
         'Update your payment method before changing plans'
       )
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
@@ -1000,15 +1009,17 @@ describe('useSubscriptionCheckout', () => {
       mockGetBillingStatus.mockResolvedValueOnce({
         billing_status: 'payment_failed'
       })
-      mockGetPaymentPortalUrl.mockRejectedValueOnce(
-        new Error('Portal unavailable')
-      )
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
 
       await submitRejectedPreview(
         'TRANSITION_NOT_ALLOWED',
         'Plan change is unavailable'
       )
 
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ detail: 'Portal unavailable' })
       )

@@ -13,6 +13,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   PaymentIntentSource,
   SubscriptionCheckoutType
@@ -513,6 +514,9 @@ export function useSubscriptionCheckout(
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
+      reportError(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
       return 'failed'
     }
