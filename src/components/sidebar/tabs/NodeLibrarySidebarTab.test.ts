@@ -1,13 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { NodeSearchService } from '@/services/nodeSearchService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 
 import NodeLibrarySidebarTab from './NodeLibrarySidebarTab.vue'
 
@@ -56,34 +57,6 @@ vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
     getSortingIcon: vi.fn(() => 'pi pi-sort'),
     organizeNodes: mockOrganizeNodes
   }
-}))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    visibleNodeDefs: [],
-    nodeSearchService: { searchNode: mockSearchNode }
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
-  useNodeBookmarkStore: () => ({
-    bookmarks: []
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/workspace/nodeHelpStore'), () => ({
-  useNodeHelpStore: () => ({
-    currentHelpNode: ref(null),
-    isHelpOpen: ref(false),
-    openHelp: vi.fn(),
-    closeHelp: vi.fn()
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({
-    execute: vi.fn()
-  })
 }))
 
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
@@ -152,13 +125,6 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('primevue/divider'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    default: { name: 'Divider', template: '<div />' }
-  })
-)
-vi.mock<unknown>(
   import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
   () => ({
     default: {
@@ -183,12 +149,18 @@ const mockNode = fromPartial<ComfyNodeDefImpl>({
 describe('NodeLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.NodeLibrary.Bookmarks.V2': [] }
+    })
+    vi.spyOn(NodeSearchService.prototype, 'searchNode').mockImplementation(
+      mockSearchNode
+    )
   })
 
   function renderComponent() {
     return render(NodeLibrarySidebarTab, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [i18n],
         stubs: { teleport: true }
       }
     })
