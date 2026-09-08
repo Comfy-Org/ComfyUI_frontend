@@ -4,7 +4,15 @@
  * listener also fires, a provisioning failure after the popup succeeded —
  * are decided in one tested place instead of by handler timing.
  */
-import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
+import {
+  authErrorMessage,
+  classifyAuthError,
+  unauthorizedDomainMessage
+} from '@comfyorg/account/firebaseAuthError'
+import type {
+  AuthCopyLocale,
+  AuthErrorClassification
+} from '@comfyorg/account/firebaseAuthError'
 
 import type { TranslationKey } from '../i18n/translations'
 
@@ -14,7 +22,10 @@ export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
   | { readonly step: 'minting'; readonly email: string }
-  | { readonly step: 'error'; readonly messageKey: TranslationKey }
+  | {
+      readonly step: 'error'
+      readonly classification: AuthErrorClassification
+    }
   | {
       readonly step: 'signedIn'
       readonly email: string
@@ -32,23 +43,24 @@ export type AuthSignInEvent =
   | { readonly type: 'mintRetried' }
   | { readonly type: 'signedOut' }
 
-const ERROR_KEYS: Record<
-  ReturnType<typeof classifyAuthError>['kind'],
-  TranslationKey
-> = {
-  'popup-dismissed': 'auth.signIn.error.popupClosed',
-  'unauthorized-domain': 'auth.signIn.error.domain',
-  'signup-blocked': 'auth.signIn.error.blocked',
-  auth: 'auth.signIn.error.generic',
-  unknown: 'auth.signIn.error.generic'
-}
+const SUPPORT_EMAIL = 'support@comfy.org'
 
-// Each dismissal shape gets the cloud app's own copy for it; the closed
-// message is the fallback for any future code in the family.
-const POPUP_DISMISSED_KEYS: Partial<Record<string, TranslationKey>> = {
-  'auth/popup-closed-by-user': 'auth.signIn.error.popupClosed',
-  'auth/cancelled-popup-request': 'auth.signIn.error.popupCancelled',
-  'auth/popup-blocked': 'auth.signIn.error.popupBlocked'
+/**
+ * The copy for a failed attempt, from the package tables the cloud app's
+ * own strings are pinned to. Only the unauthorized-domain line needs this
+ * host's values.
+ */
+export function signInErrorMessage(
+  classification: AuthErrorClassification,
+  locale: AuthCopyLocale,
+  hostname: string
+): string {
+  return classification.kind === 'unauthorized-domain'
+    ? unauthorizedDomainMessage(
+        { domain: hostname, email: SUPPORT_EMAIL },
+        locale
+      )
+    : authErrorMessage(classification, locale)
 }
 
 export function authSignInTransition(
@@ -63,17 +75,8 @@ export function authSignInTransition(
         : { step: 'pending', provider: event.provider }
     case 'popupSucceeded':
       return { step: 'minting', email: event.email }
-    case 'signInFailed': {
-      const classified = classifyAuthError(event.error)
-      const popupKey =
-        classified.kind === 'popup-dismissed'
-          ? POPUP_DISMISSED_KEYS[classified.code]
-          : undefined
-      return {
-        step: 'error',
-        messageKey: popupKey ?? ERROR_KEYS[classified.kind]
-      }
-    }
+    case 'signInFailed':
+      return { step: 'error', classification: classifyAuthError(event.error) }
     case 'provisioningFailed':
       return {
         step: 'signedIn',
