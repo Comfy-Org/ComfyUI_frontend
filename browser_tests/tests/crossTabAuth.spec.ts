@@ -7,8 +7,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:8188'
 
-async function bootSignedIn(page: Page): Promise<void> {
-  await new CloudWorkspaceMockHelper(page).setup()
+async function gotoAndWaitSignedIn(page: Page): Promise<void> {
   await page.goto(APP_URL)
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {
     timeout: 45_000
@@ -18,17 +17,23 @@ async function bootSignedIn(page: Page): Promise<void> {
   })
 }
 
+async function bootSignedIn(page: Page): Promise<void> {
+  await new CloudWorkspaceMockHelper(page).setup()
+  await gotoAndWaitSignedIn(page)
+}
+
 async function expectSignedOut(page: Page, message: string): Promise<void> {
   await expect(async () => {
     expect(
       page.isClosed(),
       'a torn-down page must fail this check, never satisfy it'
     ).toBe(false)
+    const url = page.url()
     expect(
-      page.url().startsWith(APP_URL),
-      'a page that navigated off the app must fail this check, never satisfy it'
+      url.startsWith(APP_URL),
+      `page is at "${url}", not the app: ${message}`
     ).toBe(true)
-    const atLogin = page.url().includes('/cloud/login')
+    const atLogin = url.includes('/cloud/login')
     const loginButtonVisible = await page
       .getByTestId(TestIds.topbar.loginButton)
       .isVisible()
@@ -37,6 +42,41 @@ async function expectSignedOut(page: Page, message: string): Promise<void> {
       .isVisible())
     expect(atLogin || loginButtonVisible || userButtonGone, message).toBe(true)
   }).toPass({ timeout: 60_000 })
+}
+
+// A browser-level navigation failure (e.g. a transient network hiccup on the
+// runner) can land a page on Chrome's own error interstitial instead of the
+// app. That page is a real, distinct origin: url() reports it, but nothing
+// under expectSignedOut's 60s poll can recover from it, since the interstitial
+// never becomes the app again on its own. Detect it right after the action
+// that might trigger it and recover by reloading, rather than let a 60s poll
+// spend its whole budget failing against a page that cannot pass.
+async function isOnNavigationErrorPage(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    try {
+      // Accessing localStorage throws SecurityError on an opaque-origin error
+      // page (chrome-error:); a normal app origin never throws here.
+      void window.localStorage
+      return false
+    } catch {
+      return true
+    }
+  })
+}
+
+async function clickLogout(page: Page): Promise<void> {
+  await page.getByTestId('current-user-button').click()
+  await page.getByTestId('logout-menu-item').click()
+
+  if (!(await isOnNavigationErrorPage(page))) return
+
+  // One recovery attempt: the mocked identity persists in IndexedDB, so
+  // navigating back to the app restores the signed-in state without a fresh
+  // sign-in. Retry the logout click once from there; if it lands on an error
+  // page again, let it fail loudly rather than retrying indefinitely.
+  await gotoAndWaitSignedIn(page)
+  await page.getByTestId('current-user-button').click()
+  await page.getByTestId('logout-menu-item').click()
 }
 
 // Two pages in one context share real Firebase IndexedDB persistence, so
@@ -57,8 +97,7 @@ test.describe('cross-tab auth', { tag: ['@cloud'] }, () => {
     await bootSignedIn(pageA)
     await bootSignedIn(pageB)
 
-    await pageA.getByTestId('current-user-button').click()
-    await pageA.getByTestId('logout-menu-item').click()
+    await clickLogout(pageA)
 
     await expectSignedOut(pageA, 'the signing-out tab must land signed out')
     await expectSignedOut(
