@@ -2,7 +2,9 @@
  * Utilities for constructing asset URLs
  */
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
+import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
 
@@ -50,4 +52,33 @@ export function getAssetSubfolder(asset: AssetItem): string {
 
   const { subfolder } = asset.user_metadata ?? {}
   return typeof subfolder === 'string' ? subfolder : ''
+}
+
+/**
+ * Id of the assets-API asset holding this item's own file.
+ *
+ * A card grouped per job carries the job id as its `id`; its own file is the
+ * `allOutputs` entry with the same filename, which keeps the real asset id.
+ */
+function getAssetContentId(asset: AssetItem): string {
+  const outputs = getOutputAssetMetadata(asset.user_metadata)?.allOutputs
+  const ownOutput = outputs?.find(
+    (output) => output.filename === asset.name && output.assetId
+  )
+  return ownOutput?.assetId ?? asset.id
+}
+
+/**
+ * URL of the asset's own file, for downloading or loading it whole.
+ *
+ * With the assets API enabled the file is served by id, so no path inference
+ * is needed and a preview that is only a thumbnail is never mistaken for the
+ * file. Otherwise the item came from the history API, whose `preview_url`
+ * already points at the file, with a `/view` URL as fallback.
+ */
+export function getAssetFileUrl(asset: AssetItem): string {
+  if (useFeatureFlags().flags.assetsEnabled) {
+    return api.apiURL(`/assets/${getAssetContentId(asset)}/content`)
+  }
+  return asset.preview_url || getAssetUrl(asset)
 }
