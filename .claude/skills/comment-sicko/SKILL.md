@@ -9,17 +9,19 @@ Dispatcher for the `comment-sicko` subagent (`.claude/agents/comment-sicko.md`),
 
 **Agent guardrail, not a CI gate** — never blocks a merge or fails a check, no opt-out label. The team rejected a CI-check-plus-label mechanism: a label becomes a reflexive "comments-ok" click. Runs only when invoked during review or on request.
 
+**Run this before a PR goes up for review, or before requesting re-review — not after review has started.** A comment-only cleanup can't introduce a logic defect, so re-reviewing one has near-zero yield against real cost, and it renumbers lines, silently stranding any inline review threads that anchored to them. If review is already underway, prefer leaving the comments alone until after merge rather than triggering a fresh pass over a diff with no logic risk.
+
 ## Process
 
-1. **Spawn.** Dispatch the `comment-sicko` subagent via `Task` on the PR/branch diff. It returns raw, savage, unfiltered verdicts (`file:line` + comment + KILL/KEEP/MUST KILL) — do not show these to a human as-is.
-2. **Triage every returned KILL/MUST KILL:**
+1. **Spawn.** Dispatch the `comment-sicko` subagent via `Task` on the PR/branch diff. It returns raw, savage, unfiltered verdicts (`file:line` + comment + KEEP/KILL/MUST KILL/COMMIT-BODY) — do not show these to a human as-is.
+2. **Triage every returned verdict:**
    - **Reject** any verdict that escapes scope (comments the diff didn't touch) or misstates what the code does — the subagent doesn't re-read context, you do.
-   - **Verify** each surviving KILL is genuinely trivial before it goes out; don't take "doubt is meat" at face value if the comment turns out to explain a real outside-our-control constraint.
+   - **Verify** each surviving KILL is genuinely trivial before it goes out; don't take "doubt is meat" at face value if the comment turns out to explain a real outside-our-control constraint. Same scrutiny for KEEP: a `considered:` line that doesn't actually name a losing alternative isn't a real KEEP.
    - **Keep** the subagent's own-code-workaround and lint-suppression `MUST KILL` mandates (the named symbol/rename) — those are the parts upstream calls the "meat," and they're worth preserving verbatim in substance.
 3. **Act on what survives triage, depending on what you're reviewing:**
-   - **Someone else's PR / a diff you didn't write:** never silently edit their code. Rewrite each surviving finding into direct, PR-postable text — critique is a gift, don't soften it. The one constraint that stays: no insults aimed at the PR author personally, critique the comment, not the person. Post it as a review comment: inline per-line where the repo's review-comment conventions support it (see `comprehensive-pr-review`'s inline-comment approach), or one consolidated comment listing `file:line` + quoted comment + verdict if inline isn't available.
-   - **Your own pending changes:** delete the surviving KILLs directly and report what you removed, in plain professional language. Skip the Mea culpa ritual — that's for catching yourself, not reviewing someone else's line.
-4. **Tally.** Report counts (kept, killed, rejected-on-triage) so the reader can see the subagent wasn't rubber-stamped.
+   - **Someone else's PR / a diff you didn't write:** never silently edit their code. Rewrite each surviving finding into direct, PR-postable text — critique is a gift, don't soften it. The one constraint that stays: no insults aimed at the PR author personally, critique the comment, not the person. Post it as a review comment: inline per-line where the repo's review-comment conventions support it (see `comprehensive-pr-review`'s inline-comment approach), or one consolidated comment listing `file:line` + quoted comment + verdict if inline isn't available. COMMIT-BODY findings are suggestions to move that content into the commit/PR description, not deletions.
+   - **Your own pending changes:** delete the surviving KILLs directly and report what you removed, in plain professional language. For a surviving COMMIT-BODY, move its content into the pending commit message or PR description, then delete the comment — don't just delete it outright. Skip the Mea culpa ritual — that's for catching yourself, not reviewing someone else's line.
+4. **Tally.** Report counts (kept, killed, moved-to-commit-body, rejected-on-triage) so the reader can see the subagent wasn't rubber-stamped.
 
 ## Output shape
 
