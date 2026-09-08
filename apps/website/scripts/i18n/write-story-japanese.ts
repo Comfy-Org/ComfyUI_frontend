@@ -119,7 +119,7 @@ function main(): void {
     // A section without a translation would leave English inside an otherwise
     // Japanese story, which reads worse than the page falling back whole.
     const missing = story.sections.filter(
-      (section) => sectionBodies[section.id] === undefined
+      (section) => !Object.hasOwn(sectionBodies, section.id)
     )
     if (missing.length > 0 && story.sections.length > 0) {
       untranslated.push(story.slug)

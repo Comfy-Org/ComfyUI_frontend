@@ -134,7 +134,7 @@ export function splitStoryBody(body: string): BodyPiece[] {
 }
 
 /** The between-pieces that hold prose rather than blank lines. */
-export function proseBetween(pieces: readonly BodyPiece[]): BodyPiece[] {
+function proseBetween(pieces: readonly BodyPiece[]): BodyPiece[] {
   return pieces.filter(
     (piece) => piece.kind === 'between' && piece.text.trim() !== ''
   )
@@ -325,7 +325,7 @@ export function buildStory(
           : piece.text
       }
       if (piece.text.trim() === '') return piece.text
-      const translated = translation.between[betweenIndex]
+      const translated = translation.between.at(betweenIndex)
       betweenIndex += 1
       if (translated === undefined) return piece.text
       // The key holds the prose alone, so the validator can compare line counts

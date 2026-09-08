@@ -112,6 +112,19 @@ describe('buildStory', () => {
     expect(parsed.body).toContain('著者について')
   })
 
+  /**
+   * `between` is a positional list, so a translation that ran short leaves the
+   * later indexes with nothing. A type-aware linter reads the lookup as always
+   * returning a string and calls the guard dead; it is not, and this is the
+   * case that proves it.
+   */
+  it('falls back to English for prose the translation ran out of', () => {
+    const partial = buildStory(ENGLISH, { ...JAPANESE, between: [] })
+
+    expect(partial).toContain('<AuthorBio label="About the author" />')
+    expect(partial).not.toContain('著者について')
+  })
+
   it('falls back to English for a section with no translation', () => {
     const partial = buildStory(ENGLISH, {
       ...JAPANESE,

@@ -32,7 +32,6 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 import { LOCALIZED_CODES, localePrefix } from '../../src/config/locales'
-import type { Locale } from '../../src/config/locales'
 import { comparePage } from '../../src/utils/pageCoverage'
 import { translatableEntries } from '../../src/i18n/pipeline/source'
 import { translationsAdapter } from '../../src/i18n/pipeline/adapters/translations'
@@ -166,7 +165,7 @@ function reportPages(): void {
   const scores = new Map<string, Map<string, number>>()
 
   for (const locale of LOCALIZED_CODES) {
-    const prefix = localePrefix(locale as Locale).replace(/^\//, '')
+    const prefix = localePrefix(locale).replace(/^\//, '')
     for (const route of routes) {
       const localized = join(DIST, prefix, route, 'index.html')
       if (!existsSync(localized)) continue

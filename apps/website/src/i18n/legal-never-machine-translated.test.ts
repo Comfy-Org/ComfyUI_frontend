@@ -41,7 +41,7 @@ describe('legal copy is never machine-translated', () => {
     expect(excluded.size).toBeGreaterThan(400)
   })
 
-  it.each(Object.keys(machineLayers))(
+  it.for(Object.keys(machineLayers))(
     'keeps them out of the shipped %s machine layer',
     (locale) => {
       // Tested against the namespace rule itself rather than against the

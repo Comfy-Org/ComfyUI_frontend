@@ -86,7 +86,7 @@ function ownIdentifier(node: ObjectLiteralExpression): string | undefined {
 }
 
 /** One `LocalizedText` literal, with the node so a writer can edit it. */
-export interface LocalizedLiteral {
+interface LocalizedLiteral {
   key: string
   english: string
   node: ObjectLiteralExpression
@@ -107,7 +107,7 @@ export interface LocalizedLiteral {
  * own way, a divergence would write Japanese onto the wrong key and no test
  * would see it.
  */
-export function forEachLocalizedText(
+function forEachLocalizedText(
   fileName: string,
   sourceText: string,
   visit: (literal: LocalizedLiteral) => void

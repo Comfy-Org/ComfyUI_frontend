@@ -14,10 +14,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
-import {
-  collectViolations,
-  type Violation
-} from '../../src/i18n/pipeline/validate'
+import { collectViolations } from '../../src/i18n/pipeline/validate'
+import type { Violation } from '../../src/i18n/pipeline/validate'
 import type {
   EnglishSource,
   TranslationLayer

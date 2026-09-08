@@ -147,8 +147,8 @@ export function pendingSource(
   const approved = approvedLayer(entries, locale)
   const pending: EnglishSource = {}
   for (const [key, english] of Object.entries(buildEnglishSource(entries))) {
-    if (approved[key] !== undefined) continue
-    if (machine[key] !== undefined) continue
+    if (Object.hasOwn(approved, key)) continue
+    if (Object.hasOwn(machine, key)) continue
     pending[key] = english
   }
   return pending
@@ -162,7 +162,7 @@ export function pendingSource(
  */
 export function staleKeys(prev: Manifest, next: Manifest): string[] {
   return Object.keys(next).filter(
-    (key) => prev[key] !== undefined && prev[key] !== next[key]
+    (key) => Object.hasOwn(prev, key) && prev[key] !== next[key]
   )
 }
 
