@@ -722,9 +722,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   /**
-   * Every committed mint is published while coordinated — the reactive
-   * 401 re-mint and a leaderless follower's fallback included, since those
-   * are exactly the rotations siblings must not miss. Adoption itself never
+   * Every committed mint is published once a coordination key exists —
+   * leadership gates adoption, never publication — so the reactive 401
+   * re-mint and a leaderless follower's fallback reach siblings too: those
+   * are exactly the rotations they must not miss. Adoption itself never
    * republishes, and the monotonic-expiry guard makes redelivery a no-op,
    * so the channel cannot loop.
    */

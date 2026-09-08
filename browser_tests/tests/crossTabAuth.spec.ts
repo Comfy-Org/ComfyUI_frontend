@@ -20,19 +20,26 @@ async function bootSignedIn(page: Page): Promise<void> {
 
 async function expectSignedOut(page: Page, message: string): Promise<void> {
   await expect(async () => {
+    expect(
+      page.isClosed(),
+      'a torn-down page must fail this check, never satisfy it'
+    ).toBe(false)
     const atLogin = page.url().includes('/cloud/login')
     const loginButtonVisible = await page
       .getByTestId(TestIds.topbar.loginButton)
       .isVisible()
-      .catch(() => false)
     const userButtonGone = !(await page
       .getByTestId('current-user-button')
-      .isVisible()
-      .catch(() => false))
+      .isVisible())
     expect(atLogin || loginButtonVisible || userButtonGone, message).toBe(true)
   }).toPass({ timeout: 60_000 })
 }
 
+// Two pages in one context share real Firebase IndexedDB persistence, so
+// this spec exercises the SDK's cross-tab auth propagation and the app's
+// user-facing reaction to it. The refresh-coordination feature (Web Locks +
+// BroadcastChannel) runs on a token-lifetime cadence and is covered by the
+// scheduler unit suite, not here.
 test.describe('cross-tab auth', { tag: ['@cloud'] }, () => {
   // Two full app boots per test; the cloud project's default budget fits one.
   test.beforeEach(() => {
