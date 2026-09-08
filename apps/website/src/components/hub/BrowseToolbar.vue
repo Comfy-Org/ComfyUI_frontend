@@ -18,9 +18,9 @@ import {
   TabsTrigger
 } from 'reka-ui'
 import type { Component } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { onClickOutside } from '@vueuse/core'
+import { onClickOutside, useMediaQuery } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -97,6 +97,18 @@ const pill = useSlidingUnderline(
 )
 
 const filterOpen = ref(false)
+// A sheet has to escape the toolbar to reach the bottom of the screen: an
+// ancestor that blurs its backdrop would otherwise anchor it.
+const isPhone = useMediaQuery('(max-width: 639px)')
+
+// On a phone the panel is a sheet over the page, so the grid behind it stays
+// where it was left.
+watchEffect((onCleanup) => {
+  if (!filterOpen.value || !isPhone.value) return
+  const previous = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+  onCleanup(() => (document.body.style.overflow = previous))
+})
 const panel = useTemplateRef<HTMLElement>('panel')
 onClickOutside(panel, () => (filterOpen.value = false), {
   ignore: ['[data-testid="hub-filter"]', '[data-reka-popper-content-wrapper]']
@@ -330,280 +342,304 @@ function phoneToggle(value: string) {
       </div>
     </div>
 
-    <div
-      v-if="filterOpen"
-      ref="panel"
-      class="bg-site-dropdown absolute top-full right-0 z-40 mt-3 flex max-h-[75vh] w-full max-w-4xl scrollbar-thin flex-col gap-7 overflow-y-auto rounded-3xl border border-white/10 p-8 shadow-2xl"
-      data-testid="hub-filter-menu"
-    >
-      <div class="-m-8 flex flex-col sm:hidden" data-testid="hub-filter-phone">
+    <!-- A dropdown anchored to a crowded toolbar leaves a phone no room, so
+      there the panel rises from the bottom of the screen instead. -->
+    <Teleport to="body" :disabled="!isPhone">
+      <div
+        v-if="filterOpen"
+        class="fixed inset-0 z-30 bg-black/60 sm:hidden"
+        data-testid="hub-filter-backdrop"
+        @click="filterOpen = false"
+      />
+
+      <div
+        v-if="filterOpen"
+        ref="panel"
+        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:gap-4 max-sm:rounded-t-3xl max-sm:p-5 sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
+        data-testid="hub-filter-menu"
+      >
+        <span
+          class="mx-auto -mb-4 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
+          aria-hidden="true"
+        />
+
         <div
-          class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
-          role="tablist"
+          class="-mx-5 flex flex-col sm:hidden"
+          data-testid="hub-filter-phone"
         >
-          <button
-            v-for="tab in facetTabs"
-            :key="tab.key"
-            type="button"
-            role="tab"
-            :aria-selected="currentFacet === tab.key"
-            :data-testid="`hub-phone-facet-${tab.key}`"
-            :class="
-              cn(
-                'cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors',
-                currentFacet === tab.key
-                  ? 'text-content bg-white/8'
-                  : 'text-content-secondary'
-              )
-            "
-            @click="phoneFacet = tab.key"
+          <div
+            class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
+            role="tablist"
           >
-            {{ tab.label }}
-          </button>
-        </div>
-
-        <div v-if="currentGroup" class="border-b border-white/10 p-2">
-          <input
-            v-model="facetSearch[currentFacet]"
-            type="search"
-            :placeholder="labels.searchPlaceholder"
-            :aria-label="labels.searchPlaceholder"
-            class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
-          />
-        </div>
-
-        <ul
-          class="max-h-72 scrollbar-thin overflow-y-auto py-1"
-          role="listbox"
-          aria-multiselectable="true"
-        >
-          <li v-for="option in phoneOptions" :key="option.value" role="none">
             <button
+              v-for="tab in facetTabs"
+              :key="tab.key"
               type="button"
-              role="option"
-              :aria-selected="isPhoneChosen(option.value)"
-              class="text-content-secondary flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5"
-              @click="phoneToggle(option.value)"
+              role="tab"
+              :aria-selected="currentFacet === tab.key"
+              :data-testid="`hub-phone-facet-${tab.key}`"
+              :class="
+                cn(
+                  'cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors',
+                  currentFacet === tab.key
+                    ? 'text-content bg-white/8'
+                    : 'text-content-secondary'
+                )
+              "
+              @click="phoneFacet = tab.key"
             >
-              <span
-                :class="
-                  cn(
-                    'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                    isPhoneChosen(option.value)
-                      ? 'border-brand bg-brand text-page'
-                      : 'border-white/25'
-                  )
-                "
-                aria-hidden="true"
-              >
-                <Check
-                  v-if="isPhoneChosen(option.value)"
-                  class="size-3"
-                  :stroke-width="3"
-                />
-              </span>
-              <span class="flex-1 truncate">{{ option.label }}</span>
-              <span class="text-content/30 shrink-0 tabular-nums">
-                {{ option.count }}
-              </span>
+              {{ tab.label }}
             </button>
-          </li>
-          <li
-            v-if="phoneOptions.length === 0"
-            role="none"
-            class="text-content-muted px-3 py-2 text-xs"
-          >
-            {{ labels.noResults }}
-          </li>
-        </ul>
-      </div>
+          </div>
 
-      <div class="hidden flex-wrap gap-x-12 gap-y-7 sm:flex">
+          <div v-if="currentGroup" class="border-b border-white/10 p-2">
+            <input
+              v-model="facetSearch[currentFacet]"
+              type="search"
+              :placeholder="labels.searchPlaceholder"
+              :aria-label="labels.searchPlaceholder"
+              class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+            />
+          </div>
+
+          <ul
+            class="max-h-72 scrollbar-thin overflow-y-auto py-1"
+            role="listbox"
+            aria-multiselectable="true"
+          >
+            <li v-for="option in phoneOptions" :key="option.value" role="none">
+              <button
+                type="button"
+                role="option"
+                :aria-selected="isPhoneChosen(option.value)"
+                class="text-content-secondary flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5"
+                @click="phoneToggle(option.value)"
+              >
+                <span
+                  :class="
+                    cn(
+                      'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
+                      isPhoneChosen(option.value)
+                        ? 'border-brand bg-brand text-page'
+                        : 'border-white/25'
+                    )
+                  "
+                  aria-hidden="true"
+                >
+                  <Check
+                    v-if="isPhoneChosen(option.value)"
+                    class="size-3"
+                    :stroke-width="3"
+                  />
+                </span>
+                <span class="flex-1 truncate">{{ option.label }}</span>
+                <span class="text-content/30 shrink-0 tabular-nums">
+                  {{ option.count }}
+                </span>
+              </button>
+            </li>
+            <li
+              v-if="phoneOptions.length === 0"
+              role="none"
+              class="text-content-muted px-3 py-2 text-xs"
+            >
+              {{ labels.noResults }}
+            </li>
+          </ul>
+        </div>
+
+        <div class="hidden flex-wrap gap-x-12 gap-y-7 sm:flex">
+          <div
+            v-for="group in groups.filter((g) => g.display === 'segmented')"
+            :key="group.key"
+            class="flex flex-col gap-3"
+          >
+            <h3 :class="groupTitleClass">{{ groupLabel(group) }}</h3>
+            <div
+              class="flex w-fit flex-wrap items-center gap-1 rounded-full border border-white/15 p-1"
+              role="listbox"
+              :data-testid="`hub-facet-${group.key}`"
+            >
+              <button
+                type="button"
+                role="option"
+                :aria-selected="activeCountForType(group.type) === 0"
+                :class="segmentClass(activeCountForType(group.type) === 0)"
+                :data-testid="`hub-facet-${group.key}-all`"
+                @click="store.clearBadgesOfType(group.type)"
+              >
+                {{ labels.typeAll }}
+              </button>
+              <button
+                v-for="val in group.values"
+                :key="val.value"
+                type="button"
+                role="option"
+                :aria-selected="isBadgeActive(group.type, val.value)"
+                :class="segmentClass(isBadgeActive(group.type, val.value))"
+                @click="
+                  store.selectBadge({ type: group.type, value: val.value })
+                "
+              >
+                {{ val.displayValue }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div
-          v-for="group in groups.filter((g) => g.display === 'segmented')"
+          v-for="group in groups.filter((g) => g.display === 'chips')"
           :key="group.key"
-          class="flex flex-col gap-3"
+          class="flex flex-col gap-3 max-sm:hidden"
         >
           <h3 :class="groupTitleClass">{{ groupLabel(group) }}</h3>
           <div
-            class="flex w-fit flex-wrap items-center gap-1 rounded-full border border-white/15 p-1"
+            class="flex flex-wrap items-center gap-3"
             role="listbox"
+            aria-multiselectable="true"
             :data-testid="`hub-facet-${group.key}`"
           >
             <button
-              type="button"
-              role="option"
-              :aria-selected="activeCountForType(group.type) === 0"
-              :class="segmentClass(activeCountForType(group.type) === 0)"
-              :data-testid="`hub-facet-${group.key}-all`"
-              @click="store.clearBadgesOfType(group.type)"
-            >
-              {{ labels.typeAll }}
-            </button>
-            <button
-              v-for="val in group.values"
+              v-for="val in visibleValues(group)"
               :key="val.value"
               type="button"
               role="option"
               :aria-selected="isBadgeActive(group.type, val.value)"
-              :class="segmentClass(isBadgeActive(group.type, val.value))"
-              @click="store.selectBadge({ type: group.type, value: val.value })"
+              :class="chipClass(isBadgeActive(group.type, val.value))"
+              @click="store.toggleBadge({ type: group.type, value: val.value })"
             >
               {{ val.displayValue }}
+              <X
+                v-if="isBadgeActive(group.type, val.value)"
+                class="size-3.5"
+                aria-hidden="true"
+              />
+            </button>
+
+            <button
+              v-if="hiddenCount(group) > 0 || expanded[group.key]"
+              type="button"
+              class="text-brand hover:text-brand/80 focus-visible:ring-brand inline-flex cursor-pointer items-center gap-1.5 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-2"
+              :data-testid="`hub-facet-more-${group.key}`"
+              @click="expanded[group.key] = !expanded[group.key]"
+            >
+              {{ expanded[group.key] ? labels.less : group.allLabel }}
+              <ArrowRight
+                v-if="!expanded[group.key]"
+                class="size-4"
+                aria-hidden="true"
+              />
             </button>
           </div>
         </div>
-      </div>
 
-      <div
-        v-for="group in groups.filter((g) => g.display === 'chips')"
-        :key="group.key"
-        class="flex flex-col gap-3 max-sm:hidden"
-      >
-        <h3 :class="groupTitleClass">{{ groupLabel(group) }}</h3>
-        <div
-          class="flex flex-wrap items-center gap-3"
-          role="listbox"
-          aria-multiselectable="true"
-          :data-testid="`hub-facet-${group.key}`"
-        >
-          <button
-            v-for="val in visibleValues(group)"
-            :key="val.value"
-            type="button"
-            role="option"
-            :aria-selected="isBadgeActive(group.type, val.value)"
-            :class="chipClass(isBadgeActive(group.type, val.value))"
-            @click="store.toggleBadge({ type: group.type, value: val.value })"
+        <div class="hidden gap-7 sm:grid sm:grid-cols-2">
+          <div
+            v-for="group in groups.filter((g) => g.display === 'select')"
+            :key="group.key"
+            class="flex flex-col gap-3"
           >
-            {{ val.displayValue }}
-            <X
-              v-if="isBadgeActive(group.type, val.value)"
-              class="size-3.5"
-              aria-hidden="true"
-            />
-          </button>
-
-          <button
-            v-if="hiddenCount(group) > 0 || expanded[group.key]"
-            type="button"
-            class="text-brand hover:text-brand/80 focus-visible:ring-brand inline-flex cursor-pointer items-center gap-1.5 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-2"
-            :data-testid="`hub-facet-more-${group.key}`"
-            @click="expanded[group.key] = !expanded[group.key]"
-          >
-            {{ expanded[group.key] ? labels.less : group.allLabel }}
-            <ArrowRight
-              v-if="!expanded[group.key]"
-              class="size-4"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-      </div>
-
-      <div class="hidden gap-7 sm:grid sm:grid-cols-2">
-        <div
-          v-for="group in groups.filter((g) => g.display === 'select')"
-          :key="group.key"
-          class="flex flex-col gap-3"
-        >
-          <h3 :class="groupTitleClass">{{ group.label }}</h3>
-          <PopoverRoot
-            :open="expanded[group.key] === true"
-            @update:open="expanded[group.key] = $event"
-          >
-            <PopoverTrigger as-child>
-              <button
-                type="button"
-                class="focus-visible:ring-brand flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2"
-                :data-testid="`hub-facet-${group.key}`"
-              >
-                <span
-                  :class="
-                    activeCountForType(group.type) > 0
-                      ? 'text-brand'
-                      : 'text-content'
-                  "
+            <h3 :class="groupTitleClass">{{ group.label }}</h3>
+            <PopoverRoot
+              :open="expanded[group.key] === true"
+              @update:open="expanded[group.key] = $event"
+            >
+              <PopoverTrigger as-child>
+                <button
+                  type="button"
+                  class="focus-visible:ring-brand flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/15 px-5 py-3.5 text-left text-base transition-colors outline-none hover:border-white/30 focus-visible:ring-2"
+                  :data-testid="`hub-facet-${group.key}`"
                 >
-                  {{ selectLabel(group) }}
-                </span>
-                <ChevronDown
-                  :class="
-                    cn(
-                      'text-content-muted size-4 transition-transform',
-                      expanded[group.key] && 'rotate-180'
-                    )
-                  "
-                  aria-hidden="true"
-                />
-              </button>
-            </PopoverTrigger>
-
-            <PopoverPortal>
-              <PopoverContent
-                align="start"
-                :side-offset="8"
-                class="bg-site-dropdown z-50 flex w-(--reka-popover-trigger-width) flex-col gap-3 rounded-2xl border border-white/10 p-4 shadow-2xl"
-              >
-                <input
-                  v-if="group.values.length > SEARCH_THRESHOLD"
-                  v-model="facetSearch[group.key]"
-                  type="search"
-                  :placeholder="labels.searchPlaceholder"
-                  :data-testid="`hub-facet-search-${group.key}`"
-                  class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
-                />
-                <div
-                  class="flex max-h-64 scrollbar-thin flex-wrap content-start gap-2 overflow-y-auto"
-                  role="listbox"
-                  aria-multiselectable="true"
-                >
-                  <button
-                    v-for="val in matchingValues(group)"
-                    :key="val.value"
-                    type="button"
-                    role="option"
-                    :aria-selected="isBadgeActive(group.type, val.value)"
-                    :class="chipClass(isBadgeActive(group.type, val.value))"
-                    @click="
-                      store.toggleBadge({ type: group.type, value: val.value })
+                  <span
+                    :class="
+                      activeCountForType(group.type) > 0
+                        ? 'text-brand'
+                        : 'text-content'
                     "
                   >
-                    {{ val.displayValue }}
-                  </button>
-                  <p
-                    v-if="matchingValues(group).length === 0"
-                    class="text-content-muted py-1 text-sm"
+                    {{ selectLabel(group) }}
+                  </span>
+                  <ChevronDown
+                    :class="
+                      cn(
+                        'text-content-muted size-4 transition-transform',
+                        expanded[group.key] && 'rotate-180'
+                      )
+                    "
+                    aria-hidden="true"
+                  />
+                </button>
+              </PopoverTrigger>
+
+              <PopoverPortal>
+                <PopoverContent
+                  align="start"
+                  :side-offset="8"
+                  class="bg-site-dropdown z-50 flex w-(--reka-popover-trigger-width) flex-col gap-3 rounded-2xl border border-white/10 p-4 shadow-2xl"
+                >
+                  <input
+                    v-if="group.values.length > SEARCH_THRESHOLD"
+                    v-model="facetSearch[group.key]"
+                    type="search"
+                    :placeholder="labels.searchPlaceholder"
+                    :data-testid="`hub-facet-search-${group.key}`"
+                    class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-xl bg-white/5 px-4 py-2.5 text-sm outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+                  />
+                  <div
+                    class="flex max-h-64 scrollbar-thin flex-wrap content-start gap-2 overflow-y-auto"
+                    role="listbox"
+                    aria-multiselectable="true"
                   >
-                    {{ labels.noResults }}
-                  </p>
-                </div>
-              </PopoverContent>
-            </PopoverPortal>
-          </PopoverRoot>
+                    <button
+                      v-for="val in matchingValues(group)"
+                      :key="val.value"
+                      type="button"
+                      role="option"
+                      :aria-selected="isBadgeActive(group.type, val.value)"
+                      :class="chipClass(isBadgeActive(group.type, val.value))"
+                      @click="
+                        store.toggleBadge({
+                          type: group.type,
+                          value: val.value
+                        })
+                      "
+                    >
+                      {{ val.displayValue }}
+                    </button>
+                    <p
+                      v-if="matchingValues(group).length === 0"
+                      class="text-content-muted py-1 text-sm"
+                    >
+                      {{ labels.noResults }}
+                    </p>
+                  </div>
+                </PopoverContent>
+              </PopoverPortal>
+            </PopoverRoot>
+          </div>
+        </div>
+
+        <div
+          class="flex items-center justify-between gap-4 border-t border-white/10 pt-6 max-sm:pt-5"
+        >
+          <button
+            type="button"
+            class="text-content-secondary hover:text-content shrink-0 cursor-pointer rounded-lg text-base whitespace-nowrap transition-colors max-sm:text-sm"
+            data-testid="hub-filter-clear"
+            @click="store.clearBadges()"
+          >
+            {{ labels.clearAll }}
+          </button>
+          <button
+            type="button"
+            class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold whitespace-nowrap transition-colors outline-none focus-visible:ring-2 max-sm:flex-1 max-sm:px-4 max-sm:py-3 max-sm:text-sm"
+            data-testid="hub-filter-show"
+            @click="filterOpen = false"
+          >
+            {{ labels.showResults.replace('{n}', String(resultCount)) }}
+          </button>
         </div>
       </div>
-
-      <div
-        class="flex items-center justify-between gap-4 border-t border-white/10 pt-6"
-      >
-        <button
-          type="button"
-          class="text-content-secondary hover:text-content cursor-pointer rounded-lg text-base transition-colors"
-          data-testid="hub-filter-clear"
-          @click="store.clearBadges()"
-        >
-          {{ labels.clearAll }}
-        </button>
-        <button
-          type="button"
-          class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold transition-colors outline-none focus-visible:ring-2"
-          data-testid="hub-filter-show"
-          @click="filterOpen = false"
-        >
-          {{ labels.showResults.replace('{n}', String(resultCount)) }}
-        </button>
-      </div>
-    </div>
+    </Teleport>
   </div>
 </template>
