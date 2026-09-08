@@ -12,7 +12,7 @@ function model(
     slug,
     name,
     workflowCount: 1,
-    href: `/workshop/models/${slug}/`,
+    href: `/models/${slug}/`,
     routerId: `provider/${slug}`,
     provider: 'Alibaba',
     capabilities: [],

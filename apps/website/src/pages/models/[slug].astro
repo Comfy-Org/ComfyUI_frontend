@@ -1,21 +1,21 @@
 ---
 import { ArrowRight } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../../layouts/BaseLayout.astro'
-import ModelDetail from '../../../components/workshop/ModelDetail.vue'
-import ModelStatus from '../../../components/workshop/ModelStatus.vue'
-import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
-import SplitReveal from '../../../components/workshop/SplitReveal.vue'
-import WorkshopModelCard from '../../../components/workshop/WorkshopModelCard.vue'
-import { getRoutes } from '../../../config/routes'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ModelDetail from '../../components/workshop/ModelDetail.vue'
+import ModelStatus from '../../components/workshop/ModelStatus.vue'
+import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
+import SplitReveal from '../../components/workshop/SplitReveal.vue'
+import WorkshopModelCard from '../../components/workshop/WorkshopModelCard.vue'
+import { getRoutes } from '../../config/routes'
 import {
   catalogSearch,
   getWorkshopModel,
   getWorkshopModelDetail,
   workshopModels
-} from '../../../config/workshop'
-import { relatedModels } from '../../../config/workshop-related'
-import { t } from '../../../i18n/translations'
+} from '../../config/workshop'
+import { relatedModels } from '../../config/workshop-related'
+import { t } from '../../i18n/translations'
 
 export const getStaticPaths: GetStaticPaths = () =>
   workshopModels.map((model) => ({ params: { slug: model.slug } }))

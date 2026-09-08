@@ -35,5 +35,13 @@ export const redirects = {
   '/zh-CN/affiliates': '/affiliates/',
   '/zh-CN/affiliates/terms': '/affiliates/terms/',
   '/minimax': { status: 307, destination: '/minimax-h3/' },
-  '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
+  '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' },
+  // The models catalogue was prototyped under /workshop, and the links to it
+  // are already out in Slack, tickets and review threads.
+  '/workshop': '/models/',
+  '/workshop/sign-in': '/models/sign-in/',
+  // A dynamic destination names the route, so these two carry no trailing
+  // slash: Astro matches them against the page file, not against a URL.
+  '/workshop/models/[slug]': '/models/[slug]',
+  '/workshop/workflows/[name]': '/models/workflows/[name]'
 } satisfies Record<string, RedirectConfig>

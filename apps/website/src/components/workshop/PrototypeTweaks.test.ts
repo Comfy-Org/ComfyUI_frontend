@@ -13,7 +13,7 @@ afterEach(() => {
   showStatuses.value = false
   outcome.value = 'success'
   version.value = 'v1'
-  window.history.replaceState(null, '', '/workshop/')
+  window.history.replaceState(null, '', '/models/')
 })
 
 describe('PrototypeTweaks', () => {
@@ -33,7 +33,7 @@ describe('PrototypeTweaks', () => {
     window.history.replaceState(
       null,
       '',
-      '/workshop/models/demo/?session=existing&balance=low'
+      '/models/demo/?session=existing&balance=low'
     )
     const user = userEvent.setup()
     render(PrototypeTweaks, { props: { showRunControls: true } })
@@ -50,7 +50,7 @@ describe('PrototypeTweaks', () => {
     await user.selectOptions(screen.getByTestId('tweak-version'), 'v1.1')
     expect(version.value).toBe('v1.1')
     const url = screen.getByTestId('tweak-share-url') as HTMLInputElement
-    expect(url.value).toContain('/workshop/models/demo/?')
+    expect(url.value).toContain('/models/demo/?')
     expect(url.value).toContain('session=existing')
     expect(url.value).toContain('balance=low')
     expect(url.value).toContain('outcome=timeout')

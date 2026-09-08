@@ -28,7 +28,7 @@ function model(
     slug,
     name: slug,
     workflowCount: 1,
-    href: `/workshop/models/${slug}/`,
+    href: `/models/${slug}/`,
     routerId: `acme/${slug}`,
     capabilities: [],
     runs: 10,
@@ -68,7 +68,7 @@ describe('WorkshopSections', () => {
     expect(names).toEqual(['a', 'b'])
   })
 
-  it('asks the catalog to open the section behind See all', async () => {
+  it('asks the catalog to open the section behind its title', async () => {
     const { emitted } = render(WorkshopSections, {
       props: { models, labelKey }
     })
@@ -76,5 +76,20 @@ describe('WorkshopSections', () => {
     await userEvent.click(screen.getByTestId('section-generate-videos-see-all'))
 
     expect(emitted().open).toEqual([['generate-videos']])
+  })
+
+  it('opens the sparse formats as one combined section', async () => {
+    const sparse = [
+      ...models,
+      model('d', 'text-to-audio', 'audio'),
+      model('e', 'text-to-3d', '3d')
+    ]
+    const { emitted } = render(WorkshopSections, {
+      props: { models: sparse, labelKey }
+    })
+
+    await userEvent.click(screen.getByTestId('section-other-formats-see-all'))
+
+    expect(emitted().open).toEqual([['other']])
   })
 })

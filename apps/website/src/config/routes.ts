@@ -24,7 +24,7 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  modelsShowcase: '/models',
+  modelsShowcase: '/models/showcase',
   mcp: '/mcp',
   agent: '/agent',
   platform: '/platform',
@@ -45,8 +45,10 @@ const baseRoutes = {
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
   brand: '/brand',
-  workshop: '/workshop',
-  workshopSignIn: '/workshop/sign-in'
+  // The catalogue answers to /models now. The keys keep their old names while
+  // the pull requests stacked on this branch are still open against them.
+  workshop: '/models',
+  workshopSignIn: '/models/sign-in'
 } as const
 
 type RouteKey = keyof typeof baseRoutes

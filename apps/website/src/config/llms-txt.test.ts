@@ -39,9 +39,9 @@ const EXCLUDED_PAGES = new Set([
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
-  '/workshop', // noindex Workshop prototype, mock data
-  '/workshop/workflows', // noindex Workshop prototype, mock data
-  '/workshop/sign-in', // noindex Workshop prototype, mock data
+  '/models', // noindex models prototype, mock data
+  '/models/workflows', // noindex models prototype, mock data
+  '/models/sign-in', // noindex models prototype, mock data
   '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
 

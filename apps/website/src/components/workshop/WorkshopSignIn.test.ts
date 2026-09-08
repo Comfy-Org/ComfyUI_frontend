@@ -40,11 +40,11 @@ describe('WorkshopSignIn', () => {
 
   it('signs an existing account in through a provider and returns', async () => {
     const user = userEvent.setup()
-    const api = mountSignIn('?return=/workshop/models/kling-o3/')
+    const api = mountSignIn('?return=/models/kling-o3/')
 
     await user.click(screen.getByTestId('sign-in-github'))
     expect(credits(api)).toBe(EXISTING_CREDITS)
-    expect(assign).toHaveBeenCalledWith('/workshop/models/kling-o3/')
+    expect(assign).toHaveBeenCalledWith('/models/kling-o3/')
   })
 
   it('creates an empty account from sign-up mode and falls back to the catalog', async () => {
@@ -55,7 +55,7 @@ describe('WorkshopSignIn', () => {
     expect(screen.getByTestId('workshop-sign-in').dataset.mode).toBe('signUp')
     await user.click(screen.getByTestId('sign-in-google'))
     expect(credits(api)).toBe(0)
-    expect(assign).toHaveBeenCalledWith('/workshop')
+    expect(assign).toHaveBeenCalledWith('/models')
   })
 
   it('submits the email form only once both fields are filled', async () => {

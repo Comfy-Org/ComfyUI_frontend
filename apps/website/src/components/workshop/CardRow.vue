@@ -31,15 +31,15 @@ function page(direction: 1 | -1) {
     el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
 }
 
-// The row only fades on the side that still has cards behind it, so the fade
-// has to be re-read whenever the cards themselves change, not just on scroll.
+// Which arrow is spent depends on the cards themselves, so the edges are
+// re-read whenever they change, not only on scroll.
 onMounted(() => void nextTick(measure))
 useResizeObserver(row, measure)
 useMutationObserver(row, measure, { childList: true, subtree: true })
 
 const arrowClass = (disabled: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 bg-page/70 grid size-9 place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 bg-page/70 grid size-9 place-items-center rounded-lg border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3',
     disabled
       ? 'cursor-not-allowed opacity-30'
       : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow cursor-pointer'

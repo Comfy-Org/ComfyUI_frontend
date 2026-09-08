@@ -10,7 +10,7 @@ async function versionFor(search: string, remembered?: string) {
   vi.resetModules()
   localStorage.clear()
   if (remembered) localStorage.setItem(VERSION_KEY, remembered)
-  history.replaceState({}, '', `/workshop${search}`)
+  history.replaceState({}, '', `/models${search}`)
   const { usePrototypeTweaks } = await import('./usePrototypeTweaks')
   let version: Ref<string> | undefined
   render(
@@ -25,7 +25,7 @@ async function versionFor(search: string, remembered?: string) {
   return version?.value
 }
 
-beforeEach(() => history.replaceState({}, '', '/workshop'))
+beforeEach(() => history.replaceState({}, '', '/models'))
 
 it('takes the version a link asks for, by either name', async () => {
   expect(await versionFor('?v=v2')).toBe('v2')

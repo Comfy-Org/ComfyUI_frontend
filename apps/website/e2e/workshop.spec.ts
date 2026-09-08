@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-const MODEL_PATH = '/workshop/models/openai-dall-e/'
+const MODEL_PATH = '/models/openai-dall-e/'
 
 async function useAccount(page: Page, kind: 'new' | 'existing') {
   await page.getByTestId('prototype-tweaks').click()
@@ -21,7 +21,7 @@ test.describe('Workshop V2', () => {
   test('mirrors comfy.org/workflows and links partner models to their page', async ({
     page
   }) => {
-    await page.goto('/workshop/')
+    await page.goto('/models/')
     const hub = page.getByTestId('workshop-hub')
     await expect(hub.getByTestId('hub-heading')).toContainText('Browse models')
     await expect(hub.getByTestId('hub-use-case-generate-images')).toBeVisible()
@@ -45,10 +45,10 @@ test.describe('Workshop V2', () => {
   test('workflow cards open a detail page with the model playground', async ({
     page
   }) => {
-    await page.goto('/workshop/?q=minimax%20h3')
+    await page.goto('/models/?q=minimax%20h3')
     const hub = page.getByTestId('workshop-hub')
     await hub.getByTestId('hub-card-link').first().click()
-    await page.waitForURL(/\/workshop\/workflows\/video_minimax_h3_i2v\/?$/)
+    await page.waitForURL(/\/models\/workflows\/video_minimax_h3_i2v\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       'MiniMax H3'
     )
@@ -69,7 +69,7 @@ test.describe('Workshop catalog', () => {
   test('lists partner models by what they do and filters by search', async ({
     page
   }) => {
-    await page.goto('/workshop/?version=v1.2')
+    await page.goto('/models/?version=v1.2')
     const grid = page.getByTestId('workshop-models-grid')
     const cards = grid.getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
@@ -94,7 +94,7 @@ test.describe('Workshop catalog', () => {
   test('the rows listing browses category rows and drills into one', async ({
     page
   }) => {
-    await page.goto('/workshop/')
+    await page.goto('/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
@@ -116,11 +116,11 @@ test.describe('Workshop catalog', () => {
   })
 
   test('model cards open the model detail page', async ({ page }) => {
-    await page.goto('/workshop/')
+    await page.goto('/models/')
     await page.getByTestId('workshop-search').fill('kling ai')
     await page.getByRole('heading', { level: 1 }).click()
     await page.getByTestId('workshop-model-card').first().click()
-    await expect(page).toHaveURL(/\/workshop\/models\/kling-ai\/?$/)
+    await expect(page).toHaveURL(/\/models\/kling-ai\/?$/)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kling AI')
     await expect(
       page.getByTestId('related-models').getByTestId('workshop-model-card')
@@ -130,7 +130,7 @@ test.describe('Workshop catalog', () => {
   test('the filter menu drills into a facet and narrows the grid', async ({
     page
   }) => {
-    await page.goto('/workshop/')
+    await page.goto('/models/')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -147,13 +147,13 @@ test.describe('Workshop catalog', () => {
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
-    await page.goto('/workshop/models/topaz-labs/')
+    await page.goto('/models/topaz-labs/')
     const tag = page
       .getByTestId('model-tags')
       .getByRole('link', { name: 'Upscale' })
-    await expect(tag).toHaveAttribute('href', '/workshop?capability=Upscale')
+    await expect(tag).toHaveAttribute('href', '/models?capability=Upscale')
     await tag.click()
-    await expect(page).toHaveURL(/\/workshop\/?\?capability=Upscale$/)
+    await expect(page).toHaveURL(/\/models\/?\?capability=Upscale$/)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
     await expect(
       page
@@ -163,12 +163,12 @@ test.describe('Workshop catalog', () => {
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
-    await page.goto('/workshop/models/kling-ai/')
+    await page.goto('/models/kling-ai/')
     await page
       .getByTestId('model-hero')
       .getByRole('link', { name: 'Video', exact: true })
       .click()
-    await expect(page).toHaveURL(/\/workshop\/?\?modality=video$/)
+    await expect(page).toHaveURL(/\/models\/?\?modality=video$/)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
   })
 
@@ -177,10 +177,7 @@ test.describe('Workshop catalog', () => {
   }) => {
     await page.goto('/')
     const explore = page.getByRole('link', { name: /Explore Seedance/i })
-    await expect(explore).toHaveAttribute(
-      'href',
-      /\/workshop\/models\/seedance-2\//
-    )
+    await expect(explore).toHaveAttribute('href', /\/models\/seedance-2\//)
   })
 })
 
@@ -191,15 +188,15 @@ test.describe('Model playground', () => {
     await page.goto(MODEL_PATH)
     const run = page.getByTestId('run-button')
     await expect(run).toHaveAttribute('data-gate', 'signedOut')
-    await expect(run).toHaveAttribute('href', /\/workshop\/sign-in\?return=/)
+    await expect(run).toHaveAttribute('href', /\/models\/sign-in\?return=/)
     await expect(
       page.getByTestId('desktop-nav-cta').getByTestId('header-sign-in')
-    ).toHaveAttribute('href', /\/workshop\/sign-in\?return=/)
+    ).toHaveAttribute('href', /\/models\/sign-in\?return=/)
 
     const prompt = 'a capybara in a trench coat'
     await page.getByTestId('field-prompt').fill(prompt)
     await run.click()
-    await expect(page).toHaveURL(/\/workshop\/sign-in/)
+    await expect(page).toHaveURL(/\/models\/sign-in/)
     await expect(page.getByTestId('workshop-sign-in')).toHaveAttribute(
       'data-return',
       MODEL_PATH
@@ -281,7 +278,7 @@ test.describe('Model playground', () => {
     await expect(run).toHaveAttribute('data-gate', 'noCredits')
     await run.click()
     await expect(page.getByTestId('buy-credits-url')).toContainText(
-      'success_url=%2Fworkshop%2Fmodels%2Fopenai-dall-e%2F'
+      'success_url=%2Fmodels%2Fopenai-dall-e%2F'
     )
     await page.getByTestId('buy-credits-continue').click()
     await page.getByTestId('buy-credits-pay').click()

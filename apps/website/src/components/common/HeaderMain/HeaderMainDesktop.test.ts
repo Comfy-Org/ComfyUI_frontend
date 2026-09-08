@@ -15,18 +15,18 @@ async function modelsLink(path: string) {
 describe('HeaderMainDesktop', () => {
   it('renders the Models leaf link with its NEW badge', async () => {
     const link = await modelsLink('/pricing')
-    expect(link.getAttribute('href')).toBe('/workshop')
+    expect(link.getAttribute('href')).toBe('/models')
     expect(link.textContent).toMatch(/new/i)
     expect(link.getAttribute('data-active')).toBeNull()
   })
 
   it('marks the leaf link active on its own page', async () => {
-    const link = await modelsLink('/workshop')
+    const link = await modelsLink('/models')
     expect(link.getAttribute('data-active')).not.toBeNull()
   })
 
   it('keeps Products inactive on the Models page it also links to', async () => {
-    await modelsLink('/workshop')
+    await modelsLink('/models')
     const products = screen.getByRole('button', { name: /products/i })
     expect(products.getAttribute('data-active')).toBeNull()
   })

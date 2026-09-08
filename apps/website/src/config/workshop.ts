@@ -232,7 +232,7 @@ export function decodeGeneratedModels(
 const generated = decodeGeneratedModels(generatedModels)
 
 function modelDetailHref(slug: string): string {
-  return `/workshop/models/${slug}/`
+  return `/models/${slug}/`
 }
 
 // Router ids are `{provider}/{model}`; the registry only knows the slug, so
