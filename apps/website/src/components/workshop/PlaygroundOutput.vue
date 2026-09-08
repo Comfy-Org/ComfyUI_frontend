@@ -140,13 +140,6 @@ const earlierClass = (active: boolean) =>
       >
         {{ elapsed }}
       </span>
-      <span
-        v-else-if="state.status === 'example'"
-        class="text-primary-warm-white"
-        data-testid="output-example"
-      >
-        {{ t('workshop.output.example', locale) }}
-      </span>
     </header>
 
     <!-- Idle -->
@@ -276,6 +269,16 @@ const earlierClass = (active: boolean) =>
             />
           </div>
         </div>
+        <!-- Saying "example" three times over one video says it less, so it
+          is marked once, on the result. -->
+        <span
+          v-if="state.status === 'example'"
+          class="absolute top-4 left-4 z-10 inline-flex h-8 items-center rounded-xl bg-black/40 px-3 text-xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
+          data-testid="output-example"
+        >
+          {{ t('workshop.output.example', locale) }}
+        </span>
+
         <button
           v-if="
             currentUrl &&

@@ -8808,10 +8808,10 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
-  'workshop.output.example': { en: 'Example output', 'zh-CN': '示例输出' },
+  'workshop.output.example': { en: 'Example', 'zh-CN': '示例' },
   'workshop.output.exampleHint': {
-    en: 'This is the example result. Run to generate your own.',
-    'zh-CN': '这是示例结果。运行以生成你自己的结果。'
+    en: 'Run to generate your own.',
+    'zh-CN': '运行以生成你自己的结果。'
   },
   'workshop.output.earlier': {
     en: 'Earlier runs this session',
