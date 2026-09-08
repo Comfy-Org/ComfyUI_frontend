@@ -131,7 +131,7 @@ function workflowThatFailsAfterGroups(): SerialisableGraph {
   const workflow = sameWorkflowThatLoads()
   return {
     ...workflow,
-    links: workflow.links?.map((link) => ({ ...link, parentId: 1 })),
+    links: workflow.links.map((link) => ({ ...link, parentId: 1 })),
     reroutes: [{ id: 1, pos: [50, 50], linkIds: [1] }]
   }
 }

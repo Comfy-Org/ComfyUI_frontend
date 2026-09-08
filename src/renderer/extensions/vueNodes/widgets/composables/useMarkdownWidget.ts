@@ -1,9 +1,10 @@
 import { Editor as TiptapEditor } from '@tiptap/core'
-import TiptapLink from '@tiptap/extension-link'
-import TiptapTable from '@tiptap/extension-table'
-import TiptapTableCell from '@tiptap/extension-table-cell'
-import TiptapTableHeader from '@tiptap/extension-table-header'
-import TiptapTableRow from '@tiptap/extension-table-row'
+import {
+  Table as TiptapTable,
+  TableCell as TiptapTableCell,
+  TableHeader as TiptapTableHeader,
+  TableRow as TiptapTableRow
+} from '@tiptap/extension-table'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
@@ -33,7 +34,6 @@ function addMarkdownWidget(
     extensions: [
       TiptapStarterKit,
       TiptapMarkdown,
-      TiptapLink,
       TiptapTable,
       TiptapTableCell,
       TiptapTableHeader,

@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { BaseWidget } from './BaseWidget'
+import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class ButtonWidget
@@ -9,11 +9,11 @@ export class ButtonWidget
   implements IButtonWidget
 {
   override type = 'button' as const
-  clicked: boolean
+  declare clicked: boolean
 
   constructor(widget: IButtonWidget, node: LGraphNode) {
     super(widget, node)
-    this.clicked ??= false
+    this.clicked = extensionValue(this.clicked) ?? false
   }
 
   /**
