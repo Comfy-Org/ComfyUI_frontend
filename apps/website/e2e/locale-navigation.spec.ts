@@ -39,6 +39,30 @@ async function errorsWhile(
   })
   await act()
   await page.waitForLoadState('domcontentloaded')
+
+  // `domcontentloaded` is far too early: an island's markup is server-rendered
+  // and visible long before any of its code runs, so returning here would let a
+  // hydration failure land after the assertion had already passed.
+  //
+  // Astro's island element removes its `ssr` attribute only once `hydrator()`
+  // has resolved (astro-island.js), which makes its absence the one honest
+  // signal that hydration finished. Only `client:load` islands are waited on —
+  // a `client:visible` island below the fold may never hydrate at all.
+  //
+  // A failing hydration leaves the attribute in place, so this times out in
+  // exactly the case the test exists to catch. That is deliberate: the thrown
+  // exception is already in `errors`, and reporting it reads far better than a
+  // wait timeout would.
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelectorAll('astro-island[client="load"][ssr]').length ===
+        0,
+      undefined,
+      { timeout: 5000 }
+    )
+    .catch(() => {})
+
   return errors
 }
 
@@ -62,7 +86,7 @@ test('switching language from the footer renders the new locale', async ({
     `console errors after switching language: ${errors.join(' | ')}`
   ).toEqual([])
 
-  // The islands really hydrated: the footer is rendered by one of them.
+  // Hydration is proven above; this is the content it produced.
   await expect(
     page.getByRole('link', { name: '简体中文', exact: true })
   ).toBeVisible()
