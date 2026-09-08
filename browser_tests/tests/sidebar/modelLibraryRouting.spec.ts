@@ -28,9 +28,6 @@ test.describe('Model library tab routing', () => {
   test('Keeps the sidebar tree when the assets capability is disabled', async ({
     comfyPage
   }) => {
-    // With the backend assets capability off, the browser setting is inert.
-    // Forced false rather than left unset so the real backend's handshake
-    // cannot decide which branch this test exercises.
     await comfyPage.featureFlags.setServerFlagsPersistent({ assets: false })
     await comfyPage.settings.setSetting(
       'Comfy.ModelLibrary.UseAssetBrowser',
@@ -63,9 +60,6 @@ test.describe('Model library tab routing', () => {
 
 test.describe('Model library tab routing on cloud', { tag: '@cloud' }, () => {
   test('Defaults to the asset browser', async ({ comfyPage, assetApi }) => {
-    // Cloud hardwires the assets capability on and defaults the browser
-    // setting on; nothing is forced here so the test pins that default, not
-    // just the routing.
     await assetApi.mock()
 
     await comfyPage.menu.modelLibraryTab.tabButton.click()

@@ -6,9 +6,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 export async function openModelLibraryBrowser(): Promise<void> {
-  // Silent no-op: `ComfyCommand` exposes only an `active?` toggle getter and no
-  // visibility/enabled predicate, so a command gated on this flag cannot be
-  // hidden or explained; adding that predicate is out of scope here.
   if (!useFeatureFlags().flags.assetsEnabled) return
 
   const toastStore = useToastStore()

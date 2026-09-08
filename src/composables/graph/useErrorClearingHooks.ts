@@ -228,7 +228,6 @@ function scanSingleNodeModelsAndTypes(
   const modelCandidates = scanNodeModelCandidates(
     rootGraph,
     node,
-    // shouldUseWidgetAssetPicker is cloud-gated internally (isWidgetAssetPickerEnabled)
     assetService.shouldUseWidgetAssetPicker,
     (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
   )
