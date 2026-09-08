@@ -208,8 +208,7 @@ describe('performSubscriptionCheckout', () => {
         failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'navigate',
-        outcome: 'recovered',
-        assert_mode: 'soft'
+        outcome: 'recovered'
       },
       context: { distribution: 'cloud' },
       level: 'warning'

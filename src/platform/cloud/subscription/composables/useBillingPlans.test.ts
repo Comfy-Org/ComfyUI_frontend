@@ -169,8 +169,7 @@ describe('useBillingPlans', () => {
           failure_kind: 'degraded',
           feature_area: 'billing',
           operation: 'load',
-          outcome: 'recovered',
-          assert_mode: 'soft'
+          outcome: 'recovered'
         },
         context: {
           has_cached_plans: true,

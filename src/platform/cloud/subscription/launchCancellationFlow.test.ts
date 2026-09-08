@@ -181,8 +181,7 @@ describe('launchCancellationFlow', () => {
         failure_kind: 'degraded',
         feature_area: 'billing',
         operation: 'navigate',
-        outcome: 'recovered',
-        assert_mode: 'soft'
+        outcome: 'recovered'
       },
       context: { workspace_still_current: true },
       level: 'warning'
