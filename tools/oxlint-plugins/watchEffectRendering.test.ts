@@ -1,101 +1,99 @@
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import { RuleTester } from 'oxlint/plugins-dev'
+import { describe, expect, it } from 'vitest'
 
-const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
-const pluginPath = path.resolve('tools/oxlint-plugins/comfy.ts')
+import { noRenderInWatchEffect } from './watchEffectRendering'
 
-const invalidFixture = `import { watchEffect, watchEffect as effect } from 'vue'
+type Rule = Parameters<RuleTester['run']>[1]
 
-watchEffect(() => {
-  canvas.draw(false, true)
-  canvas?.setDirty(true, true)
+RuleTester.describe = describe
+RuleTester.it = it
+
+const ruleTester = new RuleTester({
+  languageOptions: { parserOptions: { lang: 'ts' } }
 })
 
-effect(() => canvas['draw']())
-`
-
-const acceptedFixture = `import { watch, watchEffect } from 'vue'
-
-watch(source, () => canvas.draw(false, true))
-
+ruleTester.run(
+  'no-render-in-watch-effect',
+  fromAny<Rule, unknown>(noRenderInWatchEffect),
+  {
+    valid: [
+      {
+        name: 'rendering in an explicit watch callback',
+        code: `import { watch } from 'vue'
+watch(source, () => canvas.draw(false, true))`
+      },
+      {
+        name: 'a deferred callback inside watchEffect',
+        code: `import { watchEffect } from 'vue'
 watchEffect(() => {
   const deferred = () => canvas.draw(false, true)
   register(deferred)
-})
-
+})`
+      },
+      {
+        name: 'a locally shadowed watchEffect',
+        code: `import { watchEffect } from 'vue'
 function runLocalEffect(watchEffect: (callback: () => void) => void) {
   watchEffect(() => canvas.setDirty(true, true))
-}
-`
+}`
+      }
+    ],
+    invalid: [
+      {
+        name: 'a direct draw call',
+        code: `import { watchEffect } from 'vue'
+watchEffect(() => canvas.draw(false, true))`,
+        errors: [{ message: /Do not call \.draw\(\) inside watchEffect\(\)/ }]
+      },
+      {
+        name: 'an optional setDirty call',
+        code: `import { watchEffect } from 'vue'
+watchEffect(() => canvas?.setDirty(true, true))`,
+        errors: [
+          { message: /Do not call \.setDirty\(\) inside watchEffect\(\)/ }
+        ]
+      },
+      {
+        name: 'an aliased import with a computed method name',
+        code: `import { watchEffect as effect } from 'vue'
+effect(() => canvas['draw']())`,
+        errors: [{ message: /Do not call \.draw\(\) inside watchEffect\(\)/ }]
+      }
+    ]
+  }
+)
 
-interface Diagnostic {
-  readonly code?: string
-  readonly filename?: string
-  readonly message?: string
-}
-
-describe('no-render-in-watch-effect', () => {
-  let workDir: string
-  let diagnostics: readonly Diagnostic[]
-
-  beforeAll(() => {
-    workDir = mkdtempSync(path.join(tmpdir(), 'comfy-watch-effect-'))
-    writeFileSync(path.join(workDir, 'invalid.ts'), invalidFixture)
-    writeFileSync(path.join(workDir, 'accepted.ts'), acceptedFixture)
+it('loads the rendering rule through the repository Oxlint config', () => {
+  const workDir = mkdtempSync(path.join(tmpdir(), 'comfy-watch-effect-'))
+  const fixturePath = path.join(workDir, 'invalid.ts')
+  try {
     writeFileSync(
-      path.join(workDir, '.oxlintrc.json'),
-      JSON.stringify({
-        jsPlugins: [pluginPath],
-        rules: { 'comfy/no-render-in-watch-effect': 'error' }
-      })
+      fixturePath,
+      `import { watchEffect } from 'vue'
+watchEffect(() => canvas.draw(false, true))`
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        path.resolve('node_modules/oxlint/bin/oxlint'),
+        '--format=json',
+        '--config',
+        path.resolve('.oxlintrc.json'),
+        fixturePath
+      ],
+      { encoding: 'utf8', windowsHide: true }
     )
 
-    let output: string
-    try {
-      output = execFileSync(
-        process.execPath,
-        [
-          oxlintEntry,
-          '--format=json',
-          '--config',
-          path.join(workDir, '.oxlintrc.json'),
-          'invalid.ts',
-          'accepted.ts'
-        ],
-        { cwd: workDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
-      )
-    } catch (error) {
-      output = (error as { stdout?: string }).stdout ?? ''
-    }
-
-    diagnostics = (JSON.parse(output) as { diagnostics: Diagnostic[] })
-      .diagnostics
-  })
-
-  afterAll(() => rmSync(workDir, { recursive: true, force: true }))
-
-  it('reports direct canvas rendering in Vue watchEffect callbacks', () => {
-    const findings = diagnostics.filter(
-      (diagnostic) => diagnostic.code === 'comfy(no-render-in-watch-effect)'
-    )
-    expect(findings).toHaveLength(3)
-    expect(findings.map(({ message }) => message)).toEqual([
-      expect.stringContaining('.draw()'),
-      expect.stringContaining('.setDirty()'),
-      expect.stringContaining('.draw()')
-    ])
-  })
-
-  it('does not report explicit watch, deferred callbacks, or shadowed names', () => {
-    expect(
-      diagnostics.some(
-        ({ code, filename }) =>
-          code === 'comfy(no-render-in-watch-effect)' &&
-          filename?.endsWith('accepted.ts')
-      )
-    ).toBe(false)
-  })
+    expect(result.error).toBeUndefined()
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain('comfy(no-render-in-watch-effect)')
+    expect(result.stdout).toContain('Do not call .draw() inside watchEffect()')
+  } finally {
+    rmSync(workDir, { recursive: true, force: true })
+  }
 })

@@ -84,7 +84,7 @@ describe('ShortcutsList', () => {
       }
     })
 
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Ctrl')
     expect(text).toContain('n')
     expect(text).toContain('Shift')
@@ -135,7 +135,7 @@ describe('ShortcutsList', () => {
       }
     })
 
-    const text = container.textContent!
+    const text = container.textContent
     expect(text).toContain('Cmd') // Meta -> Cmd
     expect(text).toContain('↑') // ArrowUp -> ↑
     expect(text).toContain('↵') // Enter -> ↵

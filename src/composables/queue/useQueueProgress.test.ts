@@ -8,7 +8,7 @@ import { formatPercent0 } from '@/utils/numberUtil'
 
 type ProgressValue = number | null
 
-const localeRef: Ref<string> = ref('en-US') as Ref<string>
+const localeRef: Ref<string> = ref('en-US')
 const executionProgressRef: Ref<ProgressValue> = ref(null)
 const executingNodeProgressRef: Ref<ProgressValue> = ref(null)
 

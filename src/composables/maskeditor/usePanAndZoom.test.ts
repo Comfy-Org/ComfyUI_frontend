@@ -82,7 +82,7 @@ function createTouchList(...points: { x: number; y: number }[]): TouchList {
   return Object.assign(touches, {
     length: touches.length,
     item: (i: number) => touches[i]
-  }) as unknown as TouchList
+  })
 }
 
 function createTouchEvent(touches: TouchList): TouchEvent {
@@ -98,7 +98,7 @@ async function initComposable() {
   const root = createMockElement()
   const container = createMockElement()
   const canvas = createMockCanvas(800, 600)
-  mockStore.canvasContainer = container as unknown as HTMLElement
+  mockStore.canvasContainer = container
   mockStore.maskCanvas = canvas
   await pz.initializeCanvasPanZoom(img, root)
   vi.clearAllMocks()
@@ -120,7 +120,7 @@ describe('usePanAndZoom', () => {
     it('sets zoom and pan on the store', async () => {
       const pz = usePanAndZoom()
       const container = createMockElement()
-      mockStore.canvasContainer = container as unknown as HTMLElement
+      mockStore.canvasContainer = container
 
       await pz.initializeCanvasPanZoom(
         createMockImage(800, 600),
@@ -136,7 +136,7 @@ describe('usePanAndZoom', () => {
 
     it('accounts for panel widths via setPanOffset', async () => {
       const pz = usePanAndZoom()
-      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.canvasContainer = createMockElement()
 
       const toolPanel = createMockElement()
       vi.spyOn(toolPanel, 'getBoundingClientRect').mockReturnValue({
@@ -161,7 +161,7 @@ describe('usePanAndZoom', () => {
     it('syncs rgbCanvas dimensions when they differ', async () => {
       const pz = usePanAndZoom()
       const rgbCanvas = createMockCanvas(400, 300)
-      mockStore.canvasContainer = createMockElement() as unknown as HTMLElement
+      mockStore.canvasContainer = createMockElement()
       mockStore.rgbCanvas = rgbCanvas
 
       await pz.initializeCanvasPanZoom(
@@ -274,7 +274,7 @@ describe('usePanAndZoom', () => {
     it('returns early when maskCanvas is null', async () => {
       const pz = usePanAndZoom()
       const container = createMockElement()
-      mockStore.canvasContainer = container as unknown as HTMLElement
+      mockStore.canvasContainer = container
       mockStore.maskCanvas = null
       await pz.initializeCanvasPanZoom(
         createMockImage(800, 600),

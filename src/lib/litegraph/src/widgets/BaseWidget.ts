@@ -52,6 +52,10 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+export function extensionValue<T>(value: T): T | null | undefined {
+  return value
+}
+
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable
 {
@@ -88,8 +92,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   set name(value: string) {
-    const previous = this._name
-    if (previous === undefined || previous === value) {
+    const previous = extensionValue(this._name)
+    if (previous == null || previous === value) {
       this._name = value
       return
     }
@@ -116,7 +120,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
   set options(value: TWidget['options']) {
     const hidden = this._state.options.hidden
-    this._state.options = value ?? {}
+    this._state.options = extensionValue(value) ?? {}
     if (hidden !== undefined) this._state.options.hidden = hidden
   }
 
@@ -263,7 +267,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: options ?? {},
+      options: extensionValue(options) ?? {},
       y: this.y
     }
     if (hidden !== undefined) this.hidden = hidden
@@ -479,16 +483,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     const v = this.type === 'number' ? Number(value) : value
     this.value = v
-    if (
-      this.options?.property &&
-      node.properties[this.options.property] !== undefined
-    ) {
-      node.setProperty(this.options.property, v)
+    const property = extensionValue(this.options)?.property
+    if (property && node.properties[property] !== undefined) {
+      node.setProperty(property, v)
     }
     const pos = canvas.graph_mouse
     this.callback?.(this.value, canvas, node, pos, e)
 
-    node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
+    node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()
   }
 

@@ -71,15 +71,20 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.comfyEnterprise', locale),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds', locale),
+              href: routes.managedBuilds
             }
           ]
         },
         {
           header: t('nav.colFeatures', locale),
           items: [
+            { label: t('nav.mcpServer', locale), href: routes.mcp },
             {
-              label: t('nav.mcpServer', locale),
-              href: routes.mcp,
+              label: t('nav.comfyAgent', locale),
+              href: routes.agent,
               badge: 'new'
             },
             {
@@ -90,11 +95,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },
-            {
-              label: t('nav.launches', locale),
-              href: routes.launches,
-              badge: 'new'
-            },
+            { label: t('nav.launches', locale), href: routes.launches },
             { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
@@ -129,7 +130,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.fdct,
               badge: 'new'
             },
-            { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.customerStories', locale),
+              href: routes.customers
+            },
             {
               label: t('nav.events', locale),
               href: routes.events,
@@ -193,7 +197,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '/customers#hero-video'
+          href: routes.customerVideoBlackMath
         }
       },
       columns: [

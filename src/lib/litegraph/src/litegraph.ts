@@ -46,7 +46,7 @@ type ContextMenuEventListener = (
   value: IContextMenuItem,
   options: IContextMenuOptions,
   event: MouseEvent,
-  parentMenu: ContextMenu<unknown> | undefined,
+  parentMenu: ContextMenu | undefined,
   node: LGraphNode
 ) => boolean | void
 

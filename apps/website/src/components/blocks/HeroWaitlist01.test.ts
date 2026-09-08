@@ -86,6 +86,23 @@ describe('HeroWaitlist01', () => {
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
   })
 
+  // The hero owns the only path that reaches the form's locale, so a dropped
+  // prop would leave an English form under Chinese hero copy.
+  it('leaves the embedded form in English by default', () => {
+    renderHero()
+
+    expect(
+      screen.getByRole('button', { name: 'Join the waitlist' })
+    ).toBeTruthy()
+  })
+
+  it('passes its locale down to the form', () => {
+    renderHero({ locale: 'zh-CN' })
+
+    expect(screen.getByRole('button', { name: '加入候补名单' })).toBeTruthy()
+    expect(screen.getByPlaceholderText('输入你的邮箱')).toBeTruthy()
+  })
+
   it('passes its signupEvent down to the form', async () => {
     const user = userEvent.setup()
     renderHero({ signupEvent: 'cloud_beta_waitlist_joined' })

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -51,14 +51,12 @@ vi.mock('@/composables/useCameraInfo', async () => {
   return { useCameraInfo: () => ({ ...api, mode: modeRef }) }
 })
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  const { ref } = await import('vue')
-  return {
-    ...actual,
-    useElementSize: () => ({ width: ref(600), height: ref(400) })
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  createSharedComposable: (composable: () => unknown) => composable,
+  useDocumentVisibility: () => ref('visible'),
+  useElementSize: () => ({ width: ref(600), height: ref(400) }),
+  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
+}))
 
 import CameraInfo from './CameraInfo.vue'
 
@@ -68,7 +66,7 @@ function makeWidget(): SimplifiedWidget {
     type: 'cameraInfo',
     value: [],
     options: {}
-  } as unknown as SimplifiedWidget
+  }
 }
 
 function renderComponent() {

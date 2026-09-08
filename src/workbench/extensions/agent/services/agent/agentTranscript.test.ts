@@ -76,4 +76,17 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.assistantTurnIds).toEqual(new Set())
     expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
   })
+
+  it('concatenates assistant rows in sequence order within a turn', () => {
+    const transcript = normalizeAgentTranscript([
+      row(3, 'assistant', 'turn-a', 'Second', 'row-3'),
+      row(1, 'user', 'turn-a', 'Prompt', 'row-1'),
+      row(2, 'assistant', 'turn-a', 'First', 'row-2')
+    ])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'First', state: 'done' },
+      { type: 'text', text: 'Second', state: 'done' }
+    ])
+  })
 })

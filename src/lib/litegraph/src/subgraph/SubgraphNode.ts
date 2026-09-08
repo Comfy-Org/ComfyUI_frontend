@@ -73,7 +73,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override get type(): SubgraphId {
-    return super.type as SubgraphId
+    return super.type
   }
 
   override set type(value: string) {
@@ -157,7 +157,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (existingInput) {
           this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
-          if (linkId === undefined) return
 
           const link = this.subgraph.getLink(linkId)
           if (!link) return
@@ -346,9 +345,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           })
         }
 
-        delete input.pos
-        delete input.widget
-        delete input.widgetId
+        input.pos = undefined
+        input.widget = undefined
+        input.widgetId = undefined
         input._widget = undefined
         this.invalidatePromotedViews()
       },
@@ -364,7 +363,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const slotsByName = new Map<string, SubgraphInput[]>()
 
     for (const slot of subgraphSlots) {
-      const signature = `${slot.name}:${String(slot.type)}`
+      const signature = `${slot.name}:${slot.type}`
       const signatureSlots = slotsBySignature.get(signature)
       if (signatureSlots) {
         signatureSlots.push(slot)
@@ -385,7 +384,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       slots: SubgraphInput[] | undefined
     ): SubgraphInput | undefined => {
       if (!slots) return undefined
-      return slots.find((slot) => !assignedSlotIds.has(String(slot.id)))
+      return slots.find((slot) => !assignedSlotIds.has(slot.id))
     }
 
     for (const input of this.inputs) {
@@ -394,7 +393,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         existingSlot &&
         this.subgraph.inputNode.slots.some((slot) => slot === existingSlot)
       ) {
-        assignedSlotIds.add(String(existingSlot.id))
+        assignedSlotIds.add(existingSlot.id)
         continue
       }
 
@@ -405,7 +404,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       if (matchedSlot) {
         input._subgraphSlot = matchedSlot
-        assignedSlotIds.add(String(matchedSlot.id))
+        assignedSlotIds.add(matchedSlot.id)
       } else {
         delete input._subgraphSlot
       }
@@ -656,7 +655,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // that gets discarded), letting a later unrelated instance inherit
       // this value. onAdded() performs the deferred registration once a
       // real id is assigned.
-      delete input.widgetId
+      input.widgetId = undefined
       return
     }
 
@@ -667,7 +666,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       {
         type: interiorWidget.type,
         value: interiorWidget.value,
-        options: cloneDeep(interiorWidget.options ?? {}),
+        options: cloneDeep(interiorWidget.options),
         label: input.label ?? subgraphInput.name,
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
@@ -675,9 +674,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       deriveWidgetRenderState(interiorWidget)
     )
     if (!registered) {
-      delete input.pos
-      delete input.widget
-      delete input.widgetId
+      input.pos = undefined
+      input.widget = undefined
+      input.widgetId = undefined
       input._widget = undefined
       return
     }
@@ -1017,7 +1016,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
   getSlotShape(slot: SubgraphInput, extraInput?: INodeInputSlot) {
     const shapes = slot.linkIds.map(
-      (id) => this.subgraph.links[id]?.resolve(this.subgraph)?.input?.shape
+      (id) => this.subgraph.getLink(id)?.resolve(this.subgraph).input?.shape
     )
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined

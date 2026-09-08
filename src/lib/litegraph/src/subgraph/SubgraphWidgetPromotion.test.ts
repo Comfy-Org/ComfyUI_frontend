@@ -43,10 +43,14 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    useCanvasStore: () => ({})
+  })
+)
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
@@ -123,7 +127,6 @@ function writePromotedWidgetValue(
   value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 

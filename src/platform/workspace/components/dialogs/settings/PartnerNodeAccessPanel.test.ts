@@ -132,6 +132,7 @@ async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
 
 describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     mockGovernedWorkspaceId.value = 'workspace-one'
     mockStatus.value = 'configured'
     mockWorkspaceRole.value = 'owner'

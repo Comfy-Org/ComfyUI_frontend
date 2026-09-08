@@ -723,9 +723,9 @@ describe('useWorkflowStore', () => {
 
       // Verify the content was updated
       expect(workflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
 
@@ -754,7 +754,7 @@ describe('useWorkflowStore', () => {
       expect(api.storeUserData).toHaveBeenCalled()
 
       // Verify the content was updated
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
   })
@@ -787,7 +787,7 @@ describe('useWorkflowStore', () => {
 
       expect(newWorkflow.path).toBe('workflows/new-test.json')
       expect(newWorkflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
       expect(newWorkflow.isModified).toBe(false)
     })

@@ -5,16 +5,13 @@ import { nextTick } from 'vue'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-const mocks = vi.hoisted(
-  () =>
-    ({
-      remoteConfig: { value: {} },
-      resolvedUserInfo: { value: null }
-    }) as {
-      remoteConfig: { value: RemoteConfig }
-      resolvedUserInfo: { value: { id: string } | null }
-    }
-)
+const mocks = vi.hoisted<{
+  remoteConfig: { value: RemoteConfig }
+  resolvedUserInfo: { value: { id: string } | null }
+}>(() => ({
+  remoteConfig: { value: {} },
+  resolvedUserInfo: { value: null }
+}))
 
 vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
   const { ref } = await import('vue')

@@ -110,7 +110,7 @@ describe('runMissingMediaPipeline', () => {
       pendingCandidate
     )
 
-    const hostWidget = host.widgets?.[0]
+    const hostWidget = host.widgets.at(0)
     if (!hostWidget) throw new Error('Expected promoted image host widget')
     hostWidget.value = 'user-picked-valid.png'
     resolveVerification()

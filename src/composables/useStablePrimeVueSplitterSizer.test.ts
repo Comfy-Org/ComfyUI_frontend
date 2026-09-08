@@ -44,9 +44,9 @@ describe('useStablePrimeVueSplitterSizer', () => {
     trigger.value++
     await flushWatcher()
 
-    expect(panelRef.value!.style.flexBasis).toBe('400px')
-    expect(panelRef.value!.style.flexGrow).toBe('0')
-    expect(panelRef.value!.style.flexShrink).toBe('0')
+    expect(panelRef.value.style.flexBasis).toBe('400px')
+    expect(panelRef.value.style.flexGrow).toBe('0')
+    expect(panelRef.value.style.flexShrink).toBe('0')
   })
 
   it('does not apply styles when no stored width exists', async () => {
@@ -59,7 +59,7 @@ describe('useStablePrimeVueSplitterSizer', () => {
     )
     await flushWatcher()
 
-    expect(panelRef.value!.style.flexBasis).toBe('')
+    expect(panelRef.value.style.flexBasis).toBe('')
   })
 
   it('re-applies stored widths when watch sources change', async () => {
@@ -74,16 +74,16 @@ describe('useStablePrimeVueSplitterSizer', () => {
 
     onResizeEnd(resizeEndEvent())
 
-    panelRef.value!.style.flexBasis = ''
-    panelRef.value!.style.flexGrow = ''
-    panelRef.value!.style.flexShrink = ''
+    panelRef.value.style.flexBasis = ''
+    panelRef.value.style.flexGrow = ''
+    panelRef.value.style.flexShrink = ''
 
     trigger.value++
     await flushWatcher()
 
-    expect(panelRef.value!.style.flexBasis).toBe('500px')
-    expect(panelRef.value!.style.flexGrow).toBe('0')
-    expect(panelRef.value!.style.flexShrink).toBe('0')
+    expect(panelRef.value.style.flexBasis).toBe('500px')
+    expect(panelRef.value.style.flexGrow).toBe('0')
+    expect(panelRef.value.style.flexShrink).toBe('0')
   })
 
   it('handles multiple panels independently', async () => {
@@ -105,8 +105,8 @@ describe('useStablePrimeVueSplitterSizer', () => {
     trigger.value++
     await flushWatcher()
 
-    expect(leftRef.value!.style.flexBasis).toBe('300px')
-    expect(rightRef.value!.style.flexBasis).toBe('250px')
+    expect(leftRef.value.style.flexBasis).toBe('300px')
+    expect(rightRef.value.style.flexBasis).toBe('250px')
   })
 
   it('skips panels with null refs', async () => {
@@ -128,6 +128,6 @@ describe('useStablePrimeVueSplitterSizer', () => {
     trigger.value++
     await flushWatcher()
 
-    expect(validRef.value!.style.flexBasis).toBe('200px')
+    expect(validRef.value.style.flexBasis).toBe('200px')
   })
 })

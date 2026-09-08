@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -21,7 +21,7 @@ import { useWidgetValueStore } from './widgetValueStore'
 
 /**
  * Pins the store collision contract recorded in docs/exceptions-log.md
- * (EX-002) and docs/adr/0016-entity-registration-collision-and-recovery-boundaries.md:
+ * (EX-002) and docs/adr/ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md:
  * the three identity-keyed stores (nodeDataStore, linkStore, rerouteStore)
  * reject a registration at an already-occupied identity key rather than
  * overwriting it, so the caller can re-mint a new id. The structural-keyed
@@ -41,8 +41,12 @@ const scopeSibling: GraphScope = {
   owningGraphId: toOwningGraphId('sub-1')
 }
 
-function nodeState(id: number, graphId: UUID = rootA): NodeState {
-  return createNodeState({ id: toNodeId(id), graphId, title: `Node ${id}` })
+function nodeState(
+  id: number,
+  graphId: UUID = rootA,
+  title = `Node ${id}`
+): NodeState {
+  return createNodeState({ id: toNodeId(id), graphId, title })
 }
 
 function linkTopology(id: number, graphId: UUID = rootA): LinkTopology {
@@ -135,5 +139,31 @@ describe('store collision contracts (EX-002)', () => {
     expect(resolved?.type).toBe('string')
     expect(resolved?.value).toBe('recycled')
     expect(store.getWidget(id)?.value).toBe('recycled')
+  })
+
+  it('nodeDataStore returns the incumbent when the registered identity re-registers', () => {
+    const store = useNodeDataStore()
+    const registered = store.registerNode(scopeA, nodeState(1))
+    assert(registered)
+
+    expect(store.registerNode(scopeA, registered)).toBe(registered)
+    expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)
+  })
+
+  it('nodeDataStore rejects a different identity at a registered id without touching the incumbent', () => {
+    const store = useNodeDataStore()
+    const incumbent = store.registerNode(
+      scopeA,
+      nodeState(1, rootA, 'Incumbent')
+    )
+    assert(incumbent)
+
+    const usurper = nodeState(1, rootA, 'Usurper')
+    expect(store.registerNode(scopeA, usurper)).toBeUndefined()
+
+    expect(incumbent.title).toBe('Incumbent')
+    expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)
+    expect(store.ownsNode(scopeA, usurper)).toBe(false)
+    expect(store.deleteNode(scopeA, usurper)).toBe(false)
   })
 })

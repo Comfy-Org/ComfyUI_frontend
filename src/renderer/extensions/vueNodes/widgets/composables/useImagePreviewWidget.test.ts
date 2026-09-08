@@ -188,7 +188,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node1)
       const node2 = createMockNode({ id: 2 })
-      const copy = widget.createCopyForNode!(node2)
+      const copy = widget.createCopyForNode(node2)
 
       expect(copy.name).toBe('preview')
       expect(copy.type).toBe('custom')
