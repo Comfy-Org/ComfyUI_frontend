@@ -24,7 +24,9 @@ export class GithubAuthProvider implements ProviderMethods {
   setCustomParameters = vi.fn<ProviderMethods['setCustomParameters']>()
 }
 
-export const browserLocalPersistence = {}
+export const browserLocalPersistence = {
+  type: 'LOCAL'
+} satisfies FirebaseAuth.Persistence
 export const createUserWithEmailAndPassword =
   vi.fn<typeof FirebaseAuth.createUserWithEmailAndPassword>()
 export const getAdditionalUserInfo =
