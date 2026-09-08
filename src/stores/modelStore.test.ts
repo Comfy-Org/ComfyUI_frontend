@@ -1,10 +1,11 @@
-import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, reactive, ref } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type * as RemoteConfigModule from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -19,6 +20,18 @@ const mockDistribution = vi.hoisted(
 )
 
 vi.mock('@/platform/distribution/types', () => mockDistribution)
+
+const remoteConfigHolder = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return { current: ref<RemoteConfig>({}) }
+})
+
+vi.mock('@/platform/remoteConfig/remoteConfig', async (importOriginal) => ({
+  ...(await importOriginal<typeof RemoteConfigModule>()),
+  get remoteConfig() {
+    return remoteConfigHolder.current
+  }
+}))
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>
@@ -103,14 +116,7 @@ describe('useModelStore', () => {
   beforeEach(async () => {
     mockDistribution.isCloud = false
     featureState.serverFeatures = reactive({ assets: false })
-    remoteConfig.value = {}
-  })
-
-  // vitest.setup.ts installs a fresh pinia per test but never disposes the old
-  // one, so without this every store this file has ever created stays alive
-  // watching the shared flag record and re-runs reloadModels() in later tests.
-  afterEach(() => {
-    getActivePinia()?._e.stop()
+    remoteConfigHolder.current = ref({})
   })
 
   it('should load models', async () => {
