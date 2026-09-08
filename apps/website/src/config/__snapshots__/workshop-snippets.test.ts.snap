@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Workshop snippets > builds the http snippet from the current values 1`] = `
+"curl --request POST 'https://api.comfy.org/v2/models/bfl/flux-3' \\
+  --header 'Authorization: Bearer YOUR_API_KEY' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+  "prompt": "A red fox",
+  "enhance": true
+}'"
+`;
+
+exports[`Workshop snippets > builds the python snippet from the current values 1`] = `
+"from comfy_sdk import Comfy
+
+comfy = Comfy(api_key="YOUR_API_KEY")
+result = comfy.models.run("bfl/flux-3", {
+    "prompt": "A red fox",
+    "enhance": True
+})"
+`;
+
+exports[`Workshop snippets > builds the typescript snippet from the current values 1`] = `
+"import { comfy } from '@comfyorg/sdk'
+
+comfy.config({ credentials: 'YOUR_API_KEY' })
+const { data } = await comfy.models.run('bfl/flux-3', {
+  "prompt": "A red fox",
+  "enhance": true
+})"
+`;

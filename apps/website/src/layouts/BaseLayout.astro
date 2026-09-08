@@ -7,6 +7,7 @@ import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { isNoindexPathname } from '../config/indexing'
+import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
   ogLocale,
@@ -238,7 +239,12 @@ const structuredData = shouldNoindex
         client:load
       />
     )}
-    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    <HeaderMain
+      locale={locale}
+      github-stars={githubStars}
+      {...(isWorkshopInBuild() ? { showWorkshop: true } : {})}
+      client:load
+    />
     <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
          visible for reka-ui's dialog scroll lock). <body>'s clip does not
          contain overflow once <html> is visible, because the root propagates

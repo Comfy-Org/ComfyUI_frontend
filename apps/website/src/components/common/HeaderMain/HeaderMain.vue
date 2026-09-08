@@ -1,17 +1,29 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
+
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
+const {
+  locale = 'en',
+  githubStars = '',
+  showWorkshop = false
+} = defineProps<{
   locale?: Locale
   githubStars?: string
+  showWorkshop?: boolean
 }>()
 const routes = getRoutes(locale)
+const workshopAuthEnabled = useWorkshopAuthFlag()
+const HeaderAccount = defineAsyncComponent(
+  () => import('../../workshop/HeaderAccount.vue')
+)
 
 const ctaButtons = [
   {
@@ -47,7 +59,10 @@ const ctaButtons = [
         class="col-span-full row-span-full h-8"
       />
       <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+        :class="[
+          'relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width]',
+          showWorkshop ? '2xl:w-36' : 'xl:w-36'
+        ]"
       >
         <img
           src="/icons/logo.svg"
@@ -58,13 +73,26 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <HeaderMainDesktop
+      :locale
+      :show-workshop
+      :compact="showWorkshop"
+      :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
+    />
+    <HeaderMainMobile
+      :locale
+      :show-workshop
+      :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
+    />
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      :class="
+        showWorkshop
+          ? 'hidden shrink-0 items-center gap-2 xl:flex'
+          : 'hidden shrink-0 items-center gap-2 lg:flex'
+      "
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
@@ -81,6 +109,7 @@ const ctaButtons = [
           <span class="2xl:hidden">{{ cta.short }}</span>
         </span>
       </Button>
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
     </div>
   </nav>
 </template>
