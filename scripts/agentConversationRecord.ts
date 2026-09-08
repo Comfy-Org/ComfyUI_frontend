@@ -71,6 +71,10 @@ const sha256OfFile = (path: string): string => sha256(readFileSync(path))
 const writeJson = (path: string, value: unknown): void =>
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
 
+// A draft plus every tool result can pass Node's 1 MiB default.
+const ROWS_MAX_BYTES = 64 * 1024 * 1024
+const ROWS_TIMEOUT_MS = 60_000
+
 function readRows(
   exec: string[],
   path: string,
@@ -79,7 +83,11 @@ function readRows(
   const quote = (value: string): string => `'${value.replace(/'/g, "''")}'`
   const sql = `select json_build_object('source', 'postgres', 'parents', coalesce((select json_agg(row_to_json(r) order by r.started_at, r.id) from (select parent.id, parent.tool_call_id, parent.tool_name, parent.status, parent.result, parent.started_at, parent.workflow_id, coalesce(json_agg(json_build_object('op_id', child.op_id, 'status', child.status, 'op_index', child.op_index) order by child.op_index) filter (where child.id is not null), '[]'::json) as children from agent_tool_calls as parent left join agent_tool_calls as child on child.parent_call_id = parent.id where parent.thread_id = ${quote(ids.threadId)} and parent.message_id = ${quote(ids.messageId)} and parent.parent_call_id is null group by parent.id) r), '[]'::json), 'draft', (select content from workflow_drafts where workflow_id = ${quote(ids.workflowId)} limit 1))`
   const dump: unknown = JSON.parse(
-    execFileSync(exec[0], [...exec.slice(1), sql], { encoding: 'utf8' }).trim()
+    execFileSync(exec[0], [...exec.slice(1), sql], {
+      encoding: 'utf8',
+      maxBuffer: ROWS_MAX_BYTES,
+      timeout: ROWS_TIMEOUT_MS
+    }).trim()
   )
   writeJson(path, dump)
   const { parents, draft } = parseOrRefuse(zRowsDump, dump, 'rows dump')
@@ -383,7 +391,7 @@ async function main(argv: string[]): Promise<void> {
         'X-Comfy-Workspace': env.AGENT_WORKSPACE_ID,
         'X-Comfy-User': env.AGENT_USER_ID
       },
-      redisExec: env.AGENT_REDIS_EXEC.split(' '),
+      redisExec: env.AGENT_REDIS_EXEC.split(' ').filter(Boolean),
       timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed,
       prompts,
@@ -394,7 +402,7 @@ async function main(argv: string[]): Promise<void> {
     const rows = raw.turns.map((turn, index) => {
       const ids = zAck.parse(turn.accepted?.body)
       return readRows(
-        env.AGENT_PG_EXEC.split(' '),
+        env.AGENT_PG_EXEC.split(' ').filter(Boolean),
         sidecar(`rows.${index + 1}.json`),
         {
           threadId: ids.thread_id,

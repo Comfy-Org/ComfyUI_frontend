@@ -64,7 +64,7 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
   lines.push('## ⚡ Performance')
   lines.push('')
   lines.push('> ⚠️ Performance tests failed. Check the CI workflow logs.')
-} else {
+} else if (perfStatus !== 'skip') {
   lines.push('## ⚡ Performance')
   lines.push('')
   lines.push('> ⏳ Performance tests in progress…')

@@ -72,6 +72,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
+      scheduledChange: null, // Legacy rail cannot schedule plan changes
       renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
       endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
       isCancelled: isCancelled.value,
