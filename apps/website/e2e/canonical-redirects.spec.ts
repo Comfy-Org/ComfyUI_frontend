@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
 
 test.describe('canonical redirects', () => {
   test('builds the untranslated terms redirect with its canonical URL', () => {
