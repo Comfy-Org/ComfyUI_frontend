@@ -13,6 +13,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   PaymentIntentSource,
   SubscriptionCheckoutType
@@ -472,9 +473,10 @@ export function useSubscriptionCheckout(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
-    let requiresRecovery =
+    const hasPaymentRecoveryCode =
       hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
+    let requiresRecovery = hasPaymentRecoveryCode
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
         requiresRecovery =
@@ -512,7 +514,10 @@ export function useSubscriptionCheckout(
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
-      showSubscribeError(portalError)
+      reportError(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
+      showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
       return 'failed'
     }
   }
