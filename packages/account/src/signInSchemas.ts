@@ -28,6 +28,40 @@ export type AuthSchemaTranslate = (
  * rules live once while each host keeps its i18n system. Messages resolve
  * eagerly at build time, so a locale switch requires rebuilding the schemas.
  */
+/**
+ * The one password policy, shared by the schema and by the live checklist
+ * sign-up forms show while the field is being typed.
+ */
+export const PASSWORD_RULES = {
+  minLength: 8,
+  maxLength: 32,
+  uppercase: /[A-Z]/,
+  lowercase: /[a-z]/,
+  number: /\d/,
+  special: /[^A-Za-z0-9]/
+} as const
+
+export type PasswordRule =
+  | 'length'
+  | 'uppercase'
+  | 'lowercase'
+  | 'number'
+  | 'special'
+
+export function passwordRuleChecks(
+  password: string
+): Readonly<Record<PasswordRule, boolean>> {
+  return {
+    length:
+      password.length >= PASSWORD_RULES.minLength &&
+      password.length <= PASSWORD_RULES.maxLength,
+    uppercase: PASSWORD_RULES.uppercase.test(password),
+    lowercase: PASSWORD_RULES.lowercase.test(password),
+    number: PASSWORD_RULES.number.test(password),
+    special: PASSWORD_RULES.special.test(password)
+  }
+}
+
 export function createAuthSchemas(t: AuthSchemaTranslate) {
   const apiKeySchema = z.object({
     apiKey: z
@@ -48,12 +82,18 @@ export function createAuthSchemas(t: AuthSchemaTranslate) {
   const passwordSchema = z.object({
     password: z
       .string()
-      .min(8, t('validation.minLength', { length: 8 }))
-      .max(32, t('validation.maxLength', { length: 32 }))
-      .regex(/[A-Z]/, t('validation.password.uppercase'))
-      .regex(/[a-z]/, t('validation.password.lowercase'))
-      .regex(/\d/, t('validation.password.number'))
-      .regex(/[^A-Za-z0-9]/, t('validation.password.special')),
+      .min(
+        PASSWORD_RULES.minLength,
+        t('validation.minLength', { length: PASSWORD_RULES.minLength })
+      )
+      .max(
+        PASSWORD_RULES.maxLength,
+        t('validation.maxLength', { length: PASSWORD_RULES.maxLength })
+      )
+      .regex(PASSWORD_RULES.uppercase, t('validation.password.uppercase'))
+      .regex(PASSWORD_RULES.lowercase, t('validation.password.lowercase'))
+      .regex(PASSWORD_RULES.number, t('validation.password.number'))
+      .regex(PASSWORD_RULES.special, t('validation.password.special')),
     confirmPassword: z.string().min(1, t('validation.required'))
   })
 
