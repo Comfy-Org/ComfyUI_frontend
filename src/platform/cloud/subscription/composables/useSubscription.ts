@@ -44,12 +44,8 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
-/**
- * How long a checkout may plausibly take before a still-pending attempt counts
- * as never having landed. The retry ladder above starts the moment the checkout
- * tab opens and exhausts 43s later, which is well inside the time a real user
- * spends entering card details and clearing 3DS.
- */
+/** The ladder above exhausts 43s after the checkout tab opens, well inside the
+ * time a real user spends on card entry and 3DS. */
 const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 
 function useSubscriptionInternal() {
@@ -182,9 +178,14 @@ function useSubscriptionInternal() {
           assert_mode: 'soft'
         },
         context: {
-          recovery_attempt_count: pendingCheckoutRecoveryAttempt,
-          has_pending_attempt: hasPendingSubscriptionCheckoutAttempt(),
-          is_logged_in: isLoggedIn.value
+          checkout_attempt_id: attempt.attempt_id,
+          checkout_type: attempt.checkout_type,
+          attempt_age_ms: attemptAgeMs,
+          tier: attempt.tier,
+          cycle: attempt.cycle,
+          ...(attempt.operation
+            ? { checkout_operation: attempt.operation }
+            : {})
         },
         level: 'warning'
       }
