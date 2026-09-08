@@ -1,5 +1,13 @@
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALE_PREFIXES, LOCALES, isPageIndexable, localePrefix, isLocale } from '../config/locales';
-import type { Locale } from '../config/locales';
+import {
+  DEFAULT_LOCALE,
+  LOCALE_CODES,
+  LOCALE_PREFIXES,
+  LOCALES,
+  isPageIndexable,
+  localePrefix,
+  isLocale
+} from '../config/locales'
+import type { Locale } from '../config/locales'
 import { isLocaleInvariantPath, localizeHref } from '../config/routes'
 
 export interface Alternate {
