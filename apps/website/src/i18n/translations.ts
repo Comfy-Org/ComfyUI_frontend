@@ -8639,19 +8639,19 @@ Enterprise`
     'zh-CN': '浏览全部模型'
   },
   'workshop.credits.title': {
-    en: 'Payment happens on Stripe',
+    en: 'Add credits',
     'zh-CN': '支付在 Stripe 完成'
   },
   'workshop.credits.body': {
-    en: 'Pick a top-up here and finish the purchase on Stripe Checkout. We send the page you are on as the return address, so you land back here with your inputs as you left them:',
+    en: 'Pick a bundle, or choose a custom amount.',
     'zh-CN':
       '在此选择充值额度，然后在 Stripe Checkout 完成支付。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样：'
   },
   'workshop.credits.continue': {
-    en: 'Continue to Stripe',
+    en: 'Continue',
     'zh-CN': '前往 Stripe'
   },
-  'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
+  'workshop.credits.cancel': { en: 'Cancel', 'zh-CN': '留在此页' },
   'workshop.credits.checkout': {
     en: 'Checkout',
     'zh-CN': '结账'
@@ -8667,7 +8667,7 @@ Enterprise`
     'zh-CN': '已添加 {n} 积分'
   },
   'workshop.credits.resume': {
-    en: 'Back to the model',
+    en: 'Done',
     'zh-CN': '返回模型'
   },
   'workshop.credits.custom': {
@@ -8697,7 +8697,7 @@ Enterprise`
     'zh-CN': '关闭此窗口不会影响你的付款。'
   },
   'workshop.credits.reopenPrompt': {
-    en: 'Closed it by mistake?',
+    en: 'Lost the tab?',
     'zh-CN': '不小心关闭了？'
   },
   'workshop.credits.addedTo': {

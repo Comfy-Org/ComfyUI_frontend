@@ -9,7 +9,7 @@ import {
   Minus,
   Plus
 } from '@lucide/vue'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -100,8 +100,65 @@ function pay() {
   settle(topUpOutcome.value)
 }
 
+// The landed card closes itself after a beat. It is the one state with nothing
+// left to decide — the credits are in and the gate behind has already flipped to
+// Run — so making someone dismiss it is a step that buys nothing.
+//
+// Two guards, because it is still a receipt. The countdown runs only while the
+// tab is actually being looked at, so someone who wandered off does not return
+// to a confirmation that already went. And any interaction cancels it for good,
+// so nobody loses the ledger halfway through reading it.
+//
+// Deliberately not applied to waiting or unresolved: those are unfinished, and a
+// card that closes itself says the opposite.
+const AUTO_CLOSE_MS = 5_000
+let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
+let autoCloseCancelled = false
+
+function stopAutoClose() {
+  if (autoCloseTimer) clearTimeout(autoCloseTimer)
+  autoCloseTimer = undefined
+}
+
+function cancelAutoClose() {
+  autoCloseCancelled = true
+  stopAutoClose()
+}
+
+function scheduleAutoClose() {
+  stopAutoClose()
+  if (autoCloseCancelled) return
+  if (typeof document !== 'undefined' && document.hidden) return
+  autoCloseTimer = setTimeout(() => finish(), AUTO_CLOSE_MS)
+}
+
+function onVisibilityChange() {
+  if (step.value !== 'landed') return
+  if (document.hidden) stopAutoClose()
+  else scheduleAutoClose()
+}
+
+watch(step, (value) => {
+  if (value !== 'landed') {
+    stopAutoClose()
+    return
+  }
+  autoCloseCancelled = false
+  scheduleAutoClose()
+})
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', onVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  stopAutoClose()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+})
+
 // Concluding the purchase: the money has resolved either way, so stop tracking.
 function finish() {
+  stopAutoClose()
   clear()
   open.value = false
 }
@@ -124,6 +181,8 @@ const stepperClass =
       :close-label="t('workshop.credits.close', locale)"
       class="flex min-h-[min(85vh,41rem)] flex-col sm:min-h-136 sm:max-w-xl"
       data-testid="buy-credits-dialog"
+      @pointerdown="cancelAutoClose"
+      @keydown="cancelAutoClose"
     >
       <!-- 1 · Amount — the last screen we own before the hand-off -->
       <div
