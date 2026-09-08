@@ -127,6 +127,34 @@ function dynamicComboWidget(
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
+  function restoreRemovedValues(
+    value: string | undefined,
+    widgetNames: string[]
+  ) {
+    const widgets = node.widgets
+    if (!widgets) return
+    const graphId = resolveNodeRootGraphId(node)
+    for (const name of widgetNames) {
+      const addedWidget = widgets.find((widget) => widget.name === name)
+      if (!addedWidget) continue
+      const removed = removedWidgetValues.get(value)?.get(name)
+      const positionalIndex = widgets
+        .filter((widget) => widget.serialize !== false)
+        .indexOf(addedWidget)
+      const restored =
+        graphId && positionalIndex >= 0
+          ? useWidgetValueStore().getRestoredWidgetValue(
+              graphId,
+              node.id,
+              name,
+              positionalIndex
+            )
+          : undefined
+      if (!restored && removed?.type === addedWidget.type) {
+        addedWidget.value = removed.value
+      }
+    }
+  }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
@@ -186,22 +214,8 @@ function dynamicComboWidget(
     const inputInsertionPoint =
       node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
+    const addedWidgetNames = addedWidgets.map(({ name }) => name)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
-    const graphId = resolveNodeRootGraphId(node)
-    for (const [offset, addedWidget] of addedWidgets.entries()) {
-      const removed = removedWidgetValues.get(value)?.get(addedWidget.name)
-      const restored = graphId
-        ? useWidgetValueStore().getRestoredWidgetValue(
-            graphId,
-            node.id,
-            addedWidget.name,
-            insertionPoint + offset
-          )
-        : undefined
-      if (!restored && removed?.type === addedWidget.type) {
-        addedWidget.value = removed.value
-      }
-    }
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
       if (
@@ -212,6 +226,7 @@ function dynamicComboWidget(
         throw new Error('Failed to find input socket for ' + widget.name)
       const result = commitMutatedInputs(node, previous, inputLinks)
       if (!result.ok) return
+      restoreRemovedValues(value, addedWidgetNames)
       return
     }
     const addedInputs = node.inputs
@@ -237,6 +252,7 @@ function dynamicComboWidget(
     for (const { input, link, slot } of result.replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
+    restoreRemovedValues(value, addedWidgetNames)
 
     if (!node.graph) return
     node._setConcreteSlots()

@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
   addDynamicCombo
@@ -9,8 +9,12 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 
+const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 setActivePinia(createTestingPinia({ stubActions: false }))
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+afterEach(() => {
+  LiteGraph.namedValuesRestore = originalNamedValuesRestore
+})
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
