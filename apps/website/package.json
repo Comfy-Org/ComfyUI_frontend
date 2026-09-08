@@ -26,6 +26,7 @@
     "i18n:write-faq": "tsx ./scripts/i18n/write-faq-japanese.ts",
     "i18n:write-story": "tsx ./scripts/i18n/write-story-japanese.ts",
     "i18n:enforce": "tsx ./scripts/i18n/enforce-translations.ts",
+    "i18n:review": "tsx ./scripts/i18n/review-translations.ts",
     "i18n:report": "tsx ./scripts/i18n/report-coverage.ts",
     "i18n:check-config": "tsx ./scripts/i18n/check-config.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
@@ -58,6 +59,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "catalog:",
     "@astrojs/check": "catalog:",
     "@astrojs/mdx": "catalog:",
     "@astrojs/vue": "catalog:",

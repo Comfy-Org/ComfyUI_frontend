@@ -26,6 +26,12 @@ export interface Violation {
     | 'script'
     | 'brand-voice'
     | 'unknown-key'
+    /**
+     * Raised by the AI reviewer in `review.ts`, never by `collectViolations`.
+     * A kind of its own rather than reusing `glossary`, so the deterministic
+     * counts this file reports stay counts of deterministic failures.
+     */
+    | 'ai-review'
   detail: string
 }
 

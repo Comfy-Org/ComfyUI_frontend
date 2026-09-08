@@ -1,0 +1,184 @@
+{
+  "promptVersion": 1,
+  "glossary": "7a14d59eb5c54b78e0aa9e2efcf8f4d4",
+  "entries": {
+    "careers.teamPhotos.team0.alt": "b2add2f28d0eb8e0df249259cb9d5c67",
+    "careers.teamPhotos.team1.alt": "59f48da5686f4cbde84c1e7d9913f504",
+    "careers.teamPhotos.team2.alt": "a097f59e25c6bb639625a17ce3b49662",
+    "careers.teamPhotos.team3.alt": "7a298ccaa15032910ec56d038b866b5b",
+    "careers.teamPhotos.team4.alt": "207f17a2d678d3f94082e8e80c3735a7",
+    "careers.teamPhotos.team5.alt": "ff71f83363435ec7f7ff07e34fe02d47",
+    "careers.teamPhotos.team6.alt": "267d1e7f5029e2abfac5559a4dc513ea",
+    "careers.teamPhotos.team7.alt": "bee47987a3227202b79efc976cef3a58",
+    "cli.meta.keywords": "36c89524832067dca4a5fde1e7be9ead",
+    "enterprise.faq.builds-vs-managed-builds.answer": "e08b2c07c2766a407b3cda259e7139d7",
+    "enterprise.faq.builds-vs-managed-builds.question": "73362b86648525ec49a9ab532804dfd4",
+    "enterprise.faq.capacity-and-support.answer": "2fdd16d72c77d7cb48c506028ea242f7",
+    "enterprise.faq.capacity-and-support.question": "70ccae3b6e6f58027ac6e9b06feba7c2",
+    "enterprise.faq.commercial-models.answer": "d3d1f78c361c2c894a8a46dcb06324eb",
+    "enterprise.faq.commercial-models.question": "c65611ff3132e1135d6fcd3dd6246117",
+    "enterprise.faq.security.question": "39ae7ab0907029e942aa03e78aacc5b9",
+    "enterprise.faq.team-plan.answer": "befbc969653cb9d9f546359c6c92cfb5",
+    "enterprise.faq.team-plan.question": "4deadf0b1e21e341e5b851ba2d95a848",
+    "enterprise.faq.usage.answer": "d51a0e1f6f87af90e7478600ad9fd544",
+    "enterprise.faq.usage.question": "72585e18470d8d3090d214944b1ea087",
+    "enterprise.faq.what-is-enterprise.answer": "90cca98747ed25630308ee7e2e3bdaed",
+    "enterprise.faq.what-is-enterprise.question": "14a7236ed9efb223c354bdc396f3f2e3",
+    "enterprise.faq.where-runs.answer": "345fd72edd6d827ccaab455ac01b69ad",
+    "enterprise.faq.where-runs.question": "3626bea607300b127db151db1a3d3a38",
+    "enterprise.governance.build-policy.description": "82e4e1162e25889002a88a4afb31b1da",
+    "enterprise.governance.build-policy.title": "5d0bd77e2dc0812a28b3958048e395bc",
+    "enterprise.governance.model-policy.description": "d64bc2db348fffb1f4e97bdc20dff575",
+    "enterprise.governance.model-policy.title": "e6c12101f561205eb2c312ba6d30faa1",
+    "enterprise.governance.people-access.description": "cc867acab9d0fd320bc5016cb54c845d",
+    "enterprise.governance.people-access.title": "33f8e9f88f2559c5352fe413de6d7124",
+    "enterprise.governance.usage-records.description": "45148fd470e36b9c43c4c702c43bc4ff",
+    "enterprise.governance.usage-records.title": "c1186163dea40444bda58c9e116a715a",
+    "enterprise.industries.games.description": {
+      "hash": "fdba3e62e3fb62b3cd042b3e253e2c88",
+      "findings": [
+        {
+          "key": "enterprise.industries.games.description",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "在为其工作打造的 Comfy Workflows 中开展工作",
+          "suggestion": "在为各自岗位打造的 Comfy Workflows 中开展工作",
+          "reason": "Repetition of 工作 twice in close succession ('...为其工作打造...中开展工作') reads clumsily; rephrasing avoids the echo."
+        }
+      ]
+    },
+    "enterprise.industries.games.title": "ba7db5ac34cc1fb8f275661d84c648e9",
+    "enterprise.industries.onboarding.description": "d33e2a9892922168536d4ea525a6141c",
+    "enterprise.industries.onboarding.title": "e155ca352737032b07a51e54d1012d2e",
+    "enterprise.industries.vfx.description": "ce391b07f4296c18c2d61df815fce81c",
+    "enterprise.industries.vfx.title": "42e13c0591adeda9d13f1d251af396b9",
+    "enterprise.managedBuilds.faq.access.answer": "1fae1b9b87e27849ec4116c38630feab",
+    "enterprise.managedBuilds.faq.access.question": "69d2a03f89fa52005b3772ce6bb51c9e",
+    "enterprise.managedBuilds.faq.models.answer": "b141833db5a461aef6f9df87066829f1",
+    "enterprise.managedBuilds.faq.models.question": "c1e8160cf0114a4095a10988c0568291",
+    "enterprise.managedBuilds.faq.nodes.answer": "51e63cc22060a1e2f86a8a1976d8fc7e",
+    "enterprise.managedBuilds.faq.nodes.question": "feb2af51f01d8f0b92d3b02801d85eea",
+    "enterprise.managedBuilds.faq.start.answer": "bcec0cda111c6863142ab911e4995e20",
+    "enterprise.managedBuilds.faq.start.question": "8431fbcde6a21205ec83dc48410fbdf0",
+    "enterprise.managedBuilds.faq.usage.answer": "9373dd0103c71234c9b40674c395759e",
+    "enterprise.managedBuilds.faq.usage.question": "0d3b0b5eb0ef79b96ea39cda8fe0ada6",
+    "enterprise.managedBuilds.faq.what.answer": "48eb6b3218bfb12da1233469037df057",
+    "enterprise.managedBuilds.faq.what.question": "9470b3a2727bfcb50a2441ffd37fc447",
+    "enterprise.managedBuilds.faq.where.answer": "d9599ef1a7fe94ffba25b666cf11f1f4",
+    "enterprise.managedBuilds.faq.where.question": "11ba7203e3728e76ac16242bc84a907c",
+    "enterprise.managedBuilds.governance.build-policy.description": "46d4f6d926f10130ad87ee5eaa1708c3",
+    "enterprise.managedBuilds.governance.build-policy.title": "5d0bd77e2dc0812a28b3958048e395bc",
+    "enterprise.managedBuilds.governance.model-policy.description": "3aad38c25d7ee6d7df1d9f74a91fbb6c",
+    "enterprise.managedBuilds.governance.model-policy.title": "286347c175d304182c630d7b88ac859a",
+    "enterprise.managedBuilds.governance.people-access.description": "87b73fb28a503fed6e8190824c533b15",
+    "enterprise.managedBuilds.governance.people-access.title": "33f8e9f88f2559c5352fe413de6d7124",
+    "enterprise.managedBuilds.governance.usage-records.description": {
+      "hash": "8b66c52eb7ec9b06d611afffdb421812",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.governance.usage-records.description",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "明确认证、构建分配、发布、保留和导出要求",
+          "suggestion": "明确身份验证、构建分配、发布、保留和导出要求",
+          "reason": "Inconsistent rendering of 'Authentication': the near-identical FAQ string (enterprise.managedBuilds.faq.usage.answer) uses 身份验证 while this one uses 认证. The two texts appear on the same page and should use one term."
+        }
+      ]
+    },
+    "enterprise.managedBuilds.governance.usage-records.title": "c1186163dea40444bda58c9e116a715a",
+    "enterprise.managedBuilds.industries.games.description": {
+      "hash": "2eb891f65b28d677c5ba80f24f97b9d4",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.industries.games.description",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "在为其工作打造的 Comfy Workflows 中开展工作",
+          "suggestion": "在为其量身打造的 Comfy Workflows 中开展各自的任务",
+          "reason": "\"工作\" is repeated twice in one clause, producing clumsy phrasing a native writer would avoid."
+        }
+      ]
+    },
+    "enterprise.managedBuilds.industries.games.title": "ba7db5ac34cc1fb8f275661d84c648e9",
+    "enterprise.managedBuilds.industries.onboarding.description": "8b2d10434ec200c364da69903706f414",
+    "enterprise.managedBuilds.industries.onboarding.title": "e155ca352737032b07a51e54d1012d2e",
+    "enterprise.managedBuilds.industries.vfx.description": "1288823cd749c7cc1883d5c3ce580972",
+    "enterprise.managedBuilds.industries.vfx.title": "42e13c0591adeda9d13f1d251af396b9",
+    "enterprise.managedBuilds.meta.description": "871ff22bf8dc0afdb61f743d1e99b776",
+    "enterprise.managedBuilds.meta.title": {
+      "hash": "8146a7b61567c6351aecc3f48fae87ca",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.meta.title",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "在整个环境中治理 ComfyUI",
+          "suggestion": "在整个设备群/全体工作站中治理 ComfyUI",
+          "reason": "\"fleet\" (a fleet of machines/workstations) is flattened to the vague \"整个环境\" (the whole environment), losing the notion of many managed machines."
+        }
+      ]
+    },
+    "enterprise.meta.description": "79710021aeebbfa78ce18af5872e096d",
+    "enterprise.meta.title": "4919e5ac2b8f82a70882ec09ff987e50",
+    "enterprise.offers.commercial-licensing.cta.label": {
+      "hash": "1990463a47f36e3bb5d4795ab4903b85",
+      "findings": [
+        {
+          "key": "enterprise.offers.commercial-licensing.cta.label",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "查看 MiniMax 授权",
+          "suggestion": "查看 MiniMax 许可",
+          "reason": "\"licensing\" is rendered 许可 in the section title (模型许可) but 授权 in this CTA that sits directly under it; the same term should be consistent within the section."
+        }
+      ]
+    },
+    "enterprise.offers.commercial-licensing.description": {
+      "hash": "7528ab21cb1c52358bb4fcfd9270483e",
+      "findings": [
+        {
+          "key": "enterprise.offers.commercial-licensing.description",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "本地模型条款可按需向相应提供商获取",
+          "suggestion": "本地模型条款可按提供商按需提供",
+          "reason": "English says terms are available (from us) broken down by provider on request; the translation tells the customer to obtain them from the provider directly, shifting who supplies the terms."
+        }
+      ]
+    },
+    "enterprise.offers.commercial-licensing.label": "1f222d6ccdd7cd8f6bb95bf61160b284",
+    "enterprise.offers.commercial-licensing.title": "178b25603dbefcc294a06d81f13a2a09",
+    "enterprise.offers.forward-deployed-creatives.cta.label": "842148458b0703922aca920b936a82bb",
+    "enterprise.offers.forward-deployed-creatives.description": "12a83dbb09cf7da5bd032d20d4df2137",
+    "enterprise.offers.forward-deployed-creatives.label": {
+      "hash": "969f622e55592ca3ffd72d69c7437fb6",
+      "findings": [
+        {
+          "key": "enterprise.offers.forward-deployed-creatives.label",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "全程交付支持",
+          "suggestion": "实操交付",
+          "reason": "\"hands-on delivery\" is translated 实操交付 in enterprise.meta.description but 全程交付支持 here; also 全程 (\"end-to-end/full-process\") adds a claim the English does not make."
+        }
+      ]
+    },
+    "enterprise.offers.forward-deployed-creatives.title": "f73be9c33a5e058e8c7b5177002b3d2e",
+    "enterprise.offers.team-plans.description": "d5678db10d8e1db18f984b4746047de1",
+    "enterprise.offers.team-plans.label": "11820aea5c02bbecc7476231b0c9274a",
+    "enterprise.offers.team-plans.title": "15e913179fe75370325e057b114f0339",
+    "enterprise.production.dedicated-capacity.description": "f5aa5d50a721b09ced83d8ad7bbd0898",
+    "enterprise.production.dedicated-capacity.title": "52dc67a42ac55ed8b8cee4b62a16747d",
+    "enterprise.production.deployment.description": "eb4432ecba8fbe49fa19f470c1b17a86",
+    "enterprise.production.deployment.title": "01818f5185ea5a081e74ed59ea87bfcc",
+    "enterprise.production.priority-queueing.description": "6d60b86b225ec9035cc8120b1ec544cc",
+    "enterprise.production.priority-queueing.title": "29e71362640e3e42a0a975f57540e0a4",
+    "enterprise.production.support.description": "c2a1c7897bd8ad2948a53c1702b19900",
+    "enterprise.production.support.title": "53887444c8d7eea6e7cbfae7503a15da",
+    "mcp.agentBanner.linkTitle": "570e4a049288292255a118eb99d7cf34",
+    "mcp.agentBanner.title": "86cf5233c9d204a1c3082303d51d049a",
+    "meta.defaultDescription": "363387136f7805f01cadafd55cdf5b60",
+    "notFound.a11y.pageLabel": "24967d5ec8fc65863f26ef5bb5efc6ea",
+    "notFound.meta.title": "5bc2a8a0d424c848c2c7eb43b6063da7"
+  }
+}

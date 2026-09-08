@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALES, LOCALIZED_CODES } from '../../src/config/locales'
-import { OUTPUT_LOCALES, preserveTerms } from './config'
+import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 
@@ -38,7 +38,21 @@ function main(): void {
     }
   }
 
-  // 3. A short preserve term matches inside ordinary words. `Wan` is a video
+  // 3. Voice guidance is optional in the shared `OutputLocale` type, because the
+  //    app UI's locales have none. Here it is half of what the translator is
+  //    told and half of the rubric the reviewer's verdicts are fingerprinted
+  //    against, so a locale missing it would be translated to no particular
+  //    voice and reviewed against no particular standard.
+  for (const locale of LOCALIZED_CODES) {
+    if (!OUTPUT_LOCALES[locale]) continue
+    try {
+      localeRubric(locale)
+    } catch (error) {
+      problems.push((error as Error).message)
+    }
+  }
+
+  // 4. A short preserve term matches inside ordinary words. `Wan` is a video
   //    model and also the first three letters of `Want`, which made 51 real
   //    strings impossible to validate. Matching is word-boundary aware now, so
   //    a two-character term is safe — `AI`, `H3`, `T5` and `TB` are all real
@@ -57,7 +71,7 @@ function main(): void {
     )
   }
 
-  // 4. A machine layer file must exist for every locale, because `translations.ts`
+  // 5. A machine layer file must exist for every locale, because `translations.ts`
   //    imports them statically and a missing file is a build error rather than an
   //    empty layer.
   for (const locale of LOCALIZED_CODES) {
@@ -67,7 +81,7 @@ function main(): void {
     }
   }
 
-  // 5. The content-of-record must exist, or every other step is a green tick
+  // 6. The content-of-record must exist, or every other step is a green tick
   //    over nothing.
   if (!fs.existsSync(path.join(I18N_DIR, 'content', 'en.json'))) {
     problems.push(

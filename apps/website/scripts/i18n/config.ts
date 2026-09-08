@@ -106,6 +106,34 @@ export const OUTPUT_LOCALES: Record<string, OutputLocale | undefined> = {
 }
 
 /**
+ * The name and voice a locale is both translated to and judged against.
+ *
+ * `OutputLocale.guidance` is optional in the shared type because the app UI's
+ * locales have none. On the website it is not optional: it is half of what the
+ * translator is told, and half of the rubric the reviewer's verdicts are
+ * fingerprinted against. A locale silently missing it would be translated to no
+ * particular voice and reviewed against no particular standard, so this refuses
+ * rather than substituting an empty string.
+ */
+export function localeRubric(locale: string): {
+  name: string
+  guidance: string
+} {
+  const output = OUTPUT_LOCALES[locale]
+  if (!output) {
+    throw new Error(`[i18n] OUTPUT_LOCALES has no entry for "${locale}".`)
+  }
+  const guidance = output.guidance?.trim()
+  if (!guidance) {
+    throw new Error(
+      `[i18n] OUTPUT_LOCALES["${locale}"] has no voice guidance, which both ` +
+        `the translator and the reviewer need.`
+    )
+  }
+  return { name: output.name, guidance }
+}
+
+/**
  * Batching and retry, matching the app UI's proven values. Marketing strings are
  * longer than UI labels, so the per-request item count is lower while the
  * character budget stays the same.
