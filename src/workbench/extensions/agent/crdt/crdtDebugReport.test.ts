@@ -44,6 +44,8 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     workflowId: 'doc-1',
     updatesApplied: 3,
     lastFrameType: 'doc_update',
+    subscriptionStatus: 'connected',
+    refusalCode: null,
     outcomes: {
       received: 3,
       applied: 3,
@@ -125,7 +127,26 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('Comfy.Setting')
     expect(report).toContain('doc-1')
     expect(report).toContain('doc_update')
+    expect(report).toContain('**Subscription:** connected')
     expect(report).toContain('Document stamps')
+  })
+
+  it('shows the refusal code next to a refused subscription', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: {
+        ...SNAPSHOT,
+        status: {
+          ...SNAPSHOT.status,
+          connected: false,
+          subscriptionStatus: 'too_large',
+          refusalCode: 'too_large'
+        }
+      },
+      sources: ALL_SOURCES,
+      events: []
+    })
+
+    expect(report).toContain('**Subscription:** too_large (too_large)')
   })
 
   it('leads with an Identifiers block carrying every ID a backend engineer searches by', async () => {
