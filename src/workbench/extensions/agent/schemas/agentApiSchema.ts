@@ -1,29 +1,45 @@
 import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
+  zAgentCancelAccepted,
+  zAgentError as zGeneratedAgentError,
+  zAgentMessage as zGeneratedAgentMessage,
   zAgentRunMode as zGeneratedAgentRunMode,
+  zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
+  zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
+import type {
+  AgentAnswerAccepted,
+  AgentCancelAccepted,
+  AgentRunMode as AgentRunModePreference,
+  AgentThreadSummary,
+  AgentTurnAccepted as GeneratedAgentTurnAccepted
+} from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAdmissionError, zAgentAnswerAccepted }
-export type { AgentRunMode as AgentRunModePreference } from '@comfyorg/ingest-types'
+export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
+export type {
+  AgentAnswerAccepted,
+  AgentCancelAccepted,
+  AgentRunModePreference,
+  AgentThreadSummary
+}
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
 export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
-export const zAgentTurnAccepted = z
-  .object({
-    thread_id: z.string(),
-    message_id: z.string(),
+export const zAgentTurnAccepted = zGeneratedAgentTurnAccepted
+  .extend({
     workflow_id: z.string().optional()
   })
   .passthrough()
-export type AgentTurnAccepted = z.infer<typeof zAgentTurnAccepted>
-export type AgentAnswerAccepted = z.infer<typeof zAgentAnswerAccepted>
+export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
+  workflow_id?: string
+}
 
 const zAgentAskOption = z
   .object({
@@ -76,17 +92,10 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
     }
   }
 )
-export type AgentRunMode = z.infer<typeof zAgentRunMode>['mode']
+export type AgentRunModeValue = AgentRunModePreference['mode']
 
-export const zAgentMessage = z
-  .object({
-    id: z.string(),
-    thread_id: z.string(),
-    seq: z.number().int(),
-    role: z.enum(['user', 'assistant', 'tool', 'system']),
-    status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
-    turn_id: z.string(),
-    content: z.record(z.string(), z.unknown()).optional(),
+export const zAgentMessage = zGeneratedAgentMessage
+  .extend({
     pending_ask: zAgentPendingAsk.optional()
   })
   .passthrough()
@@ -94,21 +103,7 @@ export const zAgentMessage = z
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
-const zAgentThreadSummary = z
-  .object({
-    id: z.string(),
-    title: z.string(),
-    preview: z.string().optional(),
-    last_message_at: z.string().optional(),
-    updated_at: z.string().optional(),
-    created_at: z.string().optional()
-  })
-  .passthrough()
-export type AgentThreadSummary = z.infer<typeof zAgentThreadSummary>
-
-export const zAgentThreads = z
-  .object({ threads: z.array(zAgentThreadSummary) })
-  .passthrough()
+export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
 
 export const zCloudWorkflowIndex = zWorkflowListResponse
   .pick({ pagination: true })
@@ -121,15 +116,7 @@ export type CloudWorkflowEntry = z.infer<
   typeof zCloudWorkflowIndex
 >['data'][number]
 
-export const zAgentCancelAccepted = z.object({
-  status: z.literal('cancelling')
-})
-export type AgentCancelAccepted = z.infer<typeof zAgentCancelAccepted>
-
-export const zAgentError = z.union([
-  z.object({ error: z.string() }),
-  zAgentAdmissionError
-])
+export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
 export const zUploadImageResult = z.object({
   name: z.string(),
