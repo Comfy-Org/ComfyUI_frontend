@@ -3,7 +3,6 @@ import BaseLayout from '../../../layouts/BaseLayout.astro'
 import RelatedWorkflows from '../../../components/hub/RelatedWorkflows.vue'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
 import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
-import StaticFrame from '../../../components/workshop/StaticFrame.vue'
 import { getRoutes } from '../../../config/routes'
 import { hubWorkflowUrl } from '../../../lib/hub/routes'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
@@ -54,7 +53,7 @@ const comments = [
   ogImage={template.thumbnails[0]}
   noindex
 >
-  <div class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
+  <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
     <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
       <ol class="flex flex-wrap items-center gap-2">
         <li>
@@ -73,75 +72,60 @@ const comments = [
       </ol>
     </nav>
 
-    <header
-      class="relative mb-12 overflow-hidden rounded-4.5xl sm:mx-8 lg:mx-10"
-      data-testid="workflow-hero"
-    >
-      {
-        template.thumbnails[0] && (
-          <StaticFrame
-            src={template.thumbnails[0]}
-            class="absolute inset-0 size-full object-cover [mask-image:linear-gradient(to_right,transparent_45%,black_85%)]"
-            client:load
-          />
-        )
-      }
+    <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="workflow-hero">
+      <div class="flex flex-col gap-6 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
+        <div class="flex min-w-0 max-w-2xl flex-col gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <p
+              class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
+              data-testid="workflow-author"
+            >
+              {author}
+            </p>
+            <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kinds">
+              <li><span class={pillClass}>{kindLabel}</span></li>
+              {mediaLabel[mediaType] && <li><span class={pillClass}>{mediaLabel[mediaType]}</span></li>}
+              {isPartner && <li><span class={pillClass} data-testid="workflow-serverless">{t('workshop.workflow.serverless')}</span></li>}
+            </ul>
+          </div>
 
-      <div
-        class="relative flex min-h-52 flex-col justify-center gap-4 py-8 pr-8 lg:min-h-60 lg:py-10 lg:pr-10"
-      >
-        <div class="flex min-w-0 max-w-2xl flex-col gap-3">
-          <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kinds">
-            <li><span class={pillClass}>{kindLabel}</span></li>
-            {mediaLabel[mediaType] && <li><span class={pillClass}>{mediaLabel[mediaType]}</span></li>}
-            {isPartner && <li><span class={pillClass} data-testid="workflow-serverless">{t('workshop.workflow.serverless')}</span></li>}
-          </ul>
-
-          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
+          <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
             {template.title}
           </h1>
+        </div>
 
-          {
-            details.description && (
-              <p
-                class="max-w-2xl text-base leading-relaxed text-primary-comfy-canvas/80"
-                data-testid="workflow-summary"
-              >
-                {details.description}
-              </p>
-            )
-          }
+        <div class="flex flex-col gap-4 lg:items-end">
+          <p
+            class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
+            data-testid="workflow-price"
+          >
+            <span class="text-lg font-bold text-primary-warm-white">
+              {stats.creditsPerRun} {t('nav.credits')}
+            </span>
+            {t('workshop.model.perRun')}
+          </p>
 
-          <ul class="mt-1 flex flex-wrap items-center gap-2" data-testid="workflow-tags">
-            <li class="text-content-secondary mr-1 flex items-center gap-2 text-sm">
-              <span
-                class="bg-brand text-page grid size-5 shrink-0 place-items-center rounded-full text-2xs font-bold"
-                aria-hidden="true"
-              >
-                {author.charAt(0).toUpperCase()}
-              </span>
-              <span class="ppformula-text-center-sm truncate">{author}</span>
-            </li>
+          <ul
+            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+            data-testid="workflow-tags"
+          >
             {
-              template.tags.map((tag) => (
+              [
+                ...template.tags.map((tag) => ({
+                  label: tagDisplayName(tag),
+                  href: `${routes.workshop}?tag=${encodeURIComponent(tag)}`
+                })),
+                ...template.models.map((modelName) => ({
+                  label: modelName,
+                  href: `${routes.workshop}?model=${encodeURIComponent(modelName)}`
+                }))
+              ].map((tag) => (
                 <li>
                   <a
-                    href={`${routes.workshop}?tag=${encodeURIComponent(tag)}`}
-                    class="rounded-2xl border border-transparency-white-t20 px-3 py-1 text-xs text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
+                    href={tag.href}
+                    class="inline-flex h-8 shrink-0 items-center rounded-full bg-transparency-white-t8 px-4 text-sm whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
                   >
-                    {tagDisplayName(tag)}
-                  </a>
-                </li>
-              ))
-            }
-            {
-              template.models.map((modelName) => (
-                <li>
-                  <a
-                    href={`${routes.workshop}?model=${encodeURIComponent(modelName)}`}
-                    class="rounded-2xl border border-transparency-white-t20 px-3 py-1 text-xs text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
-                  >
-                    {modelName}
+                    {tag.label}
                   </a>
                 </li>
               ))
@@ -154,6 +138,17 @@ const comments = [
     <div class="sm:px-8 lg:px-10">
       <ModelDetail model={model} clone={clone} client:load>
         <div slot="details" class="flex flex-col gap-8">
+          {
+            details.description && (
+              <p
+                class="max-w-3xl text-base leading-relaxed text-primary-comfy-canvas/80"
+                data-testid="workflow-summary"
+              >
+                {details.description}
+              </p>
+            )
+          }
+
           <section class="grid gap-8 lg:grid-cols-12" data-testid="workflow-about">
             {
               hasCustomNodes && (

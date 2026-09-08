@@ -129,12 +129,15 @@ const tags = model.capabilities.map((capability) => ({
             }
           </p>
 
-          <ul class="flex flex-wrap items-center gap-2 lg:justify-end" data-testid="model-tags">
+          <ul
+            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+            data-testid="model-tags"
+          >
             {tags.map((tag) => (
               <li>
                 <a
                   href={`${routes.workshop}${tag.search}`}
-                  class="inline-flex h-8 items-center rounded-full bg-transparency-white-t8 px-4 text-sm text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                  class="inline-flex h-8 shrink-0 items-center rounded-full bg-transparency-white-t8 px-4 text-sm whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
                 >
                   {tag.label}
                 </a>
