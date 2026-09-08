@@ -300,8 +300,17 @@ export class EcsFollowerAdapter {
       })
     }
 
-    const removedLinkIds = [...changedLinkIds].flatMap((id) =>
-      session.links.has(id) ? [] : [Number(id)]
+    // A changed link the follower cannot read (gone from the doc, or re-minted
+    // by cmp onto a promoted slot the definition does not declare) must be
+    // retired live; otherwise its previous topology stays connected.
+    const changedLinks = new Map(
+      [...changedLinkIds].map((id) => [
+        id,
+        session.links.has(id) ? readSemanticLink(doc, id, definitions) : null
+      ])
+    )
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
+      link ? [] : [Number(id)]
     )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       if (reconcile) {
@@ -378,8 +387,7 @@ export class EcsFollowerAdapter {
           batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
         }
       }
-      for (const id of changedLinkIds) {
-        const link = readSemanticLink(doc, id, definitions)
+      for (const link of changedLinks.values()) {
         if (link) batch.connect(link)
       }
     })

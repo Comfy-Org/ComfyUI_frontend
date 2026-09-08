@@ -346,4 +346,58 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       state.graph.getNodeById(toNodeId(2))?.outputs[0]?.links ?? []
     ).toEqual([])
   })
+
+  it('S2d removes a live promoted link when the same link id is retargeted onto an undeclared slot', () => {
+    // cmp `claimLinkIdentity` deletes and re-mints link 9 under the new slot in
+    // one op, so the doc still holds id 9 but the follower can no longer read
+    // it (undeclared name). A changed link that is present in the doc yet
+    // unreadable must be retired live, not left connected to its old slot.
+    const state = startFollower()
+    const connect = {
+      op: 'connect',
+      link_id: 9,
+      from_node: 2,
+      from_slot: 0,
+      to_node: 1,
+      link_type: 'NUMBER'
+    }
+    deliver(
+      state,
+      {
+        ...connect,
+        grow: {
+          side: 'input',
+          slot: 'value',
+          name: 'value',
+          type: 'NUMBER',
+          promoted: true
+        }
+      },
+      1
+    )
+    expect(state.instance.inputs[0]?.link).toBe(9)
+
+    deliver(
+      state,
+      {
+        ...connect,
+        grow: {
+          side: 'input',
+          slot: 'bogus',
+          name: 'bogus',
+          type: 'NUMBER',
+          promoted: true
+        }
+      },
+      2
+    )
+
+    expect(state.graph.links.has(toLinkId(9))).toBe(false)
+    expect(state.instance.inputs.map((i) => [i.name, i.link ?? null])).toEqual([
+      ['value', null]
+    ])
+    expect(
+      state.graph.getNodeById(toNodeId(2))?.outputs[0]?.links ?? []
+    ).toEqual([])
+  })
 })
