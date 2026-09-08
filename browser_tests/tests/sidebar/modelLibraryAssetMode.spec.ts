@@ -483,10 +483,10 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
   test('Buckets by bare tags and names leaves from the filename', async ({
     comfyPage
   }) => {
-    await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
     // Force the capability off rather than omitting it: the real backend's
     // feature_flags handshake would otherwise decide which mode this tests.
     await comfyPage.featureFlags.setServerFlagsPersistent({
+      assets: true,
       supports_model_type_tags: false
     })
     await comfyPage.menu.modelLibraryTab.open()
