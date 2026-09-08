@@ -143,6 +143,20 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it('rolls back store writes when a batch commit throws', () => {
+    createLayout.mockImplementationOnce(() => {
+      throw new Error('layout commit failed')
+    })
+
+    expect(() =>
+      mutations().batch(context, (batch) => {
+        batch.addNode(node(1))
+        batch.addNode(node(2))
+      })
+    ).toThrow('layout commit failed')
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,
