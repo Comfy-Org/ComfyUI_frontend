@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Attenzione sparsa a blocchi tramite comfy_kitchen: ogni blocco di query presta attenzione esattamente a un sottoinsieme selezionato di blocchi chiave, riducendo il calcolo dell'attenzione. Il guadagno di velocità relativo cresce con la lunghezza della sequenza, poiché le sequenze brevi sono solitamente più rapide in modalità densa. Al di fuori della pianificazione attiva, per dense_blocks e sotto min_tokens, il modello usa il backend di attenzione del modello denso attivo.",
-    "display_name": "Attenzione sparsa a blocchi",
+    "description": "Applica l'attenzione sparsa a blocchi ai livelli di attenzione del modello idonei, riducendo il calcolo per le sequenze lunghe. Il guadagno di velocità aumenta con la lunghezza della sequenza, poiché le sequenze brevi sono generalmente più rapide con l'attenzione densa. Al di fuori di start/end_percent, nei dense_blocks e sotto min_tokens, il modello utilizza il backend di attenzione densa. Usa il nodo Backend di attenzione del modello per selezionare tale alternativa.",
+    "display_name": "Attenzione sparsa del modello",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Denso dopo questo punto della pianificazione."
+        "tooltip": "Punto percentuale in cui termina l'attenzione sparsa. Dopo questo punto, l'attenzione torna densa."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Le sequenze più corte di questo valore restano dense."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Il modello da modificare."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Modalità di scelta esatta dei blocchi chiave. Sol-Attn: soglia adattiva per testa/blocco. top-k (SLA): keep_percent fisso ovunque, consigliato solo con pesi addestrati. VSA (FastVideo): tassellazione a cubi e ramo grossolano di FastH3-VSA, richiede pesi addestrati per questa modalità."
+        "tooltip": "Metodo utilizzato per scegliere i blocchi chiave per l'attenzione completa a livello di token. sol-attn: Sparsifying Online Attention utilizza una soglia adattiva senza addestramento per ogni testa di attenzione e blocco di query. sla: Sparse-Linear Attention mantiene una percentuale fissa dei blocchi chiave con il punteggio più alto; utilizzare solo con pesi del modello addestrati per questo schema. vsa: Video Sparse Attention (FastVideo) utilizza la suddivisione 3D in cubi video e un ramo di attenzione grossolana appreso; richiede pesi del modello FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Denso prima di questo punto della pianificazione."
+        "tooltip": "Punto percentuale in cui inizia l'attenzione sparsa. Prima di questo punto, l'attenzione rimane densa."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Registra se ogni configurazione di attenzione ha utilizzato l'attenzione sparsa o perché è rimasta densa."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "Il modello con attenzione sparsa a blocchi applicata."
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Seleziona l'implementazione dell'attenzione densa per il modello. Se utilizzato con Block Sparse Attention, questo backend viene usato ogni volta che l'attenzione sparsa è inattiva o non supportata.",
+    "display_name": "Backend di attenzione del modello",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "Il backend di attenzione densa. L'attenzione Comfy Kitchen utilizza attenzione INT8 quantizzata ed è disponibile solo su GPU Nvidia e AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Il modello da modificare."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Il modello con il backend di attenzione selezionato."
       }
     }
   },

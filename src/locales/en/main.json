@@ -3228,6 +3228,10 @@
         "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
         "reactivate": "Reactivate plan"
       },
+      "planChange": {
+        "title": "Your plan changes to {plan} on {date}",
+        "body": "Your current plan stays active until then."
+      },
       "updatePayment": "Update payment"
     },
     "invite": "Invite",
@@ -5174,7 +5178,7 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, {'@'} to reference,\nadd nodes from graph or drag in assets",
+    "placeholder": "Describe ideas, {'@'} to reference,\nmention nodes from graph or drag in assets",
     "suggestedPrompts": [
       "Generate a yellow duck with a hockey mask",
       "List my saved workflows",
@@ -5183,27 +5187,27 @@
       "Build a workflow for image to video with 3 models"
     ],
     "attach": "Attach a file",
-    "attachFiles": "Attach images or files",
+    "attachFiles": "Upload images or files",
     "addToPrompt": "Add to prompt",
     "reference": "Reference",
     "nodes": "Nodes",
     "workflows": "Workflows",
     "noNodesToReference": "No nodes available to reference",
     "noWorkflowsToReference": "No workflows available to reference",
-    "addNodesFromGraph": "Add nodes from graph",
+    "addNodesFromGraph": "Mention nodes from graph",
     "dragAndDropAssets": "Drag and drop assets here",
     "nodeSelection": {
-      "bannerTitle": "Add nodes from graph",
+      "bannerTitle": "Mention nodes from graph",
       "bannerSubtitle": "Select one or many nodes to add as reference",
       "exit": "Exit mode",
       "selectNode": "Select node"
     },
-    "addFromAssets": "Add from assets panel",
+    "addFromAssets": "Drag in asset from asset panel",
     "assetNotAttachable": "Images, video, audio, 3D models, and text files can be attached",
     "attachmentTooLarge": "{name} is larger than {limit}",
     "attachmentUploadFailed": "{name} could not be uploaded",
     "mention": "Mention a node",
-    "changeWorkflowForChat": "Change the workflow for this chat",
+    "changeWorkflowForChat": "Change the workflow that the agent can edit",
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
     "selectWorkflowForNodes": "Please select a workflow first",

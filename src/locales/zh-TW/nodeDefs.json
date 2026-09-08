@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "透過 comfy_kitchen 的區塊稀疏注意力：每個查詢區塊會精確關注所選取的部分鍵區塊，藉此降低注意力運算量。相較於通常使用密集運算較快的短序列，序列越長，速度提升越明顯。在有效排程之外、dense_blocks 中，以及低於 min_tokens 時，模型會使用啟用中的密集模型注意力後端。",
-    "display_name": "區塊稀疏注意力",
+    "description": "對符合條件的模型注意力層套用區塊稀疏注意力，以減少長序列的運算量。序列越長，速度提升越明顯，因為短序列通常使用密集注意力更快。在 start/end_percent 範圍外、使用 dense_blocks 時，以及 token 數低於 min_tokens 時，模型會使用密集模型注意力後端。請使用「模型注意力後端」節點選擇該備援後端。",
+    "display_name": "模型區塊稀疏注意力",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "在排程的此時間點之後使用密集運算。"
+        "tooltip": "稀疏注意力結束的百分比位置。在此位置之後，注意力恢復為密集。"
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "短於此長度的序列會維持使用密集運算。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修補的模型。"
       },
       "selection": {
         "name": "selection",
-        "tooltip": "選擇精確鍵區塊的方式。Sol-Attn：依每個頭部／區塊採用自適應閾值。top-k (SLA)：在所有位置固定保留 keep_percent，僅建議搭配已訓練的權重使用。VSA (FastVideo)：FastH3-VSA 的立方體切片與粗略分支，需要為其訓練的權重。"
+        "tooltip": "用於選擇進行完整 token 層級注意力之鍵區塊的方法。sol-attn：Sparsifying Online Attention 會針對每個注意力頭與查詢區塊使用免訓練的自適應閾值。sla：Sparse-Linear Attention 會保留固定百分比的最高分鍵區塊；僅適用於以此模式訓練的模型權重。vsa：Video Sparse Attention (FastVideo) 使用 3D 視訊立方體分塊與學習式粗略注意力分支；需要 FastH3 模型權重。"
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "在排程的此時間點之前使用密集運算。"
+        "tooltip": "稀疏注意力開始的百分比位置。在此位置之前，注意力維持密集。"
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "記錄每種注意力形狀是否使用稀疏注意力，或維持密集的原因。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "模型",
+        "tooltip": "已套用區塊稀疏注意力的模型。"
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "選擇模型的密集注意力實作。與「模型區塊稀疏注意力」搭配使用時，只要稀疏注意力未啟用或不受支援，就會使用此後端。",
+    "display_name": "模型注意力後端",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "密集注意力後端。Comfy Kitchen 注意力使用量化 INT8 注意力，且僅適用於 Nvidia 與 AMD GPU。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "要修補的模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": "使用所選注意力後端的模型。"
       }
     }
   },

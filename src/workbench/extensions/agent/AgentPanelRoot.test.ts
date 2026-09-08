@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import type {
+  AgentThreadListResponse,
+  AgentThreadSummary
+} from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import {
@@ -370,6 +374,41 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+function agentThread({
+  id,
+  title,
+  last_message_at,
+  ...overrides
+}: Pick<AgentThreadSummary, 'id' | 'title' | 'last_message_at'> &
+  Partial<AgentThreadSummary>): AgentThreadSummary {
+  return {
+    created_at: last_message_at,
+    id,
+    last_message_at,
+    message_count: 0,
+    preview: '',
+    status: 'active',
+    title,
+    updated_at: last_message_at,
+    workflow_id: '',
+    ...overrides
+  }
+}
+
+function agentThreadList(
+  threads: AgentThreadSummary[] = []
+): AgentThreadListResponse {
+  return {
+    threads,
+    pagination: {
+      has_more: false,
+      limit: Math.max(threads.length, 1),
+      offset: 0,
+      total: threads.length
+    }
+  }
+}
+
 function ack(workflowId: string, messageId = 'm-1') {
   return { thread_id: 'th-1', message_id: messageId, workflow_id: workflowId }
 }
@@ -645,7 +684,7 @@ function stubUploadFetch(uploaded: string[] = []): string[] {
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
-      if (!url.includes('/upload/')) return json(200, { threads: [] })
+      if (!url.includes('/upload/')) return json(200, agentThreadList())
       const body = init?.body
       if (body instanceof FormData) {
         const file = body.get('image')
@@ -1278,7 +1317,7 @@ describe('AgentPanelRoot attach flow', () => {
           acks += 1
           return json(202, { thread_id: 'th-1', message_id: `m-${acks}` })
         }
-        return json(200, { threads: [] })
+        return json(200, agentThreadList())
       })
     )
 
@@ -1406,7 +1445,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.endsWith('/api/agent/threads'))
-          return json(200, { threads: [] })
+          return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       })
@@ -1451,7 +1490,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.endsWith('/api/agent/threads'))
-          return json(200, { threads: [] })
+          return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       })
@@ -1482,15 +1521,15 @@ describe('AgentPanelRoot history', () => {
       vi.fn(async (url: string) =>
         url.endsWith('/api/agent/threads')
           ? new Response(
-              JSON.stringify({
-                threads: [
-                  {
+              JSON.stringify(
+                agentThreadList([
+                  agentThread({
                     id: 'th-active',
                     title: 'build a duck',
                     last_message_at: '2026-07-07T10:00:00Z'
-                  }
-                ]
-              }),
+                  })
+                ])
+              ),
               { status: 200, headers: { 'Content-Type': 'application/json' } }
             )
           : new Response('[]', {
@@ -1691,22 +1730,21 @@ describe('AgentPanelRoot history', () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.endsWith('/api/agent/threads')) {
         return new Response(
-          JSON.stringify({
-            threads: [
-              {
+          JSON.stringify(
+            agentThreadList([
+              agentThread({
                 id: 'th-9',
                 title: 'build a text to image graph',
                 last_message_at: '2026-07-07T10:00:00Z'
-              },
-              {
+              }),
+              agentThread({
                 id: 'th-10',
                 title: '',
                 preview: 'make a duck',
                 last_message_at: '2026-07-07T09:00:00Z'
-              }
-            ],
-            pagination: { page: 1 }
-          }),
+              })
+            ])
+          ),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
@@ -1789,16 +1827,15 @@ describe('AgentPanelRoot transcript copy', () => {
       vi.fn(async (url: string) =>
         url.endsWith('/api/agent/threads')
           ? new Response(
-              JSON.stringify({
-                threads: [
-                  {
+              JSON.stringify(
+                agentThreadList([
+                  agentThread({
                     id: 'th-1',
                     title: 'make a cat',
                     last_message_at: '2026-07-07T10:00:00Z'
-                  }
-                ],
-                pagination: { page: 1 }
-              }),
+                  })
+                ])
+              ),
               { status: 200, headers: { 'Content-Type': 'application/json' } }
             )
           : new Response('{}', { status: 200 })
@@ -2047,7 +2084,7 @@ describe('AgentPanelRoot workflow binding', () => {
         }
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
-          return json(200, { threads: [], pagination: { page: 1 } })
+          return json(200, agentThreadList())
         }
         if (url.includes('/workflows')) {
           const workflows =
@@ -2265,9 +2302,16 @@ describe('AgentPanelRoot workflow binding', () => {
               }
             ])
           if (url.includes('/agent/threads'))
-            return json(200, {
-              threads: [{ id: 'th-history', title: 'Earlier chat' }]
-            })
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-history',
+                  title: 'Earlier chat',
+                  last_message_at: '2026-09-01T00:00:00Z'
+                })
+              ])
+            )
           if (url.includes('/workflows'))
             return json(200, {
               data: [],
@@ -2574,7 +2618,8 @@ describe('AgentPanelRoot workflow binding', () => {
               pagination: { offset: 0, limit: 100, total: 1, has_more: false }
             })
           }
-          if (url.includes('/agent/threads')) return json(200, { threads: [] })
+          if (url.includes('/agent/threads'))
+            return json(200, agentThreadList())
           return json(200, {})
         })
       )
@@ -2771,8 +2816,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('workflow_id=wf-new')) {
           return new Promise<Response>((resolve) => {
             resolveLookup = resolve
@@ -2815,8 +2859,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (url.includes('/messages')) return json(202, ack('wf-42', 'm-1'))
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('workflow_id=wf-new')) {
           return new Promise<Response>((resolve) => {
             resolveLookup = resolve
@@ -2856,8 +2899,7 @@ describe('AgentPanelRoot workflow binding', () => {
           hostStores.workflow.activeWorkflow = other
           return json(202, ack('wf-42', 'm-1'))
         }
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return new Response('{}', { status: 200 })
       })
     )
@@ -2907,8 +2949,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'fetch',
       vi.fn(async (url: string) => {
         if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return new Response('{}', { status: 200 })
       })
     )
@@ -3416,8 +3457,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(202, ack('wf-fresh'))
         }
         if (url.includes('/workflows')) return json(500, { error: 'failed' })
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return json(200, [])
       })
     )
@@ -3451,8 +3491,7 @@ describe('AgentPanelRoot workflow binding', () => {
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
         }
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return json(200, [])
       })
     )
@@ -4075,9 +4114,7 @@ describe('AgentPanelRoot workflow binding', () => {
           )
         }
         if (url.includes('/agent/threads'))
-          return Promise.resolve(
-            json(200, { threads: [], pagination: { page: 1 } })
-          )
+          return Promise.resolve(json(200, agentThreadList()))
         return Promise.resolve(new Response('{}', { status: 200 }))
       })
     )
@@ -4205,8 +4242,7 @@ describe('AgentPanelRoot workflow binding', () => {
           hostStores.workflow.activeWorkflow = background
           return json(202, ack('wf-fresh', 'm-1'))
         }
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('/workflows'))
           return json(200, {
             data: [],
@@ -4264,7 +4300,8 @@ describe('AgentPanelRoot workflow binding', () => {
             return bodies.length === 1 ? response : json(202, ack('wf-42'))
           }
           if (url.includes('/messages')) return json(200, [])
-          if (url.includes('/agent/threads')) return json(200, { threads: [] })
+          if (url.includes('/agent/threads'))
+            return json(200, agentThreadList())
           if (url.includes('/workflows'))
             return json(200, {
               data: [],
@@ -4383,8 +4420,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(202, ack('wf-fresh', 'm-1'))
         }
         if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('/workflows')) {
           workflowRequests++
           if (workflowRequests > 1)
@@ -4688,7 +4724,9 @@ describe('AgentPanelRoot workflow binding', () => {
     setupNodeSelectionCanvas()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
-    const action = screen.getByRole('button', { name: 'add nodes from graph,' })
+    const action = screen.getByRole('button', {
+      name: 'mention nodes from graph,'
+    })
     expect(action).toHaveAttribute('aria-disabled', 'true')
     expect(action).toHaveAccessibleDescription('Please select a workflow first')
     await userEvent.click(action)

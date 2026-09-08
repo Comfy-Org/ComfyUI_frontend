@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "comfy_kitchen을 통한 블록 희소 어텐션: 각 쿼리 블록이 선택된 키 블록 하위 집합에 정확히 어텐션하여 어텐션 연산량을 줄입니다. 짧은 시퀀스는 일반적으로 밀집 방식이 더 빠르므로, 시퀀스 길이가 길수록 상대적인 속도 향상도 커집니다. 활성 스케줄 범위 밖, dense_blocks 및 min_tokens 미만에서는 모델이 활성 밀집 모델 어텐션 백엔드를 사용합니다.",
-    "display_name": "블록 희소 어텐션",
+    "description": "적격 모델 어텐션 레이어에 블록 희소 어텐션을 적용하여 긴 시퀀스의 연산량을 줄입니다. 짧은 시퀀스는 일반적으로 밀집 어텐션이 더 빠르므로, 속도 향상은 시퀀스 길이에 따라 커집니다. start_percent/end_percent 범위 밖, dense_blocks 및 min_tokens 미만에서는 모델이 밀집 모델 어텐션 백엔드를 사용합니다. 해당 대체 방식을 선택하려면 모델 어텐션 백엔드 노드를 사용하세요.",
+    "display_name": "모델 희소 어텐션",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "스케줄의 이 지점 이후 밀집 방식으로 처리합니다."
+        "tooltip": "희소 어텐션이 종료되는 퍼센트 지점입니다. 이 지점 후에는 어텐션이 밀집 상태로 돌아갑니다."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "이보다 짧은 시퀀스는 밀집 방식으로 유지됩니다."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "패치할 모델입니다."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "정확한 키 블록을 선택하는 방식입니다. Sol-Attn: 헤드/블록별 적응형 임계값. top-k (SLA): 모든 위치에서 고정된 keep_percent를 사용하며, 학습된 가중치에서만 권장됩니다. VSA (FastVideo): FastH3-VSA의 큐브 타일링 및 거친 분기를 사용하며, 이를 위해 학습된 가중치가 필요합니다."
+        "tooltip": "전체 토큰 수준 어텐션에 사용할 키 블록을 선택하는 방법입니다. sol-attn: Sparsifying Online Attention은 각 어텐션 헤드와 쿼리 블록에 학습이 필요 없는 적응형 임계값을 사용합니다. sla: Sparse-Linear Attention은 가장 높은 점수를 받은 키 블록의 고정 비율을 유지합니다. 이 패턴으로 학습된 모델 가중치에서만 사용하세요. vsa: Video Sparse Attention (FastVideo)은 3D 비디오 큐브 타일링과 학습된 거친 어텐션 분기를 사용하며, FastH3 모델 가중치가 필요합니다."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "스케줄의 이 지점 전까지 밀집 방식으로 처리합니다."
+        "tooltip": "희소 어텐션이 시작되는 퍼센트 지점입니다. 이 지점 전에는 어텐션이 밀집 상태로 유지됩니다."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "각 어텐션 형태에서 희소 어텐션이 사용되었는지, 또는 밀집 상태로 유지된 이유를 기록합니다."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "블록 희소 어텐션이 적용된 모델입니다."
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "모델에 사용할 밀집 어텐션 구현을 선택합니다. 블록 희소 어텐션과 함께 사용할 경우, 희소 어텐션이 비활성화되었거나 지원되지 않을 때마다 이 백엔드가 사용됩니다.",
+    "display_name": "모델 어텐션 백엔드",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "밀집 어텐션 백엔드입니다. Comfy Kitchen 어텐션은 양자화된 INT8 어텐션을 사용하며 Nvidia 및 AMD GPU에서만 사용할 수 있습니다."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "패치할 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "선택한 어텐션 백엔드가 적용된 모델입니다."
       }
     }
   },
