@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -101,6 +102,8 @@ describe('graphMutations', () => {
         context
       )
     ).toBe(true)
+    const presentation = useLinkPresentationStore()
+    presentation.patch(scope, toLinkId(9), { hidden: true, label: 'Replaced' })
     expect(
       graph.connect(
         {
@@ -120,6 +123,42 @@ describe('graphMutations', () => {
     expect(links.getTopology(scope.rootGraphId, toLinkId(10))).toMatchObject({
       originNodeId: '2',
       targetNodeId: '3'
+    })
+    expect(presentation.getPresentation(scope, toLinkId(9))).toBeUndefined()
+    expect(presentation.getPresentation(scope, toLinkId(10))).toBeUndefined()
+  })
+
+  it('preserves presentation when a remote batch reconnects the same link id', () => {
+    const graph = mutations()
+    const link = {
+      id: 9,
+      originNodeId: 1,
+      originSlot: 0,
+      targetNodeId: 2,
+      targetSlot: 0,
+      type: 'IMAGE'
+    }
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode(node(1))
+        batch.addNode(node(2))
+        batch.connect(link)
+      })
+    ).toBe(true)
+    const presentation = useLinkPresentationStore()
+    presentation.patch(scope, toLinkId(9), { hidden: true, label: 'Retained' })
+
+    expect(graph.batch(context, (batch) => batch.connect(link))).toBe(true)
+
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toMatchObject({
+      originNodeId: '1',
+      targetNodeId: '2'
+    })
+    expect(presentation.getPresentation(scope, toLinkId(9))).toEqual({
+      hidden: true,
+      label: 'Retained'
     })
   })
 
@@ -312,6 +351,32 @@ describe('graphMutations', () => {
     )
   })
 
+  it('drops link presentation when a remote batch removes the link', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE'
+      })
+    })
+    const presentation = useLinkPresentationStore()
+    presentation.patch(scope, toLinkId(9), { hidden: true, label: 'Hidden' })
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.removeLinks([9])
+      })
+    ).toBe(true)
+
+    expect(presentation.getPresentation(scope, toLinkId(9))).toBeUndefined()
+  })
+
   it('clears every semantic owner and batches derived layout cleanup', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -326,6 +391,7 @@ describe('graphMutations', () => {
         type: 'IMAGE'
       })
     })
+    useLinkPresentationStore().patch(scope, toLinkId(9), { hidden: true })
     deleteLayouts.mockClear()
 
     expect(graph.clearSemanticGraph({ ...context, opId: 'op-clear' })).toBe(
@@ -334,6 +400,9 @@ describe('graphMutations', () => {
 
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
+    expect(
+      useLinkPresentationStore().getPresentation(scope, toLinkId(9))
+    ).toBeUndefined()
     expect(useWidgetValueStore().getNodeWidgets('root', toNodeId(1))).toEqual(
       []
     )

@@ -33,6 +33,7 @@ export interface StoryCard {
   title: string
   category: string
   cover: string
+  description: string
 }
 
 export function toCardProps(entry: {
@@ -43,6 +44,7 @@ export function toCardProps(entry: {
     slug: storySlug(entry.id),
     title: entry.data.title,
     category: entry.data.category,
-    cover: entry.data.cover
+    cover: entry.data.cover,
+    description: entry.data.description
   }
 }

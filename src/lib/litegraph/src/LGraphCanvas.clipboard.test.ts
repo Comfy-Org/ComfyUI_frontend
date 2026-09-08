@@ -16,7 +16,11 @@ import {
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import {
+  createTestRootGraph,
+  enableSubgraphNodeCreation
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   LGraph,
   LGraphCanvas,
@@ -33,6 +37,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -213,8 +218,91 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   el.getBoundingClientRect = vi
     .fn()
     .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
-  return new LGraphCanvas(el, graph, { skip_render: true })
+  return new LGraphCanvas(el, graph, { skip_render: true, skip_events: true })
 }
+
+describe('link presentation transfer across recreation flows', () => {
+  it.for([
+    {
+      name: 'valid',
+      presentation: { hidden: true, label: 'Copied' },
+      expected: { hidden: true, label: 'Copied' }
+    },
+    { name: 'absent', presentation: undefined, expected: undefined }
+  ])(
+    'preserves $name presentation through clipboard copy and paste',
+    ({ presentation, expected }) => {
+      const rootGraph = createTestRootGraph()
+      const origin = createTestNode(rootGraph, [], ['number'])
+      const target = createTestNode(rootGraph, ['number'])
+      const link = origin.connect(0, target, 0)
+      if (!link) throw new Error('Failed to connect clipboard test link')
+      if (presentation) {
+        useLinkPresentationStore().patch(
+          graphScopeOf(rootGraph),
+          link.id,
+          presentation
+        )
+      }
+      const canvas = createCanvas(rootGraph)
+
+      const results = canvas._deserializeItems(
+        canvas._serializeItems([origin, target]),
+        {}
+      )
+      if (!results) throw new Error('Paste produced no results')
+      const { links } = results
+
+      const pasted = [...links.values()][0]
+      expect(pasted).toBeDefined()
+      expect(pasted.id).not.toBe(link.id)
+      expect(
+        useLinkPresentationStore().getPresentation(
+          graphScopeOf(rootGraph),
+          pasted.id
+        )
+      ).toEqual(expected)
+    }
+  )
+
+  it.for([
+    { presentation: { hidden: 'false', label: 1 }, expected: undefined },
+    { presentation: { hidden: true, label: null }, expected: { hidden: true } },
+    { presentation: { hidden: 1, label: '' }, expected: { label: '' } }
+  ])(
+    'ignores invalid presentation fields in clipboard JSON %#',
+    ({ presentation, expected }) => {
+      const rootGraph = createTestRootGraph()
+      const origin = createTestNode(rootGraph, [], ['number'])
+      const target = createTestNode(rootGraph, ['number'])
+      const link = origin.connect(0, target, 0)
+      if (!link) throw new Error('Failed to connect clipboard test link')
+      const canvas = createCanvas(rootGraph)
+      const items = canvas._serializeItems([origin, target])
+      localStorage.setItem(
+        'litegrapheditor_clipboard',
+        JSON.stringify({
+          ...items,
+          links: items.links?.map((item) => ({ ...item, ...presentation }))
+        })
+      )
+      onTestFinished(() => localStorage.removeItem('litegrapheditor_clipboard'))
+
+      const results = canvas._pasteFromClipboard()
+      if (!results) throw new Error('Paste produced no results')
+      const pasted = [...results.links.values()][0]
+
+      expect(pasted).toBeDefined()
+      expect(pasted.id).not.toBe(link.id)
+      expect(
+        useLinkPresentationStore().getPresentation(
+          graphScopeOf(rootGraph),
+          pasted.id
+        )
+      ).toEqual(expected)
+    }
+  )
+})
 
 function registerClipboardNodeType(type: string): void {
   class ClipboardNode extends LGraphNode {

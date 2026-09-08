@@ -79,28 +79,7 @@ vi.mock<unknown>(import('vue-i18n'), () => ({
   createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
-vi.mock<unknown>(import('firebase/auth'), async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    signInWithEmailAndPassword: vi.fn(),
-    createUserWithEmailAndPassword: vi.fn(),
-    signOut: vi.fn(),
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    signInWithPopup: vi.fn(),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
-  }
-})
+vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
