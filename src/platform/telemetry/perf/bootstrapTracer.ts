@@ -34,7 +34,6 @@
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
 import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
 import {
@@ -195,7 +194,7 @@ export class BootstrapTracer {
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      reportBootstrapToRum(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
+      reportBootstrapToRum(metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
       if (outcome === 'completed') markViewLoaded()
       this._logSummary(rows, totalMs)

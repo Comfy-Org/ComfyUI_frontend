@@ -18,7 +18,9 @@
 import { datadogRum } from '@datadog/browser-rum'
 import { addBreadcrumb } from '@sentry/vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
 export interface PerfSpan {
@@ -137,6 +139,7 @@ function _measure(
  * system of record.
  */
 function _emitToRum(name: string): void {
+  if (!isCloud) return
   try {
     datadogRum.addTiming(toRumTimingName(name))
   } catch (error) {
@@ -154,15 +157,17 @@ function _emitToRum(name: string): void {
  * pre-init buffer means this reaches Datadog even when RUM itself is still
  * coming up.
  *
- * PostHog receives the same row through the registry, per
- * ADR-TELEMETRY-ROUTING-0013's dual-emission split.
+ * PostHog receives the row through the registry, per
+ * ADR-TELEMETRY-ROUTING-0013's dual-emission split. Off cloud nothing
+ * initializes RUM, so an unguarded call would sit in the SDK's pre-init
+ * buffer for the lifetime of the page.
  */
 export function reportBootstrapToRum(
-  eventName: string,
   metadata: BootstrapCompleteMetadata
 ): void {
+  if (!isCloud) return
   try {
-    datadogRum.addAction(eventName, metadata)
+    datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
   } catch (error) {
     reportRumFailure(error, 'add_action')
   }
@@ -177,6 +182,7 @@ export function reportBootstrapToRum(
  * counted through `app:bootstrap_complete`'s `outcome` facet instead.
  */
 export function markViewLoaded(): void {
+  if (!isCloud) return
   try {
     datadogRum.setViewLoadingTime()
   } catch (error) {
