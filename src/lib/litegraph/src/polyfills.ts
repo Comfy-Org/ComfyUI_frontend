@@ -8,17 +8,16 @@ Symbol.asyncDispose ??= Symbol('Symbol.asyncDispose')
 export function loadPolyfills() {
   if (
     typeof window != 'undefined' &&
-    window.CanvasRenderingContext2D &&
-    !window.CanvasRenderingContext2D.prototype.roundRect
+    typeof Reflect.get(window, 'CanvasRenderingContext2D') === 'function' &&
+    !Reflect.has(window.CanvasRenderingContext2D.prototype, 'roundRect')
   ) {
-    // @ts-expect-error Slightly broken polyfill - radius_low not impl. anywhere
     window.CanvasRenderingContext2D.prototype.roundRect = function (
       x: number,
       y: number,
       w: number,
       h: number,
       radius: number | number[],
-      radius_low: number | number[]
+      radius_low?: number | number[]
     ) {
       let top_left_radius: number
       let top_right_radius: number
@@ -80,7 +79,10 @@ export function loadPolyfills() {
     }
   }
 
-  if (typeof window != 'undefined' && !window['requestAnimationFrame']) {
+  if (
+    typeof window != 'undefined' &&
+    !Reflect.has(window, 'requestAnimationFrame')
+  ) {
     window.requestAnimationFrame =
       // @ts-expect-error Legacy code
       window.webkitRequestAnimationFrame ||

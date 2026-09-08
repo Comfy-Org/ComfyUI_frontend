@@ -1,21 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
+import {
+  _for_testing,
+  useIntWidget
+} from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 
 vi.mock('@/scripts/widgets', () => ({
-  addValueControlWidgets: vi.fn()
+  addValueControlWidget: vi.fn()
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    settings: {}
+    get: vi.fn(() => false)
   })
 }))
 
 const { onValueChange } = _for_testing
 
 describe('useIntWidget', () => {
+  it('uses a color picker while preserving the integer value', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('EmptyImage')
+    node.serialize_widgets = true
+    graph.add(node)
+    const widget = useIntWidget()(node, {
+      type: 'INT',
+      name: 'color',
+      default: 0x45edf5,
+      min: 0,
+      max: 0xffffff,
+      display: 'color'
+    })
+
+    expect(widget.type).toBe('color')
+    expect(widget.value).toBe(0x45edf5)
+    expect(widget.options).toMatchObject({ format: 'int' })
+    expect(node.serialize().widgets_values).toEqual([0x45edf5])
+  })
+
   describe('onValueChange', () => {
     let widget: INumericWidget
 

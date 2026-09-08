@@ -25,7 +25,7 @@ export function applyTextReplacements(
 
     // Find node with matching S&R property name
     let nodes = allNodes.filter(
-      (n) => n.properties?.['Node name for S&R'] === split[0]
+      (n) => n.properties['Node name for S&R'] === split[0]
     )
     // If we can't, see if there is a node with that title
     if (!nodes.length) {
