@@ -1,56 +1,47 @@
 // @vitest-environment happy-dom
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { defineComponent, h, nextTick } from 'vue'
+import { beforeEach, expect, it, vi } from 'vitest'
 
-import type * as TweaksModule from './usePrototypeTweaks'
+const VERSION_KEY = 'comfy-workshop-version'
 
-type Tweaks = typeof TweaksModule
-
-async function mountTweaks() {
-  const module: Tweaks = await import('./usePrototypeTweaks')
-  let api!: ReturnType<Tweaks['usePrototypeTweaks']>
+async function versionFor(search: string, remembered?: string) {
+  vi.resetModules()
+  localStorage.clear()
+  if (remembered) localStorage.setItem(VERSION_KEY, remembered)
+  history.replaceState({}, '', `/workshop${search}`)
+  const { usePrototypeTweaks } = await import('./usePrototypeTweaks')
+  let version: Ref<string> | undefined
   render(
     defineComponent({
       setup() {
-        api = module.usePrototypeTweaks()
-        return () => h('div')
+        version = usePrototypeTweaks().version
+        return () => h('span')
       }
     })
   )
   await nextTick()
-  return api
+  return version?.value
 }
 
-beforeEach(() => {
-  vi.resetModules()
-  localStorage.clear()
+beforeEach(() => history.replaceState({}, '', '/workshop'))
+
+it('takes the version a link asks for, by either name', async () => {
+  expect(await versionFor('?v=v2')).toBe('v2')
+  expect(await versionFor('?version=v2')).toBe('v2')
 })
 
-describe('usePrototypeTweaks', () => {
-  it('starts on V1 with the invented cases hidden', async () => {
-    const tweaks = await mountTweaks()
-    expect(tweaks.version.value).toBe('v1.2')
-    expect(tweaks.showStatuses.value).toBe(false)
-    expect(tweaks.outcome.value).toBe('success')
-    expect(tweaks.modelState.value).toBe('none')
-  })
+it('lets the link win over the version the browser remembers', async () => {
+  expect(await versionFor('?version=v2', 'v1')).toBe('v2')
+  expect(await versionFor('', 'v1')).toBe('v1')
+})
 
-  it('restores a persisted version and ignores junk', async () => {
-    localStorage.setItem('comfy-workshop-version', 'v1.1')
-    expect((await mountTweaks()).version.value).toBe('v1.1')
+it('remembers the version a link opened, even the default one', async () => {
+  expect(await versionFor('?version=v1.2', 'v2')).toBe('v1.2')
+  expect(localStorage.getItem(VERSION_KEY)).toBe('v1.2')
+})
 
-    vi.resetModules()
-    localStorage.setItem('comfy-workshop-version', 'v9')
-    expect((await mountTweaks()).version.value).toBe('v1.2')
-  })
-
-  it('persists version changes and shares state between callers', async () => {
-    const first = await mountTweaks()
-    const second = await mountTweaks()
-    first.version.value = 'v2'
-    await nextTick()
-    expect(localStorage.getItem('comfy-workshop-version')).toBe('v2')
-    expect(second.version.value).toBe('v2')
-  })
+it('sends a retired version to the screen it became', async () => {
+  expect(await versionFor('?v=v2.1')).toBe('v2')
 })

@@ -57,13 +57,15 @@ function asVersion(value: string | null): Version | undefined {
   return isVersion(value) ? value : RETIRED[value]
 }
 
-watch(version, (value) => {
+function remember(value: Version) {
   try {
     localStorage.setItem(VERSION_KEY, value)
   } catch {
     /* storage unavailable */
   }
-})
+}
+
+watch(version, remember)
 
 // Shared across islands so the tweaks panel drives the whole prototype.
 export function usePrototypeTweaks() {
@@ -72,9 +74,15 @@ export function usePrototypeTweaks() {
     hydrated = true
     // ?v=v1.1 makes a version linkable, so a ticket or a Slack message can
     // point at the variant it is about instead of describing how to reach it.
-    const asked = asVersion(new URLSearchParams(location.search).get('v'))
+    // The panel's own share links spell the key out, and both have to win over
+    // the browser's memory: whichever island mounts first, the link decides.
+    const params = new URLSearchParams(location.search)
+    const asked = asVersion(params.get('v') ?? params.get('version'))
     if (asked) {
+      // A link to the version already open still has to be the one the next
+      // visit reopens, and that assignment changes nothing to watch.
       version.value = asked
+      remember(asked)
       return
     }
     try {
