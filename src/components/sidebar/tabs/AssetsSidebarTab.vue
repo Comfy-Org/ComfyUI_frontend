@@ -435,7 +435,10 @@ const showLoadingState = computed(
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    !canLoadMoreAssets.value &&
+    displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
