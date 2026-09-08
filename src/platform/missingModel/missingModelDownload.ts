@@ -1,5 +1,6 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyDesktop2Bridge } from '@/types'
@@ -37,6 +38,48 @@ function isModelUrlAllowlisted(url: string): boolean {
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
 
+export const HUGGINGFACE_MIRROR_SETTING_ID =
+  'Comfy.ModelLibrary.HuggingFaceMirror'
+
+/**
+ * Rewrites `huggingface.co` URLs to a user-configured mirror so that
+ * users behind networks blocking `huggingface.co` can still use the
+ * "Download All missing models" button. Empty/missing setting returns
+ * the URL unchanged. Non-HuggingFace URLs are returned unchanged.
+ * Mirrors that are not absolute http(s) URLs, or that carry a query
+ * or fragment component, are ignored and warned about, to avoid
+ * producing broken download URLs.
+ */
+export function resolveHuggingFaceUrl(url: string): string {
+  const mirror = useSettingStore()
+    .get(HUGGINGFACE_MIRROR_SETTING_ID)
+    ?.trim()
+    .replace(/\/+$/, '')
+  if (!mirror) return url
+  if (!hasHuggingFaceHost(url)) return url
+  try {
+    const parsed = new URL(mirror)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      console.warn(
+        `[missingModelDownload] Ignoring ${HUGGINGFACE_MIRROR_SETTING_ID}: mirror must use http or https, got ${parsed.protocol}`
+      )
+      return url
+    }
+    if (parsed.search || parsed.hash) {
+      console.warn(
+        `[missingModelDownload] Ignoring ${HUGGINGFACE_MIRROR_SETTING_ID}: mirror must not include a query or fragment`
+      )
+      return url
+    }
+    return url.replace('https://huggingface.co', mirror)
+  } catch {
+    console.warn(
+      `[missingModelDownload] Ignoring ${HUGGINGFACE_MIRROR_SETTING_ID}: mirror is not a valid URL`
+    )
+    return url
+  }
+}
+
 export interface ModelWithUrl {
   name: string
   url: string
@@ -48,7 +91,8 @@ async function startDesktop2ModelDownload(
   model: ModelWithUrl
 ): Promise<void> {
   try {
-    await bridge.downloadModel?.(model.url, model.name, model.directory)
+    const url = resolveHuggingFaceUrl(model.url)
+    await bridge.downloadModel?.(url, model.name, model.directory)
   } catch (error: unknown) {
     console.error('Failed to start Desktop2 model download:', error)
   }
@@ -141,7 +185,7 @@ export function downloadModel(
   if (modelPaths[0]) {
     useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
     void useElectronDownloadStore().start({
-      url: model.url,
+      url: resolveHuggingFaceUrl(model.url),
       savePath: modelPaths[0],
       filename: model.name
     })
@@ -227,7 +271,7 @@ const HUGGING_FACE_GATED_ERROR_CODE = 'GatedRepo'
 async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
   try {
     // Deliberately uncredentialed HEADs prevent re-checks from clearing gating.
-    const response = await fetch(url, { method: 'HEAD' })
+    const response = await fetch(resolveHuggingFaceUrl(url), { method: 'HEAD' })
     if (!response.ok) {
       if (
         isTrustedHuggingFaceUrl(url) &&
