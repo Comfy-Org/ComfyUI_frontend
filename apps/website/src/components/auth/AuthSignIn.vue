@@ -8,7 +8,10 @@ import type {
   AuthSignInProvider,
   AuthSignInState
 } from '../../config/auth-sign-in-state'
-import { authSignInTransition } from '../../config/auth-sign-in-state'
+import {
+  authSignInTransition,
+  signInErrorMessage
+} from '../../config/auth-sign-in-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
@@ -21,6 +24,7 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 
 const enabled = useWorkshopAuthFlag()
 const state = ref<AuthSignInState>({ step: 'idle' })
+const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 
 function dispatch(event: AuthSignInEvent) {
@@ -176,7 +180,7 @@ onBeforeUnmount(() => {
         role="alert"
         class="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-primary-comfy-canvas"
       >
-        {{ t(state.messageKey, locale) }}
+        {{ signInErrorMessage(state.classification, locale, hostname) }}
       </p>
 
       <p class="mt-6 text-center text-sm text-primary-comfy-canvas/55">

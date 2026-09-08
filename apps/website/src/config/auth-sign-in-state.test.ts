@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  AUTH_ERROR_COPY,
+  AUTH_ERROR_MESSAGES
+} from '@comfyorg/account/firebaseAuthError'
+
 import type { AuthSignInState } from './auth-sign-in-state'
-import { authSignInTransition } from './auth-sign-in-state'
+import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 
 const idle: AuthSignInState = { step: 'idle' }
 const pending: AuthSignInState = { step: 'pending', provider: 'google' }
@@ -61,51 +66,86 @@ describe('authSignInTransition', () => {
     ).toEqual({ step: 'signedIn', email: 'a@b.co' })
   })
 
-  it.for([
-    [
-      'a dismissed popup',
-      { code: 'auth/popup-closed-by-user', message: 'x' },
-      'auth.signIn.error.popupClosed'
-    ],
-    [
-      'a superseded popup',
-      { code: 'auth/cancelled-popup-request', message: 'x' },
-      'auth.signIn.error.popupCancelled'
-    ],
-    [
-      'a browser-blocked popup',
-      { code: 'auth/popup-blocked', message: 'x' },
-      'auth.signIn.error.popupBlocked'
-    ],
-    [
-      'an unauthorized domain',
-      { code: 'auth/unauthorized-domain', message: 'x' },
-      'auth.signIn.error.domain'
-    ],
-    [
-      'a blocked signup',
-      { code: 'auth/internal-error', message: 'SIGNUP_BLOCKED' },
-      'auth.signIn.error.blocked'
-    ],
-    [
-      'any other auth failure',
-      { code: 'auth/network-request-failed', message: 'x' },
-      'auth.signIn.error.generic'
-    ],
-    [
-      'a non-Firebase failure',
-      new Error('customers 500'),
-      'auth.signIn.error.generic'
-    ]
-  ] as const)('maps %s to its message key', ([, error, messageKey]) => {
+  it('carries the classified failure so the view can resolve the shared copy', () => {
     expect(
-      authSignInTransition(pending, { type: 'signInFailed', error })
-    ).toEqual({ step: 'error', messageKey })
+      authSignInTransition(pending, {
+        type: 'signInFailed',
+        error: { code: 'auth/popup-blocked', message: 'x' }
+      })
+    ).toEqual({
+      step: 'error',
+      classification: { kind: 'popup-dismissed', code: 'auth/popup-blocked' }
+    })
   })
 
   it('returns to idle on sign-out from signedIn, but never abandons a pending attempt', () => {
     const signedIn: AuthSignInState = { step: 'signedIn', email: 'a@b.co' }
     expect(authSignInTransition(signedIn, { type: 'signedOut' })).toEqual(idle)
     expect(authSignInTransition(pending, { type: 'signedOut' })).toBe(pending)
+  })
+})
+
+describe('signInErrorMessage', () => {
+  const failed = (error: unknown) => {
+    const state = authSignInTransition(pending, { type: 'signInFailed', error })
+    if (state.step !== 'error') throw new Error('expected the error step')
+    return state.classification
+  }
+
+  it.for([
+    [
+      'a dismissed popup',
+      { code: 'auth/popup-closed-by-user', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
+    ],
+    [
+      'a browser-blocked popup',
+      { code: 'auth/popup-blocked', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/popup-blocked']
+    ],
+    [
+      'a blocked signup',
+      { code: 'auth/internal-error', message: 'SIGNUP_BLOCKED' },
+      AUTH_ERROR_MESSAGES.signupBlocked
+    ],
+    [
+      'a network failure, which the cloud app names',
+      { code: 'auth/network-request-failed', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/network-request-failed']
+    ],
+    [
+      'an unknown auth code',
+      { code: 'auth/some-new-code', message: 'x' },
+      AUTH_ERROR_MESSAGES.generic
+    ],
+    [
+      'a non-Firebase failure',
+      new Error('customers 500'),
+      AUTH_ERROR_MESSAGES.generic
+    ]
+  ] as const)("speaks the cloud app's line for %s", ([, error, copy]) => {
+    expect(signInErrorMessage(failed(error), 'en', 'comfy.org')).toBe(copy)
+  })
+
+  it('names this host in the unauthorized-domain line', () => {
+    expect(
+      signInErrorMessage(
+        failed({ code: 'auth/unauthorized-domain', message: 'x' }),
+        'en',
+        'preview.comfy.org'
+      )
+    ).toBe(
+      'Your domain preview.comfy.org is not authorized to use this service. Please contact support@comfy.org to add your domain to the whitelist.'
+    )
+  })
+
+  it('follows the page locale', () => {
+    expect(
+      signInErrorMessage(
+        failed({ code: 'auth/popup-blocked', message: 'x' }),
+        'ja',
+        'comfy.org'
+      )
+    ).toBe(AUTH_ERROR_COPY.ja['auth/popup-blocked'])
   })
 })
