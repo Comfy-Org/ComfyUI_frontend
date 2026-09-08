@@ -160,7 +160,8 @@ const SUGGESTIONS: Suggestion[] = [
 
 const { t } = useI18n()
 const toast = useToastStore()
-const { nudgeArmed, nudgeOutput, dismissNudge } = useFirstRunTourController()
+const { nudgeArmed, nudgeCompletedAt, nudgeOutput, dismissNudge } =
+  useFirstRunTourController()
 const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
 const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
@@ -169,6 +170,7 @@ const titleId = useId()
 const subtitleId = useId()
 const loadingSuggestionId = ref<SuggestionId | null>(null)
 const delayElapsed = ref(false)
+const readyCatalogSuggestions = ref<Suggestion[] | null>(null)
 const decidedSuggestions = ref<Suggestion[] | null>(null)
 let reported = false
 
@@ -179,21 +181,19 @@ let reported = false
  * dead end found by clicking it, seconds after the user's first success.
  */
 const catalogSuggestions = computed(() =>
-  nudgeOutput.value === null
-    ? []
-    : SUGGESTIONS.filter(({ templateId }) => {
-        const template = templatesStore.getTemplateByName(templateId)
-        return (
-          template?.sourceModule === 'default' &&
-          acceptsTemplateImageInput(template)
-        )
-      })
+  SUGGESTIONS.filter(({ templateId }) => {
+    const template = templatesStore.getTemplateByName(templateId)
+    return (
+      template?.sourceModule === 'default' &&
+      acceptsTemplateImageInput(template)
+    )
+  })
 )
 const availableSuggestions = computed(() => decidedSuggestions.value ?? [])
 
-function decideSuggestions() {
-  if (decidedSuggestions.value !== null) return
-  decidedSuggestions.value = catalogSuggestions.value
+function finishCatalogWait() {
+  if (readyCatalogSuggestions.value !== null) return
+  readyCatalogSuggestions.value = catalogSuggestions.value
 }
 
 // A run that produced no image, and an install serving none of the
@@ -216,19 +216,23 @@ const onScreen = computed(
   () =>
     screenIsClear.value &&
     delayElapsed.value &&
-    decidedSuggestions.value !== null
+    readyCatalogSuggestions.value !== null
 )
 
 const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   () => {
     delayElapsed.value = true
   },
-  APPEAR_DELAY_MS,
+  () =>
+    Math.max(
+      0,
+      (nudgeCompletedAt.value ?? Date.now()) + APPEAR_DELAY_MS - Date.now()
+    ),
   { immediate: false }
 )
 
 const { start: startCatalogWait, stop: stopCatalogWait } = useTimeoutFn(
-  decideSuggestions,
+  finishCatalogWait,
   CATALOG_WAIT_MS,
   { immediate: false }
 )
@@ -244,6 +248,7 @@ watch(
   nudgeArmed,
   (armed, _previous, onCleanup) => {
     stopCatalogWait()
+    readyCatalogSuggestions.value = null
     decidedSuggestions.value = null
     reported = false
     if (!armed) return
@@ -256,24 +261,27 @@ watch(
     void loadTemplates().finally(() => {
       if (!active) return
       stopCatalogWait()
-      decideSuggestions()
+      finishCatalogWait()
     })
   },
   { immediate: true }
 )
 
 watch(
-  screenIsClear,
-  (clear) => {
+  nudgeCompletedAt,
+  (completedAt) => {
     cancelAppearance()
     delayElapsed.value = false
-    if (clear) scheduleAppearance()
+    if (completedAt !== null) scheduleAppearance()
   },
   { immediate: true }
 )
 
 watch(onScreen, (visible) => {
   if (!visible || reported) return
+  decidedSuggestions.value = nudgeOutput.value
+    ? readyCatalogSuggestions.value
+    : []
   reported = true
   telemetry?.trackOnboardingTour('nudge_shown', {
     tour: 'firstRun',

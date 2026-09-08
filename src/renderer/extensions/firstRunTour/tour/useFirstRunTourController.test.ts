@@ -138,7 +138,7 @@ let resolveRegisteredTour: () => Promise<unknown>
 let registeredTourHolds: () => boolean
 
 /** Scoped so each controller's document listener dies with its test. */
-async function freshController() {
+async function freshController(beforeStart?: () => Promise<void>) {
   controllerScope?.stop()
   vi.resetModules()
   controllerScope = effectScope()
@@ -150,11 +150,12 @@ async function freshController() {
   registeredTourHolds = () => tours.tourHolds('firstRun')
   const { useFirstRunTourController } =
     await import('./useFirstRunTourController')
+  await beforeStart?.()
   return controllerScope.run(() => useFirstRunTourController())!
 }
 
 /** A started tour sitting on its Run step, the state every run outcome acts on. */
-async function tourOnRunStep() {
+async function tourOnRunStep(beforeStart?: () => Promise<void>) {
   mocks.steps = [runStep()]
   mocks.activeWorkflow.value = TOUR_WORKFLOW
   mocks.engine.startTour.mockImplementation(async () => {
@@ -163,7 +164,7 @@ async function tourOnRunStep() {
     mocks.engine.step = runStep()
     return true
   })
-  const controller = await freshController()
+  const controller = await freshController(beforeStart)
 
   const starting = controller.beginTour('image_z_image_turbo')
   await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
@@ -934,6 +935,126 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('the nudge', () => {
+    it('records success before an earlier store listener removes the job', async () => {
+      const { controller } = await tourOnRunStep(async () => {
+        const { api } = await import('@/scripts/api')
+        api.addEventListener(
+          'execution_success',
+          () => {
+            mocks.queuedJobs.value = {}
+          },
+          { once: true }
+        )
+      })
+      mountRunButton('queue-button', () => {}).click()
+      await captureFirstImage()
+      await endTour(COMPLETED)
+      const { api } = await import('@/scripts/api')
+
+      const completedAt = Date.now()
+      api.dispatchCustomEvent('execution_success', {
+        prompt_id: 'tour-job',
+        timestamp: 1
+      })
+      await nextTick()
+
+      expect(mocks.queuedJobs.value).toEqual({})
+      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+    })
+
+    it('requires success from the tracked job after the tour ends', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await captureFirstImage()
+      await endTour(COMPLETED)
+      const { api } = await import('@/scripts/api')
+
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+      api.dispatchCustomEvent('execution_success', {
+        prompt_id: 'another-job',
+        timestamp: 1
+      })
+      await finishRun(TOUR_WORKFLOW, 'completed')
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+
+      const completedAt = Date.now()
+      api.dispatchCustomEvent('execution_success', {
+        prompt_id: 'tour-job',
+        timestamp: 1
+      })
+      await removeRun()
+      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
+
+      await vi.advanceTimersByTimeAsync(1000)
+      api.dispatchCustomEvent('execution_success', {
+        prompt_id: 'tour-job',
+        timestamp: 2
+      })
+      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
+      controller.dismissNudge()
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+    })
+
+    it.for([
+      { order: ['success', 'accept', 'end'] },
+      { order: ['end', 'success', 'accept'] },
+      { order: ['accept', 'success', 'end'] }
+    ])('retains the completion time across $order', async ({ order }) => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      const { api } = await import('@/scripts/api')
+      const completedAt = Date.now()
+      for (const event of order) {
+        if (event === 'end') await endTour(COMPLETED)
+        if (event === 'accept') await acceptRun(TOUR_WORKFLOW, 'tour-job')
+        if (event === 'success') {
+          api.dispatchCustomEvent('execution_success', {
+            prompt_id: 'tour-job',
+            timestamp: 1
+          })
+          await vi.advanceTimersByTimeAsync(1000)
+        }
+      }
+      await removeRun()
+      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
+      expect(controller.nudgeOutput.value).toBeNull()
+    })
+
+    it.for(['execution_error', 'execution_interrupted'] as const)(
+      'does not enable a recommendation after %s',
+      async (event) => {
+        const { controller } = await tourOnRunStep()
+        mountRunButton('queue-button', () => {}).click()
+        await captureFirstImage()
+        await endTour(COMPLETED)
+        const { api } = await import('@/scripts/api')
+        api.dispatchCustomEvent(event, {
+          prompt_id: 'tour-job',
+          timestamp: 1,
+          node_id: '1',
+          node_type: 'SaveImage',
+          executed: [],
+          exception_message: 'Generation failed',
+          exception_type: 'RuntimeError',
+          traceback: [],
+          current_inputs: {},
+          current_outputs: {}
+        })
+        await removeRun()
+        api.dispatchCustomEvent('execution_success', {
+          prompt_id: 'tour-job',
+          timestamp: 1
+        })
+        expect(controller.nudgeCompletedAt.value).toBeNull()
+      }
+    )
+
     it('arms after a completed tour produced an image', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
@@ -964,6 +1085,7 @@ describe('useFirstRunTourController', () => {
         'suppressing the nudge takes the way forward from the user who most needs it (#14144)'
       ).toBe(true)
       expect(controller.nudgeOutput.value).toBeNull()
+      expect(controller.nudgeCompletedAt.value).toBeNull()
     })
 
     it.for(UNFINISHED_ENDINGS)(

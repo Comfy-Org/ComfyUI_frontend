@@ -15,7 +15,11 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { resultItemType } from '@/schemas/apiSchema'
-import type { ExecutedWsMessage, ResultItem } from '@/schemas/apiSchema'
+import type {
+  ExecutedWsMessage,
+  ExecutionSuccessWsMessage,
+  ResultItem
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -60,6 +64,11 @@ function useFirstRunTourControllerInternal() {
     output: null
   })
   const firstRunOutput = computed(() => runCorrelation.value.output)
+  const nudgeCompletedAt = computed(() =>
+    runCorrelation.value.phase === 'succeeded'
+      ? runCorrelation.value.completedAt
+      : null
+  )
 
   function dispatchRunCorrelation(event: FirstRunCorrelationEvent) {
     runCorrelation.value = transitionFirstRunCorrelation(
@@ -67,7 +76,11 @@ function useFirstRunTourControllerInternal() {
       event
     )
     if (runCorrelation.value.phase !== 'pending') stopAcceptDeadline()
-    if (runCorrelation.value.phase === 'idle') stopOfflineGrace()
+    if (
+      runCorrelation.value.phase === 'idle' ||
+      runCorrelation.value.phase === 'succeeded'
+    )
+      stopOfflineGrace()
   }
 
   /**
@@ -230,7 +243,8 @@ function useFirstRunTourControllerInternal() {
   useEventListener(api, 'reconnecting', () => {
     if (
       (runState.value !== 'generating' &&
-        runCorrelation.value.phase === 'idle') ||
+        (runCorrelation.value.phase === 'idle' ||
+          runCorrelation.value.phase === 'succeeded')) ||
       offlineTimer
     )
       return
@@ -246,6 +260,20 @@ function useFirstRunTourControllerInternal() {
     stopAcceptDeadline()
     stopOfflineGrace()
   })
+
+  useEventListener(
+    api,
+    'execution_success',
+    (event) => {
+      const { detail } = event as CustomEvent<ExecutionSuccessWsMessage>
+      dispatchRunCorrelation({
+        type: 'succeeded',
+        jobId: detail.prompt_id,
+        completedAt: Date.now()
+      })
+    },
+    { capture: true }
+  )
 
   /** A preview's temp file still seeds; the saved result behind it is better. */
   const awaitingSavedOutput = computed(
@@ -313,8 +341,6 @@ function useFirstRunTourControllerInternal() {
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
-      // Every ending leaves the user somewhere to go next, so every ending arms
-      // the nudge; only what it can offer depends on what the run produced.
       nudgeArmed.value = true
       releaseFirstRunTargets()
       runState.value = 'idle'
@@ -365,6 +391,7 @@ function useFirstRunTourControllerInternal() {
   return {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
+    nudgeCompletedAt,
     nudgeOutput: readonly(firstRunOutput),
     dismissNudge
   }

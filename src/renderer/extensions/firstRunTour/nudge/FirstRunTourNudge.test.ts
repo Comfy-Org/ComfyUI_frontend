@@ -66,6 +66,7 @@ const mocks = await vi.hoisted(async () => {
   const { ref, shallowRef } = await import('vue')
   return {
     nudgeArmed: ref(false),
+    nudgeCompletedAt: ref<number | null>(null),
     nudgeOutput: shallowRef<{
       filename: string
       subfolder: string
@@ -92,6 +93,7 @@ const mocks = await vi.hoisted(async () => {
 vi.mock('../tour/useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
+    nudgeCompletedAt: mocks.nudgeCompletedAt,
     nudgeOutput: mocks.nudgeOutput,
     dismissNudge: mocks.dismissNudge
   })
@@ -168,6 +170,7 @@ async function showNudge() {
 describe('FirstRunTourNudge', () => {
   beforeEach(() => {
     mocks.nudgeArmed.value = false
+    mocks.nudgeCompletedAt.value = Date.now()
     mocks.nudgeOutput.value = FIRST_OUTPUT
     mocks.openDialogs.value = []
     mocks.catalog.value = CATALOG_TEMPLATE_IDS
@@ -194,6 +197,81 @@ describe('FirstRunTourNudge', () => {
     })
   })
 
+  it('waits for generation success even after the tour and catalog finish', async () => {
+    mocks.nudgeArmed.value = true
+    mocks.nudgeCompletedAt.value = null
+    mocks.nudgeOutput.value = null
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(nudge()).toBeNull()
+    expect(mocks.trackOnboardingTour).not.toHaveBeenCalled()
+
+    mocks.nudgeOutput.value = FIRST_OUTPUT
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+
+    mocks.nudgeCompletedAt.value = Date.now()
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS - 1)
+    expect(nudge()).toBeNull()
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(suggestionButton('animate')).toBeTruthy()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledExactlyOnceWith(
+      'nudge_shown',
+      { tour: 'firstRun', suggestion_count: 3 }
+    )
+  })
+
+  it('counts the delay from success while the tour is still open', async () => {
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+
+    mocks.nudgeArmed.value = true
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(suggestionButton('animate')).toBeTruthy()
+  })
+
+  it('uses output arriving during the delay and freezes the visible fallback', async () => {
+    mocks.nudgeArmed.value = true
+    mocks.nudgeOutput.value = null
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS / 2)
+    mocks.nudgeOutput.value = FIRST_OUTPUT
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS / 2)
+    expect(suggestionButton('animate')).toBeTruthy()
+
+    mocks.nudgeArmed.value = false
+    mocks.nudgeCompletedAt.value = null
+    await nextTick()
+    mocks.nudgeOutput.value = null
+    mocks.nudgeArmed.value = true
+    mocks.nudgeCompletedAt.value = Date.now()
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(
+      screen.getByText(
+        enMessages.onboardingCoachmarks.firstRun.nudge.fallback.title
+      )
+    ).toBeTruthy()
+
+    mocks.nudgeOutput.value = FIRST_OUTPUT
+    await nextTick()
+    expect(
+      screen.queryByRole('button', {
+        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+      })
+    ).toBeNull()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledTimes(2)
+    expect(mocks.trackOnboardingTour).toHaveBeenLastCalledWith('nudge_shown', {
+      tour: 'firstRun',
+      suggestion_count: 0
+    })
+  })
+
   it('waits until the modal stack is clear', async () => {
     mocks.nudgeArmed.value = true
     mocks.openDialogs.value = ['some-dialog']
@@ -203,7 +281,7 @@ describe('FirstRunTourNudge', () => {
     expect(nudge()).toBeNull()
 
     mocks.openDialogs.value = []
-    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    await nextTick()
 
     expect(nudge()).not.toBeNull()
   })
