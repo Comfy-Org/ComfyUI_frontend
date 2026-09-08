@@ -33,7 +33,7 @@ export function useMinimapRenderer(
     if (!ctx) return
 
     // Fast path for 0 nodes - just show background
-    if (!g._nodes || g._nodes.length === 0) {
+    if (g._nodes.length === 0) {
       ctx.clearRect(0, 0, width, height)
       return
     }

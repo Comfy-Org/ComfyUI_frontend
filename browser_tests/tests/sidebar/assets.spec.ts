@@ -1193,7 +1193,6 @@ test.describe('Assets sidebar - drag and drop', () => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
     const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    if (!loadImage) throw new Error('Load Image node not found')
     await loadImage.centerOnNode()
 
     const { assetsTab } = comfyPage.menu
