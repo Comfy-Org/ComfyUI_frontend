@@ -214,6 +214,62 @@ describe('BaseWidget store integration', () => {
       })
     })
 
+    it('re-reads accessor-backed canvasOnly visibility', () => {
+      const widget = createTestWidget(node)
+      let live = true
+
+      Object.defineProperty(widget.options, 'canvasOnly', {
+        configurable: true,
+        enumerable: true,
+        get: () => live
+      })
+
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+
+      live = false
+      widget.syncLiveVisibilityOptions()
+
+      expect(widget.visibility.surfaces).toEqual({
+        canvas: 'shown',
+        vueNode: 'shown',
+        panel: 'shown'
+      })
+      expect(
+        Object.getOwnPropertyDescriptor(widget.options, 'canvasOnly')?.get
+      ).toBeDefined()
+    })
+
+    it('accepts a getter-only hidden option', () => {
+      const widget = createTestWidget(node)
+
+      expect(() =>
+        Object.defineProperty(widget.options, 'hidden', {
+          configurable: true,
+          enumerable: true,
+          get: () => true
+        })
+      ).not.toThrow()
+
+      expect(widget.hidden).toBe(true)
+      expect(widget.visibility.suppression.byExtension).toBe(true)
+    })
+
+    it('does not re-read data-valued visibility options', () => {
+      const widget = createMutableTypeWidget(node)
+      widget.options.hidden = true
+      widget.type = 'converted-widget'
+      widget.hidden = false
+
+      widget.syncLiveVisibilityOptions()
+
+      expect(widget.hidden).toBe(false)
+      expect(widget.visibility.suppression.byExtension).toBe(false)
+    })
+
     it('mirrors canvasOnly when options are replaced', () => {
       const widget = createTestWidget(node)
 

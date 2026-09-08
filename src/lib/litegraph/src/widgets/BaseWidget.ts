@@ -70,6 +70,12 @@ function unwrapOptionsShim<TOptions extends object>(
 }
 
 type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced' | 'canvasOnly'
+const LEGACY_VISIBILITY_KEYS: readonly LegacyVisibilityKey[] = [
+  'hidden',
+  'hideInPanel',
+  'advanced',
+  'canvasOnly'
+]
 
 type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
   TWidget['value'],
@@ -175,14 +181,20 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.applyLegacyVisibilityKey('canvasOnly', raw.canvasOnly)
   }
 
+  syncLiveVisibilityOptions(): void {
+    for (const key of LEGACY_VISIBILITY_KEYS) {
+      if (!Object.getOwnPropertyDescriptor(this._rawOptions, key)?.get) continue
+      this.applyLegacyVisibilityKey(key, Reflect.get(this._rawOptions, key))
+    }
+  }
+
   private applyLegacyVisibilityKey(
     key: LegacyVisibilityKey,
     value: unknown
   ): void {
     const enabled = value === true
     if (key === 'hidden') {
-      if (value === undefined) applyLegacyHiddenWrite(this._visibility, false)
-      else this.hidden = enabled
+      applyLegacyHiddenWrite(this._visibility, enabled)
     } else if (key === 'hideInPanel') {
       setWidgetHiddenInPanel(this._visibility, enabled)
     } else if (key === 'canvasOnly') {
@@ -213,12 +225,12 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         if (property === 'advanced') return isWidgetAdvanced(this._visibility)
         return Reflect.get(target, property, receiver)
       },
-      set: (target, property, value, receiver) => {
-        if (this.isLegacyVisibilityKey(property)) {
-          this.applyLegacyVisibilityKey(property, value)
-          return Reflect.set(target, property, value, receiver)
+      defineProperty: (target, property, descriptor) => {
+        const defined = Reflect.defineProperty(target, property, descriptor)
+        if (defined && this.isLegacyVisibilityKey(property)) {
+          this.applyLegacyVisibilityKey(property, Reflect.get(target, property))
         }
-        return Reflect.set(target, property, value, receiver)
+        return defined
       },
       deleteProperty: (target, property) => {
         if (this.isLegacyVisibilityKey(property)) {
