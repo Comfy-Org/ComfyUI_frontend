@@ -8,11 +8,12 @@
       <slot name="workflow-tabs" />
 
       <div
-        class="pointer-events-none flex flex-1 overflow-hidden"
-        :class="{
-          'flex-row': sidebarLocation === 'left',
-          'flex-row-reverse': sidebarLocation === 'right'
-        }"
+        :class="
+          cn('pointer-events-none flex flex-1 overflow-hidden', {
+            'flex-row': sidebarLocation === 'left',
+            'flex-row-reverse': sidebarLocation === 'right'
+          })
+        "
       >
         <div class="side-toolbar-container">
           <slot name="side-toolbar" />

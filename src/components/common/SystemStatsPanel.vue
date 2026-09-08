@@ -36,7 +36,7 @@
             :header="device.name"
             :value="device.index"
           >
-            <DeviceInfo :device="device" />
+            <DeviceInfo :device />
           </TabPanel>
         </TabView>
         <DeviceInfo v-else :device="stats.devices[0]" />

@@ -8,16 +8,13 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import App from './App.vue'
 
+vi.mock('firebase/auth')
+vi.mock('vuefire', () => ({ useFirebaseAuth: vi.fn() }))
+
 vi.mock('@/components/dialog/GlobalDialog.vue', () => ({
   default: { template: '<div />' }
 }))
-vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
 vi.mock('@/scripts/app', () => ({ app: {} }))
-vi.mock('@/stores/workspaceStore', async () => {
-  const { reactive } = await import('vue')
-  const store = reactive({ spinner: true })
-  return { useWorkspaceStore: () => store }
-})
 vi.mock(
   '@/workbench/extensions/manager/composables/useConflictDetection',
   () => ({
@@ -29,6 +26,8 @@ vi.mock(
 
 describe('App', () => {
   it('blocks existing dialogs while loading and keeps a stable readiness hook', async () => {
+    const workspaceStore = useWorkspaceStore()
+    workspaceStore.spinner = true
     render({
       directives: { rekaZIndex: vRekaZIndex },
       template: '<div v-reka-z-index data-testid="dialog" />'
@@ -46,7 +45,6 @@ describe('App', () => {
     expect(overlay).toBeVisible()
     expect(ZIndex.get(overlay)).toBeGreaterThan(ZIndex.get(dialog))
 
-    const workspaceStore = useWorkspaceStore()
     workspaceStore.spinner = false
     await nextTick()
 

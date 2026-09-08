@@ -1,8 +1,12 @@
 <template>
   <div
     ref="containerRef"
-    class="workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden"
-    :class="{ 'workflow-tabs-container-desktop': isDesktop }"
+    :class="
+      cn(
+        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden',
+        isDesktop && 'workflow-tabs-container-desktop'
+      )
+    "
   >
     <Button
       v-if="showOverflowArrows"
@@ -24,7 +28,7 @@
         <SelectButton
           :class="cn('workflow-tabs bg-transparent', props.class)"
           :model-value="selectedWorkflow"
-          :options="options"
+          :options
           option-label="label"
           data-key="value"
           :allow-empty="false"

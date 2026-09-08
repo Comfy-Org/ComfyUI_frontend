@@ -83,12 +83,7 @@
           {{ $t('auth.login.title') }}
         </p>
 
-        <Button
-          class="w-52"
-          variant="primary"
-          :loading="loading"
-          @click="handleSignIn"
-        >
+        <Button class="w-52" variant="primary" :loading @click="handleSignIn">
           <i class="pi pi-user" />
           {{ $t('auth.login.signInOrSignUp') }}
         </Button>

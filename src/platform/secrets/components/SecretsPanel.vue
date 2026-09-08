@@ -36,7 +36,7 @@
         <SecretListItem
           v-for="secret in secrets"
           :key="secret.id"
-          :secret="secret"
+          :secret
           :loading="operatingSecretId === secret.id"
           :disabled="operatingSecretId !== null"
           @edit="openEditDialog(secret)"
@@ -47,8 +47,8 @@
       <SecretFormDialog
         v-model:visible="createDialogVisible"
         mode="create"
-        :existing-providers="existingProviders"
-        :available-providers="availableProviders"
+        :existing-providers
+        :available-providers
         @saved="fetchSecrets"
       />
 
@@ -56,8 +56,8 @@
         v-model:visible="editDialogVisible"
         mode="edit"
         :secret="selectedSecret"
-        :existing-providers="existingProviders"
-        :available-providers="availableProviders"
+        :existing-providers
+        :available-providers
         @saved="fetchSecrets"
       />
     </div>

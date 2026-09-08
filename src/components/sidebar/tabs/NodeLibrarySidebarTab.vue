@@ -130,7 +130,7 @@
         <div>
           <NodeBookmarkTreeExplorer
             ref="nodeBookmarkTreeExplorerRef"
-            :filtered-node-defs="filteredNodeDefs"
+            :filtered-node-defs
             :open-node-help="openHelp"
           />
           <div
@@ -144,10 +144,10 @@
             :root="renderedRoot"
           >
             <template #folder="{ node }">
-              <NodeTreeFolder :node="node" />
+              <NodeTreeFolder :node />
             </template>
             <template #node="{ node }">
-              <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
+              <NodeTreeLeaf :node :open-node-help="openHelp" />
             </template>
           </TreeExplorer>
         </div>

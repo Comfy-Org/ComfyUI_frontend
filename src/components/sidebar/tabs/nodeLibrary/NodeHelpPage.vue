@@ -13,7 +13,7 @@
       <span class="ml-2 font-semibold">{{ node.display_name }}</span>
     </div>
     <div class="grow p-4">
-      <NodeHelpContent :node="node" />
+      <NodeHelpContent :node />
     </div>
   </div>
 </template>

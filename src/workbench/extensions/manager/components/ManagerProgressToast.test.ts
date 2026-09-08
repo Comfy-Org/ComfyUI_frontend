@@ -6,24 +6,14 @@ import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import type { TaskLog } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import ManagerProgressToast from './ManagerProgressToast.vue'
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', async () => {
-  const { reactive, ref } = await import('vue')
-  const store = reactive({
-    taskLogs: ref<TaskLog[]>([]),
-    succeededTasksLogs: ref<TaskLog[]>([]),
-    failedTasksLogs: [],
-    succeededTasksIds: [],
-    failedTasksIds: [],
-    taskHistory: {},
-    taskQueue: null,
-    isProcessingTasks: true
+vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
+  useComfyManagerService: () => ({
+    listInstalledPacks: vi.fn(async () => ({}))
   })
-  return { useComfyManagerStore: () => store }
-})
+}))
 
 vi.mock(
   '@/workbench/extensions/manager/composables/useApplyChanges',
@@ -43,6 +33,7 @@ it('keeps a log collapsed across updates without collapsing another task', async
   const store = useComfyManagerStore()
   const first = { taskId: 'first', taskName: 'First task', logs: ['Starting'] }
   const second = { taskId: 'second', taskName: 'Second task', logs: ['Queued'] }
+  store.isProcessingTasks = true
   store.taskLogs = [first, second]
   store.succeededTasksLogs = [first, second]
   const user = userEvent.setup()

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+  <div :class="cn('flex h-full items-center', !isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -9,7 +9,7 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <div ref="panelRef" :style="style" :class="panelClass">
+    <div ref="panelRef" :style :class="panelClass">
       <div class="relative flex items-center gap-2 select-none">
         <span
           ref="dragHandleRef"

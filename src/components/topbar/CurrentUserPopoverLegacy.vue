@@ -44,7 +44,7 @@
         <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
-            :workspace-name="workspaceName"
+            :workspace-name
             :subscription-tier="tier"
           />
           <span class="truncate text-sm text-base-foreground">

@@ -1,16 +1,17 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
+import { useCommandStore } from '@/stores/commandStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   createMockCanvas,
   createMockPositionable
@@ -30,10 +31,6 @@ function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   >
 }
 
-const { settingGetMock } = vi.hoisted(() => ({
-  settingGetMock: vi.fn()
-}))
-
 const defaultSettingValues: Record<string, unknown> = {
   'Comfy.UseNewMenu': 'Top',
   'Comfy.NodeLibrary.NewDesign': true,
@@ -41,13 +38,13 @@ const defaultSettingValues: Record<string, unknown> = {
 }
 
 function mockSettingValues(overrides: Record<string, unknown> = {}) {
-  const settingValues = {
-    ...defaultSettingValues,
-    ...overrides
-  }
-  settingGetMock.mockImplementation(
-    (key: string): unknown => settingValues[key] ?? null
-  )
+  const settingStore = useSettingStore()
+  settingStore.$patch({
+    settingValues: {
+      ...defaultSettingValues,
+      ...overrides
+    }
+  })
 }
 
 // Mock the composables and services
@@ -92,28 +89,18 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
   filterOutputNodes: vi.fn((nodes) => nodes.filter(() => false))
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: settingGetMock
-  })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    getCommand: vi.fn(() => ({ id: 'test-command', title: 'Test Command' }))
-  })
-}))
-
-let nodeDefMock = {
-  type: 'TestNode',
-  title: 'Test Node'
-} as unknown
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    fromLGraphNode: vi.fn(() => nodeDefMock)
-  })
-}))
+const nodeDef = new ComfyNodeDefImpl({
+  name: 'TestNode',
+  display_name: 'Test Node',
+  category: 'test',
+  input: {},
+  output: [],
+  output_name: [],
+  output_is_list: [],
+  output_node: false,
+  python_module: 'nodes',
+  description: ''
+})
 
 describe('SelectionToolbox', () => {
   let canvasStore: ReturnType<typeof useCanvasStore>
@@ -140,12 +127,8 @@ describe('SelectionToolbox', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     canvasStore = useCanvasStore()
-    nodeDefMock = {
-      type: 'TestNode',
-      title: 'Test Node'
-    }
+    vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
 
     // Mock the canvas to avoid "getCanvas: canvas is null" errors
     canvasStore.canvas = createMockCanvas()
@@ -233,7 +216,7 @@ describe('SelectionToolbox', () => {
 
     it('should not show info button when node definition is not found', () => {
       canvasStore.selectedItems = [createMockPositionable()]
-      nodeDefMock = null
+      vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(null)
       const { container } = renderComponent()
       expect(container.querySelector('.info-button')).toBeFalsy()
     })
@@ -424,6 +407,11 @@ describe('SelectionToolbox', () => {
 
   describe('Extension Commands', () => {
     it('should render extension command buttons when available', () => {
+      useCommandStore().registerCommand({
+        id: 'test-command',
+        function: vi.fn(),
+        label: 'Test Command'
+      })
       const mockExtensionService = vi.mocked(useExtensionService)
       mockExtensionService.mockReturnValue({
         extensionCommands: {

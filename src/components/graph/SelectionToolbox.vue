@@ -34,7 +34,7 @@
           <ExtensionCommandButton
             v-for="command in extensionToolboxCommands"
             :key="command.id"
-            :command="command"
+            :command
           />
           <ExecuteButton v-if="showExecute" />
           <NodeOptionsButton />

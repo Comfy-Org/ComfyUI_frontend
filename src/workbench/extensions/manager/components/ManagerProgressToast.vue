@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
 import TabMenu from 'primevue/tabmenu'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -204,11 +205,12 @@ onBeforeUnmount(() => {
                 ? (el) => (lastPanelRef = el as HTMLElement)
                 : undefined
             "
-            class="h-64 overflow-y-auto rounded-lg bg-black"
-            :class="{
-              'h-64': index !== focusedLogs.length - 1,
-              grow: index === focusedLogs.length - 1
-            }"
+            :class="
+              cn(
+                'h-64 overflow-y-auto rounded-lg bg-black',
+                index === focusedLogs.length - 1 && 'grow'
+              )
+            "
             @scroll="handleScroll"
           >
             <div class="h-full">

@@ -1,11 +1,15 @@
 <template>
   <div
     data-testid="subgraph-breadcrumb"
-    class="subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)"
-    :class="{
-      'subgraph-breadcrumb-collapse': collapseTabs,
-      'subgraph-breadcrumb-overflow': overflowingTabs
-    }"
+    :class="
+      cn(
+        'subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 pl-1 drop-shadow-(--interface-panel-drop-shadow)',
+        {
+          'subgraph-breadcrumb-collapse': collapseTabs,
+          'subgraph-breadcrumb-overflow': overflowingTabs
+        }
+      )
+    "
     :style="{
       '--p-breadcrumb-gap': `0px`,
       '--p-breadcrumb-item-margin': `${ITEM_GAP / 2}px`,
@@ -44,7 +48,7 @@
             class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
           >
             <SubgraphBreadcrumbItem
-              :item="item"
+              :item
               :is-active="item.key === activeItemKey"
             />
           </li>
