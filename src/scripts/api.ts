@@ -1206,7 +1206,7 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this))
+      return await fetchQueue(this.fetchApi.bind(this), options)
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)

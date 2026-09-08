@@ -5,6 +5,16 @@ import type { TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  isAudioResult,
+  isImageResult,
+  isTextResult,
+  isVhsFormat,
+  isVideoResult,
+  resultItemHtmlAudioType,
+  resultItemHtmlVideoType,
+  resultItemSupportsPreview
+} from '@/utils/resultItem'
 
 // Fixture factory for JobListItem
 function createJob(
@@ -101,10 +111,10 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/webm')
-    expect(output.isVideo).toBe(true)
-    expect(output.isVhsFormat).toBe(false)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/webm')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isVhsFormat(output)).toBe(false)
+    expect(isImageResult(output)).toBe(false)
   })
 
   // https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/0a75c7958fe320efcb052f1d9f8451fd20c730a8/videohelpersuite/nodes.py#L578-L590
@@ -126,10 +136,10 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/webm')
-    expect(output.isVideo).toBe(true)
-    expect(output.isVhsFormat).toBe(true)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/webm')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isVhsFormat(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
   })
 
   it('should recognize mp4 video from core', () => {
@@ -149,9 +159,9 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/mp4')
-    expect(output.isVideo).toBe(true)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/mp4')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
   })
 
   describe('audio format detection', () => {
@@ -179,11 +189,11 @@ describe('TaskItemImpl', () => {
 
         const output = taskItem.flatOutputs[0]
 
-        expect(output.htmlAudioType).toBe(mimeType)
-        expect(output.isAudio).toBe(true)
-        expect(output.isVideo).toBe(false)
-        expect(output.isImage).toBe(false)
-        expect(output.supportsPreview).toBe(true)
+        expect(resultItemHtmlAudioType(output)).toBe(mimeType)
+        expect(isAudioResult(output)).toBe(true)
+        expect(isVideoResult(output)).toBe(false)
+        expect(isImageResult(output)).toBe(false)
+        expect(resultItemSupportsPreview(output)).toBe(true)
       })
     })
   })
@@ -204,11 +214,11 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.isText).toBe(true)
-    expect(output.isImage).toBe(false)
-    expect(output.isVideo).toBe(false)
-    expect(output.isAudio).toBe(false)
-    expect(output.supportsPreview).toBe(true)
+    expect(isTextResult(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
+    expect(isVideoResult(output)).toBe(false)
+    expect(isAudioResult(output)).toBe(false)
+    expect(resultItemSupportsPreview(output)).toBe(true)
   })
 
   it.skip('should parse text outputs', () => {

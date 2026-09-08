@@ -12,7 +12,7 @@ import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { PagedList } from '@/utils/pagedList'
 
 import OutputHistory from './OutputHistory.vue'
@@ -31,12 +31,12 @@ const runningTasksRef = ref<Array<{ jobId: string }>>([])
 const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
 const selectFirstHistoryFn = vi.fn(() => {
-  const first = mediaRef.value[0]
+  const first = mediaRef.value.at(0)
   selectedIdRef.value = first ? `history:${first.id}:0` : null
 })
 const mayBeActiveWorkflowPendingRef = ref(false)
 
-const allOutputsFn = vi.fn((): ResultItemImpl[] => [])
+const allOutputsFn = vi.fn((): AugmentedResultItem[] => [])
 
 const selectFn = vi.fn((id: string | null) => {
   selectedIdRef.value = id
@@ -146,7 +146,7 @@ function makeAsset(id: string): AssetItem {
   return fromPartial({ id, name: `${id}.png`, tags: [], user_metadata: {} })
 }
 
-function makeResult(filename: string): ResultItemImpl {
+function makeResult(filename: string): AugmentedResultItem {
   return {
     filename,
     subfolder: '',
@@ -154,7 +154,7 @@ function makeResult(filename: string): ResultItemImpl {
     nodeId: '1',
     mediaType: 'images',
     url: `http://localhost/${filename}`
-  } as unknown as ResultItemImpl
+  }
 }
 
 function makeInProgressItem(

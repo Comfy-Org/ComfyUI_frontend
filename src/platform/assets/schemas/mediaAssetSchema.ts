@@ -63,9 +63,9 @@ const zDraggedAssetInfo = zResultItem.and(
 )
 
 export function parseAssetInfo(dataTransfer: DataTransfer) {
-  const assetString = dataTransfer?.getData(MIME_ASSET_INFO)
+  const assetString = dataTransfer.getData(MIME_ASSET_INFO)
   try {
-    return zDraggedAssetInfo.safeParse(JSON.parse(assetString ?? '')).data
+    return zDraggedAssetInfo.safeParse(JSON.parse(assetString)).data
   } catch {
     // output was not parsable, allow fallthrough and return undefined
   }

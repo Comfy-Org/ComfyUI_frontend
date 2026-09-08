@@ -4,7 +4,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/scripts/app', () => ({
-  app: { canvas: undefined },
+  app: { canvas: undefined, isGraphReady: false },
   ComfyApp: class {}
 }))
 
@@ -21,6 +21,7 @@ const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
+    Reflect.set(app, 'isGraphReady', false)
     Reflect.set(app, 'canvas', undefined)
 
     const center = useLitegraphService().getCanvasCenter()
@@ -28,15 +29,8 @@ describe('useLitegraphService().getCanvasCenter', () => {
     expect(center).toEqual([0, 0])
   })
 
-  it('returns origin when canvas exists but ds.visible_area is missing', () => {
-    Reflect.set(app, 'canvas', { ds: {} })
-
-    const center = useLitegraphService().getCanvasCenter()
-
-    expect(center).toEqual([0, 0])
-  })
-
   it('returns the visible-area centre once the canvas is ready', () => {
+    Reflect.set(app, 'isGraphReady', true)
     Reflect.set(app, 'canvas', {
       ds: { visible_area: [10, 20, 200, 100] }
     })
@@ -191,7 +185,7 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
         })
         node.widgets ??= []
         node.widgets.push(retainedWidget)
-        return { widget: retainedWidget }
+        return retainedWidget
       }
     })
     await useLitegraphService().registerNodeDef(nodeName, {

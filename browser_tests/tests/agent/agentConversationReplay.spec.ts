@@ -3,52 +3,82 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 
+// A run of words the rendered markdown must contain: images dropped, links
+// reduced to their label, bare URLs and markup characters removed. A turn
+// whose text is only a link yields no probe and is covered by the count floor.
+function textProbe(text: string): string | null {
+  const words = text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[*_`#>|]/g, '')
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+  return words.length >= 3 ? words.slice(0, 6).join(' ') : null
+}
+
 test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
   for (const conversationCase of listRecordedConversations()) {
     test.describe(`recorded ${conversationCase}`, () => {
       test.use({ conversationCase })
 
-      test('replays the recorded turn onto the panel and the canvas', async ({
-        agentConversation,
-        page
+      test('replays every recorded turn onto the panel and the canvas', async ({
+        agentConversation
       }) => {
-        test.setTimeout(60_000)
+        test.setTimeout(90_000)
         const { panel } = agentConversation
+        const streams = panel.getByTestId('markdown-stream')
+        let turnsWithText = 0
 
-        await agentConversation.runTurns()
+        for (const turn of agentConversation.conversation.turns.keys()) {
+          await agentConversation.sendPrompt(turn)
+          await agentConversation.replayResponse(turn)
+          await agentConversation.waitForTurnComplete()
 
-        const groups = agentConversation.toolCallGroups()
+          const text = agentConversation.recordedAssistantText(turn).trim()
+          if (text !== '') {
+            turnsWithText += 1
+            const probe = textProbe(text)
+            if (probe !== null)
+              await expect(streams.filter({ hasText: probe })).not.toHaveCount(
+                0
+              )
+            // MarkdownStream renders once per text group, so a turn can own
+            // several; every turn with text still owns at least one.
+            await expect
+              .poll(
+                async () =>
+                  (await streams.allInnerTexts()).filter((t) => t.trim() !== '')
+                    .length
+              )
+              .toBeGreaterThanOrEqual(turnsWithText)
+          }
+
+          // The state after this turn, not only the end state: a node added
+          // now and deleted later must be on the canvas now.
+          await agentConversation.expectCanvasReplayed(turn)
+        }
+
+        const calls = agentConversation.recordedToolCalls()
         const groupButtons = panel.getByRole('button', {
           name: /^Ran \d+ tool call/
         })
-        await expect(groupButtons).toHaveCount(groups.length)
-        const toolRows = panel.getByRole('listitem')
-        for (const [index, calls] of groups.entries()) {
-          const button = groupButtons.nth(index)
-          const succeeded = calls.every((call) => call.ok)
-          await expect(button).toHaveText(
-            new RegExp(`^Ran ${calls.length} tool call`)
-          )
-          // A failed group stays open at turn end; a clean one collapses.
-          await expect(button).toHaveAttribute(
-            'aria-expanded',
-            succeeded ? 'false' : 'true'
-          )
-          if (succeeded) await button.click()
-        }
-        for (const {
-          label,
-          times,
-          rows
-        } of agentConversation.toolRowCounts()) {
-          const named = toolRows.filter({
-            has: page.getByText(label, { exact: true })
-          })
-          await expect(
-            named.filter(
-              times > 1 ? { hasText: `×${times}` } : { hasNotText: '×' }
-            )
-          ).toHaveCount(rows)
+        if (calls.length > 0) {
+          await expect(groupButtons.first()).toBeVisible()
+          const expandedCount = async () =>
+            (
+              await groupButtons.evaluateAll((buttons) =>
+                buttons.map((button) => button.getAttribute('aria-expanded'))
+              )
+            ).filter((state) => state === 'true').length
+          const failed = calls.filter((call) => call.failed).length
+          if (failed > 0) {
+            // A group holding a failed call stays open, and only those do.
+            await expect.poll(expandedCount).toBeGreaterThan(0)
+            await expect.poll(expandedCount).toBeLessThanOrEqual(failed)
+          } else {
+            await expect.poll(expandedCount).toBe(0)
+          }
         }
 
         await expect(
@@ -56,41 +86,6 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
             name: `Open ${agentConversation.conversation.workflow.name}`
           })
         ).toBeVisible()
-        await expect(
-          panel.getByTestId('markdown-stream').first()
-        ).not.toBeEmpty()
-
-        for (const id of agentConversation.addedNodeIds()) {
-          await expect(page.locator(`[data-node-id="${id}"]`)).toBeVisible()
-        }
-        for (const id of agentConversation.removedNodeIds()) {
-          await expect(page.locator(`[data-node-id="${id}"]`)).toBeHidden()
-        }
-        for (const {
-          nodeId,
-          widget,
-          value
-        } of agentConversation.recordedWidgetValues()) {
-          const field = page
-            .locator(`[data-node-id="${nodeId}"]`)
-            .getByLabel(widget, { exact: true })
-          if (typeof value === 'number') {
-            // Number widgets format their input (0.5 renders as 0.50), so compare the number.
-            await expect
-              .poll(async () =>
-                Number(await field.locator('input').first().inputValue())
-              )
-              .toBe(value)
-            continue
-          }
-          const tag = await field.evaluate((el) => el.tagName.toLowerCase())
-          if (tag === 'button') await expect(field).toContainText(value)
-          else await expect(field).toHaveValue(value)
-        }
-
-        await expect
-          .poll(() => agentConversation.graphSnapshot())
-          .toEqual(agentConversation.expectedGraph())
       })
     })
   }

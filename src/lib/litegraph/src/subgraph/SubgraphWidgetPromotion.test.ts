@@ -123,7 +123,6 @@ function writePromotedWidgetValue(
   value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 

@@ -1,22 +1,21 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import type { GraphSnapshot, Op } from '@comfyorg/comfy-multi-player'
+import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
-import type { DocFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import {
-  DOC_PROTOCOL_VERSION,
-  HostDoc
-} from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type {
   AgentConversation,
   AgentConversationTurn,
@@ -24,19 +23,16 @@ import type {
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 
-import { compareNodeIds, toNodeId } from '@/types/nodeId'
-import { knownTool } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
-// useAgentSession.ts keeps THREAD_STORAGE_KEY module-private.
-const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
+const CANCEL_TIMEOUT = 10_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const SEND_LABEL = enMessages.agent.send
@@ -46,13 +42,19 @@ type NodeBody = {
   id: number | string
   type: string
   title?: string
-  inputs?: Array<{ name: string }>
-  outputs?: Array<{ name: string }>
+  inputs?: Array<{ name: string; widget?: unknown }>
 }
 
 interface RecordedToolCall {
-  name: string
-  ok: boolean
+  callId: string
+  failed: boolean
+}
+
+interface RecordedLink {
+  fromNode: string
+  fromSlot: number
+  toNode: string
+  toSlot: number
 }
 
 interface RecordedWidgetValue {
@@ -61,35 +63,52 @@ interface RecordedWidgetValue {
   value: string | number
 }
 
-// The panel's row label: the known-tool table, else the humanized tool name (ToolCallCard.vue).
-function toolRowLabel(name: string): string {
-  const known = knownTool(name)?.labelKey
-  const label = known
-    ? enMessages.agent[
-        known.replace('agent.', '') as keyof typeof enMessages.agent
-      ]
-    : undefined
-  if (typeof label === 'string') return label
-  const spaced = name.replaceAll('_', ' ')
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+// [id, from, from_slot, to, to_slot, type], as a workflow file stores a link.
+const zSeedLink = z
+  .tuple([
+    z.unknown(),
+    z.union([z.string(), z.number()]),
+    z.number(),
+    z.union([z.string(), z.number()]),
+    z.number()
+  ])
+  .rest(z.unknown())
+
+function linkKey(link: RecordedLink): string {
+  return `${link.fromNode}:${link.fromSlot}->${link.toNode}:${link.toSlot}`
 }
 
-// Connected link slots by name; a node definition may render slots the recording never listed.
-interface GraphNodeSnapshot {
-  id: string
-  inputs: string[]
-  outputs: string[]
+function byLinkKey(a: RecordedLink, b: RecordedLink): number {
+  return linkKey(a).localeCompare(linkKey(b))
+}
+
+async function withTimeout(
+  promise: Promise<void>,
+  ms: number,
+  message: string
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms)
+  })
+  try {
+    await Promise.race([promise, timeout])
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
 class AgentConversationHarness {
-  readonly postedMessages: string[] = []
-  // Human-op minting is observable only on the client side of the socket.
-  readonly clientFrames: { type?: unknown; data?: unknown }[] = []
   readonly panel: Locator
+  readonly vueNodes: VueNodeHelpers
 
   private readonly host: HostDoc
   private socket: WebSocketRoute | null = null
+  private postedTurns = 0
+  private readonly displayNames = new Map<string, string>()
+  // Resolved when the panel cancels the turn the recording stopped.
+  private readonly cancelWaiters = new Map<string, () => void>()
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
@@ -103,6 +122,7 @@ class AgentConversationHarness {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
     this.panel = page.locator('#agent-panel-root')
+    this.vueNodes = new VueNodeHelpers(page)
   }
 
   async boot(agentFlag: boolean): Promise<void> {
@@ -121,12 +141,18 @@ class AgentConversationHarness {
         })
       )
     })
+    const objectInfo = this.page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith('/api/object_info')
+    )
     await bootAgentApp(this.page, agentFlag, {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: { 'Comfy.VueNodes.Enabled': true },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
       objectInfo: 'server'
     })
+    const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
+    for (const [type, definition] of Object.entries(definitions))
+      this.displayNames.set(type, definition.display_name || definition.name)
 
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
@@ -139,23 +165,13 @@ class AgentConversationHarness {
     })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    await expect.poll(() => this.postedMessages.length).toBeGreaterThan(turn)
-    expect(this.postedMessages[turn]).toContain(content)
     // Replay frames are dropped until the page has applied the ack's thread id.
-    await expect
-      .poll(() =>
-        this.page.evaluate(
-          (key) => localStorage.getItem(key),
-          THREAD_STORAGE_KEY
-        )
-      )
-      .toBe(THREAD_ID)
+    // useAgentSession records the user turn straight after storing that id, so
+    // the rendered turn says the ack landed without reading private storage.
+    await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(
-    turn = 0,
-    afterEntry?: (index: number) => Promise<void>
-  ): Promise<void> {
+  async replayResponse(turn = 0): Promise<void> {
     const startedAt = Date.now()
     const entries = this.conversation.turns[turn].response.entries()
     for (const [index, entry] of entries) {
@@ -172,16 +188,12 @@ class AgentConversationHarness {
       else {
         await this.waitForSubscribe()
         this.send(this.host.apply(entry.ops))
-        await afterEntry?.(index)
       }
       // The recorded turn was stopped here, so the panel stops here too.
       if (index === this.conversation.turns[turn].cancel_after)
-        await this.stopTurn()
+        await this.stopTurn(turn)
     }
-    this.replayElapsedMs = Date.now() - startedAt
   }
-
-  replayElapsedMs = 0
 
   async runTurns(): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
@@ -191,12 +203,27 @@ class AgentConversationHarness {
     }
   }
 
-  private entries(): AgentConversationTurn['response'] {
-    return this.conversation.turns.flatMap((turn) => turn.response)
+  // Everything the recording played through the given turn (all turns by default).
+  private entries(throughTurn?: number): AgentConversationTurn['response'] {
+    const last = throughTurn === undefined ? undefined : throughTurn + 1
+    return this.conversation.turns
+      .slice(0, last)
+      .flatMap((turn) => turn.response)
   }
 
-  async stopTurn(): Promise<void> {
+  // Clicks Stop, then holds the recorded tail until the panel's cancel for this
+  // turn reaches the server: the completed conversation is reachable only
+  // through that request.
+  private async stopTurn(turn: number): Promise<void> {
+    const accepted = new Promise<void>((resolve) =>
+      this.cancelWaiters.set(turnId(turn), resolve)
+    )
     await this.panel.getByRole('button', { name: STOP_LABEL }).click()
+    await withTimeout(
+      accepted,
+      CANCEL_TIMEOUT,
+      'the panel never cancelled the stopped turn'
+    )
   }
 
   async waitForTurnComplete(): Promise<void> {
@@ -208,10 +235,10 @@ class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
-  // Doc-id filter: a stray template node must not pin the template here.
-  private nodeBodies(): NodeBody[] {
+  // Every node the recording ever placed through the given turn, deleted or not.
+  private nodeBodies(throughTurn?: number): NodeBody[] {
     const seed = this.conversation.workflow.seed.nodes as NodeBody[]
-    const added = this.entries().flatMap((entry) =>
+    const added = this.entries(throughTurn).flatMap((entry) =>
       entry.kind === 'graph_ops'
         ? entry.ops.flatMap((op) =>
             op.op === 'add_node' ? [op.node as NodeBody] : []
@@ -221,113 +248,75 @@ class AgentConversationHarness {
     return [...seed, ...added]
   }
 
-  // The doc keeps no titles or slot names; those come from the node bodies the turn started from or added.
-  expectedGraph(): GraphNodeSnapshot[] {
-    const graph = this.host.graph()
-    const bodies = this.nodeBodies()
-    const byType = new Map(bodies.map((body) => [body.type, body]))
-    const byId = new Map(bodies.map((body) => [String(body.id), body]))
-    const catalog = this.conversation.workflow.catalog.types as Record<
-      string,
-      { widget_order: string[] }
-    >
-    const links = Object.values(graph.links) as Array<
-      [unknown, unknown, number, unknown, number, string]
-    >
-    return Object.entries(graph.nodes)
-      .map(([id, node]) => {
-        const type = String(node.type)
-        const body = byId.get(id) ?? byType.get(type)
-        const widgets = new Set(catalog[type]?.widget_order ?? [])
-        const inputNames = (body?.inputs ?? []).map((slot) => slot.name)
-        const outputNames = (body?.outputs ?? []).map((slot) => slot.name)
-        return {
-          id,
-          // Widget-backed inputs render as widgets, not slot rows.
-          inputs: [
-            ...new Set(
-              links
-                .filter((link) => String(link[3]) === id)
-                .map((link) => inputNames[link[4]])
-                .filter((name) => name !== undefined && !widgets.has(name))
-            )
-          ].sort(),
-          // One slot can feed several links.
-          outputs: [
-            ...new Set(
-              links
-                .filter((link) => String(link[1]) === id)
-                .map((link) => outputNames[link[2]])
-                .filter((name) => name !== undefined)
-            )
-          ].sort()
-        }
+  // The graph the recording promises through the given turn: the seed, then
+  // every add, delete, clear and connect in order. An input holds one link,
+  // so a later connect to it replaces the earlier one.
+  private expectedGraph(throughTurn?: number): {
+    nodes: Map<string, NodeBody>
+    links: Map<string, RecordedLink>
+  } {
+    const { seed } = this.conversation.workflow
+    const nodes = new Map(
+      (seed.nodes as NodeBody[]).map((node) => [String(node.id), node])
+    )
+    const links = new Map<string, RecordedLink>()
+    const connect = (link: RecordedLink) =>
+      links.set(`${link.toNode}:${link.toSlot}`, link)
+    for (const raw of seed.links) {
+      const [, fromNode, fromSlot, toNode, toSlot] = zSeedLink.parse(raw)
+      connect({
+        fromNode: String(fromNode),
+        fromSlot,
+        toNode: String(toNode),
+        toSlot
       })
-      .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
-  }
-
-  // The panel starts a new tool group whenever thinking or text interrupts the calls.
-  // ToolCallGroup.vue merges consecutive calls of the same tool into one row.
-  // One row per run of same-tool calls; the card shows ×N for a run longer than one.
-  toolRowCounts(): Array<{ label: string; times: number; rows: number }> {
-    const rows = new Map<
-      string,
-      { label: string; times: number; rows: number }
-    >()
-    for (const group of this.toolCallGroups()) {
-      const runs: Array<{ name: string; times: number }> = []
-      for (const call of group) {
-        const previous = runs.at(-1)
-        if (previous?.name === call.name) previous.times += 1
-        else runs.push({ name: call.name, times: 1 })
-      }
-      for (const { name, times } of runs) {
-        const key = `${name}/${times}`
-        const row = rows.get(key) ?? {
-          label: toolRowLabel(name),
-          times,
-          rows: 0
-        }
-        row.rows += 1
-        rows.set(key, row)
+    }
+    for (const entry of this.entries(throughTurn)) {
+      if (entry.kind !== 'graph_ops') continue
+      for (const op of entry.ops) {
+        if (op.op === 'add_node')
+          nodes.set(String(op.node.id), op.node as NodeBody)
+        else if (op.op === 'delete_node') {
+          const id = String(op.node_id)
+          nodes.delete(id)
+          for (const [key, link] of links)
+            if (link.fromNode === id || link.toNode === id) links.delete(key)
+        } else if (op.op === 'clear') {
+          nodes.clear()
+          links.clear()
+        } else if (op.op === 'connect' && op.grow == null)
+          connect({
+            fromNode: String(op.from_node),
+            fromSlot: op.from_slot,
+            toNode: String(op.to_node),
+            toSlot: op.to_slot
+          })
       }
     }
-    return [...rows.values()]
+    return { nodes, links }
   }
 
-  toolCallGroups(): RecordedToolCall[][] {
-    const groups: RecordedToolCall[][] = []
-    for (const turn of this.conversation.turns) {
-      let current: RecordedToolCall[] = []
-      for (const entry of turn.response) {
-        if (entry.kind !== 'event') continue
-        const { type, data } = entry.event
-        if (type === 'agent_tool_call') {
-          if (data.status !== 'running')
-            current.push({
-              name: String(data.tool_name),
-              ok: data.status === 'success'
-            })
-          continue
-        }
-        if (
-          (type === 'agent_thinking' || type === 'agent_message_delta') &&
-          current.length > 0
-        ) {
-          groups.push(current)
-          current = []
-        }
-      }
-      if (current.length > 0) groups.push(current)
+  // One row per recorded tool call; failed when the recording reported an
+  // error status for it. The panel's own grouping and coalescing rules are the
+  // thing under test, so they are not reproduced here.
+  recordedToolCalls(throughTurn?: number): RecordedToolCall[] {
+    const calls = new Map<string, RecordedToolCall>()
+    for (const entry of this.entries(throughTurn)) {
+      if (entry.kind !== 'event' || entry.event.type !== 'agent_tool_call')
+        continue
+      const { tool_call_id: callId, status } = entry.event.data
+      const call = calls.get(callId) ?? { callId, failed: false }
+      if (status === 'error') call.failed = true
+      calls.set(callId, call)
     }
-    return groups
+    return [...calls.values()]
   }
 
   // Last write wins per widget; the rendered control shows only the final value.
-  recordedWidgetValues(): RecordedWidgetValue[] {
+  private recordedWidgetValues(throughTurn?: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
-    for (const entry of this.entries()) {
+    for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
       for (const op of entry.ops) {
         if (op.op !== 'set_widget') continue
@@ -344,53 +333,100 @@ class AgentConversationHarness {
     return [...latest.values()]
   }
 
-  addedNodeIds(): string[] {
-    const graph = this.host.graph()
-    const seedIds = new Set(
-      this.conversation.workflow.seed.nodes.map((node) => String(node.id))
-    )
-    return this.nodeBodies()
-      .map((body) => String(body.id))
-      .filter((id) => !seedIds.has(id) && id in graph.nodes)
-  }
-
-  removedNodeIds(): string[] {
-    const graph = this.host.graph()
-    return this.nodeBodies()
-      .map((body) => String(body.id))
-      .filter((id) => !(id in graph.nodes))
-  }
-
-  hostGraph(): GraphSnapshot {
-    return this.host.graph()
-  }
-
-  async graphSnapshot(): Promise<GraphNodeSnapshot[]> {
-    const docNodeIds = new Set(Object.keys(this.host.graph().nodes))
-    const snapshot = await this.page
-      .locator('[data-node-id]')
-      .evaluateAll((nodes) =>
-        nodes.map((node) => {
-          // Widget sockets are dot-only and carry no name.
-          const connected = (selector: string) =>
-            Array.from(
-              node.querySelectorAll(
-                `${selector}.lg-slot--connected:not(.lg-slot--dot-only)`
-              )
-            )
-              .map((slot) => slot.textContent?.trim() ?? '')
-              .filter((name) => name !== '')
-              .sort()
-          return {
-            id: node.getAttribute('data-node-id') ?? '',
-            inputs: connected('.lg-slot--input'),
-            outputs: connected('.lg-slot--output')
-          }
-        })
+  // The assistant text a turn recorded, concatenated as the panel streams it.
+  recordedAssistantText(turn: number): string {
+    return this.conversation.turns[turn].response
+      .flatMap((entry) =>
+        entry.kind === 'event' && entry.event.type === 'agent_message_delta'
+          ? [entry.event.data.delta]
+          : []
       )
-    return snapshot
-      .filter((node) => docNodeIds.has(node.id))
-      .sort((a, b) => compareNodeIds(toNodeId(a.id), toNodeId(b.id)))
+      .join('')
+  }
+
+  // A recorded title renders verbatim. An untitled node should show its
+  // display name, but the follower's full reconcile (the catch-up path) still
+  // re-titles it by type through graphMutations.ts prepareNode, so until that
+  // is settled either spelling of the same node identity passes.
+  private expectedTitle(body: NodeBody): string | RegExp {
+    if (body.title) return body.title
+    const displayName = this.displayNames.get(body.type)
+    if (displayName === undefined)
+      throw new Error(`the server registers no node type ${body.type}`)
+    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^(?:${escape(displayName)}|${escape(body.type)})$`)
+  }
+
+  private async renderedLinks(): Promise<RecordedLink[]> {
+    const links = await this.page.evaluate(() =>
+      [...window.app!.graph.links.values()].map((link) => ({
+        fromNode: String(link.origin_id),
+        fromSlot: link.origin_slot,
+        toNode: String(link.target_id),
+        toSlot: link.target_slot
+      }))
+    )
+    return links.sort(byLinkKey)
+  }
+
+  // What the canvas shows after the given turn (the end state by default),
+  // judged the way a user would: which nodes are there and what they are
+  // called, what their widgets say, and which wires join them.
+  async expectCanvasReplayed(throughTurn?: number): Promise<void> {
+    const { nodes, links } = this.expectedGraph(throughTurn)
+    const bodies = this.nodeBodies(throughTurn)
+    for (const body of bodies)
+      if (!nodes.has(String(body.id)))
+        await expect(this.vueNodes.getNodeLocator(String(body.id))).toHaveCount(
+          0
+        )
+    for (const [id, body] of nodes) {
+      const node = this.vueNodes.getNodeLocator(id)
+      await expect(node).toBeVisible()
+      await expect(node.getByTestId('node-title')).toHaveText(
+        this.expectedTitle(body)
+      )
+    }
+    await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.size)
+
+    for (const { nodeId, widget, value } of this.recordedWidgetValues(
+      throughTurn
+    )) {
+      const field = this.vueNodes
+        .getNodeLocator(nodeId)
+        .getByLabel(widget, { exact: true })
+      if (typeof value === 'number') {
+        // Number widgets format their input (0.5 renders as 0.50), so compare the number.
+        await expect
+          .poll(async () =>
+            Number(await field.locator('input').first().inputValue())
+          )
+          .toBe(value)
+        continue
+      }
+      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
+      if (tag === 'button') await expect(field).toContainText(value)
+      else await expect(field).toHaveValue(value)
+    }
+
+    await expect
+      .poll(() => this.renderedLinks())
+      .toEqual([...links.values()].sort(byLinkKey))
+    // A widget-backed input renders no slot row on an uncollapsed node
+    // (NodeSlots.vue); the wire above already covers that end.
+    for (const link of links.values()) {
+      await expect(
+        this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
+      ).toHaveClass(/lg-slot--connected/)
+      const widgetBacked =
+        bodies.find((body) => String(body.id) === link.toNode)?.inputs?.[
+          link.toSlot
+        ]?.widget != null
+      if (!widgetBacked)
+        await expect(
+          this.vueNodes.getInputSlotRow(link.toNode, link.toSlot)
+        ).toHaveClass(/lg-slot--connected/)
+    }
   }
 
   private async mockAgentApi(): Promise<void> {
@@ -401,13 +437,13 @@ class AgentConversationHarness {
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
       if (request.method() === 'POST') {
-        this.postedMessages.push(request.postData() ?? '')
+        this.postedTurns += 1
         return route.fulfill({
           status: 202,
           contentType: 'application/json',
           body: JSON.stringify({
             thread_id: THREAD_ID,
-            message_id: turnId(this.postedMessages.length - 1),
+            message_id: turnId(this.postedTurns - 1),
             workflow_id: this.conversation.workflow.id
           })
         })
@@ -416,6 +452,16 @@ class AgentConversationHarness {
       return route.fulfill(jsonRoute(history))
     })
     await page.route('**/api/agent/threads/*/messages/*/cancel', (route) => {
+      const target = /\/threads\/([^/]+)\/messages\/([^/]+)\/cancel/.exec(
+        route.request().url()
+      )
+      const release =
+        target === null || target[1] !== THREAD_ID
+          ? undefined
+          : this.cancelWaiters.get(target[2])
+      // A real server knows nothing about any other message.
+      if (release === undefined) return route.fulfill({ status: 404 })
+      release()
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
       return route.fulfill(jsonRoute(cancelled))
     })
@@ -442,47 +488,22 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | DocFrame): void {
+  private send(frame: AgentWsEvent | HostFrame): void {
+    // Every host frame must satisfy production's own parser, so a host that
+    // stopped emitting a required field fails here, not silently on the client.
+    if (
+      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
+      parseServerDocFrame(frame) === null
+    )
+      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
     if (!this.socket) throw new Error('the app has not opened /ws yet')
     this.socket.send(JSON.stringify(frame))
-  }
-
-  outboundOps(): { op?: unknown }[] {
-    return this.clientFrames
-      .filter((frame) => frame.type === 'doc_ops')
-      .flatMap((frame) => {
-        const ops = (frame.data as { ops?: unknown } | undefined)?.ops
-        return Array.isArray(ops) ? (ops as { op?: unknown }[]) : []
-      })
   }
 
   private onClientFrame(raw: string | Buffer): void {
     const frame: unknown = JSON.parse(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
-    this.clientFrames.push({ type, data })
-    if (type === 'doc_ops' && typeof data === 'object' && data !== null) {
-      // The client keeps one op batch in flight until the host acks it.
-      const { workflow_id, ops } = data as {
-        workflow_id?: unknown
-        ops?: unknown
-      }
-      if (workflow_id === this.conversation.workflow.id && Array.isArray(ops)) {
-        // The applier validates each payload; the wire frame only guarantees an array.
-        const applied = this.host.applyClient(ops as Op[])
-        this.send({
-          type: 'doc_ops_result',
-          data: {
-            v: DOC_PROTOCOL_VERSION,
-            workflow_id,
-            ok: true,
-            applied,
-            skipped: []
-          }
-        })
-      }
-      return
-    }
     if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
       return
     const { workflow_id, state_vector_b64 } = data as {
@@ -499,24 +520,12 @@ class AgentConversationHarness {
     this.resolveSubscribed?.()
   }
 
-  private async waitForSubscribe(): Promise<void> {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () =>
-          reject(
-            new Error(
-              'the follower never subscribed to the conversation workflow; graph_ops need an agent_active_tab (or a bound tab) first'
-            )
-          ),
-        SUBSCRIBE_TIMEOUT
-      )
-    })
-    try {
-      await Promise.race([this.subscribed, timeout])
-    } finally {
-      clearTimeout(timer)
-    }
+  private waitForSubscribe(): Promise<void> {
+    return withTimeout(
+      this.subscribed,
+      SUBSCRIBE_TIMEOUT,
+      'the follower never subscribed to the conversation workflow; graph_ops need an agent_active_tab (or a bound tab) first'
+    )
   }
 }
 

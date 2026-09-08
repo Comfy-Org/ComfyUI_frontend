@@ -5,11 +5,10 @@ import { basename } from 'node:path'
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type {
-  zAgentConversationRequest,
-  zRecordedWsEvent
-} from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { zAgentConversationRequest } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
+  OP_ENVELOPE_KEYS,
+  mintedIds,
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
@@ -71,15 +70,20 @@ export const zRowsDump = z.object({
   )
 })
 
-// The socket carries frames without a data object; the replay union does not.
-// The exporter's candidate set: data.ops when it is a list, else data.op.
+// The candidate set: data.ops when it is a list, else data.op.
 const zOpsCarrier = z.object({
   data: z
     .object({ ops: z.array(z.unknown()).optional().catch(undefined) })
     .passthrough()
 })
 
-export type RecordedFrame = z.infer<typeof zRecordedWsEvent>
+// Every socket frame the recorder saw, agent event or not; zAgentConversation
+// narrows the kept ones to the production event union.
+export interface RecordedFrame {
+  type: string
+  data: Record<string, unknown>
+  at_ms?: number
+}
 type GraphOps = Array<Record<string, unknown>>
 
 // What the assembler hands to zAgentConversation, which narrows the op payloads.
@@ -290,7 +294,7 @@ function activeWorkflowId(
   return workflowId.data
 }
 
-// Every op the exporter will read out of this result, shape-checked once.
+// Every op the assembler will read out of this result, shape-checked once.
 function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   const carrier = zOpsCarrier.safeParse(row.result ?? {})
   if (!carrier.success) return []
@@ -305,7 +309,7 @@ function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
   )
   if (offFrozen.size > 0)
     refuse(
-      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the exporter frozen set`
+      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the frozen op set`
     )
   return ops.data
 }
@@ -327,7 +331,12 @@ function appliedOps(
     refuse(
       `parent row ${row.id} applied op ids ${missing.join(', ')} are not echoed in its result`
     )
-  const ops = applied.map((opId) => byId.get(opId)!)
+  // The envelope is the wire's, not the operation's; the replay mints its own.
+  const ops = applied.map((opId) => {
+    const op = { ...byId.get(opId)! }
+    for (const key of OP_ENVELOPE_KEYS) delete op[key]
+    return op
+  })
   // A node id of 0 is a real id, so only a missing one refuses.
   if (
     ops.some((op) => op.op === 'delete_node' && (op.node_id ?? null) === null)
@@ -373,8 +382,7 @@ function buildResponse(
         ? undefined
         : frame.at_ms - firstAt
     const data = { ...frame.data }
-    delete data.thread_id
-    delete data.message_id
+    for (const key of Object.keys(mintedIds)) delete data[key]
 
     if (frame.type === 'agent_tool_call') {
       const { status, tool_call_id: toolCallId } = frame.data
@@ -396,26 +404,41 @@ function buildResponse(
   return { response, cancelAfter }
 }
 
-// The frames and the audit rows must describe the same turn's tool calls.
+const repeated = (values: string[]): string[] => [
+  ...new Set(values.filter((value, index) => values.indexOf(value) !== index))
+]
+
+// The frames and the audit rows must describe the same turn's tool calls, one
+// terminal frame and one parent row each. Set equality alone hides multiplicity:
+// a second terminal frame replays the call's ops again, and a second parent row
+// is silently dropped from the replay while still counting toward the draft.
 function checkTurnAgreement(
   kept: RecordedFrame[],
   rows: ParentRow[],
   label: string
 ): void {
-  const frameCalls = new Set(
-    kept
-      .filter(
-        (frame) =>
-          frame.type === 'agent_tool_call' && frame.data.status !== 'running'
-      )
-      .flatMap(
-        (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
-      )
-  )
-  const rowCalls = new Set(rows.map((row) => row.tool_call_id))
-  if (!sameSet(frameCalls, rowCalls))
+  const frameCalls = kept
+    .filter(
+      (frame) =>
+        frame.type === 'agent_tool_call' && frame.data.status !== 'running'
+    )
+    .flatMap(
+      (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
+    )
+  const repeatedFrames = repeated(frameCalls)
+  if (repeatedFrames.length > 0)
     refuse(
-      `${label}: frames ${list(frameCalls)} and audit parent rows ${list(rowCalls)} disagree; the rows are not this turn`
+      `${label}: tool calls ${list(repeatedFrames)} carry more than one terminal frame; the replay would apply their ops once per frame`
+    )
+  const rowCalls = rows.map((row) => row.tool_call_id)
+  const repeatedRows = repeated(rowCalls)
+  if (repeatedRows.length > 0)
+    refuse(
+      `${label}: audit parent rows repeat tool calls ${list(repeatedRows)}; only one operation list per call can be the turn's`
+    )
+  if (!sameSet(new Set(frameCalls), new Set(rowCalls)))
+    refuse(
+      `${label}: frames ${list(new Set(frameCalls))} and audit parent rows ${list(new Set(rowCalls))} disagree; the rows are not this turn`
     )
 }
 
@@ -429,22 +452,34 @@ function checkDraft(
   if (draft === null)
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
   const draftIds = new Set(draft.nodes.map((node) => node.id))
-  const nodeIds = (kind: string): Set<string> =>
-    new Set(
-      appliedOps
-        .filter((op) => op.op === kind && (op.node_id ?? null) !== null)
-        .map((op) => String(op.node_id))
-    )
 
-  const deleted = nodeIds('delete_node')
-  const added = nodeIds('add_node')
-  const expected = [...seedIds].filter((id) => !deleted.has(id))
-  const missing = expected.filter((id) => !draftIds.has(id))
+  // Replay the ops in order over the seed rather than collecting membership:
+  // a delete_node followed by an add_node of the same id leaves the node in
+  // place, which unordered sets read as a node the delete failed to remove.
+  const expected = new Set(seedIds)
+  const touched = new Set<string>()
+  for (const op of appliedOps) {
+    if ((op.node_id ?? null) === null) continue
+    const id = String(op.node_id)
+    if (op.op === 'delete_node') {
+      expected.delete(id)
+      touched.add(id)
+    } else if (op.op === 'add_node') {
+      expected.add(id)
+      touched.add(id)
+    }
+  }
+
+  const missing = [...expected].filter((id) => !draftIds.has(id))
   if (missing.length > 0)
     refuse(
-      `draft for ${workflowId} lacks seed node ids ${list(missing)} that no applied delete_node removed`
+      `draft for ${workflowId} lacks node ids ${list(missing)} that the applied ops leave in place`
     )
-  const undeleted = [...deleted].filter((id) => draftIds.has(id))
+  // Still present although the ops ended by removing it: the ops did not reach
+  // the document. A node the ops never mention is merely unexplained.
+  const undeleted = [...draftIds].filter(
+    (id) => touched.has(id) && !expected.has(id)
+  )
   if (undeleted.length > 0)
     refuse(
       `draft for ${workflowId} still holds node ids ${list(undeleted)} that applied delete_node ops removed`
@@ -452,11 +487,10 @@ function checkDraft(
 
   return {
     draft_nodes: draftIds.size,
-    added_nodes: added.size,
-    deleted_nodes: deleted.size,
-    unexplained_draft_nodes: [...draftIds].filter(
-      (id) => !expected.includes(id) && !added.has(id)
-    ).length
+    added_nodes: [...expected].filter((id) => !seedIds.has(id)).length,
+    deleted_nodes: [...seedIds].filter((id) => !expected.has(id)).length,
+    unexplained_draft_nodes: [...draftIds].filter((id) => !expected.has(id))
+      .length
   }
 }
 
@@ -499,28 +533,32 @@ function buildConversation(options: {
       : `seeded by throwaway turn ${options.seedMessageId}`
   const note = `${origin}; NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (${seeded}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
-  return zAgentConversation.parse({
-    schema_version: 'agent-conversation.v2',
-    source: {
-      repo: 'Comfy-Org/ComfyUI_frontend',
-      suite: 'agent',
-      case_id: raw.case_id,
-      response_side: 'recorded',
-      note,
-      capture: {
-        backend: 'Comfy-Org/cloud',
-        thread_id: threadId,
-        exported_at: provenance.exportedAt
-      }
+  return parseOrRefuse(
+    zAgentConversation,
+    {
+      schema_version: 'agent-conversation.v2',
+      source: {
+        repo: 'Comfy-Org/ComfyUI_frontend',
+        suite: 'agent',
+        case_id: raw.case_id,
+        response_side: 'recorded',
+        note,
+        capture: {
+          backend: 'Comfy-Org/cloud',
+          thread_id: threadId,
+          exported_at: provenance.exportedAt
+        }
+      },
+      workflow: {
+        id: workflowId,
+        name: workflow.name,
+        catalog: workflow.catalog,
+        seed: workflow.seed
+      },
+      turns
     },
-    workflow: {
-      id: workflowId,
-      name: workflow.name,
-      catalog: workflow.catalog,
-      seed: workflow.seed
-    },
-    turns
-  })
+    'assembled conversation'
+  )
 }
 
 interface TurnReceipt {

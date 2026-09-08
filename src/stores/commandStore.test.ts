@@ -46,7 +46,7 @@ describe('commandStore', () => {
       expect(warnSpy).toHaveBeenCalledWith('Command dup already registered')
       warnSpy.mockRestore()
 
-      await store.getCommand('dup')?.function()
+      await store.getCommand('dup').function()
       expect(replacementFn).toHaveBeenCalled()
       expect(originalFn).not.toHaveBeenCalled()
     })
@@ -59,7 +59,7 @@ describe('commandStore', () => {
       store.registerCommand({ id: 'get.test', function: fn, label: 'Test' })
       const cmd = store.getCommand('get.test')
       expect(cmd).toBeDefined()
-      expect(cmd?.label).toBe('Test')
+      expect(cmd.label).toBe('Test')
     })
 
     it('returns undefined for unregistered command', () => {
@@ -126,8 +126,8 @@ describe('commandStore', () => {
       })
       expect(store.isRegistered('ext.cmd1')).toBe(true)
       expect(store.isRegistered('ext.cmd2')).toBe(true)
-      expect(store.getCommand('ext.cmd1')?.source).toBe('test-ext')
-      expect(store.getCommand('ext.cmd2')?.source).toBe('test-ext')
+      expect(store.getCommand('ext.cmd1').source).toBe('test-ext')
+      expect(store.getCommand('ext.cmd2').source).toBe('test-ext')
     })
 
     it('skips extensions without commands', () => {
@@ -145,7 +145,7 @@ describe('commandStore', () => {
         function: vi.fn(),
         label: () => 'Dynamic'
       })
-      expect(store.getCommand('label.fn')?.label).toBe('Dynamic')
+      expect(store.getCommand('label.fn').label).toBe('Dynamic')
     })
 
     it('resolves tooltip as function', () => {
@@ -155,7 +155,7 @@ describe('commandStore', () => {
         function: vi.fn(),
         tooltip: () => 'Dynamic tip'
       })
-      expect(store.getCommand('tip.fn')?.tooltip).toBe('Dynamic tip')
+      expect(store.getCommand('tip.fn').tooltip).toBe('Dynamic tip')
     })
 
     it('uses explicit menubarLabel over label', () => {
@@ -166,7 +166,7 @@ describe('commandStore', () => {
         label: 'Label',
         menubarLabel: 'Menu Label'
       })
-      expect(store.getCommand('mbl.explicit')?.menubarLabel).toBe('Menu Label')
+      expect(store.getCommand('mbl.explicit').menubarLabel).toBe('Menu Label')
     })
 
     it('falls back menubarLabel to label', () => {
@@ -176,7 +176,7 @@ describe('commandStore', () => {
         function: vi.fn(),
         label: 'My Label'
       })
-      expect(store.getCommand('mbl.default')?.menubarLabel).toBe('My Label')
+      expect(store.getCommand('mbl.default').menubarLabel).toBe('My Label')
     })
   })
 

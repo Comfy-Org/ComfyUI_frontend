@@ -22,7 +22,9 @@ const hoisted = vi.hoisted(() => ({
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({ nodeDefsByName: hoisted.nodeDefsByName })
+  useNodeDefStore: () => ({
+    fromLGraphNode: (node: FakeNode) => hoisted.nodeDefsByName[node.type]
+  })
 }))
 
 // Mirrors ComfyApp: reading `rootGraph` before init logs an error, so

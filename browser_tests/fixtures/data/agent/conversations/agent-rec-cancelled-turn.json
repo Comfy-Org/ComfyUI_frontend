@@ -289,12 +289,8 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "rec-local-user",
-              "op_id": "634330f1b8cd4e689c353be87bf23296",
-              "stamp": [2, "rec-local-user"],
               "node_id": 729482957923442,
-              "class_type": "CLIPTextEncode",
-              "base_version": 2
+              "class_type": "CLIPTextEncode"
             }
           ],
           "at_ms": 5927

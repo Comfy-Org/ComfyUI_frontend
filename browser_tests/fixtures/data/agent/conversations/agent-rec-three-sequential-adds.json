@@ -259,12 +259,8 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "cf6a6fdb84ee4f7dbec557f999d2fa8f",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 2478057798252548,
-              "class_type": "PrimitiveStringMultiline",
-              "base_version": 2
+              "class_type": "PrimitiveStringMultiline"
             }
           ],
           "at_ms": 2686
@@ -307,12 +303,8 @@
                 "properties": {},
                 "widgets_values": [512, 512, 1]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "48a4c2f2ea8647d1be5b0817985bda87",
-              "stamp": [3, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 2772376668635982,
-              "class_type": "EmptyLatentImage",
-              "base_version": 3
+              "class_type": "EmptyLatentImage"
             }
           ],
           "at_ms": 4441
@@ -361,12 +353,8 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "da3e136d6b224cc8838a0d9aa569ede3",
-              "stamp": [4, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 2514973844700532,
-              "class_type": "CLIPTextEncode",
-              "base_version": 4
+              "class_type": "CLIPTextEncode"
             }
           ],
           "at_ms": 7816

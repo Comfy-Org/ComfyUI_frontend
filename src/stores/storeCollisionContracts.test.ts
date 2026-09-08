@@ -21,7 +21,7 @@ import { useWidgetValueStore } from './widgetValueStore'
 
 /**
  * Pins the store collision contract recorded in docs/exceptions-log.md
- * (EX-002) and docs/adr/0016-entity-registration-collision-and-recovery-boundaries.md:
+ * (EX-002) and docs/adr/ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md:
  * the three identity-keyed stores (nodeDataStore, linkStore, rerouteStore)
  * reject a registration at an already-occupied identity key rather than
  * overwriting it, so the caller can re-mint a new id. The structural-keyed

@@ -151,7 +151,7 @@ export function usePreemptableQueue() {
     const task = makeTask(PREEMPT_KIND, runner)
     controller.abort()
     controller = new AbortController()
-    const active = queue[0]
+    const active = queue.at(0)
     const existing = queue.splice(0, queue.length, task)
     if (active) {
       await active.promise

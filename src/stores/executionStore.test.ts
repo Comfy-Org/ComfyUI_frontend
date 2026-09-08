@@ -8,9 +8,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
@@ -49,13 +47,9 @@ const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock('@/composables/useAppMode', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    useAppMode: () => mockAppModeState
-  }
-})
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => mockAppModeState
+}))
 
 beforeEach(() => {
   mockAppModeState.mode.value = 'graph'
@@ -64,33 +58,23 @@ beforeEach(() => {
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
-// Mock the workflowStore
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ComfyWorkflow,
-    useWorkflowStore: vi.fn(() => ({
-      nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
-      executionIdToCurrentId: mockExecutionIdToCurrentId,
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      },
-      get openWorkflows() {
-        return mockOpenWorkflows.value
-      },
-      isOpen: (workflow: { path?: string }) =>
-        mockOpenWorkflows.value.some((w) => w.path === workflow.path)
-    }))
-  }
-})
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({
+    nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
+    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+    executionIdToCurrentId: mockExecutionIdToCurrentId,
+    get activeWorkflow() {
+      return mockActiveWorkflow.value
+    },
+    get openWorkflows() {
+      return mockOpenWorkflows.value
+    },
+    isOpen: (workflow: { path?: string }) =>
+      mockOpenWorkflows.value.some((w) => w.path === workflow.path)
+  }))
+}))
 
-vi.mock('@/platform/distribution/types', async () => ({
-  ...(await vi.importActual<typeof DistributionTypes>(
-    '@/platform/distribution/types'
-  )),
+vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
 }))
 
@@ -128,6 +112,12 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn((event: string) => {
       apiEventHandlers.delete(event)
     }),
+    dispatchCustomEvent: vi.fn((event: string, detail?: unknown) => {
+      const handler = apiEventHandlers.get(event)
+      if (!handler) return false
+      handler(new CustomEvent(event, { detail }))
+      return true
+    }),
     clientId: 'test-client',
     apiURL: vi.fn((path: string) => `/api${path}`)
   }
@@ -146,16 +136,20 @@ vi.mock('@/stores/jobPreviewStore', () => ({
 }))
 
 // Mock the app import with proper implementation
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      getNodeById: vi.fn(),
-      nodes: [] // Add nodes array for workflowStore iteration
-    },
-    revokePreviews: vi.fn(),
-    nodePreviewImages: {}
+vi.mock('@/scripts/app', () => {
+  const rootGraph = {
+    getNodeById: vi.fn(),
+    nodes: [] // Add nodes array for workflowStore iteration
   }
-}))
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph,
+      revokePreviews: vi.fn(),
+      nodePreviewImages: {}
+    }
+  }
+})
 
 beforeEach(() => {
   mockActiveWorkflow.value = null
@@ -224,6 +218,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
+    })
+
+    it('should handle IDs before the root graph is initialized', () => {
+      expect(executionIdToNodeLocatorId(undefined, '123')).toBe('123')
+      expect(executionIdToNodeLocatorId(undefined, '123:456')).toBeUndefined()
     })
 
     it('should return undefined when conversion fails', () => {
@@ -603,6 +602,7 @@ describe('useExecutionStore - workflowStatus', () => {
   }
 
   function callStoreJob(jobId: string, workflow: Workflow) {
+    store.registerJobWorkflowIdMapping(jobId, workflow.path)
     store.storeJob({
       nodes: ['1'],
       id: jobId,
@@ -1142,6 +1142,50 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
   })
 
+  it('resets the active job and flushes its buffered failure after mapping', () => {
+    fireExecutionStart('job-b')
+    fireExecutionError('job-b')
+
+    expect(store.isIdle).toBe(true)
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-b')
+  })
+
+  it('does not replay a buffered failure after execution succeeds', () => {
+    fireExecutionError('job-b')
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'job-b',
+      timestamp: 0
+    })
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+  })
+
+  it('does not replay a buffered failure after execution is interrupted', () => {
+    fireExecutionError('job-b')
+    api.dispatchCustomEvent('execution_interrupted', {
+      prompt_id: 'job-b',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'TestNode',
+      executed: []
+    })
+
+    store.registerJobWorkflowIdMapping('job-b', graphBId)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError).toBeNull()
+    expect(errorStore.totalErrorCount).toBe(0)
+  })
+
   it('clears execution-start errors only for the producing workflow', () => {
     errorStore.recordPromptError({
       type: 'visible-error',
@@ -1164,7 +1208,7 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastPromptError).toBeNull()
   })
 
-  it('does not route a known ambiguous job to the visible workflow', () => {
+  it('buffers a mapped job with an ambiguous path until storeJob', () => {
     const duplicateWorkflow = makeWorkflow('/workflows/c.json', graphBId)
     mockOpenWorkflows.value = [workflowA, workflowB, duplicateWorkflow]
     store.registerJobWorkflowIdMapping('job-ambiguous', graphBId)
@@ -1172,6 +1216,11 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-ambiguous')
 
     expect(errorStore.lastExecutionError).toBeNull()
+
+    callStoreJob('job-ambiguous', workflowB)
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {
@@ -1890,6 +1939,21 @@ describe('useExecutionStore - RAF batching', () => {
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
     })
+
+    it('accepts a snapshot that omits the previously executing node', () => {
+      const handler = getRegisteredHandler('progress_state')
+      handler(makeProgressStateEvent('1', 'running'))
+      vi.advanceTimersToNextFrame()
+
+      handler(
+        new CustomEvent('progress_state', {
+          detail: { prompt_id: 'job-1', nodes: {} }
+        })
+      )
+
+      expect(() => vi.advanceTimersToNextFrame()).not.toThrow()
+      expect(store.nodeProgressStates).toEqual({})
+    })
   })
 
   describe('pending RAF is discarded when execution completes', () => {
@@ -2192,7 +2256,7 @@ describe('useExecutionStore - RAF batching', () => {
 describe('useExecutionStore - WebSocket event handlers', () => {
   let store: ReturnType<typeof useExecutionStore>
 
-  function fire<T>(event: string, detail: T) {
+  function fire(event: string, detail: unknown) {
     const handler = apiEventHandlers.get(event)
     if (!handler) throw new Error(`${event} handler not bound`)
     handler(new CustomEvent(event, { detail }))

@@ -57,7 +57,6 @@ function roundTripGraphWithoutLiveWidgetState(graph: LGraph): LGraph {
 
 function firstWidget(graph: LGraph) {
   const node = graph.nodes[0]
-  if (!node) throw new Error('expected a node in the reloaded graph')
   const widget = node.widgets?.[0]
   if (!widget) throw new Error('expected a widget on the reloaded node')
   return widget

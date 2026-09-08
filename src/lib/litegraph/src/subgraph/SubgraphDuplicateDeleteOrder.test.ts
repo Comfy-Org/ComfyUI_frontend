@@ -97,7 +97,7 @@ function promotedId(node: SubgraphNode) {
 function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
   const producer = createTestNode(rootGraph, [], ['number'])
 
-  if (!LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE]) {
+  if (!(CONVERTIBLE_NODE_TYPE in LiteGraph.registered_node_types)) {
     class ConvertibleNode extends LGraphNodeClass {
       constructor() {
         super('Convertible')

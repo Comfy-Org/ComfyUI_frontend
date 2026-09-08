@@ -35,8 +35,10 @@ vi.mock('@/i18n', () => ({
 
 const mapTaskOutputToAssetItemMock = vi.fn()
 vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapTaskOutputToAssetItem: (taskItem: TaskItemImpl, output: ResultItemImpl) =>
-    mapTaskOutputToAssetItemMock(taskItem, output)
+  mapTaskOutputToAssetItem: (
+    taskItem: TaskItemImpl,
+    output: AugmentedResultItem
+  ) => mapTaskOutputToAssetItemMock(taskItem, output)
 }))
 
 const mediaAssetActionsMock = {
@@ -128,17 +130,10 @@ vi.mock('@/services/jobOutputCache', () => ({
   getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
 }))
 
-const appendJsonExtMock = vi.fn((value: string) =>
-  value.toLowerCase().endsWith('.json') ? value : `${value}.json`
-)
-vi.mock('@/utils/formatUtil', () => ({
-  appendJsonExt: (...args: Parameters<typeof appendJsonExtMock>) =>
-    appendJsonExtMock(...args)
-}))
-
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type MockTaskRef = Record<string, unknown>
 
@@ -497,7 +492,7 @@ describe('useJobMenu', () => {
         expectedWidgetValue
       )
       expect(widgetCallback).toHaveBeenCalledWith(expectedWidgetValue)
-      expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+      expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     }
   )
 
@@ -509,8 +504,7 @@ describe('useJobMenu', () => {
         state: 'completed',
         taskRef: {
           previewOutput: {
-            isImage: true,
-            filename: 'foo',
+            filename: 'foo.png',
             subfolder: '',
             type: 'output'
           }
@@ -555,8 +549,7 @@ describe('useJobMenu', () => {
         state: 'completed',
         taskRef: {
           previewOutput: {
-            isImage: true,
-            filename: 'foo',
+            filename: 'foo.png',
             subfolder: '',
             type: 'output'
           }
@@ -685,7 +678,6 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    expect(appendJsonExtMock).toHaveBeenCalledWith('existing.json')
     const [filename] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('existing.json')
   })

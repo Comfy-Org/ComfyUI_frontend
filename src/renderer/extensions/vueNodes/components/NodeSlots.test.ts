@@ -125,7 +125,7 @@ function createTrackingStub(
     name: componentName,
     props: STUB_SLOT_PROPS,
     setup(props) {
-      const key = props.slotData?.name ?? ''
+      const key = props.slotData.name ?? ''
       mountCounts.set(key, (mountCounts.get(key) ?? 0) + 1)
     },
     template: `
@@ -475,7 +475,7 @@ describe('NodeSlots.vue', () => {
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
     const graph = subgraphNode.rootGraph
     graph.add(subgraphNode)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
@@ -516,7 +516,7 @@ describe('NodeSlots.vue', () => {
     const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 65 })
     const graph = outerSubgraphNode.rootGraph
     graph.add(outerSubgraphNode)
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)

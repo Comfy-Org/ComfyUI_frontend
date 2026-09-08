@@ -161,7 +161,7 @@ async function mountGraphCanvas() {
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
-  if (app.canvas) app.canvas.graph = null
+  app.canvas.graph = null
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
   useSettingStore().isReady = true
@@ -257,7 +257,6 @@ describe('GraphCanvas execution progress updates', () => {
     graph._nodes.push(...nodes)
 
     const canvas = app.canvas
-    if (!canvas) throw new Error('GraphCanvas did not initialize the canvas')
     canvas.graph = graph
     useCanvasStore().canvas = canvas
 
@@ -383,7 +382,6 @@ describe('GraphCanvas execution progress updates', () => {
     replacementGraph._nodes.push(replacementNode)
 
     const canvas = app.canvas
-    if (!canvas) throw new Error('GraphCanvas did not initialize the canvas')
     canvas.graph = replacementGraph
     useCanvasStore().currentGraph = replacementGraph
     await nextTick()
