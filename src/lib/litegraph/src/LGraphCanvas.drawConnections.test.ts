@@ -10,7 +10,11 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import { getLinkBadgeFrameState } from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  BADGE_GAP,
+  queryLinkBadgeAtPoint
+} from '@/lib/litegraph/src/canvas/linkBadges'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
@@ -649,13 +653,24 @@ describe('drawConnections hidden links', () => {
     return link
   }
 
+  function outputBadgePoint(link: LLink): Point {
+    const source = graph.getNodeById(link.origin_id)
+    if (!source) throw new Error('Missing hidden link source node')
+    const [x, y] = source.getOutputPos(link.origin_slot)
+    return [x + BADGE_GAP + 4, y]
+  }
+
   it('draws two endpoint badges instead of a curve', () => {
     const link = createHiddenLink()
 
-    canvas.drawConnections(createMockCtx())
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
 
     expect(canvas.renderedPaths.has(link)).toBe(false)
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
+    expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
   it('keeps offscreen badge rows for stable stacking but skips their paint', () => {
@@ -669,19 +684,21 @@ describe('drawConnections hidden links', () => {
     const ctx = createMockCtx()
     canvas.drawConnections(ctx)
 
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
     expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
   it('reveals on badge hover and clears the reveal on canvas leave', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
 
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
-        clientX: badge.x + badge.width / 2,
-        clientY: badge.y + badge.height / 2,
+        clientX: badgeX,
+        clientY: badgeY,
         isPrimary: false
       })
     )
@@ -697,11 +714,11 @@ describe('drawConnections hidden links', () => {
     vi.stubGlobal('Path2D', StubPath2D)
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
-        clientX: badge.x + badge.width / 2,
-        clientY: badge.y + badge.height / 2,
+        clientX: badgeX,
+        clientY: badgeY,
         isPrimary: false
       })
     )
@@ -725,15 +742,15 @@ describe('drawConnections hidden links', () => {
   it('does not reveal an occluded badge', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
     const source = graph.getNodeById(link.origin_id)
     if (!source) throw new Error('Missing hidden link source node')
     vi.spyOn(graph, 'getNodeOnPos').mockReturnValue(source)
 
     canvas.processMouseMove(
       new PointerEvent('pointermove', {
-        clientX: badge.x + badge.width / 2,
-        clientY: badge.y + badge.height / 2,
+        clientX: badgeX,
+        clientY: badgeY,
         isPrimary: false
       })
     )
@@ -775,11 +792,11 @@ describe('drawConnections hidden links', () => {
   it('opens rename from a badge double-click', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
     const event = new PointerEvent('pointerdown', {
       button: 0,
-      clientX: badge.x + badge.width / 2,
-      clientY: badge.y + badge.height / 2,
+      clientX: badgeX,
+      clientY: badgeY,
       isPrimary: false
     })
     const prompt = vi
@@ -803,13 +820,13 @@ describe('drawConnections hidden links', () => {
   })
 
   it('pans when dragging from a badge', () => {
-    createHiddenLink()
+    const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
-    const badge = getLinkBadgeFrameState(canvas).hitAreas[0]
+    const [badgeX, badgeY] = outputBadgePoint(link)
     const event = new PointerEvent('pointerdown', {
       button: 0,
-      clientX: badge.x + badge.width / 2,
-      clientY: badge.y + badge.height / 2,
+      clientX: badgeX,
+      clientY: badgeY,
       isPrimary: false
     })
 
@@ -821,16 +838,38 @@ describe('drawConnections hidden links', () => {
     expect(canvas.dragging_canvas).toBe(false)
   })
 
+  it('hides a revealed link when the same graph instance is reset', () => {
+    const link = createHiddenLink()
+    const scope = graphScopeOf(graph)
+    vi.stubGlobal('Path2D', StubPath2D)
+    setRevealedLinks(scope.rootGraphId, [link.id], {})
+    canvas.drawConnections(createMockCtx())
+    expect(canvas.renderedPaths.has(link)).toBe(true)
+
+    canvas.setGraph(graph)
+    canvas.drawConnections(createMockCtx())
+
+    expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(false)
+    expect(canvas.renderedPaths.has(link)).toBe(false)
+    expect(useLinkPresentationStore().getPresentation(scope, link.id)).toEqual({
+      hidden: true
+    })
+  })
+
   it('clears slot-owned reveals and badge hit areas when the graph changes', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
     setRevealedLinks(graphScopeOf(graph).rootGraphId, [link.id], {})
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
 
     canvas.setGraph(new LGraph())
 
     expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(0)
+    expect(
+      queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))
+    ).toBeUndefined()
   })
 
   it('groups output badges by source slot regardless of target node order', () => {
@@ -893,19 +932,18 @@ describe('drawConnections hidden links', () => {
       presentationStore.patch(scope, link.id, { hidden: true })
     }
 
-    canvas.drawConnections(createMockCtx())
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
 
     const outputSocketX = sourceNode.getOutputPos(0)[0]
     const inputSocketX = firstImageTarget.getInputPos(0)[0]
-    const outputBadgeLinkIds = getLinkBadgeFrameState(canvas)
-      .hitAreas.filter((area) => {
-        const centerX = area.x + area.width / 2
-        return (
-          Math.abs(centerX - outputSocketX) < Math.abs(centerX - inputSocketX)
-        )
-      })
-      .sort((first, second) => first.y - second.y)
-      .map((area) => area.linkId)
+    const outputBadgeLinkIds = vi
+      .mocked(ctx.fillText)
+      .mock.calls.filter(
+        ([, x]) => Math.abs(x - outputSocketX) < Math.abs(x - inputSocketX)
+      )
+      .sort((first, second) => first[2] - second[2])
+      .map(([, x, y]) => queryLinkBadgeAtPoint(canvas, x, y))
 
     expect(outputBadgeLinkIds).toEqual([
       firstImageLink.id,
@@ -924,7 +962,9 @@ describe('drawConnections hidden links', () => {
 
     canvas.drawConnections(createMockCtx())
 
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
     expect(canvas.renderedPaths.has(link)).toBe(false)
     expect(drawReroute).not.toHaveBeenCalled()
     expect(renderLink).not.toHaveBeenCalled()
@@ -932,20 +972,23 @@ describe('drawConnections hidden links', () => {
     vi.stubGlobal('Path2D', StubPath2D)
     const revealOwner = {}
     setRevealedLinks(graphScopeOf(graph).rootGraphId, [link.id], revealOwner)
-    canvas.drawConnections(createMockCtx())
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
 
-    expect(getLinkBadgeFrameState(canvas).hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
     expect(canvas.renderedPaths.has(link)).toBe(true)
     expect(canvas.renderedPaths.has(reroute)).toBe(true)
     expect(drawReroute).toHaveBeenCalledOnce()
     expect(renderLink).toHaveBeenCalledTimes(2)
 
-    const [outputBadge, inputBadge] = getLinkBadgeFrameState(canvas).hitAreas
+    const [outputBadge, inputBadge] = vi.mocked(ctx.roundRect).mock.calls
     const outputTip = [
-      outputBadge.x + outputBadge.width,
-      outputBadge.y + outputBadge.height / 2
+      outputBadge[0] + outputBadge[2],
+      outputBadge[1] + outputBadge[3] / 2
     ]
-    const inputTip = [inputBadge.x, inputBadge.y + inputBadge.height / 2]
+    const inputTip = [inputBadge[0], inputBadge[1] + inputBadge[3] / 2]
     const firstRender = renderLink.mock.calls[0]
     const lastRender = renderLink.mock.calls.at(-1)
     expect(firstRender[1]).toEqual(outputTip)

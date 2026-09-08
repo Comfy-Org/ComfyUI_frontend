@@ -4,7 +4,10 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
-import { getLinkBadgeFrameState } from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  drawHiddenLinkBadges,
+  layoutHiddenLinkBadges
+} from '@/lib/litegraph/src/canvas/linkBadges'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -17,7 +20,7 @@ import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -66,7 +69,7 @@ describe('getCanvasContextMenuTarget', () => {
     vi.spyOn(graph, 'getGroupOnPos').mockReturnValue(group)
     canvas = createTestCanvas(
       graph,
-      createMockCanvas2DContext({
+      createMockCanvasRenderingContext2D({
         lineWidth: 3,
         isPointInStroke
       })
@@ -176,13 +179,16 @@ describe('getCanvasContextMenuTarget', () => {
   it('returns a hidden link hit on its badge', () => {
     const link = createLink(5)
     hide(link)
-    getLinkBadgeFrameState(canvas).hitAreas.push({
-      linkId: link.id,
-      x: 5,
-      y: 15,
-      width: 20,
-      height: 10
-    })
+    const layout = layoutHiddenLinkBadges(
+      canvas,
+      canvas.ctx,
+      link,
+      { hidden: true },
+      [-10, 20],
+      [200, 20],
+      '#cab8ff'
+    )
+    drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
     const target = resolve()
 
     expect(target.link).toBe(link)
@@ -235,13 +241,16 @@ describe('getCanvasContextMenuTarget', () => {
     const link = createLink(5)
     hide(link)
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    getLinkBadgeFrameState(canvas).hitAreas.push({
-      linkId: link.id,
-      x: 5,
-      y: 15,
-      width: 20,
-      height: 10
-    })
+    const layout = layoutHiddenLinkBadges(
+      canvas,
+      canvas.ctx,
+      link,
+      { hidden: true },
+      [-10, 20],
+      [200, 20],
+      '#cab8ff'
+    )
+    drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
 
     const target = resolve()
 

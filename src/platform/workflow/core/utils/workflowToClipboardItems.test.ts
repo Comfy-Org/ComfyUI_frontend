@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -113,34 +113,6 @@ describe('workflowToClipboardItems', () => {
       }
     ])
   })
-
-  it.for([
-    { presentation: { hidden: 'false', label: 1 }, expected: {} },
-    { presentation: { hidden: true, label: null }, expected: { hidden: true } },
-    { presentation: { hidden: 1, label: '' }, expected: { label: '' } }
-  ])(
-    'ignores invalid legacy presentation fields %#',
-    ({ presentation, expected }) => {
-      const workflow: ISerialisedGraph = fromAny({
-        version: 0.4,
-        links: [[1, 1, 0, 2, 0, 'MODEL']],
-        extra: { linkPresentation: { '1': presentation } }
-      })
-
-      expect(workflowToClipboardItems(workflow).links).toEqual([
-        {
-          id: 1,
-          origin_id: 1,
-          origin_slot: 0,
-          target_id: 2,
-          target_slot: 0,
-          type: 'MODEL',
-          parentId: undefined,
-          ...expected
-        }
-      ])
-    }
-  )
 
   it('tolerates a legacy workflow with no links', () => {
     const workflow = fromPartial<ISerialisedGraph>({

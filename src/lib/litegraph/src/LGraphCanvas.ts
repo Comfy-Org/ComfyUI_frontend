@@ -58,9 +58,8 @@ import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
-  clearLinkBadgeFrameState,
+  clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
-  getLinkBadgeFrameState,
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
@@ -1928,9 +1927,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
-    if (newGraph === graph) return
     if (graph) clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
-    clearLinkBadgeFrameState(getLinkBadgeFrameState(this))
+    if (newGraph === graph) return
+    clearLinkBadgeHitAreas(this)
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
@@ -2525,11 +2524,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
-      const badgeLinkId = queryLinkBadgeAtPoint(
-        getLinkBadgeFrameState(this),
-        x,
-        y
-      )
+      const badgeLinkId = queryLinkBadgeAtPoint(this, x, y)
       const badgeLink =
         badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
       if (
@@ -3333,15 +3328,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
-    const badgeFrameState = getLinkBadgeFrameState(this)
-    const hasBadgeHitAreas = badgeFrameState.hitAreas.length > 0
+    const hoveredBadge = queryLinkBadgeAtPoint(this, x, y)
     let nodeAtPoint: LGraphNode | null = null
-    if (hasBadgeHitAreas) {
+    if (hoveredBadge !== undefined) {
       nodeAtPoint = graph.getNodeOnPos(x, y, this.visible_nodes)
-      const hoveredBadge = nodeAtPoint
-        ? undefined
-        : queryLinkBadgeAtPoint(badgeFrameState, x, y)
-      const revealed = hoveredBadge === undefined ? [] : [hoveredBadge]
+      const revealed = nodeAtPoint ? [] : [hoveredBadge]
       if (setRevealedLinks(graphScopeOf(graph).rootGraphId, revealed, this)) {
         this.dirty_bgcanvas = true
       }
@@ -3383,7 +3374,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node =
       LiteGraph.vueNodesMode && !isSubgraphIOLink
         ? null
-        : hasBadgeHitAreas
+        : hoveredBadge !== undefined
           ? nodeAtPoint
           : graph.getNodeOnPos(x, y, this.visible_nodes)
 
@@ -6156,8 +6147,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     nodesGraph: LGraph | Subgraph | null = this.graph
   ): void {
     this.renderedPaths.clear()
-    const badgeFrameState = getLinkBadgeFrameState(this)
-    clearLinkBadgeFrameState(badgeFrameState)
+    clearLinkBadgeHitAreas(this)
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
     const { graph, subgraph } = this
@@ -6223,7 +6213,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       hiddenLinkLayouts.set(
         link.id,
         layoutHiddenLinkBadges(
-          badgeFrameState,
+          this,
           ctx,
           link,
           presentation,

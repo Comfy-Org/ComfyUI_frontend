@@ -7,8 +7,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 
 import {
   BADGE_GAP,
-  clearLinkBadgeFrameState,
-  createLinkBadgeFrameState,
+  clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
   layoutHiddenLinkBadges,
   linkBadgeText,
@@ -29,7 +28,7 @@ function createLink(id: number, type: LLink['type'] = 'MODEL'): LLink {
 }
 
 function drawBadgesInView(
-  state: ReturnType<typeof createLinkBadgeFrameState>,
+  host: object,
   ctx: CanvasRenderingContext2D,
   link: LLink,
   startPos: Point,
@@ -37,7 +36,7 @@ function drawBadgesInView(
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
   const layout = layoutHiddenLinkBadges(
-    state,
+    host,
     ctx,
     link,
     { hidden: true },
@@ -73,109 +72,97 @@ describe('linkBadgeText', () => {
 
 describe('link badge frame layout', () => {
   it('registers two endpoint hit areas', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     drawBadgesInView(
-      state,
+      host,
       createContext(),
       createLink(7),
       [100, 100],
       [400, 200]
     )
 
-    expect(state.hitAreas).toHaveLength(2)
-    expect(queryLinkBadgeAtPoint(state, 120, 100)).toBe(toLinkId(7))
-    expect(queryLinkBadgeAtPoint(state, 360, 200)).toBe(toLinkId(7))
-    expect(queryLinkBadgeAtPoint(state, 250, 150)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(7))
+    expect(queryLinkBadgeAtPoint(host, 360, 200)).toBe(toLinkId(7))
+    expect(queryLinkBadgeAtPoint(host, 250, 150)).toBeUndefined()
   })
 
   it('offsets an unstacked output badge from its socket by the badge gap', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     drawBadgesInView(
-      state,
+      host,
       createContext(),
       createLink(7),
       [100, 100],
       [400, 200]
     )
 
-    expect(queryLinkBadgeAtPoint(state, 100 + BADGE_GAP + 4, 100)).toBe(
+    expect(queryLinkBadgeAtPoint(host, 100 + BADGE_GAP + 4, 100)).toBe(
       toLinkId(7)
     )
   })
 
   it('clears hit areas between frames', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     drawBadgesInView(
-      state,
+      host,
       createContext(),
       createLink(7),
       [100, 100],
       [400, 200]
     )
 
-    clearLinkBadgeFrameState(state)
+    clearLinkBadgeHitAreas(host)
 
-    expect(state.hitAreas).toHaveLength(0)
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBeUndefined()
   })
 
-  it('keeps frame state isolated between canvases', () => {
-    const firstState = createLinkBadgeFrameState()
-    const secondState = createLinkBadgeFrameState()
-    drawBadgesInView(
-      firstState,
-      createContext(),
-      createLink(7),
-      [100, 100],
-      [400, 200]
-    )
+  it('keeps hit areas isolated when another canvas is cleared', () => {
+    const firstCanvas = document.createElement('canvas')
+    const secondCanvas = document.createElement('canvas')
+    const ctx = createContext()
+    drawBadgesInView(firstCanvas, ctx, createLink(7), [100, 100], [400, 200])
+    drawBadgesInView(secondCanvas, ctx, createLink(8), [100, 100], [400, 200])
 
-    expect(queryLinkBadgeAtPoint(firstState, 120, 100)).toBe(toLinkId(7))
-    expect(queryLinkBadgeAtPoint(secondState, 120, 100)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(firstCanvas, 120, 100)).toBe(toLinkId(7))
+    expect(queryLinkBadgeAtPoint(secondCanvas, 120, 100)).toBe(toLinkId(8))
+
+    clearLinkBadgeHitAreas(firstCanvas)
+
+    expect(queryLinkBadgeAtPoint(firstCanvas, 120, 100)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(secondCanvas, 120, 100)).toBe(toLinkId(8))
   })
 
   it('creates fallback badges for a typeless link', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     const ctx = createContext()
 
-    drawBadgesInView(state, ctx, createLink(7, ''), [100, 100], [400, 200])
+    drawBadgesInView(host, ctx, createLink(7, ''), [100, 100], [400, 200])
 
-    expect(state.hitAreas).toHaveLength(2)
     expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
   it('stacks overlapping endpoint badges into disjoint bands', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     const ctx = createContext()
-    drawBadgesInView(state, ctx, createLink(1, 'IMAGE'), [100, 100], [400, 200])
-    drawBadgesInView(state, ctx, createLink(2, 'IMAGE'), [100, 100], [400, 300])
-    drawBadgesInView(state, ctx, createLink(3, 'MASK'), [100, 118], [400, 400])
+    drawBadgesInView(host, ctx, createLink(1, 'IMAGE'), [100, 100], [400, 200])
+    drawBadgesInView(host, ctx, createLink(2, 'IMAGE'), [100, 100], [400, 300])
+    drawBadgesInView(host, ctx, createLink(3, 'MASK'), [100, 118], [400, 400])
 
-    const outputAreas = state.hitAreas.filter((area) => {
-      const centerX = area.x + area.width / 2
-      return Math.abs(centerX - 100) < Math.abs(centerX - 400)
-    })
-    const bands = [1, 2, 3].map((id) => {
-      const area = outputAreas.find((area) => area.linkId === toLinkId(id))
-      if (!area) throw new Error(`Missing output badge for link ${id}`)
-      return { top: area.y, bottom: area.y + area.height }
-    })
-    const overlaps = (
-      first: (typeof bands)[number],
-      second: (typeof bands)[number]
-    ) => first.top < second.bottom && first.bottom > second.top
-
-    expect(overlaps(bands[0], bands[1])).toBe(false)
-    expect(overlaps(bands[0], bands[2])).toBe(false)
-    expect(overlaps(bands[1], bands[2])).toBe(false)
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(2))
+    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(3))
+    expect(queryLinkBadgeAtPoint(host, 120, 111)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(host, 120, 133)).toBeUndefined()
   })
 
   it('culls using reversed and stacked badge extents', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     const ctx = createContext()
-    drawBadgesInView(state, ctx, createLink(1), [400, 100], [100, 100])
+    drawBadgesInView(host, ctx, createLink(1), [400, 100], [100, 100])
+    vi.mocked(ctx.fillText).mockClear()
 
     drawBadgesInView(
-      state,
+      host,
       ctx,
       createLink(2),
       [400, 100],
@@ -183,15 +170,17 @@ describe('link badge frame layout', () => {
       [414, 113, 10, 18]
     )
 
-    expect(state.hitAreas).toHaveLength(4)
+    expect(queryLinkBadgeAtPoint(host, 420, 122)).toBe(toLinkId(2))
+    expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 123)
+    expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
   it('keeps hit areas and rows for culled badges while skipping their paint', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     const ctx = createContext()
 
     drawBadgesInView(
-      state,
+      host,
       ctx,
       createLink(1),
       [100, 100],
@@ -199,14 +188,15 @@ describe('link badge frame layout', () => {
       [5000, 5000, 10, 10]
     )
 
-    expect(state.hitAreas).toHaveLength(2)
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 360, 200)).toBe(toLinkId(1))
     expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
   it('paints visible badges immediately', () => {
-    const state = createLinkBadgeFrameState()
+    const host = document.createElement('canvas')
     const ctx = createContext()
-    drawBadgesInView(state, ctx, createLink(9), [100, 100], [400, 200])
+    drawBadgesInView(host, ctx, createLink(9), [100, 100], [400, 200])
 
     expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
