@@ -770,6 +770,54 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Atención dispersa por bloques mediante comfy_kitchen: cada bloque de consulta atiende exactamente a un subconjunto seleccionado de bloques clave, lo que reduce el cálculo de atención. La ganancia relativa de velocidad aumenta con la longitud de la secuencia, ya que las secuencias cortas suelen ser más rápidas con atención densa. Fuera de la programación activa, en dense_blocks y por debajo de min_tokens, el modelo usa el backend de atención densa activo del modelo.",
+    "display_name": "Atención dispersa por bloques",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Bloques Transformer que siempre se ejecutan de forma densa; p. ej., «0, 1, 47-49»."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Densa después de este punto de la programación."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Tokens adicionales con mayor puntuación a los que atiende cada bloque de consulta, además de sus bloques seleccionados. Más cercano a denso para mayor tiempo de atención; se recomienda 256, 0 lo desactiva. Se ignora para VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Las secuencias más cortas que esto permanecen densas."
+      },
+      "model": {
+        "name": "model"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Cómo se eligen los bloques clave exactos. Sol-Attn: umbral adaptativo por cabeza/bloque. top-k (SLA): keep_percent fijo en todas partes, recomendado solo con pesos entrenados. VSA (FastVideo): mosaico de cubos y rama gruesa de FastH3-VSA; requiere pesos entrenados para ello."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Solo MiniMax-H3. exact_kv: cada consulta atiende exactamente a las filas empaquetadas de texto/audio/referencia (~3 % de coste). exact_kv_and_rows: además ejecuta de forma densa las filas de consulta de audio objetivo (mantiene intacto el audio generado)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Densa antes de este punto de la programación."
+      },
+      "verbose": {
+        "name": "verbose"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Elimina de una imagen objetos o áreas delimitadas por una máscara mediante Bria.",
     "display_name": "Borrador de Bria",
@@ -1478,96 +1526,6 @@
       "watermark": {
         "name": "marca_de_agua",
         "tooltip": "Si se debe añadir una marca de agua \"Generado por IA\" al video."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "Generar imágenes usando modelos ByteDance a través de API basado en prompt",
-    "display_name": "Imagen ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control después de generar"
-      },
-      "guidance_scale": {
-        "name": "escala_de_guía",
-        "tooltip": "Un valor más alto hace que la imagen siga más de cerca el prompt"
-      },
-      "height": {
-        "name": "alto",
-        "tooltip": "Alto personalizado para la imagen. El valor solo funciona si `tamaño_predefinido` está establecido en `Personalizado`"
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "El prompt de texto utilizado para generar la imagen"
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación"
-      },
-      "size_preset": {
-        "name": "tamaño_predefinido",
-        "tooltip": "Selecciona un tamaño recomendado. Elige Personalizado para usar el ancho y alto a continuación"
-      },
-      "watermark": {
-        "name": "marca_de_agua",
-        "tooltip": "Si añadir una marca de agua \"Generado por IA\" a la imagen"
-      },
-      "width": {
-        "name": "ancho",
-        "tooltip": "Ancho personalizado para la imagen. El valor solo funciona si `tamaño_predefinido` está establecido en `Personalizado`"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "Generar video usando prompt e imágenes de referencia.",
-    "display_name": "ByteDance Referencia de Imágenes a Video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "relación_de_aspecto",
-        "tooltip": "La relación de aspecto del video de salida."
-      },
-      "control_after_generate": {
-        "name": "control después de generar"
-      },
-      "duration": {
-        "name": "duración",
-        "tooltip": "La duración del video de salida en segundos."
-      },
-      "images": {
-        "name": "imágenes",
-        "tooltip": "De una a cuatro imágenes."
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "El prompt de texto usado para generar el video."
-      },
-      "resolution": {
-        "name": "resolución",
-        "tooltip": "La resolución del video de salida."
-      },
-      "seed": {
-        "name": "semilla",
-        "tooltip": "Semilla a usar para la generación."
-      },
-      "watermark": {
-        "name": "marca_de_agua",
-        "tooltip": "Si añadir una marca de agua \"Generado por IA\" al video."
       }
     },
     "outputs": {
@@ -2755,6 +2713,260 @@
     "inputs": {
       "values": {
         "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: se pueden añadir o eliminar opciones, y un flujo de trabajo puede retirarse. Genera una imagen a partir de un prompt de texto con Flux 2 dev. Turbo usa el LoRA elegido y una programación corta, sacrificando un poco de fidelidad para una ejecución mucho más rápida; desactívalo para la pasada dev completa sin LoRA. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud Flux 2 de texto a imagen [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Presupuesto total de píxeles. 1.0 equivale aproximadamente a 1024x1024 con una proporción cuadrada."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Ejecuta el LoRA Turbo con una programación corta, sacrificando un poco de fidelidad para una ejecución mucho más rápida. Desactivado ejecuta la pasada dev completa sin LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: se pueden añadir o eliminar opciones, y un flujo de trabajo puede retirarse. Genera una imagen a partir de un prompt de texto con Mage-Flow en una pasada completa de 30 pasos. Acepta un prompt negativo, que la variante turbo destilada no puede usar bien. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud Mage Flow de texto a imagen [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Presupuesto total de píxeles. 1.0 equivale aproximadamente a 1024x1024 con una proporción cuadrada."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Déjalo vacío para conservar el prompt negativo con el que se ajustó esta canalización."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: pueden añadirse o eliminarse opciones, y un flujo de trabajo puede retirarse. Genera una imagen a partir de un prompt con Mage-Flow destilado en 4 pasos con cfg 1. Requiere aproximadamente una séptima parte del tiempo de GPU de la pasada completa, por lo que es ideal para iterar. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud Mage Flow Turbo de texto a imagen [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Presupuesto total de píxeles. 1.0 equivale aproximadamente a 1024x1024 con una proporción cuadrada."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Déjelo vacío para mantener el prompt negativo con el que se ajustó esta canalización."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: pueden añadirse o eliminarse opciones, y un flujo de trabajo puede retirarse. Genera el movimiento entre dos fotogramas clave, con una banda sonora correspondiente, mediante MiniMax H3. Proporciónele los fotogramas inicial y final, y el modelo rellena la toma entre ellos. El último fotograma es opcional: omítalo y el movimiento se alejará del primer fotograma. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 de primer y último fotograma a vídeo [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duración en segundos. La canalización cuantiza en pasos de 17 fotogramas a 24 fps, por lo que el clip queda a unos dos tercios de segundo de esta duración."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Presupuesto de tamaño de fotograma. 720p cuesta aproximadamente el doble de segundos de GPU que 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: pueden añadirse o eliminarse opciones, y un flujo de trabajo puede retirarse. Anima una imagen estática para convertirla en un vídeo con una banda sonora correspondiente, mediante MiniMax H3. Proporciónele el fotograma final de un clip y continuará la secuencia, de modo que encadenar varios crea una toma más larga. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 de imagen a vídeo [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duración en segundos. La canalización cuantiza en pasos de 17 fotogramas a 24 fps, por lo que el clip queda a unos dos tercios de segundo de esta duración."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Presupuesto de tamaño de fotograma. 720p cuesta aproximadamente el doble de segundos de GPU que 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: pueden añadirse o eliminarse opciones, y un flujo de trabajo puede retirarse. Genera un vídeo con una banda sonora correspondiente a partir de un prompt, mediante MiniMax H3. La imagen y el audio se generan en la misma pasada, en lugar de añadirse después mediante doblaje. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud MiniMax H3 de texto a vídeo [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "Duración en segundos. El proceso cuantiza en pasos de 17 fotogramas a 24 fps, por lo que el clip queda a aproximadamente dos tercios de segundo de este valor."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Presupuesto de tamaño de fotograma. 720p cuesta aproximadamente el doble de segundos de GPU que 480p."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: pueden añadirse o eliminarse opciones, y un flujo de trabajo puede retirarse. Genera una canción completa a partir de una descripción con MiniMax Music 3. El prompt determina el estilo, la instrumentación y el ambiente; las letras se cantan en lugar de describirse, y si se dejan vacías, la pista será instrumental. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud MiniMax Music 3 Texto a audio [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "Tasa de bits de mp3. V0 es variable y ofrece la mayor calidad de las tres opciones."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "lyrics": {
+        "name": "letras",
+        "tooltip": "Palabras para cantar. Déjalo vacío para una pieza instrumental."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Duración máxima de la pista. El modelo puede terminar la canción antes."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA. El conjunto de nodos de Comfy Cloud aún está cambiando: pueden añadirse o eliminarse opciones, y un flujo de trabajo puede retirarse. Genera una imagen a partir de un prompt de texto con Z-Image Turbo en 8 pasos. Es uno de los nodos más rápidos y económicos, por lo que es ideal para iterar. Se ejecuta en una GPU de Comfy Cloud y se factura según el tiempo de ejecución a {'$'}0.001295/GPU-segundo (0.27 créditos). Se paga con créditos; no se requiere suscripción a Cloud.",
+    "display_name": "Comfy Cloud Z-Image Turbo Texto a imagen [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "Presupuesto total de píxeles. 1.0 equivale aproximadamente a 1024x1024 con una proporción cuadrada."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -6298,6 +6510,42 @@
       }
     }
   },
+  "GeminiVideoOmniV2": {
+    "description": "Genera un vídeo con audio a partir de un prompt de texto mediante los modelos Gemini Omni Flash de Google. De forma opcional, proporciona imágenes o vídeos de referencia para guiar o editar el resultado. Describe la duración deseada (3-10 s) directamente en el prompt.",
+    "display_name": "Google Gemini Omni (Vídeo)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo de vídeo Gemini utilizado para generar el vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GenerateTracks": {
     "display_name": "GenerateTracks",
     "inputs": {
@@ -6364,6 +6612,22 @@
       }
     }
   },
+  "Get3DComponents": {
+    "description": "Analiza un archivo de modelo 3D (GLB, GLTF, OBJ, STL) y lo convierte en un MESH editable para los nodos de procesamiento de mallas (decimate, remesh, UV unwrap, bake, ...). Todos los nodos/primitivas de la escena se fusionan en una sola malla con sus transformaciones aplicadas; las texturas y los factores de material proceden del primer material. Equivalente de MeshToFile3D.",
+    "display_name": "Obtener componentes 3D",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Archivo de modelo 3D de Load 3D u otro nodo 3D. FBX/USDZ no son compatibles; conviértelos primero a GLB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Extrae los parámetros IC-LoRA de los metadatos safetensors de un modelo cargado con LoRA y los proporciona para LTXVAddGuide (por ejemplo, reference_downscale_factor).",
     "display_name": "Obtener parámetros IC-LoRA",
@@ -6381,7 +6645,7 @@
     }
   },
   "GetImageSize": {
-    "description": "Devuelve el ancho y alto de la imagen, y la pasa sin cambios.",
+    "description": "Devuelve la anchura, la altura y el tamaño del lote de la imagen.",
     "display_name": "Obtener Tamaño de Imagen",
     "inputs": {
       "image": {
@@ -7081,7 +7345,7 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad al doble de precio."
+        "tooltip": "'speed' es más rápido; 'precision' produce una sincronización labial de mayor calidad a un precio más alto."
       },
       "output_language": {
         "name": "output_language",
@@ -7149,12 +7413,12 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "description": "Adjunta de 1 a 10 imágenes de referencia para el condicionamiento, una para instrucción de edición o varias para personalización basada en el sujeto.",
+    "description": "Adjunta imágenes de referencia ordenadas al condicionamiento positivo y negativo.",
     "display_name": "Imágenes de Referencia HiDream-O1",
     "inputs": {
       "images": {
         "name": "imágenes",
-        "tooltip": "Imágenes de referencia. 1 imagen = edición por instrucción; 2-10 imágenes = referencia múltiple."
+        "tooltip": "Las imágenes de referencia se usan según el orden numérico de los sockets."
       },
       "negative": {
         "name": "negativo"
@@ -7709,6 +7973,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "Convierte sRGB (Rec.709), HDR (Rec.2020 HLG) y HDR PQ (Rec.2020 PQ). Usa blanco SDR de 203 nits y una pantalla de referencia HLG de 1000 nits. La reducción aplica un mapeo de tonos al exceso de luminancia en todo el lote y comprime los colores fuera de gama. Las conversiones se calculan en float32 y devuelven el dispositivo y dtype intermedios. El alfa directo no se transforma en color.",
+    "display_name": "Convertir espacio de color de imagen",
+    "inputs": {
+      "destination": {
+        "name": "destino",
+        "tooltip": "Espacio de color de los píxeles de salida. Configure el nodo de guardado con este mismo espacio de color."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "source": {
+        "name": "origen",
+        "tooltip": "Espacio de color de los píxeles de entrada."
       }
     },
     "outputs": {
@@ -9279,40 +9565,6 @@
     },
     "outputs": {
       "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "KlingVideoExtendNode": {
-    "description": "Nodo Kling Video Extend. Extiende videos creados por otros nodos Kling. El video_id se crea utilizando otros nodos Kling.",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Prompt de texto negativo para los elementos a evitar en el video extendido"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt de texto positivo para guiar la extensión del video"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "El ID del video a extender. Soporta videos generados por texto a video, imagen a video y operaciones previas de extensión de video. No puede exceder los 3 minutos de duración total después de la extensión."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
         "tooltip": null
       }
     }
@@ -11125,70 +11377,6 @@
       }
     }
   },
-  "LtxvApiImageToVideo": {
-    "description": "Videos de calidad profesional con duración y resolución personalizables basados en la imagen inicial.",
-    "display_name": "LTXV Imagen a Video",
-    "inputs": {
-      "duration": {
-        "name": "duración"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "generar_audio",
-        "tooltip": "Cuando es verdadero, el video generado incluirá audio generado por IA que coincide con la escena."
-      },
-      "image": {
-        "name": "imagen",
-        "tooltip": "Primer fotograma a utilizar para el video."
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "resolución"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "Videos de calidad profesional con duración y resolución personalizables.",
-    "display_name": "LTXV Texto a Video",
-    "inputs": {
-      "duration": {
-        "name": "duración"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "generar_audio",
-        "tooltip": "Cuando es verdadero, el video generado incluirá audio generado por IA que coincida con la escena."
-      },
-      "model": {
-        "name": "modelo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "resolution": {
-        "name": "resolución"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaConceptsNode": {
     "description": "Contiene uno o más Conceptos de Cámara para usar con los nodos Luma Text to Video y Luma Image to Video.",
     "display_name": "Luma Concepts",
@@ -12658,6 +12846,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "Edita o combina hasta 10 imágenes de referencia guiadas por un prompt de texto mediante el modelo Muse Image de Meta.",
+    "display_name": "Edición de imagen Meta Muse",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control tras generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "Genera imágenes a partir de un prompt de texto mediante el modelo Muse Image de Meta, que razona sobre el prompt antes de renderizar.",
+    "display_name": "Meta Muse Image Texto a imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control tras generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "Ancla una imagen, un clip corto, audio o un clip con su banda sonora en cualquier fotograma de un vídeo MiniMax H3. Encadena varios nodos para anclar varios fotogramas.",
     "display_name": "Añadir guía para MiniMax H3",
@@ -12692,6 +12958,46 @@
     "outputs": {
       "0": {
         "name": "positive",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3FunControlNetApply": {
+    "description": "Aplica un MiniMax H3 Fun ControlNet a un modelo de texto a vídeo como parche de modelo.",
+    "display_name": "Aplicar MiniMax H3 Fun ControlNet",
+    "inputs": {
+      "control_video": {
+        "name": "control_video"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "1 marca las regiones que se regenerarán."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Vídeo detrás de la máscara; solo se lee cuando se proporciona una máscara."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength": {
+        "name": "intensidad"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12740,7 +13046,8 @@
     "display_name": "MiniMax H3 Referencia a Video",
     "inputs": {
       "audio_vae": {
-        "name": "audio_vae"
+        "name": "audio_vae",
+        "tooltip": "VAE de audio. Sin él, el audio de referencia solo condiciona el codificador de texto."
       },
       "clip": {
         "name": "clip"
@@ -12772,7 +13079,8 @@
         "name": "videos_ref"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "VAE de vídeo. Sin él, las imágenes/vídeos de referencia solo condicionan el codificador de texto."
       },
       "width": {
         "name": "ancho"
@@ -12881,7 +13189,7 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "description": "Genera video a partir de una imagen de primer fotograma y una imagen opcional de último fotograma usando el modelo MiniMax H3. La relación de aspecto del video sigue las imágenes proporcionadas.",
+    "description": "Genera vídeo a partir de una imagen de primer fotograma y una imagen opcional de último fotograma mediante los modelos MiniMax H3. La relación de aspecto del vídeo sigue las imágenes proporcionadas.",
     "display_name": "MiniMax H3 Primer-Último Fotograma a Video",
     "inputs": {
       "control_after_generate": {
@@ -12924,7 +13232,7 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Genera un video condicionado por imágenes de referencia, videos y audio usando el modelo MiniMax H3. Haz referencia a los elementos en el prompt según su orden: 'Imagen 1', 'Imagen 2', 'Video 1', 'Audio 1', y así sucesivamente.",
+    "description": "Genera vídeo condicionado por imágenes, vídeos y audio de referencia mediante los modelos MiniMax H3. Haz referencia a los elementos en el prompt según su orden: 'Image 1', 'Image 2', 'Video 1', 'Audio 1', etc.",
     "display_name": "MiniMax H3 Referencia a Video",
     "inputs": {
       "control_after_generate": {
@@ -12999,7 +13307,7 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "description": "Genera un video a partir de un prompt de texto usando el modelo MiniMax H3.",
+    "description": "Genera vídeo a partir de un prompt de texto mediante los modelos MiniMax H3.",
     "display_name": "MiniMax H3 Texto a Video",
     "inputs": {
       "control_after_generate": {
@@ -15758,7 +16066,11 @@
       },
       "max_output_tokens": {
         "name": "tokens_salida_max",
-        "tooltip": "Un límite superior para el número de tokens que se pueden generar para una respuesta, incluyendo tokens de salida visibles"
+        "tooltip": "Límite superior del número de tokens que se pueden generar para una respuesta, incluidos los tokens de salida visibles y los tokens de razonamiento."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Cuánto razona el modelo antes de responder. 'default' deja la elección al modelo. Los niveles compatibles difieren según el modelo: GPT-6 Astra low-max, GPT-5.6 none-max (sin minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 no tiene razonamiento. Los niveles no compatibles se rechazan antes de enviar la solicitud."
       },
       "truncation": {
         "name": "truncamiento",
@@ -15798,78 +16110,6 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Entradas de texto al modelo, utilizadas para generar una respuesta."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "Genera imágenes de forma síncrona a través del endpoint DALL·E 2 de OpenAI.",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controlar después de generar"
-      },
-      "image": {
-        "name": "imagen",
-        "tooltip": "Imagen de referencia opcional para la edición de imágenes."
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "Máscara opcional para inpainting (las áreas blancas serán reemplazadas)"
-      },
-      "n": {
-        "name": "n",
-        "tooltip": "Cuántas imágenes generar"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Texto de entrada para DALL·E"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "aún no implementado en el backend"
-      },
-      "size": {
-        "name": "tamaño",
-        "tooltip": "Tamaño de la imagen"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "Genera imágenes de forma sincrónica a través del endpoint DALL·E 3 de OpenAI.",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controlar después de generar"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Texto de entrada para DALL·E"
-      },
-      "quality": {
-        "name": "calidad",
-        "tooltip": "Calidad de la imagen"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "aún no implementado en el backend"
-      },
-      "size": {
-        "name": "tamaño",
-        "tooltip": "Tamaño de la imagen"
-      },
-      "style": {
-        "name": "estilo",
-        "tooltip": "Vívido hace que el modelo tienda a generar imágenes hiperrealistas y dramáticas. Natural hace que el modelo produzca imágenes más naturales y menos hiperrealistas."
       }
     },
     "outputs": {
@@ -16880,7 +17120,7 @@
   },
   "Preview3D": {
     "description": "Previsualiza un archivo de modelo 3D sin guardarlo en el directorio de salida de ComfyUI.",
-    "display_name": "Vista previa 3D",
+    "display_name": "Vista previa 3D y animación (OBSOLETO)",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -17772,7 +18012,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "Selecciona el estilo realistic_image y un subestilo opcional.",
+    "description": "Seleccione el estilo y subestilo logo_raster.",
     "display_name": "Recraft Style - Logo Raster",
     "inputs": {
       "substyle": {
@@ -17883,6 +18123,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "Cree un estilo reutilizable de Recraft V4 a partir de 1 a 10 imágenes de referencia. El style_id resultante funciona con todos los modelos Recraft V4 y V4.1 del mismo tipo de salida. El tamaño total de todas las imágenes está limitado a 10 MB.",
+    "display_name": "Recraft V4 Crear estilo",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Imágenes de referencia que definen el estilo. Referencias similares afinan la coincidencia; referencias variadas la amplían."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo para el que se crea el estilo. Standard y Pro comparten un grupo de estilos: los estilos ráster funcionan con todos los modelos ráster Recraft V4 y V4.1, y los estilos vectoriales (*_vector) con todos los modelos vectoriales V4 y V4.1."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Genera imágenes usando los modelos Recraft V4 o V4 Pro.",
     "display_name": "Recraft V4 Texto a Imagen",
@@ -17892,7 +18152,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo a utilizar para la generación."
+        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para una generación coherente con el estilo y siempre requieren un style_id o style_references."
       },
       "model_size": {
         "name": "tamaño"
@@ -17916,10 +18176,26 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; los resultados reales no son deterministas independientemente de la semilla."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID de un estilo de Recraft V4 que se aplicará, por ejemplo, del nodo Recraft V4 Crear estilo o de la salida style_id de una ejecución anterior. No se puede combinar con style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Qué tan fielmente se seguirá el estilo: precise lo reproduce en detalle; flexible coincide con el aspecto general. Solo se utiliza cuando se proporciona un estilo."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Imágenes de referencia para crear un estilo al momento, facturado además de la generación. El estilo creado se devuelve como style_id para reutilizarlo. No se puede combinar con style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +18209,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "El modelo a utilizar para la generación."
+        "tooltip": "El modelo que se utilizará para la generación. Los modelos recraftv4_styles están diseñados para una generación coherente con el estilo y siempre requieren un style_id o style_references."
       },
       "model_size": {
         "name": "tamaño"
@@ -17957,10 +18233,26 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; los resultados reales no son deterministas independientemente de la semilla."
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "UUID de un estilo vectorial de Recraft V4 que se aplicará, por ejemplo, del nodo Recraft V4 Crear estilo o de la salida style_id de una ejecución anterior. No se puede combinar con style_references."
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "Qué tan fielmente se seguirá el estilo: precise lo reproduce en detalle; flexible coincide con el aspecto general. Solo se utiliza cuando se proporciona un estilo."
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "Imágenes de referencia para crear un estilo vectorial al momento, facturado además de la generación. El estilo creado se devuelve como style_id para reutilizarlo. No se puede combinar con style_id."
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -18537,6 +18829,10 @@
       "multiple": {
         "name": "múltiplo",
         "tooltip": "Múltiplo más cercano del resultado para establecer la resolución seleccionada."
+      },
+      "preview": {
+        "name": "vista previa",
+        "tooltip": "Vista previa en vivo de la resolución de salida calculada."
       }
     },
     "outputs": {
@@ -21017,6 +21313,23 @@
       }
     }
   },
+  "SenseNovaSamplingOptions": {
+    "description": "Establece el desplazamiento de flujo de SenseNova.",
+    "display_name": "Opciones de muestreo de SenseNova",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SetClipHooks": {
     "display_name": "Establecer Ganchos CLIP",
     "inputs": {
@@ -23325,10 +23638,12 @@
         "name": "animate_in_place"
       },
       "bake": {
-        "name": "bake"
+        "name": "bake",
+        "tooltip": "Hornea los materiales avanzados en las texturas base para una mayor compatibilidad."
       },
       "export_orientation": {
-        "name": "export_orientation"
+        "name": "export_orientation",
+        "tooltip": "Eje frontal del modelo exportado. default conserva el +x de Tripo."
       },
       "export_vertex_colors": {
         "name": "export_vertex_colors"
@@ -23337,13 +23652,15 @@
         "name": "límite_caras"
       },
       "fbx_preset": {
-        "name": "fbx_preset"
+        "name": "fbx_preset",
+        "tooltip": "Preajuste de compatibilidad FBX. bake_scale hornea la transformación de escala en la geometría."
       },
       "flatten_bottom": {
         "name": "flatten_bottom"
       },
       "flatten_bottom_threshold": {
-        "name": "flatten_bottom_threshold"
+        "name": "flatten_bottom_threshold",
+        "tooltip": "Profundidad de aplanado usada con flatten_bottom."
       },
       "force_symmetry": {
         "name": "force_symmetry"
@@ -23376,15 +23693,66 @@
         "name": "tamaño_textura"
       },
       "with_animation": {
-        "name": "with_animation"
+        "name": "with_animation",
+        "tooltip": "Conserva el esqueleto y la animación de los modelos con rig o retargeting."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "Modelo convertido en el formato solicitado. Tripo entrega OBJ como un archivo ZIP (malla, material y texturas)."
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Edita las vistas de un resultado de Tripo: Image to Multiview con instrucciones de texto por vista. Las vistas sin instrucciones permanecen sin cambios. Introduce las imágenes en Tripo: Multiview to Model; un conjunto editado no se puede volver a editar.",
+    "display_name": "Tripo: Editar multivista",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "left",
+        "tooltip": null
+      },
+      "2": {
+        "name": "back",
+        "tooltip": null
+      },
+      "3": {
+        "name": "right",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
     "display_name": "Tripo: Imagen a Modelo",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Escala los modelos texturizados a su tamaño real en metros. Tripo almacena el tamaño como la transformación de escena del modelo y lo incorpora al convertir, añadir rig o reasignar rig al modelo; se ignora sin textura."
+      },
       "face_limit": {
-        "name": "límite_de_caras"
+        "name": "límite_de_caras",
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija adaptativamente (unas 1,4 M de caras en v3.x estándar, 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000 y las mallas quad a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -23403,22 +23771,31 @@
         "name": "orientación"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (color base, metálico, rugosidad, normal). Requiere textura."
       },
       "quad": {
-        "name": "cuadrilátero"
+        "name": "cuadrilátero",
+        "tooltip": "Salida de malla quad. Tripo entrega las mallas quad como FBX, por lo que el resultado llega a la salida FBX y la salida GLB queda vacía."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malla low-poly con topología limpia de estilo artesanal (500-20.000 caras, quad 500-10.000). Ideal para sujetos simples; los complejos pueden fallar."
       },
       "style": {
-        "name": "estilo"
+        "name": "estilo",
+        "tooltip": "Tripo ya no lo admite y se ignora. Se conserva para flujos de trabajo antiguos."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Genera mapas de textura. Desactivado devuelve geometría sin texturas e ignora pbr."
       },
       "texture_alignment": {
         "name": "alineación_de_textura"
       },
       "texture_quality": {
-        "name": "calidad_textura"
+        "name": "calidad_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semilla_textura"
@@ -23435,6 +23812,41 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Vacía cuando quad está activado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Solo se completa cuando quad está activado."
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "Genera vistas frontal, izquierda, trasera y derecha del sujeto. Introdúcelas en Tripo: Multivista a modelo, o refinálas primero con Tripo: Editar multivista.",
+    "display_name": "Tripo: Imagen a multivista",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id de multivista",
+        "tooltip": null
+      },
+      "1": {
+        "name": "frontal",
+        "tooltip": null
+      },
+      "2": {
+        "name": "izquierda",
+        "tooltip": null
+      },
+      "3": {
+        "name": "trasera",
+        "tooltip": null
+      },
+      "4": {
+        "name": "derecha",
         "tooltip": null
       }
     }
@@ -23455,11 +23867,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "Completa las partes de un modelo segmentado y repara las regiones faltantes.",
+    "display_name": "Tripo: Completar partes de malla",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nombres de las partes que se deben completar, separados por comas. Si se deja vacío, completa todas las partes."
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id del modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multivista a Modelo",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Escala los modelos texturizados a su tamaño real en metros. Tripo almacena el tamaño como la transformación de escena del modelo y lo incorpora al convertir, añadir rig o reasignar rig al modelo; se ignora sin textura."
+      },
       "face_limit": {
-        "name": "límite_de_caras"
+        "name": "límite_de_caras",
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija adaptativamente (unas 1,4 M de caras en v3.x estándar, 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000 y las mallas quad a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -23487,20 +23931,27 @@
         "name": "orientación"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (color base, metálico, rugosidad, normal). Requiere textura."
       },
       "quad": {
         "name": "cuadrilátero",
-        "tooltip": "Este parámetro está obsoleto y no hace nada."
+        "tooltip": "Salida de malla quad. Tripo entrega las mallas quad como FBX, por lo que el resultado llega a la salida FBX y la salida GLB queda vacía."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malla low-poly con topología limpia de estilo artesanal (500-20.000 caras, quad 500-10.000). Ideal para sujetos simples; los complejos pueden fallar."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Genera mapas de textura. Desactivado devuelve geometría sin texturas e ignora pbr."
       },
       "texture_alignment": {
         "name": "alineación_de_textura"
       },
       "texture_quality": {
-        "name": "calidad_de_textura"
+        "name": "calidad_de_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semilla_de_textura"
@@ -23517,7 +23968,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vacía cuando quad está activado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Solo se completa cuando quad está activado."
       }
     }
   },
@@ -23531,7 +23986,7 @@
       },
       "compress_geometry": {
         "name": "comprimir_geometría",
-        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+        "tooltip": "Aplica compresión de geometría meshopt (EXT_meshopt_compression). Archivos más pequeños, pero la vista previa 3D de ComfyUI no puede mostrarlos; descomprímelos antes de editarlos."
       },
       "enable_image_autofix": {
         "name": "activar_autocorrección_imagen",
@@ -23581,7 +24036,7 @@
       },
       "compress_geometry": {
         "name": "comprimir_geometría",
-        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+        "tooltip": "Aplica compresión de geometría meshopt (EXT_meshopt_compression). Archivos más pequeños, pero la vista previa 3D de ComfyUI no puede mostrarlos; descomprímelos antes de editarlos."
       },
       "export_uv": {
         "name": "exportar_uv",
@@ -23640,7 +24095,7 @@
       },
       "compress_geometry": {
         "name": "comprimir_geometría",
-        "tooltip": "Aplicar compresión basada en geometría. Descomprime antes de editar."
+        "tooltip": "Aplica compresión de geometría meshopt (EXT_meshopt_compression). Archivos más pequeños, pero la vista previa 3D de ComfyUI no puede mostrarlos; descomprímelos antes de editarlos."
       },
       "export_uv": {
         "name": "exportar_uv",
@@ -23687,11 +24142,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: Redireccionar modelo con rig",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "Reproduce la animación en el sitio, sin desplazamiento de raíz."
+      },
       "animation": {
-        "name": "animación"
+        "name": "animación",
+        "tooltip": "Las animaciones preset:* funcionan con ambos modelos de rig; las animaciones preset:biped:* requieren un rig creado con el modelo v1.0-20240301."
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "Incluye la malla en la exportación; desactivado exporta solo el esqueleto animado."
       },
       "original_model_task_id": {
         "name": "ID_de_tarea_del_modelo_original"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Formato de archivo de salida; el resultado aparece en la salida correspondiente."
       }
     },
     "outputs": {
@@ -23705,15 +24173,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Se rellena cuando out_format es glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Se rellena cuando out_format es fbx."
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "Reconstruye una malla de pocos polígonos con topología limpia a partir de un modelo de muchos polígonos.",
+    "display_name": "Tripo: Retopología",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Hornea las texturas de origen en la malla de pocos polígonos."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Cantidad de caras objetivo: 500-20.000 triángulos o 500-10.000 quads. -1 permite que Tripo elija."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nombres de piezas separados por comas de Tripo: Segment Model. Vacío procesa el modelo completo."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Salida de malla quad. Tripo entrega las mallas quad como FBX, por lo que el resultado aparece en la salida FBX y la salida GLB queda vacía."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando quad está activado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Solo se rellena cuando quad está activado."
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "Comprueba si se puede crear un rig para un modelo y qué tipo de esqueleto recomienda Tripo.",
+    "display_name": "Tripo: Comprobación de rig",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "Esqueleto recomendado: biped, quadruped, hexapod, octopod, avian, serpentine o aquatic; «others» cuando no se puede crear un rig para el modelo."
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: Modelo con rig",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0: solo personajes humanoides (biped), más de 90 preajustes de animación. v2.5: criaturas no humanoides (quadruped, hexapod, octopod, avian, serpentine, aquatic)."
+      },
       "original_model_task_id": {
         "name": "ID_de_tarea_del_modelo_original"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "Formato de archivo de salida; el resultado llega a la salida correspondiente."
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "Tipo de esqueleto. «auto» ejecuta primero la comprobación de rig gratuita de Tripo y usa el tipo recomendado."
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "Nomenclatura de huesos: nativa de Tripo o compatible con Mixamo. Tripo no puede redirigir sus preajustes de animación a un rig v1.0 creado con la especificación mixamo; usa tripo para Tripo: Retarget rigged model."
       }
     },
     "outputs": {
@@ -23727,7 +24277,38 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "Se rellena cuando out_format es glb."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Se rellena cuando out_format es fbx."
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "Divide un modelo en partes. Los nombres de las partes alimentan Tripo: Complete Mesh Parts, Tripo: Retopology y Tripo: Convert model.",
+    "display_name": "Tripo: Segmentar modelo",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nombres de las partes separados por comas."
       }
     }
   },
@@ -23829,8 +24410,13 @@
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto a Modelo",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Escala los modelos texturizados a su tamaño real en metros. Tripo guarda el tamaño como transformación de escena del modelo y lo incorpora al convertir, riggear o redirigir el modelo; se ignora sin textura."
+      },
       "face_limit": {
-        "name": "límite_de_caras"
+        "name": "límite_de_caras",
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aprox. 1,4 M de caras en v3.x standard y 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000 y las mallas de quads a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -23845,25 +24431,35 @@
         "name": "versión_del_modelo"
       },
       "negative_prompt": {
-        "name": "promoción_negativa"
+        "name": "promoción_negativa",
+        "tooltip": "Hasta 255 caracteres."
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (color base, metalizado, rugosidad, normal). Requiere texture."
       },
       "prompt": {
         "name": "prompt"
       },
       "quad": {
-        "name": "cuadrante"
+        "name": "cuadrante",
+        "tooltip": "Salida de malla de quads. Tripo entrega las mallas de quads como FBX, por lo que el resultado llega a la salida FBX y la salida GLB permanece vacía."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malla low-poly con topología limpia de estilo artesanal (500-20.000 caras; con quad, 500-10.000). Ideal para sujetos simples; los complejos pueden fallar."
       },
       "style": {
-        "name": "estilo"
+        "name": "estilo",
+        "tooltip": "Tripo ya no lo admite y se ignora. Se conserva para flujos de trabajo antiguos."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Genera mapas de textura. Desactivado devuelve geometría sin textura e ignora pbr."
       },
       "texture_quality": {
-        "name": "calidad_de_textura"
+        "name": "calidad_de_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semilla_de_textura"
@@ -23880,7 +24476,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vacío cuando quad está activado."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Solo se rellena cuando quad está activado."
       }
     }
   },
@@ -23890,21 +24490,40 @@
       "model_task_id": {
         "name": "id_de_tarea_del_modelo"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modelo de textura: v3.0 para mallas generadas con v3.x, v2.5 para mallas generadas con v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nombres de partes separados por comas de Tripo: Segment Model que se van a texturizar. Si está vacío, se texturizan todas las partes."
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (color base, metalizado, rugosidad, normal); desactivado proporciona una textura de color liso."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Imágenes de referencia que guían las texturas. No se pueden combinar con texture_prompt ni style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Imagen de referencia para el estilo artístico de las texturas. Solo se usa junto con texture_prompt."
       },
       "texture": {
-        "name": "textura"
+        "name": "textura",
+        "tooltip": "Se ignora: este nodo siempre genera texturas. Se conserva para flujos de trabajo antiguos."
       },
       "texture_alignment": {
         "name": "alineación_de_textura"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "Guía de texto opcional para texturizar. Es necesaria en la práctica para modelos importados (Tripo: Importar modelo), que no tienen imagen de origen para inferir colores."
+        "tooltip": "Guía de texto opcional para el texturizado. En la práctica es necesaria para modelos importados (Tripo: Import Model), que no contienen una imagen de origen de la que inferir colores. No se puede combinar con imágenes de referencia."
       },
       "texture_quality": {
-        "name": "calidad_de_textura"
+        "name": "calidad_de_textura",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
       },
       "texture_seed": {
         "name": "semilla_de_textura"
@@ -23921,7 +24540,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "Vacío cuando la fuente es una malla de cuadriláteros o una importación FBX."
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo devuelve FBX para mallas de cuadriláteros e importaciones FBX; vacío en caso contrario."
       }
     }
   },
@@ -24613,60 +25236,10 @@
       },
       "resolution": {
         "name": "resolución",
-        "tooltip": "Resolución de salida del video. 4K no está disponible para los modelos veo-3.1-lite y veo-3.0."
+        "tooltip": "Resolución del vídeo de salida. 4K no está disponible para el modelo veo-3.1-lite."
       },
       "seed": {
         "name": "semilla",
-        "tooltip": "Semilla para la generación de video (0 para aleatorio)"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Genera videos a partir de indicaciones de texto usando la API de Veo de Google",
-    "display_name": "Generación de Video Google Veo2",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "Relación de aspecto del video de salida"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "Duración del video de salida en segundos"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "Si se debe mejorar la indicación con asistencia de IA"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Imagen de referencia opcional para guiar la generación del video"
-      },
-      "model": {
-        "name": "modelo",
-        "tooltip": "Modelo Veo 2 a utilizar para la generación de video"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Indicaciones negativas para guiar lo que se debe evitar en el video"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "Si se permite generar personas en el video"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descripción de texto del video"
-      },
-      "seed": {
-        "name": "seed",
         "tooltip": "Semilla para la generación de video (0 para aleatorio)"
       }
     },
@@ -24690,6 +25263,23 @@
       "strict_duration": {
         "name": "duración estricta",
         "tooltip": "Si es Verdadero, cuando la duración especificada no sea posible, se generará un error."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoCrop": {
+    "display_name": "Recortar vídeo",
+    "inputs": {
+      "crop": {
+        "name": "crop",
+        "tooltip": "Región de recorte en píxeles. La anchura/altura cero conserva el fotograma completo."
       },
       "video": {
         "name": "video"
@@ -24802,6 +25392,27 @@
       },
       "model": {
         "name": "modelo"
+      }
+    }
+  },
+  "VideoTrim": {
+    "display_name": "Recortar vídeo (avanzado)",
+    "inputs": {
+      "strict_duration": {
+        "name": "strict_duration",
+        "tooltip": "Si es True y no es posible la duración especificada, se generará un error."
+      },
+      "trim": {
+        "name": "trim",
+        "tooltip": "Ventana de recorte mediante los fotogramas de inicio/fin."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
