@@ -218,18 +218,35 @@ describe('WorkflowTabs agent entry button', () => {
     ).toHaveLength(1)
   })
 
-  it('toggles the panel and reflects the pressed state on the button', async () => {
+  it('toggles the panel and hides the entry button once open', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
       name: enMessages.agent.askComfyAgent
     })
-    expect(button).toHaveAttribute('aria-pressed', 'false')
 
     await user.click(button)
 
     expect(useAgentPanelStore().toggle).toHaveBeenCalledTimes(1)
-    expect(button).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
+  })
+
+  it('re-renders the entry button once the panel closes', async () => {
+    useAgentPanelStore().isOpen = true
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeNull()
+
+    useAgentPanelStore().isOpen = false
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeInTheDocument()
   })
 
   it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
