@@ -1,58 +1,20 @@
-/**
- * Pending-op tracker (s3-opt-6 dispatch wiring): the glue that drives the
- * pure {@link PendingOpLedger} and {@link PendingOpShadowSurface} from the
- * {@link OpSender}'s lifecycle hooks and the follower's authoritative frames.
- *
- * Every human op has exactly two ways to leave the pending surface:
- *
- * - EFFECT: its `doc_update` arrives carrying the op id (`DocUpdate.opIds`,
- *   DQ-9) and the shadow is cleared. An `applied` ack alone never clears a
- *   shadow (KEEP-ALIVE #9): the ack says the host accepted the op, the
- *   update says the doc now shows it.
- * - REVERT: the op will never take effect. The host rejected it (`failed`),
- *   never reached it (`unprocessed` after a failed prefix), no doc was bound
- *   or the transport never carried it (`undeliverable`), or one resend also
- *   drew silence (`unacknowledged`). The shadow is reverted and the entry
- *   dropped, so the optimistic styling disappears instead of lingering.
- *
- * `skipped` covers two host outcomes that share one property: the op will
- * never produce an effect frame of its own. Either the op id already existed
- * host-side (a re-delivery; a fully duplicate batch produces no broadcast at
- * all) or the applier dropped it under last-writer-wins, in which case its
- * effect is specifically NOT in the doc — a competing write is. What settles
- * a skipped entry is therefore not "its effect landed" but "the doc state at
- * or beyond the ack's `seq` is authoritative for whatever it touched", so
- * it must never be re-shown as the op's own optimistic value. It is still
- * never cleared on the ack itself (s3-opt-2): removal happens on an
- * authoritative PROJECTION transition. A skipped entry clears when the
- * follower has projected doc state at or beyond the ack's `seq` —
- * immediately at ack time when the projected seq already covers it,
- * otherwise on the first later projected `doc_update` whose seq covers it.
- * When the ack carries no seq, the next projected authoritative transition
- * of any seq clears it (the outcome pre-existed the ack, so any later
- * authoritative state reflects it). A `doc_update` that happens to carry the
- * id still clears it through the EFFECT path first.
- *
- * Nothing here touches the canvas; it only maintains the two data
- * structures and reports what it did so a renderer/dev-panel can react.
- */
 import type { Op } from '@comfyorg/comfy-multi-player'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { BatchOutcome } from './opSender'
 import type { PendingOpEntry, PendingOpLedger } from './pendingOpLedger'
 import { createPendingOpLedger } from './pendingOpLedger'
-import type { PendingOpShadowSurface, ShadowTarget } from './pendingOpShadow'
-import { createPendingOpShadowSurface } from './pendingOpShadow'
 
 type PendingOpRevertReason =
   | 'failed'
   | 'unprocessed'
   | 'unattributed'
-  | 'unacknowledged'
   | 'undeliverable'
 
 export type PendingOpTrackerEvent =
   | { type: 'reverted'; reason: PendingOpRevertReason; opIds: string[] }
+  | { type: 'delivery_unknown'; opIds: string[] }
   | { type: 'cleared'; opIds: string[] }
   /** Skipped duplicates resolved by a projection at/after their ack seq. */
   | { type: 'skipped_cleared'; seq: number | null; opIds: string[] }
@@ -62,7 +24,6 @@ export type PendingOpTrackerEvent =
 
 export interface PendingOpTrackerDeps {
   ledger?: PendingOpLedger<Op>
-  shadow?: PendingOpShadowSurface
   /**
    * The highest doc seq the follower has PROJECTED (applied to the canvas),
    * read at ack time to decide whether a skipped duplicate can resolve now.
@@ -96,43 +57,12 @@ export interface PendingOpTracker {
   /** Doc lineage broke (reset / replacement / teardown): nothing is pending. */
   reset(): void
   entries(): PendingOpEntry<Op>[]
-  readonly shadow: PendingOpShadowSurface
-}
-
-/**
- * Which canvas entities an op paints while pending. Ids are stringified
- * because the wire allows numeric node ids while the shadow keys on strings.
- */
-export function shadowTargetsFor(op: Op): ShadowTarget[] {
-  switch (op.op) {
-    case 'add_node':
-      return [{ kind: 'node', nodeId: String(op.node_id) }]
-    case 'delete_node':
-      return [
-        { kind: 'node', nodeId: String(op.node_id) },
-        ...op.removed_links.map(
-          (link): ShadowTarget => ({ kind: 'link', linkId: String(link) })
-        )
-      ]
-    case 'connect':
-      return [{ kind: 'link', linkId: String(op.link_id) }]
-    case 'set_widget':
-      return [
-        { kind: 'widget', nodeId: String(op.node_id), widgetName: op.widget }
-      ]
-    case 'clear':
-      return op.removed_nodes.map((nodeId) => ({
-        kind: 'node',
-        nodeId: String(nodeId)
-      }))
-  }
 }
 
 export function createPendingOpTracker(
   deps: PendingOpTrackerDeps = {}
 ): PendingOpTracker {
   const ledger = deps.ledger ?? createPendingOpLedger<Op>()
-  const shadow = deps.shadow ?? createPendingOpShadowSurface()
   const currentSeq = deps.currentSeq ?? (() => 0)
   // Per-op send count, mirrored from the sender's transmit hook so a result
   // for an earlier attempt of a resent batch is rejected by the ledger.
@@ -142,7 +72,13 @@ export function createPendingOpTracker(
   const awaitingSkipped = new Map<string, number | null>()
 
   function emit(event: PendingOpTrackerEvent): void {
-    deps.onEvent?.(event)
+    try {
+      deps.onEvent?.(event)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_crdt_pending_op_event_listener_failed'
+      })
+    }
   }
 
   function drop(opId: string): PendingOpEntry<Op> | undefined {
@@ -155,7 +91,6 @@ export function createPendingOpTracker(
     const reverted: string[] = []
     for (const opId of opIds) {
       const entry = drop(opId)
-      shadow.revert(opId)
       if (entry) reverted.push(opId)
     }
     if (reverted.length > 0) emit({ type: 'reverted', reason, opIds: reverted })
@@ -169,7 +104,6 @@ export function createPendingOpTracker(
     const cleared: string[] = []
     for (const opId of opIds) {
       const entry = drop(opId)
-      shadow.clear(opId)
       if (entry) cleared.push(opId)
     }
     if (cleared.length > 0)
@@ -177,12 +111,9 @@ export function createPendingOpTracker(
   }
 
   return {
-    shadow,
     onBatchMinted(ops) {
       for (const op of ops) {
-        if (ledger.enqueue(op.op_id, op)) {
-          shadow.show(op.op_id, shadowTargetsFor(op))
-        }
+        ledger.enqueue(op.op_id, op)
       }
     },
     onBatchTransmitted(ops) {
@@ -192,6 +123,10 @@ export function createPendingOpTracker(
     },
     onBatchSettled(outcome) {
       const batch = outcome.ops.map((op) => op.op_id)
+      if (outcome.state === 'unacknowledged') {
+        emit({ type: 'delivery_unknown', opIds: batch })
+        return
+      }
       if (outcome.state !== 'acknowledged') {
         revert(batch, outcome.state)
         return
@@ -238,7 +173,6 @@ export function createPendingOpTracker(
       if (opIds.length === 0) return
       const cleared = ledger.clearOnEffect(opIds)
       for (const entry of cleared) {
-        shadow.clear(entry.opId)
         attempts.delete(entry.opId)
         awaitingSkipped.delete(entry.opId)
       }
@@ -260,7 +194,6 @@ export function createPendingOpTracker(
     },
     reset() {
       const dropped = ledger.reset()
-      shadow.clearAll()
       attempts.clear()
       awaitingSkipped.clear()
       if (dropped.length > 0)

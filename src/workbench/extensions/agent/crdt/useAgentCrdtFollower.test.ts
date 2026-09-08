@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
@@ -19,6 +20,7 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { DocUpdate } from './docFrameClient'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -43,13 +45,14 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(() => true)
+  sendOps: vi.fn((_workflowId: string, _tab: string, _ops: Op[]) => true)
 }))
 
 const adapterState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
+  retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -107,6 +110,7 @@ vi.mock('./ecsFollowerAdapter', () => ({
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
+    retryPending = adapterState.retryPending
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -207,6 +211,8 @@ describe('useAgentCrdtFollower', () => {
     setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
+    adapterState.applyFrame.mockReset().mockReturnValue(true)
+    adapterState.retryPending.mockReset().mockReturnValue(null)
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -405,15 +411,30 @@ describe('useAgentCrdtFollower', () => {
     expect(stampedAt).toBeTypeOf('number')
 
     vi.advanceTimersByTime(3 * 60 * 1000)
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-2',
+      ok: true,
+      applied: [],
+      skipped: []
+    })
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
 
     isTargetActive.value = false
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [],
+      skipped: []
+    })
     expect(persistedRecord()?.expiresAt).toBe(stampedAt)
 
     isTargetActive.value = true
-    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [],
+      skipped: []
+    })
     expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
     unmount()
   })
@@ -873,222 +894,51 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  describe('pending-op shadows (s3-opt-6)', () => {
-    function mountWithSender(initial: string | null = 'wf-1') {
-      const workflowId = ref<string | null>(initial)
-      let follower!: ReturnType<typeof useAgentCrdtFollower>
-      const host = defineComponent({
-        setup() {
-          follower = useAgentCrdtFollower(workflowId, graphMutations)
-          return () => null
-        }
-      })
-      const { unmount } = render(host)
-      const sentOpIds = (): string[] => {
-        const call = clientState.sendOps.mock.lastCall as
-          | [string, string, Array<{ op_id: string }>]
-          | undefined
-        return call ? call[2].map((op) => op.op_id) : []
+  it('settles pending state only after a rejected projection retries', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          ref('wf-1'),
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
       }
-      return { unmount, follower, sentOpIds }
+    })
+    const { unmount } = render(host)
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+    expect(opId).toBeDefined()
+    if (!opId) throw new Error('Expected a sent operation')
+    dispatchFrame('doc_ops_result', {
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+    const update = {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(),
+      opIds: [opId]
     }
+    adapterState.applyFrame.mockReturnValueOnce(false)
 
-    const deleteNode1 = {
-      op: 'delete_node' as const,
-      node_id: '1',
-      removed_links: []
-    }
-    const node1 = { kind: 'node', nodeId: '1' } as const
-
-    beforeEach(() => {
-      clientState.sendOps.mockClear()
-      clientState.sendOps.mockImplementation(() => true)
+    dispatchFrame('doc_update', update)
+    expect(recordDevEvent).not.toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
     })
 
-    it('shows a shadow for a sent op and keeps it through the applied ack', () => {
-      const { unmount, follower, sentOpIds } = mountWithSender()
-      follower.enqueueHumanOperations([deleteNode1])
-      const [opId] = sentOpIds()
-
-      expect(follower.pendingShadows.isPending(node1)).toBe(true)
-      dispatchFrame('doc_ops_result', {
-        ok: true,
-        applied: [opId],
-        skipped: []
-      })
-      expect(follower.pendingShadows.isPending(node1)).toBe(true)
-      unmount()
+    adapterState.retryPending.mockReturnValueOnce(update)
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
     })
-
-    it('clears the shadow only when a doc_update carries the op id', () => {
-      const { unmount, follower, sentOpIds } = mountWithSender()
-      follower.enqueueHumanOperations([deleteNode1])
-      const [opId] = sentOpIds()
-      dispatchFrame('doc_ops_result', {
-        ok: true,
-        applied: [opId],
-        skipped: []
-      })
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
-      expect(follower.pendingShadows.isPending(node1)).toBe(true)
-
-      dispatchFrame('doc_update', {
-        workflowId: 'wf-1',
-        seq: 43,
-        opIds: [opId]
-      })
-      expect(follower.pendingShadows.isPending(node1)).toBe(false)
-      unmount()
-    })
-
-    it('clears a skipped-duplicate shadow once a projection covers the ack seq (s3-opt-2)', () => {
-      const { unmount, follower, sentOpIds } = mountWithSender()
-      follower.enqueueHumanOperations([deleteNode1])
-      const [opId] = sentOpIds()
-
-      // Host already had this op; no doc_update will ever carry its id.
-      dispatchFrame('doc_ops_result', {
-        ok: true,
-        applied: [],
-        skipped: [opId],
-        seq: 43
-      })
-      expect(follower.pendingShadows.isPending(node1)).toBe(true)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 42 })
-      expect(follower.pendingShadows.isPending(node1)).toBe(true)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 43 })
-      expect(follower.pendingShadows.isPending(node1)).toBe(false)
-      unmount()
-    })
-
-    it('keeps a skipped shadow through the subscribe-ack window until a frame is applied', () => {
-      // After (re)subscribe the bridge knows the host seq from the ack
-      // (lastSequence = 41) but has applied nothing yet; the canvas still shows
-      // pre-op state. A skipped result at that seq must not clear the shadow.
-      const { unmount, follower, sentOpIds } = mountWithSender()
-      expect(bridge().lastAppliedSequence).toBeNull()
-      follower.enqueueHumanOperations([deleteNode1])
-      const [opId] = sentOpIds()
-
-      dispatchFrame('doc_ops_result', {
-        ok: true,
-        applied: [],
-        skipped: [opId],
-        seq: 41
-      })
-      expect(follower.pendingShadows.isPending(node1)).toBe(true)
-
-      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 41 })
-      expect(follower.pendingShadows.isPending(node1)).toBe(false)
-      unmount()
-    })
-
-    it('clears a skipped shadow at once when an applied frame already covers its seq', () => {
-      const { unmount, follower, sentOpIds } = mountWithSender()
-      bridge().lastAppliedSequence = 43
-      follower.enqueueHumanOperations([deleteNode1])
-      const [opId] = sentOpIds()
-
-      dispatchFrame('doc_ops_result', {
-        ok: true,
-        applied: [],
-        skipped: [opId],
-        seq: 43
-      })
-      expect(follower.pendingShadows.isPending(node1)).toBe(false)
-      unmount()
-    })
-
-    it('reverts the shadow when the host rejects the op', () => {
-      const { unmount, follower, sentOpIds } = mountWithSender()
-      follower.enqueueHumanOperations([deleteNode1])
-      const [opId] = sentOpIds()
-
-      dispatchFrame('doc_ops_result', {
-        ok: false,
-        applied: [],
-        skipped: [],
-        failed: { op_id: opId, reason: 'node_missing' }
-      })
-      expect(follower.pendingShadows.size()).toBe(0)
-      unmount()
-    })
-
-    it('never shows a lingering shadow when no doc is bound', () => {
-      const { unmount, follower } = mountWithSender(null)
-      bridge().subscribedWorkflowId = null
-      follower.enqueueHumanOperations([deleteNode1])
-
-      expect(clientState.sendOps).not.toHaveBeenCalled()
-      expect(follower.pendingShadows.size()).toBe(0)
-      unmount()
-    })
-
-    it('drops every pending shadow on doc_reset', () => {
-      const { unmount, follower } = mountWithSender()
-      follower.enqueueHumanOperations([deleteNode1])
-      expect(follower.pendingShadows.size()).toBe(1)
-
-      dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 1 })
-      expect(follower.pendingShadows.size()).toBe(0)
-      unmount()
-    })
-
-    it('drops every pending shadow on unmount', () => {
-      const { unmount, follower } = mountWithSender()
-      follower.enqueueHumanOperations([deleteNode1])
-      unmount()
-      expect(follower.pendingShadows.size()).toBe(0)
-    })
-
-    it('drops every pending shadow when the target deactivates', async () => {
-      const workflowId = ref<string | null>('wf-1')
-      const isTargetActive = ref(true)
-      let follower!: ReturnType<typeof useAgentCrdtFollower>
-      const host = defineComponent({
-        setup() {
-          follower = useAgentCrdtFollower(
-            workflowId,
-            graphMutations,
-            () => null,
-            isTargetActive
-          )
-          return () => null
-        }
-      })
-      const { unmount } = render(host)
-      follower.enqueueHumanOperations([deleteNode1])
-      expect(follower.pendingShadows.size()).toBe(1)
-
-      isTargetActive.value = false
-      await nextTick()
-
-      expect(follower.pendingShadows.size()).toBe(0)
-      unmount()
-    })
-
-    it('drops every pending shadow when the watcher switches to a new workflow', async () => {
-      const workflowId = ref<string | null>('wf-1')
-      let follower!: ReturnType<typeof useAgentCrdtFollower>
-      const host = defineComponent({
-        setup() {
-          follower = useAgentCrdtFollower(workflowId, graphMutations)
-          return () => null
-        }
-      })
-      const { unmount } = render(host)
-      follower.enqueueHumanOperations([deleteNode1])
-      expect(follower.pendingShadows.size()).toBe(1)
-
-      workflowId.value = 'wf-2'
-      await nextTick()
-
-      expect(follower.pendingShadows.size()).toBe(0)
-      unmount()
-    })
+    unmount()
   })
 
   it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {

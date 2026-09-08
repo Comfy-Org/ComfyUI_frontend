@@ -243,6 +243,7 @@ export function useAgentCrdtFollower(
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
   const tabId = createUuidv4()
+  let lastProjectedSequence: number | null = null
   // s3-opt-6: every minted human op is registered here before it flies and
   // leaves only on its authoritative doc_update effect, on revert, or — for
   // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
@@ -253,7 +254,7 @@ export function useAgentCrdtFollower(
     // An already-current follower (ack, no catch-up) therefore parks a skipped
     // id until its next applied frame; a still-pending skipped entry means the
     // effect frame never reached this follower, so one is coming.
-    currentSeq: () => bridge.lastAppliedSequence ?? 0,
+    currentSeq: () => lastProjectedSequence ?? 0,
     onEvent: (event) => recordDevEvent('pending_ops', event)
   })
   const sender = createOpSender({
@@ -397,6 +398,8 @@ export function useAgentCrdtFollower(
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistConfirmedDocId(subscribedWorkflowId.value)
+      if (subscribedWorkflowId.value !== null)
+        retryPendingProjection(subscribedWorkflowId.value)
     } else {
       clearStaleProbe()
       scheduleSubscribeRetry()
@@ -431,12 +434,7 @@ export function useAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) reconcileLiveGraph(update.workflowId)
-    // KEEP-ALIVE #9: the doc_update effect, not the ack, retires a shadow.
-    if (update.opIds) pendingOps.onDocEffect(update.opIds)
-    // s3-opt-2: a projected transition at/after an ack seq resolves the
-    // skipped duplicates that ack named (their effect never re-broadcasts).
-    pendingOps.onAuthoritativeState(update.seq)
+    if (applied) onProjected(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -496,6 +494,7 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
+    lastProjectedSequence = null
     pendingOps.reset()
     recordDevEvent(
       'doc_reset',
@@ -527,6 +526,7 @@ export function useAgentCrdtFollower(
       // start landing.
       reconcileLiveGraph(workflowId)
       adapter.bind(workflowId, bridge.follower)
+      lastProjectedSequence = null
       pendingOps.reset()
     }
   }
@@ -618,6 +618,20 @@ export function useAgentCrdtFollower(
       })
     }
   }
+
+  function onProjected(update: DocUpdate): void {
+    lastProjectedSequence = update.seq
+    reconcileLiveGraph(update.workflowId)
+    if (update.opIds) pendingOps.onDocEffect(update.opIds)
+    pendingOps.onAuthoritativeState(update.seq)
+  }
+
+  function retryPendingProjection(workflowId: string): boolean {
+    const update = adapter.retryPending(workflowId)
+    if (!update) return false
+    onProjected(update)
+    return true
+  }
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
@@ -626,7 +640,8 @@ export function useAgentCrdtFollower(
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      reconcileLiveGraph(boundWorkflowId)
+      if (!retryPendingProjection(boundWorkflowId))
+        reconcileLiveGraph(boundWorkflowId)
     }
   })
   // Drive the bridge's intent, then give the sender the same eager signal the
@@ -753,8 +768,6 @@ export function useAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations),
-    /** Pending-op styling surface for canvas renderers (s3-opt-6). */
-    pendingShadows: pendingOps.shadow
+      sender.enqueue(operations)
   }
 }

@@ -249,7 +249,7 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it('retries authoritative reconciliation after a rejected first batch', () => {
+  it('retries a rejected projection without another document frame', () => {
     const deleteLayouts = vi.fn()
     let scopeAvailable = false
     const mutations = createGraphMutations({
@@ -292,11 +292,14 @@ describe('EcsFollowerAdapter integration', () => {
     ).toEqual([toNodeId(99)])
     expect(deleteLayouts).not.toHaveBeenCalled()
 
-    // Second frame: scope is available again, so the retried reconciliation
-    // clears the stale local-only node instead of falling through to
-    // incremental handling.
+    expect(adapter.retryPending('wf')).toBeNull()
+
     scopeAvailable = true
-    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(adapter.retryPending('wf')).toEqual({
+      workflowId: 'wf',
+      seq: 1,
+      update
+    })
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(deleteLayouts).toHaveBeenCalledWith(
       scope,

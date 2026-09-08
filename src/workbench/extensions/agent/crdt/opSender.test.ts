@@ -293,6 +293,24 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('acknowledged')
   })
 
+  it('routes an identified result after the batch became delivery-unknown', () => {
+    sender.enqueue([addNode(1)])
+    const opId = sent[0].ops[0].op_id
+    vi.advanceTimersByTime(20_000)
+
+    resultListener?.({
+      ok: false,
+      applied: [],
+      skipped: [],
+      failure: { op_id: opId }
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unacknowledged',
+      'acknowledged'
+    ])
+  })
+
   it('splits an oversized enqueue into serialized wire batches', () => {
     sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
 

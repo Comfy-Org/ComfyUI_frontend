@@ -113,6 +113,7 @@ interface InFlight {
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  const unacknowledged = new Map<string, Op[]>()
   let inFlight: InFlight | null = null
   let detached = false
   // Late-result credits: a batch that settled 'unacknowledged' was
@@ -168,6 +169,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
+        for (const op of batch.ops) unacknowledged.set(op.op_id, batch.ops)
         staleAnonymousBudget += 2
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
@@ -194,16 +196,30 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
+    const identified = [...result.applied, ...result.skipped]
+    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    const matchesInFlight =
+      inFlight !== null && identified.some((opId) => inFlight?.opIds.has(opId))
+    if (identified.length > 0 && !matchesInFlight) {
+      const lateOps = identified
+        .map((opId) => unacknowledged.get(opId))
+        .find(Boolean)
+      if (lateOps) {
+        for (const op of lateOps) unacknowledged.delete(op.op_id)
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
+        deps.onBatchSettled({ state: 'acknowledged', ops: lateOps, result })
+      } else if (!inFlight && staleAnonymousBudget > 0) {
+        staleAnonymousBudget--
+      }
+      return
+    }
     if (!inFlight) {
       // A late result with no batch waiting: drain a credit if one is
       // outstanding so it cannot swallow a future batch's own result.
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
