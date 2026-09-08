@@ -6,20 +6,21 @@ import type {
 } from '@/platform/telemetry/types'
 
 import { BootstrapTracer } from './bootstrapTracer'
+import type * as PerfMarkModule from './perfMark'
 
 const {
-  reportError,
+  markViewLoaded,
+  reportBootstrapToRum,
   trackBootstrapComplete,
-  trackEarlyBootstrapComplete,
   useTelemetry
 } = vi.hoisted(() => {
   const trackBootstrapComplete =
     vi.fn<(metadata: BootstrapCompleteMetadata) => void>()
   return {
-    reportError: vi.fn(),
+    markViewLoaded: vi.fn(),
+    reportBootstrapToRum:
+      vi.fn<(event: string, metadata: BootstrapCompleteMetadata) => void>(),
     trackBootstrapComplete,
-    trackEarlyBootstrapComplete:
-      vi.fn<(metadata: BootstrapCompleteMetadata) => void>(),
     useTelemetry: vi.fn(
       (): Pick<TelemetryDispatcher, 'trackBootstrapComplete'> | null => ({
         trackBootstrapComplete
@@ -28,23 +29,18 @@ const {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 vi.mock('@/platform/telemetry', () => ({ useTelemetry }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
-vi.mock(
-  '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider',
-  () => ({
-    DatadogRumTelemetryProvider: class {
-      trackBootstrapComplete = trackEarlyBootstrapComplete
-    }
-  })
-)
+vi.mock('./perfMark', async (importOriginal) => ({
+  ...(await importOriginal<typeof PerfMarkModule>()),
+  markViewLoaded,
+  reportBootstrapToRum
+}))
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {
-    reportError.mockReset()
+    markViewLoaded.mockReset()
+    reportBootstrapToRum.mockReset()
     trackBootstrapComplete.mockReset()
-    trackEarlyBootstrapComplete.mockReset()
     useTelemetry.mockClear()
   })
 
@@ -124,7 +120,7 @@ describe('bootstrapTracer', () => {
     expect(Object.keys(metadata.phases)).toEqual(['startup/remote-config'])
   })
 
-  it('reports an early timeout before the telemetry registry exists', async () => {
+  it('reaches Datadog directly when the registry does not exist yet', async () => {
     useTelemetry.mockReturnValueOnce(null)
     const tracer = new BootstrapTracer()
 
@@ -132,32 +128,37 @@ describe('bootstrapTracer', () => {
     tracer.armWatchdog(30_000)
     await vi.advanceTimersByTimeAsync(30_000)
 
-    await vi.waitFor(() => {
-      expect(trackEarlyBootstrapComplete).toHaveBeenCalledWith(
-        expect.objectContaining({
-          outcome: 'timed_out',
-          pending: ['startup/remote-config']
-        })
-      )
-    })
+    expect(reportBootstrapToRum).toHaveBeenCalledWith(
+      'app:bootstrap_complete',
+      expect.objectContaining({
+        outcome: 'timed_out',
+        pending: ['startup/remote-config']
+      })
+    )
+    expect(trackBootstrapComplete).not.toHaveBeenCalled()
   })
 
-  it('reports an early telemetry fallback failure', async () => {
-    const error = new Error('Datadog unavailable')
-    useTelemetry.mockReturnValueOnce(null)
-    trackEarlyBootstrapComplete.mockImplementationOnce(() => {
-      throw error
-    })
+  it('sets the view loading time only for a startup that reached a working app', () => {
+    const completed = new BootstrapTracer()
+    completed.complete()
+    expect(markViewLoaded).toHaveBeenCalledOnce()
+
+    markViewLoaded.mockReset()
+    new BootstrapTracer().complete('failed')
+    expect(markViewLoaded).not.toHaveBeenCalled()
+  })
+
+  it('does not set the view loading time for a startup still running', async () => {
     const tracer = new BootstrapTracer()
 
     tracer.armWatchdog(30_000)
     await vi.advanceTimersByTimeAsync(30_000)
 
-    await vi.waitFor(() => {
-      expect(reportError).toHaveBeenCalledWith(error, {
-        errorType: 'bootstrap_telemetry_fallback_failure'
-      })
-    })
+    expect(reportBootstrapToRum).toHaveBeenCalledWith(
+      'app:bootstrap_complete',
+      expect.objectContaining({ outcome: 'timed_out' })
+    )
+    expect(markViewLoaded).not.toHaveBeenCalled()
   })
 
   it('still reports the terminal row after a watchdog row', async () => {

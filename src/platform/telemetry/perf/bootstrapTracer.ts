@@ -33,12 +33,16 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
-import { perfMark, perfPoint } from './perfMark'
+import {
+  markViewLoaded,
+  perfMark,
+  perfPoint,
+  reportBootstrapToRum
+} from './perfMark'
 import type { PerfSpan } from './perfMark'
 
 /**
@@ -191,20 +195,9 @@ export class BootstrapTracer {
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      const telemetry = useTelemetry()
-      if (telemetry) {
-        telemetry.trackBootstrapComplete(metadata)
-      } else if (isCloud && outcome === 'timed_out') {
-        void import('@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider')
-          .then(({ DatadogRumTelemetryProvider }) => {
-            new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
-          })
-          .catch((error: unknown) => {
-            reportError(error, {
-              errorType: 'bootstrap_telemetry_fallback_failure'
-            })
-          })
-      }
+      reportBootstrapToRum(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
+      useTelemetry()?.trackBootstrapComplete(metadata)
+      if (outcome === 'completed') markViewLoaded()
       this._logSummary(rows, totalMs)
     } catch {
       return
