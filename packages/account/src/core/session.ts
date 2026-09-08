@@ -170,6 +170,28 @@ export interface SessionRequestOptions {
 }
 
 /**
+ * Cross-tab refresh coordination. One tab per (uid, workspace) key holds the
+ * lease and performs the proactive refresh; the others adopt its published
+ * credential and mint for themselves only when the leader goes quiet past
+ * their jittered fallback. Real hosts wrap Web Locks + BroadcastChannel
+ * (`createWebCrossTabRefreshPort`); tests pass fakes.
+ */
+export interface CrossTabRefreshPort {
+  /**
+   * Queue for the key's lease. `onAcquired` fires if and when this tab
+   * becomes leader; the returned function abandons the request or releases
+   * held leadership.
+   */
+  requestLeadership: (key: string, onAcquired: () => void) => () => void
+  publishCredential: (key: string, credential: AccountCredential) => void
+  /** Messages cross a serialization boundary; the client validates them. */
+  onCredential: (
+    key: string,
+    callback: (message: unknown) => void
+  ) => () => void
+}
+
+/**
  * Opt-in proactive refresh, mirroring the cloud store's scheduled-refresh
  * semantics (its buffer, retry base, and retry cap are the defaults): arm at
  * expiry minus the buffer, retry transient failures with doubling backoff,
@@ -180,6 +202,16 @@ export interface RefreshSchedulerOptions {
   readonly bufferMs?: number
   readonly retryBaseMs?: number
   readonly maxRetries?: number
+  /**
+   * Cross-tab coordination (opt-in): the leader tab refreshes and publishes;
+   * followers adopt the published credential and fall back to their own mint
+   * only after a bounded random hold past the refresh point.
+   */
+  readonly crossTab?: {
+    readonly port: CrossTabRefreshPort
+    /** Upper bound for the follower's random hold. Default 15s. */
+    readonly followerJitterMs?: number
+  }
   /**
    * Called with the outcome of every SCHEDULED refresh attempt (never a
    * login or caller-initiated mint), so a host can feed its refresh
@@ -618,8 +650,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   const schedulerRetryBaseMs =
     clientOptions.refreshScheduler?.retryBaseMs ?? 5000
   const schedulerMaxRetries = clientOptions.refreshScheduler?.maxRetries ?? 3
+  const crossTab = clientOptions.refreshScheduler?.crossTab
+  const followerJitterMs = crossTab?.followerJitterMs ?? 15_000
   let scheduledTimer: ReturnType<typeof setTimeout> | undefined
   let scheduledRetryCount = 0
+  /** Without coordination every tab is its own leader. */
+  let isRefreshLeader = crossTab === undefined
+  let coordinationKey: string | undefined
+  let releaseLeadership: (() => void) | undefined
+  let stopCredentialFeed: (() => void) | undefined
 
   function stopScheduledRefresh(): void {
     if (scheduledTimer !== undefined) {
@@ -628,17 +667,81 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
+  function teardownCoordination(): void {
+    releaseLeadership?.()
+    releaseLeadership = undefined
+    stopCredentialFeed?.()
+    stopCredentialFeed = undefined
+    coordinationKey = undefined
+    isRefreshLeader = crossTab === undefined
+  }
+
+  function ensureCoordination(): void {
+    if (crossTab === undefined || credential === undefined) return
+    const key = `comfy-account-refresh:${credential.uid}:${credentialTarget ?? ''}`
+    if (key === coordinationKey) return
+    teardownCoordination()
+    coordinationKey = key
+    stopCredentialFeed = crossTab.port.onCredential(
+      key,
+      adoptPublishedCredential
+    )
+    releaseLeadership = crossTab.port.requestLeadership(key, () => {
+      isRefreshLeader = true
+      // Promotion after a leader loss: the jittered follower timer is
+      // waiting on a broadcast that will never come — retake the schedule.
+      if (credential !== undefined && scheduledTimer !== undefined) {
+        armScheduledRefresh(credential.expiresAt)
+      }
+    })
+  }
+
+  function adoptPublishedCredential(message: unknown): void {
+    // Leaders publish; only followers adopt.
+    if (isRefreshLeader) return
+    const parsed = CachedCredentialSchema.safeParse(message)
+    if (!parsed.success) return
+    if (currentUser?.uid !== parsed.data.uid) return
+    if (
+      credential !== undefined &&
+      parsed.data.expiresAt <= credential.expiresAt
+    ) {
+      return
+    }
+    const next: AccountCredential = {
+      token: parsed.data.token,
+      expiresAt: parsed.data.expiresAt,
+      uid: parsed.data.uid,
+      workspace: parsed.data.workspace,
+      role: parsed.data.role,
+      permissions: parsed.data.permissions
+    }
+    // Adoption is a commit: it supersedes any in-flight mint of this tab's
+    // own, exactly like a newer mint would.
+    mintSequence += 1
+    credential = next
+    failure = undefined
+    safeWrite(JSON.stringify(next))
+    publish()
+    armScheduledRefresh(next.expiresAt)
+  }
+
   function armScheduledRefresh(expiresAt: number): void {
     if (!clientOptions.refreshScheduler) return
     stopScheduledRefresh()
     scheduledRetryCount = 0
+    ensureCoordination()
     const now = clientOptions.now?.() ?? Date.now()
+    // A follower holds past the leader's refresh point by bounded random
+    // jitter; when no published credential has arrived by then, the leader
+    // is gone and this tab refreshes for itself.
+    const jitter = isRefreshLeader ? 0 : Math.random() * followerJitterMs
     scheduledTimer = setTimeout(
       () => {
         scheduledTimer = undefined
         void runScheduledRefresh()
       },
-      Math.max(0, expiresAt - schedulerBufferMs - now)
+      Math.max(0, expiresAt - schedulerBufferMs - now) + jitter
     )
   }
 
@@ -680,6 +783,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       failure = undefined
       publish()
       armScheduledRefresh(result.session.expiresAt)
+      if (isRefreshLeader && coordinationKey !== undefined) {
+        crossTab?.port.publishCredential(coordinationKey, result.session)
+      }
       reportOutcome?.('succeeded')
       return
     }
@@ -753,6 +859,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         if (!active) return
         identityEpoch += 1
         stopScheduledRefresh()
+        teardownCoordination()
         currentUser = next
         credential = undefined
         credentialTarget = undefined
@@ -774,6 +881,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         detachCurrent = undefined
         unsubscribe()
         stopScheduledRefresh()
+        teardownCoordination()
         currentUser = null
         credential = undefined
         credentialTarget = undefined
@@ -801,6 +909,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     invalidate() {
       invalidationEpoch += 1
       stopScheduledRefresh()
+      teardownCoordination()
       currentUser = null
       credential = undefined
       credentialTarget = undefined

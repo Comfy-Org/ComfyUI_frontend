@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
+  AccountCredential,
   AccountUser,
   CredentialStorage,
+  CrossTabRefreshPort,
   IdentityPort,
   SessionClientOptions
 } from './session.js'
@@ -356,5 +358,239 @@ describe('opt-in refresh scheduler', () => {
       fetchImpl,
       'valid-on-read hosts opted into no timers'
     ).toHaveBeenCalledOnce()
+  })
+})
+
+function fakeCrossTabPort() {
+  let acquire: (() => void) | undefined
+  let feed: ((message: unknown) => void) | undefined
+  const abandonLeadership = vi.fn()
+  const stopFeed = vi.fn()
+  const published: AccountCredential[] = []
+  const keys: string[] = []
+  const port: CrossTabRefreshPort = {
+    requestLeadership: (key, onAcquired) => {
+      keys.push(key)
+      acquire = onAcquired
+      return abandonLeadership
+    },
+    publishCredential: (_key, credential) => {
+      published.push(credential)
+    },
+    onCredential: (_key, callback) => {
+      feed = callback
+      return stopFeed
+    }
+  }
+  return {
+    port,
+    grantLeadership: () => acquire?.(),
+    receive: (message: unknown) => feed?.(message),
+    published,
+    keys,
+    abandonLeadership,
+    stopFeed
+  }
+}
+
+function publishedCredential(
+  overrides: Partial<AccountCredential> = {}
+): AccountCredential {
+  return {
+    token: 'jwt-from-leader',
+    expiresAt: Date.now() + NINETY_MINUTES_MS,
+    uid: 'uid-1',
+    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+    role: 'owner',
+    permissions: ['workspace:read'],
+    ...overrides
+  }
+}
+
+describe('cross-tab refresh coordination', () => {
+  it('the leader refreshes on schedule and publishes the result', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    tab.grantLeadership()
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+
+    expect(client.getToken()).toBe('jwt-2')
+    expect(
+      tab.published.map((credential) => credential.token),
+      'siblings adopt the refresh from the leader instead of minting their own'
+    ).toEqual(['jwt-2'])
+    expect(tab.keys[0]).toContain('uid-1')
+  })
+
+  it('a follower adopts the published credential instead of minting', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-own')
+    })
+
+    tab.receive(publishedCredential())
+    expect(
+      client.getToken(),
+      'a fresher published credential replaces the token this tab minted'
+    ).toBe('jwt-from-leader')
+
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS / 2)
+    expect(
+      fetchImpl,
+      'an adopted credential re-arms the follower; no own mint before its refresh point'
+    ).toHaveBeenCalledOnce()
+  })
+
+  it('a follower falls back to its own mint when the leader goes quiet', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: { port: tab.port, followerJitterMs: 10_000 }
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10_000 + 10
+    )
+
+    expect(
+      client.getToken(),
+      'a quiet leader must never strand the follower on an expiring token'
+    ).toBe('jwt-2')
+    expect(tab.published, 'followers never publish').toEqual([])
+  })
+
+  it('a promoted follower retakes the schedule without jitter', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    vi.spyOn(Math, 'random').mockReturnValue(0.999)
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: { port: tab.port, followerJitterMs: 60_000 }
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    tab.grantLeadership()
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+
+    expect(
+      client.getToken(),
+      'promotion must rearm at the refresh point, not the jittered fallback of the dead leader'
+    ).toBe('jwt-2')
+    expect(tab.published.map((credential) => credential.token)).toEqual([
+      'jwt-2'
+    ])
+  })
+
+  it('never adopts a credential for another user or a malformed message', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-own')
+    })
+
+    tab.receive(publishedCredential({ uid: 'someone-else' }))
+    tab.receive({ token: 'garbage' })
+    tab.receive('not even an object')
+
+    expect(
+      client.getToken(),
+      'the broadcast crosses a serialization boundary; only a valid same-user credential commits'
+    ).toBe('jwt-own')
+  })
+
+  it('an adopted credential supersedes the in-flight own mint', async () => {
+    let releaseOwn!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOwn = resolve))
+      )
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: { port: tab.port, followerJitterMs: 10_000 }
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10_000 + 10
+    )
+    tab.receive(publishedCredential())
+    releaseOwn(mintResponse('jwt-own-late'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      client.getToken(),
+      'a late own mint resolving after an adoption must not overwrite it'
+    ).toBe('jwt-from-leader')
   })
 })

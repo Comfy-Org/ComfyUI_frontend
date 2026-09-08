@@ -3,6 +3,7 @@ export type {
   AttachIdentityOptions,
   AccountUser,
   CredentialStorage,
+  CrossTabRefreshPort,
   IdentityPort,
   RefreshSchedulerOptions,
   SessionClient,
@@ -28,3 +29,4 @@ export type {
   CreditsState
 } from './credits.js'
 export { createBillingClient } from './credits.js'
+export { createWebCrossTabRefreshPort } from './crossTabRefresh.js'
