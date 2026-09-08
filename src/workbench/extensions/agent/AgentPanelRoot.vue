@@ -686,8 +686,12 @@ async function onAgentActiveTab(
   try {
     const bound = boundWorkflowFor(data.workflow_id)
     if (bound) {
-      await workflowService.openWorkflow(bound)
+      const opened = await workflowService.openWorkflow(bound)
       if (stale()) return
+      if (opened === false) {
+        warnWorkflowUnavailable()
+        return
+      }
       // boundWorkflowFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
       bindingStore.bind(data.workflow_id, bound.path)
@@ -711,11 +715,10 @@ async function onAgentActiveTab(
     if (stale()) return
     const tab = workflowStore.createTemporary(agentTabFilename(data.name))
     tabActivity.setCreating(false)
-    await workflowService.openWorkflow(tab)
-    if (stale()) {
-      // A newer activation superseded this one mid-open: close the minted
-      // tab rather than stranding a ghost the user never asked for.
+    const opened = await workflowService.openWorkflow(tab)
+    if (stale() || opened === false) {
       await workflowStore.closeWorkflow(tab)
+      if (!stale()) warnWorkflowUnavailable()
       return
     }
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
@@ -740,6 +743,7 @@ async function onAgentActiveTab(
 start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
+  ++activeTabGeneration
   ++composerContextGeneration
   ++targetSelectionGeneration
   mintPortWiring.detach()
