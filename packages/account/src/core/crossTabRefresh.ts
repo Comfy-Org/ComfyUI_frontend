@@ -18,6 +18,17 @@ export function createWebCrossTabRefreshPort():
     return undefined
   }
   const locks = navigator.locks
+  // One channel per key, shared by subscribe and publish. A channel never
+  // delivers a message back to itself, so publishing on the subscription
+  // channel keeps a tab from hearing its own broadcasts.
+  const channels = new Map<string, BroadcastChannel>()
+  const channelFor = (key: string): BroadcastChannel => {
+    const existing = channels.get(key)
+    if (existing !== undefined) return existing
+    const created = new BroadcastChannel(key)
+    channels.set(key, created)
+    return created
+  }
   return {
     requestLeadership(key, onAcquired) {
       const controller = new AbortController()
@@ -31,24 +42,32 @@ export function createWebCrossTabRefreshPort():
             releaseHeld = resolve
           })
         })
-        .catch(() => undefined)
+        .catch((error: unknown) => {
+          // Abandoning the request aborts it; anything else means this tab
+          // silently never leads, which deserves a trace.
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return
+          }
+          console.warn('Cross-tab refresh leadership request failed:', error)
+        })
       return () => {
         controller.abort()
         releaseHeld?.()
       }
     },
     publishCredential(key, credential) {
-      const channel = new BroadcastChannel(key)
-      channel.postMessage(credential)
-      channel.close()
+      channelFor(key).postMessage(credential)
     },
     onCredential(key, callback) {
-      const channel = new BroadcastChannel(key)
+      const channel = channelFor(key)
       channel.onmessage = (event) => {
         const message: unknown = event.data
         callback(message)
       }
-      return () => channel.close()
+      return () => {
+        channel.close()
+        channels.delete(key)
+      }
     }
   }
 }
