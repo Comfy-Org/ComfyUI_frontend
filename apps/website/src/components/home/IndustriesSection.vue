@@ -11,7 +11,15 @@ import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import BlobMedia from './BlobMedia.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  heading,
+  body
+} = defineProps<{
+  locale?: Locale
+  heading?: string
+  body?: string
+}>()
 
 interface Industry {
   label: string
@@ -125,7 +133,20 @@ const ambientClipId = `industries-ambient-${uid}`
     >
       <!-- Copy column -->
       <div class="flex flex-col items-start gap-10">
-        <div class="flex flex-col gap-6">
+        <div v-if="heading" class="flex flex-col gap-6">
+          <h2
+            class="max-w-md text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
+          >
+            {{ heading }}
+          </h2>
+          <p
+            v-if="body"
+            class="max-w-md text-lg/relaxed text-primary-warm-gray"
+          >
+            {{ body }}
+          </p>
+        </div>
+        <div v-else class="flex flex-col gap-6">
           <p
             class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
           >
