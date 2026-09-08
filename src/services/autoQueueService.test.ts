@@ -5,12 +5,15 @@ import { nextTick } from 'vue'
 
 vi.mock('@/platform/assets/composables/media/assetMappers')
 
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+
 const mocks = vi.hoisted(() => ({
   addEventListener:
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
   lastExecutionError: null as object | null,
-  gateBlocks: false
+  gateBlocks: false,
+  activeWorkflow: null as LoadedComfyWorkflow | null
 }))
 
 vi.mock('@/composables/billing/usePartnerNodesRunGate', () => ({
@@ -30,6 +33,16 @@ vi.mock('@/scripts/app', () => ({
       return mocks.lastExecutionError
     }
   }
+}))
+
+vi.mock('@/stores/workspaceStore', () => ({
+  useWorkspaceStore: vi.fn(() => ({
+    workflow: {
+      get activeWorkflow() {
+        return mocks.activeWorkflow
+      }
+    }
+  }))
 }))
 
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -59,6 +72,7 @@ describe('setupAutoQueueHandler', () => {
     useQueuePendingTaskCountStore().count = 0
     mocks.lastExecutionError = null
     mocks.gateBlocks = false
+    mocks.activeWorkflow = null
   })
 
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
@@ -144,5 +158,58 @@ describe('setupAutoQueueHandler', () => {
       mocks.queuePrompt,
       'a false from a busy processor already enqueued the item; do not queue it again'
     ).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps Run Instant bound to the workflow where it started', async () => {
+    const workflowA = { path: 'workflows/a.json' } as LoadedComfyWorkflow
+    const workflowB = { path: 'workflows/b.json' } as LoadedComfyWorkflow
+    const queueSettingsStore = useQueueSettingsStore()
+    const queueCountStore = useQueuePendingTaskCountStore()
+
+    mocks.activeWorkflow = workflowA
+    queueSettingsStore.batchCount = 3
+    setupAutoQueueHandler()
+
+    queueSettingsStore.mode = 'instant-running'
+    await nextTick()
+    mocks.activeWorkflow = workflowB
+
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+
+    expect(mocks.queuePrompt).toHaveBeenCalledWith(0, 3, {
+      intent: { trigger_source: 'auto_queue' },
+      workflow: workflowA
+    })
+  })
+
+  it('captures the current workflow when Run Instant restarts', async () => {
+    const workflowA = { path: 'workflows/a.json' } as LoadedComfyWorkflow
+    const workflowB = { path: 'workflows/b.json' } as LoadedComfyWorkflow
+    const queueSettingsStore = useQueueSettingsStore()
+    const queueCountStore = useQueuePendingTaskCountStore()
+
+    mocks.activeWorkflow = workflowA
+    setupAutoQueueHandler()
+
+    queueSettingsStore.mode = 'instant-running'
+    await nextTick()
+    queueSettingsStore.mode = 'instant-idle'
+    await nextTick()
+    mocks.activeWorkflow = workflowB
+    queueSettingsStore.mode = 'instant-running'
+    await nextTick()
+
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+
+    expect(mocks.queuePrompt).toHaveBeenCalledWith(0, 2, {
+      intent: { trigger_source: 'auto_queue' },
+      workflow: workflowB
+    })
   })
 })
