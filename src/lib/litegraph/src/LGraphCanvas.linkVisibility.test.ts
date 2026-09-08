@@ -3,7 +3,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { t } from '@/i18n'
 import type {
   CanvasPointerEvent,
   IContextMenuOptions,
@@ -154,7 +153,7 @@ describe('LGraphCanvas link visibility interactions', () => {
     void menuOptions.callback?.('Rename')
 
     expect(prompt).toHaveBeenCalledWith(
-      t('contextMenu.Rename'),
+      'Rename',
       'Checkpoint',
       expect.any(Function),
       event

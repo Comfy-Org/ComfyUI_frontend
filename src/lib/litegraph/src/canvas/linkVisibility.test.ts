@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { t } from '@/i18n'
+import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -78,27 +78,34 @@ describe('link visibility mutations', () => {
     ).toBeUndefined()
   })
 
-  it('seeds the rename prompt with the stored label', () => {
+  it('localizes and seeds the rename prompt', async () => {
     const link = createLink()
     const scope = graphScopeOf(new LGraph())
     const host = createHost()
     const event = fromPartial<CanvasPointerEvent>({})
+    const originalLocale = i18n.global.locale.value
 
-    promptRenameLinkBadge(host, scope, link.id, event)
+    await loadLocale('fr')
+    i18n.global.locale.value = 'fr'
+    try {
+      promptRenameLinkBadge(host, scope, link.id, event)
 
-    expect(host.prompt).toHaveBeenCalledWith(
-      t('contextMenu.Rename'),
-      '',
-      expect.any(Function),
-      event
-    )
+      expect(host.prompt).toHaveBeenCalledWith(
+        'Renommer',
+        '',
+        expect.any(Function),
+        event
+      )
 
-    const callback = host.prompt.mock.calls[0][2]
-    callback('  Checkpoint  ')
+      const callback = host.prompt.mock.calls[0][2]
+      callback('  Checkpoint  ')
 
-    expect(
-      useLinkPresentationStore().getPresentation(scope, link.id)?.label
-    ).toBe('Checkpoint')
+      expect(
+        useLinkPresentationStore().getPresentation(scope, link.id)?.label
+      ).toBe('Checkpoint')
+    } finally {
+      i18n.global.locale.value = originalLocale
+    }
   })
 
   it('produces a reversible graph serialization change', () => {
