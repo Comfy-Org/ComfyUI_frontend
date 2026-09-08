@@ -43,17 +43,7 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <ul
-      v-else
-      :class="
-        cn(
-          'grid gap-3',
-          examples.length === 1
-            ? 'max-w-56 grid-cols-1'
-            : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
-        )
-      "
-    >
+    <ul v-else class="grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"

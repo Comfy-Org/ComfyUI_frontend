@@ -22,7 +22,7 @@ const WORKFLOW_TEMPLATES_BASE =
 const OUTPUT = fileURLToPath(
   new URL('../src/config/workshop-models.generated.json', import.meta.url)
 )
-const EXAMPLES_PER_MODEL = 6
+const EXAMPLES_PER_MODEL = 3
 
 type Modality = 'image' | 'video' | 'audio' | '3d' | 'text'
 type Primitive = string | number | boolean
