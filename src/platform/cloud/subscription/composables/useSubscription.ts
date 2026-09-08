@@ -32,6 +32,7 @@ import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
+  getPendingSubscriptionCheckoutAttempt,
   hasPendingSubscriptionCheckoutAttempt,
   recordPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
@@ -42,6 +43,14 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 >
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
+
+/**
+ * How long a checkout may plausibly take before a still-pending attempt counts
+ * as never having landed. The retry ladder above starts the moment the checkout
+ * tab opens and exhausts 43s later, which is well inside the time a real user
+ * spends entering card details and clearing 3DS.
+ */
+const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<BillingStatusResponse | null>(null)
@@ -146,6 +155,43 @@ function useSubscriptionInternal() {
     hasReportedPendingCheckoutRecoveryExhaustion = false
   }
 
+  const reportMissingCheckoutCompletion = () => {
+    if (hasReportedPendingCheckoutRecoveryExhaustion) {
+      return
+    }
+
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    if (!attempt) {
+      return
+    }
+
+    const attemptAgeMs = Date.now() - attempt.started_at_ms
+    if (attemptAgeMs < PENDING_CHECKOUT_COMPLETION_DEADLINE_MS) {
+      return
+    }
+
+    reportTelemetryError(
+      new Error('Pending subscription checkout recovery timed out'),
+      {
+        errorType: 'cloud_checkout_completion_missing',
+        tags: {
+          failure_kind: 'missing_event',
+          feature_area: 'cloud',
+          operation: 'sync',
+          outcome: 'timed_out',
+          assert_mode: 'soft'
+        },
+        context: {
+          recovery_attempt_count: pendingCheckoutRecoveryAttempt,
+          has_pending_attempt: hasPendingSubscriptionCheckoutAttempt(),
+          is_logged_in: isLoggedIn.value
+        },
+        level: 'warning'
+      }
+    )
+    hasReportedPendingCheckoutRecoveryExhaustion = true
+  }
+
   const schedulePendingCheckoutRecovery = () => {
     if (
       !defaultWindow ||
@@ -161,28 +207,7 @@ function useSubscriptionInternal() {
     )
 
     if (nextDelay === undefined) {
-      if (!hasReportedPendingCheckoutRecoveryExhaustion) {
-        reportTelemetryError(
-          new Error('Pending subscription checkout recovery timed out'),
-          {
-            errorType: 'cloud_checkout_completion_missing',
-            tags: {
-              failure_kind: 'missing_event',
-              feature_area: 'cloud',
-              operation: 'sync',
-              outcome: 'timed_out',
-              assert_mode: 'soft'
-            },
-            context: {
-              recovery_attempt_count: pendingCheckoutRecoveryAttempt,
-              has_pending_attempt: hasPendingSubscriptionCheckoutAttempt(),
-              is_logged_in: isLoggedIn.value
-            },
-            level: 'warning'
-          }
-        )
-        hasReportedPendingCheckoutRecoveryExhaustion = true
-      }
+      reportMissingCheckoutCompletion()
       return
     }
 

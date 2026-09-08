@@ -576,13 +576,40 @@ describe('useSubscription', () => {
   })
 
   describe('pending checkout recovery', () => {
-    it('reports once when pending checkout recovery exhausts its retry window', async () => {
+    it('does not report while the checkout could still plausibly complete', async () => {
+      vi.useFakeTimers()
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-in-progress',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+    })
+
+    it('reports once when a checkout has missed its completion deadline', async () => {
       vi.useFakeTimers()
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
           attempt_id: 'attempt-timeout',
-          started_at_ms: Date.now(),
+          started_at_ms: Date.now() - 11 * 60 * 1000,
           tier: 'standard',
           cycle: 'monthly',
           checkout_type: 'new'
