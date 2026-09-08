@@ -13,6 +13,8 @@
     "./turnstileScript": "./src/turnstileScript.ts",
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
+    "./redirect": "./src/redirect.ts",
+    "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
   "scripts": {
