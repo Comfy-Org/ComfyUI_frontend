@@ -102,7 +102,7 @@ function makeOtherWidget(name: string, value: unknown): IBaseWidget {
 /** Mocks read connectivity from their own input mock data. */
 function stampInputConnectivity(node: LGraphNode): LGraphNode {
   return Object.assign(node, {
-    isInputConnected: (slot: number) => node.inputs?.[slot]?.link != null
+    isInputConnected: (slot: number) => node.inputs[slot].link != null
   })
 }
 

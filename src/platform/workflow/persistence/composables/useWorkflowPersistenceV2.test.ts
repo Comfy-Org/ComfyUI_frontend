@@ -562,7 +562,7 @@ describe('useWorkflowPersistenceV2', () => {
       const restored = workflowStore.getWorkflowByPath(path)
       expect(restored).toBeTruthy()
       expect(restored?.isTemporary).toBe(true)
-      expect(workflowStore.openWorkflows.map((w) => w?.path)).toContain(path)
+      expect(workflowStore.openWorkflows.map((w) => w.path)).toContain(path)
     })
 
     it('skips activation when persistence is disabled', async () => {

@@ -290,14 +290,14 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
     // A host node's legacy proxyWidgets must follow its own definition's
     // remap, not another definition's.
     for (const host of graph.nodes) {
-      const definitionId = String(host.type)
+      const definitionId = host.type
       const subgraph = graph.subgraphs.get(definitionId)
       if (!subgraph) continue
 
-      const proxyWidgets = parseProxyWidgets(host.properties?.proxyWidgets)
+      const proxyWidgets = parseProxyWidgets(host.properties.proxyWidgets)
       expect(proxyWidgets).toHaveLength(1)
       for (const entry of proxyWidgets) {
-        expect(subgraph.getNodeById(toNodeId(String(entry[0])))?.title).toBe(
+        expect(subgraph.getNodeById(toNodeId(entry[0]))?.title).toBe(
           `${subgraph.name}#7`
         )
       }
@@ -307,7 +307,7 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
   it('remints link, reroute and group ids so no id collides across scopes, because all scopes share the root graph store', () => {
     // The dedicated stores are keyed by root graph id, so ids colliding across
     // scopes are identity collisions the stores refuse to merge: the later
-    // registration remints a fresh id (see ADR-0003). Each scope still owns
+    // registration remints a fresh id (see ADR-CRDT-LAYOUT-0003). Each scope still owns
     // exactly one link, reroute and group, and every reference is patched.
     const graph = configureColliding()
     const scopes = scopesOf(graph)
@@ -340,7 +340,7 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
   it('normalisation is value-idempotent: the second save reproduces every id, reference and entity of the first', () => {
     // Release each instance's store entities (graph.clear()) before loading
     // the same root graph id again: two live claimants of one root id are an
-    // identity collision the store resolves by reminting (ADR-0003), which is
+    // identity collision the store resolves by reminting (ADR-CRDT-LAYOUT-0003), which is
     // correct in the app (one live graph per id) but would skew this harness.
     const graph = configureColliding()
     const first = graph.serialize()

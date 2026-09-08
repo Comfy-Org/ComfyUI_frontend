@@ -214,7 +214,7 @@ describe('AssetFilterBar', () => {
       const options = fileFormatEl.querySelectorAll('option')
       expect(
         Array.from(options).map((o) => ({
-          name: o.textContent?.trim(),
+          name: o.textContent.trim(),
           value: o.value
         }))
       ).toEqual([
@@ -237,7 +237,7 @@ describe('AssetFilterBar', () => {
       const options = baseModelEl.querySelectorAll('option')
       expect(
         Array.from(options).map((o) => ({
-          name: o.textContent?.trim(),
+          name: o.textContent.trim(),
           value: o.value
         }))
       ).toEqual([

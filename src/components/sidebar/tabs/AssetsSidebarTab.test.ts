@@ -1,14 +1,18 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 const folderAsset = vi.hoisted(() => ({
   id: 'multi-output',
   name: 'multi-output.png',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
   tags: ['output'],
   user_metadata: {
     jobId: 'multi-output-job',
@@ -18,14 +22,23 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
+const outputAssetState = vi.hoisted(() => ({
+  items: [] as (typeof folderAsset)[],
+  hasMore: false
+}))
+
 vi.mock('@/stores/assetsStore', async () => {
   const { ref } = await import('vue')
 
   const store = {
     outputAssets: {
-      items: ref([folderAsset]),
+      get items() {
+        return outputAssetState.items
+      },
       isLoading: ref(false),
-      hasMore: ref(false),
+      get hasMore() {
+        return outputAssetState.hasMore
+      },
       loadMore: vi.fn(),
       loadNew: vi.fn(),
       invalidate: vi.fn()
@@ -84,10 +97,7 @@ vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveOutputAssetItems: vi.fn(async () => [folderAsset])
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
 
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: vi.fn() })
@@ -125,10 +135,12 @@ const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click'],
   template: `
-    <button
-      aria-label="Enter output folder"
-      @click="$emit('output-count-click', assets[0])"
-    />
+    <div data-testid="assets-grid">
+      <button
+        aria-label="Enter output folder"
+        @click="$emit('output-count-click', assets[0])"
+      />
+    </div>
   `
 }
 
@@ -159,8 +171,23 @@ function renderTab() {
   })
 }
 
+beforeEach(() => {
+  outputAssetState.items = [folderAsset]
+  outputAssetState.hasMore = false
+})
+
+it('keeps pagination mounted when more assets can be loaded', () => {
+  outputAssetState.items = []
+  outputAssetState.hasMore = true
+
+  renderTab()
+
+  expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
+
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })

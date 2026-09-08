@@ -21,7 +21,7 @@ const E2E_API_KEY = 'comfyui-e2e-api-key'
 // Workspace-rail mocks authenticate like the real API: a request that does
 // not carry the stored key as X-API-KEY gets a 401 instead of data, so the
 // suite fails if the client stops wiring the credential through.
-const fulfillForApiKey = <T>(route: Route, body: T) =>
+const fulfillForApiKey = (route: Route, body: unknown) =>
   route.request().headers()['x-api-key'] === E2E_API_KEY
     ? route.fulfill(jsonRoute(body))
     : route.fulfill({
@@ -109,7 +109,8 @@ export const apiKeyAuthFixture = base.extend<{
         occupied_seats: 1,
         subscription_status: 'active',
         subscription_tier: 'TEAM',
-        team_credit_stop: null
+        team_credit_stop: null,
+        scheduled_change: null
       } satisfies BillingStatusResponse)
     )
     await page.route('**/api/billing/balance', (route) =>

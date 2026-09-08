@@ -21,7 +21,7 @@ test(
     await comfyPage.page.evaluate(async () => {
       ;(
         window.app!.extensionManager as WorkspaceStore
-      ).workflow.activeWorkflow?.changeTracker?.captureCanvasState()
+      ).workflow.activeWorkflow?.changeTracker.captureCanvasState()
     })
     await expect
       .poll(() => comfyPage.page.title())

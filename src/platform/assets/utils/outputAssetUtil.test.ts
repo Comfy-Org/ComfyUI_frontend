@@ -5,13 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import {
-  getTotalAssetOutputCount,
-  resolveOutputAssetItems
-} from './outputAssetUtil'
+import { getTotalAssetOutputCount } from './outputAssetCountUtil'
+import { resolveOutputAssetItems } from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),
@@ -40,11 +38,13 @@ type OutputOverrides = Partial<{
   display_name: string
 }>
 
-function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
-  const merged = {
+function createOutput(overrides: OutputOverrides = {}): AugmentedResultItem {
+  const merged: AugmentedResultItem = {
     filename: 'file.png',
     subfolder: 'sub',
+    type: 'output',
     nodeId: '1',
+    mediaType: 'images',
     url: 'https://example.com/file.png',
     ...overrides
   }
@@ -52,7 +52,7 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
     ...merged,
     previewUrl: merged.url,
     display_name: merged.display_name
-  } as ResultItemImpl
+  }
 }
 
 function createAsset(
@@ -433,9 +433,7 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     const [asset] = results
-    if (!asset) {
-      throw new Error('Expected a root output asset')
-    }
+
     expect(asset.id).toBe(`job-root-${getOutputKey(output)}`)
     if (!asset.user_metadata) {
       throw new Error('Expected output metadata')
