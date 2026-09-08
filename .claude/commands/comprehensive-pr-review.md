@@ -157,8 +157,12 @@ correct.
 
 For each override:
 
-1. Remove it in the local checkout and run the narrowest owning lint or
-   typecheck command. Record the exact diagnostic, then restore the file.
+1. Remove it in the local checkout. Run the linter named by the directive on the
+   changed file, or run the typecheck project that includes the file. `pnpm lint`
+   does not prove that ESLint checked a file outside `src/`. `pnpm typecheck`
+   does not cover `browser_tests/`, `scripts/`, `tools/`, or `apps/website/`.
+   Use the corresponding `typecheck:*` script for those paths. Record the exact
+   diagnostic, then restore the file.
 2. Trace the value to its runtime owner and authoritative type or schema.
 3. Search for an existing typed helper, generated type, guard, parser, fixture,
    semantic query, or readiness signal that avoids the override.

@@ -27,6 +27,11 @@ has the claimed type. Before overriding the compiler:
 4. Fix the source type, narrow the value, or parse external data at the boundary.
 5. Run the owning typecheck without the override.
 
+Confirm that the typecheck project includes the changed file. `pnpm typecheck`
+does not cover `browser_tests/`, `scripts/`, `tools/`, or `apps/website/`. Use
+`pnpm typecheck:browser`, `pnpm typecheck:scripts`, `pnpm typecheck:tools`, or
+`pnpm typecheck:website` for those paths.
+
 Use real platform objects and generated types when they own the contract. For
 example, construct a `Response` instead of casting an object to `Response`.
 Model malformed runtime input as `unknown` and pass it through the boundary
