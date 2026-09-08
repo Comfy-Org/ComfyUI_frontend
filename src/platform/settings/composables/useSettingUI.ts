@@ -14,6 +14,7 @@ import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { NavGroupData } from '@/types/navTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -32,6 +33,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   Other: 'icon-[lucide--ellipsis]',
   PlanCredits: 'icon-[lucide--receipt-text]',
   secrets: 'icon-[lucide--key-round]',
+  'skill-packs': 'icon-[lucide--book-open-text]',
   'server-config': 'icon-[lucide--server]',
   user: 'icon-[lucide--user]',
   workspace: 'icon-[lucide--building-2]',
@@ -58,6 +60,7 @@ export function useSettingUI(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { workspaceRole } = useWorkspaceUI()
   const governanceStore = usePartnerNodeGovernanceStore()
+  const skillPacksStore = useSkillPacksStore()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -217,6 +220,22 @@ export function useSettingUI(
     () => flags.userSecretsEnabled && isLoggedIn.value
   )
 
+  const skillPacksPanel: SettingPanelItem = {
+    node: {
+      key: 'skill-packs',
+      label: 'SkillPacks',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/skills/components/SkillPacksPanel.vue')
+    )
+  }
+
+  // Both cohort flags plus a runtime check that the routes have not 404'd.
+  const shouldShowSkillPacksPanel = computed(
+    () => skillPacksStore.enabled && isLoggedIn.value
+  )
+
   const keybindingPanel: SettingPanelItem = {
     node: {
       key: 'keybinding',
@@ -258,7 +277,8 @@ export function useSettingUI(
     keybindingPanel,
     extensionPanel,
     ...(isDesktop ? [serverConfigPanel] : []),
-    ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
+    ...(shouldShowSecretsPanel.value ? [secretsPanel] : []),
+    ...(shouldShowSkillPacksPanel.value ? [skillPacksPanel] : [])
   ])
 
   /**
@@ -313,6 +333,9 @@ export function useSettingUI(
         ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
         ...(shouldShowSecretsPanel.value
           ? [translateCategory(secretsPanel.node)]
+          : []),
+        ...(shouldShowSkillPacksPanel.value
+          ? [translateCategory(skillPacksPanel.node)]
           : []),
         ...coreSettingCategories.value.slice(1).map(translateCategory),
         translateCategory(keybindingPanel.node),
@@ -373,6 +396,7 @@ export function useSettingUI(
 
   onMounted(() => {
     activeCategory.value = defaultCategory.value
+    void skillPacksStore.startFlagGate()
   })
 
   return {

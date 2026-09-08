@@ -1679,7 +1679,8 @@
     "Other": "Other",
     "Secrets": "Secrets",
     "Node Library": "Node Library",
-    "PointCloud": "Point Cloud"
+    "PointCloud": "Point Cloud",
+    "SkillPacks": "Skill Packs"
   },
   "serverConfigItems": {
     "listen": {
@@ -5259,5 +5260,42 @@
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
     "showLess": "Show less"
+  },
+  "skillPacks": {
+    "title": "Agent Skill Packs",
+    "panelDescription": "Write down a preference once and the agent loads it when the trigger line matches. Packs are private to you.",
+    "yourPacks": "Your Packs",
+    "addPack": "Add Skill Pack",
+    "editPack": "Edit Skill Pack",
+    "publish": "Publish",
+    "noPacks": "No skill packs yet. Add one to teach the agent a preference you keep repeating.",
+    "name": "Name",
+    "namePlaceholder": "e.g., my-render-defaults",
+    "nameHint": "Letters, digits, '.', '_' and '-'. This is the name the agent loads the pack by.",
+    "triggerLine": "Trigger line",
+    "triggerLinePlaceholder": "Load me when the user asks about upscaling",
+    "triggerLineHint": "One line saying when to load this pack. It rides in every prompt whether the pack is used or not, so keep it short.",
+    "body": "Instructions",
+    "bodyPlaceholder": "The instructions the agent follows once this pack is loaded.",
+    "bodySize": "{bytes} of {max} bytes",
+    "packSize": "{bytes} bytes",
+    "atLimitTitle": "You are at your limit",
+    "atLimitHint": "Remove a pack to make room for this one.",
+    "deleteConfirmTitle": "Delete Skill Pack",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "errors": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must be {max} characters or less",
+      "nameCharset": "Name may only use letters, digits, '.', '_' and '-', and must include at least one character that is not a dot",
+      "nameReserved": "\"{name}\" is a built-in pack name and cannot be used",
+      "descriptionRequired": "Trigger line is required",
+      "descriptionSingleLine": "Trigger line must be a single line with no control characters",
+      "descriptionTooLong": "Trigger line must be {max} characters or less",
+      "bodyRequired": "Instructions are required",
+      "bodyTooLarge": "Instructions must be {max} bytes or less",
+      "tooManyPacks": "You already have the maximum of {max} skill packs. Remove one to add another.",
+      "totalTooLarge": "Your packs would total {over} bytes over the {max} byte limit. Remove a pack to make room.",
+      "totalAtLimit": "Your packs have reached the {max} byte total limit. Remove a pack to add another."
+    }
   }
 }
