@@ -474,6 +474,37 @@ describe('ensureFresh', () => {
     ).toBeUndefined()
   })
 
+  it('a superseded same-target caller receives the newer committed session', async () => {
+    let releaseSlow!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseSlow = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'newer-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+
+    const slow = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const fast = await client.remint(user, {})
+    expect(fast?.status === 'ok' && fast.session.token).toBe('newer-jwt')
+
+    releaseSlow(jsonResponse(200, mintBody({ token: 'slow-jwt' })))
+    const superseded = await slow
+
+    expect(
+      superseded?.status === 'ok' && superseded.session.token,
+      'the caller asked for a session this target already has; losing the mint race is not a failure'
+    ).toBe('newer-jwt')
+    expect(client.getToken()).toBe('newer-jwt')
+  })
+
   it('resolves an expired-cache read with the NEW token when the mint lands after the call', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
