@@ -63,7 +63,7 @@ reconstructing one.
 | ---------------------------------- | --------------------------------- | ------------------------------ |
 | Phase boundary                     | `datadogRum.addTiming(phase)`     | `@view.custom_timings.<phase>` |
 | Time to a usable app               | `datadogRum.setViewLoadingTime()` | `@view.loading_time`           |
-| Per-session outcome and breakdown  | `app:bootstrap_complete` action   | `@action.context.*`            |
+| Per-session outcome and breakdown  | `app:bootstrap_complete` action   | `@context.*`                   |
 | Phase timings attached to an error | Sentry breadcrumb                 | breadcrumb trail               |
 | Local investigation                | `performance.mark`/`measure`      | DevTools timeline              |
 
@@ -88,11 +88,11 @@ contributes only the `timed_out` row.
 
 Queries must therefore select an outcome rather than counting rows:
 
-| Question                               | Filter                                                         |
-| -------------------------------------- | -------------------------------------------------------------- |
-| How long did startup take              | `outcome:(completed OR failed)` — one row per finished session |
-| How many sessions blew past 30 s       | `outcome:timed_out` — one row per affected session             |
-| How many sessions are affected overall | count distinct session id, not rows                            |
+| Question                               | Filter                                                                  |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| How long did startup take              | `@context.outcome:(completed OR failed)` — one row per finished session |
+| How many sessions blew past 30 s       | `@context.outcome:timed_out` — one row per affected session             |
+| How many sessions are affected overall | count distinct session id, not rows                                     |
 
 An undifferentiated row count double-counts every hung session.
 
@@ -114,8 +114,7 @@ loading-time percentiles down. Failures are counted through the action's
 ADR-TELEMETRY-ROUTING-0013 routes dual-emission through `TelemetryRegistry`.
 This signal
 deviates for Datadog only: the registry does not exist during early startup,
-which is precisely when the signal matters. `reportError()` already bypasses
-the registry for the same reason and the same sink. `perfMark.ts` sits under
+which is precisely when the signal matters. `bootstrapTracer.ts` sits under
 `src/platform/telemetry/**`, which `no-restricted-imports` permits to import
 the sinks behind an explicit disable comment.
 
@@ -145,12 +144,11 @@ past telemetry init.
 
 - `setViewLoadingTime()` is marked `[Experimental]` in `@datadog/browser-rum`
   6.33.0. If its behavior changes, `@view.loading_time` is affected;
-  `app:bootstrap_complete.total_ms` is the unaffected fallback and is
+  `@context.total_ms` is the unaffected fallback and is
   deliberately retained rather than deduplicated away.
-- Custom timings attach to the view current when recorded and are dropped once
-  that view ends, so a route change mid-startup — the login redirect —
-  truncates the timing series. The aggregate action is unaffected and is the
-  system of record.
+- Custom timings attach to the view current when recorded, so a route change
+  mid-startup — the login redirect — splits the timing series across views.
+  The aggregate action carries the complete series and is the system of record.
 - Emitting to Datadog directly rather than through the registry means a future
   sink added to the registry does not automatically receive this signal.
 - Datadog and PostHog will disagree on volume, as ADR-TELEMETRY-ROUTING-0013
@@ -179,8 +177,9 @@ phase behind a hand-built dashboard when `@view.custom_timings` and
 loading time with Core Web Vitals.
 
 **Emit only native timings, no aggregate action.** Rejected: timings cannot
-express `outcome` or `pending`, cannot survive a mid-startup route change, and
-cannot answer the affected-user-count question that motivated the work.
+express `outcome` or `pending`, cannot provide one complete series across a
+mid-startup route change, and cannot answer the affected-user-count question
+that motivated the work.
 
 **Use `addDurationVital` for the page load.** Rejected as redundant with
 `view.loading_time` and a misuse of a primitive meant for discrete in-view
