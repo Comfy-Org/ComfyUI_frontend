@@ -5,8 +5,8 @@ import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProv
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 
 // Mock the provider modules to control their behavior
-vi.mock('@/services/providers/algoliaSearchProvider')
-vi.mock('@/services/providers/registrySearchProvider')
+vi.mock(import('@/services/providers/algoliaSearchProvider'))
+vi.mock(import('@/services/providers/registrySearchProvider'))
 
 describe('useRegistrySearchGateway', () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>
