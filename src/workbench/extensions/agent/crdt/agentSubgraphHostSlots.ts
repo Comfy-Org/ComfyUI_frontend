@@ -17,10 +17,21 @@ import type {
 
 export type SubgraphDefinitionIndex = ReadonlyMap<string, ExportedSubgraph>
 
+/**
+ * Flattens the definition tree (each definition may carry nested
+ * `definitions.subgraphs`) into one id-keyed index. The first definition
+ * seen for an id wins, so a nested copy never shadows a top-level one.
+ */
 export function indexSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): SubgraphDefinitionIndex {
-  return new Map(definitions.map((definition) => [definition.id, definition]))
+  const index = new Map<string, ExportedSubgraph>()
+  const visit = (definition: ExportedSubgraph) => {
+    if (!index.has(definition.id)) index.set(definition.id, definition)
+    for (const nested of definition.definitions?.subgraphs ?? []) visit(nested)
+  }
+  for (const definition of definitions) visit(definition)
+  return index
 }
 
 /**

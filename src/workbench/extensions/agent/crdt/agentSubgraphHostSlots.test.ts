@@ -86,6 +86,29 @@ describe('agentSubgraphHostSlots', () => {
     expect(index.has('sg-2')).toBe(false)
   })
 
+  it('indexes definitions nested under an outer definition', () => {
+    const nested = { ...definition(), id: 'sg-nested' }
+    const outer = {
+      ...definition(),
+      definitions: { subgraphs: [nested] }
+    }
+    const index = indexSubgraphDefinitions([outer])
+    expect(index.get('sg-1')).toBe(outer)
+    expect(index.get('sg-nested')).toBe(nested)
+  })
+
+  it('keeps the first definition when a nested one repeats an id', () => {
+    const shadow = { ...definition(), name: 'shadow' }
+    const outer = {
+      ...definition(),
+      id: 'sg-outer',
+      definitions: { subgraphs: [shadow] }
+    }
+    const first = definition()
+    const index = indexSubgraphDefinitions([first, outer])
+    expect(index.get('sg-1')).toBe(first)
+  })
+
   it('reports only inputs linked to a widget-bearing interior slot, in order', () => {
     expect(promotedWidgetNames(definition())).toEqual(['value'])
   })
