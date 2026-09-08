@@ -1,0 +1,274 @@
+name: 'PR: Resolve Lockfile Conflicts After Base Updates'
+
+on:
+  push:
+    branches: [main]
+    paths: [pnpm-lock.yaml]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    outputs:
+      candidates: ${{ steps.scan.outputs.result }}
+    steps:
+      - name: Find conflicting pull requests
+        id: scan
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const baseRef = context.ref.replace('refs/heads/', '');
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: baseRef,
+              per_page: 100,
+            });
+            const candidates = [];
+            for (const pull of pulls) {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pull.number,
+                per_page: 100,
+              });
+              if (!files.some(file => file.filename === 'pnpm-lock.yaml')) continue;
+
+              const { data: livePull } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pull.number,
+              });
+              if (
+                livePull.state !== 'open' ||
+                livePull.base.ref !== baseRef ||
+                !livePull.head.repo
+              ) continue;
+              if (
+                livePull.head.repo.full_name !== process.env.GITHUB_REPOSITORY &&
+                !livePull.maintainer_can_modify
+              ) continue;
+
+              candidates.push({
+                number: pull.number,
+                baseRef,
+                baseSha: context.sha,
+                headRef: livePull.head.ref,
+                headRepo: livePull.head.repo.full_name,
+                headSha: livePull.head.sha,
+              });
+            }
+            return candidates;
+
+  generate:
+    needs: scan
+    if: needs.scan.outputs.candidates != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        pull: ${{ fromJSON(needs.scan.outputs.candidates) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ matrix.pull.headRepo }}
+          ref: ${{ matrix.pull.headSha }}
+          persist-credentials: false
+
+      - name: Reproduce lockfile-only conflict
+        id: conflict
+        env:
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ matrix.pull.baseSha }}
+        run: |
+          git remote add upstream "https://github.com/$BASE_REPOSITORY.git"
+          git fetch --no-tags upstream "$BASE_SHA"
+          set +e
+          git merge --no-commit --no-ff "$BASE_SHA"
+          merge_status=$?
+          set -e
+          if [ "$merge_status" -ne 0 ] && \
+             [ "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml' ]; then
+            git checkout --theirs pnpm-lock.yaml
+            git add pnpm-lock.yaml
+            echo 'eligible=true' >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort || true
+            git reset --hard HEAD
+            echo 'eligible=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pnpm
+        if: steps.conflict.outputs.eligible == 'true'
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Setup Node.js
+        if: steps.conflict.outputs.eligible == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Repair lockfile
+        if: steps.conflict.outputs.eligible == 'true'
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+
+      - name: Prepare repair artifact
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/lockfile-repair
+          ELIGIBLE: ${{ steps.conflict.outputs.eligible }}
+        run: |
+          mkdir "$ARTIFACT_DIR"
+          printf '%s\n' "$ELIGIBLE" > "$ARTIFACT_DIR/eligible"
+          if [ "$ELIGIBLE" = 'true' ]; then
+            cp pnpm-lock.yaml "$ARTIFACT_DIR/pnpm-lock.yaml"
+          fi
+
+      - name: Upload repaired lockfile
+        uses: actions/upload-artifact@v6
+        with:
+          name: lockfile-conflict-repair-${{ matrix.pull.number }}
+          path: ${{ runner.temp }}/lockfile-repair
+          retention-days: 1
+
+  apply:
+    needs: [scan, generate]
+    if: needs.scan.outputs.candidates != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        pull: ${{ fromJSON(needs.scan.outputs.candidates) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Revalidate pull request
+        id: pr
+        uses: actions/github-script@v9
+        env:
+          EXPECTED_BASE_REF: ${{ matrix.pull.baseRef }}
+          EXPECTED_HEAD_REF: ${{ matrix.pull.headRef }}
+          EXPECTED_HEAD_REPOSITORY: ${{ matrix.pull.headRepo }}
+          EXPECTED_HEAD_SHA: ${{ matrix.pull.headSha }}
+          PR_NUMBER: ${{ matrix.pull.number }}
+        with:
+          script: |
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            });
+            const valid =
+              pull.state === 'open' &&
+              pull.base.ref === process.env.EXPECTED_BASE_REF &&
+              pull.head.sha === process.env.EXPECTED_HEAD_SHA &&
+              pull.head.repo?.full_name === process.env.EXPECTED_HEAD_REPOSITORY &&
+              pull.head.ref === process.env.EXPECTED_HEAD_REF &&
+              (pull.head.repo.full_name === process.env.GITHUB_REPOSITORY ||
+                pull.maintainer_can_modify);
+            core.setOutput('valid', String(valid));
+
+      - name: Download repaired lockfile
+        uses: actions/download-artifact@v8
+        with:
+          name: lockfile-conflict-repair-${{ matrix.pull.number }}
+          path: ${{ runner.temp }}/lockfile-repair
+
+      - name: Validate repair artifact
+        id: artifact
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/lockfile-repair
+        run: |
+          test -f "$ARTIFACT_DIR/eligible"
+          test ! -L "$ARTIFACT_DIR/eligible"
+          eligible=$(cat "$ARTIFACT_DIR/eligible")
+          case "$eligible" in
+            true)
+              test -f "$ARTIFACT_DIR/pnpm-lock.yaml"
+              test ! -L "$ARTIFACT_DIR/pnpm-lock.yaml"
+              ;;
+            false) ;;
+            *) exit 1 ;;
+          esac
+          echo "eligible=$eligible" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout validated pull request revision
+        if: >
+          steps.pr.outputs.valid == 'true' &&
+          steps.artifact.outputs.eligible == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ matrix.pull.headRepo }}
+          ref: ${{ matrix.pull.headSha }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Apply repaired lockfile
+        if: >
+          steps.pr.outputs.valid == 'true' &&
+          steps.artifact.outputs.eligible == 'true'
+        env:
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ matrix.pull.baseSha }}
+          REPAIRED_LOCKFILE: ${{ runner.temp }}/lockfile-repair/pnpm-lock.yaml
+        run: |
+          test ! -L pnpm-lock.yaml
+          test -f "$REPAIRED_LOCKFILE"
+          test ! -L "$REPAIRED_LOCKFILE"
+          git remote add upstream "https://github.com/$BASE_REPOSITORY.git"
+          git fetch --no-tags upstream "$BASE_SHA"
+          set +e
+          git merge --no-commit --no-ff "$BASE_SHA"
+          merge_status=$?
+          set -e
+          test "$merge_status" -ne 0
+          test "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml'
+          cp "$REPAIRED_LOCKFILE" pnpm-lock.yaml
+          git add pnpm-lock.yaml
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+      - name: Revalidate pull request before push
+        id: final-pr
+        if: >
+          steps.pr.outputs.valid == 'true' &&
+          steps.artifact.outputs.eligible == 'true'
+        uses: actions/github-script@v9
+        env:
+          EXPECTED_BASE_REF: ${{ matrix.pull.baseRef }}
+          EXPECTED_HEAD_REF: ${{ matrix.pull.headRef }}
+          EXPECTED_HEAD_REPOSITORY: ${{ matrix.pull.headRepo }}
+          EXPECTED_HEAD_SHA: ${{ matrix.pull.headSha }}
+          PR_NUMBER: ${{ matrix.pull.number }}
+        with:
+          script: |
+            const { data: pull } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number(process.env.PR_NUMBER),
+            });
+            const valid =
+              pull.state === 'open' &&
+              pull.base.ref === process.env.EXPECTED_BASE_REF &&
+              pull.head.sha === process.env.EXPECTED_HEAD_SHA &&
+              pull.head.repo?.full_name === process.env.EXPECTED_HEAD_REPOSITORY &&
+              pull.head.ref === process.env.EXPECTED_HEAD_REF &&
+              (pull.head.repo.full_name === process.env.GITHUB_REPOSITORY ||
+                pull.maintainer_can_modify);
+            core.setOutput('valid', String(valid));
+
+      - name: Commit and push repaired lockfile
+        if: steps.final-pr.outputs.valid == 'true'
+        env:
+          HEAD_REF: ${{ matrix.pull.headRef }}
+          HEAD_SHA: ${{ matrix.pull.headSha }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: resolve pnpm lockfile conflict'
+          git push origin "HEAD:refs/heads/$HEAD_REF" \
+            --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA"

@@ -22,7 +22,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
