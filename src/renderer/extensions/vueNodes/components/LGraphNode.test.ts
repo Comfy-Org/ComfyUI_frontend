@@ -46,7 +46,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
-
   () => {
     return {
       useTransformState: () => ({
@@ -61,7 +60,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
-
   () => {
     const handleNodeSelect = vi.fn()
     return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
@@ -70,7 +68,6 @@ vi.mock<unknown>(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
-
   () => ({
     useVueElementTracking: vi.fn()
   })
@@ -93,7 +90,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
-
   () => ({
     useNodeLayout: () => ({
       position: { x: 100, y: 50 },
@@ -109,7 +105,6 @@ vi.mock<unknown>(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/execution/useNodeExecutionState'),
-
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
@@ -123,7 +118,6 @@ vi.mock(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/preview/useNodePreviewState'),
-
   () => ({
     useNodePreviewState: vi.fn(() => ({
       latestPreviewUrl: computed(() => ''),
@@ -134,7 +128,6 @@ vi.mock<unknown>(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'),
-
   () => ({
     useNodeResize: vi.fn(() => ({
       startResize: vi.fn(),

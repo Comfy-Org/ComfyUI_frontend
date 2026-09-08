@@ -48,29 +48,21 @@ const {
   }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useAutoPan'),
-
-  () => ({
-    AutoPanController: class {
-      updatePointer = vi.fn()
-      start = vi.fn()
-      stop = vi.fn()
-      constructor(opts: { onPan: (dx: number, dy: number) => void }) {
-        capturedOnPan.current = opts.onPan
-        capturedAutoPan.current = this
-      }
+vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
+  AutoPanController: class {
+    updatePointer = vi.fn()
+    start = vi.fn()
+    stop = vi.fn()
+    constructor(opts: { onPan: (dx: number, dy: number) => void }) {
+      capturedOnPan.current = opts.onPan
+      capturedAutoPan.current = this
     }
-  })
-)
+  }
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({ isReadOnly: false })
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({ isReadOnly: false })
+}))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -105,7 +97,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/links/linkConnectorAdapter'),
-
   () => ({
     createLinkConnectorAdapter: () => mockAdapter
   })
@@ -113,7 +104,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/links/slotLinkDragUIState'),
-
   () => {
     const pointer = { client: { x: 0, y: 0 }, canvas: { x: 0, y: 0 } }
     return {
@@ -159,20 +149,15 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'),
-
-  () => ({
-    layoutStore: {
-      getRerouteLayout: () => null,
-      queryRerouteAtPoint: () => null
-    }
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+  layoutStore: {
+    getRerouteLayout: () => null,
+    queryRerouteAtPoint: () => null
+  }
+}))
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/litegraph/slotCalculations'),
-
   () => ({
     getGraphSlotLayout: () => ({
       nodeId: 'node1',
@@ -183,17 +168,12 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/slots/slotIdentifier'),
-
-  () => ({
-    getSlotKey: (...args: unknown[]) => args.join('-')
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/layout/slots/slotIdentifier'), () => ({
+  getSlotKey: (...args: unknown[]) => args.join('-')
+}))
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/interaction/canvasPointerEvent'),
-
   () => ({
     toCanvasPointerEvent: (e: PointerEvent) => e,
     clearCanvasPointerHistory: vi.fn()
@@ -202,7 +182,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/slotLinkDragContext'),
-
   () => ({
     createSlotLinkDragContext: () => ({
       pendingPointerMove: null,
@@ -218,22 +197,14 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(
-  import('@/renderer/extensions/vueNodes/utils/eventUtils'),
+vi.mock(import('@/renderer/extensions/vueNodes/utils/eventUtils'), () => ({
+  augmentToCanvasPointerEvent: vi.fn()
+}))
 
-  () => ({
-    augmentToCanvasPointerEvent: vi.fn()
-  })
-)
-
-vi.mock(
-  import('@/renderer/core/canvas/links/linkDropOrchestrator'),
-
-  () => ({
-    resolveSlotTargetCandidate: () => null,
-    resolveNodeSurfaceSlotCandidate: () => null
-  })
-)
+vi.mock(import('@/renderer/core/canvas/links/linkDropOrchestrator'), () => ({
+  resolveSlotTargetCandidate: () => null,
+  resolveNodeSurfaceSlotCandidate: () => null
+}))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {

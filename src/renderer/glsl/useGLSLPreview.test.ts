@@ -65,14 +65,10 @@ const mockRendererFactory = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/glsl/useGLSLRenderer'),
-
-  () => ({
-    useGLSLRenderer: (config?: GLSLRendererConfig) =>
-      mockRendererFactory.create(config)
-  })
-)
+vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
+  useGLSLRenderer: (config?: GLSLRendererConfig) =>
+    mockRendererFactory.create(config)
+}))
 
 const mockSetNodePreviewsByNodeId = vi.fn()
 const mockRevokePreviewsByLocatorId = vi.fn()

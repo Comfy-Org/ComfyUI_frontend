@@ -20,7 +20,6 @@ const {
 
 vi.mock<unknown>(
   import('@/renderer/extensions/compositor/composables/compositorLayerState'),
-
   () => ({
     applyLayerState,
     parseLayerState: () => null,
@@ -29,7 +28,6 @@ vi.mock<unknown>(
 )
 vi.mock<unknown>(
   import('@/renderer/extensions/compositor/composables/useCompositorLayers'),
-
   () => ({
     getCompositorBBoxes: () => undefined,
     getCompositorCanvas,
@@ -39,7 +37,6 @@ vi.mock<unknown>(
 )
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorWidgets'),
-
   () => ({
     getCompositorWidgetValue: () => ({})
   })

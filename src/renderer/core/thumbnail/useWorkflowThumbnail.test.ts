@@ -6,13 +6,9 @@ import { createGraphThumbnail } from '@/renderer/core/thumbnail/graphThumbnailRe
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 
-vi.mock(
-  import('@/renderer/core/thumbnail/graphThumbnailRenderer'),
-
-  () => ({
-    createGraphThumbnail: vi.fn()
-  })
-)
+vi.mock(import('@/renderer/core/thumbnail/graphThumbnailRenderer'), () => ({
+  createGraphThumbnail: vi.fn()
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

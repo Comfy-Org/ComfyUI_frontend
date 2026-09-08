@@ -11,7 +11,6 @@ const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
-
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),

@@ -55,7 +55,6 @@ vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/extensions/layerEditor/composables/useLayerEditorSession'),
-
   () => ({
     isTextEditingTarget: (target: EventTarget | null) =>
       (target as HTMLElement | null)?.tagName === 'INPUT',
@@ -64,7 +63,6 @@ vi.mock<unknown>(
 )
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorSave'),
-
   () => ({
     saveCompositorLayerState: saveLayerState,
     saveCompositorPreview: savePreview
@@ -72,7 +70,6 @@ vi.mock(
 )
 vi.mock(
   import('@/renderer/extensions/compositor/composables/useCompositorAutoSave'),
-
   () => ({
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
@@ -90,7 +87,6 @@ vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
 }))
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorSession'),
-
   () => ({
     loadCompositorSession
   })

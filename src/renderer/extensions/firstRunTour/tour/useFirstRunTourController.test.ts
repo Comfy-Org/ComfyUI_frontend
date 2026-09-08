@@ -92,21 +92,17 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  async () => {
-    const { shallowRef } = await import('vue')
-    mocks.linearMode = shallowRef(mocks.linearMode.value)
-    return {
-      useCanvasStore: () => ({
-        get linearMode() {
-          return mocks.linearMode.value
-        }
-      })
-    }
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
+  const { shallowRef } = await import('vue')
+  mocks.linearMode = shallowRef(mocks.linearMode.value)
+  return {
+    useCanvasStore: () => ({
+      get linearMode() {
+        return mocks.linearMode.value
+      }
+    })
   }
-)
+})
 
 vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({

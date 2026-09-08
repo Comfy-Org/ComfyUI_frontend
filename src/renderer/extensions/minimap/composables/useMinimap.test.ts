@@ -230,13 +230,9 @@ const defaultSettingStore = {
   set: vi.fn().mockResolvedValue(undefined)
 }
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: vi.fn(() => defaultCanvasStore)
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: vi.fn(() => defaultCanvasStore)
+}))
 
 vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => defaultSettingStore)

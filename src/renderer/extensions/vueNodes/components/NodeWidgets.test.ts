@@ -17,15 +17,11 @@ import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      rootGraphId: GRAPH_ID
-    })
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({
+    rootGraphId: GRAPH_ID
   })
-)
+}))
 
 const WidgetStub = {
   name: 'WidgetStub',
@@ -42,7 +38,6 @@ const AppInputStub = {
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
-
   () => ({
     getComponent: () => WidgetStub,
     shouldExpand: () => false,

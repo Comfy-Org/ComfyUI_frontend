@@ -28,14 +28,12 @@ vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
 }))
 vi.mock(
   import('@/renderer/extensions/compositor/composables/useCompositorEditor'),
-
   () => ({
     useCompositorEditor: () => ({ openCompositorEditor: vi.fn() })
   })
 )
 vi.mock(
   import('@/renderer/extensions/compositor/composables/useCompositorPsdDownload'),
-
   () => ({
     useCompositorPsdDownload: () => ({
       exporting: ref(false),

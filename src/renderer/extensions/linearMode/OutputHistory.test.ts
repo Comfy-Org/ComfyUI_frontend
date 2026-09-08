@@ -53,32 +53,27 @@ vi.mock<unknown>(import('@/lib/litegraph/src/CanvasPointer'), () => ({
   }
 }))
 
-vi.mock(
-  import('@/renderer/extensions/linearMode/useOutputHistory'),
-
-  () => ({
-    useOutputHistory: () => ({
-      outputs: {
-        hasMore: hasMoreRef,
-        invalidate: vi.fn(),
-        isLoading: ref(false),
-        items: mediaRef,
-        loadMore: loadMoreFn,
-        loadNew: vi.fn()
-      } satisfies PagedList<AssetItem>,
-      allOutputs: allOutputsFn,
-      selectFirstHistory: selectFirstHistoryFn,
-      mayBeActiveWorkflowPending:
-        mayBeActiveWorkflowPendingRef as ComputedRef<boolean>,
-      isWorkflowActive: computed(() => false),
-      cancelActiveWorkflowJobs: vi.fn()
-    })
+vi.mock(import('@/renderer/extensions/linearMode/useOutputHistory'), () => ({
+  useOutputHistory: () => ({
+    outputs: {
+      hasMore: hasMoreRef,
+      invalidate: vi.fn(),
+      isLoading: ref(false),
+      items: mediaRef,
+      loadMore: loadMoreFn,
+      loadNew: vi.fn()
+    } satisfies PagedList<AssetItem>,
+    allOutputs: allOutputsFn,
+    selectFirstHistory: selectFirstHistoryFn,
+    mayBeActiveWorkflowPending:
+      mayBeActiveWorkflowPendingRef as ComputedRef<boolean>,
+    isWorkflowActive: computed(() => false),
+    cancelActiveWorkflowJobs: vi.fn()
   })
-)
+}))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/linearOutputStore'),
-
   () => ({
     useLinearOutputStore: () => ({
       get activeWorkflowInProgressItems() {
@@ -128,7 +123,6 @@ vi.mock<unknown>(import('@/stores/queueStore'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'),
-
   () => ({
     default: {
       name: 'OutputHistoryActiveQueueItem',
@@ -139,7 +133,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/OutputHistoryItem.vue'),
-
   () => ({
     default: {
       name: 'OutputHistoryItem',
@@ -152,7 +145,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/OutputPreviewItem.vue'),
-
   () => ({
     default: {
       name: 'OutputPreviewItem',

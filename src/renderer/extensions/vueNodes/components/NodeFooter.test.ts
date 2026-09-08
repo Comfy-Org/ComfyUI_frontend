@@ -7,14 +7,10 @@ import { createI18n } from 'vue-i18n'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'),
-
-  () => {
-    const isDraggingVueNodes = ref(false)
-    return { layoutStore: { isDraggingVueNodes } }
-  }
-)
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => {
+  const isDraggingVueNodes = ref(false)
+  return { layoutStore: { isDraggingVueNodes } }
+})
 
 const { layoutStore } = await import('@/renderer/core/layout/store/layoutStore')
 

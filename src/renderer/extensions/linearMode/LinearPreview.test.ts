@@ -37,7 +37,6 @@ vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/useOutputHistory'),
-
   async () => {
     const { computed } = await import('vue')
     return {

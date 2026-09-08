@@ -120,13 +120,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => mockCanvasStore
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => mockCanvasStore
+}))
 
 vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({

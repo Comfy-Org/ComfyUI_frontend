@@ -5,6 +5,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
@@ -44,17 +45,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
-}))
-
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
   t: vi.fn((key) => key),
@@ -64,6 +54,14 @@ vi.mock<unknown>(import('@/i18n'), () => ({
     }
   }
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 describe('Vue Node - Subgraph Functionality', () => {
   let rootGraph: LGraph
@@ -102,9 +100,8 @@ describe('Vue Node - Subgraph Functionality', () => {
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [pinia, i18n],
         mocks: {
-          $t: vi.fn((key: string) => key),
           $primevue: { config: {} }
         }
       }

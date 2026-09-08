@@ -36,7 +36,6 @@ vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
 }))
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
-
   async () => {
     const { reactive } = await import('vue')
     state.camera = reactive({ x: 0, y: 0, z: 1 })
@@ -53,7 +52,6 @@ vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
 }))
 vi.mock<unknown>(
   import('@/renderer/core/layout/store/layoutStore'),
-
   async () => {
     const { shallowRef } = await import('vue')
     state.layout = shallowRef<unknown>(null)

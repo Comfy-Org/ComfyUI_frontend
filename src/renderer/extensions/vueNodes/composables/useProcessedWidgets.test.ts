@@ -32,15 +32,11 @@ import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      rootGraphId: GRAPH_ID
-    })
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({
+    rootGraphId: GRAPH_ID
   })
-)
+}))
 
 function createMockWidget(
   overrides: Partial<IBaseWidget> & { widgetId?: WidgetId } = {}

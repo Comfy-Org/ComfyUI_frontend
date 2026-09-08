@@ -17,7 +17,6 @@ const mockData = vi.hoisted(() => ({
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
-
   () => {
     const syncWithCanvas = vi.fn()
     return {

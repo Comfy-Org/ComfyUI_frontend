@@ -21,15 +21,11 @@ vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => mockSettingStore
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      getCanvas: () => mockCanvas
-    })
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({
+    getCanvas: () => mockCanvas
   })
-)
+}))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

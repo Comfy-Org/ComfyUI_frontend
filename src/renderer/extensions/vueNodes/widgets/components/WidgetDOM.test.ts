@@ -10,18 +10,13 @@ const canvasMocks = vi.hoisted(() => ({
   linearMode: false
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => canvasMocks
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => canvasMocks
+}))
 
 const resolveMock = vi.hoisted(() => vi.fn())
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'),
-
   () => ({
     resolveWidgetFromHostNode: resolveMock
   })

@@ -16,7 +16,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/links/slotLinkDragUIState'),
-
   () => ({
     useSlotLinkDragUIState: () => ({
       state: { active: false, compatible: new Map() }
@@ -26,7 +25,6 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
-
   () => ({
     useNodeTooltips: () => ({
       getOutputSlotTooltip: () => '',
@@ -37,19 +35,14 @@ vi.mock<unknown>(
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
-
   () => ({
     useSlotLinkInteraction: () => ({ onPointerDown: vi.fn() })
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/slots/slotIdentifier'),
-
-  () => ({
-    getSlotKey: () => 'mock-key'
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/layout/slots/slotIdentifier'), () => ({
+  getSlotKey: () => 'mock-key'
+}))
 
 const SlotConnectionDotStub = defineComponent({
   name: 'SlotConnectionDot',

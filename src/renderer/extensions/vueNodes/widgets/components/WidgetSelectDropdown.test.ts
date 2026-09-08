@@ -34,7 +34,6 @@ vi.mock<unknown>(import('@/scripts/api'))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
-
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -81,7 +80,6 @@ const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'),
-
   () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { computed } = require('vue')
@@ -108,7 +106,6 @@ vi.mock(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'),
-
   () => ({
     useWidgetSelectActions: () => ({
       updateSelectedItems: mockUpdateSelectedItems,

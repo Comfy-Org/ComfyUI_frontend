@@ -30,7 +30,6 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
-
   () => ({
     useTransformState: () => ({
       camera: { x: 0, y: 0, z: 1 }
@@ -46,7 +45,6 @@ const snapState = vi.hoisted(() => ({
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),
-
   () => ({
     useNodeSnap: () => ({
       shouldSnap: vi.fn(() => snapState.shouldSnap),
@@ -62,7 +60,6 @@ vi.mock<unknown>(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useShiftKeySync'),
-
   () => ({
     useShiftKeySync: () => ({
       trackShiftKey: vi.fn(() => vi.fn())
@@ -70,27 +67,19 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({ rootGraphId: 'root-graph' })
+}))
 
-  () => ({
-    useCanvasStore: () => ({ rootGraphId: 'root-graph' })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'),
-
-  () => ({
-    layoutStore: {
-      isResizingVueNodes: { value: false },
-      getNodeLayout: vi.fn(() => ({
-        position: { x: 100, y: 200 },
-        size: { width: 300, height: 400 }
-      }))
-    }
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+  layoutStore: {
+    isResizingVueNodes: { value: false },
+    getNodeLayout: vi.fn(() => ({
+      position: { x: 100, y: 200 },
+      size: { width: 300, height: 400 }
+    }))
+  }
+}))
 
 function createMockNodeElement(
   width = 300,

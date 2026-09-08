@@ -48,7 +48,6 @@ vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
 
 vi.mock<unknown>(
   import('@/renderer/extensions/linearMode/linearOutputStore'),
-
   () => ({
     useLinearOutputStore: () => ({
       get pendingResolve() {

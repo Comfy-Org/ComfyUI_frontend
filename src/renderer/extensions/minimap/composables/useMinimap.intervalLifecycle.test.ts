@@ -54,13 +54,9 @@ const mockCanvas = {
   setDirty: vi.fn()
 }
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: vi.fn(() => ({ canvas: mockCanvas }))
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: vi.fn(() => ({ canvas: mockCanvas }))
+}))
 
 vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({

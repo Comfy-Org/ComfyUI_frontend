@@ -41,13 +41,9 @@ const mockRenderer = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/glsl/useGLSLRenderer'),
-
-  () => ({
-    useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
-  })
-)
+vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
+  useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
+}))
 
 const nodeOutputs = reactive<Record<string, unknown>>({})
 vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({

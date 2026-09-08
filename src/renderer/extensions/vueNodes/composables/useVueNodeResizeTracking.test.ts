@@ -76,17 +76,13 @@ vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T>(fn: T) => fn
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      linearMode: testState.linearMode,
-      rootGraphId: testState.rootGraphId,
-      canvas: { setDirty: testState.setDirty }
-    })
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({
+    linearMode: testState.linearMode,
+    rootGraphId: testState.rootGraphId,
+    canvas: { setDirty: testState.setDirty }
   })
-)
+}))
 
 vi.mock<unknown>(
   import('@/composables/element/useCanvasPositionConversion'),
@@ -97,33 +93,23 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/store/layoutStore'),
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+  layoutStore: {
+    reportContentSize: testState.reportContentSize,
+    contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
+      testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
+    getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
+      testState.nodeLayouts.get(rawNodeId) ?? null
+  }
+}))
 
-  () => ({
-    layoutStore: {
-      reportContentSize: testState.reportContentSize,
-      contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
-        testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
-      getNodeLayout: (
-        _rootGraphId: UUID,
-        rawNodeId: NodeId
-      ): NodeLayout | null => testState.nodeLayouts.get(rawNodeId) ?? null
-    }
-  })
-)
-
-vi.mock(
-  import('@/renderer/core/layout/slots/syncSlotOffsets'),
-
-  () => ({
-    syncSlotOffsets: (
-      _element: HTMLElement,
-      _rootGraphId: UUID,
-      nodeId: NodeId
-    ) => testState.syncSlotOffsets(nodeId)
-  })
-)
+vi.mock(import('@/renderer/core/layout/slots/syncSlotOffsets'), () => ({
+  syncSlotOffsets: (
+    _element: HTMLElement,
+    _rootGraphId: UUID,
+    nodeId: NodeId
+  ) => testState.syncSlotOffsets(nodeId)
+}))
 
 import { useVueElementTracking } from './useVueNodeResizeTracking'
 

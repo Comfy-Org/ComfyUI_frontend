@@ -36,15 +36,11 @@ const state = vi.hoisted<{
   canvasStore: { rootGraphId: UUID | undefined } | null
 }>(() => ({ canvasStore: null }))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  async () => {
-    const { reactive } = await import('vue')
-    state.canvasStore = reactive({ rootGraphId: undefined })
-    return { useCanvasStore: () => state.canvasStore }
-  }
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
+  const { reactive } = await import('vue')
+  state.canvasStore = reactive({ rootGraphId: undefined })
+  return { useCanvasStore: () => state.canvasStore }
+})
 
 const NodeLayoutHost = defineComponent({
   setup() {
