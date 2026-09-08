@@ -63,11 +63,12 @@ describe('pageContext', () => {
   })
 
   it('points a held-back page at the English original', () => {
-    // Japanese serves only `/`, so every other route is built but unpublished.
-    const context = pageContext(site, '/ja/pricing/', 'ja')
+    // Japanese publishes a short allowlist; every other route is built by the
+    // fallback but unpublished.
+    const context = pageContext(site, '/ja/mcp/', 'ja')
 
-    expect(context.url).toBe('https://comfy.org/ja/pricing/')
-    expect(context.canonicalUrl).toBe('https://comfy.org/pricing/')
+    expect(context.url).toBe('https://comfy.org/ja/mcp/')
+    expect(context.canonicalUrl).toBe('https://comfy.org/mcp/')
     expect(context.canonicalLocale).toBe('en')
   })
 })

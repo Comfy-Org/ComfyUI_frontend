@@ -23,6 +23,7 @@
     "i18n:validate": "tsx ./scripts/i18n/validate-translations.ts",
     "i18n:translate": "tsx ./scripts/i18n/translate-pending.ts",
     "i18n:write-data": "tsx ./scripts/i18n/write-data-japanese.ts",
+    "i18n:write-faq": "tsx ./scripts/i18n/write-faq-japanese.ts",
     "i18n:enforce": "tsx ./scripts/i18n/enforce-translations.ts",
     "i18n:report": "tsx ./scripts/i18n/report-coverage.ts",
     "i18n:check-config": "tsx ./scripts/i18n/check-config.ts",

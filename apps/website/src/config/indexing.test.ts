@@ -54,7 +54,7 @@ describe('localized pages the site is not ready to expose', () => {
    * One predicate, every surface.
    */
   it('keeps a fallback page out of the sitemap', () => {
-    expect(isExcludedFromSitemap('https://comfy.org/ja/pricing/')).toBe(true)
+    expect(isExcludedFromSitemap('https://comfy.org/ja/mcp/')).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/ja/cli/')).toBe(true)
   })
 

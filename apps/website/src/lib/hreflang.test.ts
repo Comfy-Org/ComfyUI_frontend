@@ -272,7 +272,7 @@ describe('a page whose own locale is held back', () => {
   it('emits no alternates for a Japanese page that is not indexable', () => {
     // The English pathname is deliberate: that is what Astro reports during a
     // rewritten fallback render. Only the locale argument reveals it is ja.
-    expect(hreflangAlternates('/pricing/', ORIGIN, 'ja')).toEqual([])
+    expect(hreflangAlternates('/mcp/', ORIGIN, 'ja')).toEqual([])
   })
 
   it('still emits them for the Japanese page that IS indexable', () => {
@@ -281,12 +281,23 @@ describe('a page whose own locale is held back', () => {
     ).toContain('ja')
   })
 
-  it('leaves Chinese alone, since every Chinese page is published', () => {
+  it('leaves Chinese alone when Japanese is the one held back', () => {
+    expect(
+      hreflangAlternates('/zh-CN/mcp/', ORIGIN, 'zh-CN').map((a) => a.hreflang)
+    ).toEqual(['en', 'zh-CN', 'x-default'])
+  })
+
+  /**
+   * The other half of the same rule, and the one that only became observable
+   * when `/pricing` joined the Japanese allowlist: a cluster grows as soon as
+   * another locale publishes the page, without anything else being edited.
+   */
+  it('names Japanese once Japanese publishes the page', () => {
     expect(
       hreflangAlternates('/zh-CN/pricing/', ORIGIN, 'zh-CN').map(
         (a) => a.hreflang
       )
-    ).toEqual(['en', 'zh-CN', 'x-default'])
+    ).toEqual(['en', 'zh-CN', 'ja', 'x-default'])
   })
 })
 
@@ -312,7 +323,14 @@ describe('canonicalPath', () => {
   })
 
   it('points a held-back Japanese page at the English original', () => {
-    expect(canonicalPath('/pricing/', 'ja')).toBe('/pricing/')
+    expect(canonicalPath('/mcp/', 'ja')).toBe('/mcp/')
+  })
+
+  it('points a published Japanese page at itself', () => {
+    // `/pricing` joined the allowlist once its FAQ had Japanese. Without a case
+    // like this the canonical rule could point every Japanese page at English
+    // and still pass.
+    expect(canonicalPath('/pricing/', 'ja')).toBe('/ja/pricing/')
   })
 
   it('points the published Japanese home page at itself', () => {

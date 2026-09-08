@@ -40,7 +40,7 @@ describe('missingSitemapEntries', () => {
     expect(
       missingSitemapEntries(
         [
-          '/ja/pricing/',
+          '/ja/mcp/',
           '/zh-CN/p/supported-models/grok-imagine/',
           '/zh-CN/payment/success/'
         ],

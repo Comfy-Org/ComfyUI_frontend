@@ -115,21 +115,23 @@ export function isLocale(value: string | undefined): value is Locale {
  * own change rather than all at once, which is the pattern Google's
  * scaled-content-abuse policy targets.
  *
- * `/pricing` was named in tier 1 and is deliberately NOT here. Its 21 FAQ items
- * come from an MDX content collection that has no Japanese, so they fall back to
- * English: the page measures 48% translated where 85% is achievable, and the FAQ
- * is most of a pricing page's substance. Add it once the MDX adapter exists.
+ * `/pricing` joined once the FAQ had Japanese. It was held back because its 21
+ * FAQ items come from an MDX collection that had none, so the page rendered
+ * English where most of a pricing page's substance lives. All 21 are Japanese
+ * now.
  *
- * The other 66 pages below their ceiling are the same two gaps — the MDX
- * collections and `src/data/*.ts` — plus the legal pages, which are English on
- * purpose. `pnpm build && pnpm i18n:report` lists them.
+ * What is still English there is the MiniMax licence comparison table, which is
+ * deliberate: `minimaxLicense` is on the never-translated list, so a person
+ * writes those rows or they stay English. That was weighed and accepted rather
+ * than overlooked — a mostly-Japanese pricing page beats sending Japanese
+ * readers to the English one.
  *
  * Paths carry no trailing slash, matching `baseRoutes` and `englishPath`.
  */
 export const PARTIAL_LOCALE_ROUTES: Partial<
   Record<Locale, ReadonlySet<string>>
 > = {
-  ja: new Set(['/', '/download', '/cloud', '/platform', '/about'])
+  ja: new Set(['/', '/download', '/cloud', '/platform', '/about', '/pricing'])
 }
 
 /**

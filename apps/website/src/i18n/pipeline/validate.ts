@@ -71,6 +71,21 @@ function matches(value: string, pattern: RegExp): string[] {
  * Boundaries are only applied at ends that are word characters, so terms like
  * `Wan 3.0` and `SOC 2` still match correctly.
  */
+const MARKDOWN_LINK = /\]\(([^)\s]+)/g
+
+/**
+ * Every target a markdown link points at.
+ *
+ * Shared by the translator, which asks the model to leave these alone, and by
+ * the FAQ verifier, which refuses a translation that changed one. A relative
+ * target is already correct for every locale — `localizeHref` leaves an
+ * unpublished route unprefixed — so the right behaviour is always to copy it
+ * across untouched.
+ */
+export function linkTargets(markdown: string): string[] {
+  return [...markdown.matchAll(MARKDOWN_LINK)].map((match) => match[1])
+}
+
 export function containsTerm(value: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const prefix = /^\w/.test(term) ? '\\b' : ''

@@ -29,7 +29,7 @@ import {
 } from '../../../../scripts/i18n/translate'
 import type { TranslationItem } from '../../../../scripts/i18n/translate'
 import { isLocale } from '../../src/config/locales'
-import { containsTerm } from '../../src/i18n/pipeline/validate'
+import { containsTerm, linkTargets } from '../../src/i18n/pipeline/validate'
 import {
   OUTPUT_LOCALES,
   preserveTerms,
@@ -100,7 +100,12 @@ async function main(): Promise<void> {
     // and no banned words, so it would have shipped.
     preserve: [
       ...protectedTokens(pending[key], true),
-      ...terms.filter((term) => containsTerm(pending[key], term))
+      ...terms.filter((term) => containsTerm(pending[key], term)),
+      // Markdown link targets. Left to itself the model rewrote `/contact` as
+      // `https://comfy.org/contact`, which `FaqLink` then treats as external
+      // and opens in a new tab — a difference no other check would notice,
+      // because the English had no absolute URL to compare against.
+      ...linkTargets(pending[key])
     ]
   }))
 

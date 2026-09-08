@@ -64,7 +64,13 @@ describe('isPageIndexable', () => {
    */
   it('never allows a page the locale does not serve', () => {
     expect(isPageIndexable('ja', '/cli')).toBe(false)
-    expect(isPageIndexable('ja', '/pricing')).toBe(false)
+    expect(isPageIndexable('ja', '/mcp')).toBe(false)
+  })
+
+  it('allows one the locale does serve', () => {
+    // Without this the pair above would still pass if the list denied
+    // everything, which is the failure mode an allowlist is prone to.
+    expect(isPageIndexable('ja', '/pricing')).toBe(true)
   })
 })
 
@@ -81,13 +87,14 @@ describe('localeHasRoute', () => {
   })
 
   /**
-   * Japanese is a partial locale: one page today. Callers use this so a link or
+   * Japanese is a partial locale: a short allowlist. Callers use this so a link or
    * an hreflang alternate is only offered where the page really exists, rather
    * than pointing at a 404.
    */
   it('is true only for the Japanese routes that exist', () => {
     expect(localeHasRoute('ja', '/')).toBe(true)
+    expect(localeHasRoute('ja', '/pricing')).toBe(true)
     expect(localeHasRoute('ja', '/cli')).toBe(false)
-    expect(localeHasRoute('ja', '/pricing')).toBe(false)
+    expect(localeHasRoute('ja', '/mcp')).toBe(false)
   })
 })
