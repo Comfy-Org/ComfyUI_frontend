@@ -8956,6 +8956,10 @@ Enterprise`
     en: 'Pick one to fill the form above with its settings.',
     'zh-CN': '选择一个示例，用它的设置填充上方表单。'
   },
+  'workshop.examples.subtitleOne': {
+    en: 'The one example this model ships with, already loaded above.',
+    'zh-CN': '该模型自带的唯一示例，已加载到上方。'
+  },
   'workshop.examples.open': {
     en: 'Open in Playground',
     'zh-CN': '在 Playground 中打开'

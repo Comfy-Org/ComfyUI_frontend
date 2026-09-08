@@ -28,7 +28,14 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
         {{ t('workshop.examples.start', locale) }}
       </h2>
       <p class="text-sm text-primary-warm-gray">
-        {{ t('workshop.examples.subtitle', locale) }}
+        {{
+          t(
+            examples.length === 1
+              ? 'workshop.examples.subtitleOne'
+              : 'workshop.examples.subtitle',
+            locale
+          )
+        }}
       </p>
     </div>
 
@@ -36,7 +43,17 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
       {{ t('workshop.examples.empty', locale) }}
     </p>
 
-    <ul v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <ul
+      v-else
+      :class="
+        cn(
+          'grid gap-3',
+          examples.length === 1
+            ? 'max-w-56 grid-cols-1'
+            : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'
+        )
+      "
+    >
       <li v-for="example in examples" :key="example.id">
         <button
           type="button"
