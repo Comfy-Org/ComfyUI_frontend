@@ -12,7 +12,7 @@ interface MarkupSpan {
 
 const MARKDOWN_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
 const BARE_URL = /https?:\/\/[\w\-./?=&#%~:@+,;]+/g
-const BOLD = /\*\*([^*]+)\*\*/g
+const BOLD = /\*\*([^*\n]+)\*\*/g
 const BOLD_DELIMITER = '**'
 
 const withoutBoldDelimiters = (text: string) =>

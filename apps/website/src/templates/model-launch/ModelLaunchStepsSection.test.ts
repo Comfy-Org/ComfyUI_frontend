@@ -31,26 +31,33 @@ describe('ModelLaunchStepsSection', () => {
     expect(screen.getByRole('list').className).toContain('md:grid-cols-3')
   })
 
-  it('renders a bold phrase in a step description as emphasis', () => {
-    render(ModelLaunchStepsSection, {
-      props: {
-        steps: {
-          ...steps(1),
-          items: [
-            {
-              id: 'parity',
-              title: { en: 'Parity', 'zh-CN': '价格一致' },
-              description: {
-                en: 'Priced **at parity** everywhere.',
-                'zh-CN': '各处**价格一致**。'
+  it.for([
+    { locale: 'en', emphasised: 'at parity' },
+    { locale: 'zh-CN', emphasised: '价格一致' }
+  ] as const)(
+    'renders a bold phrase in a $locale step description as emphasis',
+    ({ locale, emphasised }) => {
+      render(ModelLaunchStepsSection, {
+        props: {
+          locale,
+          steps: {
+            ...steps(1),
+            items: [
+              {
+                id: 'parity',
+                title: { en: 'Parity', 'zh-CN': '定价' },
+                description: {
+                  en: 'Priced **at parity** everywhere.',
+                  'zh-CN': '各处**价格一致**。'
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
-    })
+      })
 
-    expect(screen.getByText('at parity').tagName).toBe('STRONG')
-    expect(screen.queryAllByText(/\*\*/)).toEqual([])
-  })
+      expect(screen.getByText(emphasised).tagName).toBe('STRONG')
+      expect(screen.queryAllByText(/\*\*/)).toEqual([])
+    }
+  )
 })

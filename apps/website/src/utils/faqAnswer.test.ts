@@ -110,6 +110,12 @@ describe('parseFaqAnswer', () => {
     ])
   })
 
+  it('does not pair bold markers across a paragraph break', () => {
+    expect(parseFaqAnswer('One **stray.\n\nTwo** stray.')).toEqual([
+      { type: 'text', value: 'One stray.\n\nTwo stray.' }
+    ])
+  })
+
   it('leaves unfinished link markup as plain text', () => {
     expect(parseFaqAnswer('See [the docs](')).toEqual([
       { type: 'text', value: 'See [the docs](' }
