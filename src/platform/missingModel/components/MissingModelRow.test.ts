@@ -39,7 +39,7 @@ const mockUploadCallbacks = vi.hoisted(() => ({
     | undefined
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       return mockRootGraph.value
@@ -47,7 +47,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(
       (event: string, handler: (event: CustomEvent) => void) => {
@@ -60,7 +60,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async () => {
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), async () => {
   const actual = await vi.importActual<typeof GraphTraversalUtil>(
     '@/utils/graphTraversalUtil'
   )
@@ -71,7 +71,7 @@ vi.mock('@/utils/graphTraversalUtil', async () => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   },
@@ -80,31 +80,36 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/useModelUpload', () => ({
-  useModelUpload: (
-    onUploadSuccess?: (
-      result: UploadModelSuccess
-    ) => Promise<unknown> | unknown,
-    uploadContext?: UploadModelDialogContext | UploadModelContextResolver
-  ) => {
-    mockUploadCallbacks.onUploadSuccess = onUploadSuccess
-    mockUploadContext.resolver =
-      typeof uploadContext === 'function' ? uploadContext : () => uploadContext
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useModelUpload'),
+  () => ({
+    useModelUpload: (
+      onUploadSuccess?: (
+        result: UploadModelSuccess
+      ) => Promise<unknown> | unknown,
+      uploadContext?: UploadModelDialogContext | UploadModelContextResolver
+    ) => {
+      mockUploadCallbacks.onUploadSuccess = onUploadSuccess
+      mockUploadContext.resolver =
+        typeof uploadContext === 'function'
+          ? uploadContext
+          : () => uploadContext
 
-    return {
-      isUploadButtonEnabled: { value: true },
-      showUploadDialog: mockShowUploadDialog
+      return {
+        isUploadButtonEnabled: { value: true },
+        showUploadDialog: mockShowUploadDialog
+      }
     }
-  }
-}))
+  })
+)
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: mockCopyToClipboard
   })
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+vi.mock(import('@/platform/missingModel/missingModelDownload'), async () => {
   const actual = await vi.importActual<typeof MissingModelDownload>(
     '@/platform/missingModel/missingModelDownload'
   )

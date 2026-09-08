@@ -36,15 +36,15 @@ const env = vi.hoisted(() => {
   return { state, fakeRef }
 })
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (_: string, fallback: string) => fallback })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get partnerNodeGovernanceEnabled() {
@@ -57,11 +57,11 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/composables/useVueFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({ shouldRenderVueNodes: ref(false) })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return env.state.isCloud
   },
@@ -70,27 +70,33 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(),
   getSettingInfo: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    workspaceRole: env.fakeRef('workspaceRole')
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      workspaceRole: env.fakeRef('workspaceRole')
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
-  usePartnerNodeGovernanceStore: () => ({
-    get status() {
-      return env.state.partnerNodeGovernanceStatus
-    },
-    get providers() {
-      return env.state.partnerNodeGovernanceProviders
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/partnerNodeGovernanceStore'),
+  () => ({
+    usePartnerNodeGovernanceStore: () => ({
+      get status() {
+        return env.state.partnerNodeGovernanceStatus
+      },
+      get providers() {
+        return env.state.partnerNodeGovernanceProviders
+      }
+    })
   })
-}))
+)
 
 interface MockSettingParams {
   id: string

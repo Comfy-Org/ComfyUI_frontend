@@ -18,7 +18,7 @@ const mockTranslations: Record<string, string> = {
   'whatsNewPopup.noReleaseNotes': 'No release notes available'
 }
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   i18n: {
     global: {
       locale: {
@@ -34,7 +34,7 @@ vi.mock('@/i18n', () => ({
   d: (date: Date) => date.toLocaleDateString()
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     locale: { value: 'en' },
     t: vi.fn((key: string) => {
@@ -43,11 +43,11 @@ vi.mock('vue-i18n', () => ({
   }))
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
 }))
 
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
@@ -60,7 +60,7 @@ const mockReleaseStore = {
   fetchReleases: vi.fn()
 }
 
-vi.mock('../common/releaseStore', () => ({
+vi.mock<unknown>(import('../common/releaseStore'), () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 

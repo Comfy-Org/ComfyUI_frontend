@@ -8,14 +8,14 @@ import type {
 } from '../types'
 import { useSecretForm } from './useSecretForm'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
 const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
 
-vi.mock('../api/secretsApi', () => ({
+vi.mock<unknown>(import('../api/secretsApi'), () => ({
   createSecret: (payload: unknown) => mockCreate(payload),
   updateSecret: (id: string, payload: unknown) => mockUpdate(id, payload),
   SecretsApiError: class SecretsApiError extends Error {

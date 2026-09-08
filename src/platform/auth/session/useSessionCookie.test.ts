@@ -7,11 +7,11 @@ const mockAuthState = vi.hoisted(() => ({
 }))
 const originalFetch = globalThis.fetch
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
     getAuthHeader: mockGetAuthHeader,
@@ -21,14 +21,14 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`
   }
 }))
 
 const mockReportError = vi.fn()
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
 const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => mockShowErrorsTab.value)
   }))

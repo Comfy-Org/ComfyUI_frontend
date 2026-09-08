@@ -9,11 +9,11 @@ const mockRemoteConfig = vi.hoisted(() => ({
   value: {} as { syftdata_source_id?: string }
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: mockCurrentUser.useCurrentUser
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: mockRemoteConfig
 }))
 

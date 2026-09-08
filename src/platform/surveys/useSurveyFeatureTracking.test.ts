@@ -4,7 +4,7 @@ const getSurveyConfig = vi.hoisted(() =>
   vi.fn<(featureId: string) => { enabled: boolean } | undefined>()
 )
 
-vi.mock('./surveyRegistry', () => ({
+vi.mock<unknown>(import('./surveyRegistry'), () => ({
   getSurveyConfig
 }))
 

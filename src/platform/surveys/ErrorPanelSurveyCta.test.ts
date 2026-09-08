@@ -31,7 +31,7 @@ const mockSurveyConfig = vi.hoisted(() => ({
 }))
 const mockOpen = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isNightly() {
     return mockIsNightly.value
   },
@@ -43,12 +43,12 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('./surveyRegistry', () => ({
+vi.mock<unknown>(import('./surveyRegistry'), () => ({
   getSurveyConfig: (id: string) =>
     id === FEATURE_ID ? mockSurveyConfig.value : undefined
 }))
 
-vi.mock('./useErrorSurveyPopoverState', () => ({
+vi.mock(import('./useErrorSurveyPopoverState'), () => ({
   useErrorSurveyPopoverState: () => ({
     isPopoverOpen: ref(false),
     hasOpenedOnce: ref(false),
@@ -57,7 +57,7 @@ vi.mock('./useErrorSurveyPopoverState', () => ({
   })
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: vi.fn(() => ({
     t: (key: string) => key
   }))

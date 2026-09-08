@@ -5,12 +5,12 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 
-vi.mock('@sentry/vue', () => ({
+vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
   isEnabled: () => isEnabled()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: {
     addError: (...args: unknown[]) => addError(...args),
     getInitConfiguration: () => getInitConfiguration()

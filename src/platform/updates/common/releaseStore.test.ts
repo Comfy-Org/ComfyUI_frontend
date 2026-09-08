@@ -12,14 +12,14 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { SystemStats } from '@/types'
 
 // Mock the dependencies
-vi.mock('semver', () => ({
+vi.mock(import('semver'), () => ({
   compare: vi.fn(),
   valid: vi.fn(() => '1.0.0')
 }))
 
 const mockData = vi.hoisted(() => ({ isDesktop: true, isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
@@ -28,7 +28,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/updates/common/releaseService', () => {
+vi.mock(import('@/platform/updates/common/releaseService'), () => {
   const getReleases = vi.fn()
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -41,7 +41,7 @@ vi.mock('@/platform/updates/common/releaseService', () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => {
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => {
   const get = vi.fn((key: string) => {
     if (key === 'Comfy.Notification.ShowVersionUpdates') return true
     return null
@@ -73,7 +73,7 @@ const mockSystemStatsState = vi.hoisted(() => ({
     this.isInitialized = true
   }
 }))
-vi.mock('@/stores/systemStatsStore', () => {
+vi.mock<unknown>(import('@/stores/systemStatsStore'), () => {
   const refetchSystemStats = vi.fn()
   const getFormFactor = vi.fn(() => 'git-windows')
   return {
@@ -95,7 +95,7 @@ vi.mock('@/stores/systemStatsStore', () => {
     })
   }
 })
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   until: vi.fn(() => Promise.resolve()),
   useStorage: vi.fn(() => ({ value: {} })),
   createSharedComposable: vi.fn((fn) => fn)
@@ -104,11 +104,14 @@ vi.mock('@vueuse/core', () => ({
 const mocks = vi.hoisted(() => ({
   tour: { activeTour: null as EntryPath | null }
 }))
-vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
-  const { reactive } = await import('vue')
-  mocks.tour = reactive(mocks.tour)
-  return { useOnboardingTourStore: () => mocks.tour }
-})
+vi.mock<unknown>(
+  import('@/platform/onboarding/onboardingTourStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    mocks.tour = reactive(mocks.tour)
+    return { useOnboardingTourStore: () => mocks.tour }
+  }
+)
 
 describe('useReleaseStore', () => {
   const mockRelease = {
