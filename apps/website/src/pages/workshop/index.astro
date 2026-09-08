@@ -17,7 +17,6 @@ const models = (await getCollection('workshopModels'))
 <BaseLayout
   title={t('workshop.meta.title')}
   description={t('workshop.meta.description')}
-  noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
     <WorkshopCatalog models={models} client:load />
