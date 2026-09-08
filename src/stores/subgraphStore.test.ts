@@ -565,7 +565,7 @@ describe('useSubgraphStore', () => {
         definitions: {
           subgraphs: [
             {
-              ...mockGraph.definitions?.subgraphs?.[0],
+              ...mockGraph.definitions.subgraphs[0],
               essentials_category: 'Image Tools'
             }
           ]
