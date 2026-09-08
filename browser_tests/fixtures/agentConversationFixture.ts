@@ -249,8 +249,8 @@ class AgentConversationHarness {
   }
 
   // The graph the recording promises through the given turn: the seed, then
-  // every add, delete and connect in order. An input holds one link, so a
-  // later connect to it replaces the earlier one.
+  // every add, delete, clear and connect in order. An input holds one link,
+  // so a later connect to it replaces the earlier one.
   private expectedGraph(throughTurn?: number): {
     nodes: Map<string, NodeBody>
     links: Map<string, RecordedLink>
@@ -281,6 +281,9 @@ class AgentConversationHarness {
           nodes.delete(id)
           for (const [key, link] of links)
             if (link.fromNode === id || link.toNode === id) links.delete(key)
+        } else if (op.op === 'clear') {
+          nodes.clear()
+          links.clear()
         } else if (op.op === 'connect' && op.grow == null)
           connect({
             fromNode: String(op.from_node),
