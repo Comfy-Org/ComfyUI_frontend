@@ -9,6 +9,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type {
   DocFrameTransport,
@@ -539,14 +540,19 @@ export function useAgentCrdtFollower(
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown } | null
+    if (
+      !isTargetActive.value ||
+      detail?.workflowId !== subscribedWorkflowId.value
+    )
+      return
     if (staleProbeTimer !== null) {
       armStaleProbe()
       refreshPersistedDocId()
     }
     lastFrameType.value = event.type
-    if (event instanceof CustomEvent) {
-      recordDevEvent('doc_ops_result', event.detail ?? null)
-    }
+    recordDevEvent('doc_ops_result', event.detail ?? null)
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -565,17 +571,15 @@ export function useAgentCrdtFollower(
       return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
-      actor: detail?.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail?.seq ?? 'unknown'}`
+      actor: detail.actor ?? 'agent-reset',
+      opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    if (detail?.workflowId !== undefined) {
-      adapter.clearForReset(detail.workflowId, context)
-      // A lineage break empties the stores but leaves every live adapter
-      // standing, and those adapters are what a save serialises. Without a
-      // reconcile here the pre-reset nodes survive -- and can be written back
-      // -- until some later frame happens to arrive.
-      reconcileLiveGraph(detail.workflowId)
-    }
+    adapter.clearForReset(detail.workflowId, context)
+    // A lineage break empties the stores but leaves every live adapter
+    // standing, and those adapters are what a save serialises. Without a
+    // reconcile here the pre-reset nodes survive -- and can be written back
+    // -- until some later frame happens to arrive.
+    reconcileLiveGraph(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -690,7 +694,10 @@ export function useAgentCrdtFollower(
   function reconcileLiveGraph(docId: string): void {
     const graph = getGraph()
     if (!graph) return
-    const nodeIds = reconcileAgentAdapters(graph)
+    const nodeIds = reconcileAgentAdapters(
+      graph,
+      readSubgraphDefinitions(bridge.follower.doc)
+    )
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId: docId,
@@ -720,7 +727,10 @@ export function useAgentCrdtFollower(
   }
   watch(
     [workflowId, isTargetActive],
-    ([next, active], previous) => {
+    (
+      [next, active],
+      previous: [string | null | undefined, boolean | undefined] | undefined
+    ) => {
       // Only the inactive->active edge, and never the `immediate` first run
       // (`previous` is undefined there), so a plain mount or retarget keeps its
       // existing "reconcile on frame or on graph readiness" behaviour.

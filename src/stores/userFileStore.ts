@@ -58,7 +58,6 @@ export class UserFile {
     public size: number
   ) {
     const details = getPathDetails(path)
-    this.path = path
     this.directory = details.directory
     this.fullFilename = details.fullFilename
     this.filename = details.filename

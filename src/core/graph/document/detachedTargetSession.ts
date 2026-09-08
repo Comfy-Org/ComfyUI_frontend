@@ -66,7 +66,7 @@ const DEFAULT_MAX_CONSECUTIVE_FAILURES = 3
 
 /**
  * Staged frame queue for a target document that is not attached to a live
- * follower (ADR-0024's unloaded-target path). Frames enqueue in wire order
+ * follower (ADR-GRAPH-DOCUMENT-0024's unloaded-target path). Frames enqueue in wire order
  * and commit one at a time: each commit folds the head frame into a clone of
  * the last committed Yjs state, offers it to the projection port, and only
  * on success publishes the new committed tuple
@@ -141,7 +141,7 @@ export function createDetachedTargetSession(
 
   function commitNext(port: TargetFrameApplyPort): CommitResult {
     if (needsResync) return { status: 'resync-required' }
-    const frame = queue[0]
+    const frame = queue.at(0)
     if (!frame) return { status: 'idle' }
 
     const staged = new Y.Doc()

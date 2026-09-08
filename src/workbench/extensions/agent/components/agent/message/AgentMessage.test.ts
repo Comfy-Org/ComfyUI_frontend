@@ -15,7 +15,10 @@ vi.hoisted(() => {
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  RunApprovalPart
+} from '../../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
@@ -369,4 +372,98 @@ describe('AgentMessage fallback content', () => {
 
     expect(emitted().feedback).toEqual([['up']])
   })
+})
+
+describe('AgentMessage run approval', () => {
+  const approvalMessage = (
+    approval: Partial<RunApprovalPart> = {}
+  ): AssistantMessage => ({
+    id: 'msg-approval' as TurnId,
+    role: 'assistant',
+    parts: [
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow',
+        ...approval
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the Figma copy and emits workflow, cancel, and run actions', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run the workflow:')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+
+    expect(emitted().openWorkflow).toEqual([
+      ['workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', 'cancel'],
+      ['turn-1:call-1', 'run']
+    ])
+  })
+
+  it('keeps both labels in place while disabling an in-flight answer', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    for (const name of ['Cancel', 'Run']) {
+      const button = screen.getByRole('button', { name })
+      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-busy', 'true')
+    }
+  })
+
+  it.for([
+    {
+      approval: { workflowName: '  ' },
+      expectedLabel: 'workflow-1',
+      interactive: true
+    },
+    {
+      approval: { workflowId: undefined, workflowName: undefined },
+      expectedLabel: 'this workflow',
+      interactive: false
+    }
+  ] as const)(
+    'falls back to “$expectedLabel” when backend naming data is unavailable',
+    ({ approval, expectedLabel, interactive }) => {
+      render(AgentMessage, {
+        props: { message: approvalMessage(approval) },
+        global: { plugins: [i18n] }
+      })
+
+      if (interactive) {
+        expect(
+          screen.getByRole('button', { name: expectedLabel })
+        ).toBeInTheDocument()
+      } else {
+        expect(
+          screen.queryByRole('button', { name: expectedLabel })
+        ).not.toBeInTheDocument()
+        expect(screen.getByText(expectedLabel)).toBeInTheDocument()
+      }
+    }
+  )
 })

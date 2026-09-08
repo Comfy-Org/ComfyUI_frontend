@@ -91,14 +91,14 @@ interface SeveranceEntry {
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
-  return String(scope.owningGraphId) === String(scope.rootGraphId)
+  return scope.owningGraphId === scope.rootGraphId
 }
 
 function matchesTarget(
   target: GraphMutationTarget,
   scope: LinkScopeView
 ): boolean {
-  return target.rootGraphId === String(scope.rootGraphId)
+  return target.rootGraphId === scope.rootGraphId
 }
 
 function severanceKey(
@@ -201,7 +201,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     // Key on the scope that owns the link, so a severance from another
     // document is never consumed by this target's delete_node and survives
     // to the sweep as a divergence.
-    const owningRoot = String(scope.rootGraphId)
+    const owningRoot = scope.rootGraphId
     const entry: SeveranceEntry = {
       linkId: topology.id,
       consumptionKey: severanceKey(

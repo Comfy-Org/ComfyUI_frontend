@@ -116,8 +116,6 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     operation: LayoutChangeView['operation'],
     action: 'create' | 'delete'
   ): boolean {
-    if (operation.graphId === undefined) return false
-
     if (operation.ownerGraphId === undefined) {
       // Every production emitter (canvas attach/detach, the agent panel) now
       // sets ownerGraphId on every createNode/deleteNode it mints, root scope
@@ -216,7 +214,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
             {
               op: 'add_node',
               node_id: operation.nodeId,
-              class_type: String(node.type),
+              class_type: node.type,
               pos: [operation.layout.position.x, operation.layout.position.y],
               node
             }

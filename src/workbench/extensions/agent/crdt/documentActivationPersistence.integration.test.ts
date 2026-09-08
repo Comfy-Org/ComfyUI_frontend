@@ -121,7 +121,7 @@ function loadedCoordinator() {
   })
 }
 
-describe('document activation persistence (ADR-0024 seam)', () => {
+describe('document activation persistence (ADR-GRAPH-DOCUMENT-0024 seam)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })

@@ -48,9 +48,13 @@ export function cloneLGraphState(source: LGraphState): LGraphState {
   return state
 }
 
+function getWebCrypto(): Crypto | undefined {
+  return globalThis.crypto
+}
+
 function defaultRandom(): number {
-  const crypto = globalThis.crypto
-  if (crypto?.getRandomValues) {
+  const crypto = getWebCrypto()
+  if (typeof crypto?.getRandomValues === 'function') {
     const words = new Uint32Array(2)
     crypto.getRandomValues(words)
     return (words[0] * 2 ** 21 + (words[1] >>> 11)) / 2 ** 53

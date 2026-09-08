@@ -242,7 +242,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener(target, {
-          graphId: String(graphId),
+          graphId,
           nodeId,
           name: widgetName,
           value,

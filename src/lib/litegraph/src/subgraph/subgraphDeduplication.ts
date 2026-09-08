@@ -333,7 +333,7 @@ function findNextAvailableId(
   advance: () => number,
   entity: 'node' | 'group' | 'link' | 'reroute'
 ): number {
-  while (true) {
+  for (;;) {
     const nextId = advance()
     if (nextId > MAX_ID) {
       const label = entity[0].toUpperCase() + entity.slice(1)
@@ -489,8 +489,8 @@ function remapRerouteIds(
   )
 }
 
-function remapNumericIds<T extends { id: number }>(
-  items: T[],
+function remapNumericIds(
+  items: { id: number }[],
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,

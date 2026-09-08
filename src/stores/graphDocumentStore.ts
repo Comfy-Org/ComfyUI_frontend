@@ -30,7 +30,7 @@ export interface SaveTicket {
 }
 
 /**
- * The GraphDocument registry (ADR-0024): every workflow document is a
+ * The GraphDocument registry (ADR-GRAPH-DOCUMENT-0024): every workflow document is a
  * first-class entry keyed by a stable frontend `document_id`, whether or not
  * a tab, renderer, or cloud `workflow_id` exists for it. The registry owns
  * the optional `workflow_id → document_id` mapping and rejects duplicate or
