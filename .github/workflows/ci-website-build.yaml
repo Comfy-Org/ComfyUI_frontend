@@ -38,6 +38,12 @@ jobs:
       - name: Typecheck website
         run: pnpm --filter @comfyorg/website typecheck
 
+      # Copy typed into a page file has no key, so it reaches no adapter and
+      # shows up in no report or coverage number: it renders English in every
+      # locale and nothing says so. Reads source, so it runs before the build.
+      - name: Check for copy the translation pipeline cannot see
+        run: pnpm --filter @comfyorg/website check:hardcoded-copy
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
@@ -63,3 +69,10 @@ jobs:
       # build exits 0 either way.
       - name: Check localized pages render their content
         run: pnpm --filter @comfyorg/website check:localized-pages
+
+      # The nightly translation job already gates its own PR on this, but a
+      # hand-edited translation would otherwise reach main without it ever
+      # running. Preserve terms, placeholders, URLs, line structure and target
+      # script are all checked here.
+      - name: Validate translations
+        run: pnpm --filter @comfyorg/website i18n:validate
