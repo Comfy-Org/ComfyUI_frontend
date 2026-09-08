@@ -967,6 +967,46 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('leaves a clickable portal link when the popup is blocked', async () => {
+      mockOpen.mockReturnValueOnce(null)
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+
+      expect(checkout.outstandingPaymentPortalUrl.value).toBe(
+        'https://billing.stripe.com/portal'
+      )
+
+      mockOpen.mockClear()
+      checkout.openOutstandingPaymentPortal()
+
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      expect(checkout.outstandingPaymentPortalUrl.value).toBeNull()
+    })
+
+    it('keeps the portal link when the user click is also blocked', async () => {
+      mockOpen.mockReturnValue(null)
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+      checkout.openOutstandingPaymentPortal()
+
+      expect(checkout.outstandingPaymentPortalUrl.value).toBe(
+        'https://billing.stripe.com/portal'
+      )
+    })
+
+    it('offers no portal link when the popup opened', async () => {
+      const checkout = await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED'
+      )
+
+      expect(checkout.outstandingPaymentPortalUrl.value).toBeNull()
+    })
+
     it('keeps the original error path for non-payment transition failures', async () => {
       await submitRejectedPreview(
         'TRANSITION_NOT_ALLOWED',
@@ -3368,6 +3408,23 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.previewData.value).toBeNull()
       expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('leaves a portal link when a legacy-rail subscribe is blocked', async () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockOpen.mockReturnValueOnce(null)
+      mockSubscribe.mockRejectedValueOnce(
+        errorWithCode('OUTSTANDING_PAYMENT_REQUIRED', 'outstanding payment')
+      )
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.outstandingPaymentPortalUrl.value).toBe(
+        'https://billing.stripe.com/portal'
+      )
     })
 
     it('recovers payment failure while refreshing an expired quote', async () => {

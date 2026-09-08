@@ -57,6 +57,16 @@
       </p>
     </div>
 
+    <div
+      v-if="outstandingPaymentPortalUrl && checkoutStep === 'pricing'"
+      class="flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4 text-sm text-text-secondary"
+    >
+      <span>{{ $t('subscription.preview.paymentPopupBlocked') }}</span>
+      <Button size="sm" @click="openOutstandingPaymentPortal">
+        {{ $t('subscription.manageBilling') }}
+      </Button>
+    </div>
+
     <!-- Pricing Table Step. v-show (not v-if) keeps it mounted so the plan,
          billing cycle, and credit-stop selection survive a round trip to the
          confirm step and back. -->
@@ -248,7 +258,9 @@ const {
   handleTeamSubscriptionPayment,
   applyPromotionCode,
   invalidateQuote,
-  handleResubscribe
+  handleResubscribe,
+  outstandingPaymentPortalUrl,
+  openOutstandingPaymentPortal
 } = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
 
 const savedMethodsForConfirm = computed(() =>

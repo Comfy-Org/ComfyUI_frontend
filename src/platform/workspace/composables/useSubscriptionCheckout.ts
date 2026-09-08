@@ -171,6 +171,7 @@ export function useSubscriptionCheckout(
   // rejects an unconfirmed change, keep the consent screen in reactivation
   // mode until the user backs out or completes the change.
   const reactivationRequired = ref(false)
+  const outstandingPaymentPortalUrl = ref<string | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
   const activeCheckoutOperation = computed(() => {
@@ -468,6 +469,14 @@ export function useSubscriptionCheckout(
     )
   }
 
+  function openOutstandingPaymentPortal() {
+    const url = outstandingPaymentPortalUrl.value
+    if (!url) return
+    if (!window.open(url, '_blank')) return
+    outstandingPaymentPortalUrl.value = null
+    refreshStatusOnFocus = true
+  }
+
   async function recoverOutstandingPayment(
     error: unknown,
     isCurrent: () => boolean = () => true
@@ -501,6 +510,8 @@ export function useSubscriptionCheckout(
       }
       const paymentWindow = window.open(portalUrl.href, '_blank')
       if (!paymentWindow) {
+        // Unlike the sibling redirect paths, a refused popup here is terminal.
+        outstandingPaymentPortalUrl.value = portalUrl.href
         toast.add({
           severity: 'warn',
           summary: t('g.warning'),
@@ -508,6 +519,7 @@ export function useSubscriptionCheckout(
         })
         return 'blocked'
       }
+      outstandingPaymentPortalUrl.value = null
       refreshStatusOnFocus = true
       return 'opened'
     } catch (portalError) {
@@ -1567,6 +1579,8 @@ export function useSubscriptionCheckout(
     handleTeamSubscriptionPayment,
     applyPromotionCode,
     invalidateQuote,
-    handleResubscribe
+    handleResubscribe,
+    outstandingPaymentPortalUrl,
+    openOutstandingPaymentPortal
   }
 }
