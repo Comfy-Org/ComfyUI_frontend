@@ -1,9 +1,12 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
@@ -22,12 +25,25 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
+const storeControls = vi.hoisted(() => ({
+  setOutputItems: (_items: AssetItem[]) => {}
+}))
+
+const selectionMocks = vi.hoisted(() => ({
+  reconcileSelection:
+    vi.fn<ReturnType<typeof useAssetSelection>['reconcileSelection']>()
+}))
+
 vi.mock('@/stores/assetsStore', async () => {
   const { ref } = await import('vue')
+  const outputItems = ref<AssetItem[]>([folderAsset])
+  storeControls.setOutputItems = (items) => {
+    outputItems.value = items
+  }
 
   const store = {
     outputAssets: {
-      items: ref([folderAsset]),
+      items: outputItems,
       isLoading: ref(false),
       hasMore: ref(false),
       loadMore: vi.fn(),
@@ -69,7 +85,7 @@ vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
       hasSelection: ref(false),
       clearSelection: vi.fn(),
       getSelectedAssets: vi.fn(() => []),
-      reconcileSelection: vi.fn(),
+      reconcileSelection: selectionMocks.reconcileSelection,
       getOutputCount: vi.fn(() => 2),
       getTotalOutputCount: vi.fn(() => 0),
       activate: vi.fn(),
@@ -126,10 +142,16 @@ const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click'],
   template: `
-    <button
-      aria-label="Enter output folder"
-      @click="$emit('output-count-click', assets[0])"
-    />
+    <div>
+      <button
+        v-if="assets.length"
+        aria-label="Enter output folder"
+        @click="$emit('output-count-click', assets[0])"
+      />
+      <span v-for="asset in assets" :key="asset.id" data-testid="asset-id">
+        {{ asset.id }}
+      </span>
+    </div>
   `
 }
 
@@ -161,8 +183,12 @@ function renderTab() {
 }
 
 describe('AssetsSidebarTab folder navigation', () => {
-  it('places accessible folder actions beside the job ID', async () => {
+  beforeEach(() => {
+    storeControls.setOutputItems([folderAsset])
     vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
+  })
+
+  it('places accessible folder actions beside the job ID', async () => {
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })
@@ -189,5 +215,83 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+
+  const existingChild = {
+    ...folderAsset,
+    id: 'existing-child',
+    name: 'existing-child.png'
+  }
+  const replacementPrimary = {
+    ...folderAsset,
+    id: 'replacement-primary',
+    name: 'replacement-primary.png'
+  }
+  const addedChild = {
+    ...folderAsset,
+    id: 'added-child',
+    name: 'added-child.png'
+  }
+
+  // Renders the folder and enters it, leaving the DOM/resolver in the
+  // pre-refresh, in-folder state for both tests below to build on. Queues a
+  // second resolved value so a refresh (triggered separately by each test)
+  // has refreshed data available if the component ever fetches it.
+  async function renderOpenFolder() {
+    vi.mocked(resolveOutputAssetItems)
+      .mockReset()
+      .mockResolvedValueOnce([folderAsset, existingChild])
+      .mockResolvedValueOnce([replacementPrimary, existingChild, addedChild])
+
+    renderTab()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await waitFor(() =>
+      expect(screen.getAllByTestId('asset-id')).toHaveLength(2)
+    )
+  }
+
+  it('reconciles an open output folder when refreshed assets replace its primary output', async () => {
+    await renderOpenFolder()
+
+    expect(screen.getByText('multi-output-job')).toBeVisible()
+    expect(selectionMocks.reconcileSelection).toHaveBeenLastCalledWith([
+      folderAsset,
+      existingChild
+    ])
+  })
+
+  // Known bug: the store-level asset list is refreshed while a folder is
+  // open, but the open folder never re-fetches or reconciles against the
+  // refreshed data (`AssetsSidebarTab.vue` has no watcher on the output
+  // store while `isInFolderView`). Both the in-folder view and the parent
+  // grid after leaving the folder keep showing the stale pre-refresh primary
+  // asset instead of `replacementPrimary`.
+  it.fails('shows the refreshed primary asset after leaving the folder', async () => {
+    await renderOpenFolder()
+
+    storeControls.setOutputItems([replacementPrimary])
+    await nextTick()
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByTestId('asset-id')
+          .map((item) => item.textContent?.trim())
+      ).toEqual(['replacement-primary', 'existing-child', 'added-child'])
+    )
+    expect(selectionMocks.reconcileSelection).toHaveBeenLastCalledWith([
+      replacementPrimary,
+      existingChild,
+      addedChild
+    ])
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to all assets' })
+    )
+    expect(
+      screen.getAllByTestId('asset-id').map((item) => item.textContent?.trim())
+    ).toEqual(['replacement-primary'])
   })
 })
