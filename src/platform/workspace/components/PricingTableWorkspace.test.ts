@@ -1,22 +1,46 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import PricingTableWorkspace from '@/platform/workspace/components/PricingTableWorkspace.vue'
+
+const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    plans: ref([]),
+    plans: computed(() => state.plans),
     currentPlanSlug: computed(() => null),
     fetchPlans: vi.fn(),
     subscription: computed(() => null),
     getMaxSeats: () => 5
   })
 }))
+
+function apiPlan(
+  tier: Plan['tier'],
+  duration: Plan['duration'],
+  credits: number
+): Plan {
+  return {
+    availability: { available: true },
+    credits_cents: credits,
+    duration,
+    max_seats: 5,
+    price_cents: 2000,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 2000,
+      total_credits_cents: credits
+    },
+    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    tier
+  }
+}
 
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ execute: vi.fn() })
@@ -53,6 +77,21 @@ function renderComponent() {
 }
 
 describe('PricingTableWorkspace credit allotment copy', () => {
+  beforeEach(() => {
+    state.plans = []
+  })
+
+  it('shows the catalog grant in preference to twelve static months', () => {
+    state.plans = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
+
+    renderComponent()
+
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('50,400')).toBeNull()
+    expect(screen.getByText('~5,429')).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
+  })
+
   it('states the whole-year per-member allotment on the yearly cycle', () => {
     renderComponent()
 

@@ -8,8 +8,32 @@ import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json'
-import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingSubscriptionStatus,
+  Plan
+} from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+
+function apiPlan(
+  tier: Plan['tier'],
+  duration: Plan['duration'],
+  credits: number
+): Plan {
+  return {
+    availability: { available: true },
+    credits_cents: credits,
+    duration,
+    max_seats: 5,
+    price_cents: 2000,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 2000,
+      total_credits_cents: credits
+    },
+    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    tier
+  }
+}
 
 interface MockSubscription {
   tier: SubscriptionTier | null
@@ -39,10 +63,11 @@ const mockPermissions = ref({
   canDowngradeToPersonal: true
 })
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    plans: ref([]),
+    plans: computed(() => mockApiPlans.value),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
     fetchPlans: vi.fn(),
     isTeamPlan: computed(() => mockIsTeamPlan.value),
@@ -95,6 +120,10 @@ function renderComponent(props: Record<string, unknown> = {}) {
     }
   })
 }
+
+beforeEach(() => {
+  mockApiPlans.value = []
+})
 
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
@@ -585,6 +614,17 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true
     mockDistributionTypes.isCloud = true
+  })
+
+  it('shows the catalog grant in preference to twelve static months', () => {
+    mockApiPlans.value = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
+
+    renderComponent()
+
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('50,400')).toBeNull()
+    expect(screen.getByText(/~5,429/)).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
   })
 
   it('states the whole-year allotment for personal tiers on the yearly cycle', () => {

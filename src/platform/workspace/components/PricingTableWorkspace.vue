@@ -526,10 +526,14 @@ const maxMembersByTier = computed(
 )
 
 const getCreditsPerMember = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
   amountForBillingCycle(tier.pricing.credits, isYearly.value)
 
 const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
-  amountForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
+  Math.round(
+    getCreditsPerMember(tier) *
+      (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return

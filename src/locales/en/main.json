@@ -2901,7 +2901,7 @@
     "outOfCreditsTitle": "You're out of credits. Credits refill {date}",
     "outOfCreditsTitleNoDate": "You're out of credits",
     "outOfCreditsDescription": "Add more credits to continue generating.",
-    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
+    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after your plan credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",

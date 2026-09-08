@@ -224,7 +224,6 @@ import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
@@ -258,7 +257,6 @@ const {
   fetchStatus
 } = useBillingContext()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const { isYearlySubscription } = useSubscription()
 const {
   prepaidCredits,
   totalCredits,
@@ -279,6 +277,10 @@ const tierKey = computed(() => {
   return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
+const isAnnualBilling = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
@@ -286,9 +288,7 @@ const creditPoolTotalCredits = computed<number | null>(() => {
       ? null
       : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null
-  return subscription.value?.duration === 'ANNUAL'
-    ? monthlyCredits * 12
-    : monthlyCredits
+  return isAnnualBilling.value ? monthlyCredits * 12 : monthlyCredits
 })
 
 // The reactivate-to-use-credits treatment sells a self-serve reactivation, so
@@ -325,12 +325,12 @@ const refillsLabel = computed(() =>
 )
 
 const allowanceLabel = computed(() =>
-  t(isYearlySubscription.value ? 'subscription.yearly' : 'subscription.monthly')
+  t(isAnnualBilling.value ? 'subscription.yearly' : 'subscription.monthly')
 )
 
 const usedAfterAllowanceLabel = computed(() =>
   t(
-    isYearlySubscription.value
+    isAnnualBilling.value
       ? 'subscription.usedAfterYearly'
       : 'subscription.usedAfterMonthly'
   )
@@ -379,7 +379,7 @@ const usedBarWidth = computed(
 )
 const monthlyUsageLabel = computed(() =>
   t(
-    isYearlySubscription.value
+    isAnnualBilling.value
       ? 'subscription.yearlyUsageProgress'
       : 'subscription.monthlyUsageProgress',
     {
@@ -438,7 +438,7 @@ const emptyStateNotice = computed(() => {
     return {
       title: hasRefillsDate.value
         ? t(
-            isYearlySubscription.value
+            isAnnualBilling.value
               ? 'subscription.yearlyCreditsUsedUpTitle'
               : 'subscription.monthlyCreditsUsedUpTitle',
             {
@@ -446,7 +446,7 @@ const emptyStateNotice = computed(() => {
             }
           )
         : t(
-            isYearlySubscription.value
+            isAnnualBilling.value
               ? 'subscription.yearlyCreditsUsedUpTitleNoDate'
               : 'subscription.monthlyCreditsUsedUpTitleNoDate'
           ),

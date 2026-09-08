@@ -171,7 +171,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  {{ n(amountForCurrentCycle(tier.pricing.credits)) }}
+                  {{ n(creditsForTier(tier)) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
                   {{ t(creditsLabelKey) }}
@@ -180,7 +180,7 @@
               <span class="text-sm text-muted-foreground">
                 {{
                   t('subscription.videoEstimate', {
-                    count: n(amountForCurrentCycle(tier.pricing.videoEstimate))
+                    count: n(videoEstimateForTier(tier))
                   })
                 }}
               </span>
@@ -836,6 +836,17 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   const price = plan.price_cents / 100
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
+
+// The catalog grant for the selected duration is authoritative; the static
+// per-month figure is only the pre-resolve (loading / OSS) fallback.
+const creditsForTier = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
+  amountForCurrentCycle(tier.pricing.credits)
+
+const videoEstimateForTier = (tier: PricingTierConfig): number =>
+  Math.round(
+    creditsForTier(tier) * (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
 
 const currentAccountTier = computed(() =>
   subscription.value?.tier && !isEnded.value ? subscription.value.tier : null

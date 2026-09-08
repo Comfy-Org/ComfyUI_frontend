@@ -21,6 +21,7 @@ type CustomerEventsResult = { events: { event_type: string }[] } | null
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
+  personalIsYearly: false,
   canAccessSubscriptionFeatures: false,
   isFreeTier: false,
   isTeamPlan: false,
@@ -94,9 +95,7 @@ vi.mock(
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isYearlySubscription: computed(
-      () => state.subscription?.duration === 'ANNUAL'
-    )
+    isYearlySubscription: computed(() => state.personalIsYearly)
   })
 }))
 
@@ -218,6 +217,7 @@ describe('CreditsTile', () => {
   beforeEach(() => {
     state.balance = null
     state.subscription = null
+    state.personalIsYearly = false
     state.canAccessSubscriptionFeatures = false
     state.isFreeTier = false
     state.isTeamPlan = false
@@ -267,6 +267,29 @@ describe('CreditsTile', () => {
     expect(
       screen.getByRole('progressbar').getAttribute('aria-valuetext')
     ).toContain('yearly credits used')
+  })
+
+  it('takes the cycle wording from the workspace plan, not the personal one', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
+    }
+    state.balance = { amountMicros: 840000, cloudCreditBalanceMicros: 840000 }
+    state.personalIsYearly = false
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('1,772,400 left of 1,772,400')
+    expect(container.textContent).toContain('Yearly')
+    expect(container.textContent).not.toContain('Monthly')
+    expect(container.textContent).toContain('Used after yearly runs out')
   })
 
   it('renders the yearly depletion notice when the annual allowance is used up', () => {
