@@ -30,7 +30,9 @@ function addMultilineWidget(
         widgetId(graphId, node.id, name)
       )
 
-      return (widgetState?.value as string) ?? inputEl.value
+      return typeof widgetState?.value === 'string'
+        ? widgetState.value
+        : inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
@@ -44,7 +46,7 @@ function addMultilineWidget(
       widgetStore.registerWidget(id, {
         type: 'customtext',
         value: v,
-        options: widget.options ?? {}
+        options: widget.options
       })
     }
   })

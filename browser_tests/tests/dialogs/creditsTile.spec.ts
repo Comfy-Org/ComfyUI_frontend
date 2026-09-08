@@ -65,6 +65,7 @@ const mockBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -76,6 +77,7 @@ const freeBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE',
   has_funds: true
 }
@@ -85,6 +87,7 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'ended',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -291,8 +294,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
     const content = await openPlanAndCredits(page)
-    await expect(content.getByText('Your subscription has ended')).toBeVisible()
-    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+    const billingPortal = content.getByRole('button', {
+      name: 'Billing & invoices'
+    })
+    await expect(billingPortal).toBeVisible()
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
+    await billingPortal.click()
 
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
