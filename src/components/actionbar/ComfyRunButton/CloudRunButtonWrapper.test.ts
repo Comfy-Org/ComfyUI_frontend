@@ -21,26 +21,31 @@ const state = vi.hoisted(() => ({
   updateDialog: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { computed } = await import('vue')
-  return {
-    useBillingContext: () => ({
-      canRunWorkflows: mockCanRunWorkflows,
-      showsSubscribeToRunPrompt: computed(
-        () => mockIsInitialized.value && !mockCanRunWorkflows.value
-      ),
-      billingStatus: mockBillingStatus,
-      subscription: computed(() =>
-        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
-      ),
-      manageSubscription: state.manageSubscription,
-      fetchStatus: state.fetchStatus,
-      fetchBalance: state.fetchBalance
-    })
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingContext: () => ({
+        canRunWorkflows: mockCanRunWorkflows,
+        showsSubscribeToRunPrompt: computed(
+          () => mockIsInitialized.value && !mockCanRunWorkflows.value
+        ),
+        billingStatus: mockBillingStatus,
+        subscription: computed(() =>
+          mockSubscriptionTier.value
+            ? { tier: mockSubscriptionTier.value }
+            : null
+        ),
+        manageSubscription: state.manageSubscription,
+        fetchStatus: state.fetchStatus,
+        fetchBalance: state.fetchBalance
+      })
+    }
   }
-})
+)
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get v1PaymentRecovery() {
@@ -50,48 +55,57 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
-  const { computed } = await import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription
-      }))
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        permissions: computed(() => ({
+          canManageSubscription: state.canManageSubscription
+        }))
+      })
+    }
   }
-})
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showLayoutDialog: state.showLayoutDialog })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: state.closeDialog,
     updateDialog: state.updateDialog
   })
 }))
 
-vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
-  default: {
-    name: 'ComfyQueueButton',
-    props: ['paymentRecoveryLock'],
-    emits: ['paymentRecoveryClick'],
-    template:
-      '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
+  () => ({
+    default: {
+      name: 'ComfyQueueButton',
+      props: ['paymentRecoveryLock'],
+      emits: ['paymentRecoveryClick'],
+      template:
+        '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
+    }
+  })
+)
 
-vi.mock('@/platform/cloud/subscription/components/SubscribeToRun.vue', () => ({
-  default: {
-    name: 'SubscribeToRun',
-    template: '<div data-testid="subscribe-to-run-button" />'
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/components/SubscribeToRun.vue'),
+  () => ({
+    default: {
+      name: 'SubscribeToRun',
+      template: '<div data-testid="subscribe-to-run-button" />'
+    }
+  })
+)
 
 function renderWrapper() {
   return render(CloudRunButtonWrapper)

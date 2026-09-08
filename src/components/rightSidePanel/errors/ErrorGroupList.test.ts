@@ -19,7 +19,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
     serialize: vi.fn(() => ({})),
     getNodeById: vi.fn()
@@ -32,7 +32,7 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),
@@ -40,17 +40,17 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: vi.fn()
   }))
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: vi.fn(),
   fetchModelMetadata: vi.fn().mockResolvedValue({
     fileSize: null,

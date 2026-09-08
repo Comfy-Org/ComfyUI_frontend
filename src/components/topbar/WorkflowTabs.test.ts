@@ -34,7 +34,7 @@ const workflowStoreHolder = vi.hoisted<{
   } | null
 }>(() => ({ store: null }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
@@ -46,54 +46,58 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('primevue/scrollpanel', async () => {
-  const { defineComponent, h, ref } = await import('vue')
-  return {
-    default: defineComponent({
-      name: 'ScrollPanelStub',
-      inheritAttrs: false,
-      setup(_, { attrs, slots }) {
-        const contentKey = ref(0)
-        return () => {
-          const contentProps = attrs['pt:content']
-          const passThroughProps =
-            typeof contentProps === 'object' && contentProps !== null
-              ? contentProps
-              : {}
+vi.mock(
+  import('primevue/scrollpanel'), // eslint-disable-line primevue-removal/no-imports
 
-          return h('div', [
-            h(
-              'button',
-              { onClick: () => contentKey.value++ },
-              'Replace scroll content'
-            ),
-            h(
-              'div',
-              {
-                ...passThroughProps,
-                key: contentKey.value,
-                class: 'p-scrollpanel-content',
-                'data-testid': 'scroll-content',
-                'data-internal-ref-preserved':
-                  'ref' in passThroughProps ? undefined : 'true'
-              },
-              slots.default?.()
-            )
-          ])
+  async () => {
+    const { defineComponent, h, ref } = await import('vue')
+    return {
+      default: defineComponent({
+        name: 'ScrollPanelStub',
+        inheritAttrs: false,
+        setup(_, { attrs, slots }) {
+          const contentKey = ref(0)
+          return () => {
+            const contentProps = attrs['pt:content']
+            const passThroughProps =
+              typeof contentProps === 'object' && contentProps !== null
+                ? contentProps
+                : {}
+
+            return h('div', [
+              h(
+                'button',
+                { onClick: () => contentKey.value++ },
+                'Replace scroll content'
+              ),
+              h(
+                'div',
+                {
+                  ...passThroughProps,
+                  key: contentKey.value,
+                  class: 'p-scrollpanel-content',
+                  'data-testid': 'scroll-content',
+                  'data-internal-ref-preserved':
+                    'ref' in passThroughProps ? undefined : 'true'
+                },
+                slots.default?.()
+              )
+            ])
+          }
         }
-      }
-    })
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.UI.TabBarLayout' ? tabBarLayout.value : undefined
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: { value: false },
     userEmail: { value: undefined }
@@ -106,49 +110,58 @@ const workflowStore = vi.hoisted(() => ({
   openWorkflows: [] as WorkflowFixture[],
   activeWorkflow: null as WorkflowFixture | null
 }))
-vi.mock('@/platform/support/feedbackDialog', () => ({
+vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
 
-vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
+vi.mock(import('@/composables/useWorkflowStatusDismissal'), () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', async () => {
-  const { ref } = await import('vue')
-  return {
-    useOverflowObserver: () => {
-      const isOverflowing = ref(false)
-      const observer = {
-        isOverflowing,
-        checkOverflow: vi.fn()
+vi.mock<unknown>(
+  import('@/composables/element/useOverflowObserver'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useOverflowObserver: () => {
+        const isOverflowing = ref(false)
+        const observer = {
+          isOverflowing,
+          checkOverflow: vi.fn()
+        }
+        overflowObservers.push(observer)
+        return observer
       }
-      overflowObservers.push(observer)
-      return observer
     }
   }
-})
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    openWorkflow,
-    closeWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      openWorkflow,
+      closeWorkflow: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => {
-    const store = reactive(workflowStore)
-    workflowStoreHolder.store = store
-    return store
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => {
+      const store = reactive(workflowStore)
+      workflowStoreHolder.store = store
+      return store
+    }
+  })
+)
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))
 
@@ -160,8 +173,9 @@ const agentPanelHolder = vi.hoisted(() => ({
     toggle: ReturnType<typeof vi.fn>
   }
 }))
-vi.mock(
-  '@/workbench/extensions/agent/stores/agent/agentPanelStore',
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/stores/agent/agentPanelStore'),
+
   async () => {
     const { reactive, ref } = await import('vue')
     agentPanelHolder.store = {
@@ -179,18 +193,18 @@ vi.mock(
   }
 )
 
-vi.mock('@/utils/mouseDownUtil', () => ({
+vi.mock(import('@/utils/mouseDownUtil'), () => ({
   whileMouseDown: vi.fn()
 }))
 
-vi.mock('./WorkflowOverflowMenu.vue', () => ({
+vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
     render: () => h('div', { 'data-testid': 'workflow-overflow-menu' })
   })
 }))
 
-vi.mock('./WorkflowTab.vue', () => ({
+vi.mock(import('./WorkflowTab.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
     props: {
@@ -205,14 +219,14 @@ vi.mock('./WorkflowTab.vue', () => ({
   })
 }))
 
-vi.mock('./CurrentUserButton.vue', () => ({
+vi.mock(import('./CurrentUserButton.vue'), () => ({
   default: defineComponent({
     name: 'CurrentUserButtonStub',
     render: () => h('div')
   })
 }))
 
-vi.mock('./LoginButton.vue', () => ({
+vi.mock(import('./LoginButton.vue'), () => ({
   default: defineComponent({
     name: 'LoginButtonStub',
     render: () => h('div')

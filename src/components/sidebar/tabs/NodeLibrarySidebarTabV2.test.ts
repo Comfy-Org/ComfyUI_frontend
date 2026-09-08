@@ -11,13 +11,13 @@ const hoisted = vi.hoisted(() => ({
   mockSearchNode: vi.fn<(query: string) => unknown[]>(() => [])
 }))
 
-vi.mock('@/services/nodeSearchService', () => ({
+vi.mock<unknown>(import('@/services/nodeSearchService'), () => ({
   NodeSearchService: class {
     searchNode = hoisted.mockSearchNode
   }
 }))
 
-vi.mock('@vueuse/core', async () => {
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const actual = await vi.importActual('@vueuse/core')
   return {
     ...actual,
@@ -27,7 +27,7 @@ vi.mock('@vueuse/core', async () => {
   }
 })
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     isDragging: { value: false },
     draggedNode: { value: null },
@@ -36,7 +36,7 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   })
 }))
 
-vi.mock('@/services/nodeOrganizationService', () => ({
+vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_TAB_ID: 'essentials',
   DEFAULT_SORTING_ID: 'alphabetical',
   nodeOrganizationService: {
@@ -45,7 +45,7 @@ vi.mock('@/services/nodeOrganizationService', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/AllNodesPanel.vue'), () => ({
   default: {
     name: 'AllNodesPanel',
     template: '<div data-testid="all-panel"><slot /></div>',
@@ -53,7 +53,7 @@ vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/EssentialNodesPanel.vue'), () => ({
   default: {
     name: 'EssentialNodesPanel',
     template: '<div data-testid="essential-panel"><slot /></div>',
@@ -61,19 +61,22 @@ vi.mock('./nodeLibrary/EssentialNodesPanel.vue', () => ({
   }
 }))
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchBox',
-    template:
-      '<input data-testid="search-box" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-    props: ['modelValue', 'placeholder'],
-    emits: ['update:modelValue', 'search'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/ui/search-input/SearchInput.vue'),
+  () => ({
+    default: {
+      name: 'SearchBox',
+      template:
+        '<input data-testid="search-box" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+      props: ['modelValue', 'placeholder'],
+      emits: ['update:modelValue', 'search'],
+      setup() {
+        return { focus: vi.fn() }
+      },
+      expose: ['focus']
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

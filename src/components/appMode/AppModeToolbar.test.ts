@@ -11,11 +11,11 @@ const appModeState = vi.hoisted(() => ({
 }))
 const enterBuilder = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({ enableAppBuilder: appModeState.enableAppBuilder })
 }))
 
-vi.mock('@/stores/appModeStore', async () => {
+vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
   const { computed, reactive } = await import('vue')
   return {
     useAppModeStore: () =>

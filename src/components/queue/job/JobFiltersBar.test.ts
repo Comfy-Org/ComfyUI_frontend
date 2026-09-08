@@ -4,21 +4,25 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { defineComponent } from 'vue'
 
-vi.mock('primevue/popover', () => {
-  const PopoverStub = defineComponent({
-    name: 'Popover',
-    setup(_, { slots, expose }) {
-      expose({
-        hide: () => undefined,
-        toggle: (_event: Event) => undefined
-      })
-      return () => slots.default?.()
-    }
-  })
-  return { default: PopoverStub }
-})
+vi.mock<unknown>(
+  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('@/platform/distribution/types', () => ({
+  () => {
+    const PopoverStub = defineComponent({
+      name: 'Popover',
+      setup(_, { slots, expose }) {
+        expose({
+          hide: () => undefined,
+          toggle: (_event: Event) => undefined
+        })
+        return () => slots.default?.()
+      }
+    })
+    return { default: PopoverStub }
+  }
+)
+
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 

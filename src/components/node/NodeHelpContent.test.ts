@@ -7,7 +7,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import NodeHelpContent from './NodeHelpContent.vue'
 
-vi.mock('@/composables/useNodeHelpContent', () => ({
+vi.mock<unknown>(import('@/composables/useNodeHelpContent'), () => ({
   useNodeHelpContent: () => ({
     renderedHelpHtml: ref(''),
     isLoading: ref(false),

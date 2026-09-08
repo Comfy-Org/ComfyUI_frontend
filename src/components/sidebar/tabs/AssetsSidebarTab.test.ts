@@ -22,7 +22,7 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/stores/assetsStore', async () => {
+vi.mock<unknown>(import('@/stores/assetsStore'), async () => {
   const { ref } = await import('vue')
 
   const store = {
@@ -49,50 +49,63 @@ vi.mock('@/stores/assetsStore', async () => {
   }
 })
 
-vi.mock('@/platform/assets/composables/useAssetGridSelection', async () => {
-  const { ref } = await import('vue')
-  return {
-    useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetGridSelection'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
+    }
   }
-})
+)
 
-vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
-  const { ref } = await import('vue')
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetSelection'),
+  async () => {
+    const { ref } = await import('vue')
 
-  return {
-    useAssetSelection: () => ({
-      isSelected: vi.fn(() => false),
-      selectedIds: ref(new Set<string>()),
-      handleAssetClick: vi.fn(),
-      selectAll: vi.fn(),
-      setSelectedIds: vi.fn(),
-      hasSelection: ref(false),
-      clearSelection: vi.fn(),
-      getSelectedAssets: vi.fn(() => []),
-      reconcileSelection: vi.fn(),
-      getOutputCount: vi.fn(() => 2),
-      getTotalOutputCount: vi.fn(() => 0),
-      activate: vi.fn(),
-      deactivate: vi.fn()
+    return {
+      useAssetSelection: () => ({
+        isSelected: vi.fn(() => false),
+        selectedIds: ref(new Set<string>()),
+        handleAssetClick: vi.fn(),
+        selectAll: vi.fn(),
+        setSelectedIds: vi.fn(),
+        hasSelection: ref(false),
+        clearSelection: vi.fn(),
+        getSelectedAssets: vi.fn(() => []),
+        reconcileSelection: vi.fn(),
+        getOutputCount: vi.fn(() => 2),
+        getTotalOutputCount: vi.fn(() => 0),
+        activate: vi.fn(),
+        deactivate: vi.fn()
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => ({
+      downloadAssets: vi.fn(),
+      deleteAssets: vi.fn(),
+      addMultipleToWorkflow: vi.fn(),
+      openMultipleWorkflows: vi.fn(),
+      exportMultipleWorkflows: vi.fn()
     })
-  }
-})
-
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({
-    downloadAssets: vi.fn(),
-    deleteAssets: vi.fn(),
-    addMultipleToWorkflow: vi.fn(),
-    openMultipleWorkflows: vi.fn(),
-    exportMultipleWorkflows: vi.fn()
   })
-}))
+)
 
-vi.mock('@/platform/assets/utils/outputAssetUtil')
+vi.mock<unknown>(import('@/platform/assets/utils/outputAssetUtil'))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+
+  () => ({
+    useToast: () => ({ add: vi.fn() })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
