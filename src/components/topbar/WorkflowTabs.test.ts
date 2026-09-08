@@ -179,9 +179,6 @@ vi.mock(
   }
 )
 
-const whileMouseDown = vi.hoisted(() => vi.fn())
-vi.mock('@/utils/mouseDownUtil', () => ({ whileMouseDown }))
-
 vi.mock('./WorkflowOverflowMenu.vue', () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
@@ -592,70 +589,81 @@ describe('WorkflowTabs scrolling', () => {
 
 describe('WorkflowTabs overflow arrows', () => {
   beforeEach(() => {
-    whileMouseDown.mockClear()
     overflowObservers.length = 0
     workflowStore.openWorkflows = []
     workflowStore.activeWorkflow = null
   })
 
-  it('scrolls once immediately and delays hold-to-repeat scrolling', async () => {
+  async function renderOverflowArrows() {
     renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    const scrollContent = screen.getByTestId('scroll-content')
+    Object.defineProperties(scrollContent, {
+      clientWidth: { configurable: true, value: 200 },
+      scrollWidth: { configurable: true, value: 1000 },
+      scrollBy: {
+        configurable: true,
+        value: ({ left = 0 }: ScrollToOptions) => {
+          scrollContent.scrollLeft += left
+          scrollContent.dispatchEvent(new Event('scroll'))
+        }
+      }
+    })
+    scrollContent.scrollLeft = 400
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
+    await nextTick()
 
-    const scrollContent = screen.getByTestId('scroll-content')
-
-    const scrollBy = vi.fn()
-    Object.defineProperty(scrollContent, 'scrollBy', {
-      configurable: true,
-      value: scrollBy
-    })
-
-    const rightArrow = await screen.findByRole('button', {
+    const rightArrow = screen.getByRole('button', {
       name: /scroll right/i
     })
-    rightArrow.dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, pointerId: 1 })
-    )
+    await waitFor(() => expect(rightArrow).toBeEnabled())
 
-    expect(scrollBy).toHaveBeenCalledOnce()
-    expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
-    expect(whileMouseDown).toHaveBeenCalledOnce()
-    expect(whileMouseDown).toHaveBeenCalledWith(
-      expect.any(PointerEvent),
-      expect.any(Function),
-      30,
-      300
-    )
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    return { user, scrollContent, rightArrow }
+  }
 
-    const repeatScroll = whileMouseDown.mock.calls[0][1]
-    repeatScroll()
+  it('scrolls once on a quick click without repeating after release', async () => {
+    const { user, scrollContent, rightArrow } = await renderOverflowArrows()
 
-    expect(scrollBy).toHaveBeenCalledTimes(2)
+    await user.click(rightArrow)
+
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(350)
+    expect(scrollContent.scrollLeft).toBe(420)
   })
 
-  it('scrolls once when activated from the keyboard', async () => {
-    renderComponent()
-    await waitFor(() => expect(overflowObservers).toHaveLength(1))
-    overflowObservers[0].isOverflowing.value = true
-    await nextTick()
+  it('delays hold-to-repeat scrolling and stops when released outside the arrow', async () => {
+    const { user, scrollContent, rightArrow } = await renderOverflowArrows()
 
-    const scrollContent = screen.getByTestId('scroll-content')
-    const scrollBy = vi.fn()
-    Object.defineProperty(scrollContent, 'scrollBy', {
-      configurable: true,
-      value: scrollBy
-    })
+    await user.pointer({ target: rightArrow, keys: '[MouseLeft>]' })
 
-    const rightArrow = await screen.findByRole('button', {
-      name: /scroll right/i
-    })
-    rightArrow.removeAttribute('disabled')
-    rightArrow.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(299)
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(scrollContent.scrollLeft).toBe(440)
+    await vi.advanceTimersByTimeAsync(60)
+    expect(scrollContent.scrollLeft).toBe(480)
 
-    expect(scrollBy).toHaveBeenCalledOnce()
-    expect(scrollBy).toHaveBeenCalledWith({ left: 20 })
-    expect(whileMouseDown).not.toHaveBeenCalled()
+    await user.pointer({ target: document.body, keys: '[/MouseLeft]' })
+    await vi.advanceTimersByTimeAsync(350)
+    expect(scrollContent.scrollLeft).toBe(480)
+  })
+
+  it.for([
+    ['Enter', '{Enter}'],
+    ['Space', ' ']
+  ])('scrolls once when activated with %s', async ([, key]) => {
+    const { user, scrollContent, rightArrow } = await renderOverflowArrows()
+    rightArrow.focus()
+    expect(rightArrow).toHaveFocus()
+
+    await user.keyboard(key)
+
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(350)
+    expect(scrollContent.scrollLeft).toBe(420)
   })
 })
