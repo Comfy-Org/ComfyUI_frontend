@@ -18,7 +18,6 @@ type MockTask = {
   previewOutput?: {
     filename: string
     url: string
-    urlTimestamp: string
   }
 }
 
@@ -95,8 +94,7 @@ describe(useQueueNotificationBanners, () => {
     if (previewUrl) {
       task.previewOutput = {
         filename: isImage ? 'preview.png' : 'preview.txt',
-        url: previewUrl,
-        urlTimestamp: ''
+        url: previewUrl
       }
     }
 
@@ -222,7 +220,9 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value).toEqual({
         type: 'completed',
         count: 1,
-        thumbnailUrls: ['https://example.com/preview.png']
+        thumbnailUrls: [
+          expect.stringContaining('https://example.com/preview.png')
+        ]
       })
     } finally {
       unmount()
@@ -256,7 +256,9 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value).toEqual({
         type: 'completed',
         count: 1,
-        thumbnailUrls: ['https://example.com/race-preview.png']
+        thumbnailUrls: [
+          expect.stringContaining('https://example.com/race-preview.png')
+        ]
       })
 
       await vi.advanceTimersByTimeAsync(4000)
@@ -293,7 +295,9 @@ describe(useQueueNotificationBanners, () => {
       expect(composable.currentNotification.value).toEqual({
         type: 'completed',
         count: 3,
-        thumbnailUrls: ['https://example.com/result.png']
+        thumbnailUrls: [
+          expect.stringContaining('https://example.com/result.png')
+        ]
       })
 
       await vi.advanceTimersByTimeAsync(4000)
@@ -340,8 +344,8 @@ describe(useQueueNotificationBanners, () => {
         type: 'completed',
         count: 4,
         thumbnailUrls: [
-          'https://example.com/preview-1.png',
-          'https://example.com/preview-2.png'
+          expect.stringContaining('https://example.com/preview-1.png'),
+          expect.stringContaining('https://example.com/preview-2.png')
         ]
       })
     } finally {

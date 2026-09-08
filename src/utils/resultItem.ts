@@ -14,7 +14,6 @@ export interface AugmentedResultItem extends ResultItem {
   frame_rate?: number
   url?: string
   previewUrl?: string
-  urlTimestamp?: string
 }
 
 const isVideoBySuffix = (item: AugmentedResultItem): boolean =>
