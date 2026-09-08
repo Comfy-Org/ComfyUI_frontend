@@ -328,10 +328,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
+    initialLocalStorage = {},
     mockReleases = true,
     url
   }: {
     clearStorage?: boolean
+    initialLocalStorage?: Record<string, string>
     mockReleases?: boolean
     url?: string
   } = {}) {
@@ -363,6 +365,9 @@ export class ComfyPage {
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
+
+      for (const [k, v] of Object.entries(initialLocalStorage))
+        await this.page.localStorage.setItem(k, v)
     }
 
     await this.goto({ url })
@@ -557,6 +562,7 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
   initialFeatureFlags: Record<string, unknown>
+  initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
@@ -565,6 +571,8 @@ export const comfyPageFixture = base.extend<{
   // Allows configuring feature flags for tests with before initial setup:
   // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
+
+  initialLocalStorage: [{}, { option: true }],
   // Allows seeding user settings before initial page load:
   // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
   // the fixture's defaults so per-test values win.
@@ -589,7 +597,13 @@ export const comfyPageFixture = base.extend<{
   },
 
   comfyPage: async (
-    { page, request, initialFeatureFlags, initialSettings },
+    {
+      page,
+      request,
+      initialFeatureFlags,
+      initialLocalStorage,
+      initialSettings
+    },
     use,
     testInfo
   ) => {
@@ -683,7 +697,7 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup()
+      await comfyPage.setup({ initialLocalStorage })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()
