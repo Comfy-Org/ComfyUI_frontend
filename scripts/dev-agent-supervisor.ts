@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
+import { createConnection } from 'node:net'
 
 export async function assertReachable(url: string): Promise<void> {
   const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
@@ -82,6 +83,22 @@ async function waitForGroupExit(
   while (groupIsAlive(child) && Date.now() < deadline) await wait(50)
 }
 
+export function assertFree(portNumber: number, label: string): Promise<void> {
+  return new Promise((resolveCheck, rejectCheck) => {
+    const socket = createConnection({ host: '127.0.0.1', port: portNumber })
+    socket.setTimeout(1000)
+    socket.once('connect', () => {
+      socket.end()
+      rejectCheck(new Error(`${label} port ${portNumber} is already in use`))
+    })
+    socket.once('error', () => resolveCheck())
+    socket.once('timeout', () => {
+      socket.destroy()
+      resolveCheck()
+    })
+  })
+}
+
 export async function waitForHttp(
   child: ChildProcess,
   url: string,
@@ -135,10 +152,13 @@ export function supervise(dataDir: string) {
     requestedExitCode = code
     resolveExitRequest(code)
   }
+  const onSighup = () => requestExit(129)
   const onSigint = () => requestExit(130)
   const onSigterm = () => requestExit(143)
-  process.once('SIGINT', onSigint)
-  process.once('SIGTERM', onSigterm)
+  // Repeated signals during teardown must not kill the launcher over its detached children.
+  process.on('SIGHUP', onSighup)
+  process.on('SIGINT', onSigint)
+  process.on('SIGTERM', onSigterm)
   return {
     exitRequested,
     requested: () => requestedExitCode !== null,
@@ -166,6 +186,7 @@ export function supervise(dataDir: string) {
         }
         await rm(dataDir, { force: true, recursive: true })
       } finally {
+        process.removeListener('SIGHUP', onSighup)
         process.removeListener('SIGINT', onSigint)
         process.removeListener('SIGTERM', onSigterm)
       }
@@ -173,7 +194,8 @@ export function supervise(dataDir: string) {
     },
     watch: (child: ChildProcess) => {
       children.push(child)
-      child.once('exit', (code) => requestExit(code ?? 1))
+      // Every watched child is a service; leaving on its own is a failure even at 0.
+      child.once('exit', (code) => requestExit(code === 0 ? 1 : (code ?? 1)))
       child.once('error', () => requestExit(1))
     }
   }

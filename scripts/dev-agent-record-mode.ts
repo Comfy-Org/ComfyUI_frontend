@@ -9,6 +9,7 @@ import { promisify } from 'node:util'
 import type { Options } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
 import {
+  assertFree,
   spawnGroup,
   supervise,
   wait,
@@ -119,6 +120,7 @@ async function redisExecCommand(): Promise<string> {
 // Every value is a module constant, so the statement carries no caller input.
 async function seedIdentity(command: string): Promise<void> {
   const parts = command.split(' ').filter(Boolean)
+  if (parts.length === 0) throw new Error('--pg-exec must name a command')
   const sql = [
     `insert into users (id, create_time, update_time, email, name) values ('${RECORD_USER_ID}', now(), now(), 'recorder@local', 'recorder') on conflict (id) do nothing;`,
     `insert into workspaces (id, create_time, update_time, name, created_by_user_id) values ('${RECORD_WORKSPACE_ID}', now(), now(), 'recorder', '${RECORD_USER_ID}') on conflict (id) do nothing;`,
@@ -143,8 +145,17 @@ async function writeCatalog(fixture: string, dataDir: string): Promise<string> {
 }
 
 function recordEnv(options: Options, catalogPath: string, secret: string) {
+  const env = { ...process.env }
+  for (const key of [
+    'AGENT_RUNNER_ENDPOINT',
+    'AGENT_SESSION_TOKEN',
+    'AGENT_STANDALONE'
+  ]) {
+    delete env[key]
+  }
   return {
-    ...process.env,
+    ...env,
+    AGENT_BIND_ADDR: '127.0.0.1',
     AGENT_COMFY_URL: options.comfyUrl,
     AGENT_CRDT_MODE: 'on',
     AGENT_ENGINE: options.engine,
@@ -221,6 +232,7 @@ export async function runRecord(options: Options): Promise<number> {
         throw new Error('Temporal exited before it started listening')
       }
     }
+    await assertFree(options.docHostPort, 'Doc host')
     const docHost = spawnGroup('bash', ['dochost/start.sh'], agentDir, {
       ...process.env,
       DOC_HOST_PORT: String(options.docHostPort)
@@ -235,6 +247,8 @@ export async function runRecord(options: Options): Promise<number> {
     if (docHostStartupResult !== null) {
       return await supervisor.stop(docHostStartupResult)
     }
+    await assertFree(options.agentPort, 'Agent')
+    await assertFree(options.healthPort, 'Agent health')
     const agent = spawnGroup(
       'bash',
       ['start.sh'],

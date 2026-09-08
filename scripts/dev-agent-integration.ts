@@ -9,7 +9,12 @@ import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
 import { runRecord } from './dev-agent-record-mode'
-import { spawnGroup, supervise, waitForStartup } from './dev-agent-supervisor'
+import {
+  assertFree,
+  spawnGroup,
+  supervise,
+  waitForStartup
+} from './dev-agent-supervisor'
 
 async function assertWorkspacePackage(): Promise<void> {
   const manifest = JSON.parse(
@@ -67,6 +72,8 @@ async function run(options: Options): Promise<number> {
   const token = randomBytes(32).toString('hex')
   const supervisor = supervise(dataDir)
   try {
+    await assertFree(options.agentPort, 'Agent')
+    await assertFree(options.healthPort, 'Agent health')
     const agent = spawnGroup(
       options.airBin,
       ['-c', '.air.toml'],

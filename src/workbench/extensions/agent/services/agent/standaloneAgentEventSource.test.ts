@@ -180,4 +180,17 @@ describe('createStandaloneAgentEventSource', () => {
 
     expect(sockets).toHaveLength(1)
   })
+
+  it('reports the stream down when the last subscriber leaves', () => {
+    const { source, sockets } = sourceHarness()
+    const status = vi.fn()
+    source.onStatus?.(status)
+
+    const unsubscribe = source.subscribe(vi.fn())
+    sockets[0].open()
+    unsubscribe()
+
+    expect(status.mock.calls).toEqual([[true], [false]])
+    expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
+  })
 })

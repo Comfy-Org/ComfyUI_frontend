@@ -166,5 +166,23 @@ export function parseOptions(args: string[]): Options {
       `--doc-host-port ${options.docHostPort} collides with the agent health port (agent port + 1)`
     )
   }
+  if (options.engine === 'temporal') {
+    const taken: Array<[string, number]> = [
+      ['agent', options.agentPort],
+      ['agent health', options.healthPort],
+      ['frontend', options.frontendPort],
+      ['doc host', options.docHostPort]
+    ]
+    for (const [label, portNumber] of taken) {
+      if (
+        options.temporalPort === portNumber ||
+        options.temporalUiPort === portNumber
+      ) {
+        throw new Error(
+          `--temporal-port ${options.temporalPort} (UI port ${options.temporalUiPort}) collides with the ${label} port ${portNumber}`
+        )
+      }
+    }
+  }
   return options
 }

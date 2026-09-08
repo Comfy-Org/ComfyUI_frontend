@@ -71,7 +71,9 @@ export function createStandaloneAgentEventSource({
     }
     const current = socket
     socket = null
-    current?.close()
+    if (current === null) return
+    current.close()
+    notifyStatus(false)
   }
 
   return {

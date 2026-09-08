@@ -6,6 +6,23 @@ import { describe, expect, it } from 'vitest'
 import { PROJECT_ROOT, parseOptions } from './dev-agent-options'
 
 describe('parseOptions', () => {
+  it.for([
+    ['6286', 'agent port 6286'],
+    ['7096', 'doc host port 8096']
+  ])('rejects --temporal-port %s colliding with the %s', ([port, what]) => {
+    expect(() =>
+      parseOptions([
+        '--record',
+        '--catalog',
+        'seed.json',
+        '--engine',
+        'temporal',
+        '--temporal-port',
+        port
+      ])
+    ).toThrow(`collides with the ${what}`)
+  })
+
   it('returns safe defaults with derived companion ports', () => {
     expect(parseOptions([])).toEqual({
       agentPort: 6286,

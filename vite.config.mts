@@ -220,6 +220,17 @@ if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
 
+// The agent proxy adds the session token, so only the dev server's own pages may use it.
+function isCrossOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin
+  if (origin === undefined) return false
+  try {
+    return new URL(origin).host !== req.headers.host
+  } catch {
+    return true
+  }
+}
+
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   req: IncomingMessage,
@@ -346,7 +357,18 @@ export default defineConfig({
               headers: {
                 Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
               },
-              rewrite: (path: string) => path.replace(/^\/api/, '')
+              rewrite: (path: string) => path.replace(/^\/api/, ''),
+              configure: (proxy) => {
+                proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
+                  if (isCrossOrigin(req)) socket.destroy()
+                })
+              },
+              bypass: (req, res) => {
+                if (!res || !isCrossOrigin(req)) return null
+                res.statusCode = 403
+                res.end('The agent proxy serves the dev server origin only')
+                return false
+              }
             }
           }
         : {}),

@@ -2,9 +2,11 @@
 import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
+import { createServer } from 'node:net'
+import type { AddressInfo } from 'node:net'
 import { describe, expect, it, vi } from 'vitest'
 
-import { supervise, waitForStartup } from './dev-agent-supervisor'
+import { assertFree, supervise, waitForStartup } from './dev-agent-supervisor'
 
 vi.mock('node:fs/promises', () => ({ rm: vi.fn() }))
 
@@ -22,7 +24,37 @@ class FakeChild extends EventEmitter {
   }
 }
 
+describe('assertFree', () => {
+  it('rejects a port something already listens on', async () => {
+    const server = createServer()
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const { port } = server.address() as AddressInfo
+    try {
+      await expect(assertFree(port, 'Agent')).rejects.toThrow(
+        `Agent port ${port} is already in use`
+      )
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
+    await expect(assertFree(port, 'Agent')).resolves.toBeUndefined()
+  })
+})
+
 describe('supervise state', () => {
+  it('treats a clean exit of a watched service as a failure', async () => {
+    vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+    })
+    const child = new FakeChild()
+    const supervisor = supervise('/tmp/agent-data')
+    supervisor.watch(child as unknown as ChildProcess)
+
+    child.exit(0)
+
+    await expect(supervisor.exitRequested).resolves.toBe(1)
+    await supervisor.stop(1)
+  })
+
   it('keeps the first child exit code as the lifecycle result', async () => {
     vi.spyOn(process, 'kill').mockImplementation(() => {
       throw Object.assign(new Error('missing'), { code: 'ESRCH' })
