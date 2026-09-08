@@ -41,7 +41,10 @@ export type NavItem =
       featured?: never
     }
 
-export function getMainNavigation(locale: Locale): NavItem[] {
+export function getMainNavigation(
+  locale: Locale,
+  includeWorkshop = false
+): NavItem[] {
   const routes = getRoutes(locale)
   return [
     {
@@ -107,6 +110,9 @@ export function getMainNavigation(locale: Locale): NavItem[] {
       ]
     },
     { label: t('nav.pricing', locale), href: routes.pricing },
+    ...(includeWorkshop
+      ? [{ label: t('nav.workshop', locale), href: routes.workshop }]
+      : []),
     {
       label: t('nav.community', locale),
       badge: 'new',

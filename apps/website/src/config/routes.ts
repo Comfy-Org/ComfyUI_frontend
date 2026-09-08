@@ -44,7 +44,8 @@ const baseRoutes = {
   wanAnimate2: '/wan-animate-2',
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  brand: '/brand',
+  workshop: '/workshop'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -73,6 +74,10 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
+// workshop: the model workshop lives only at /workshop (src/pages/workshop/);
+// there is no /<locale>/workshop page, so a prefixed link 404s. The route is
+// also omitted from deployed builds until config/workshop-release.ts enables it.
+//
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
 // page would either duplicate the English video under a Chinese path or lie
@@ -86,6 +91,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
+  'workshop',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])
