@@ -5,7 +5,7 @@ import { isImageResult } from '@/utils/resultItem'
 
 function resultItemUrlParams(item: AugmentedResultItem): URLSearchParams {
   const params = new URLSearchParams()
-  params.set('filename', item.filename ?? '')
+  params.set('filename', item.filename)
   params.set('type', item.type ?? '')
   params.set('subfolder', item.subfolder ?? '')
   if (item.format) params.set('format', item.format)
