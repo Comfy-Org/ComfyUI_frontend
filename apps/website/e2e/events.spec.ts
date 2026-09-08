@@ -29,9 +29,7 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_ZH, 'zh-CN']
 ]
 
-const pastCardEvents = pastEvents.filter(
-  (event) => event.media ?? event.featured?.media
-)
+const pastCardEvents = pastEvents.filter((event) => event.media)
 
 // Mirrors PAGE_SIZE in PastEventsSection.vue.
 const PAST_PAGE_SIZE = 4
