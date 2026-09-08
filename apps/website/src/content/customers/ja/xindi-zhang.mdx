@@ -1,0 +1,102 @@
+---
+title: "アートを広げるツール：ComfyUIで制作したXindi Zhangのアカデミー賞ショートリスト入り卒業制作"
+category: "クリエイティブ・キャンパス ショーケース"
+description: "USCのExpanded Animation卒業制作が、アーティスト自身のイラストをスタイルガイドに、Student Academy Award受賞、アカデミー賞ショートリスト入り、Amazonでの就職につながるまで。"
+cover: "https://media.comfy.org/website/customers/xindi-zhang/cover.webp"
+order: 1
+translatedBy: machine
+sections:
+  - id: topic-1
+    label: "イントロ"
+  - id: topic-2
+    label: "ComfyUIを選んだ理由"
+  - id: topic-3
+    label: "パイプライン"
+  - id: topic-4
+    label: "概要"
+  - id: topic-5
+    label: "次の展開"
+---
+
+<Section id="topic-1">
+
+<Embed src="https://player.vimeo.com/video/1131160045" title="Xindi ZhangによるThe Song of Drifters" />
+
+*『The Song of Drifters』より。映像：Xindi Zhang。*
+
+### 『The Song of Drifters』について教えてください。どんな作品で、どこから始まったのでしょうか？
+
+『The Song of Drifters』は、離れることと帰ることの間で揺れる人々を描いたドキュメンタリーアニメーションです。見知らぬ都市をさまよい、届かない故郷の記憶を抱えながら、居場所を探す人々の物語です。タイトルは、故郷を離れる子を思う母の愛を詠んだ中国の古詩を直訳したものです。私の作品では、その視点を反転させ、子どもの側から描きました。
+
+この映画はComfyUIで制作しました。始めたとき、AIに何ができるかを見せようとしていたわけではありません。むしろ、その反対を証明しようとしていました。
+
+<Quote>これは、AI生成作品は画一的で安価だという固定観念への挑戦から始まりました。AIは個人のビジョンを置き換えるものではなく、それを増幅するものになり得ると示したかったのです。</Quote>
+
+</Section>
+
+<Section id="topic-2">
+
+### エンジニアリングではなく、イラストレーションからこの分野に入ったのですね。ComfyUIにたどり着いた経緯を教えてください。
+
+私はイラストレーターとしてキャリアを始めました。ロードアイランド・スクール・オブ・デザインでイラストレーションのBFAを取得し、その後ゲームのコンセプトアーティストとして働く中で、シェーダー、Unity、Unrealを学びました。技術的な経験があったため、新しいツールもすぐに習得できました。その後、USCのSchool of Cinematic ArtsでExpanded AnimationのMFAを取得し、Kathy Smith教授に師事しました。
+
+修士制作の年には、Stable Diffusionの標準的なインターフェースからComfyUIへ移行しました。私はノードベースの構造で考えるため、すべての工程を自分で制御したかったからです。多くのAIツールはワンクリックです。プロンプトを入力し、クリックすれば結果が出ます。私が求めていたのはそれではありませんでした。
+
+<Quote>私はプロセスを制御したいのです。そして、プロセスは結果そのものより重要です。私のようなアーティストにとって、何かを自動化したいとは思いません。ワークフロー設計のすべての段階に関わりたいのです。そこが一番面白い部分です。</Quote>
+
+</Section>
+
+<Section id="topic-3">
+
+### パイプラインを詳しく教えてください。実際にモデルへ何を入力していたのでしょうか？
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/balloon-workflow.png" alt="風船シーケンス用のXindiのComfyUIワークフロー">風船シーケンス用のXindiのComfyUIワークフロー。出典：[xindizhangart.com](https://xindizhangart.com)。</Figure>
+
+中核となる技法は、IP-AdapterとControlNetで駆動するStable Diffusion 1.5でのスタイル転写でした。最も重要だったのは、モデルに何を入力したかです。それは自分自身の作品でした。素材には、iPhone 15 Proで撮影した実写映像と、Blenderで制作した3Dアニメーションを使用しました。AIは、私がすでに制作した映像をリスタイルしたのであり、新たに考案したのではありません。
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/film-still.jpg" alt="『The Song of Drifters』のスタイルガイド用スチル">『The Song of Drifters』のスタイルガイド用スチル。出典：[xindizhangart.com](https://xindizhangart.com)。</Figure>
+
+<Quote>モデル内の他のアーティストの作品を使う多くのAI生成動画とは異なり、私は自分のイラストをスタイルガイドとして使っています。</Quote>
+
+<Download href="https://media.comfy.org/website/customers/xindi-zhang/workflows/style-transfer-workflow.json" label="ComfyUIでXindiのスタイル転写ワークフロー（json）をダウンロード" />
+
+また、自分が暮らした都市で撮影した映像を使って、カスタムLoRAsも学習させました。その映像を撮影すること自体が、ドキュメンタリー制作に欠かせない工程になりました。かつて住んでいた街を歩き回ることで、その都市と改めてつながることができました。大半は最終版には登場しませんが、学習データとして映像表現の中に息づいています。このハイブリッドなパイプラインにより、最終的なルックのレンダリングを効率化し、構想により多くの時間を使えました。
+
+夢のシーケンスでは、アニメーション3DとAIモーフィングを組み合わせ、半分目覚めているような感覚を表すために、抽象から具体へと移り変わらせました。
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/bts-clip.gif" alt="Xindi ZhangのAIモーフィングワークフローの舞台裏クリップ" caption="舞台裏クリップ、AIモーフィング。出典：Xindi Zhang。" />
+
+<Download href="https://media.comfy.org/website/customers/xindi-zhang/workflows/morphing-workflow.json" label="ComfyUIでXindiのAIモーフィングワークフロー（json）をダウンロード" />
+
+</Section>
+
+<Section id="topic-4" title="概要">
+
+<AtAGlance rows={[
+  { label: "プログラム", value: "USC School of Cinematic Arts — MFA Expanded Animation（修士制作）" },
+  { label: "ベース素材", value: "iPhone 15 Proの実写映像、自作のBlender 3Dアニメーション" },
+  { label: "中核技法", value: "ComfyUIでIP-Adapter + ControlNetを使用したSD 1.5のスタイル転写" },
+  { label: "スタイルの素材", value: "自作イラスト + 自身で撮影した都市映像で学習したカスタムLoRAs" },
+  { label: "仕上げ", value: "After Effectsでの深度・マスク・フェードパス、複雑なコンポジット" },
+  { label: "成果", value: "Student Academy Awards金賞（2025）、第98回アカデミー賞ショートリスト、Amazon AI StudioのAIクリエイティブ職" }
+]} />
+
+</Section>
+
+<Section id="topic-5">
+
+### この映画はStudent Academy Awardsで金賞を受賞し、アカデミー賞のショートリストにも選ばれました。次は何を予定していますか？
+
+この映画はキャリアのためではなく、創作上の理由で制作しました。仕事につながるとは、正直まったく思っていませんでした。ところが、2025年のStudent Academy AwardsでGolden Awardを受賞し、アカデミー賞のショートリストにも選ばれると、さまざまな連絡が来るようになりました。
+
+<Figure src="https://media.comfy.org/website/customers/xindi-zhang/awards.png" alt="2025年Student Academy Awardsに出席したXindi Zhang" caption="2025年Student Academy Awardsに出席したXindi Zhang。出典：Oscars Press Office。" />
+
+求められていたのは、その組み合わせでした。従来の制作技術とAIツールの両方を理解している人材です。現在はAmazon AI StudioでAIクリエイティブとして働き、カスタム制作パイプラインを構築しています。業界全体でも同じ需要を感じています。大手スタジオやデザインエージェンシーの求人では、ComfyUIの経験が要件として記載され始めています。
+
+<Quote>私のアートを奪うのはツールではありません。私のアートを広げるツールです。</Quote>
+
+ほかの学生へのアドバイスは、ソフトウェアそのものについてではありません。AIはアイデアを伝えるためのツールの一つにすぎませんが、物語そのものより重要なものはありません。AIを使うなら、目的を持って使ってください。理解が深まるほど、本当に自分自身の作品をつくる自由が増します。
+
+</Section>
+
+<AuthorBio people={[{ name: "Xindi Zhang", photo: "https://media.comfy.org/website/customers/xindi-zhang/profile.jpg", bio: `Xindi Zhangは中国出身のアニメーション監督、ビジュアルアーティストです（RISD イラストレーションBFA、2020年、USC Expanded Animation MFA、2025年）。『The Song of Drifters』は2025年のStudent Academy AwardsでGolden Awardを受賞し、第98回アカデミー賞のショートリストに選ばれました。Amazon AI StudioでAIクリエイティブとして働くほか、Sony Musicのイマーシブスタジオとも協業し、現在はUniversity of South Floridaで教鞭を執っています。` }]} />

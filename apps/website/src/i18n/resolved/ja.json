@@ -269,7 +269,7 @@
   "cloudNodes.detail.deprecated": "非推奨",
   "cloudNodes.detail.experimental": "実験的",
   "cloudNodes.detail.nodesHeading": "このパックのノード",
-  "cloud.reason.heading": "Why\nprofessionals\nchoose ",
+  "cloud.reason.heading": "プロフェッショナルに\n選ばれる\n理由",
   "cloud.reason.headingHighlight": "Cloud",
   "cloud.reason.1.title": "<span class=\"whitespace-nowrap\">エンドツーエンドの</span>セキュリティを<span class=\"whitespace-nowrap\">標準搭載した</span>高性能GPU",
   "cloud.reason.1.description": "Comfy Cloud はあらゆるデバイスで利用できます。実行中のワークフローにのみ課金され、アイドル時間には課金されません。Comfy Cloud なら、セキュリティとインフラが標準搭載され、人気のカスタムノードも利用できます。",

@@ -63,7 +63,9 @@ interface Planned {
 
 function main(): void {
   const dryRun = process.argv.includes('--dry-run')
-  const machine = readMachineLayer()
+  // A lookup can miss, and the type has to say so or the guards below read as
+  // dead code to a type-aware linter.
+  const machine: Readonly<Partial<Record<string, string>>> = readMachineLayer()
   const documents = readFaqDocuments()
 
   const existing = new Map<string, FaqDocument>()

@@ -29,6 +29,7 @@ import {
 } from '../../../../scripts/i18n/translate'
 import type { TranslationItem } from '../../../../scripts/i18n/translate'
 import { isLocale } from '../../src/config/locales'
+import { identifierValues } from '../../src/i18n/pipeline/adapters/story'
 import { containsTerm, linkTargets } from '../../src/i18n/pipeline/validate'
 import {
   OUTPUT_LOCALES,
@@ -105,7 +106,11 @@ async function main(): Promise<void> {
       // `https://comfy.org/contact`, which `FaqLink` then treats as external
       // and opens in a new tab — a difference no other check would notice,
       // because the English had no absolute URL to compare against.
-      ...linkTargets(pending[key])
+      ...linkTargets(pending[key]),
+      // JSX identifiers: a translated `id` breaks the table of contents and a
+      // translated `src` breaks an image, neither of which looks like an error
+      // anywhere except on the rendered page.
+      ...identifierValues(pending[key])
     ]
   }))
 

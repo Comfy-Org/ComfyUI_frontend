@@ -153,7 +153,7 @@ export function buildFaqDocument(
     'translatedBy: machine',
     '---',
     '',
-    `${translation.body.trim()}`,
+    translation.body.trim(),
     ''
   ].join('\n')
 }

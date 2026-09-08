@@ -25,6 +25,7 @@ import path from 'node:path'
 import { LOCALIZED_CODES } from '../../src/config/locales'
 import { dataAdapter } from '../../src/i18n/pipeline/adapters/data'
 import { faqAdapter } from '../../src/i18n/pipeline/adapters/faq'
+import { storyAdapter } from '../../src/i18n/pipeline/adapters/story'
 import { translationsAdapter } from '../../src/i18n/pipeline/adapters/translations'
 import {
   buildEnglishSource,
@@ -38,10 +39,16 @@ import {
 import type { SourceAdapter } from '../../src/i18n/pipeline/types'
 
 /**
- * Sources, in the order their keys are collected. The customer-story collection
- * joins here next, without anything else in this file changing.
+ * Sources, in the order their keys are collected. Every one of them plugs in
+ * here without anything else in this file changing, which is what the adapter
+ * interface is for.
  */
-const ADAPTERS: SourceAdapter[] = [translationsAdapter, dataAdapter, faqAdapter]
+const ADAPTERS: SourceAdapter[] = [
+  translationsAdapter,
+  dataAdapter,
+  faqAdapter,
+  storyAdapter
+]
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
