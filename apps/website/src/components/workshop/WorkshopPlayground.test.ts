@@ -55,7 +55,7 @@ describe('WorkshopPlayground', () => {
       .click(screen.getByRole('button', { name: 'Copy code' }))
 
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("comfy.models.run('bfl/flux-3'")
+      expect.stringContaining('comfy.models.run("bfl/flux-3"')
     )
     expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy()
   })
