@@ -10,23 +10,12 @@ const { mockIsPackInstalled } = vi.hoisted(() => ({
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/stores/comfyManagerStore'),
-
   () => ({
     useComfyManagerStore: () => ({
       isPackInstalled: mockIsPackInstalled
     })
   })
 )
-
-vi.mock<unknown>(import('vue-i18n'), async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: vi.fn((key) => key)
-    })
-  }
-})
 
 type NodePack = components['schemas']['Node']
 

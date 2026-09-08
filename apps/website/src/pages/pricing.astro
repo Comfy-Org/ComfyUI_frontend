@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import CloudPricingSection from '../components/pricing/CloudPricingSection.vue'
+import CustomerProofSection from '../components/pricing/CustomerProofSection.vue'
 import WhatsIncludedSection from '../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../components/pricing/PricingFaq.astro'
 import ResourceCostsSection from '../templates/platform/PricingSection.vue'
@@ -45,6 +46,7 @@ const productId = jsonLdId(url, 'product')
 >
   <CloudPricingSection client:load />
   <WhatsIncludedSection />
+  <CustomerProofSection locale={locale} />
   <ResourceCostsSection
     locale={locale}
     heading={t('pricing.resourceCosts.heading', locale)}
