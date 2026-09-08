@@ -18,7 +18,8 @@ import {
   LGraph,
   LLink,
   NodeInputSlot,
-  NodeOutputSlot
+  NodeOutputSlot,
+  RenderShape
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
@@ -137,6 +138,235 @@ describe('LGraphNode', () => {
     node.configure(configureData)
     expect(Array.from(node.pos)).toEqual([50, 60])
     expect(Array.from(node.size)).toEqual([70, 80])
+  })
+
+  describe('missing-node placeholder serialization', () => {
+    function createPlaceholder(
+      overrides: Partial<ISerialisedNode> = {}
+    ): LGraphNode {
+      const lastSerialization = getMockISerialisedNode({
+        type: 'UninstalledNodeType',
+        pos: [100, 100],
+        size: [140, 60],
+        widgets_values: [512],
+        ...overrides
+      })
+      const placeholder = new LGraphNode('')
+      placeholder.last_serialization = lastSerialization
+      placeholder.has_errors = true
+      placeholder.configure(lastSerialization)
+      return placeholder
+    }
+
+    test('carries the live pos and size through to the replayed serialization', () => {
+      const placeholder = createPlaceholder()
+      placeholder.setPos(999, 888)
+      placeholder.setSize([777, 666])
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.pos).toEqual([999, 888])
+      expect(serialized.size).toEqual([777, 666])
+    })
+
+    test('still replays the fields it has no definition to regenerate', () => {
+      const placeholder = createPlaceholder()
+      placeholder.setSize([777, 666])
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.type).toEqual('UninstalledNodeType')
+      expect(serialized.widgets_values).toEqual([512])
+    })
+
+    test('restores the recorded size after configure-time widgets auto-expand the node', () => {
+      const lastSerialization = getMockISerialisedNode({
+        type: 'UninstalledNodeType',
+        pos: [100, 100],
+        size: [140, 60],
+        widgets_values: [512]
+      })
+      const placeholder = new LGraphNode('')
+      placeholder.last_serialization = lastSerialization
+      placeholder.has_errors = true
+      // The missing-node error UI adds one widget per recorded value from
+      // `onConfigure`, and `addWidget` -> `expandToFitContent` widens the
+      // node past the size the file recorded.
+      placeholder.onConfigure = function (this: LGraphNode) {
+        this.addWidget('number', 'UNKNOWN', 512, () => {})
+      }
+
+      placeholder.configure(lastSerialization)
+
+      expect(Array.from(placeholder.size)).toEqual([140, 60])
+      expect(placeholder.serialize().size).toEqual([140, 60])
+    })
+
+    test('does not invent a size when the recorded serialization has none', () => {
+      const placeholder = createPlaceholder()
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).size
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized).not.toHaveProperty('size')
+    })
+
+    test('keeps the recorded size while collapsed, since a placeholder cannot re-derive an expanded one', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.collapse(true)
+      placeholder.setSize([80, 30])
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.size).toEqual([140, 60])
+      expect(serialized.flags).toEqual({ collapsed: true })
+    })
+
+    test('records the size it was collapsed from, so a resize survives collapsing', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.size).toEqual([777, 666])
+      expect(serialized.flags).toEqual({ collapsed: true })
+    })
+
+    test('does not invent a recorded size on collapse when the file recorded none', () => {
+      const placeholder = createPlaceholder()
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).size
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      expect(placeholder.serialize()).not.toHaveProperty('size')
+    })
+
+    test('restores the recorded size when expanding, rather than serializing the collapsed card measurement', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+      // Simulate the Vue nodes mode race: `size` still measures the collapsed
+      // card immediately after expanding, before the next ResizeObserver tick
+      // lands the real measurement.
+      placeholder.setSize([80, 30])
+      placeholder.collapse()
+
+      expect(placeholder.last_serialization?.size).toEqual([777, 666])
+      expect(placeholder.serialize().size).toEqual([777, 666])
+    })
+
+    test('keeps the recorded size through an expand/collapse pair made before the card is re-measured', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+      placeholder.setSize([80, 30])
+      placeholder.collapse()
+      placeholder.collapse()
+
+      expect(placeholder.serialize().size).toEqual([777, 666])
+    })
+
+    test('replaces the recorded serialization rather than mutating the object it was configured from', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      const configuredFrom = placeholder.last_serialization!
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      expect(configuredFrom.size).toEqual([140, 60])
+      expect(placeholder.last_serialization?.size).toEqual([777, 666])
+    })
+
+    test('carries a live pin through', () => {
+      const placeholder = createPlaceholder()
+      new LGraph().add(placeholder)
+      placeholder.pin(true)
+
+      expect(placeholder.serialize().flags).toEqual({ pinned: true })
+    })
+
+    test('carries a live rename through', () => {
+      const placeholder = createPlaceholder({ title: 'Recorded Title' })
+      placeholder.title = 'renamed'
+
+      expect(placeholder.serialize().title).toEqual('renamed')
+    })
+
+    test('carries a live recolour through, over the recorded colours', () => {
+      const placeholder = createPlaceholder({
+        color: '#111',
+        bgcolor: '#222'
+      })
+      placeholder.setColorOption(LGraphCanvas.node_colors.red)
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.color).toEqual(LGraphCanvas.node_colors.red.color)
+      expect(serialized.bgcolor).toEqual(LGraphCanvas.node_colors.red.bgcolor)
+    })
+
+    test('drops the recorded colours when the live colour is cleared', () => {
+      const placeholder = createPlaceholder({
+        color: '#111',
+        bgcolor: '#222'
+      })
+      placeholder.setColorOption(null)
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized).not.toHaveProperty('color')
+      expect(serialized).not.toHaveProperty('bgcolor')
+    })
+
+    test('carries a live shape and box colour through, over the recorded ones', () => {
+      const placeholder = createPlaceholder({
+        shape: RenderShape.BOX,
+        boxcolor: '#333'
+      })
+      placeholder.shape = RenderShape.CARD
+      placeholder.boxcolor = '#444'
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.shape).toEqual(RenderShape.CARD)
+      expect(serialized.boxcolor).toEqual('#444')
+    })
+
+    test('round-trips an untouched placeholder that recorded decorations', () => {
+      const recorded = {
+        title: 'Recorded Title',
+        flags: { collapsed: true, pinned: true },
+        color: '#111',
+        bgcolor: '#222',
+        boxcolor: '#333',
+        shape: RenderShape.CARD
+      }
+      const serialized = createPlaceholder(recorded).serialize()
+
+      expect(serialized).toMatchObject(recorded)
+    })
+
+    test('round-trips an untouched placeholder that recorded no decorations', () => {
+      const serialized = createPlaceholder().serialize()
+
+      expect(serialized).not.toHaveProperty('title')
+      expect(serialized).not.toHaveProperty('color')
+      expect(serialized).not.toHaveProperty('bgcolor')
+      expect(serialized.flags).toEqual({})
+    })
+
+    test('emits empty flags when the recorded serialization has none, since the schema requires the key', () => {
+      const placeholder = createPlaceholder()
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).flags
+
+      expect(placeholder.serialize().flags).toEqual({})
+    })
   })
 
   test('should configure inputs correctly', () => {
