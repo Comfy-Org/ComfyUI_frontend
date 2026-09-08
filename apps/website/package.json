@@ -20,7 +20,9 @@
     "generate:models": "tsx ./scripts/generate-models.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
-    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts"
+    "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
+    "i18n-content:check": "tsx ./scripts/i18n-content/update-content-translations.ts --check",
+    "i18n-content:translate": "tsx ./scripts/i18n-content/update-content-translations.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
@@ -57,12 +59,14 @@
     "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
     "happy-dom": "catalog:",
+    "openai": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "yaml": "catalog:"
   }
 }
