@@ -305,6 +305,14 @@ describe('error mapping', () => {
     {
       label: 'nonnumeric',
       headers: { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' }
+    },
+    {
+      label: 'unsafe integer',
+      headers: { 'Retry-After': '9007199254740993' }
+    },
+    {
+      label: 'overflowing number',
+      headers: { 'Retry-After': '9'.repeat(400) }
     }
   ])(
     'leaves retryAfterSeconds undefined for an $label Retry-After header',
@@ -323,7 +331,11 @@ describe('error mapping', () => {
         .catch((caught: unknown) => caught)
 
       expect(error).toBeInstanceOf(AgentApiError)
-      expect((error as AgentApiError).retryAfterSeconds).toBeUndefined()
+      expect(error).toMatchObject({
+        message: body.error.message,
+        body,
+        retryAfterSeconds: undefined
+      })
     }
   )
 
