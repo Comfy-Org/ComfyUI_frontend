@@ -376,6 +376,19 @@ describe('BillingStatusBanner', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows payment recovery to personal workspace owners', async () => {
+    paymentFailedState()
+    state.isTeamPlan = false
+    state.workspaceType = 'personal'
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledTimes(1)
+  })
+
   it('does not expose payment controls to members', () => {
     paymentFailedState()
     state.canManageSubscription = false

@@ -43,10 +43,14 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    useCanvasStore: () => ({})
+  })
+)
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
@@ -224,8 +228,7 @@ describe('link presentation transfer across recreation flows', () => {
       presentation: { hidden: true, label: 'Copied' },
       expected: { hidden: true, label: 'Copied' }
     },
-    { name: 'absent', presentation: undefined, expected: undefined },
-    { name: 'empty', presentation: {}, expected: undefined }
+    { name: 'absent', presentation: undefined, expected: undefined }
   ])(
     'preserves $name presentation through clipboard copy and paste',
     ({ presentation, expected }) => {

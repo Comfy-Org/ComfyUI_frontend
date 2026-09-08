@@ -22,7 +22,7 @@ function defaultDisplayPrice(
 const getNodeDisplayPrice = vi.fn(defaultDisplayPrice)
 const pricingMocks = vi.hoisted(() => ({ hasDynamicPricing: vi.fn() }))
 
-vi.mock('@/composables/node/useNodePricing', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
   useNodePricing: () => ({
     getNodeDisplayPrice,
     getNodeRevisionRef: () => ({ value: 0 }),
@@ -33,7 +33,7 @@ vi.mock('@/composables/node/useNodePricing', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.NodeBadge.ShowApiPricing' ? true : undefined

@@ -56,15 +56,15 @@ export function remapLinkReferences(
   }
 
   const presentation = data.extra?.linkPresentation
-  if (presentation) {
-    for (const [key, value] of Object.entries(presentation)) {
-      const linkId = parseLinkId(key)
-      if (linkId === undefined) continue
-      const remappedKey = String(remap(linkId))
-      if (remappedKey === key) continue
-      presentation[remappedKey] ??= value
-      delete presentation[key]
-    }
+  if (!presentation) return
+
+  for (const [key, value] of Object.entries(presentation)) {
+    const linkId = parseLinkId(key)
+    if (linkId === undefined) continue
+    const remappedKey = String(remap(linkId))
+    if (remappedKey === key) continue
+    presentation[remappedKey] ??= value
+    delete presentation[key]
   }
 }
 
