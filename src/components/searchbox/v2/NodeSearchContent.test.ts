@@ -22,6 +22,7 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 
 describe('NodeSearchContent', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setupTestPinia()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
