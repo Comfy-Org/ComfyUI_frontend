@@ -3134,6 +3134,156 @@ describe('AgentPanelRoot workflow binding', () => {
       target: 'active_tab_open'
     })
   })
+  it.for(['saved', 'new'] as const)(
+    'does not apply an activation when opening a %s tab is refused',
+    async (kind) => {
+      const current = makeTab('wf-42')
+      if (kind === 'saved') addTab('workflows/Other.json')
+      mockMessagesEndpoint(
+        'wf-42',
+        kind === 'saved' ? [{ id: 'wf-other', name: 'Other' }] : []
+      )
+      await renderAndSend('work here')
+      workflowService.openWorkflow.mockResolvedValueOnce(false)
+      telemetry.trackAgentWorkflowApplied.mockClear()
+
+      ws.emit('agent_active_tab', {
+        workflow_id: 'wf-other',
+        name: 'Other',
+        thread_id: 'th-1'
+      })
+
+      await vi.waitFor(() =>
+        expect(useToastStore().messagesToAdd).toContainEqual(
+          expect.objectContaining({
+            severity: 'warn',
+            detail: i18n.global.t('agent.targetNavigationUnavailable')
+          })
+        )
+      )
+      expect(hostStores.workflow.activeWorkflow).toEqual(current)
+      expect(useAgentPanelStore().selectedWorkflow).toEqual(current)
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-other')
+      ).toBeUndefined()
+      expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+      expect(useWorkflowTabActivityStore().editingTabPath).toBe(current.path)
+      expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
+      expect(hostStores.workflow.tabs.has('workflows/Other.json')).toBe(
+        kind === 'saved'
+      )
+    }
+  )
+
+  it('drops an activation unmounted during the tab creation delay', async () => {
+    const current = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const { unmount } = renderWithSelectedTarget()
+    await sendFromComposer('work here')
+    vi.useFakeTimers()
+    telemetry.trackAgentWorkflowApplied.mockClear()
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-late',
+      name: 'Late',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(useWorkflowTabActivityStore().creatingTab).toBe(true)
+    unmount()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    expect(hostStores.workflow.tabs.has('workflows/Late.json')).toBe(false)
+    expect(hostStores.workflow.activeWorkflow).toEqual(current)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+    ).toBeUndefined()
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
+  })
+
+  it.for(['saved', 'new'] as const)(
+    'does not bind a %s activation that finishes opening after unmount',
+    async (kind) => {
+      makeTab('wf-42')
+      if (kind === 'saved') addTab('workflows/Late.json')
+      mockMessagesEndpoint(
+        'wf-42',
+        kind === 'saved' ? [{ id: 'wf-late', name: 'Late' }] : []
+      )
+      const { unmount } = renderWithSelectedTarget()
+      await sendFromComposer('work here')
+      vi.useFakeTimers()
+      telemetry.trackAgentWorkflowApplied.mockClear()
+      let finishOpen: ((opened: boolean) => void) | undefined
+      workflowService.openWorkflow.mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishOpen = resolve
+          })
+      )
+
+      ws.emit('agent_active_tab', {
+        workflow_id: 'wf-late',
+        name: 'Late',
+        thread_id: 'th-1'
+      })
+      await vi.advanceTimersByTimeAsync(500)
+      expect(finishOpen).toBeDefined()
+      unmount()
+      finishOpen?.(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
+      ).toBeUndefined()
+      expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+      expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
+      expect(hostStores.workflow.tabs.has('workflows/Late.json')).toBe(
+        kind === 'saved'
+      )
+    }
+  )
+
+  it('drops queued activations when an in-flight open outlives the panel', async () => {
+    const current = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const { unmount } = renderWithSelectedTarget()
+    await sendFromComposer('work here')
+    vi.useFakeTimers()
+    telemetry.trackAgentWorkflowApplied.mockClear()
+    let finishOpen: ((opened: boolean) => void) | undefined
+    workflowService.openWorkflow.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishOpen = resolve
+        })
+    )
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(finishOpen).toBeDefined()
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-queued',
+      name: 'Queued',
+      thread_id: 'th-1'
+    })
+    unmount()
+    finishOpen?.(true)
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(workflowService.openWorkflow).toHaveBeenCalledExactlyOnceWith(
+      current
+    )
+    expect(hostStores.workflow.tabs.has('workflows/Queued.json')).toBe(false)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-queued')
+    ).toBeUndefined()
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
+  })
+
   it('agent_active_tab sanitizes slashes and falls back on empty names', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
