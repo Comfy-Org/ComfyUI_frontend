@@ -5,7 +5,7 @@ import {
   useEventListener
 } from '@vueuse/core'
 import { delay } from 'es-toolkit'
-import { computed, readonly, ref, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -14,10 +14,23 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { resultItemType } from '@/schemas/apiSchema'
+import type {
+  ExecutedWsMessage,
+  ExecutionSuccessWsMessage,
+  ResultItem
+} from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
+import { isImageResult } from '@/utils/resultItem'
 
+import { transitionFirstRunCorrelation } from './firstRunCorrelation'
+import type {
+  FirstRunCorrelationEvent,
+  FirstRunCorrelationState
+} from './firstRunCorrelation'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -46,8 +59,29 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
-  /** Only a tour walked to the end made a first result to be congratulated for. */
-  const tourWasCompleted = ref(false)
+  const runCorrelation = shallowRef<FirstRunCorrelationState>({
+    phase: 'idle',
+    output: null
+  })
+  const firstRunOutput = computed(() => runCorrelation.value.output)
+  const nudgeCompletedAt = computed(() =>
+    runCorrelation.value.phase === 'succeeded'
+      ? runCorrelation.value.completedAt
+      : null
+  )
+
+  function dispatchRunCorrelation(event: FirstRunCorrelationEvent) {
+    runCorrelation.value = transitionFirstRunCorrelation(
+      runCorrelation.value,
+      event
+    )
+    if (runCorrelation.value.phase !== 'pending') stopAcceptDeadline()
+    if (
+      runCorrelation.value.phase === 'idle' ||
+      runCorrelation.value.phase === 'succeeded'
+    )
+      stopOfflineGrace()
+  }
 
   /**
    * The half of the tour's context that exists before the tour does: a canvas
@@ -115,10 +149,32 @@ function useFirstRunTourControllerInternal() {
    * while a worker is allocated. Allocation routinely outlasts any deadline
    * short enough to be useful, so keying on status would fail healthy runs.
    */
-  const tourRunAccepted = computed(() =>
-    Object.values(executionStore.queuedJobs).some(
-      (job) => job.workflow === tourWorkflow.value
+  const acceptedTourJobId = computed(() => {
+    const correlation = runCorrelation.value
+    if (correlation.phase !== 'pending') return null
+    return (
+      Object.entries(executionStore.queuedJobs).find(
+        ([jobId, job]) =>
+          !correlation.previousJobIds.has(jobId) &&
+          job.workflow === correlation.workflow
+      )?.[0] ?? null
     )
+  })
+  const tourRunPresent = computed(() => {
+    const correlation = runCorrelation.value
+    return (
+      correlation.phase === 'accepted' &&
+      executionStore.queuedJobs[correlation.jobId]?.workflow ===
+        correlation.workflow
+    )
+  })
+
+  watch(
+    acceptedTourJobId,
+    (jobId) => {
+      if (jobId) dispatchRunCorrelation({ type: 'accepted', jobId })
+    },
+    { flush: 'sync' }
   )
 
   /**
@@ -153,10 +209,17 @@ function useFirstRunTourControllerInternal() {
    * same flush, and the terminal branches above overwrite unconditionally — so
    * the outcome wins whichever watcher runs first.
    */
-  watch(tourRunAccepted, (accepted) => {
-    if (accepted) stopAcceptDeadline()
-    else if (runState.value === 'generating') runState.value = 'failed'
-  })
+  watch(
+    tourRunPresent,
+    (present, wasPresent) => {
+      if (present) stopAcceptDeadline()
+      else if (wasPresent && runCorrelation.value.phase === 'accepted') {
+        dispatchRunCorrelation({ type: 'released' })
+        if (runState.value === 'generating') runState.value = 'failed'
+      }
+    },
+    { flush: 'sync' }
+  )
 
   let acceptTimer: ReturnType<typeof setTimeout> | undefined
   function stopAcceptDeadline() {
@@ -165,9 +228,9 @@ function useFirstRunTourControllerInternal() {
   }
   function startAcceptDeadline() {
     stopAcceptDeadline()
-    if (tourRunAccepted.value) return
     acceptTimer = setTimeout(() => {
       stopAcceptDeadline()
+      dispatchRunCorrelation({ type: 'released' })
       if (runState.value === 'generating') runState.value = 'failed'
     }, ACCEPT_DEADLINE_MS)
   }
@@ -178,13 +241,69 @@ function useFirstRunTourControllerInternal() {
     offlineTimer = undefined
   }
   useEventListener(api, 'reconnecting', () => {
-    if (runState.value !== 'generating' || offlineTimer) return
+    if (
+      (runState.value !== 'generating' &&
+        (runCorrelation.value.phase === 'idle' ||
+          runCorrelation.value.phase === 'succeeded')) ||
+      offlineTimer
+    )
+      return
     offlineTimer = setTimeout(() => {
       stopOfflineGrace()
+      dispatchRunCorrelation({ type: 'released' })
       if (runState.value === 'generating') runState.value = 'failed'
     }, OFFLINE_GRACE_MS)
   })
   useEventListener(api, 'reconnected', stopOfflineGrace)
+
+  onScopeDispose(() => {
+    stopAcceptDeadline()
+    stopOfflineGrace()
+  })
+
+  useEventListener(
+    api,
+    'execution_success',
+    (event) => {
+      const { detail } = event as CustomEvent<ExecutionSuccessWsMessage>
+      dispatchRunCorrelation({
+        type: 'succeeded',
+        jobId: detail.prompt_id,
+        completedAt: Date.now()
+      })
+    },
+    { capture: true }
+  )
+
+  /** A preview's temp file still seeds; the saved result behind it is better. */
+  const awaitingSavedOutput = computed(
+    () => firstRunOutput.value === null || firstRunOutput.value.type === 'temp'
+  )
+
+  useEventListener(api, 'executed', (event) => {
+    const { detail } = event as CustomEvent<ExecutedWsMessage>
+    if (runCorrelation.value.phase === 'idle' || !awaitingSavedOutput.value)
+      return
+    // Every media key, not just `images`: a template can save under `video` or
+    // under a key only its custom node knows, and only the item itself says
+    // whether what came back is an image the continuations can be seeded with.
+    const images = parseNodeOutput(detail.node, detail.output).filter(
+      isImageResult
+    )
+    const image = images.find(({ type }) => type !== 'temp') ?? images.at(0)
+    if (!image) return
+    const parsedType = resultItemType.safeParse(image.type)
+    const output: ResultItem = {
+      filename: image.filename,
+      subfolder: image.subfolder,
+      type: parsedType.success ? parsedType.data : 'output'
+    }
+    dispatchRunCorrelation({
+      type: 'output-received',
+      jobId: detail.prompt_id,
+      output
+    })
+  })
 
   /**
    * A run outlives the step that starts it, so the click moves the tour on. One
@@ -204,6 +323,13 @@ function useFirstRunTourControllerInternal() {
         return
       }
 
+      if (tourWorkflow.value) {
+        dispatchRunCorrelation({
+          type: 'submitted',
+          workflow: tourWorkflow.value,
+          previousJobIds: new Set(Object.keys(executionStore.queuedJobs))
+        })
+      }
       runState.value = 'generating'
       startAcceptDeadline()
       engine.next()
@@ -215,22 +341,16 @@ function useFirstRunTourControllerInternal() {
     () => engine.activeTour === 'firstRun',
     (active) => {
       if (active) return
-      // Every ending leaves the user somewhere to go next, so every ending arms
-      // the nudge; only what it says depends on how the tour ended.
-      const ending = engine.lastEnding
-      tourWasCompleted.value =
-        ending?.tour === 'firstRun' && ending.outcome === 'completed'
       nudgeArmed.value = true
-      stopOfflineGrace()
-      stopAcceptDeadline()
       releaseFirstRunTargets()
-      tourWorkflow.value = null
       runState.value = 'idle'
+      tourWorkflow.value = null
     }
   )
 
   function dismissNudge() {
     nudgeArmed.value = false
+    dispatchRunCorrelation({ type: 'released' })
   }
 
   /** False when there is no tour to give; any renderer switch is undone. */
@@ -248,6 +368,7 @@ function useFirstRunTourControllerInternal() {
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
+    dispatchRunCorrelation({ type: 'reset' })
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -270,7 +391,8 @@ function useFirstRunTourControllerInternal() {
   return {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
-    tourWasCompleted: readonly(tourWasCompleted),
+    nudgeCompletedAt,
+    nudgeOutput: readonly(firstRunOutput),
     dismissNudge
   }
 }
