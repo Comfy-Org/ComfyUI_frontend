@@ -16,7 +16,8 @@ import {
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
-  agentTest
+  agentTest,
+  selectAgentWorkflow
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -60,6 +61,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
+    await selectAgentWorkflow(page)
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
@@ -293,13 +295,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
 
+    await selectAgentWorkflow(page)
+
     const panel = page.locator('#agent-panel-root')
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
-    await page
-      .getByRole('menuitem', { name: enMessages.agent.addNodesFromGraph })
-      .click()
+    await page.getByRole('menuitem', { name: enMessages.agent.nodes }).click()
     const selectionBanner = page.getByTestId('node-selection-mode-banner')
     await expect(selectionBanner).toBeVisible()
 
@@ -315,6 +317,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    await selectAgentWorkflow(page)
 
     const panel = page.locator('#agent-panel-root')
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
