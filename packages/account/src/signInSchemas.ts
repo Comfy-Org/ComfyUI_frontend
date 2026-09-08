@@ -24,11 +24,6 @@ export type AuthSchemaTranslate = (
 ) => string
 
 /**
- * Builds the auth validation schemas with the host's own translator, so the
- * rules live once while each host keeps its i18n system. Messages resolve
- * eagerly at build time, so a locale switch requires rebuilding the schemas.
- */
-/**
  * The one password policy, shared by the schema and by the live checklist
  * sign-up forms show while the field is being typed.
  */
@@ -62,6 +57,11 @@ export function passwordRuleChecks(
   }
 }
 
+/**
+ * Builds the auth validation schemas with the host's own translator, so the
+ * rules live once while each host keeps its i18n system. Messages resolve
+ * eagerly at build time, so a locale switch requires rebuilding the schemas.
+ */
 export function createAuthSchemas(t: AuthSchemaTranslate) {
   const apiKeySchema = z.object({
     apiKey: z
