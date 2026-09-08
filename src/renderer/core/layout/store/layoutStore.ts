@@ -1285,7 +1285,6 @@ class LayoutStoreImpl {
     scope: LayoutListenerScope,
     listener: LayoutListener
   ): void {
-    console.error(`[LayoutStore] ${scope} listener failed`, error)
     const reportedFailures = this.reportedListenerFailures[scope]
     if (reportedFailures.has(listener)) return
     reportedFailures.add(listener)

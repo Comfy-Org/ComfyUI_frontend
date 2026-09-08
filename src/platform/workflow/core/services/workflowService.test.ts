@@ -728,25 +728,17 @@ describe('useWorkflowService', () => {
           return true
         })
 
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => undefined)
       const firstOpen = useWorkflowService().openWorkflow(first)
       const secondOpen = useWorkflowService().openWorkflow(second)
 
       await expect(firstOpen).rejects.toBe(error)
       await expect(secondOpen).resolves.toBe(true)
-      expect(consoleError).toHaveBeenCalledWith(
-        expect.stringContaining('queued workflow load failed'),
-        error
-      )
       expect(reportErrorMock).toHaveBeenCalledWith(error, {
         errorType: 'workflow_load_failure'
       })
       expect(
         subgraphNavigationMocks.endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
-      consoleError.mockRestore()
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second])

@@ -335,10 +335,6 @@ describe('layoutStore CRDT operations', () => {
       global: vi.fn(),
       node: vi.fn()
     }
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
-
     const stopBeforeGeometry = layoutStore.onGeometryChange(
       listenersBefore.geometry
     )
@@ -398,12 +394,7 @@ describe('layoutStore CRDT operations', () => {
     for (const listener of Object.values(listenersAfter)) {
       expect(listener).toHaveBeenCalledOnce()
     }
-    expect(consoleErrorSpy).toHaveBeenCalledTimes(3)
     for (const scope of ['geometry', 'global', 'node'] as const) {
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        `[LayoutStore] ${scope} listener failed`,
-        errors[scope]
-      )
       expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
         errorType: 'canvas_layout_listener_failed',
         tags: {
@@ -428,7 +419,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     await vi.waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(6)
+      expect(listenersAfter.geometry).toHaveBeenCalledTimes(2)
     })
     expect(mockReportError).toHaveBeenCalledTimes(3)
     for (const listener of Object.values(listenersBefore)) {

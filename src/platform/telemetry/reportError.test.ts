@@ -190,6 +190,45 @@ describe('reportError', () => {
     expect(() => flushErrorReports()).not.toThrow()
   })
 
+  it('writes the failure to the console so callers need no second sink', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const error = new Error('listener failed')
+
+    reportError(error, { errorType: 'canvas_layout_listener_failed' })
+
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      `${REPORTED_ERROR_PREFIX}canvas_layout_listener_failed`,
+      error
+    )
+  })
+
+  it('skips the console line for a caller that already logged', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('[Assertion failed]: graph must exist'), {
+      errorType: 'invariant_assert',
+      logToConsole: false
+    })
+
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('logs a buffered report once, when it is raised', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(consoleError).toHaveBeenCalledOnce()
+  })
+
   it('does not throw when a sink throws', async () => {
     captureException.mockImplementation(() => {
       throw new Error('sentry exploded')
