@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const {
   photoUrl,
@@ -45,4 +45,11 @@ const handleImageError = () => {
   imageError.value = true
 }
 const hasAvatar = computed(() => photoUrl && !imageError.value)
+
+watch(
+  () => photoUrl,
+  () => {
+    imageError.value = false
+  }
+)
 </script>
