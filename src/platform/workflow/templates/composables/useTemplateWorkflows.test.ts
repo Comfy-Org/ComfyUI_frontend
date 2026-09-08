@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { app } from '@/scripts/app'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+
+const { mockCloseDialog } = vi.hoisted(() => ({ mockCloseDialog: vi.fn() }))
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -54,7 +60,7 @@ vi.mock('vue-i18n', () => ({
 // Mock the dialog store
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: vi.fn(() => ({
-    closeDialog: vi.fn()
+    closeDialog: mockCloseDialog
   }))
 }))
 
@@ -109,6 +115,27 @@ describe('useTemplateWorkflows', () => {
       isLoaded: false,
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
       enhancedTemplates: [],
+      getTemplateByName: vi.fn((name: string) =>
+        name === 'template1'
+          ? {
+              name,
+              mediaType: 'image',
+              mediaSubtype: 'jpg',
+              sourceModule: 'default',
+              description: 'Template 1 description',
+              io: {
+                inputs: [
+                  {
+                    nodeId: 2,
+                    nodeType: 'LoadImage',
+                    file: 'starter.png',
+                    mediaType: 'image'
+                  }
+                ]
+              }
+            }
+          : undefined
+      ),
       groupedTemplates: [
         {
           label: 'ComfyUI Examples',
@@ -161,6 +188,7 @@ describe('useTemplateWorkflows', () => {
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
+      ok: true,
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
     } as Partial<Response> as Response)
   })
@@ -333,6 +361,48 @@ describe('useTemplateWorkflows', () => {
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
   })
 
+  it('seeds a result into the template before loading the workflow', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['starter.png', 'image']
+          }
+        ]
+      })
+    } as Partial<Response> as Response)
+
+    const result = await loadWorkflowTemplate('template1', 'default', {
+      input: {
+        filename: 'first-output.png',
+        subfolder: 'tour',
+        type: 'output'
+      }
+    })
+
+    expect(result).toBe(true)
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      {
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['tour/first-output.png [output]', 'image']
+          }
+        ]
+      },
+      true,
+      true,
+      'template1',
+      { openSource: 'template' }
+    )
+  })
+
   it('tracks template telemetry on load in cloud builds', async () => {
     const { loadWorkflowTemplate } = useTemplateWorkflows()
 
@@ -440,17 +510,109 @@ describe('useTemplateWorkflows', () => {
     // Mock fetch to throw an error
     vi.mocked(fetch).mockRejectedValueOnce(new Error('Failed to fetch'))
 
-    // Spy on console.error
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     // Load a template that will fail
     const result = await loadWorkflowTemplate('error-template', 'default')
 
     expect(result).toBe(false)
-    expect(consoleSpy).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('Failed to fetch'),
+      {
+        errorType: 'error_loading_workflow_template',
+        context: { templateId: 'error-template', sourceModule: 'default' }
+      }
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCloseDialog).not.toHaveBeenCalled()
     expect(loadingTemplateId.value).toBe(null) // Should reset even after error
+  })
 
-    // Restore console.error
-    consoleSpy.mockRestore()
+  it('reports a failed template response without parsing or loading it', async () => {
+    const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    const json = vi.fn()
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json
+    } as Partial<Response> as Response)
+
+    expect(await loadWorkflowTemplate('template1', 'default')).toBe(false)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('Template response failed (404)'),
+      {
+        errorType: 'error_loading_workflow_template_response',
+        context: {
+          templateId: 'template1',
+          sourceModule: 'default',
+          status: 404
+        }
+      }
+    )
+    expect(json).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
+    expect(loadingTemplateId.value).toBeNull()
+  })
+
+  it.for([
+    {
+      nodes: [
+        { id: 2, type: 'LoadImage', widgets_values: ['different.png', 'image'] }
+      ],
+      error: 'Expected one matching template widget value'
+    },
+    { nodes: undefined, error: 'Template workflow has no nodes' }
+  ])(
+    'reports invalid template data and preserves the active graph: $error',
+    async ({ nodes, error }) => {
+      const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+      const workflow = { nodes }
+      const before = structuredClone(workflow)
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue(workflow)
+      } as Partial<Response> as Response)
+
+      expect(
+        await loadWorkflowTemplate('template1', 'default', {
+          input: { filename: 'output.png' }
+        })
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(new Error(error), {
+        errorType: 'error_transforming_workflow_template',
+        context: { templateId: 'template1', sourceModule: 'default' }
+      })
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(mockTrackTemplate).not.toHaveBeenCalled()
+      expect(workflow).toEqual(before)
+      expect(loadingTemplateId.value).toBeNull()
+    }
+  )
+
+  it('reports missing input metadata without loading an unseeded workflow', async () => {
+    const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(mockWorkflowTemplatesStore.getTemplateByName).mockReturnValueOnce(
+      undefined
+    )
+
+    expect(
+      await loadWorkflowTemplate('template1', 'default', {
+        input: { filename: 'output.png' }
+      })
+    ).toBe(false)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('Template input metadata is unavailable'),
+      {
+        errorType: 'error_transforming_workflow_template',
+        context: { templateId: 'template1', sourceModule: 'default' }
+      }
+    )
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(loadingTemplateId.value).toBeNull()
   })
 })

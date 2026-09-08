@@ -2,16 +2,24 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { replaceTemplateImageInput } from '@/platform/workflow/templates/utils/templateWorkflowTransforms'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+
+interface LoadWorkflowTemplateOptions {
+  input?: ResultItem
+}
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -95,11 +103,14 @@ export function useTemplateWorkflows() {
   /**
    * Loads a workflow template
    */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
+  const loadWorkflowTemplate = async (
+    id: string,
+    sourceModule: string,
+    options: LoadWorkflowTemplateOptions = {}
+  ) => {
     if (!isTemplatesLoaded.value) return false
 
     loadingTemplateId.value = id
-    let json
 
     try {
       // Handle "All" category as a special case
@@ -122,7 +133,32 @@ export function useTemplateWorkflows() {
       }
 
       // Regular case for normal categories
-      json = await fetchTemplateJson(id, sourceModule)
+      let json = await fetchTemplateJson(id, sourceModule)
+      if (json === null) return false
+
+      if (options.input) {
+        const template = workflowTemplatesStore.getTemplateByName(id)
+        if (!template || template.sourceModule !== sourceModule) {
+          reportError(new Error('Template input metadata is unavailable'), {
+            errorType: 'error_transforming_workflow_template',
+            context: { templateId: id, sourceModule }
+          })
+          return false
+        }
+        const transformed = replaceTemplateImageInput(
+          json,
+          template,
+          options.input
+        )
+        if (!transformed.ok) {
+          reportError(new Error(transformed.error), {
+            errorType: 'error_transforming_workflow_template',
+            context: { templateId: id, sourceModule }
+          })
+          return false
+        }
+        json = transformed.value
+      }
 
       const workflowName =
         sourceModule === 'default'
@@ -158,7 +194,10 @@ export function useTemplateWorkflows() {
 
       return true
     } catch (error) {
-      console.error('Error loading workflow template:', error)
+      reportError(error, {
+        errorType: 'error_loading_workflow_template',
+        context: { templateId: id, sourceModule }
+      })
       return false
     } finally {
       loadingTemplateId.value = null
@@ -168,15 +207,29 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
-    if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
-      ).then((r) => r.json())
+  const fetchTemplateJson = async (
+    id: string,
+    sourceModule: string
+  ): Promise<ComfyWorkflowJSON | null> => {
+    // Default templates provided by frontend are served on this separate endpoint
+    const url =
+      sourceModule === 'default'
+        ? api.fileURL(`/templates/${id}.json`)
+        : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+
+    const response = await fetch(url)
+    // An install pinning an older template package serves an error page here,
+    // which parses as neither JSON nor a workflow. Separating that from a
+    // template whose metadata drifted is the difference between a bad pin and
+    // a bad template.
+    if (!response.ok) {
+      reportError(new Error(`Template response failed (${response.status})`), {
+        errorType: 'error_loading_workflow_template_response',
+        context: { templateId: id, sourceModule, status: response.status }
+      })
+      return null
     }
+    return response.json()
   }
 
   return {
