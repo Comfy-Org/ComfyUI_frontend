@@ -7,7 +7,7 @@ function resultItemUrlParams(item: AugmentedResultItem): URLSearchParams {
   const params = new URLSearchParams()
   params.set('filename', item.filename)
   params.set('type', item.type ?? '')
-  params.set('subfolder', item.subfolder ?? '')
+  params.set('subfolder', item.subfolder)
   if (item.format) params.set('format', item.format)
   if (item.frame_rate) params.set('frame_rate', item.frame_rate.toString())
   return params
