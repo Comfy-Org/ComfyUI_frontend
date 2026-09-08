@@ -336,7 +336,7 @@ function useInCode() {
       data-testid="playground-tab"
     >
       <div
-        class="bg-transparency-white-t4 flex flex-col rounded-2xl border border-transparency-white-t8 lg:col-span-5"
+        class="bg-transparency-white-t4 flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 lg:col-span-5"
         data-testid="playground-input"
       >
         <header
@@ -496,7 +496,7 @@ function useInCode() {
         </div>
       </div>
 
-      <div class="lg:sticky lg:top-26 lg:col-span-7 lg:self-start">
+      <div class="min-w-0 lg:sticky lg:top-26 lg:col-span-7 lg:self-start">
         <PlaygroundOutput
           v-model:revealed="revealed"
           :state="runState"
