@@ -176,6 +176,31 @@ describe('createBillingClient', () => {
     ).toEqual({ status: 'unknown' })
   })
 
+  it('reset() also abandons a forced read queued behind an in-flight one', async () => {
+    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+      .mockImplementation(async () =>
+        balanceResponse({ effective_balance_micros: 42 })
+      )
+    const client = makeClient(session, fetchImpl)
+
+    const plain = client.refresh()
+    const forced = client.refresh({ force: true })
+    client.reset()
+    release(balanceResponse({ effective_balance_micros: 7 }))
+    await Promise.all([plain, forced])
+
+    expect(
+      client.getState(),
+      'the queued forced continuation restarts with a post-reset generation, so the generation guard alone cannot catch it'
+    ).toEqual({ status: 'unknown' })
+  })
+
   it('a same-user caller joins the in-flight read across a mid-read token rotation', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     let releaseRetry!: (response: Response) => void
