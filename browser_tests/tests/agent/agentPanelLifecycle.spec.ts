@@ -45,7 +45,7 @@ test.describe(
       const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
       const panel = page.getByTestId('docked-agent-panel')
 
-      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
+      await expect(openButton).toBeVisible()
       await openButton.click()
       await expect(panel).toBeVisible()
       await expect(
@@ -61,7 +61,7 @@ test.describe(
       await expect(panel).toHaveCount(0)
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveAttribute('aria-pressed', 'false')
+      ).toBeVisible()
       await expect
         .poll(() =>
           page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
@@ -92,7 +92,7 @@ test.describe(
         .getByRole('button', { name: enMessages.g.close })
         .press('Enter')
       await expect(panel).toHaveCount(0)
-      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
+      await expect(openButton).toBeVisible()
     })
 
     test('keeps the dock within the viewport and its documented width cap', async ({

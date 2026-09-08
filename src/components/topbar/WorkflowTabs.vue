@@ -92,15 +92,7 @@
         v-if="agentPanelStore.enabled && !agentPanelStore.isOpen"
         variant="link"
         size="sm"
-        :aria-pressed="agentPanelStore.isOpen"
-        :class="
-          cn(
-            'no-drag shrink-0 border border-solid text-base-foreground',
-            agentPanelStore.isOpen
-              ? 'border-plum-500 bg-plum-600/20'
-              : 'border-plum-600 bg-ink-700 hover:border-plum-500'
-          )
-        "
+        class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
         @click="onAgentEntryClick"
       >
         <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
@@ -133,7 +125,6 @@ import type { ComponentPublicInstance } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'

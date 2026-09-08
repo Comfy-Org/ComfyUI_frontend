@@ -332,7 +332,6 @@ describe('WorkflowTabs agent entry button', () => {
     const button = screen.getByRole('button', {
       name: enMessages.agent.askComfyAgent
     })
-    expect(button).toHaveAttribute('aria-pressed', 'false')
 
     await user.click(button)
 
