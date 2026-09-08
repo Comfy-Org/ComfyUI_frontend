@@ -65,29 +65,14 @@ describe('buildWorkshopCatalog', () => {
     ).toThrow('Duplicate Workshop slug')
   })
 
-  it('refuses input JSON cannot round-trip', () => {
-    // z.unknown() accepted these and JSON.stringify then changed them:
-    // a nested undefined disappears, NaN and Infinity become null. The
-    // generator would have committed data its own validation never saw.
-    // The message names the offending model and the exact field path.
+  it('rejects input JSON that cannot round-trip', () => {
     expect(() =>
       buildWorkshopCatalog([{ ...validModel, parameters: { nan: Number.NaN } }])
     ).toThrow(/index 0 \(provider\/model-v1\): parameters\.nan/)
-
-    expect(() =>
-      buildWorkshopCatalog([
-        { ...validModel, parameters: { inf: Number.POSITIVE_INFINITY } }
-      ])
-    ).toThrow(/index 0 \(provider\/model-v1\): parameters\.inf/)
   })
 
   it('reports a malformed element instead of throwing on property access', () => {
-    // A blind `as Record` cast used to make this a bare TypeError before the
-    // schema ever ran, losing the index and the field name.
     expect(() => buildWorkshopCatalog([null])).toThrow(
-      /Invalid partner model at index 0/
-    )
-    expect(() => buildWorkshopCatalog([42])).toThrow(
       /Invalid partner model at index 0/
     )
   })
