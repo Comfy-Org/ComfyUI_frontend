@@ -13,7 +13,12 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createUuidv4,
+  LGraphNode,
+  LiteGraph,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,
@@ -22,8 +27,11 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
+class CloneTestNode extends LGraphNode {}
+
 beforeEach(() => {
   resetSubgraphFixtureState()
+  LiteGraph.registerNodeType('clone-test', CloneTestNode)
 })
 
 describe('Subgraph Construction', () => {
@@ -69,6 +77,7 @@ describe('Subgraph Construction', () => {
 
   it('clones with a new ID unless preserving it is requested', () => {
     const subgraph = createTestSubgraph({ name: 'Clone source' })
+    subgraph.add(new CloneTestNode('Clone content'))
 
     const clone = subgraph.clone()
     const preservedIdClone = subgraph.clone(true)
@@ -76,7 +85,11 @@ describe('Subgraph Construction', () => {
     expect(clone).not.toBe(subgraph)
     expect(clone.id).not.toBe(subgraph.id)
     expect(clone.name).toBe(subgraph.name)
+    expect(clone.nodes.map(({ title }) => title)).toEqual(['Clone content'])
     expect(preservedIdClone.id).toBe(subgraph.id)
+    expect(preservedIdClone.nodes.map(({ title }) => title)).toEqual([
+      'Clone content'
+    ])
   })
 })
 

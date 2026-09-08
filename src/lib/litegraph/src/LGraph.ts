@@ -3394,14 +3394,17 @@ export class Subgraph
   }
 
   /**
-   * Clones the subgraph, creating an identical copy with a new ID.
-   * @returns A new subgraph with the same configuration, but a new ID.
+   * Clones the subgraph, creating an identical copy. Generates a new ID by
+   * default; `clone(true)` preserves the existing ID.
+   * @returns A new subgraph with the same configuration.
    */
   // fallow-ignore-next-line unused-class-member
   clone(keepId: boolean = false): Subgraph {
     const exported = this.asSerialisable()
     if (!keepId) exported.id = createUuidv4()
-    return new Subgraph(this.rootGraph, exported, keepId)
+    const subgraph = new Subgraph(this.rootGraph, exported, keepId)
+    subgraph.configure(exported)
+    return subgraph
   }
 
   getIoNodeOnPos(
