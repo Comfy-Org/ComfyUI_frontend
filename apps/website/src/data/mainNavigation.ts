@@ -71,6 +71,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.comfyEnterprise', locale),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds', locale),
+              href: routes.managedBuilds
             }
           ]
         },
@@ -126,7 +130,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.fdct,
               badge: 'new'
             },
-            { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.customerStories', locale),
+              href: routes.customers
+            },
             {
               label: t('nav.events', locale),
               href: routes.events,
@@ -190,7 +197,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '/customers#hero-video'
+          href: routes.customerVideoBlackMath
         }
       },
       columns: [

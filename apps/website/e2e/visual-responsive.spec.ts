@@ -172,6 +172,8 @@ test.describe('About', { tag: '@visual' }, () => {
 })
 
 test.describe('Overflow guards', { tag: '@visual' }, () => {
+  test.describe.configure({ mode: 'parallel' })
+
   const pages = [
     '/',
     '/cloud',
