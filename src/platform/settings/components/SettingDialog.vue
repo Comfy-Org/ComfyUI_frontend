@@ -1,5 +1,12 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="full">
+  <BaseModalLayout
+    content-title=""
+    data-testid="settings-dialog"
+    size="full"
+    :content-padding="
+      activeCategoryKey === 'workspace-members' ? 'compact' : 'default'
+    "
+  >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
