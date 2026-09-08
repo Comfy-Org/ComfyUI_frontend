@@ -17,7 +17,7 @@ import {
 } from '../utils/jsonLd'
 import { localizeHref } from '../config/routes'
 
-const { siteUrl, locale, url, canonicalUrl, canonicalLocale } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale,
@@ -39,7 +39,7 @@ const productId = jsonLdId(canonicalUrl, 'product')
       siteUrl,
       id: productId,
       name: 'Comfy Cloud',
-      url,
+      url: canonicalUrl,
       offers: pricingOffers(locale),
     }),
   ]}

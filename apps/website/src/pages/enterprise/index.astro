@@ -172,12 +172,12 @@ const industries = [
   },
 ] as const
 
-const { url, locale, canonicalLocale } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale,
 )
-const faqPage = buildFaqPageNode(url, faqs)
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)
 ---
 
 <BaseLayout
