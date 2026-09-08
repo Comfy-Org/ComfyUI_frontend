@@ -14,6 +14,7 @@
     "./turnstileScript": "./src/turnstileScript.ts",
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
+    "./redirect": "./src/redirect.ts",
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
   "scripts": {
