@@ -1,7 +1,8 @@
 import {
+  zAgentAdmissionError,
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
-  zAgentError,
+  zAgentError as zGeneratedAgentError,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
@@ -19,7 +20,7 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAnswerAccepted, zAgentCancelAccepted, zAgentError }
+export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
@@ -114,6 +115,8 @@ export const zCloudWorkflowIndex = zWorkflowListResponse
 export type CloudWorkflowEntry = z.infer<
   typeof zCloudWorkflowIndex
 >['data'][number]
+
+export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
 export const zUploadImageResult = z.object({
   name: z.string(),
