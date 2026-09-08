@@ -71,6 +71,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.comfyEnterprise', locale),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds', locale),
+              href: routes.managedBuilds
             }
           ]
         },
