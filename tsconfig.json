@@ -50,6 +50,8 @@
     "global.d.ts",
     "knip.config.ts",
     "lint-staged.config.ts",
+    // Type-level assertions vitest erases; they only bind if tsc sees them.
+    "packages/ingest-types/test/**/*",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",
