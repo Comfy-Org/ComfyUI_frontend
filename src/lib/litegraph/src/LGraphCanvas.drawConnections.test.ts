@@ -27,7 +27,7 @@ import {
   createTestLink
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({

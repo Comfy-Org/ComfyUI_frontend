@@ -28,12 +28,16 @@ const { mockQueryLinkSegmentAtPoint, mockQueryRerouteAtPoint } = vi.hoisted(
   })
 )
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    queryLinkSegmentAtPoint: mockQueryLinkSegmentAtPoint,
-    queryRerouteAtPoint: mockQueryRerouteAtPoint
-  }
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/store/layoutStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    layoutStore: {
+      queryLinkSegmentAtPoint: mockQueryLinkSegmentAtPoint,
+      queryRerouteAtPoint: mockQueryRerouteAtPoint
+    }
+  })
+)
 
 let strokeHit = false
 const isPointInStrokeMock = vi.fn()
