@@ -155,6 +155,54 @@ describe('createBillingClient', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
+  it('a read resolving after reset() must not resurrect the abandoned state', async () => {
+    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
+    let release!: (response: Response) => void
+    const client = makeClient(
+      session,
+      vi.fn<typeof fetch>(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+    )
+
+    const refreshing = client.refresh()
+    client.reset()
+    release(balanceResponse({ effective_balance_micros: 999 }))
+    await refreshing
+
+    expect(
+      client.getState(),
+      'reset() abandons the in-flight read; its late result must not overwrite the cleared state'
+    ).toEqual({ status: 'unknown' })
+  })
+
+  it('a same-user caller joins the in-flight read across a mid-read token rotation', async () => {
+    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
+    let releaseRetry!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => balanceResponse({}, 401))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseRetry = resolve))
+      )
+      .mockImplementation(async () =>
+        balanceResponse({ effective_balance_micros: 500 })
+      )
+    const client = makeClient(session, fetchImpl)
+
+    const first = client.refresh()
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    const second = client.refresh()
+    releaseRetry(balanceResponse({ effective_balance_micros: 500 }))
+    await Promise.all([first, second])
+
+    expect(
+      fetchImpl,
+      'the re-mint rotates the token mid-read; a same-user caller must still join, not race a duplicate read'
+    ).toHaveBeenCalledTimes(2)
+    expect(client.getState()).toEqual({ status: 'ok', cents: 500 })
+  })
+
   it('does not publish a balance that belongs to a superseded user', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     let release!: (response: Response) => void
