@@ -10,12 +10,13 @@ type Cta = {
   target?: '_blank' | '_self' | '_parent' | '_top'
 }
 
-defineProps<{
+const { hideNumbers = false } = defineProps<{
   heading: string
   benefits: readonly Benefit[]
   footnote?: string
   primaryCta?: Cta
   secondaryCta?: Cta
+  hideNumbers?: boolean
 }>()
 </script>
 
@@ -35,6 +36,7 @@ defineProps<{
           class="flex flex-col gap-6 rounded-4xl bg-primary-comfy-ink p-6 lg:p-8"
         >
           <span
+            v-if="!hideNumbers"
             class="text-primary-comfy-yellow font-mono text-sm font-bold tracking-wide"
           >
             {{ String(index + 1).padStart(2, '0') }}
