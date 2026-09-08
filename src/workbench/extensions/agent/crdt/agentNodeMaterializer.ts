@@ -1,4 +1,4 @@
-import { assert } from '@/base/assert'
+import { adoptRegisteredNodeState } from '@/core/graph/nodeShell/nodeShellState'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -274,31 +274,8 @@ function materialize(
     })
   )
 
-  if (orphan?.type === state.type) {
-    nodeStore.deleteNode(scope, state)
-    const registered = nodeStore.registerNode(scope, orphan._state)
-    // ADR 0016: same-state re-registration is idempotent; rejection here is
-    // lifecycle corruption rather than a recoverable input collision.
-    assert(registered, 'Failed to rebind incumbent node state')
-    orphan._state = registered
-    orphan._graphScope = scope
-    nodeStore.updateNode(scope, state.id, state)
-
-    const values = new Map(
-      widgets.map((widget) => [widget.name ?? '', widget.value])
-    )
-    for (const widget of orphan.widgets ?? []) {
-      if (!isNodeBindable(widget)) continue
-      widget.setNodeId(state.id)
-      if (values.has(widget.name)) widget.value = values.get(widget.name)
-    }
-    widgetStore.setNodeWidgetOrder(
-      scope.rootGraphId,
-      state.id,
-      getWidgetIds(orphan.widgets ?? [])
-    )
-    return true
-  }
+  if (orphan && canRebindIncumbent(orphan, state, serialised, widgets))
+    return rebindIncumbent(graph, state, serialised, orphan, widgets)
 
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
@@ -374,6 +351,81 @@ function materialize(
     })
   }
   return true
+}
+
+function canRebindIncumbent(
+  orphan: LGraphNode,
+  state: NodeState,
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): boolean {
+  if (orphan.type !== state.type || orphan.has_errors) return false
+  if (serialised.widgets_values === undefined) return true
+  const widgetNames = new Set(
+    (orphan.widgets ?? []).map((widget) => widget.name)
+  )
+  return widgets.every((widget) => widgetNames.has(widget.name ?? ''))
+}
+
+function bindNodeWidgets(node: LGraphNode, nodeId: NodeId): void {
+  for (const widget of node.widgets ?? []) {
+    if (isNodeBindable(widget)) widget.setNodeId(nodeId)
+  }
+}
+
+function rebindIncumbent(
+  graph: MaterializableGraph,
+  state: NodeState,
+  serialised: ISerialisedNode,
+  orphan: LGraphNode,
+  widgets: readonly WidgetStateInit[]
+): boolean {
+  if (
+    serialised.widgets_values !== undefined &&
+    !removeDroppedWidgets(graph, orphan, state, widgets)
+  )
+    return false
+  if (!adoptRegisteredNodeState(graph, orphan, state)) return false
+  bindNodeWidgets(orphan, state.id)
+  try {
+    withNamedValuesRestore(() =>
+      orphan.configure(withNamedWidgetValues(serialised))
+    )
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_configure_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+  }
+  bindNodeWidgets(orphan, state.id)
+  useWidgetValueStore().setNodeWidgetOrder(
+    graph.rootGraph.id,
+    state.id,
+    getWidgetIds(orphan.widgets ?? [])
+  )
+  return true
+}
+
+function removeDroppedWidgets(
+  graph: MaterializableGraph,
+  node: LGraphNode,
+  state: NodeState,
+  widgets: readonly WidgetStateInit[]
+): boolean {
+  const successorNames = new Set(widgets.map((widget) => widget.name ?? ''))
+  const dropped = (node.widgets ?? []).filter(
+    (widget) => widget.serialize !== false && !successorNames.has(widget.name)
+  )
+  try {
+    for (const widget of dropped) node.removeWidget(widget)
+    return true
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_rebind_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+    return false
+  }
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */

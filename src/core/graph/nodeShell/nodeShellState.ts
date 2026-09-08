@@ -118,6 +118,20 @@ export function registerNodeState(
   return true
 }
 
+/** Makes a detached live node adopt an already-registered canonical state. */
+export function adoptRegisteredNodeState(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  node: LGraphNode,
+  state: NodeState
+): boolean {
+  if (node.id !== state.id) return false
+  const graphScope = graphScopeOf(graph)
+  if (!useNodeDataStore().ownsNode(graphScope, state)) return false
+  node._state = state
+  node._graphScope = graphScope
+  return true
+}
+
 /**
  * Removes a node's shell state from {@link useNodeDataStore} and detaches the
  * node. No-op for nodes that were never registered.
