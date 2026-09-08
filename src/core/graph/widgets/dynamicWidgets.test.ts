@@ -218,6 +218,18 @@ describe('Dynamic Combos', () => {
     node.widgets[0].value = '0'
     expect(node.widgets[1].value).toBe(3)
   })
+  test('Nested child keeps its value when its parent option is recreated', () => {
+    const node = testNode()
+    addDynamicCombo(node, [[[['INT'], ['INT']]], ['INT']])
+    node.widgets[1].value = '1'
+    node.widgets[2].value = 7
+
+    node.widgets[0].value = '1'
+    node.widgets[0].value = '0'
+
+    expect(node.widgets[1].value).toBe('1')
+    expect(node.widgets[2].value).toBe(7)
+  })
 })
 describe('Autogrow', () => {
   const inputsSpec = { required: { image: ['IMAGE', {}] } }
