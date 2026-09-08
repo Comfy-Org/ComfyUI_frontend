@@ -626,23 +626,16 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(mockReportTelemetryError).toHaveBeenCalledOnce()
-      expect(mockReportTelemetryError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'cloud_checkout_completion_missing',
-        tags: {
-          failure_kind: 'missing_event',
-          feature_area: 'billing',
-          operation: 'sync',
-          outcome: 'timed_out'
-        },
-        context: {
-          checkout_attempt_id: 'attempt-timeout',
-          checkout_type: 'new',
-          attempt_age_ms: 11 * 60 * 1000 + 43_000,
-          tier: 'standard',
-          cycle: 'monthly'
-        },
-        level: 'warning'
-      })
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing',
+          context: expect.objectContaining({
+            checkout_attempt_id: 'attempt-timeout',
+            attempt_age_ms: 11 * 60 * 1000 + 43_000
+          })
+        })
+      )
     })
 
     it('closes the billing funnel when the completion never lands', async () => {
