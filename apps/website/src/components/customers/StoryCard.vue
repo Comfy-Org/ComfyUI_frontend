@@ -39,6 +39,9 @@ const href = localizeHref(`/customers/${story.slug}`, locale)
         >
           {{ story.title }}
         </h3>
+        <p class="mt-2 line-clamp-2 text-sm font-light text-primary-warm-gray">
+          {{ story.description }}
+        </p>
       </div>
 
       <div

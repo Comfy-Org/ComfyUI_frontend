@@ -507,6 +507,35 @@ Enterprise`
     'zh-CN': '查看全部案例',
     ja: 'すべてのケーススタディを見る'
   },
+  'caseStudy.watchStory': {
+    en: 'WATCH STORY',
+    'zh-CN': '观看故事',
+    ja: 'ストーリーを見る'
+  },
+  'customers.group.watch': { en: 'WATCH', 'zh-CN': '观看' },
+  'customers.group.read': { en: 'READ', 'zh-CN': '阅读' },
+  'customers.video.watchStory': { en: 'WATCH STORY', 'zh-CN': '观看故事' },
+  'customers.watch.transcript': { en: 'Transcript', 'zh-CN': '文字记录' },
+  'customers.watch.readWrittenStory': {
+    en: 'Read the written story',
+    'zh-CN': '阅读文字版故事'
+  },
+  'customers.watch.browseAll': {
+    en: 'BROWSE ALL CUSTOMER STORIES',
+    'zh-CN': '浏览全部客户故事'
+  },
+  'customers.article.watchVideo': {
+    en: 'WATCH THE VIDEO',
+    'zh-CN': '观看视频'
+  },
+  'nav.managedBuilds': {
+    en: 'Managed Builds',
+    'zh-CN': '托管构建'
+  },
+  'pricing.customerProof.heading': {
+    en: 'Built with ComfyUI',
+    'zh-CN': '使用 ComfyUI 构建'
+  },
 
   // BuildWhatSection
   'buildWhat.subtitle': {
@@ -8693,11 +8722,11 @@ Enterprise`
   },
   // customers.astro
   'customers.meta.title': {
-    en: 'Customer Stories - Comfy',
+    en: 'ComfyUI Customer Stories: Studios, Brands, and Artists',
     'zh-CN': '客户故事 - Comfy'
   },
   'customers.meta.description': {
-    en: 'How studios, brands, artists, and universities use ComfyUI in production: Series Entertainment, Moment Factory, Ubisoft, Groove Jones, Svedka, and more.',
+    en: 'Customer stories from studios, brands, artists, and universities using ComfyUI for campaigns, games, films, public art, and teaching.',
     'zh-CN':
       '工作室、品牌、艺术家与高校如何在生产中使用 ComfyUI：Series Entertainment、Moment Factory、Ubisoft、Groove Jones、Svedka 等。'
   },

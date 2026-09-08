@@ -1,8 +1,10 @@
 ---
+import BreadcrumbBar from '../../components/common/BreadcrumbBar.vue'
 import CustomerArticle from '../../components/customers/CustomerArticle.astro'
 import DetailHeroSection from '../../components/customers/DetailHeroSection.vue'
 import WhatsNextSection from '../../components/customers/WhatsNextSection.vue'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import { customerVideoForStory } from '../../data/customerVideos'
 import { t } from '../../i18n/translations'
 import { nextStory, storySlug } from '../../utils/customers'
 import { loadStories } from '../../utils/loadStories'
@@ -57,6 +59,10 @@ const article = articleNode({
   imageUrl: entry.data.cover,
   locale
 })
+
+const homeLabel = t('breadcrumb.home', locale)
+const collectionLabel = t('nav.customerStories', locale)
+const relatedVideo = customerVideoForStory(storySlug(entry.id))
 ---
 
 <BaseLayout
@@ -65,15 +71,23 @@ const article = articleNode({
   ogImage={entry.data.cover}
   mainEntityId={jsonLdId(canonicalUrl, 'article')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    { name: homeLabel, url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     {
-      name: t('nav.customerStories', locale),
+      name: collectionLabel,
       url: absoluteUrl(Astro.site, localizeHref('/customers', canonicalLocale))
     },
     { name: entry.data.title }
   ]}
   extraJsonLd={[article]}
 >
+  <BreadcrumbBar
+    crumbs={[
+      { label: homeLabel, href: localizeHref('/', locale) },
+      { label: collectionLabel, href: localizeHref('/customers', locale) },
+      { label: entry.data.title }
+    ]}
+    label={t('ui.breadcrumb', locale)}
+  />
   <DetailHeroSection
     label={entry.data.category}
     title={entry.data.title}
@@ -81,7 +95,20 @@ const article = articleNode({
     image={entry.data.cover}
   />
   <CustomerArticle locale={locale} entry={entry} />
-  <WhatsNextSection locale={locale}
+  {
+    relatedVideo && (
+      <div class="max-w-9xl mx-auto px-6 pb-10 lg:px-16">
+        <a
+          href={localizeHref(`/customers/videos/${relatedVideo.slug}`, locale)}
+          class="text-sm font-semibold tracking-wide text-primary-comfy-yellow uppercase hover:underline"
+        >
+          {t('customers.article.watchVideo', locale)}
+        </a>
+      </div>
+    )
+  }
+  <WhatsNextSection
+    locale={locale}
     title={next.data.title}
     image={next.data.cover}
     href={localizeHref(`/customers/${storySlug(next.id)}`, locale)}

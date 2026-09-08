@@ -79,12 +79,15 @@ function lint(targets: string[]): Finding[] {
 }
 
 const accepted = `import type {
+  AgentTurnAccepted as GeneratedAgentTurnAccepted,
   ListMembersResponse as GeneratedListMembersResponse,
   Member as GeneratedMember,
   PendingInvite as GeneratedPendingInvite,
   PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
   SubscribeRequest as GeneratedSubscribeRequest
 } from '@comfyorg/ingest-types'
+
+type AgentTurnAccepted = GeneratedAgentTurnAccepted & { workflow_id?: string }
 
 type Member = GeneratedMember & { credits_used_this_month?: number }
 
@@ -100,6 +103,7 @@ interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
 type ListMembersResponse = GeneratedListMembersResponse | null
 
 export type {
+  AgentTurnAccepted,
   Member,
   PendingInvite,
   SubscribeRequest,
@@ -180,7 +184,15 @@ const unimported = `import type { Member as GeneratedMember } from '@comfyorg/in
 // it. Import provenance is the trigger, so the collision alone is not evidence.
 type CreateInviteRequest = GeneratedMember & { note?: string }
 
-export type { CreateInviteRequest }
+// Agent API names are reserved even without an import because every Agent*
+// contract must follow the generated package.
+interface AgentTurnAccepted {
+  message_id: string
+  thread_id: string
+}
+type AgentCancelAccepted = { status: 'cancelling' }
+
+export type { AgentCancelAccepted, AgentTurnAccepted, CreateInviteRequest }
 `
 
 const vueProbe = `<script setup lang="ts">
@@ -235,6 +247,10 @@ describe('comfy/no-duplicate-ingest-type', () => {
   })
 
   it.for([
+    [
+      'an Agent API type derived from its generated export',
+      'AgentTurnAccepted'
+    ],
     ['an additive intersection', 'Member'],
     ['a projection that re-adds nothing', 'PendingInvite'],
     ['presence relaxed via Partial<Pick<...>>', 'SubscribeRequest'],
@@ -264,8 +280,15 @@ describe('comfy/no-duplicate-ingest-type', () => {
   })
 
   it('never reports a colliding name the file did not import', () => {
-    expect(reported('unimported.ts')).toEqual([])
+    expect(reported('unimported.ts')).not.toContain('CreateInviteRequest')
   })
+
+  it.for(['AgentTurnAccepted', 'AgentCancelAccepted'])(
+    'reports unimported generated Agent type %s',
+    (name) => {
+      expect(reported('unimported.ts')).toContain(name)
+    }
+  )
 
   it('covers .vue single-file components, not just .ts', () => {
     expect(reported('Probe.vue')).toContain('Plan')

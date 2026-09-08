@@ -1,17 +1,25 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import BreadcrumbBar from '../components/common/BreadcrumbBar.vue'
 import ContactSection from '../components/customers/ContactSection.vue'
 import FeedbackSection from '../components/customers/FeedbackSection.vue'
 import HeroSection from '../components/customers/HeroSection.vue'
 import StorySection from '../components/customers/StorySection.vue'
-import VideoSection from '../components/customers/VideoSection.vue'
+import WatchSection from '../components/customers/WatchSection.vue'
+import { customerVideoStories, formatDuration } from '../data/customerVideos'
 import { t } from '../i18n/translations'
 import { toCardProps } from '../utils/customers'
 import { loadStories } from '../utils/loadStories'
-import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../utils/jsonLd'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext,
+  videoObjectNode
+} from '../utils/jsonLd'
 import { localizeHref } from '../config/routes'
 
-const { locale, canonicalUrl, canonicalLocale } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale
@@ -19,8 +27,10 @@ const { locale, canonicalUrl, canonicalLocale } = pageContext(
 
 const stories = (await loadStories(locale)).map(toCardProps)
 
-
 const collectionLabel = t('nav.customerStories', locale)
+const homeLabel = t('breadcrumb.home', locale)
+const homeHref = localizeHref('/', canonicalLocale)
+
 const storyList = itemListNode(
   canonicalUrl,
   collectionLabel,
@@ -28,6 +38,27 @@ const storyList = itemListNode(
     url: absoluteUrl(Astro.site, localizeHref(`/customers/${story.slug}`, canonicalLocale)),
     name: story.title
   }))
+)
+
+const watchCards = customerVideoStories.map((story) => ({
+  ...story,
+  duration: formatDuration(story.durationSeconds)
+}))
+
+// One VideoObject per directory watch card so the collection page also
+// describes the videos it links to, not just the articles.
+const videoNodes = customerVideoStories.map((story) =>
+  videoObjectNode({
+    siteUrl,
+    id: jsonLdId(canonicalUrl, `video-${story.slug}`),
+    pageUrl: canonicalUrl,
+    name: story.title,
+    description: story.description,
+    thumbnailUrl: story.poster,
+    contentUrl: story.videoSrc,
+    uploadDate: story.uploadDate,
+    locale
+  })
 )
 ---
 
@@ -37,14 +68,21 @@ const storyList = itemListNode(
   pageType="CollectionPage"
   mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    { name: homeLabel, url: absoluteUrl(Astro.site, homeHref) },
     { name: collectionLabel }
   ]}
-  extraJsonLd={[storyList]}
+  extraJsonLd={[storyList, ...videoNodes]}
 >
+  <BreadcrumbBar
+    crumbs={[
+      { label: homeLabel, href: localizeHref('/', locale) },
+      { label: collectionLabel }
+    ]}
+    label={t('ui.breadcrumb', locale)}
+  />
   <HeroSection locale={locale} client:load />
+  <WatchSection locale={locale} stories={watchCards} />
   <StorySection locale={locale} stories={stories} />
   <FeedbackSection locale={locale} client:load />
-  <VideoSection locale={locale} client:load />
   <ContactSection locale={locale} />
 </BaseLayout>
