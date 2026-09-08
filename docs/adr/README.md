@@ -12,6 +12,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------- | ---------- |
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                     | Proposed | 2026-07-28 |
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                           | Proposed | 2026-07-09 |
+| [CANVAS-GESTURE-0029](CANVAS-GESTURE-0029-pointer-gesture-state-machine.md)                                      | Pointer Gesture State Machine                                   | Proposed | 2026-09-06 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 | [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)                                 | CRDT Layout Intent and Local Measurement                        | Proposed | 2025-08-27 |
 | [CRDT-MINT-0018](CRDT-MINT-0018-merge-identity-for-node-transfers.md)                                            | Merge Identity for Node Transfers                               | Proposed | 2026-08-25 |
@@ -22,6 +23,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm-workspace-monorepo.md)                                    | Adopt a pnpm Workspace Monorepo                                 | Accepted | 2025-08-25 |
 | [ECS-0008](ECS-0008-entity-component-system.md)                                                                  | Entity Component System                                         | Proposed | 2026-03-23 |
 | [ECS-IDENTITY-0016](ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md)                                | Entity ID Collision Policy and Recovery                         | Proposed | 2026-08-24 |
+| [ECS-LINK-PRESENTATION-0028](ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md)                    | Link Presentation Store Owns Hidden/Label State                 | Proposed | 2026-08-29 |
 | [ECS-SLOTS-0017](ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md)                                          | Slot Records as the Source of Truth                             | Accepted | 2026-08-24 |
 | [ECS-WIDGETS-0023](ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md)                                      | Widget Entities with a Legacy Layer                             | Proposed | 2026-08-26 |
 | [EXTENSIONS-PUBLIC-API-0005](EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md)                | Bundle Vue Dependencies in Extensions                           | Accepted | 2025-12-13 |

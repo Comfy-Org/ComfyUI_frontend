@@ -26,13 +26,15 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
@@ -235,6 +237,7 @@ export interface GraphRemoveOptions {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
+  linkPresentation?: Record<string, LinkPresentation>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -365,15 +368,20 @@ function walkSegment(
 function serialiseOwnedTopology(owner: LGraph) {
   const scope = graphScopeOf(owner)
   const topologies = [...useLinkStore().graphTopologies(scope)]
-  const serialiseLink = (link: (typeof topologies)[number]) => ({
-    id: link.id,
-    origin_id: serializeNodeId(link.originNodeId),
-    origin_slot: link.originSlot,
-    target_id: serializeNodeId(link.targetNodeId),
-    target_slot: link.targetSlot,
-    type: link.type,
-    ...(link.parentId !== undefined && { parentId: link.parentId })
-  })
+  const presentationStore = useLinkPresentationStore()
+  const serialiseLink = (link: (typeof topologies)[number]) => {
+    const presentation = presentationStore.getPresentation(scope, link.id)
+    return {
+      id: link.id,
+      origin_id: serializeNodeId(link.originNodeId),
+      origin_slot: link.originSlot,
+      target_id: serializeNodeId(link.targetNodeId),
+      target_slot: link.targetSlot,
+      type: link.type,
+      ...(link.parentId !== undefined && { parentId: link.parentId }),
+      ...presentation
+    }
+  }
   const links = topologies.filter((link) => !isFloatingTopology(link))
   const floatingLinks = topologies.filter(isFloatingTopology)
   const reroutes = [...owner.reroutes.values()].map((reroute) =>
@@ -779,6 +787,7 @@ export class LGraph
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
+      useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
@@ -2703,8 +2712,22 @@ export class LGraph
     if (reroutes?.length) {
       // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
-        .filter((x) => x.parentId !== undefined)
-        .map((x) => ({ id: x.id, parentId: x.parentId }))
+        .filter((link) => link.parentId !== undefined)
+        .map((link) => ({ id: link.id, parentId: link.parentId }))
+    }
+
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const linkPresentation = Object.fromEntries(
+      linkArray.flatMap((link) => {
+        const presentation = presentationStore.getPresentation(scope, link.id)
+        return presentation
+          ? [[String(link.id), { ...presentation }] as const]
+          : []
+      })
+    )
+    if (Object.keys(linkPresentation).length) {
+      extra.linkPresentation = linkPresentation
     }
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
@@ -2809,6 +2832,7 @@ export class LGraph
 
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
+    delete this.extra.linkPresentation
   }
 
   /**
@@ -2855,6 +2879,7 @@ export class LGraph
         const topologyScope = graphScopeOf(this)
         if (this.isRootGraph) {
           useLinkStore().clearGraph(topologyScope.rootGraphId)
+          useLinkPresentationStore().clearGraph(topologyScope.rootGraphId)
           useRerouteStore().clearGraph(topologyScope.rootGraphId)
           useNodeDataStore().clearGraph(this.id)
           useWidgetValueStore().clearGraph(this.id)
@@ -2862,6 +2887,7 @@ export class LGraph
           layoutStore.clearGraph(this.id)
         } else {
           useLinkStore().clearOwner(topologyScope)
+          useLinkPresentationStore().clearOwner(topologyScope)
           useRerouteStore().clearOwner(topologyScope)
           useNodeDataStore().clearOwner(topologyScope)
         }
@@ -2893,6 +2919,14 @@ export class LGraph
             const link = this.links.get(linkEx.id)
             if (link) link.parentId = linkEx.parentId
           }
+        }
+
+        for (const [linkId, presentation] of Object.entries(
+          extra?.linkPresentation ?? {}
+        )) {
+          const id = parseLinkId(linkId)
+          if (id === undefined || !this.links.has(id)) continue
+          useLinkPresentationStore().patch(graphScopeOf(this), id, presentation)
         }
 
         // Reroutes
@@ -2930,7 +2964,13 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            if (this._addLink(link)) addedLinkIds.push(link.id)
+            if (this._addLink(link)) {
+              addedLinkIds.push(link.id)
+              useLinkPresentationStore().patch(graphScopeOf(this), link.id, {
+                hidden: linkData.hidden,
+                label: linkData.label
+              })
+            }
           }
         }
 
@@ -3089,7 +3129,13 @@ export class LGraph
           ) {
             floatingLink.id = toLinkId(-1)
           }
-          this.addFloatingLink(floatingLink)
+          if (this.addFloatingLink(floatingLink)) {
+            useLinkPresentationStore().patch(
+              graphScopeOf(this),
+              floatingLink.id,
+              { hidden: linkData.hidden, label: linkData.label }
+            )
+          }
         }
       }
 
