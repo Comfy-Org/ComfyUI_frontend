@@ -8,6 +8,7 @@
     :node-type
     :can-select-inputs
     :node-id="nodeData?.id"
+    :node-data
     :class="
       shouldHandleNodePointerEvents
         ? 'pointer-events-auto'

@@ -14,11 +14,17 @@
         :data-testid="isConvertedWidget(widget) ? undefined : 'node-widget'"
         :class="
           cn(
-            'group col-span-full grid grid-cols-subgrid items-stretch',
+            'group relative col-span-full grid grid-cols-subgrid',
+            gridOverrideFor(widget) ? 'items-center' : 'items-stretch',
             !isConvertedWidget(widget) && 'lg-node-widget'
           )
         "
       >
+        <div
+          v-if="!isConvertedWidget(widget) && nodeData"
+          class="absolute inset-x-0 bottom-0 h-1 cursor-ns-resize opacity-0 transition-opacity hover:bg-node-stroke hover:opacity-50"
+          @pointerdown="handleResizePointerDown($event, widget.simplified.name)"
+        />
         <div
           :class="
             cn(
@@ -80,9 +86,15 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useWidgetRowResize } from '@/renderer/extensions/vueNodes/composables/useWidgetRowResize'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import {
+  isValidGridTrack,
+  readGridOverrides
+} from '@/utils/widgetGridOverrides'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -104,29 +116,48 @@ const {
   nodeType,
   canSelectInputs = false,
   nodeId,
+  nodeData,
   syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  nodeData?: NodeState
   syncLayout?: boolean
 }>()
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
+const { startResize } = useWidgetRowResize()
+
+function gridOverrideFor(widget: WidgetGridItem): string | undefined {
+  if (!nodeData || isConvertedWidget(widget)) return
+  const value = readGridOverrides(nodeData)?.[widget.simplified.name]
+  return value && isValidGridTrack(value) ? value : undefined
+}
 
 const gridTemplateRows = computed(() =>
   processedWidgets
     .filter(shouldRenderRow)
-    .map((widget) =>
-      !isConvertedWidget(widget) &&
-      (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
-        ? 'auto'
-        : 'min-content'
+    .map(
+      (widget) =>
+        gridOverrideFor(widget) ??
+        (!isConvertedWidget(widget) &&
+        (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+          ? 'auto'
+          : 'min-content')
     )
     .join(' ')
 )
+
+function handleResizePointerDown(event: PointerEvent, widgetName: string) {
+  const target = event.currentTarget
+  if (!(target instanceof HTMLElement) || !nodeData) return
+  const rowElement = target.closest<HTMLElement>("[data-testid='node-widget']")
+  if (!rowElement) return
+  startResize(event, nodeData, widgetName, rowElement)
+}
 
 const layoutKey = computed(() =>
   processedWidgets

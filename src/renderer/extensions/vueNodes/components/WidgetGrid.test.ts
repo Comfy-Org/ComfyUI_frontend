@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import { defineComponent, markRaw } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 
 const WidgetStub = markRaw(
   defineComponent({
@@ -106,5 +107,37 @@ describe('WidgetGrid', () => {
       'true'
     )
     expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('applies valid persisted row-height overrides', () => {
+    vi.stubGlobal('CSS', { supports: () => true })
+    const nodeData: NodeState = {
+      id: toNodeId(1),
+      graphId: 'test-graph',
+      type: 'TestNode',
+      title: 'Test Node',
+      mode: 0,
+      flags: {},
+      inputs: [],
+      outputs: [],
+      properties: { gridOverrides: { prompt: '200px' } }
+    }
+
+    render(WidgetGrid, {
+      props: {
+        nodeData,
+        nodeId: nodeData.id,
+        nodeType: nodeData.type,
+        processedWidgets: [widget('prompt', 'string', 0)]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+      }
+    })
+
+    expect(screen.getByTestId('node-widgets')).toHaveStyle({
+      gridTemplateRows: '200px'
+    })
   })
 })
