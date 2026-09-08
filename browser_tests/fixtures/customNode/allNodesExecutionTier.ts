@@ -305,9 +305,11 @@ async function runBatch(
   }>,
   timeoutMs: number = 20_000
 ): Promise<string> {
+  const widgetInputsByKey: Partial<Record<string, Record<string, string>>> =
+    packLedgerFor(AUTO_RUN_WIDGET_INPUTS, pack)
   const batchWithInputs = batch.map((spec) => ({
     ...spec,
-    widgetInputs: packLedgerFor(AUTO_RUN_WIDGET_INPUTS, pack)[spec.key]
+    widgetInputs: widgetInputsByKey[spec.key] ?? {}
   }))
   const { ids, allIds, nodeIdByKey, sinkIdByKey } = await page.evaluate(
     ([nodes, producers, spacingY]) => {
