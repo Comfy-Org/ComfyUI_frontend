@@ -153,6 +153,27 @@ describe('sign-in and sign-out delegation', () => {
     expect(sdk.signOut).toHaveBeenCalledOnce()
   })
 
+  it('resolves a password reset that completes before the ceiling', async () => {
+    sdk.sendPasswordResetEmail.mockResolvedValueOnce(undefined)
+    const identity = await makeIdentity()
+
+    await expect(
+      identity.sendPasswordReset('a@b.example'),
+      'the action ceiling must never swallow a reset that completed in time'
+    ).resolves.toBeUndefined()
+  })
+
+  it('propagates a password-reset failure as the SDK error, not a timeout', async () => {
+    sdk.sendPasswordResetEmail.mockRejectedValueOnce(
+      new Error('auth/user-not-found')
+    )
+    const identity = await makeIdentity()
+
+    await expect(identity.sendPasswordReset('a@b.example')).rejects.toThrow(
+      'auth/user-not-found'
+    )
+  })
+
   it('propagates a sign-out failure to the caller', async () => {
     sdk.signOut.mockRejectedValueOnce(new Error('auth/network-request-failed'))
     const identity = await makeIdentity()
