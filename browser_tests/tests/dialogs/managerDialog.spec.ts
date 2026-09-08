@@ -247,6 +247,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       }
     )
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     // Seed manager-ready server feature flags AFTER setup so the WebSocket

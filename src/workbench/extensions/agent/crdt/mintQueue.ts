@@ -70,9 +70,7 @@ export function orderMintedOperations(
     if (operation.op === 'connect') {
       return !gone(operation.from_node) && !gone(operation.to_node)
     }
-    if (operation.op === 'set_widget' && operation.path == null) {
-      return !gone(operation.node_id)
-    }
+    if (operation.path == null) return !gone(operation.node_id)
     return true
   })
   return [...structural, ...kept]

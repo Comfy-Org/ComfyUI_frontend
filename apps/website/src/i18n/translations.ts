@@ -110,6 +110,10 @@ const translations = {
     en: 'Upscaling',
     'zh-CN': '放大'
   },
+  'tags.motionControl': {
+    en: 'Motion Control',
+    'zh-CN': '运动控制'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -3408,9 +3412,130 @@ Enterprise`
       '• 通过 Flux、Seedance、Kling、Ideogram 等合作伙伴模型生成图像、视频、音频和 3D\n• 构建、编辑、校验并运行工作流图；保存并重跑\n• 批量排队、等待任务并下载全部输出\n• 搜索模板、模型和节点，附带完整模式\n• 用类型化片段组合多阶段工作流\n\n运行一次 comfy skills install，自带技能会把这一切教给你的智能体。'
   },
 
+  // Agent – nav
+  'nav.comfyAgent': { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' },
+  'breadcrumb.agent': { en: 'Comfy Agent', 'zh-CN': 'Comfy Agent' },
+
+  // Agent – landing page
+  'agent.meta.title': {
+    en: 'The first agent for craft',
+    'zh-CN': '首个为创作而生的智能体'
+  },
+  'agent.meta.description': {
+    en: 'The Comfy Agent lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas, runs it, and hands back the result.',
+    'zh-CN':
+      'Comfy Agent 就住在 ComfyUI 里，本地与云端皆可运行。描述你想要的东西：它会在你的画布上搭好工作流、运行它，并把结果交给你。'
+  },
+  'agent.hero.badge': { en: 'AGENT', 'zh-CN': 'AGENT' },
+  'agent.hero.title': {
+    en: 'The first agent for craft',
+    'zh-CN': '首个为创作而生的智能体'
+  },
+  'agent.hero.subtitle': {
+    en: 'An agent that lives inside ComfyUI, local and cloud. Describe what you want: it builds the workflow on your canvas with you, reviews assets, runs generations, and iterates until the result is production ready.',
+    'zh-CN':
+      '一个住在 ComfyUI 里的智能体，本地与云端皆可运行。描述你想要的东西：它与你一起在画布上搭建工作流、审阅素材、执行生成，并不断迭代，直到结果足以直接交付。'
+  },
+  'agent.hero.footnote': {
+    en: "We'll prepare your account and email you when it's ready.",
+    'zh-CN': '我们会为你准备好账户，就绪后通过邮件通知你。'
+  },
+  'agent.cards.heading': {
+    en: 'It fits the way you already work',
+    'zh-CN': '它契合你原本的工作方式'
+  },
+  'agent.cards.knowledge.tag': {
+    en: 'Creative knowledge',
+    'zh-CN': '创意知识'
+  },
+  'agent.cards.knowledge.title': {
+    en: 'Best practice can be delivered end to end',
+    'zh-CN': '最佳实践可以端到端交付'
+  },
+  'agent.cards.knowledge.body': {
+    en: "Up-to-date knowledge of all the latest models, ComfyUI extensions, parameters, and best workflows, curated by ComfyUI experts. Describe the content and asset you want. It is Comfy Agent's job to learn the technology and model details. It can run a project in auto mode and deliver the best result end to end.",
+    'zh-CN':
+      '由 ComfyUI 专家精选整理，随时掌握最新模型、ComfyUI 扩展、参数与最佳工作流。你只要描述想要的内容和素材，钻研技术与模型细节是 Comfy Agent 的事。它可以在自动模式下推进整个项目，端到端交付最好的结果。'
+  },
+  'agent.cards.multiplayer.tag': {
+    en: 'Human-agent Multiplayer',
+    'zh-CN': '人机协同'
+  },
+  'agent.cards.multiplayer.title': {
+    en: 'Two of you edit at the same time',
+    'zh-CN': '你们两位同时编辑'
+  },
+  'agent.cards.multiplayer.body': {
+    en: "Build a big workflow with the agent in parallel. Watch the graph assemble. Mention a node or reference another workflow. Point at an error and it fixes it. Comfy Agent is fully aware of what's happening on the canvas.",
+    'zh-CN':
+      '和智能体并行搭建大型工作流，看着节点图一步步成形。提到某个节点，或引用另一个工作流；指出一处报错，它就会修好。画布上发生的一切，Comfy Agent 都清清楚楚。'
+  },
+  'agent.cards.control.tag': {
+    en: 'Control & Iterate',
+    'zh-CN': '掌控与迭代'
+  },
+  'agent.cards.control.title': {
+    en: 'The craft stays yours',
+    'zh-CN': '创作始终属于你'
+  },
+  'agent.cards.control.body': {
+    en: 'Every control ComfyUI gives you stays exactly where it is. You spend your time on composition, camera angles, masks, parameters, and polishing the details. Power users can always take over: open the nodes and check every single pixel.',
+    'zh-CN':
+      'ComfyUI 给你的每一项控制都原封不动地留在原处。你的时间花在构图、镜头角度、遮罩、参数和细节打磨上。资深用户随时可以接管：打开节点，逐个像素地检查。'
+  },
+  'agent.cards.anywhere.tag': {
+    en: 'Local and Cloud',
+    'zh-CN': '本地与云端'
+  },
+  'agent.cards.anywhere.title': {
+    en: 'It runs where you run',
+    'zh-CN': '你在哪里运行，它就在哪里运行'
+  },
+  'agent.cards.anywhere.body': {
+    en: 'Same agent, works with you on your local machine or in Comfy Cloud. It walks you through all setups, builds the workflows, and chooses models based on your hardware. It suggests environment and deployment solutions for your workflow and dependencies.',
+    'zh-CN':
+      '同一个智能体，既能在你的本地机器上和你协作，也能在 Comfy Cloud 中运行。它会带你走完所有配置、搭好工作流，并依据你的硬件挑选模型，还会为你的工作流和依赖推荐环境与部署方案。'
+  },
+
+  // Agent – beta waitlist form
+  'agent.form.emailLabel': { en: 'Email address', 'zh-CN': '邮箱地址' },
+  'agent.form.placeholder': {
+    en: 'Type your email',
+    'zh-CN': '输入你的邮箱'
+  },
+  'agent.form.submit': {
+    en: 'Join the waitlist',
+    'zh-CN': '加入候补名单'
+  },
+  'agent.form.submitPending': { en: 'Joining…', 'zh-CN': '提交中…' },
+  'agent.form.invalidEmail': {
+    en: 'Please enter a valid email address.',
+    'zh-CN': '请输入有效的邮箱地址。'
+  },
+  'agent.form.error': {
+    en: 'Something went wrong. Please try again.',
+    'zh-CN': '出错了，请重试。'
+  },
+  // Split around the link that reopens the application form: the sentence
+  // reads success + link + successTail with the anchor between them.
+  'agent.form.success': {
+    en: "You're on the waitlist! We'll email {email} when it's ready. A few questions just opened in a new tab —",
+    'zh-CN':
+      '你已加入候补名单！准备就绪后我们会发邮件到 {email}。我们刚在新标签页里打开了几个问题 —'
+  },
+  'agent.form.successLink': { en: 'open them here', 'zh-CN': '点这里打开' },
+  'agent.form.successTail': {
+    en: 'if your browser blocked it.',
+    'zh-CN': '（如果浏览器拦截了它）。'
+  },
+
   // CLI – nav + breadcrumb
   'nav.comfyCli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
   'breadcrumb.cli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
+  'breadcrumb.cloudNodes': {
+    en: 'Comfy Cloud Nodes',
+    'zh-CN': 'Comfy Cloud 节点'
+  },
 
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
@@ -6979,6 +7104,10 @@ Enterprise`
     en: 'SEE MINIMAX H3',
     'zh-CN': '了解 MiniMax H3'
   },
+  'minimaxLicense.comparison.heading': {
+    en: 'Compare license tiers',
+    'zh-CN': '许可级别对比'
+  },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
     en: 'One model, every use case. Licensed for yours.',
@@ -7401,8 +7530,8 @@ Enterprise`
     'zh-CN': '开发者平台'
   },
   'home.platform.body': {
-    en: 'Scale your custom nodes in your Comfy workflows in custom environments through Comfy API.',
-    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+    en: 'Deploy your ComfyUI workflow as a production API. Thousands of models on one platform.',
+    'zh-CN': '将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。'
   },
   'home.platform.cta': {
     en: 'Explore the Developer Platform',
@@ -7580,8 +7709,8 @@ Enterprise`
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.shipSubtitle': {
-    en: 'Easily package up your existing ComfyUI environment or a single workflow,\nthen deploy it to Comfy API.',
-    'zh-CN': '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Comfy API。'
+    en: 'Using our CLI and Skills, have your coding agent deploy everything in minutes.',
+    'zh-CN': '使用我们的 CLI 和 Skills，让你的编码智能体在几分钟内完成部署。'
   },
   'platform.serverlessDeploy.subtitle': {
     en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Comfy API and scale it on demand.',
@@ -7658,10 +7787,18 @@ Enterprise`
     en: 'Comfy API',
     'zh-CN': 'Comfy API'
   },
+  'platform.products.serverless.badgeLabel': {
+    en: 'API',
+    'zh-CN': 'API'
+  },
   'platform.products.serverless.description': {
     en: 'Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project’s needs.',
     'zh-CN':
       '将你的 ComfyUI 工作流部署为生产级 API，随团队或项目的需求轻松扩展。'
+  },
+  'platform.products.models.learnMore': {
+    en: 'Learn more',
+    'zh-CN': '了解更多'
   },
   'platform.serverlessVisual.ariaLabel': {
     en: 'Animated diagram of a request lighting up RTX 6000 PRO, H100, and B200 GPU workers, with COMFYUI scrolling across the grid.',
@@ -7673,13 +7810,13 @@ Enterprise`
     'zh-CN': '工作节点'
   },
   'platform.products.builder.title': {
-    en: 'Builder',
+    en: 'Builds',
     'zh-CN': 'Builder'
   },
   'platform.products.builder.description': {
-    en: 'Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.',
+    en: 'Package custom nodes, LoRAs, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to Comfy API.',
     'zh-CN':
-      '将自定义节点、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Comfy API。'
+      '将自定义节点、LoRA、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Comfy API。'
   },
   'platform.products.builder.enterpriseCta': {
     en: 'Enterprise: Managed Builds',
@@ -7690,48 +7827,76 @@ Enterprise`
     'zh-CN': 'Models API'
   },
   'platform.products.models.description': {
-    en: 'Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.',
+    en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
     'zh-CN':
-      '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
+      '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
+  },
+  'platform.modelsHero.heading': {
+    en: '1000+ media AI models in one API.',
+    'zh-CN': '1000+ 媒体 AI 模型，尽在一个 API。'
+  },
+  'platform.modelsHero.subtitle': {
+    en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
+    'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
+  },
+  'platform.builderHero.heading': {
+    en: 'Share ComfyUI Builds with your team',
+    'zh-CN': '与团队共享 ComfyUI Builds'
+  },
+  'platform.builderHero.subtitle': {
+    en: 'A Build lets you share ComfyUI custom nodes, LoRAs, models, and Python dependencies without hassle. Run them on your workstation, server, or datacenter.',
+    'zh-CN':
+      'Build 让你轻松共享 ComfyUI 自定义节点、LoRA、模型和 Python 依赖。可在工作站、服务器或数据中心运行。'
+  },
+  'platform.serverlessHero.heading': {
+    en: 'ComfyUI workflow to production API in minutes.',
+    'zh-CN': '几分钟内，将 ComfyUI 工作流变成生产级 API。'
+  },
+  'platform.serverlessHero.subtitle': {
+    en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
+    'zh-CN':
+      '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
+  },
+  'platform.modelsGallery.ariaLabel': {
+    en: 'Sample outputs from partner models',
+    'zh-CN': '合作伙伴模型的示例输出'
   },
   'platform.modelsFeatures.heading': {
-    en: 'One key, every frontier model',
-    'zh-CN': '一个密钥，所有前沿模型'
+    en: 'Built for production',
+    'zh-CN': '为生产环境而建'
   },
   'platform.modelsFeatures.1.title': {
     en: 'Every frontier media model',
     'zh-CN': '所有前沿媒体模型'
   },
   'platform.modelsFeatures.1.description': {
-    en: '36+ partner providers — Nano Banana, Veo, Kling, Seedance, Flux, Sora, GPT Image, Runway, Luma, ElevenLabs and more — behind stable model IDs.',
+    en: '1000+ models — Seedance, GPT Image 2, Nano Banana, Kling, Minimax, Flux, ElevenLabs, and more with day 0 access.',
     'zh-CN':
-      '36+ 家合作伙伴——Nano Banana、Veo、Kling、Seedance、Flux、Sora、GPT Image、Runway、Luma、ElevenLabs 等——都在稳定的模型 ID 之后。'
+      '1000+ 模型——Seedance、GPT Image 2、Nano Banana、Kling、Minimax、Flux、ElevenLabs 等——首发日即可使用。'
   },
   'platform.modelsFeatures.3.title': {
     en: 'One credit pool',
     'zh-CN': '一个积分池'
   },
   'platform.modelsFeatures.3.description': {
-    en: 'Pay per use from the same balance that powers Cloud workflows and serverless GPUs. No subscription floor.',
-    'zh-CN':
-      '按用量付费，与 Cloud 工作流和无服务器 GPU 共用同一余额。没有订阅门槛。'
+    en: 'Pay per use from one credit pool for your team. No subscription required.',
+    'zh-CN': '按用量付费，团队共用同一积分池。无需订阅。'
   },
   'platform.modelsFeatures.5.title': {
-    en: 'Schemas to generate against',
-    'zh-CN': '可直接生成代码的 Schema'
+    en: 'No setup',
+    'zh-CN': '无需配置'
   },
   'platform.modelsFeatures.5.description': {
-    en: 'Every model publishes its own OpenAPI document — the same one the server validates your call against.',
-    'zh-CN':
-      '每个模型都发布自己的 OpenAPI 文档——服务器校验你的调用时用的正是同一份。'
+    en: 'Every model can be accessed via a simple API or SDK.',
+    'zh-CN': '每个模型都可通过简单的 API 或 SDK 访问。'
   },
   'platform.modelsFeatures.6.title': {
-    en: 'Cancel anytime',
-    'zh-CN': '随时取消'
+    en: 'No data retention',
+    'zh-CN': '不保留数据'
   },
   'platform.modelsFeatures.6.description': {
-    en: 'A queued request cancels immediately and costs nothing; in-progress calls get a best-effort cancel.',
-    'zh-CN': '排队中的请求立即取消且不产生费用；进行中的调用会尽力取消。'
+    en: 'You own your outputs. Your prompts and data are never retained.',
+    'zh-CN': '输出归你所有。你的提示词和数据永不保留。'
   },
   'platform.examples.heading': {
     en: 'Built on the Developer Platform',
@@ -7892,6 +8057,19 @@ Enterprise`
   'pricing.resourceCosts.heading': {
     en: 'Resource costs',
     'zh-CN': '资源成本'
+  },
+  'pricing.minimaxLicense.heading': {
+    en: 'License pricing',
+    'zh-CN': '许可定价'
+  },
+  'pricing.minimaxLicense.description': {
+    en: 'Professional from $5,000 a month. Enterprise on an annual agreement, priced to your volume. Video, audio, and music under one license.',
+    'zh-CN':
+      '专业版每月 5,000 美元起。企业版为年度协议，按用量定价。视频、音频与音乐涵盖于同一份许可。'
+  },
+  'pricing.minimaxLicense.cta': {
+    en: 'See license tiers',
+    'zh-CN': '查看许可级别'
   },
   'platform.pricing.heading': {
     en: 'Pricing',
@@ -8116,20 +8294,19 @@ Enterprise`
     'zh-CN': '让每个人都用上同一个 Comfy'
   },
   'platform.builderPillars.1.title': {
-    en: 'Consistency',
-    'zh-CN': '一致性'
+    en: 'It just works',
+    'zh-CN': '开箱即用'
   },
   'platform.builderPillars.1.description': {
-    en: 'Ensure your team is using the same consistent build. Deploy exact models, custom nodes, pip dependencies and get consistent results.',
-    'zh-CN':
-      '确保团队使用同一个一致的构建。部署完全一致的模型、自定义节点和 pip 依赖，获得一致的结果。'
+    en: 'Ensure your team uses the same environment. Share custom nodes, LoRAs, and models without hassle.',
+    'zh-CN': '确保团队使用同一环境。轻松共享自定义节点、LoRA 和模型。'
   },
   'platform.builderPillars.2.title': {
     en: 'Comfy Desktop',
     'zh-CN': 'Comfy Desktop'
   },
   'platform.builderPillars.2.description': {
-    en: 'Run builds locally on Desktop. Easily reinstall the same working build.',
+    en: 'Run Builds locally on Desktop. Easily reinstall the same working Build.',
     'zh-CN': '在 Desktop 上本地运行构建，随时轻松重装同一个可用构建。'
   },
   'platform.builderPillars.3.title': {
@@ -8141,16 +8318,15 @@ Enterprise`
     'zh-CN': '构建可以部署到 Comfy API，并以编程方式运行。'
   },
   'platform.builderPillars.4.title': {
-    en: 'Migrate in minutes',
-    'zh-CN': '几分钟内完成迁移'
+    en: 'Start in minutes',
+    'zh-CN': '几分钟内上手'
   },
   'platform.builderPillars.4.description': {
-    en: 'Easily migrate using the UI or your agent via Skills maintained by our team.',
-    'zh-CN':
-      '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
+    en: 'Have your coding agent do all of the work in minutes using our CLI and skills library.',
+    'zh-CN': '让你的编码智能体使用我们的 CLI 和技能库，在几分钟内完成全部工作。'
   },
   'platform.builderEnterprise.heading': {
-    en: 'Builder vs. Managed Builds',
+    en: 'Builds vs. Managed Builds',
     'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {
@@ -8199,8 +8375,300 @@ Enterprise`
     'zh-CN': '将规模与控制力最大化'
   },
   'platform.closing.headingAfterBadge': {
-    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
-    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+    en: 'Deploy your ComfyUI workflow as a production API.\nThousands of models on one platform.',
+    'zh-CN': '将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。'
+  },
+
+  'cloudNodesLaunch.meta.title': {
+    en: 'Comfy Cloud Nodes: Run Open Models on Our GPUs, From Your ComfyUI',
+    'zh-CN':
+      'Comfy Cloud 节点：在我们的 GPU 上运行开源模型，就在你的 ComfyUI 里'
+  },
+  'cloudNodesLaunch.meta.description': {
+    en: 'Drop a Comfy Cloud node into a local graph and run open models on Comfy Cloud GPUs. No subscription, no downloads, billed per GPU-second in credits.',
+    'zh-CN':
+      '把 Comfy Cloud 节点放进本地工作流，即可在 Comfy Cloud 的 GPU 上运行开源模型。无需订阅，无需下载，按 GPU 秒数以积分计费。'
+  },
+  'cloudNodesLaunch.cta.getStarted': {
+    en: 'Get Started',
+    'zh-CN': '开始使用'
+  },
+  'cloudNodesLaunch.cta.docs': {
+    en: 'Read the Docs',
+    'zh-CN': '查看文档'
+  },
+  'cloudNodesLaunch.cta.update': {
+    en: 'How to Update ComfyUI',
+    'zh-CN': '如何更新 ComfyUI'
+  },
+  'cloudNodesLaunch.hero.title': {
+    en: 'Our GPUs.',
+    'zh-CN': '我们的 GPU。'
+  },
+  'cloudNodesLaunch.hero.titleHighlight': {
+    en: 'Your graph.',
+    'zh-CN': '你的工作流。'
+  },
+  'cloudNodesLaunch.hero.subtitle': {
+    en: 'Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Drop one into the graph you already have and wire it like any other node.',
+    'zh-CN':
+      'Comfy Cloud 节点让你在自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。把它放进你已有的工作流，像其他节点一样连线即可。'
+  },
+  'cloudNodesLaunch.hero.feature1': {
+    en: 'No subscription',
+    'zh-CN': '无需订阅'
+  },
+  'cloudNodesLaunch.hero.feature2': {
+    en: 'Nothing to download, no VRAM floor',
+    'zh-CN': '无需下载，没有显存门槛'
+  },
+  'cloudNodesLaunch.hero.feature3': {
+    en: 'Billed per GPU-second in credits',
+    'zh-CN': '按 GPU 秒数以积分计费'
+  },
+  'cloudNodesLaunch.hero.videoAlt': {
+    en: 'A Comfy Cloud Flux 2 Text to Image node on the ComfyUI canvas, wired to a Save Image node',
+    'zh-CN':
+      'ComfyUI 画布上的 Comfy Cloud Flux 2 文生图节点，连接到 Save Image 节点'
+  },
+  'cloudNodesLaunch.setup.heading': {
+    en: 'Four steps to your first run',
+    'zh-CN': '四步完成首次运行'
+  },
+  'cloudNodesLaunch.setup.step1.label': {
+    en: 'Update ComfyUI',
+    'zh-CN': '更新 ComfyUI'
+  },
+  'cloudNodesLaunch.setup.step1.description': {
+    en: 'Update to v0.34.5 or later. The nodes are part of ComfyUI core, so there is nothing to install separately.',
+    'zh-CN':
+      '更新到 v0.34.5 或更高版本。这些节点属于 ComfyUI 核心，无需单独安装。'
+  },
+  'cloudNodesLaunch.setup.step2.label': {
+    en: 'Restart ComfyUI',
+    'zh-CN': '重启 ComfyUI'
+  },
+  'cloudNodesLaunch.setup.step2.description': {
+    en: 'The nodes only register at startup, so they will not appear until you restart.',
+    'zh-CN': '节点只在启动时注册，重启后才会出现。'
+  },
+  'cloudNodesLaunch.setup.step3.label': {
+    en: 'Find a node',
+    'zh-CN': '找到节点'
+  },
+  'cloudNodesLaunch.setup.step3.description': {
+    en: 'Search the node library for “Comfy Cloud”.',
+    'zh-CN': '在节点库中搜索“Comfy Cloud”。'
+  },
+  'cloudNodesLaunch.setup.step4.label': {
+    en: 'Wire it in and run',
+    'zh-CN': '连线并运行'
+  },
+  'cloudNodesLaunch.setup.step4.description': {
+    en: 'Wire it like any other node. The model runs on our GPUs and the result comes back into the same canvas.',
+    'zh-CN':
+      '像其他节点一样连线。模型在我们的 GPU 上运行，结果会回到同一张画布。'
+  },
+  'cloudNodesLaunch.models.heading': {
+    en: 'Eight nodes, six models',
+    'zh-CN': '八个节点，六个模型'
+  },
+  'cloudNodesLaunch.models.subtitle': {
+    en: 'Image, video and audio at launch. Every image and clip below is a real output from the model on the card, generated on Comfy Cloud.',
+    'zh-CN':
+      '首发覆盖图像、视频与音频。下方的图片与视频，均为对应模型在 Comfy Cloud 上的真实输出。'
+  },
+  'cloudNodesLaunch.models.footnote': {
+    en: 'The full node list and their inputs live in the docs.',
+    'zh-CN': '完整的节点列表及其输入参数见文档。'
+  },
+  'cloudNodesLaunch.models.footnoteLink': {
+    en: 'See the node reference',
+    'zh-CN': '查看节点参考'
+  },
+  'cloudNodesLaunch.models.oneNode': {
+    en: '1 node',
+    'zh-CN': '1 个节点'
+  },
+  'cloudNodesLaunch.models.threeNodes': {
+    en: '3 nodes',
+    'zh-CN': '3 个节点'
+  },
+  'cloudNodesLaunch.models.flux2': {
+    en: 'Flux 2',
+    'zh-CN': 'Flux 2'
+  },
+  'cloudNodesLaunch.models.minimaxH3': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'cloudNodesLaunch.models.zImageTurbo': {
+    en: 'Z-Image Turbo',
+    'zh-CN': 'Z-Image Turbo'
+  },
+  'cloudNodesLaunch.models.mageFlow': {
+    en: 'Mage Flow',
+    'zh-CN': 'Mage Flow'
+  },
+  'cloudNodesLaunch.models.mageFlowTurbo': {
+    en: 'Mage Flow Turbo',
+    'zh-CN': 'Mage Flow Turbo'
+  },
+  'cloudNodesLaunch.models.minimaxMusic3': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'cloudNodesLaunch.howItWorks.heading': {
+    en: 'What actually runs on our side',
+    'zh-CN': '我们这边究竟运行什么'
+  },
+  'cloudNodesLaunch.howItWorks.subheading': {
+    en: 'One curated workflow per node, pinned to a fixed model version.',
+    'zh-CN': '每个节点对应一套精选工作流，并锁定具体模型版本。'
+  },
+  'cloudNodesLaunch.howItWorks.1.label': {
+    en: 'Pinned versions, so a saved graph keeps its result.',
+    'zh-CN': '版本锁定，保存的工作流结果不变。'
+  },
+  'cloudNodesLaunch.howItWorks.2.label': {
+    en: 'Only the node’s inputs leave your machine.',
+    'zh-CN': '只有该节点的输入会离开你的机器。'
+  },
+  'cloudNodesLaunch.howItWorks.3.label': {
+    en: 'Results return as a normal IMAGE, VIDEO or AUDIO output.',
+    'zh-CN': '结果以普通的 IMAGE、VIDEO 或 AUDIO 输出返回。'
+  },
+  'cloudNodesLaunch.howItWorks.4.label': {
+    en: 'Charged by execution time, not per generation.',
+    'zh-CN': '按执行时间计费，而不是按次计费。'
+  },
+  'cloudNodesLaunch.why.heading': {
+    en: 'Maximum control.\n',
+    'zh-CN': '完全掌控。\n'
+  },
+  'cloudNodesLaunch.why.headingHighlight': {
+    en: 'Offload only the compute.',
+    'zh-CN': '只把算力交给我们。'
+  },
+  'cloudNodesLaunch.why.subtitle': {
+    en: 'Your graph, your nodes, your outputs. A Comfy Cloud node hands off a single model run and hands the result straight back.',
+    'zh-CN':
+      '你的工作流、你的节点、你的输出，始终属于你。Comfy Cloud 节点只把一次模型运行交出去，并把结果直接送回。'
+  },
+  'cloudNodesLaunch.why.1.title': {
+    en: 'Your workflow stays yours',
+    'zh-CN': '工作流始终是你的'
+  },
+  'cloudNodesLaunch.why.1.description': {
+    en: 'The graph you built, the nodes around it and the outputs you route onward all stay on your machine, exactly as they are.',
+    'zh-CN':
+      '你搭建的工作流、周围的节点，以及往下游输送的输出，都原封不动地留在你的机器上。'
+  },
+  'cloudNodesLaunch.why.2.title': {
+    en: 'Only the compute moves',
+    'zh-CN': '移动的只有算力'
+  },
+  'cloudNodesLaunch.why.2.description': {
+    en: 'A Cloud node sends the inputs for one model and returns the result. Everything else in the workflow keeps running locally.',
+    'zh-CN':
+      '云端节点只发送某一个模型所需的输入，并返回结果。工作流中的其他部分仍在本地运行。'
+  },
+  'cloudNodesLaunch.why.3.title': {
+    en: 'Reach for any model',
+    'zh-CN': '任何模型都能用上'
+  },
+  'cloudNodesLaunch.why.3.description': {
+    en: 'The newest open models run on our GPUs at full size, so what your hardware can do stops deciding what you can make.',
+    'zh-CN':
+      '最新的开源模型以完整规模在我们的 GPU 上运行，你能做什么不再取决于手上的硬件。'
+  },
+  'cloudNodesLaunch.why.4.title': {
+    en: 'One node, not a migration',
+    'zh-CN': '只是一个节点，而不是迁移'
+  },
+  'cloudNodesLaunch.why.4.description': {
+    en: 'You add a node to the graph you already have. Nothing else about your setup changes.',
+    'zh-CN': '你只是在已有的工作流里加一个节点，其他一切都不用改。'
+  },
+  'cloudNodesLaunch.faq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+  'cloudNodesLaunch.faq.1.q': {
+    en: 'Why are these marked beta?',
+    'zh-CN': '为什么这些节点标记为测试版？'
+  },
+  'cloudNodesLaunch.faq.1.a': {
+    en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability, runs are real and are billed the same as any other partner node.',
+    'zh-CN':
+      '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性无关，运行是真实的，计费方式与其他合作伙伴节点一致。'
+  },
+  'cloudNodesLaunch.faq.2.q': {
+    en: 'Do I need a Comfy Cloud subscription?',
+    'zh-CN': '我需要订阅 Comfy Cloud 吗？'
+  },
+  'cloudNodesLaunch.faq.2.a': {
+    en: 'No. These behave like every other partner node: an account and credits are enough. There is no plan floor.',
+    'zh-CN':
+      '不需要。它们与其他合作伙伴节点一样，只需账号和积分即可使用，没有套餐门槛。'
+  },
+  'cloudNodesLaunch.faq.3.q': {
+    en: 'Which models can I run?',
+    'zh-CN': '可以运行哪些模型？'
+  },
+  'cloudNodesLaunch.faq.3.a': {
+    en: 'Eight nodes at launch. Four text-to-image (Flux 2, Mage Flow, Mage Flow Turbo, Z-Image Turbo), three MiniMax H3 video nodes (text, image, and first-last frame to video), and MiniMax Music 3 for audio.',
+    'zh-CN':
+      '首发八个节点：四个文生图（Flux 2、Mage Flow、Mage Flow Turbo、Z-Image Turbo），三个 MiniMax H3 视频节点（文生视频、图生视频、首尾帧生视频），以及用于音频的 MiniMax Music 3。'
+  },
+  'cloudNodesLaunch.faq.4.q': {
+    en: 'What actually runs on your side?',
+    'zh-CN': '究竟有哪些内容在你们那边运行？'
+  },
+  'cloudNodesLaunch.faq.4.a': {
+    en: 'A curated workflow per node, pinned to an exact model version so a saved graph keeps producing the same thing. Your graph, prompts and inputs stay on your machine apart from what the node sends.',
+    'zh-CN':
+      '每个节点对应一套精选工作流，并锁定具体模型版本，因此保存的工作流会持续产出一致的结果。除节点发送的内容外，你的工作流、提示词与输入都保留在本机。'
+  },
+  'cloudNodesLaunch.faq.5.q': {
+    en: 'How is it billed?',
+    'zh-CN': '如何计费？'
+  },
+  'cloudNodesLaunch.faq.5.a': {
+    en: 'Per GPU-second in credits, shown on the node before you run. A short image generation is a few seconds; video is longer.',
+    'zh-CN':
+      '按 GPU 秒数以积分计费，运行前会在节点上显示。生成一张图通常只需几秒，视频则更久。'
+  },
+  'cloudNodesLaunch.faq.6.q': {
+    en: 'Can I use my own LoRAs or checkpoints?',
+    'zh-CN': '可以使用我自己的 LoRA 或模型吗？'
+  },
+  'cloudNodesLaunch.faq.6.a': {
+    en: 'Not yet. Each node exposes a fixed set of weights we host. Bringing your own is the obvious next step and is not in this first release.',
+    'zh-CN':
+      '暂时还不行。每个节点仅提供我们托管的固定权重集合。自带模型是后续的明确方向，但不在首个版本中。'
+  },
+  'cloudNodesLaunch.faq.7.q': {
+    en: 'Does this replace running locally?',
+    'zh-CN': '这会取代本地运行吗？'
+  },
+  'cloudNodesLaunch.faq.7.a': {
+    en: 'No, and it should not. Keep running what your machine handles well. These nodes exist for the models it cannot, without asking you to leave your workflow.',
+    'zh-CN':
+      '不会，也不应该。本机跑得动的继续在本机跑。这些节点是为跑不动的模型准备的，同时让你无需离开自己的工作流。'
+  },
+  'cloudNodesLaunch.closing.heading': {
+    en: 'Run the model, not the hardware',
+    'zh-CN': '专注模型，而不是硬件'
+  },
+  'cloudNodesLaunch.closing.subtitle': {
+    en: 'Update to v0.34.5 or later, search the node library for Comfy Cloud, and wire one in.',
+    'zh-CN':
+      '更新到 v0.34.5 或更高版本，在节点库中搜索 Comfy Cloud，然后连线使用。'
+  },
+  'footer.cloudNodes': {
+    en: 'Comfy Cloud Nodes',
+    'zh-CN': 'Comfy Cloud 节点'
   }
 } as const satisfies Record<
   string,

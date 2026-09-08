@@ -49,15 +49,14 @@ const createTask = (
 const createJobViewItem = (
   id: string,
   taskRef?: TaskItemImpl
-): JobListViewItem =>
-  ({
-    id,
-    title: `Job ${id}`,
-    meta: '',
-    state: 'completed',
-    showClear: false,
-    taskRef
-  }) as JobListViewItem
+): JobListViewItem => ({
+  id,
+  title: `Job ${id}`,
+  meta: '',
+  state: 'completed',
+  showClear: false,
+  taskRef
+})
 
 describe('useResultGallery', () => {
   it('collects only previewable outputs and preserves their order', async () => {

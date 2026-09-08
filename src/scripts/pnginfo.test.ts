@@ -17,8 +17,7 @@ import {
   importA1111
 } from './pnginfo'
 
-vi.mock('./api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./api')>()),
+vi.mock('./api', () => ({
   api: {
     getEmbeddings: vi.fn()
   }

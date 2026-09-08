@@ -161,11 +161,11 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     first.nodes[0].id = -1
-    first.definitions!.subgraphs![0].id = 'corrupted'
+    first.definitions!.subgraphs[0].id = 'corrupted'
 
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
-    expect(second.definitions!.subgraphs![0].id).toBe('123')
+    expect(second.definitions!.subgraphs[0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -565,7 +565,7 @@ describe('useSubgraphStore', () => {
         definitions: {
           subgraphs: [
             {
-              ...mockGraph.definitions?.subgraphs?.[0],
+              ...mockGraph.definitions.subgraphs[0],
               essentials_category: 'Image Tools'
             }
           ]

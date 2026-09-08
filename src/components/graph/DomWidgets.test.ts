@@ -12,7 +12,7 @@ import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
 
-type TestWidget = BaseDOMWidget<object | string>
+type TestWidget = BaseDOMWidget
 
 type WidgetUpdateCounters = {
   isVisibleCalls: number

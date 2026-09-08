@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/design-system",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Shared design system for ComfyUI Frontend",
   "homepage": "https://comfy.org",
   "license": "MIT",
@@ -15,12 +15,14 @@
   },
   "files": [
     "src/css",
-    "src/icons"
+    "src/icons",
+    "src/workspaceAvatar.ts"
   ],
   "type": "module",
   "exports": {
     "./css/*": "./src/css/*",
-    "./icons/*": "./src/icons/*"
+    "./icons/*": "./src/icons/*",
+    "./workspaceAvatar": "./src/workspaceAvatar.ts"
   },
   "publishConfig": {
     "access": "public"

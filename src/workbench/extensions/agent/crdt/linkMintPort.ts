@@ -82,7 +82,7 @@ interface SeveranceEntry {
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
-  return String(scope.owningGraphId) === String(scope.rootGraphId)
+  return scope.owningGraphId === scope.rootGraphId
 }
 
 /** Link ids are per root graph; two open workflows may both own link 41. */
@@ -90,7 +90,7 @@ function placementKey(
   scope: LinkScopeView,
   topology: LinkTopologyView
 ): string {
-  return `${String(scope.rootGraphId)}:${String(topology.id)}`
+  return `${scope.rootGraphId}:${String(topology.id)}`
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
@@ -107,7 +107,6 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     return shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
-      localProvenance: !deps.session.inRemoteApply(),
       teardown: deps.session.inTeardown()
     })
   }

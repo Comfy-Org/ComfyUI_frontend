@@ -3,6 +3,8 @@ import { marked } from 'marked'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import {
@@ -125,11 +127,11 @@ const proseClass = cn(
         v-else-if="segment.type === 'assets'"
         :assets="segment.assets"
       />
-      <div
+      <SanitizedHtml
         v-else
         :class="proseClass"
+        :html="segment.html"
         @click="onProseClick"
-        v-html="segment.html"
       />
     </template>
     <MediaLightbox

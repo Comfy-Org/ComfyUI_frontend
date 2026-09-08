@@ -98,7 +98,7 @@ function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
     subfolder: metadata?.subfolder ?? '',
-    type: 'output'
+    type: asset.tags.includes('temp') ? 'temp' : 'output'
   })
 }
 

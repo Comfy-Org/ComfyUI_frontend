@@ -10,7 +10,7 @@ const done = (id: string): AgentChatEvent =>
   zAgentWsEvent.parse({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
-  }) as AgentChatEvent
+  })
 
 const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId

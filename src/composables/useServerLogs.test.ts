@@ -80,7 +80,7 @@ describe('useServerLogs', () => {
         type: 'logs',
         entries: [{ m: 'Log message 1' }, { m: 'Log message 2' }]
       })
-    }) as CustomEvent<LogsWsMessage>
+    })
 
     eventCallback(mockEvent)
     await nextTick()
@@ -108,7 +108,7 @@ describe('useServerLogs', () => {
           { m: '' }
         ]
       })
-    }) as CustomEvent<LogsWsMessage>
+    })
 
     eventCallback(mockEvent)
     await nextTick()

@@ -85,7 +85,7 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     })
 
     const changed = await page.evaluate(() => {
-      const node = window.app!.graph!._nodes.find(
+      const node = window.app!.graph._nodes.find(
         (n) => n.widgets && n.widgets.length > 0
       )
       const widget = node?.widgets?.[0]
