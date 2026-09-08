@@ -28,12 +28,18 @@ const electron = {
   getPlatform: vi.fn(() => 'darwin')
 }
 
+const errorReporter = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/distribution/types', () => ({
   isDesktop: true
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => settingStore
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: errorReporter
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -122,6 +128,88 @@ describe('DesktopCloudNotificationController', () => {
 
     dialogOpen.resolve()
     await vi.advanceTimersByTimeAsync(0)
+
+    unmount()
+  })
+
+  it('reports a settings load failure without scheduling the notification', async () => {
+    const error = new Error('load failed')
+    settingStore.load.mockRejectedValue(error)
+
+    const { unmount } = render(DesktopCloudNotificationController)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(errorReporter).toHaveBeenCalledWith(error, {
+      errorType: 'cloud_notification_settings_load_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'cloud',
+        operation: 'load',
+        outcome: 'failed',
+        assert_mode: 'soft'
+      },
+      context: { platform: 'darwin', is_disposed: false },
+      level: 'error'
+    })
+    expect(settingStore.set).not.toHaveBeenCalled()
+    expect(dialogService.showCloudNotification).not.toHaveBeenCalled()
+
+    unmount()
+  })
+
+  it('reports a notification failure and resets its shown state', async () => {
+    const error = new Error('show failed')
+    dialogService.showCloudNotification.mockRejectedValue(error)
+
+    const { unmount } = render(DesktopCloudNotificationController)
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(errorReporter).toHaveBeenCalledWith(error, {
+      errorType: 'cloud_notification_show_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'cloud',
+        operation: 'render',
+        outcome: 'failed',
+        assert_mode: 'soft'
+      },
+      context: { platform: 'darwin', is_disposed: false },
+      level: 'error'
+    })
+    expect(settingStore.set).toHaveBeenLastCalledWith(
+      'Comfy.Desktop.CloudNotificationShown',
+      false
+    )
+
+    unmount()
+  })
+
+  it('reports a failure to reset the notification shown state', async () => {
+    const showError = new Error('show failed')
+    const resetError = new Error('reset failed')
+    dialogService.showCloudNotification.mockRejectedValue(showError)
+    settingStore.set.mockImplementation(
+      async (_key: string, value: boolean) => {
+        if (!value) throw resetError
+        settingState.shown = value
+      }
+    )
+
+    const { unmount } = render(DesktopCloudNotificationController)
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(errorReporter).toHaveBeenNthCalledWith(2, resetError, {
+      errorType: 'cloud_notification_state_reset_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'cloud',
+        operation: 'save',
+        outcome: 'failed',
+        assert_mode: 'soft'
+      },
+      context: { platform: 'darwin', is_disposed: false },
+      level: 'error'
+    })
 
     unmount()
   })

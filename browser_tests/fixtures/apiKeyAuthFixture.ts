@@ -109,7 +109,8 @@ export const apiKeyAuthFixture = base.extend<{
         occupied_seats: 1,
         subscription_status: 'active',
         subscription_tier: 'TEAM',
-        team_credit_stop: null
+        team_credit_stop: null,
+        scheduled_change: null
       } satisfies BillingStatusResponse)
     )
     await page.route('**/api/billing/balance', (route) =>

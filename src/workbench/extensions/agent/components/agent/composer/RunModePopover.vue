@@ -14,7 +14,7 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
+import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
 import {
   DEFAULT_CREDIT_LIMIT,
   useAgentRunModeStore
@@ -27,7 +27,7 @@ const toast = useToastStore()
 
 const open = ref(false)
 const saving = ref(false)
-const draftMode = ref<AgentRunMode>(store.mode)
+const draftMode = ref<AgentRunModeValue>(store.mode)
 const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
 
 function onOpenChange(next: boolean): void {
@@ -76,7 +76,7 @@ const saveable = computed(
   () => dirty.value && limitValid.value && !saving.value
 )
 
-const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
+const TRIGGER_LABEL_KEYS: Record<AgentRunModeValue, string> = {
   ask_approval: 'agent.runModeTriggerAsk',
   auto: 'agent.runModeTriggerAuto',
   auto_limited: 'agent.runModeTriggerAutoLimit'
@@ -84,7 +84,7 @@ const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
 
 const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
 
-const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
+const TRIGGER_TOOLTIP_KEYS: Record<AgentRunModeValue, string> = {
   ask_approval: 'agent.runModeTriggerAskTooltip',
   auto: 'agent.runModeTriggerAutoTooltip',
   auto_limited: 'agent.runModeTriggerAutoLimitTooltip'
@@ -93,7 +93,7 @@ const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
 const triggerTooltip = computed(() => t(TRIGGER_TOOLTIP_KEYS[store.mode]))
 
 const options: {
-  mode: AgentRunMode
+  mode: AgentRunModeValue
   icon: string
   title: string
   description: string

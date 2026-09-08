@@ -10,6 +10,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
+import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 
 import { resolveConcretePromotedWidget } from './resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
@@ -154,6 +155,13 @@ export function promotedInputWidget(
 export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
   return node.inputs.flatMap((input) => {
     const widget = promotedInputWidget(node, input)
-    return widget ? [widget] : []
+    if (!widget) return []
+    const visibility = input.widgetId
+      ? useWidgetValueStore().getWidgetVisibility(input.widgetId)
+      : undefined
+    return !visibility ||
+      isWidgetVisibleOnSurface(visibility, 'panel', { showAdvanced: true })
+      ? [widget]
+      : []
   })
 }
