@@ -512,6 +512,7 @@ export const zSubscribeResponse = z.object({
 export const zSubscribeRequest = z.object({
   billing_cycle: z.enum(['monthly', 'yearly']).optional(),
   cancel_url: z.string().optional(),
+  checkout_attempt_id: z.string().optional(),
   confirm_reactivation: z.boolean().optional(),
   confirmation_token: z.string().optional(),
   idempotency_key: z.string().optional(),
@@ -568,6 +569,15 @@ export const zSecretProvidersResponse = z.object({
  */
 export const zSecretListResponse = z.object({
   data: z.array(zSecretResponse)
+})
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export const zScheduledPlanChange = z.object({
+  effective_at: z.string().datetime(),
+  plan_slug: z.string(),
+  team_credit_stop: zTeamCreditStopSummary.nullable()
 })
 
 export const zSavedPaymentMethod = z.object({
@@ -871,6 +881,7 @@ export const zPreviewSubscribeResponse = z.object({
  * Request body for previewing the cost of a plan subscription change.
  */
 export const zPreviewSubscribeRequest = z.object({
+  checkout_attempt_id: z.string().optional(),
   plan_slug: z.string(),
   promotion_code: z.string().optional(),
   team_credit_stop_id: z.string().optional()
@@ -2033,6 +2044,7 @@ export const zCreateTopupRequest = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  checkout_attempt_id: z.string().optional(),
   idempotency_key: z.string().optional()
 })
 
@@ -2151,6 +2163,7 @@ export const zBillingStatusResponse = z.object({
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
+  scheduled_change: zScheduledPlanChange.nullable(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -2514,11 +2527,27 @@ export const zAgentPostMessageRequest = z.object({
 })
 
 /**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ */
+export const zAgentPendingAsk = z.object({
+  allow_other: z.boolean(),
+  ask_id: z.string(),
+  context: z.record(z.unknown()).optional(),
+  kind: z.enum(['ask_user', 'run_approval']),
+  max_selections: z.number().int(),
+  message_id: z.string(),
+  min_selections: z.number().int(),
+  options: z.array(z.record(z.unknown())),
+  prompt: z.string()
+})
+
+/**
  * A persisted message in an agent thread.
  */
 export const zAgentMessage = z.object({
   content: z.record(z.unknown()).optional(),
   id: z.string(),
+  pending_ask: zAgentPendingAsk.optional(),
   role: z.enum(['user', 'assistant', 'tool', 'system']),
   seq: z.number().int(),
   status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
@@ -2680,6 +2709,16 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+/**
+ * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
+ */
+export const zAgentLlmMessagesBody = z.record(z.unknown())
+
+/**
+ * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
+ */
+export const zAgentLlmMessagesResponse = z.string()
 
 /**
  * The caller's run mode (the saved choice, or the default).
