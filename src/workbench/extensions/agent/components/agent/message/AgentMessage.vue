@@ -20,11 +20,11 @@ import MessageFeedback from './MessageFeedback.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../../services/agent/agentPaywallPresentation'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
-} from '../../../services/agent/agentPaywallPresentation'
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 const {
   message,

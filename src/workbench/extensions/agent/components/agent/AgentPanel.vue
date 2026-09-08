@@ -17,11 +17,11 @@ import type { ActiveTab } from '../../types/activeTab'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../services/agent/agentPaywallPresentation'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
-} from '../../services/agent/agentPaywallPresentation'
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 

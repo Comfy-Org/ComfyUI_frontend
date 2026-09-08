@@ -7,11 +7,11 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../services/agent/agentPaywallPresentation'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
-} from '../../services/agent/agentPaywallPresentation'
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
 

@@ -3,11 +3,11 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '../../../services/agent/agentPaywallPresentation'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
-} from '../../../services/agent/agentPaywallPresentation'
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 const { presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION } = defineProps<{
   presentation?: AgentPaywallPresentation
