@@ -2,10 +2,12 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { createUuidv4 } from '@/utils/uuid'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
+  toTurnId,
   zAgentAdmissionError
 } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
@@ -124,9 +126,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answeringAskIds.value = next
   }
 
-  let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
-    return `local-error-${++localErrorCount}` as TurnId
+    return toTurnId(`local-error-${createUuidv4()}`)
   }
 
   let unsubscribe: (() => void) | null = null
