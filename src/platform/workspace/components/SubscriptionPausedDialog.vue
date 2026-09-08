@@ -6,15 +6,7 @@
       class="flex h-12 items-center gap-2 border-b border-border-default p-4"
     >
       <p class="m-0 min-w-0 flex-1 font-inter text-sm text-base-foreground">
-        {{
-          $t(
-            status === 'payment_failed'
-              ? canManage
-                ? 'subscription.paymentRecovery.paymentFailedOwnerTitle'
-                : 'subscription.paymentRecovery.paymentFailedMemberTitle'
-              : 'subscription.paymentRecovery.title'
-          )
-        }}
+        {{ $t(titleKey) }}
       </p>
       <button
         type="button"
@@ -28,17 +20,7 @@
 
     <div class="p-4">
       <p class="m-0 font-inter text-sm text-muted-foreground">
-        {{
-          $t(
-            canManage
-              ? status === 'payment_failed'
-                ? 'subscription.paymentRecovery.paymentFailedOwnerDescription'
-                : 'subscription.paymentRecovery.ownerDescription'
-              : status === 'payment_failed'
-                ? 'subscription.paymentRecovery.paymentFailedMemberDescription'
-                : 'subscription.paymentRecovery.memberDescription'
-          )
-        }}
+        {{ $t(descriptionKey) }}
       </p>
     </div>
 
@@ -66,6 +48,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 
 const {
@@ -81,4 +65,22 @@ const {
   onClose: () => void
   onUpdatePayment: () => void
 }>()
+
+const titleKey = computed(() =>
+  status === 'payment_failed'
+    ? canManage
+      ? 'subscription.paymentRecovery.paymentFailedOwnerTitle'
+      : 'subscription.paymentRecovery.paymentFailedMemberTitle'
+    : 'subscription.paymentRecovery.title'
+)
+
+const descriptionKey = computed(() =>
+  canManage
+    ? status === 'payment_failed'
+      ? 'subscription.paymentRecovery.paymentFailedOwnerDescription'
+      : 'subscription.paymentRecovery.ownerDescription'
+    : status === 'payment_failed'
+      ? 'subscription.paymentRecovery.paymentFailedMemberDescription'
+      : 'subscription.paymentRecovery.memberDescription'
+)
 </script>
