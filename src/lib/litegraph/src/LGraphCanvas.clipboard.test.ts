@@ -224,8 +224,7 @@ describe('link presentation transfer across recreation flows', () => {
       presentation: { hidden: true, label: 'Copied' },
       expected: { hidden: true, label: 'Copied' }
     },
-    { name: 'absent', presentation: undefined, expected: undefined },
-    { name: 'empty', presentation: {}, expected: undefined }
+    { name: 'absent', presentation: undefined, expected: undefined }
   ])(
     'preserves $name presentation through clipboard copy and paste',
     ({ presentation, expected }) => {

@@ -36,7 +36,12 @@ import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
+import {
+  compareNodeIds,
+  parseNodeId,
+  serializeNodeId,
+  toNodeId
+} from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
@@ -62,6 +67,7 @@ import {
   showLink
 } from './canvas/linkVisibility'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
+import { queryRenderedLinkSegmentsAtPoint } from './canvas/queryRenderedLinkSegmentsAtPoint'
 import { strokeShape } from './draw'
 import { defineDeprecatedProperty } from './utils/feedback'
 import {
@@ -2597,38 +2603,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
       }
 
-      // Links - paths of links & reroutes
-      // Set the width of the line for isPointInStroke checks
-      const { lineWidth } = this.ctx
-      this.ctx.lineWidth = this.connections_width + 7
-      const dpi = Math.max(window.devicePixelRatio, 1)
-
-      // Try layout store for segment hit testing first (more precise)
-      const hitSegment = layoutStore.queryLinkSegmentAtPoint({ x, y }, this.ctx)
+      const hitSegments = queryRenderedLinkSegmentsAtPoint(this, x, y)
 
       for (const linkSegment of this.renderedPaths) {
         const centre = linkSegment._pos
-        // Check if this link segment was hit
-        let isLinkHit =
-          hitSegment &&
-          linkSegment.id ===
-            (linkSegment instanceof Reroute
-              ? hitSegment.rerouteId
-              : hitSegment.linkId)
-
-        if (!isLinkHit && linkSegment.path) {
-          // Fallback to direct path hit testing if not found in layout store
-          isLinkHit = this.ctx.isPointInStroke(
-            linkSegment.path,
-            x * dpi,
-            y * dpi
-          )
-        }
+        const isLinkHit = hitSegments.has(linkSegment)
 
         // If we shift click on a link then start a link from that input
         if ((e.shiftKey || e.altKey) && isLinkHit) {
-          this.ctx.lineWidth = lineWidth
-
           if (e.shiftKey && !e.altKey) {
             linkConnector.dragFromLinkSegment(graph, linkSegment)
             this._linkConnectorDrop()
@@ -2647,8 +2629,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this.linkMarkerShape !== LinkMarkerShape.None &&
           isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)
         ) {
-          this.ctx.lineWidth = lineWidth
-
           pointer.onClick = () => this.showLinkMenu(linkSegment, e)
           pointer.onDragStart = () => (this.dragging_canvas = true)
           pointer.finally = () => (this.dragging_canvas = false)
@@ -2658,9 +2638,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           return
         }
       }
-
-      // Restore line width
-      this.ctx.lineWidth = lineWidth
 
       // Groups
       const group = graph.getGroupOnPos(x, y)
@@ -4098,15 +4075,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           const graph = this.graph
           const link = graph?.links.get(linkId)
-          if (graph && link) {
-            serialisable.links.push({
-              ...link.asSerialisable(),
-              ...useLinkPresentationStore().getPresentation(
-                graphScopeOf(graph),
-                linkId
-              )
-            })
-          }
+          if (!graph || !link) continue
+
+          serialisable.links.push({
+            ...link.asSerialisable(),
+            ...useLinkPresentationStore().getPresentation(
+              graphScopeOf(graph),
+              linkId
+            )
+          })
         }
 
         // Find all unique referenced subgraphs
@@ -6312,7 +6289,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     hiddenLinks.sort(
       (first, second) =>
-        String(first.origin_id).localeCompare(String(second.origin_id)) ||
+        compareNodeIds(first.origin_id, second.origin_id) ||
         first.origin_slot - second.origin_slot ||
         first.id - second.id
     )

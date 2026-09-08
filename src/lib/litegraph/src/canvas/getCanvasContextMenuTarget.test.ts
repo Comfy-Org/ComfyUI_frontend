@@ -161,7 +161,8 @@ describe('getCanvasContextMenuTarget', () => {
     expect(target.link).toBe(link)
   })
 
-  it('falls back to current-frame paths when the layout store has no geometry', () => {
+  it.for([0.5, 2])('falls back to current-frame paths at DPI %s', (dpi) => {
+    vi.stubGlobal('devicePixelRatio', dpi)
     const link = createLink(4)
     link.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(link)
@@ -169,8 +170,23 @@ describe('getCanvasContextMenuTarget', () => {
 
     const target = resolve()
 
-    expect(isPointInStrokeMock).toHaveBeenCalledWith(link.path, 10, 20)
+    const scale = Math.max(dpi, 1)
+    expect(isPointInStrokeMock).toHaveBeenCalledWith(
+      link.path,
+      10 * scale,
+      20 * scale
+    )
     expect(target.link).toBe(link)
+    expect(canvas.ctx.lineWidth).toBe(3)
+  })
+
+  it('restores stroke width when layout hit testing throws', () => {
+    mockQueryLinkSegmentAtPoint.mockImplementation(() => {
+      throw new Error('Layout unavailable')
+    })
+
+    expect(resolve).toThrow('Layout unavailable')
+    expect(canvas.ctx.lineWidth).toBe(3)
   })
 
   it('returns a hidden link hit on its badge', () => {

@@ -2585,6 +2585,9 @@ export class LGraph
       const outerPresentation = outerLink
         ? presentationStore.getPresentation(scope, outerLink.id)
         : undefined
+      const restoredPresentation = outerLink
+        ? getAgreedLinkPresentation([presentation, outerPresentation])
+        : presentation
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2594,9 +2597,7 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        ...(outerLink
-          ? getAgreedLinkPresentation([presentation, outerPresentation])
-          : presentation)
+        ...restoredPresentation
       })
     }
     this.remove(subgraphNode)

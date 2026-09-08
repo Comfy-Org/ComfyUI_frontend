@@ -120,8 +120,6 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.nextFrame()
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'link-hidden-after-reload.png'
-    )
+    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
   })
 })

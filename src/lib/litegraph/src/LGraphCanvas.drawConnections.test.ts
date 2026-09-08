@@ -628,8 +628,9 @@ describe('drawConnections hidden links', () => {
     LiteGraph.vueNodesMode = false
   })
 
-  function createHiddenLink(): LLink {
+  function createHiddenLink(sourceId?: string): LLink {
     const sourceNode = new LGraphNode('Source')
+    if (sourceId !== undefined) sourceNode.id = toNodeId(sourceId)
     sourceNode.pos = [0, 100]
     sourceNode.size = [150, 60]
     sourceNode.addOutput('out', 'STRING')
@@ -666,6 +667,20 @@ describe('drawConnections hidden links', () => {
       link.id
     )
     expect(ctx.fillText).toHaveBeenCalledTimes(2)
+  })
+
+  it.for([
+    ['10', '2'],
+    ['ä', 'z']
+  ])('orders overlapping badges for node IDs %s and %s', ([later, earlier]) => {
+    createHiddenLink(later)
+    const firstLink = createHiddenLink(earlier)
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(firstLink))).toBe(
+      firstLink.id
+    )
   })
 
   it('keeps offscreen badge rows for stable stacking but skips their paint', () => {
