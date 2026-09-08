@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -59,11 +60,10 @@ function project(value: unknown): unknown {
       ? source.roles.map((role) => {
           if (typeof role !== 'object' || role === null) return role
           const { extras, ...rest } = role as Record<string, unknown>
-          // Keep `extras` only where the provider actually populated it, so
-          // 288 roles do not each carry an empty array.
-          return Array.isArray(extras) && extras.length > 0
-            ? { ...rest, extras }
-            : rest
+          return extras === undefined ||
+            (Array.isArray(extras) && extras.length === 0)
+            ? rest
+            : { ...rest, extras }
         })
       : source.roles
   }
@@ -78,7 +78,10 @@ export function buildWorkshopCatalog(input: unknown): WorkshopModelEntry[] {
   const catalog = input.map((value, index) => {
     const parsed = workshopModelSchema.safeParse(project(value))
     if (!parsed.success) {
-      const id = (value as { id?: unknown })?.id
+      const id =
+        typeof value === 'object' && value !== null && !Array.isArray(value)
+          ? (value as Record<string, unknown>).id
+          : undefined
       throw new Error(
         `Invalid partner model at index ${index}${typeof id === 'string' ? ` (${id})` : ''}: ${parsed.error.issues
           .map((issue) => `${issue.path.join('.')} ${issue.message}`)
@@ -143,4 +146,7 @@ async function writeCatalog(
   if (previousManifest !== manifest) await writeFile(MANIFEST, manifest)
 }
 
-if (process.argv[1] === import.meta.filename) await main()
+const invoked = process.argv[1]
+if (invoked && realpathSync(invoked) === realpathSync(import.meta.filename)) {
+  await main()
+}
