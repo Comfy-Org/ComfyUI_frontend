@@ -9,8 +9,23 @@ const workflow = parseDocument(
 )
 const steps = workflow.getIn(['jobs', 'publish_types_manual', 'steps'], true)
 if (!isSeq(steps)) throw new Error('Release steps missing')
-const validation = steps.items[0]
-if (!isMap(validation)) throw new Error('Input validation must run first')
+const validationIndex = steps.items.findIndex(
+  (step) => isMap(step) && step.get('name') === 'Validate inputs'
+)
+const checkoutIndex = steps.items.findIndex(
+  (step) =>
+    isMap(step) &&
+    String(step.get('uses') ?? '').startsWith('actions/checkout@')
+)
+if (
+  validationIndex < 0 ||
+  checkoutIndex < 0 ||
+  validationIndex >= checkoutIndex
+) {
+  throw new Error('Input validation must run before checkout')
+}
+const validation = steps.items[validationIndex]
+if (!isMap(validation)) throw new Error('Input validation step missing')
 const script = String(validation.get('run'))
 
 describe('release input validation', () => {
