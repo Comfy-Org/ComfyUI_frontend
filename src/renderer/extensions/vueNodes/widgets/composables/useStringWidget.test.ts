@@ -15,7 +15,7 @@ const { canvasMock } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, canvas: canvasMock }
 }))
 const { widgetStoreMock } = vi.hoisted(() => {
@@ -40,10 +40,10 @@ const { widgetStoreMock } = vi.hoisted(() => {
     }
   }
 })
-vi.mock('@/stores/widgetValueStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => widgetStoreMock
 }))
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: () => false })
 }))
 

@@ -1,14 +1,11 @@
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
-import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
   SearchPacksResult
 } from '@/types/searchServiceTypes'
 import { toError } from '@/utils/errorUtil'
-
-type RegistryNodePack = components['schemas']['Node']
 
 interface ProviderState {
   provider: NodePackSearchProvider
@@ -188,38 +185,8 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     }
   }
 
-  /**
-   * Get the sort value for a pack.
-   * @example
-   * const pack = {
-   *   id: '123',
-   *   name: 'Test Pack',
-   *   downloads: 100
-   * }
-   * const sortValue = getSortValue(pack, 'downloads')
-   * console.log(sortValue) // 100
-   */
-  const getSortValue = (
-    pack: RegistryNodePack,
-    sortField: string
-  ): string | number => {
-    return getActiveProvider().getSortValue(pack, sortField)
-  }
-
-  /**
-   * Get the sortable fields for the active provider.
-   * @example
-   * const sortableFields = getSortableFields()
-   * console.log(sortableFields) // ['downloads', 'created', 'updated', 'publisher', 'name']
-   */
-  const getSortableFields = () => {
-    return getActiveProvider().getSortableFields()
-  }
-
   return {
     searchPacks,
-    clearSearchCache,
-    getSortValue,
-    getSortableFields
+    clearSearchCache
   }
 }
