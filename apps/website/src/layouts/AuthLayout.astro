@@ -2,6 +2,7 @@
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import AuthHeroCarousel from '../components/auth/AuthHeroCarousel.vue'
+import AuthToast from '../components/auth/AuthToast.vue'
 import { t } from '../i18n/translations'
 import type { Locale } from '../i18n/translations'
 
@@ -149,6 +150,8 @@ const gtmEnabled = import.meta.env.PROD
         </div>
       </div>
     </div>
+
+    <AuthToast {locale} client:load />
 
     <Analytics />
 

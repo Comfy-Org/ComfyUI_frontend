@@ -206,6 +206,11 @@ const translations = {
     'zh-CN': '需要帮助？',
     ja: 'ヘルプが必要ですか？'
   },
+  'auth.toast.close': {
+    en: 'Close',
+    'zh-CN': '关闭',
+    ja: '閉じる'
+  },
   'auth.hero.carouselLabel': {
     en: 'Featured models',
     'zh-CN': '精选模型',

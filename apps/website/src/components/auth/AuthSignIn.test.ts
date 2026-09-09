@@ -3,7 +3,11 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
+
+import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import AuthSignIn from './AuthSignIn.vue'
+import AuthToast from './AuthToast.vue'
 
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
@@ -11,7 +15,6 @@ const handles = vi.hoisted(() => ({
   session: undefined as { value: unknown } | undefined,
   chunkFails: false,
   ensureFresh: vi.fn(),
-  signOut: vi.fn(),
   google: vi.fn(),
   github: vi.fn(),
   emailSignIn: vi.fn(),
@@ -53,7 +56,6 @@ vi.mock('../../config/workshop-firebase', () => {
     signInWorkshopWithGitHub: handles.github,
     signInWorkshopWithEmail: handles.emailSignIn,
     signUpWorkshopWithEmail: handles.emailSignUp,
-    signOutWorkshop: handles.signOut,
     isWorkshopProvisioningError: handles.isProvisioningError
   }
 })
@@ -68,11 +70,14 @@ vi.mock('../../config/workshop-session-state', async () => {
     useWorkshopSession: () => ({
       user,
       session,
-      ensureFresh: handles.ensureFresh,
-      signOut: handles.signOut
+      ensureFresh: handles.ensureFresh
     })
   }
 })
+
+const { messages: toasts } = useAuthToasts()
+const replace = vi.fn<(url: string | URL) => void>()
+const assign = vi.fn<(url: string | URL) => void>()
 
 beforeEach(() => {
   handles.flag!.value = true
@@ -83,15 +88,24 @@ beforeEach(() => {
     status: 'ok',
     session: { token: 'workspace-jwt' }
   })
-  handles.signOut.mockReset().mockResolvedValue(undefined)
   handles.google.mockReset()
   handles.github.mockReset()
   handles.emailSignIn.mockReset()
   handles.emailSignUp.mockReset()
   handles.turnstileReset.mockReset()
   handles.isProvisioningError.mockReset().mockReturnValue(false)
+  removeAllToasts()
   window.history.replaceState({}, '', '/')
+  replace.mockReset()
+  assign.mockReset()
+  vi.spyOn(window.location, 'replace').mockImplementation(replace)
+  vi.spyOn(window.location, 'assign').mockImplementation(assign)
 })
+
+const clickGoogle = () =>
+  userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: /continue with google/i }))
 
 describe('AuthSignIn', () => {
   it('does not render sign-in controls when the auth flag is off', () => {
@@ -112,57 +126,114 @@ describe('AuthSignIn', () => {
     ).toBeTruthy()
   })
 
-  it('keeps a signed-in user on the signed-in screen when sign-out fails', async () => {
-    handles.signOut.mockRejectedValue(new Error('network'))
+  it('leaves for the homepage once a fresh sign-in has a session', async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
     render(AuthSignIn)
+
+    await clickGoogle()
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(handles.ensureFresh).toHaveBeenCalledWith(
+      expect.objectContaining({ uid: 'user-1' })
+    )
+  })
+
+  it('returns to the requested page instead of the homepage', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    render(AuthSignIn)
+
+    await clickGoogle()
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith('/workshop/models/example/')
+    )
+  })
+
+  it('sends an already-signed-in visitor away without a panel, minting without the readonly proxy', async () => {
+    render(AuthSignIn)
+
     handles.user!.value = {
       uid: 'user-1',
       email: 'a@b.co',
       displayName: null
     }
 
-    await screen.findByText(/a@b\.co/)
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: 'Sign out' }))
-
-    await waitFor(() => expect(handles.signOut).toHaveBeenCalled())
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
     expect(
-      screen.getByText(/a@b\.co/),
-      'a failed sign-out keeps the user on the signed-in screen'
-    ).toBeTruthy()
-    expect(screen.queryByRole('alert')).toBeNull()
+      handles.ensureFresh,
+      'the session client already holds the raw current user; a readonly proxy would drop Firebase token writes'
+    ).toHaveBeenCalledWith()
+    expect(screen.queryByText(/a@b\.co/)).toBeNull()
   })
 
-  it('signs in through the Google button and shows the signed-in identity', async () => {
-    handles.google.mockResolvedValue({
-      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
-    })
-    render(AuthSignIn)
-
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: /continue with google/i }))
-
-    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
-    expect(handles.ensureFresh).toHaveBeenCalledWith(
-      expect.objectContaining({ uid: 'user-1' })
-    )
-    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
-  })
-
-  it('surfaces an error when the GitHub sign-in fails', async () => {
+  it('raises a warning toast when the visitor dismisses the pop-up', async () => {
     handles.github.mockRejectedValue({
       code: 'auth/popup-closed-by-user',
       message: 'x'
     })
     render(AuthSignIn)
+    render(AuthToast)
 
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: /continue with github/i }))
 
-    expect(await screen.findByRole('alert')).toBeTruthy()
+    const alert = await screen.findByRole('alert')
+    expect(alert.getAttribute('data-severity')).toBe('warn')
+    expect(alert.textContent).toContain('Warning')
+    expect(alert.textContent).toContain(
+      AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
+    )
+    expect(toasts.value).toHaveLength(1)
+  })
+
+  it('raises one sticky error toast with the collapsed credential copy when an email sign-in fails', async () => {
+    handles.emailSignIn.mockRejectedValue({
+      code: 'auth/user-not-found',
+      message: 'x'
+    })
+    render(AuthSignIn)
+    render(AuthToast)
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(
+      screen.getByRole('button', { name: /sign in with email/i })
+    )
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.getAttribute('data-severity')).toBe('error')
+    expect(
+      alert.textContent,
+      'an unknown address must read exactly like a wrong password'
+    ).toContain(AUTH_ERROR_MESSAGES['auth/invalid-credential'])
+    expect(toasts.value[0].life).toBeUndefined()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('names this host in the unauthorized-domain toast', async () => {
+    handles.google.mockRejectedValue({
+      code: 'auth/unauthorized-domain',
+      message: 'x'
+    })
+    render(AuthSignIn)
+    render(AuthToast)
+
+    await clickGoogle()
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      `Your domain ${window.location.hostname} is not authorized`
+    )
   })
 
   it('discards a spent Turnstile token when email signup fails', async () => {
@@ -207,8 +278,6 @@ describe('AuthSignIn', () => {
   })
 
   it('carries a safe return destination into the forgot-password flow on click', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
     window.history.replaceState(
       {},
       '',
@@ -241,7 +310,7 @@ describe('AuthSignIn', () => {
     ).toBe('/forgot-password/')
   })
 
-  it('keeps the signed-in identity visible when provisioning fails', async () => {
+  it('stays on the page with an inline message when provisioning fails', async () => {
     const failure = {
       user: { email: 'user@example.com', displayName: null }
     }
@@ -249,17 +318,16 @@ describe('AuthSignIn', () => {
     handles.google.mockRejectedValue(failure)
     render(AuthSignIn)
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await clickGoogle()
 
-    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
-    expect(screen.getByRole('alert').textContent).toContain(
+    expect((await screen.findByRole('alert')).textContent).toContain(
       'account setup did not finish'
     )
+    expect(replace).not.toHaveBeenCalled()
+    expect(toasts.value).toHaveLength(0)
   })
 
-  it('keeps sign-out reachable and offers retry when session minting fails', async () => {
+  it('offers a retry inline when session minting fails, then leaves once it succeeds', async () => {
     handles.google.mockResolvedValue({
       user: { uid: 'user-1', email: 'user@example.com', displayName: null }
     })
@@ -269,28 +337,17 @@ describe('AuthSignIn', () => {
     })
     render(AuthSignIn)
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await clickGoogle()
 
-    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Retry session' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
-  })
+    const retry = await screen.findByRole('button', { name: 'Retry session' })
+    expect(screen.getByRole('alert').textContent).toContain(
+      'workspace session could not be started'
+    )
+    expect(replace).not.toHaveBeenCalled()
 
-  it('mints a restored visitor without handing over the readonly user proxy', async () => {
-    render(AuthSignIn)
-    handles.user!.value = {
-      uid: 'user-1',
-      email: 'a@b.co',
-      displayName: null
-    }
+    await userEvent.setup().click(retry)
 
-    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
-    expect(
-      handles.ensureFresh,
-      'the session client already holds the raw current user; a readonly proxy would drop Firebase token writes'
-    ).toHaveBeenCalledWith()
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
   })
 
   it('clears the session-failure banner once a later refresh recovers', async () => {
@@ -303,9 +360,7 @@ describe('AuthSignIn', () => {
     })
     render(AuthSignIn)
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await clickGoogle()
     await screen.findByRole('button', { name: 'Retry session' })
 
     handles.session!.value = { token: 'workspace-jwt' }
@@ -321,6 +376,9 @@ describe('AuthSignIn', () => {
     handles.chunkFails = true
     vi.resetModules()
     const { default: FreshAuthSignIn } = await import('./AuthSignIn.vue')
+    const { useAuthToasts: useFreshToasts } =
+      await import('../../config/auth-toast-state')
+    const fresh = useFreshToasts().messages
     handles.flag!.value = true
     try {
       render(FreshAuthSignIn)
@@ -329,11 +387,8 @@ describe('AuthSignIn', () => {
       }) as HTMLButtonElement
       await userEvent.setup().click(button)
 
-      await waitFor(() =>
-        expect(screen.getByRole('alert').textContent).toMatch(
-          /something went wrong/i
-        )
-      )
+      await waitFor(() => expect(fresh.value).toHaveLength(1))
+      expect(fresh.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
       expect(
         button.disabled,
         'a failed chunk load must not strand the page in pending'
