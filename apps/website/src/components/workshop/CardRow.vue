@@ -37,13 +37,14 @@ onMounted(() => void nextTick(measure))
 useResizeObserver(row, measure)
 useMutationObserver(row, measure, { childList: true, subtree: true })
 
-const arrowClass = (disabled: boolean) =>
-  cn(
-    'focus-visible:ring-primary-comfy-yellow/50 bg-page/70 grid size-9 place-items-center rounded-lg border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3',
-    disabled
-      ? 'cursor-not-allowed opacity-30'
-      : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow cursor-pointer'
-  )
+// The arrows ride over the row rather than under it: a strip of their own
+// would put a band of empty page between every two sliders.
+const arrowClass =
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow bg-page/80 pointer-events-auto absolute top-1/3 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3'
+
+// The cards run under the arrow instead of stopping dead behind it.
+const fadeClass =
+  'pointer-events-none absolute inset-y-0 z-0 w-16 from-page to-transparent sm:w-24'
 </script>
 
 <template>
@@ -55,41 +56,53 @@ const arrowClass = (disabled: boolean) =>
       </div>
     </div>
 
-    <ul
-      ref="row"
-      class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
-      @scroll="measure"
-    >
-      <slot />
-    </ul>
+    <div class="relative">
+      <ul
+        ref="row"
+        class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
+        @scroll="measure"
+      >
+        <slot />
+      </ul>
 
-    <!-- The link to everything sits in the heading, so the arrows take the
-      other end of the row rather than crowding it. -->
-    <div
-      v-if="!atStart || !atEnd"
-      class="mt-4 flex justify-end gap-2 max-sm:hidden"
-      data-testid="card-row-arrows"
-    >
-      <button
-        type="button"
-        :disabled="atStart"
-        :aria-label="t('workshop.sections.scrollBack', locale)"
-        :class="arrowClass(atStart)"
-        data-testid="card-row-prev"
-        @click="page(-1)"
+      <!-- An arrow is only there while it has somewhere to go, so the row
+        never carries a control it cannot honour. -->
+      <div
+        v-if="!atStart || !atEnd"
+        class="pointer-events-none absolute inset-0"
+        data-testid="card-row-arrows"
       >
-        <ChevronLeft class="size-4" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        :disabled="atEnd"
-        :aria-label="t('workshop.sections.scrollForward', locale)"
-        :class="arrowClass(atEnd)"
-        data-testid="card-row-next"
-        @click="page(1)"
-      >
-        <ChevronRight class="size-4" aria-hidden="true" />
-      </button>
+        <template v-if="!atStart">
+          <span
+            :class="cn(fadeClass, 'left-0 bg-linear-to-r')"
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            :aria-label="t('workshop.sections.scrollBack', locale)"
+            :class="cn(arrowClass, 'left-2')"
+            data-testid="card-row-prev"
+            @click="page(-1)"
+          >
+            <ChevronLeft class="size-4" aria-hidden="true" />
+          </button>
+        </template>
+        <template v-if="!atEnd">
+          <span
+            :class="cn(fadeClass, 'right-0 bg-linear-to-l')"
+            aria-hidden="true"
+          />
+          <button
+            type="button"
+            :aria-label="t('workshop.sections.scrollForward', locale)"
+            :class="cn(arrowClass, 'right-2')"
+            data-testid="card-row-next"
+            @click="page(1)"
+          >
+            <ChevronRight class="size-4" aria-hidden="true" />
+          </button>
+        </template>
+      </div>
     </div>
   </div>
 </template>
