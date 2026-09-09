@@ -208,6 +208,11 @@ const translations = {
     'zh-CN': '改用 Google 或 Github 注册',
     ja: 'GoogleまたはGithubでサインアップする'
   },
+  'auth.signIn.backToSocialSignIn': {
+    en: 'Sign in with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github 登录',
+    ja: 'GoogleまたはGithubでサインインする'
+  },
   'auth.signIn.insecureContextWarning': {
     en: 'This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.',
     'zh-CN': '此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。',

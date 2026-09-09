@@ -447,7 +447,14 @@ watch(initPending, (pending) => {
           :disabled="busy"
           @click="showEmailForm = false"
         >
-          {{ t('auth.signIn.backToSocialLogin', locale) }}
+          {{
+            t(
+              mode === 'signUp'
+                ? 'auth.signIn.backToSocialLogin'
+                : 'auth.signIn.backToSocialSignIn',
+              locale
+            )
+          }}
         </button>
       </template>
 
