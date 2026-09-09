@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -114,11 +113,7 @@ function renderControls({
 } = {}) {
   billingMock.canRunWorkflows = canRunWorkflows
 
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    stubActions: false
-  })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   useAppModeStore().selectedOutputs = [toNodeId(1)]
   if (hasError) {

@@ -1,16 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
+import { useWidgetStore } from '@/stores/widgetStore'
+
 import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-
-vi.mock<unknown>(import('@/stores/widgetStore'), () => ({
-  useWidgetStore: () => ({ inputIsWidget: () => true })
-}))
 
 const WidgetGridProbe = {
   props: ['processedWidgets'],
@@ -50,7 +48,7 @@ function renderedWidgets(
   render(LGraphNodePreview, {
     props: { nodeDef: def, ...props },
     global: {
-      plugins: [createTestingPinia({ stubActions: false })],
+      plugins: [getActivePinia()!],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
@@ -70,12 +68,16 @@ function renderedComboWidget(
   return renderedWidgets(nodeDef, props).find((w) => w.name === 'ckpt_name')
 }
 
+beforeEach(() => {
+  vi.mocked(useWidgetStore().inputIsWidget).mockReturnValue(true)
+})
+
 describe('LGraphNodePreview', () => {
   it('does not synchronize preview geometry with the canvas layout', () => {
     render(LGraphNodePreview, {
       props: { nodeDef },
       global: {
-        plugins: [createTestingPinia({ stubActions: false })],
+        plugins: [getActivePinia()!],
         stubs: {
           NodeHeader: true,
           NodeSlots: {

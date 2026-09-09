@@ -1,3 +1,4 @@
+import { useCommandStore } from '@/stores/commandStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,10 +43,6 @@ function apiPlan(
   }
 }
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -75,6 +72,10 @@ function renderComponent() {
     }
   })
 }
+
+beforeEach(() => {
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+})
 
 describe('PricingTableWorkspace credit allotment copy', () => {
   beforeEach(() => {

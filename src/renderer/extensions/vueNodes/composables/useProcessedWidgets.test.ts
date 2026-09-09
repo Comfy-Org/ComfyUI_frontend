@@ -1,6 +1,5 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { TooltipOptions } from 'primevue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -32,12 +31,6 @@ import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    rootGraphId: GRAPH_ID
-  })
-}))
 
 function createMockWidget(
   overrides: Partial<IBaseWidget> & { widgetId?: WidgetId } = {}
@@ -146,10 +139,12 @@ function processWidgets({
   })
 }
 
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { rootGraphId: GRAPH_ID })
+})
+
 describe('widget slot ownership', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   it('does not assign a non-widget input socket to a same-named custom widget', () => {
     const { graph, node } = createGraphWithNode([])
@@ -171,9 +166,7 @@ describe('widget slot ownership', () => {
 })
 
 describe('widget visibility', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   function visibilityOf(
     options: IBaseWidget['options'],
@@ -279,9 +272,7 @@ describe('widget visibility', () => {
 })
 
 describe('widget error state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   function processWidgetNamed(name: string) {
     const id = widgetId(GRAPH_ID, toNodeId(1), name)
@@ -326,7 +317,6 @@ describe('promoted subgraph widgets', () => {
   const SOURCE_EXECUTION_ID = createNodeExecutionId([HOST_ID, INTERIOR_ID])
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
   })
 
@@ -605,9 +595,7 @@ describe('computeProcessedWidgets', () => {
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const NODE_ID = toNodeId(1)
 
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   function processUpdateWidgets(widgets: IBaseWidget[]) {
     const { graph } = createGraphWithNode(widgets, NODE_ID)
@@ -687,9 +675,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 })
 
 describe('live widget update handler', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   it('forwards null (not undefined) to both the live widget value and callback', () => {
     const callback = vi.fn()

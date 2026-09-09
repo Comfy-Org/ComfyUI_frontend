@@ -1,26 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const mockActiveWorkflow = vi.hoisted(() => ({
-  value: { filename: 'my-workflow.json' } as { filename: string } | null
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      }
-    })
-  })
-)
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
   await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
-    mockActiveWorkflow.value = { filename: 'my-workflow.json' }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { filename: 'my-workflow.json' }
+    })
   })
 
   describe('createDefaultFormData', () => {
@@ -30,7 +18,7 @@ describe('useComfyHubPublishWizard', () => {
     })
 
     it('defaults name to empty string when no active workflow', () => {
-      mockActiveWorkflow.value = null
+      Object.assign(useWorkflowStore(), { activeWorkflow: null })
       const { formData } = useComfyHubPublishWizard()
       expect(formData.value.name).toBe('')
     })
