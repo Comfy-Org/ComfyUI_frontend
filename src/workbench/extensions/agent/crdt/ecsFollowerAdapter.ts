@@ -25,6 +25,22 @@ import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
+
+/**
+ * Node-map keys whose by-key edits trigger a field resync. Structural keys
+ * (`inputs`, `outputs`, `pos`, `size`, widget storage) are excluded: slots
+ * are handled by link events and autogrow, layout is not resynced in place.
+ */
+const RESYNCED_NODE_FIELDS: ReadonlySet<string> = new Set([
+  'title',
+  'mode',
+  'flags',
+  'properties',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape'
+])
 export type MutationsForTarget =
   | GraphMutations
   | ((workflowId: string) => GraphMutations)
@@ -200,6 +216,8 @@ interface TargetSession {
   readonly replacedWidgetMaps: Set<string>
   /** Nodes whose positional `__widgets_opaque` array was replaced. */
   readonly replacedOpaqueWidgets: Set<string>
+  /** Nodes whose scalar fields (title, mode, flags, ...) changed in place. */
+  readonly changedNodeFields: Set<string>
   readonly changedLinks: Set<string>
   readonly frameQueue: DocUpdate[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
@@ -291,6 +309,7 @@ export class EcsFollowerAdapter {
       changedWidgets: new Map<string, Set<string>>(),
       replacedWidgetMaps: new Set<string>(),
       replacedOpaqueWidgets: new Set<string>(),
+      changedNodeFields: new Set<string>(),
       changedLinks: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
@@ -311,6 +330,7 @@ export class EcsFollowerAdapter {
     )
     const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
     const replacedOpaqueWidgets = new Set(session.replacedOpaqueWidgets)
+    const changedNodeFields = new Set(session.changedNodeFields)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
     this.discardSessionPending(session)
@@ -356,10 +376,11 @@ export class EcsFollowerAdapter {
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
       // host's input list in place, which drops the `widgetId` /
       // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
-      // host with no widgets at all. Write the promoted values by name instead;
-      // `readSemanticNode` has already keyed them from the definition. A host
-      // whose stored values are not a record (malformed opaque payload) is
-      // left untouched rather than wiped.
+      // host with no widgets at all. Resync the host's scalar fields (title,
+      // mode, flags, properties, colors) and write the promoted values by name
+      // instead; `readSemanticNode` has already keyed them from the
+      // definition. A host whose stored values are not a record (malformed
+      // opaque payload) keeps its widgets untouched rather than wiped.
       const isLiveHost = (payload: SemanticNodePayload) =>
         definitions().has(payload.type) && batch.hasNode(toNodeId(payload.id))
       const upsertNode = (
@@ -371,6 +392,7 @@ export class EcsFollowerAdapter {
           else batch.reconcileNode(payload)
           return
         }
+        batch.reconcileNodeFields(payload)
         const values = payload.widgets_values
         if (!isRecord(values)) return
         for (const [name, value] of Object.entries(values)) {
@@ -428,6 +450,19 @@ export class EcsFollowerAdapter {
         const payload = readSemanticNode(doc, id, definitions)
         if (payload) upsertNode(payload, 'reconcile')
       }
+      // A node whose scalar fields were edited by key (title, mode, flags,
+      // properties, colors) is re-read so a live host resyncs those fields
+      // without rebuilding its promoted widgets or slots.
+      for (const id of changedNodeFields) {
+        if (
+          nodeActions.has(id) ||
+          replacedWidgetMaps.has(id) ||
+          replacedOpaqueWidgets.has(id)
+        )
+          continue
+        const payload = readSemanticNode(doc, id, definitions)
+        if (payload) upsertNode(payload, 'reconcile')
+      }
       for (const [id, names] of changedWidgets) {
         if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
         const node = session.nodes.get(id)
@@ -461,6 +496,7 @@ export class EcsFollowerAdapter {
     session.changedWidgets.clear()
     session.replacedWidgetMaps.clear()
     session.replacedOpaqueWidgets.clear()
+    session.changedNodeFields.clear()
     session.changedLinks.clear()
   }
 
@@ -489,6 +525,14 @@ export class EcsFollowerAdapter {
       if (event.keysChanged.has('widgets')) session.replacedWidgetMaps.add(id)
       if (event.keysChanged.has(OPAQUE_WIDGETS_KEY))
         session.replacedOpaqueWidgets.add(id)
+      // Scalar fields edited by key on the node map (rather than by replacing
+      // the whole node) would otherwise never reach the live node.
+      for (const key of event.keysChanged) {
+        if (RESYNCED_NODE_FIELDS.has(key)) {
+          session.changedNodeFields.add(id)
+          break
+        }
+      }
     }
   }
 

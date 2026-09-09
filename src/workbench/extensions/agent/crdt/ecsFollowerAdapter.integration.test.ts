@@ -934,6 +934,7 @@ describe('EcsFollowerAdapter integration', () => {
         hasNode: () => false,
         addNode: () => undefined,
         reconcileNode: () => undefined,
+        reconcileNodeFields: () => undefined,
         setWidget: () => undefined,
         connect: () => undefined,
         removeMissing: () => undefined,

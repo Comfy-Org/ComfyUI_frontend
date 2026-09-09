@@ -290,6 +290,86 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  it('resyncs scalar fields without touching slots, widgets, or layout', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+    graph.addNode(node(2), context)
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 2,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
+        },
+        context
+      )
+    ).toBe(true)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const [inputBefore] = existing.inputs
+    expect(inputBefore.link).toBe(toLinkId(9))
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNodeFields({
+          ...node(1),
+          title: 'Renamed host',
+          mode: 2,
+          flags: { collapsed: true },
+          properties: { source: 'doc' },
+          // Doc slot records are stale on purpose: they must be ignored.
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          widgets_values: {}
+        })
+      })
+    ).toBe(true)
+
+    const [resynced] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(resynced).toBe(existing)
+    expect(resynced.title).toBe('Renamed host')
+    expect(resynced.mode).toBe(2)
+    expect(resynced.flags).toEqual({ collapsed: true })
+    expect(resynced.properties).toEqual({ source: 'doc' })
+    expect(resynced.inputs[0]).toBe(inputBefore)
+    expect(resynced.inputs[0].link).toBe(toLinkId(9))
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(1)
+    expect(deleteLayouts).not.toHaveBeenCalled()
+    expect(createLayout).not.toHaveBeenCalled()
+  })
+
+  it('rejects reconcileNodeFields for a missing node or an incomplete payload', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(3), title: 'Ghost' })
+      })
+    ).toBe(false)
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), type: '' })
+      })
+    ).toBe(false)
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), title: 'Live' })
+        batch.reconcileNodeFields({ ...node(3), title: 'Ghost' })
+      })
+    ).toBe(false)
+
+    const [untouched] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(untouched.title).toBe('Node 1')
+  })
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
