@@ -18,7 +18,8 @@ const sdk = vi.hoisted(() => {
     createUserWithEmailAndPassword: vi.fn(() => new Promise(() => {})),
     sendPasswordResetEmail: vi.fn(() => new Promise(() => {})),
     signInWithPopup: vi.fn(() => new Promise(() => {})),
-    signOut: vi.fn(async () => {})
+    signOut: vi.fn(async () => {}),
+    updatePassword: vi.fn(async () => {})
   }
 })
 
@@ -47,7 +48,8 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
   signInWithEmailAndPassword: sdk.signInWithEmailAndPassword,
   createUserWithEmailAndPassword: sdk.createUserWithEmailAndPassword,
   sendPasswordResetEmail: sdk.sendPasswordResetEmail,
-  signOut: sdk.signOut
+  signOut: sdk.signOut,
+  updatePassword: sdk.updatePassword
 }))
 
 async function makeIdentity() {
@@ -260,6 +262,27 @@ describe('sign-in and sign-out delegation', () => {
       identity.sendPasswordReset('ghost@b.example'),
       'a reset that fails only for unknown emails tells the caller which emails have accounts'
     ).resolves.toBeUndefined()
+  })
+
+  it('updates the password of the signed-in user through the SDK', async () => {
+    const user = { uid: 'u1' } as Partial<User> as User
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      auth: { ...hostAuth, currentUser: user } as Partial<Auth> as Auth
+    })
+
+    await identity.updatePassword('hunter22!!')
+
+    expect(sdk.updatePassword).toHaveBeenCalledWith(user, 'hunter22!!')
+  })
+
+  it('rejects a password update when nobody is signed in', async () => {
+    const identity = await makeHostBoundIdentity()
+
+    await expect(identity.updatePassword('hunter22!!')).rejects.toThrow(
+      'No signed-in user'
+    )
+    expect(sdk.updatePassword).not.toHaveBeenCalled()
   })
 
   it('propagates a sign-out failure to the caller', async () => {

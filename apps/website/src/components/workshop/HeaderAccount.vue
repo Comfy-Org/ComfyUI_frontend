@@ -20,20 +20,29 @@ const { balance } = useWorkshopCredits()
 
 /**
  * The return destination is only known in the browser, and hydration does
- * not repair a server-rendered href, so the plain link stays `/login/` and
- * the destination is added when the visitor actually clicks. Modified clicks
- * keep their native open-in-new-tab behaviour.
+ * not repair a server-rendered href, so the link renders as `/login/` and
+ * gains its destination on pointer-down or focus, before any click or
+ * keypress follows it. Modified clicks then keep their native
+ * open-in-new-tab behaviour with the destination intact.
  */
+const signInHref = ref('/login/')
+
+function signInDestination(): string {
+  return `/login/?returnTo=${encodeURIComponent(
+    window.location.pathname + window.location.search
+  )}`
+}
+
+function prepareSignInHref(): void {
+  signInHref.value = signInDestination()
+}
+
 function goToSignIn(event: MouseEvent): void {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
     return
   event.preventDefault()
   runBeforeSignInLeave()
-  window.location.assign(
-    `/login/?returnTo=${encodeURIComponent(
-      window.location.pathname + window.location.search
-    )}`
-  )
+  window.location.assign(signInDestination())
 }
 
 const menuOpen = ref(false)
@@ -84,8 +93,10 @@ async function signOutFromMenu() {
   <div v-if="enabled" class="shrink-0">
     <a
       v-if="!user"
-      href="/login/"
+      :href="signInHref"
       class="hover:border-primary-comfy-yellow/60 flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors"
+      @pointerdown="prepareSignInHref"
+      @focus="prepareSignInHref"
       @click="goToSignIn"
     >
       {{ t('auth.header.signIn', locale) }}
