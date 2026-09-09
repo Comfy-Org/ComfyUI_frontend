@@ -256,6 +256,64 @@ describe('directoryRows', () => {
     })
   })
 
+  it('turns an upcoming event’s link into a register CTA with its own label', () => {
+    const linked = makeEvent({
+      id: 'linked',
+      link: {
+        href: {
+          en: 'https://example.com/en',
+          'zh-CN': 'https://example.com/zh'
+        },
+        newTab: true
+      },
+      ctaLabel: { en: 'Register', 'zh-CN': '报名' }
+    })
+    const [row] = directoryRows([linked], 'zh-CN', future)
+    expect(row.register).toEqual({
+      href: 'https://example.com/zh',
+      newTab: true,
+      label: '报名'
+    })
+  })
+
+  it('falls back to the English ctaLabel when the locale has none', () => {
+    const linked = makeEvent({
+      id: 'linked',
+      link: { href: { en: 'https://example.com', 'zh-CN': '' } },
+      ctaLabel: { en: 'Register', 'zh-CN': '' }
+    })
+    const [row] = directoryRows([linked], 'zh-CN', future)
+    expect(row.register).toEqual({
+      href: 'https://example.com',
+      newTab: false,
+      label: 'Register'
+    })
+  })
+
+  it('labels a register CTA LEARN MORE when the event names no label', () => {
+    const linked = makeEvent({
+      id: 'linked',
+      link: { href: { en: 'https://example.com', 'zh-CN': '' } }
+    })
+    const [row] = directoryRows([linked], 'en', future)
+    expect(row.register?.label).toBe('LEARN MORE')
+  })
+
+  it('gives an upcoming event without a link no register CTA', () => {
+    const [row] = directoryRows([paris], 'en', future)
+    expect(row.register).toBeUndefined()
+  })
+
+  it('gives a past event a watch CTA but never a register one', () => {
+    const linked = makeEvent({
+      id: 'linked',
+      link: { href: { en: 'https://example.com', 'zh-CN': '' } }
+    })
+    const [row] = directoryRows([linked], 'en', past)
+    expect(row.register).toBeUndefined()
+    expect(row.watch?.href).toBe('https://example.com')
+  })
+
   it('gives a past event with neither recording nor link no CTA at all', () => {
     const [row] = directoryRows([paris], 'en', past)
     expect(row.calendar).toBeUndefined()

@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { externalLinks, localizeHref } from '../src/config/routes'
+import type { ComfyEvent } from '../src/data/events'
 import {
   directoryEvents,
   eventPath,
@@ -12,14 +13,7 @@ import {
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
-import {
-  EVENT_CATEGORIES,
-  directoryRows,
-  filterDirectoryEvents,
-  groupRowsByMonth,
-  monthLabel,
-  pastCtaLabel
-} from '../src/utils/eventsDirectory'
+import { EVENT_CATEGORIES, pastCtaLabel } from '../src/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'
@@ -51,6 +45,63 @@ function countLabel(count: number, locale: Locale) {
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
   return t(key, locale).replace('{count}', String(count))
 }
+
+// Expected filter results restated from the raw event data, so the spec never
+// asks the production filter what the page should show.
+const inCategory = (category: string) =>
+  directoryEvents.filter((event) => event.category === category)
+
+const byOrganizer = (organizer: string) =>
+  directoryEvents.filter((event) => event.organizer === organizer)
+
+const matchesSearch = (event: ComfyEvent, query: string) =>
+  [event.title.en, event.description.en, event.location?.en ?? ''].some(
+    (field) => field.toLowerCase().includes(query.toLowerCase())
+  )
+
+// The agenda contract restated from the raw data. Month keys are the event's
+// own written month — the ISO strings carry the event's offset, so their
+// leading YYYY-MM already is that month. Upcoming months ascend then past
+// months descend; rows inside an upcoming month ascend by start, inside a
+// past month they descend. A month counts as upcoming while any of its
+// events does.
+function expectedAgendaMonths(): { key: string; eventIds: string[] }[] {
+  const upcomingIds = new Set(upcomingEvents.map((event) => event.id))
+  const byMonth = new Map<string, ComfyEvent[]>()
+  for (const event of directoryEvents) {
+    const key = event.startDateTime.slice(0, 7)
+    byMonth.set(key, [...(byMonth.get(key) ?? []), event])
+  }
+  const byStart = (a: ComfyEvent, b: ComfyEvent) =>
+    Date.parse(a.startDateTime) - Date.parse(b.startDateTime)
+  const months = [...byMonth.entries()].map(([key, events]) => ({
+    key,
+    upcoming: events.some((event) => upcomingIds.has(event.id)),
+    events: [...events]
+  }))
+  for (const month of months) {
+    month.events.sort(month.upcoming ? byStart : (a, b) => byStart(b, a))
+  }
+  return [
+    ...months
+      .filter((month) => month.upcoming)
+      .sort((a, b) => a.key.localeCompare(b.key)),
+    ...months
+      .filter((month) => !month.upcoming)
+      .sort((a, b) => b.key.localeCompare(a.key))
+  ].map(({ key, events }) => ({
+    key,
+    eventIds: events.map((event) => event.id)
+  }))
+}
+
+// Month headings are localized by Intl, not by an i18n key.
+const monthHeading = (key: string) =>
+  new Intl.DateTimeFormat('en', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(new Date(`${key}-01T00:00:00Z`))
 
 function directorySection(page: Page, locale: Locale) {
   return page.locator('section').filter({
@@ -296,10 +347,8 @@ test.describe('Events page — desktop @smoke', () => {
     if (!target) return
 
     const query = target.location!.en
-    const expected = filterDirectoryEvents(
-      directoryEvents,
-      { query, category: 'all', organizer: 'all' },
-      'en'
+    const expected = directoryEvents.filter((event) =>
+      matchesSearch(event, query)
     )
 
     await page.goto(PATH_EN)
@@ -334,8 +383,6 @@ test.describe('Events page — desktop @smoke', () => {
     const mappable = directoryEvents.filter((event) => event.coords)
     test.skip(mappable.length === 0, 'needs at least one event with coords')
 
-    const inCategory = (category: string) =>
-      directoryEvents.filter((event) => event.category === category)
     // A category whose events all lack coords must empty the map; one with a
     // single mappable event must show exactly one pin (no clustering to fold).
     const emptyCategory = EVENT_CATEGORIES.find(
@@ -366,6 +413,22 @@ test.describe('Events page — desktop @smoke', () => {
     if (singlePinCategory) {
       await typeFilter.selectOption(singlePinCategory)
       await expect(pins).toHaveCount(1)
+
+      // A single-event pin is a divIcon whose title is the event's title;
+      // clicking it selects the matching directory row, which highlights with
+      // the yellow ring (the row has no aria selection state).
+      const pinned = inCategory(singlePinCategory).find((event) => event.coords)
+      expect(pinned).toBeDefined()
+      const selectedRow = section.locator(
+        `[data-testid="events-directory-row"][data-event-id="${pinned!.id}"]`
+      )
+      await expect(pins).toHaveAttribute('title', pinned!.title.en)
+      await expect(selectedRow).not.toHaveClass(/ring-primary-comfy-yellow/)
+      // The 8px pin sits under the sticky header at this map framing and the
+      // site's smooth-scroll keeps it there, so a pointer click can never
+      // land; fire the DOM click Leaflet listens for on the icon instead.
+      await pins.dispatchEvent('click')
+      await expect(selectedRow).toHaveClass(/ring-primary-comfy-yellow/)
     }
 
     if (emptyCategory) {
@@ -390,11 +453,7 @@ test.describe('Events page — desktop @smoke', () => {
     test.skip(!category, 'needs at least one categorised event')
     if (!category) return
 
-    const expected = filterDirectoryEvents(
-      directoryEvents,
-      { query: '', category, organizer: 'all' },
-      'en'
-    )
+    const expected = inCategory(category)
 
     await page.goto(PATH_EN)
     const section = directorySection(page, 'en')
@@ -530,11 +589,9 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(rows).toHaveCount(directoryEvents.length)
     await expect(section.locator('.leaflet-container')).toHaveCount(0)
 
-    // The rendered grouping matches the pure function the unit tests cover,
-    // including the upcoming-ascending-then-past-descending month order.
-    const expectedMonths = groupRowsByMonth(
-      directoryRows(directoryEvents, 'en', new Date())
-    )
+    // The grouping and its upcoming-ascending-then-past-descending month
+    // order, checked against a restatement built from the raw event data.
+    const expectedMonths = expectedAgendaMonths()
     const headings = agenda.locator('[data-month]')
     await expect(headings).toHaveCount(expectedMonths.length)
     expect(
@@ -545,7 +602,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     // Headings are localized by Intl, not by an i18n key, and they stick.
     await expect(headings.first()).toHaveText(
-      monthLabel(expectedMonths[0].key, 'en')
+      monthHeading(expectedMonths[0].key)
     )
     await expect(headings.first()).toHaveCSS('position', 'sticky')
 
@@ -554,12 +611,12 @@ test.describe('Events page — desktop @smoke', () => {
       const monthRows = agenda
         .locator(`section:has(> [data-month="${month.key}"])`)
         .getByTestId('events-directory-row')
-      await expect(monthRows).toHaveCount(month.rows.length)
+      await expect(monthRows).toHaveCount(month.eventIds.length)
       expect(
         await monthRows.evaluateAll((nodes) =>
           nodes.map((node) => node.getAttribute('data-event-id'))
         )
-      ).toEqual(month.rows.map((row) => row.event.id))
+      ).toEqual(month.eventIds)
     }
 
     // Filters reach the agenda like every other view.
@@ -572,6 +629,56 @@ test.describe('Events page — desktop @smoke', () => {
     ).toBeVisible()
   })
 
+  test('calendar tab inherits a filter set beforehand and hands it back', async ({
+    page
+  }) => {
+    const category = EVENT_CATEGORIES.find((entry) => {
+      const count = inCategory(entry).length
+      return count > 0 && count < directoryEvents.length
+    })
+    test.skip(!category, 'needs a category that narrows the list')
+    if (!category) return
+
+    const expected = inCategory(category)
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const rows = section.getByTestId('events-directory-row')
+    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    // Filter first, then switch: the calendar must inherit the active filter.
+    await expect(async () => {
+      await typeFilter.selectOption(category)
+      await expect(rows).toHaveCount(expected.length, { timeout: 1000 })
+    }).toPass()
+
+    const agenda = section.getByTestId('events-directory-agenda')
+    await section
+      .getByRole('button', { name: t('events.directory.view.calendar', 'en') })
+      .click()
+    await expect(agenda).toBeVisible()
+
+    // Only the filtered events reach the agenda, and the control still shows
+    // the selection. The agenda regroups by month, so compare as sets.
+    await expect(rows).toHaveCount(expected.length)
+    const agendaIds = await rows.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute('data-event-id'))
+    )
+    expect([...agendaIds].sort()).toEqual(
+      expected.map((event) => event.id).sort()
+    )
+    await expect(typeFilter).toHaveValue(category)
+
+    // Switching back restores the map view with the same filtered set.
+    await section
+      .getByRole('button', { name: t('events.directory.view.map', 'en') })
+      .click()
+    await expect(section.locator('.leaflet-container')).toBeVisible()
+    await expect(rows).toHaveCount(expected.length)
+    await expect(typeFilter).toHaveValue(category)
+  })
+
   test('directory type filter composes with the search box', async ({
     page
   }) => {
@@ -581,11 +688,7 @@ test.describe('Events page — desktop @smoke', () => {
     test.skip(!category, 'needs events in at least two categories')
     if (!category) return
 
-    const expected = filterDirectoryEvents(
-      directoryEvents,
-      { query: '', category, organizer: 'all' },
-      'en'
-    )
+    const expected = inCategory(category)
 
     await page.goto(PATH_EN)
     const section = directorySection(page, 'en')
@@ -610,6 +713,64 @@ test.describe('Events page — desktop @smoke', () => {
     // Back to All types with the search cleared restores every event.
     await section.getByLabel(t('events.directory.searchLabel', 'en')).fill('')
     await typeFilter.selectOption('all')
+    await expect(rows).toHaveCount(directoryEvents.length)
+  })
+
+  test('organizer filter narrows the list, composes with type, and resets', async ({
+    page
+  }) => {
+    const expectedComfy = byOrganizer('comfy')
+    test.skip(
+      expectedComfy.length === 0 ||
+        expectedComfy.length === directoryEvents.length,
+      'needs Comfy-organized events alongside other organizers'
+    )
+
+    // A type that narrows the Comfy set further proves the two filters AND
+    // together rather than replacing each other.
+    const category = expectedComfy
+      .map((event) => event.category)
+      .find((entry) => entry !== expectedComfy[0].category)
+    const expectedBoth = category
+      ? expectedComfy.filter((event) => event.category === category)
+      : []
+
+    await page.goto(PATH_EN)
+    const section = directorySection(page, 'en')
+    await section.scrollIntoViewIfNeeded()
+
+    const rows = section.getByTestId('events-directory-row')
+    const organizerFilter = section.getByLabel(
+      t('events.directory.organizerLabel', 'en')
+    )
+    await expect(async () => {
+      await organizerFilter.selectOption('comfy')
+      await expect(rows).toHaveCount(expectedComfy.length, { timeout: 1000 })
+    }).toPass()
+    for (const [i, event] of expectedComfy.entries()) {
+      await expect(rows.nth(i)).toContainText(event.title.en)
+    }
+    await expect(
+      section.getByText(countLabel(expectedComfy.length, 'en'))
+    ).toBeVisible()
+
+    const typeFilter = section.getByLabel(t('events.directory.typeLabel', 'en'))
+    if (category) {
+      await typeFilter.selectOption(category)
+      await expect(rows).toHaveCount(expectedBoth.length)
+      for (const [i, event] of expectedBoth.entries()) {
+        await expect(rows.nth(i)).toContainText(event.title.en)
+      }
+
+      // Releasing only the organizer leaves the type filter in force.
+      await organizerFilter.selectOption('all')
+      await expect(rows).toHaveCount(inCategory(category).length)
+      await typeFilter.selectOption('all')
+    } else {
+      await organizerFilter.selectOption('all')
+    }
+
+    // Both filters back at All restores the full directory.
     await expect(rows).toHaveCount(directoryEvents.length)
   })
 

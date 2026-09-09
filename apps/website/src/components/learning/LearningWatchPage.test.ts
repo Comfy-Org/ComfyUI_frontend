@@ -56,4 +56,18 @@ describe('LearningWatchPage', () => {
       youtubeTutorial.title.en
     )
   })
+
+  it('titles the embed in English when the localized title is empty', () => {
+    renderWatchPage(
+      {
+        ...youtubeTutorial,
+        title: { ...youtubeTutorial.title, 'zh-CN': '' }
+      },
+      'zh-CN'
+    )
+
+    expect(screen.getByTestId('youtube-embed').textContent).toBe(
+      youtubeTutorial.title.en
+    )
+  })
 })
