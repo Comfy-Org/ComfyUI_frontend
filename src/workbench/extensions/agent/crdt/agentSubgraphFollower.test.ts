@@ -11,7 +11,7 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -26,6 +26,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -36,6 +37,10 @@ import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
@@ -221,6 +226,7 @@ function forwardRaw(
 }
 
 beforeEach(() => {
+  vi.mocked(reportError).mockClear()
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('promoted-widget', PromotedWidgetNode)
   LiteGraph.registerNodeType('source', SourceNode)
@@ -478,21 +484,36 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     ).toEqual([])
   })
 
-  it('S1c drops opaque host values beyond the declared promoted names', () => {
-    // The definition declares one promoted name; a longer opaque array must
-    // map positionally onto that name only, never grow the host surface.
+  it('S1c keeps promoted values and reports drift when the opaque array is longer', () => {
+    // The definition declares one promoted name. cmp writes the whole
+    // positional array against that same promoted list, so a longer array
+    // means writer and reader disagree on the host surface. Mapping the first
+    // value positionally could land it on the wrong widget; the host keeps
+    // its current value and the mismatch is reported.
     const state = startFollower()
+    deliver(state, hostSetWidget(44), 1)
     forwardRaw(
       state,
       (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [42, 'extra']),
-      1
+      2
     )
 
     const widgetId = state.instance.inputs[0]?.widgetId
     expect(widgetId).toBeDefined()
+    expect(storedHostWidgets(state)).toEqual([['value', 44]])
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
-    expect(state.instance.widgets[0]?.value).toBe(42)
-    expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
+    expect(state.instance.widgets[0]?.value).toBe(44)
+    expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(44)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 2 opaque widget values')
+      }),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_host_widgets_mismatch',
+        context: expect.objectContaining({ expected: 1, actual: 2 })
+      })
+    )
   })
 
   it('S1d falls back to reconcileNode for an opaque write on a non-host node', () => {
@@ -668,6 +689,13 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(storedHostWidgets(state)).toEqual([['value', 46]])
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
     expect(state.instance.widgets[0]?.value).toBe(46)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_host_widgets_mismatch',
+        context: expect.objectContaining({ expected: 1, actual: 0 })
+      })
+    )
   })
 })
 

@@ -49,13 +49,32 @@ function ambiguousInputNames(definition: ExportedSubgraph): Set<string> {
 }
 
 /**
- * Names of the subgraph inputs that surface a widget on the host, in host
- * slot order. An input is promoted when one of its links lands on an interior
- * node input that carries a `widget` reference (see
- * `SubgraphNode._resolveInputWidget`). This is the order cmp's positional
- * `__widgets_opaque` array follows.
+ * Mirrors comfy-cli `_MAX_NESTED_PROMOTION_DEPTH`: how many nested subgraph
+ * instances a promoted input may be chased through before it is treated as
+ * unpromoted. Also bounds cyclic definition references.
  */
-export function promotedWidgetNames(definition: ExportedSubgraph): string[] {
+const MAX_NESTED_PROMOTION_DEPTH = 32
+
+/**
+ * Names of the subgraph inputs that surface a widget on the host, in host
+ * slot order. This is the order cmp's positional `__widgets_opaque` array
+ * follows, and it must match the rule comfy-cli `promoted_inputs()` and
+ * `SubgraphNode._resolveInputWidget` share: an input is promoted when one of
+ * its links lands on
+ *
+ * - an interior plain node input that carries a `widget` reference, or
+ * - a nested subgraph instance (node `type` found in `index`) whose
+ *   same-named input is itself promoted, resolved recursively through
+ *   `_resolveNestedPromotedSource`.
+ *
+ * A nested instance whose definition is missing from `index`, or whose chain
+ * exceeds the depth cap, counts as unpromoted.
+ */
+export function promotedWidgetNames(
+  definition: ExportedSubgraph,
+  index: SubgraphDefinitionIndex,
+  depth = 0
+): string[] {
   const linksById = new Map(
     (definition.links ?? []).map((link) => [link.id, link])
   )
@@ -67,7 +86,14 @@ export function promotedWidgetNames(definition: ExportedSubgraph): string[] {
       const link = linksById.get(linkId)
       if (!link) return false
       const target = nodesById.get(String(link.target_id))
-      return target?.inputs?.[link.target_slot]?.widget != null
+      const targetInput = target?.inputs?.[link.target_slot]
+      if (!target || !targetInput) return false
+      const nested = index.get(target.type)
+      if (!nested) return targetInput.widget != null
+      if (depth >= MAX_NESTED_PROMOTION_DEPTH) return false
+      return promotedWidgetNames(nested, index, depth + 1).includes(
+        targetInput.name
+      )
     })
     return promoted ? [input.name] : []
   })

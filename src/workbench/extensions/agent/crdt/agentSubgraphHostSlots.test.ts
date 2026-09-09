@@ -10,12 +10,17 @@ import {
   promotedWidgetNames
 } from './agentSubgraphHostSlots'
 
+/** Definition whose interior `nodes` are known to be present. */
+type DefinitionWithNodes = ExportedSubgraph & {
+  nodes: NonNullable<ExportedSubgraph['nodes']>
+}
+
 /**
  * Definition with `extra` declared before `value`. Only `value` lands on an
  * interior input that carries a widget; `extra` feeds a plain slot and
  * `dangling` has no links at all.
  */
-function definition(): ExportedSubgraph {
+function definition(): DefinitionWithNodes {
   return {
     id: 'sg-1',
     version: 1,
@@ -76,7 +81,7 @@ function definition(): ExportedSubgraph {
     ],
     groups: [],
     extra: {}
-  } as unknown as ExportedSubgraph
+  } as unknown as DefinitionWithNodes
 }
 
 describe('agentSubgraphHostSlots', () => {
@@ -140,7 +145,72 @@ describe('agentSubgraphHostSlots', () => {
   })
 
   it('reports only inputs linked to a widget-bearing interior slot, in order', () => {
-    expect(promotedWidgetNames(definition())).toEqual(['value'])
+    const def = definition()
+    expect(promotedWidgetNames(def, indexSubgraphDefinitions([def]))).toEqual([
+      'value'
+    ])
+  })
+
+  /**
+   * Outer definition whose `extra` input feeds a nested subgraph instance
+   * (node 1 typed `sg-1`) on its `value` input. The nested definition promotes
+   * `value` to a widget, so the outer `extra` is widget-backed through the
+   * nested instance even though node 1's own input entry carries no `widget`
+   * marker (`SubgraphNode._resolveNestedPromotedSource`, comfy-cli
+   * `promoted_inputs`). The nested instance's own `value` slot has no widget
+   * marker in the outer definition, so `extra` must precede `value` in the
+   * positional `__widgets_opaque` order.
+   */
+  function outerWithNestedInstance(): DefinitionWithNodes {
+    const base = definition()
+    return {
+      ...base,
+      id: 'sg-outer',
+      nodes: [
+        {
+          ...base.nodes[0],
+          type: 'sg-1',
+          inputs: [{ name: 'value', type: 'NUMBER', link: 1 }]
+        },
+        base.nodes[1]
+      ]
+    }
+  }
+
+  it('counts an input promoted through a nested instance as widget-backed', () => {
+    const outer = outerWithNestedInstance()
+    const index = indexSubgraphDefinitions([outer, definition()])
+    expect(promotedWidgetNames(outer, index)).toEqual(['extra', 'value'])
+  })
+
+  it('does not count a nested-instance input the nested definition leaves unpromoted', () => {
+    const outer = outerWithNestedInstance()
+    const nested = definition()
+    // Point the nested link at `extra`, which lands on a plain slot inside.
+    outer.nodes[0].inputs = [{ name: 'extra', type: 'NUMBER', link: 1 }]
+    const index = indexSubgraphDefinitions([outer, nested])
+    expect(promotedWidgetNames(outer, index)).toEqual(['value'])
+  })
+
+  it('treats a nested instance whose definition is missing as unpromoted', () => {
+    const outer = outerWithNestedInstance()
+    const index = indexSubgraphDefinitions([outer])
+    expect(promotedWidgetNames(outer, index)).toEqual(['value'])
+  })
+
+  it('terminates when nested definitions reference each other cyclically', () => {
+    const outer = outerWithNestedInstance()
+    // `sg-1` in turn hosts an `sg-outer` instance on its promoted `value` link.
+    const nested = definition()
+    nested.nodes[1] = {
+      ...nested.nodes[1],
+      type: 'sg-outer',
+      inputs: [{ name: 'extra', type: 'NUMBER', link: 2 }]
+    }
+    const index = indexSubgraphDefinitions([outer, nested])
+    // `extra` chases the cycle until the depth cap and stays unpromoted;
+    // `value` still lands on a real widget marker inside `sg-outer`.
+    expect(promotedWidgetNames(outer, index)).toEqual(['value'])
   })
 
   it('resolves host slot index from definition order, not doc order', () => {
@@ -200,6 +270,8 @@ describe('agentSubgraphHostSlots', () => {
   it('returns no slots for a definition without inputs', () => {
     const def: ExportedSubgraph = { ...definition(), inputs: undefined }
     expect(hostInputs(def, [])).toEqual([])
-    expect(promotedWidgetNames(def)).toEqual([])
+    expect(promotedWidgetNames(def, indexSubgraphDefinitions([def]))).toEqual(
+      []
+    )
   })
 })

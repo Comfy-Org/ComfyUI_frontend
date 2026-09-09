@@ -10,6 +10,7 @@ import type {
   SemanticLinkPayload,
   SemanticNodePayload
 } from '@/core/graph/graphMutations'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
@@ -90,13 +91,33 @@ function readSemanticNode(
   if (definition) {
     const opaque = payload.widgets_values
     if (Array.isArray(opaque)) {
-      const names = promotedWidgetNames(definition)
-      // Values past the promoted list have no host widget; drop them.
-      payload.widgets_values = Object.fromEntries(
-        opaque
-          .slice(0, names.length)
-          .map((value, index) => [names[index], value])
-      )
+      const names = promotedWidgetNames(definition, definitions())
+      if (opaque.length === names.length) {
+        payload.widgets_values = Object.fromEntries(
+          opaque.map((value, index) => [names[index], value])
+        )
+      } else {
+        // cmp writes the whole positional array against the same promoted
+        // list (`promoted_inputs()`), so a length mismatch means the writer
+        // and this reader disagree on the host surface. Mapping positionally
+        // would land values on the wrong promoted widget; keep the live
+        // values and surface the drift instead.
+        delete payload.widgets_values
+        reportError(
+          new Error(
+            `Subgraph host ${id} (${type}) carries ${opaque.length} opaque widget values but its definition promotes ${names.length}`
+          ),
+          {
+            errorType: 'agent_subgraph_host_widgets_mismatch',
+            context: {
+              nodeId: id,
+              type,
+              expected: names.length,
+              actual: opaque.length
+            }
+          }
+        )
+      }
     }
     const docInputs = source.get('inputs')
     payload.inputs = hostInputs(
