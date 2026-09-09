@@ -135,6 +135,12 @@ const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
 const creditLabelFor = (stop: CreditStop) =>
   formatCreditsCompact(amountForBillingCycle(stop.credits, cycle === 'yearly'))
 
+const creditsLabelKey = computed(() =>
+  cycle === 'yearly'
+    ? 'subscription.yearlyCredits'
+    : 'subscription.monthlyCredits'
+)
+
 const { t } = useI18n()
 </script>
 
@@ -205,6 +211,7 @@ const { t } = useI18n()
     <!-- Credit stop labels; the selected stop is emphasized -->
     <ol
       data-testid="credit-slider-stops"
+      :aria-label="t(creditsLabelKey)"
       class="m-0 flex list-none justify-between p-0"
     >
       <li

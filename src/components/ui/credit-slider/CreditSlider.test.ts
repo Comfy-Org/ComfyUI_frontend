@@ -18,7 +18,9 @@ const i18n = createI18n({
         usdPerMonth: 'USD / mo',
         billedYearly: '{total} Billed yearly',
         billedMonthly: 'Billed monthly',
-        creditSliderSave: 'Save {percent}% ({amount})'
+        creditSliderSave: 'Save {percent}% ({amount})',
+        monthlyCredits: 'monthly credits',
+        yearlyCredits: 'credits per year'
       }
     }
   }
@@ -164,7 +166,7 @@ describe('CreditSlider', () => {
     renderSlider({ modelValue: 700 })
     await flush()
 
-    const stops = within(screen.getByTestId('credit-slider-stops'))
+    const stops = within(screen.getByRole('list', { name: 'credits per year' }))
     for (const label of ['506.4K', '1M', '1.7M', '3.5M', '6.3M']) {
       expect(stops.getByText(label)).toBeInTheDocument()
     }
@@ -175,7 +177,7 @@ describe('CreditSlider', () => {
     renderSlider({ modelValue: 700, cycle: 'monthly' })
     await flush()
 
-    const stops = within(screen.getByTestId('credit-slider-stops'))
+    const stops = within(screen.getByRole('list', { name: 'monthly credits' }))
     for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
       expect(stops.getByText(label)).toBeInTheDocument()
     }

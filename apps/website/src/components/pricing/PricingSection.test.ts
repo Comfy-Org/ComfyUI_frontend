@@ -61,6 +61,7 @@ describe('PricingSection credit allotment copy', () => {
     for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
       expect(screen.getByText(label)).toBeTruthy()
     }
+    expect(screen.getByLabelText('Team monthly credit commitment')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: /^Yearly/ }))
     await nextTick()
@@ -69,6 +70,7 @@ describe('PricingSection credit allotment copy', () => {
       expect(screen.getByText(label)).toBeTruthy()
     }
     expect(screen.queryByText('147.7K')).toBeNull()
+    expect(screen.getByLabelText('Team annual credit commitment')).toBeTruthy()
   })
 
   it('keeps every yearly figure at twelve times its monthly counterpart', () => {
