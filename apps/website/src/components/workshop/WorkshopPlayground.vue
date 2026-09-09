@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { externalLinks } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
@@ -10,7 +10,9 @@ import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
-  buildWorkshopSnippet
+  buildWorkshopInput,
+  buildWorkshopSnippet,
+  workshopIdempotencyKey
 } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -36,8 +38,53 @@ const {
 } = useClipboard({ copiedDuring: 1500, legacy: true })
 /** Which language was on screen when the copy happened. */
 const copiedLanguage = ref<WorkshopSnippetLanguage>()
+
+/**
+ * The request the snippet currently describes, serialized so it can be compared.
+ * Only the body: the language a reader is reading it in is not part of what
+ * would be sent, so switching tabs must not count as composing a new request.
+ */
+const requestBody = computed(() =>
+  JSON.stringify(buildWorkshopInput(model.fields, values.value))
+)
+
+/**
+ * One key per *composed request*, not per page load.
+ *
+ * The Router permits reuse only for a retry of the unchanged request; sending a
+ * changed body under a key that has already been consumed conflicts, or replays
+ * the earlier generation. So an edit has to mint a new one — otherwise a reader
+ * who copies prompt A, edits to prompt B and copies again sends two distinct
+ * paid requests under one key.
+ *
+ * Retries stay safe without any work here: the key is baked into the copied
+ * text as a literal, so re-running that block always sends the key it was
+ * copied with, whatever the form says by then.
+ *
+ * Minted in `onMounted` rather than in setup, and watched without `immediate`,
+ * because setup also runs when Astro prerenders this island — a key made there
+ * would be baked into the static HTML and shared by every visitor, so the
+ * Router would read one reader's run as a repeat of another's. Until hydration
+ * the snippet shows a placeholder, in the same spirit as the media URLs:
+ * visibly not a real value, so a reader who somehow copied it that early gets a
+ * request the Router rejects rather than one that silently collides.
+ */
+const idempotencyKey = ref('REPLACE-WITH-A-UUID')
+onMounted(() => {
+  idempotencyKey.value = workshopIdempotencyKey()
+})
+watch(requestBody, () => {
+  idempotencyKey.value = workshopIdempotencyKey()
+})
+
 const snippet = computed(() =>
-  buildWorkshopSnippet(language.value, model.id, model.fields, values.value)
+  buildWorkshopSnippet(
+    language.value,
+    model.id,
+    model.fields,
+    values.value,
+    idempotencyKey.value
+  )
 )
 const hasInvalidJson = computed(() =>
   model.fields.some((field) => {
@@ -139,7 +186,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           <pre
             tabindex="0"
             class="focus-visible:ring-primary-comfy-yellow/50 mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none"
-          ><code>{{ option === language ? snippet : buildWorkshopSnippet(option, model.id, model.fields, values) }}</code></pre>
+          ><code>{{ option === language ? snippet : buildWorkshopSnippet(option, model.id, model.fields, values, idempotencyKey) }}</code></pre>
         </TabsContent>
       </TabsRoot>
       <a
