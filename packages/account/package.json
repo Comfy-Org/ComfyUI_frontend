@@ -8,6 +8,7 @@
   "exports": {
     "./core": "./src/core/index.ts",
     "./firebase": "./src/firebase/index.ts",
+    "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./signInSchemas": "./src/signInSchemas.ts",
     "./turnstile": "./src/turnstile.ts",
     "./turnstileScript": "./src/turnstileScript.ts",
@@ -18,7 +19,6 @@
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
     "./PasswordRules.vue": "./src/PasswordRules.vue",
-    "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
   "scripts": {
