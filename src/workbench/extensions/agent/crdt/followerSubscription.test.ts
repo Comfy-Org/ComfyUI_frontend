@@ -468,3 +468,30 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 })
+
+describe('workflow switches keep document lineages isolated', () => {
+  it('replaces the follower and subscribes from an empty state vector', () => {
+    const { transport, client, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const previousFollower = bridge.follower
+
+    bridge.subscribe('wf-2')
+
+    expect(bridge.follower).not.toBe(previousFollower)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { workflow_id: string; state_vector_b64: string }
+    }[]
+    expect(subscribes.at(-1)).toMatchObject({
+      data: { workflow_id: 'wf-2' }
+    })
+    expect(subscribes.at(-1)?.data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    bridge.destroy()
+    client.destroy()
+  })
+})

@@ -1,4 +1,4 @@
-const DOC_PROTOCOL_VERSION = 1
+export const DOC_PROTOCOL_VERSION = 1
 
 export interface DocOp {
   op_id: string

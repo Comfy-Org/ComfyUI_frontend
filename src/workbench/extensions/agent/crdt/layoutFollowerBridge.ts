@@ -37,11 +37,13 @@ function trySend(send: () => boolean): boolean {
  */
 export class LayoutFollowerBridge extends EventTarget {
   /**
-   * Reassigned only by {@link onDocReset}: a lineage break replaces the doc
-   * wholesale, because folding a re-minted document into the old one merges
-   * two unrelated histories and duplicates every node on the canvas.
+   * Reassigned when a reset or workflow switch breaks lineage. Folding a
+   * re-minted document into the old one merges two unrelated histories and
+   * duplicates every node on the canvas.
    */
   private followerDoc = new FollowerDoc()
+  /** Workflow lineage currently held by followerDoc. */
+  private lineageWorkflowId: string | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -102,7 +104,14 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   subscribe(workflowId: string): void {
+    const previousLineage = this.lineageWorkflowId
+    this.lineageWorkflowId = workflowId
     this.desiredWorkflowId = workflowId
+    if (previousLineage !== null && previousLineage !== workflowId) {
+      this.followerDoc.destroy()
+      this.followerDoc = new FollowerDoc()
+      this.schemaError = null
+    }
     this.reconcile()
   }
 
@@ -163,6 +172,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
+      this.lineageWorkflowId = null
       this.followerDoc.destroy()
     }
   }

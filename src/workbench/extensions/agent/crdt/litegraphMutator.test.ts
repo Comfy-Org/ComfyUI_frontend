@@ -17,7 +17,10 @@ import type { LitegraphMutatorDeps } from './litegraphMutator'
 class FakeNode {
   id: NodeId = toNodeId(-1)
   pos: [number, number] = [0, 0]
-  readonly widgets: { name: string; value: unknown }[]
+  title: string
+  has_errors: boolean | undefined
+  properties: Record<string, unknown> = {}
+  readonly widgets: { name: string; value: unknown; serialize?: boolean }[]
   readonly connectCalls: {
     originSlot: number
     target: FakeNode
@@ -29,6 +32,7 @@ class FakeNode {
     readonly type: string,
     widgetNames: string[] = []
   ) {
+    this.title = type
     this.widgets = widgetNames.map((name) => ({ name, value: undefined }))
   }
 
@@ -134,6 +138,65 @@ describe('LitegraphMutator', () => {
     expect(graph.getNodeById(toNodeId('abc'))).not.toBeNull()
   })
 
+  it('reuses an existing node and maps opaque widget indexes on replay', () => {
+    const { mutator, graph, created } = makeMutator()
+    const restored = new FakeNode('MarkdownNote', ['text'])
+    restored.id = toNodeId('15')
+    restored.title = 'Enable multi-image input'
+    restored.has_errors = false
+    restored.properties = { preserved: true }
+    restored.widgets[0].value = 'stale text'
+    graph.add(restored)
+
+    mutator.applyBatch(
+      batch({
+        kind: 'add_node',
+        node: {
+          id: toNodeId('15'),
+          type: 'MarkdownNote',
+          pos: [30, 40],
+          widgets: { '0': 'Preserve this exact text after tab switching.' }
+        }
+      })
+    )
+
+    expect(created).toHaveLength(0)
+    expect(graph.nodes.size).toBe(1)
+    expect(graph.getNodeById(toNodeId('15'))).toBe(restored)
+    expect(restored.pos).toEqual([30, 40])
+    expect(restored.title).toBe('Enable multi-image input')
+    expect(restored.has_errors).toBe(false)
+    expect(restored.properties).toEqual({ preserved: true })
+    expect(restored.widgets[0].value).toBe(
+      'Preserve this exact text after tab switching.'
+    )
+  })
+
+  it('replaces an existing node when its id is reused for another type', () => {
+    const { mutator, graph, created } = makeMutator()
+    const stale = new FakeNode('MarkdownNote', ['text'])
+    stale.id = toNodeId('15')
+    graph.add(stale)
+
+    mutator.applyBatch(
+      batch({
+        kind: 'add_node',
+        node: {
+          id: toNodeId('15'),
+          type: 'LoadVideo',
+          pos: [30, 40],
+          widgets: { fps: 24 }
+        }
+      })
+    )
+
+    expect(created).toHaveLength(1)
+    expect(graph.nodes.size).toBe(1)
+    expect(graph.getNodeById(toNodeId('15'))).toBe(created[0])
+    expect(graph.getNodeById(toNodeId('15'))?.type).toBe('LoadVideo')
+    expect(graph.getNodeById(toNodeId('15'))?.widgets[0].value).toBe(24)
+  })
+
   it('skips add when the node factory returns null', () => {
     const { mutator, graph } = makeMutator({ createNode: () => null })
     expect(() =>
@@ -172,7 +235,7 @@ describe('LitegraphMutator', () => {
     expect(node.pos).toEqual([100, 200])
   })
 
-  it('sets a matching widget and ignores an unknown widget name', () => {
+  it('sets widgets by name or opaque index and ignores an unknown name', () => {
     const { mutator, graph } = makeMutator()
     const node = new FakeNode('KSampler', ['seed', 'steps'])
     node.id = toNodeId('2')
@@ -180,11 +243,34 @@ describe('LitegraphMutator', () => {
     mutator.applyBatch(
       batch(
         { kind: 'set_widget', id: toNodeId('2'), name: 'seed', value: 123 },
+        { kind: 'set_widget', id: toNodeId('2'), name: '1', value: 50 },
         { kind: 'set_widget', id: toNodeId('2'), name: 'nope', value: 9 }
       )
     )
     expect(node.widgets.find((w) => w.name === 'seed')?.value).toBe(123)
+    expect(node.widgets.find((w) => w.name === 'steps')?.value).toBe(50)
     expect(node.widgets.some((w) => w.name === 'nope')).toBe(false)
+  })
+
+  it('maps opaque indexes across serializable widgets only', () => {
+    const { mutator, graph } = makeMutator()
+    const node = new FakeNode('KSampler', ['seed', 'steps'])
+    node.widgets.splice(1, 0, {
+      name: 'control',
+      value: 'unchanged',
+      serialize: false
+    })
+    node.id = toNodeId('2')
+    graph.add(node)
+
+    mutator.applyBatch(
+      batch({ kind: 'set_widget', id: toNodeId('2'), name: '1', value: 50 })
+    )
+
+    expect(node.widgets[1].value).toBe('unchanged')
+    expect(node.widgets.find((widget) => widget.name === 'steps')?.value).toBe(
+      50
+    )
   })
 
   it('connects and disconnects between resolved nodes', () => {

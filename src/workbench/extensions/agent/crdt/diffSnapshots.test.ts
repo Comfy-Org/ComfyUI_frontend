@@ -155,6 +155,88 @@ describe('diffSnapshots (unit)', () => {
     ])
   })
 
+  it('replaces a reused node id and restores its links when the type changes', () => {
+    const before = snapshot(
+      [
+        { id: '1', type: 'A', pos: [0, 0], widgets: {} },
+        { id: '2', type: 'OldType', pos: [10, 20], widgets: {} }
+      ],
+      [{ id: 'l1', originId: '1', originSlot: 0, targetId: '2', targetSlot: 0 }]
+    )
+    const after = snapshot(
+      [
+        { id: '1', type: 'A', pos: [0, 0], widgets: {} },
+        { id: '2', type: 'NewType', pos: [30, 40], widgets: { text: 'new' } }
+      ],
+      [{ id: 'l1', originId: '1', originSlot: 0, targetId: '2', targetSlot: 0 }]
+    )
+
+    expect(diffSnapshots(before, after)).toEqual([
+      { kind: 'disconnect', id: 'l1', targetId: toNodeId('2'), targetSlot: 0 },
+      { kind: 'remove_node', id: toNodeId('2') },
+      {
+        kind: 'add_node',
+        node: {
+          id: toNodeId('2'),
+          type: 'NewType',
+          pos: [30, 40],
+          widgets: { text: 'new' }
+        }
+      },
+      {
+        kind: 'connect',
+        link: {
+          id: 'l1',
+          originId: toNodeId('1'),
+          originSlot: 0,
+          targetId: toNodeId('2'),
+          targetSlot: 0
+        }
+      }
+    ])
+  })
+
+  it('restores an outgoing link when its origin node type changes', () => {
+    const before = snapshot(
+      [
+        { id: '1', type: 'OldType', pos: [0, 0], widgets: {} },
+        { id: '2', type: 'B', pos: [10, 20], widgets: {} }
+      ],
+      [{ id: 'l1', originId: '1', originSlot: 0, targetId: '2', targetSlot: 0 }]
+    )
+    const after = snapshot(
+      [
+        { id: '1', type: 'NewType', pos: [30, 40], widgets: {} },
+        { id: '2', type: 'B', pos: [10, 20], widgets: {} }
+      ],
+      [{ id: 'l1', originId: '1', originSlot: 0, targetId: '2', targetSlot: 0 }]
+    )
+
+    expect(diffSnapshots(before, after)).toEqual([
+      { kind: 'disconnect', id: 'l1', targetId: toNodeId('2'), targetSlot: 0 },
+      { kind: 'remove_node', id: toNodeId('1') },
+      {
+        kind: 'add_node',
+        node: {
+          id: toNodeId('1'),
+          type: 'NewType',
+          pos: [30, 40],
+          widgets: {}
+        }
+      },
+      {
+        kind: 'connect',
+        link: {
+          id: 'l1',
+          originId: toNodeId('1'),
+          originSlot: 0,
+          targetId: toNodeId('2'),
+          targetSlot: 0
+        }
+      }
+    ])
+  })
+
   it('re-emits a connect when a link is rewired to a new slot', () => {
     const before = snapshot(
       [
@@ -188,12 +270,9 @@ describe('diffSnapshots (unit)', () => {
 
 // ---- property tests: the follower's convergence guarantee ------------------
 
-// Real ComfyUI invariants the generator must respect, otherwise it exercises
-// impossible states the diff intentionally does not model:
-//   - a node id keeps a FIXED type for its lifetime (no id reuse with a new
-//     type; a replacement is a delete + add of a new id), and
-//   - a node type has a FIXED widget-name set; only widget VALUES change.
-// So type and widget keys are pinned per id; only pos and widget values vary.
+// This generator keeps node types and widget-name sets fixed. Reused-id type
+// changes are covered by the unit regression above, so only position and widget
+// values vary here.
 const NODE_SCHEMA: Record<string, { type: string; widgetKeys: string[] }> = {
   '1': { type: 'LoadImage', widgetKeys: [] },
   '2': { type: 'LoadVideo', widgetKeys: ['fps'] },

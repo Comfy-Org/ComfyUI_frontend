@@ -103,8 +103,6 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const draftStore = useAgentDraftStore()
-const crdtWorkflowId = computed(() => draftStore.workflowId)
-const { status: crdtStatus } = useAgentCrdtFollower(crdtWorkflowId)
 const agentPanelStore = useAgentPanelStore()
 const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
@@ -222,6 +220,13 @@ let lastKnownGraph: { serialized: string; workflowId: string } | null = null
 
 function reclaimMovedBinding(activePath: string): string | undefined {
   if (lastKnownGraph === null) return undefined
+  const previousPath = bindingStore.tabPathFor(lastKnownGraph.workflowId)
+  const previousWorkflow =
+    previousPath === undefined
+      ? null
+      : workflowStore.getWorkflowByPath(previousPath)
+  if (previousWorkflow !== null && workflowStore.isOpen(previousWorkflow))
+    return undefined
   const graph = app.graph?.serialize()
   if (
     !graph?.nodes?.length ||
@@ -235,6 +240,22 @@ function reclaimMovedBinding(activePath: string): string | undefined {
 }
 
 const workflowDetached = ref(false)
+const crdtWorkflowId = computed(() => draftStore.workflowId)
+const crdtProjectionWorkflowId = computed(() => {
+  if (agentNodeSelectionStore.isLoadingWorkflow) return null
+  return activeWorkflowTurnContext()?.id ?? null
+})
+const { status: crdtStatus } = useAgentCrdtFollower(
+  crdtWorkflowId,
+  crdtProjectionWorkflowId,
+  (workflowId) => {
+    const active = workflowStore.activeWorkflow
+    if (active === null) return
+    bindingStore.bind(workflowId, active.path)
+    draftStore.bind(workflowId)
+    workflowDetached.value = false
+  }
+)
 
 function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
@@ -266,9 +287,10 @@ const workflowTabs = computed<ActiveTab[]>(() =>
 )
 
 async function onSelectTab(path: string): Promise<void> {
-  workflowDetached.value = false
   const tab = workflowStore.getWorkflowByPath(path)
-  if (tab) await workflowService.openWorkflow(tab)
+  if (!tab) return
+  await workflowService.openWorkflow(tab)
+  workflowDetached.value = false
 }
 
 function onClearWorkflow(): void {
@@ -593,6 +615,7 @@ async function onAgentActiveTab(
           snapshot,
           lastRenderedVersions.get(data.workflow_id) ?? -1
         )
+      workflowDetached.value = false
       useTelemetry()?.trackAgentWorkflowApplied({
         workflow_id: data.workflow_id,
         target: 'active_tab_switch'
@@ -633,6 +656,7 @@ async function onAgentActiveTab(
     if (stale()) return
     if (snapshot === null) draftStore.bind(data.workflow_id)
     else await adoptDraftBase(data.workflow_id, snapshot)
+    workflowDetached.value = false
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: data.workflow_id,
       target: 'active_tab_open'

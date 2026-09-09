@@ -11,9 +11,6 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 useExtensionService().registerExtension({
   name: 'Comfy.AgentPanel',
   beforeLoadGraph() {
-    const agentPanelStore = useAgentPanelStore()
-    if (!agentPanelStore.isOpen) return
-
     const nodeSelectionStore = useAgentNodeSelectionStore()
     nodeSelectionStore.beginWorkflowLoad()
   },

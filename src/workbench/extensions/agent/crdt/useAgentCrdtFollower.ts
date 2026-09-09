@@ -34,7 +34,7 @@ function safeLocalStorage(): Storage | null {
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount / page reload loses the binding until the NEXT turn ack.
 // Persist it per-tab in sessionStorage so a remount can rebind immediately.
-const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
+export const DOC_ID_SESSION_KEY = 'Comfy.Agent.CrdtDocId'
 
 function safeSessionStorage(): Storage | null {
   try {
@@ -93,7 +93,11 @@ export const apiTransport: DocFrameTransport = {
   }
 }
 
-export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
+export function useAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  projectionWorkflowId: Ref<string | null>,
+  bindWorkflow: (workflowId: string) => void
+) {
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -154,6 +158,15 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     createNode: (type) => LiteGraph.createNode(type)
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
+  let projectionReady = false
+  const projectIfActive = (): void => {
+    if (
+      projectionReady &&
+      projectionWorkflowId.value !== null &&
+      projectionWorkflowId.value === subscribedWorkflowId.value
+    )
+      projector.project(bridge.follower.doc)
+  }
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -224,11 +237,12 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     }
   }
   const onUpdate: EventListener = (event) => {
+    projectionReady = true
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
       lastSeq = Math.max(lastSeq, event.detail.seq)
-    projector.project(bridge.follower.doc)
+    projectIfActive()
     if (event instanceof CustomEvent) {
       const detail = event.detail as {
         workflowId?: string
@@ -260,13 +274,13 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const onDocReset: EventListener = (event) => {
     // Lineage break: the bridge already dropped its doc and resubscribed with
-    // an empty state vector. Forget the projected snapshot so the fresh folded
-    // state re-materializes from zero instead of diffing against a canvas
-    // seeded by the dead lineage.
+    // an empty state vector. Keep the last projected snapshot as the canvas
+    // reconciliation baseline so the fresh folded state removes nodes absent
+    // from the new lineage and replaces reused ids whose types changed.
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
-    projector.reset()
+    projectionReady = false
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -279,6 +293,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
     lastFrameType.value = event.type
+    projectionReady = false
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -286,7 +301,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const onReconnected: EventListener = () => {
     connected.value = false
-    projector.reset()
+    projectionReady = false
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -322,8 +337,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   watch(
     workflowId,
     (next) => {
+      if (!initialBind && next === subscribedWorkflowId.value) return
       clearSubscribeRetry()
       connected.value = false
+      projectionReady = false
       projector.reset()
       knownDocNodeIds = new Set()
       if (next === null) {
@@ -346,6 +363,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     },
     { immediate: true }
   )
+  watch(projectionWorkflowId, projectIfActive, { flush: 'sync' })
 
   onBeforeUnmount(() => {
     // Teardown must be total. Anything that survives keeps a projector wired to
@@ -481,13 +499,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // Bind a fresh tab to an existing doc without waiting for a turn ack
     // (gap #2: doc id is otherwise in-memory only, set on turn ack). Drives
     // the same watch → bridge.subscribe path as the real binding.
-    bindDoc: (id: string) => {
-      // Mirror the watch path so status/persistence agree with the binding
-      // (otherwise the dev panel shows "no document" on a live subscription).
-      clearSubscribeRetry()
-      subscribedWorkflowId.value = id
-      bridge.subscribe(id)
-    },
+    bindDoc: bindWorkflow,
     sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
     resubscribe: () => bridge.resubscribe(),
     reconcile: () => bridge.reconcile(),

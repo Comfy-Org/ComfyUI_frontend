@@ -42,12 +42,23 @@ export function diffSnapshots(
   next: DocSnapshot
 ): GraphMutation[] {
   const mutations: GraphMutation[] = []
+  const replacedNodeIds = new Set(
+    [...prev.nodes].flatMap(([id, node]) => {
+      const nextNode = next.nodes.get(id)
+      return nextNode && nextNode.type !== node.type ? [id] : []
+    })
+  )
 
   // 1. Drop links that are gone or rewired (before node removal, so the target
   //    still exists when we disconnect its input).
   for (const [id, link] of prev.links) {
     const nextLink = next.links.get(id)
-    if (!nextLink || linkChanged(link, nextLink)) {
+    if (
+      !nextLink ||
+      linkChanged(link, nextLink) ||
+      replacedNodeIds.has(String(link.originId)) ||
+      replacedNodeIds.has(String(link.targetId))
+    ) {
       mutations.push({
         kind: 'disconnect',
         id,
@@ -57,10 +68,10 @@ export function diffSnapshots(
     }
   }
 
-  // 2. Remove nodes that are gone.
+  // 2. Remove nodes that are gone or whose ids were reused for another type.
   for (const id of prev.nodes.keys()) {
     const node = prev.nodes.get(id)
-    if (node && !next.nodes.has(id)) {
+    if (node && (!next.nodes.has(id) || replacedNodeIds.has(id))) {
       mutations.push({ kind: 'remove_node', id: node.id })
     }
   }
@@ -68,7 +79,7 @@ export function diffSnapshots(
   // 3. Add new nodes, then reconcile survivors (position + widgets).
   for (const [id, node] of next.nodes) {
     const before = prev.nodes.get(id)
-    if (!before) {
+    if (!before || replacedNodeIds.has(id)) {
       mutations.push({ kind: 'add_node', node })
       continue
     }
@@ -83,7 +94,12 @@ export function diffSnapshots(
   // 4. Add links that are new or rewired (after their endpoints exist).
   for (const [id, link] of next.links) {
     const prevLink = prev.links.get(id)
-    if (!prevLink || linkChanged(prevLink, link)) {
+    if (
+      !prevLink ||
+      linkChanged(prevLink, link) ||
+      replacedNodeIds.has(String(link.originId)) ||
+      replacedNodeIds.has(String(link.targetId))
+    ) {
       mutations.push({ kind: 'connect', link })
     }
   }

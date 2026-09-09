@@ -7,6 +7,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
+import type * as AgentCrdtFollowerModule from './crdt/useAgentCrdtFollower'
+
 import { i18n } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
 import { app } from '@/scripts/app'
@@ -119,7 +121,9 @@ const hostStores = vi.hoisted(() => ({
     activeWorkflow: FakeTab | null
     openWorkflows: FakeTab[]
     tabs: Map<string, FakeTab>
+    closedTabs: Set<string>
     getWorkflowByPath: (path: string) => FakeTab | null
+    isOpen: (workflow: FakeTab) => boolean
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
@@ -136,13 +140,19 @@ const hostStores = vi.hoisted(() => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { reactive } = await import('vue')
   const tabs = new Map<string, FakeTab>()
+  const closedTabs = new Set<string>()
   const store = reactive({
     activeWorkflow: null as FakeTab | null,
     get openWorkflows() {
-      return Array.from(tabs.values())
+      return Array.from(tabs.values()).filter(
+        (workflow) => !closedTabs.has(workflow.path)
+      )
     },
     tabs,
+    closedTabs,
     getWorkflowByPath: (path: string) => tabs.get(path) ?? null,
+    isOpen: (workflow: FakeTab) =>
+      tabs.has(workflow.path) && !closedTabs.has(workflow.path),
     nodeToNodeLocatorId: (node: {
       graph?: { id?: string }
       id: string | number
@@ -268,6 +278,31 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
 
+const crdtFollowerTargets = vi.hoisted(
+  () =>
+    [] as {
+      workflowId: { value: string | null }
+      projectionWorkflowId: { value: string | null }
+      bindWorkflow: (workflowId: string) => void
+    }[]
+)
+vi.mock('./crdt/useAgentCrdtFollower', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentCrdtFollowerModule>()
+  return {
+    ...actual,
+    useAgentCrdtFollower: (
+      ...args: Parameters<typeof actual.useAgentCrdtFollower>
+    ) => {
+      crdtFollowerTargets.push({
+        workflowId: args[0],
+        projectionWorkflowId: args[1],
+        bindWorkflow: args[2]
+      })
+      return actual.useAgentCrdtFollower(...args)
+    }
+  }
+})
+
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
@@ -290,6 +325,7 @@ beforeEach(() => {
     (_name: string, defaultValue?: unknown) => defaultValue
   )
   hostStores.workflow.tabs.clear()
+  hostStores.workflow.closedTabs.clear()
   hostStores.workflow.activeWorkflow = null
   hostStores.canvas.selectedItems = []
   hostStores.canvas.currentGraph = null
@@ -301,6 +337,7 @@ beforeEach(() => {
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
+  crdtFollowerTargets.length = 0
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -2291,6 +2328,89 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent('other')
   })
 
+  it('keeps the bound subscription while projection pauses across tab loading', async () => {
+    const bound = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentDraftStore().bind('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const targets = crdtFollowerTargets.at(-1)
+    expect(targets?.workflowId.value).toBe('wf-42')
+    expect(targets?.projectionWorkflowId.value).toBe('wf-42')
+
+    useAgentNodeSelectionStore().beginWorkflowLoad()
+    await nextTick()
+    expect(targets?.workflowId.value).toBe('wf-42')
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+
+    hostStores.workflow.activeWorkflow = other
+    await nextTick()
+    useAgentNodeSelectionStore().finishWorkflowLoad()
+    await nextTick()
+    expect(targets?.workflowId.value).toBe('wf-42')
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+
+    useAgentNodeSelectionStore().beginWorkflowLoad()
+    hostStores.workflow.activeWorkflow = bound
+    await nextTick()
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+    useAgentNodeSelectionStore().finishWorkflowLoad()
+    await nextTick()
+    expect(targets?.workflowId.value).toBe('wf-42')
+    expect(targets?.projectionWorkflowId.value).toBe('wf-42')
+  })
+
+  it('projects the active persisted tab before the draft binding restores', () => {
+    makeTab('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const targets = crdtFollowerTargets.at(-1)
+    expect(targets?.workflowId.value).toBeNull()
+    expect(targets?.projectionWorkflowId.value).toBe('wf-42')
+  })
+
+  it('binds the active fresh tab before the follower subscribes', async () => {
+    const tab = makeTab()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const targets = crdtFollowerTargets.at(-1)
+    expect(targets?.workflowId.value).toBeNull()
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+
+    targets?.bindWorkflow('wf-42')
+    await nextTick()
+
+    expect(useAgentDraftStore().workflowId).toBe('wf-42')
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
+    expect(targets?.workflowId.value).toBe('wf-42')
+    expect(targets?.projectionWorkflowId.value).toBe('wf-42')
+  })
+
+  it('resumes projection after a detached new chat activates its workflow', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const targets = crdtFollowerTargets.at(-1)
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+    await sendFromComposer('create a workflow')
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-42',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() => {
+      expect(targets?.workflowId.value).toBe('wf-42')
+      expect(targets?.projectionWorkflowId.value).toBe('wf-42')
+    })
+  })
+
   it('transitions the bound tab from editing to modified when the turn completes', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -3591,8 +3711,8 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('a bound workflow follows its unchanged content to a renamed tab', async () => {
-    makeTab('wf-42')
+  it('a closed bound workflow follows its unchanged content to a renamed tab', async () => {
+    const current = makeTab('wf-42')
     appMock.graph.nodes = [{ id: 1 }]
     const bodies = mockMessagesEndpoint('wf-42', {
       status: 404,
@@ -3603,6 +3723,9 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
     await screen.findByRole('button', { name: 'Send' })
 
+    hostStores.workflow.closedTabs.add(current.path)
+    expect(hostStores.workflow.getWorkflowByPath(current.path)).toBe(current)
+    expect(hostStores.workflow.isOpen(current)).toBe(false)
     const duck = addTab('workflows/duck.json')
     hostStores.workflow.activeWorkflow = duck
 
@@ -3616,6 +3739,29 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).toHaveProperty('draft')
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
       'workflows/duck.json'
+    )
+  })
+
+  it('does not move a binding to a second open workflow with identical content', async () => {
+    const current = makeTab('wf-42')
+    appMock.graph.nodes = [{ id: 1 }]
+    mockMessagesEndpoint('wf-42', {
+      status: 404,
+      body: { error: 'none' }
+    })
+
+    await renderAndSend('first message')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    const duplicate = addTab('workflows/duplicate.json')
+    hostStores.workflow.activeWorkflow = duplicate
+    await nextTick()
+
+    const targets = crdtFollowerTargets.at(-1)
+    expect(targets?.projectionWorkflowId.value).toBeNull()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
+      current.path
     )
   })
 
@@ -4765,6 +4911,24 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
+  })
+
+  it('does not finish a new graph load from stale restore state on mount', async () => {
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    nodeSelectionStore.beginWorkflowLoad()
+    nodeSelectionStore.restoreNodeIds(['9'])
+    state.selectedItems.add(state.nodes[0])
+    hostStores.canvas.updateSelectedItems()
+
+    nodeSelectionStore.beginWorkflowLoad()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    expect(nodeSelectionStore.restoredNodeIds).toBeNull()
+    expect(nodeSelectionStore.isLoadingWorkflow).toBe(true)
+    expect(crdtFollowerTargets.at(-1)?.projectionWorkflowId.value).toBeNull()
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {

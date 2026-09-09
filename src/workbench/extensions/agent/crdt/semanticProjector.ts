@@ -4,8 +4,9 @@
  *
  * Snapshot-diff (rather than Yjs event observation) is a deliberate POC choice:
  * O(doc) per applied update, but pure, deterministic, and fully testable. The
- * first `project` after a (re)subscribe diffs against the empty snapshot, so the
- * initial seed is materialized as `add_node`s and reconnect replays cleanly.
+ * first `project` for another workflow diffs against the empty snapshot, so its
+ * initial seed is materialized as `add_node`s. A same-workflow lineage reset can
+ * retain the previous snapshot to reconcile the existing canvas exactly.
  */
 import type * as Y from 'yjs'
 

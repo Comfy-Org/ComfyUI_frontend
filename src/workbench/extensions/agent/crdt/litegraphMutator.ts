@@ -68,7 +68,7 @@ export class LitegraphMutator implements GraphMutator {
       }
       case 'set_widget': {
         const node = graph.getNodeById(mutation.id)
-        const widget = node?.widgets?.find((w) => w.name === mutation.name)
+        const widget = node && this.widget(node, mutation.name)
         if (widget) widget.value = mutation.value as TWidgetValue
         return
       }
@@ -92,14 +92,43 @@ export class LitegraphMutator implements GraphMutator {
   }
 
   private addNode(graph: LGraph, spec: NodeSpec): void {
-    const node = this.deps.createNode(spec.type)
+    let existing = graph.getNodeById(spec.id)
+    if (existing && existing.type !== spec.type) {
+      graph.remove(existing)
+      existing = null
+    }
+    const node = existing ?? this.deps.createNode(spec.type)
     if (!node) return
-    node.id = spec.id
+    if (!existing) {
+      node.id = spec.id
+      graph.add(node)
+    }
     node.pos = [spec.pos[0], spec.pos[1]]
-    graph.add(node)
+    const widgets = node.widgets ?? []
+    const widgetsByName = new Map(
+      widgets.map((widget) => [widget.name, widget])
+    )
+    const serializableWidgets = widgets.filter(
+      (widget) => widget.serialize !== false
+    )
     for (const [name, value] of Object.entries(spec.widgets)) {
-      const widget = node.widgets?.find((w) => w.name === name)
+      const widget =
+        widgetsByName.get(name) ?? this.indexedWidget(serializableWidgets, name)
       if (widget) widget.value = value as TWidgetValue
     }
+  }
+
+  private widget(node: LGraphNode, name: string) {
+    return (
+      node.widgets?.find((widget) => widget.name === name) ??
+      this.indexedWidget(
+        node.widgets?.filter((widget) => widget.serialize !== false) ?? [],
+        name
+      )
+    )
+  }
+
+  private indexedWidget<T>(widgets: T[], name: string): T | undefined {
+    return /^(0|[1-9]\d*)$/.test(name) ? widgets[Number(name)] : undefined
   }
 }
