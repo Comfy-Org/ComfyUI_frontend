@@ -379,20 +379,20 @@ const stepperClass =
         data-testid="buy-credits-done"
         data-step="landed"
       >
-        <div class="flex items-center gap-3 pr-16">
-          <span
-            class="border-primary-comfy-yellow text-primary-comfy-yellow grid size-8 shrink-0 place-items-center rounded-full border-2"
-            aria-hidden="true"
-          >
-            <Check class="size-4" :stroke-width="3" />
-          </span>
-          <DialogTitle>
-            {{
-              t('workshop.credits.done', locale).replace('{n}', format(credits))
-            }}
-          </DialogTitle>
-        </div>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
+        <span
+          class="border-primary-comfy-yellow text-primary-comfy-yellow -mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2"
+          aria-hidden="true"
+        >
+          <Check class="size-7" :stroke-width="2.5" />
+        </span>
+        <DialogTitle class="px-8 text-center">
+          {{
+            t('workshop.credits.done', locale).replace('{n}', format(credits))
+          }}
+        </DialogTitle>
+        <DialogDescription
+          class="px-8 text-center text-base text-primary-comfy-canvas/70"
+        >
           {{
             t('workshop.credits.addedTo', locale).replace(
               '{workspace}',
@@ -454,25 +454,24 @@ const stepperClass =
         data-testid="buy-credits-held"
         data-step="unresolved"
       >
-        <div class="flex items-center gap-3 pr-16">
-          <!-- Not yellow: "Payment received" is a reassuring headline on the
-               outcome that is not fine, and the mark is what says so before the
-               body does. Not secondary-mauve either, which /payment/failed uses
-               — it is #4d3762 on a #211927 surface, about 1.6:1, so it barely
-               renders. Orange is the palette's "needs attention" that is
-               legible on ink, the same problem --color-destructive-light exists
-               to solve. -->
-          <span
-            class="border-primary-comfy-orange text-primary-comfy-orange grid size-8 shrink-0 place-items-center rounded-full border-2"
-            aria-hidden="true"
-          >
-            <Clock class="size-4" />
-          </span>
-          <DialogTitle>
-            {{ t('workshop.credits.heldTitle', locale) }}
-          </DialogTitle>
-        </div>
-        <DialogDescription class="text-base text-primary-comfy-canvas/70">
+        <!-- Not yellow: "Payment received" is a reassuring headline on the
+             outcome that is not fine, and the mark is what says so before the
+             body does. Not secondary-mauve either, which /payment/failed uses —
+             it is #4d3762 on a #211927 surface, about 1.6:1, so it barely
+             renders. Orange is the palette's "needs attention" that is legible
+             on ink, the same problem --color-destructive-light exists to solve. -->
+        <span
+          class="border-primary-comfy-orange text-primary-comfy-orange -mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2"
+          aria-hidden="true"
+        >
+          <Clock class="size-7" />
+        </span>
+        <DialogTitle class="px-8 text-center">
+          {{ t('workshop.credits.heldTitle', locale) }}
+        </DialogTitle>
+        <DialogDescription
+          class="px-8 text-center text-base text-primary-comfy-canvas/70"
+        >
           {{ t('workshop.credits.heldBody', locale) }}
         </DialogDescription>
 
