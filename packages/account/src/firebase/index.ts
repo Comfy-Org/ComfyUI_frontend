@@ -28,6 +28,8 @@ import {
   signOut
 } from 'firebase/auth'
 
+import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
+
 interface ActionCeiling {
   /**
    * Optional ceiling on the network-shaped actions (email sign-in/sign-up,
@@ -107,6 +109,18 @@ function withCeiling<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
   })
 }
 
+/**
+ * An unknown email must look exactly like a sent reset, which is how Firebase
+ * itself answers with email enumeration protection on; a distinct failure
+ * here would be an account enumeration oracle.
+ */
+function resolveUnknownEmailAsSent(error: unknown): void {
+  if (isFirebaseAuthErrorLike(error) && error.code === 'auth/user-not-found') {
+    return
+  }
+  throw error
+}
+
 function authResolver(config: FirebaseIdentityConfig): () => Auth {
   if ('auth' in config) return () => config.auth
   const appName = config.appName ?? 'comfy-account'
@@ -137,7 +151,9 @@ export function createFirebaseIdentity(
     createUserWithEmail: (email, password) =>
       bounded(createUserWithEmailAndPassword(auth(), email, password)),
     sendPasswordReset: (email) =>
-      bounded(sendPasswordResetEmail(auth(), email)),
+      bounded(sendPasswordResetEmail(auth(), email)).catch(
+        resolveUnknownEmailAsSent
+      ),
     signOut: () => signOut(auth())
   }
 }
