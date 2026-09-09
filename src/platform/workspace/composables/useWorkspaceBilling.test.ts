@@ -124,6 +124,7 @@ const activeStatus = {
   occupied_seats: 72,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
   subscription_duration: 'MONTHLY' as const,
@@ -137,6 +138,7 @@ const freeStatus = {
   occupied_seats: 100,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
 }
@@ -276,6 +278,29 @@ describe('useWorkspaceBilling', () => {
       expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
         'workspace-1',
         'stripe'
+      )
+    })
+
+    it('maps a scheduled plan change into subscription info', async () => {
+      const scheduledChange = {
+        plan_slug: 'team-annual',
+        effective_at: '2026-06-01T00:00:00Z',
+        team_credit_stop: {
+          id: 'team_2500',
+          credits_monthly: 527_500,
+          stop_usd: 2500
+        }
+      }
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        scheduled_change: scheduledChange
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.scheduledChange).toEqual(
+        scheduledChange
       )
     })
 

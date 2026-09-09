@@ -10,12 +10,12 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
-vi.mock('@/platform/assets/services/assetService')
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs')
+vi.mock(import('@/platform/assets/services/assetService'))
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))
 
 const mockGetAllAssetsByTag = vi.mocked(assetService.getAllAssetsByTag)
 const mockGetAssetsPageByTag = vi.mocked(assetService.getAssetsPageByTag)

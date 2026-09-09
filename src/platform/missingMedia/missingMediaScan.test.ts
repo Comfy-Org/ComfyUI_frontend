@@ -29,7 +29,7 @@ import {
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
-vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), async (importActual) => {
   const actual = await importActual<typeof GraphTraversalUtil>()
   type TestNode = LGraphNode & { _testExecutionId?: string }
   type TestGraph = { _testNodes: TestNode[] }
@@ -65,12 +65,12 @@ vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   }
 })
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
-vi.mock('@/platform/assets/services/assetService')
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs')
+vi.mock(import('@/platform/assets/services/assetService'))
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))
 
 const mockGetAllAssetsByTag = vi.mocked(assetService.getAllAssetsByTag)
 const mockGetAssetsPageByTag = vi.mocked(assetService.getAssetsPageByTag)
