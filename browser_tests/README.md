@@ -346,6 +346,8 @@ equivalent) rather than deleting it.
 
 - All mock setup, state resets, and fixture arrangement belong in
   `test.beforeEach()` or Playwright fixtures.
+- Prefer `test.use({ initialSettings })` for starting settings rather than
+  `comfyPage.settings.setSetting()` in `beforeEach`.
 - Inside `test()`, only **act** (user actions) and **assert**.
 - Never call `clearAllMocks` or reset mock state mid-test.
 - **Free-standing helpers, constants, and locator wiring don't belong inline in
@@ -482,11 +484,16 @@ Choose based on **what you're testing**:
 | Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based; use coordinates/refs   |
 | Both in one test                               | Pick primary, minimize switching | Mixing both is a smell               |
 
-Vue Nodes requires explicit opt-in:
+The `@vue-nodes` tag enables Vue Nodes before boot and waits for them to render.
+For suites that configure the renderer without that tag, seed the setting and
+keep an explicit readiness check:
 
 ```typescript
-await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-await comfyPage.vueNodes.waitForNodes()
+test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
+
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.vueNodes.waitForNodes()
+})
 ```
 
 Vue Node state is expressed via CSS classes:
@@ -631,15 +638,52 @@ await page.evaluate(() => window.app!.registerExtension({ name: 'TestExt' }))
 **Preferred** — helper methods from `fixtures/helpers/` that wrap real user
 interactions.
 
+### Starting settings and isolation
+
+Use `test.use({ initialSettings })` at the narrowest file or describe scope:
+
+```typescript
+test.use({
+  initialSettings: {
+    'Comfy.UseNewMenu': 'Disabled',
+    'Comfy.Canvas.SelectionToolbox': true
+  }
+})
+```
+
+`comfyPageFixture` replaces the worker user's entire settings file before each
+test. It merges the common baseline, the `@vue-nodes` renderer override, and
+`initialSettings`, in that order. Omitted keys from previous tests disappear.
+The browser context is test-scoped, and initial setup clears localStorage and
+sessionStorage. Tests do not need settings resets in `afterEach`.
+
+Nested `test.use` calls **replace**, not merge, the parent's `initialSettings`
+object. Include every suite-specific override needed by a nested scope. Do not
+contradict `@vue-nodes` with a false renderer override; its readiness check still
+expects Vue nodes.
+
+Keep runtime `setSetting` calls when a live change, persistence, or renderer
+transition is the behavior under test. A same-test reload retains those changes.
+Preserve readiness checks and install any mocks needed by startup settings before
+the `comfyPage` fixture boots.
+
+Manual backend boots must call `comfyPage.setupSettings({ userId, settings })`
+before navigation to apply the same baseline. `ComfyPage.setup()` alone does not
+reset backend settings. Use a multi-user backend; separate test runs must not
+share worker users on the same backend.
+
+Mock-only cloud tests use their boot helper's settings response instead. Give
+each test a fresh response; backend seeds cannot affect a mocked settings read.
+Use a stateful mock when testing persistence across reloads.
+
 ### Minimal workflows & cleanup
 
 - Load the smallest workflow the test needs (`loadWorkflow('single_ksampler')`),
   not the full default graph.
-- Server-persisted state (settings, uploaded files, saved workflows) leaks
-  across tests. Reset it in `afterEach` (or a fixture) and clean up files:
+- Uploaded files and saved workflows are not covered by the settings baseline.
+  Keep their cleanup in the owning fixture or `afterEach`:
 
 ```typescript
-await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
 comfyPage.deleteFileAfterTest({ filename: 'image.png' })
 ```
 

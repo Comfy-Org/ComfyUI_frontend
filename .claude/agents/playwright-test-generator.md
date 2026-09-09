@@ -89,16 +89,21 @@ test('my test', async ({ comfyPage }) => {
 
 ### Key APIs
 
-| Need             | Use                                                  | Notes                             |
-| ---------------- | ---------------------------------------------------- | --------------------------------- |
-| Canvas element   | `comfyPage.canvas`                                   | Pre-configured Locator            |
-| Wait for render  | `comfyPage.nextFrame()`                              | After canvas mutations            |
-| Load workflow    | `comfyPage.workflow.loadWorkflow('name')`            | Assets in `browser_tests/assets/` |
-| Get node by type | `comfyPage.nodeOps.getNodeRefsByType('KSampler')`    | Returns NodeReference[]           |
-| Search box       | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick          |
-| Settings         | `comfyPage.settings.setSetting(key, value)`          | Clean up in afterEach             |
-| Keyboard         | `comfyPage.keyboard.press('Delete')`                 | Focus canvas first                |
-| Context menu     | `comfyPage.contextMenu`                              | Right-click interactions          |
+| Need              | Use                                                  | Notes                                             |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| Canvas element    | `comfyPage.canvas`                                   | Pre-configured Locator                            |
+| Wait for render   | `comfyPage.nextFrame()`                              | After canvas mutations                            |
+| Load workflow     | `comfyPage.workflow.loadWorkflow('name')`            | Assets in `browser_tests/assets/`                 |
+| Get node by type  | `comfyPage.nodeOps.getNodeRefsByType('KSampler')`    | Returns NodeReference[]                           |
+| Search box        | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick                          |
+| Starting settings | `test.use({ initialSettings: { key: value } })`      | Fixture resets settings per test                  |
+| Runtime settings  | `comfyPage.settings.setSetting(key, value)`          | Only for changes under test; no settings teardown |
+| Keyboard          | `comfyPage.keyboard.press('Delete')`                 | Focus canvas first                                |
+| Context menu      | `comfyPage.contextMenu`                              | Right-click interactions                          |
+
+Follow [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
+Nested `test.use` replaces the parent's settings object. Include inherited
+overrides and install startup-dependent mocks before `comfyPage` boots.
 
 ### Mandatory Test Structure
 
