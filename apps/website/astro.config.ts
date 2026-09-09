@@ -8,6 +8,7 @@ import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
 import { redirects } from './src/config/redirects'
 import { localizedSitemap } from './src/integrations/localized-sitemap'
 import { markdownTwins } from './src/integrations/markdown-twins'
+import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
 
 export default defineConfig({
@@ -35,7 +36,8 @@ export default defineConfig({
     // After sitemap(): it builds from Astro's page list, which omits the routes
     // the i18n fallback produces for dynamic routes. This adds them back.
     localizedSitemap('https://comfy.org'),
-    markdownTwins()
+    markdownTwins(),
+    workshopReleaseGate()
   ],
   vite: {
     plugins: [tailwindcss()],

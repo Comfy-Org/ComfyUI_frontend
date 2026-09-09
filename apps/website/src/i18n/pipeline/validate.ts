@@ -193,6 +193,27 @@ export function collectViolations(
       }
     }
 
+    // `tPlural` chooses between `singular | plural` using English rules,
+    // because the flattened dictionary no longer records which language a
+    // message came from. That is only safe while no other locale supplies forms
+    // of its own — true of Japanese and Chinese, whose plural category set is
+    // the single value 'other'. A translation that supplies them anyway would
+    // be pluralised by the wrong language's rules, and silently, so it fails
+    // here instead.
+    // `{count}` as well as the pipe, because a pipe on its own is just a
+    // character: it appears inside JSX props in the story bodies, and matching
+    // on it alone failed twelve keys that have no plural forms at all.
+    const pluralForms = (text: string) =>
+      text.includes('{count}') && text.includes('|')
+    if (pluralForms(source) && pluralForms(value)) {
+      add(
+        key,
+        'structure',
+        'supplies its own plural forms, which tPlural would choose between ' +
+          'using English rules'
+      )
+    }
+
     const sourceLines = source.split('\n').length
     const valueLines = value.split('\n').length
     if (sourceLines !== valueLines) {

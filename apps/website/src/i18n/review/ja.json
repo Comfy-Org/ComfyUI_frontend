@@ -14,15 +14,15 @@
     "about.careers.whyTitle": "9bc50c226e6f68eecc9f1e8f5bab397c",
     "about.careers.whyTitleAfter": "3a0d04ce0257cdbc1e73325d019d041c",
     "about.careers.whyTitleBefore": {
-      "hash": "85193685db732f307c3fe0898bbfb2d4",
+      "hash": "deba247bef5a1cd05123527f7870cf50",
       "findings": [
         {
           "key": "about.careers.whyTitleBefore",
           "category": "context",
-          "severity": "major",
-          "span": "なぜ参加するのか",
-          "suggestion": "なぜ",
-          "reason": "This is the leading fragment of a split heading (whyTitleBefore + brand + whyTitleAfter = \"Why join\" + \"Comfy\" + \"?\"). The translation is a complete clause ending in のか, so when concatenated with the brand name and the final \"？\" it produces broken Japanese (\"なぜ参加するのかComfy？\"). It also uses 参加する while the full heading key whyTitle renders the same phrase as \"Comfyで働く理由\", so the two are inconsistent on the same page."
+          "severity": "minor",
+          "span": "Comfyで働く理由",
+          "suggestion": "…で働く理由",
+          "reason": "This is the 'before' fragment of a split heading; the brand name is normally supplied by the adjacent highlighted segment. Inserting 'Comfy' here risks rendering the brand twice in the assembled heading."
         }
       ]
     },
@@ -599,15 +599,15 @@
     "cli.session.heading": "695893974b468a55cf95adf10b559ff5",
     "cli.session.subtitle": "fe94d86da70dbf090ca836e94432522f",
     "cli.session.transcript": {
-      "hash": "8fd83e4355c26d79b8e6c3915b6d3b7a",
+      "hash": "e09467b333a9e3065fc40acff388477d",
       "findings": [
         {
           "key": "cli.session.transcript",
           "category": "accuracy",
-          "severity": "major",
-          "span": "comfy generate はパートナーモデルでプロンプトを生成し",
-          "suggestion": "comfy generate はパートナーモデルでプロンプトから画像を生成し",
-          "reason": "Reverses the meaning: the English says the command renders (an image) FROM a prompt, while the Japanese says it generates a prompt."
+          "severity": "minor",
+          "span": "comfy jobs waitで完了を待機し",
+          "suggestion": "comfy jobs waitで進行状況を追跡し",
+          "reason": "English says the command 'tracks it'; the translation says it waits for completion, which narrows the stated behaviour."
         }
       ]
     },
@@ -635,19 +635,7 @@
     "cli.setup.connections.local.tagline": "7330e69a20acf0ae658791e75a9294c9",
     "cli.setup.connections.tabsLabel": "895434ecea5c704cc891c4fcaea6d572",
     "cli.setup.docsLinkLabel": "e5ba9e929e02bdeb83b269012087567c",
-    "cli.setup.docsPrefix": {
-      "hash": "a7e3bac69dbda1d886962438186ecf09",
-      "findings": [
-        {
-          "key": "cli.setup.docsPrefix",
-          "category": "fluency",
-          "severity": "major",
-          "span": "すべてのコマンドとフラグは",
-          "suggestion": "すべてのコマンドとフラグは、",
-          "reason": "This prefix is concatenated with the link label and the '。' suffix, producing the incomplete sentence 'すべてのコマンドとフラグはコマンドリファレンス。' with no predicate. The prefix needs to carry a verb phrase such as '…に記載されています' or be restructured so the assembled sentence is grammatical."
-        }
-      ]
-    },
+    "cli.setup.docsPrefix": "f3af15a5bcc36db6547d321edd165c60",
     "cli.setup.docsSuffix": "fe8f5f9b55c7a13f68481ad0946b95e4",
     "cli.setup.heading": "e4c144aaea598d1e08c4cb7250a926f1",
     "cli.setup.install.cloudDescription": "7ed1e27e8d5375430aa3159b586c1896",
@@ -663,7 +651,6 @@
     "cli.setup.requirementLinkLabel": "049159dc37b0677ef784625a5b70a945",
     "cli.setup.requirementPrefix": "35175cdbf508e745ebf96445ebfd621b",
     "cli.setup.requirementSuffix": "f3034c11686833783115cdd86e43d90f",
-    "cli.setup.shell.ci.keyLinkLabel": "8df962e59bf0dcaf9f8b453f6cfd93cc",
     "cli.setup.shell.ci.keyLinkPrefix": "e78c1065946ea78d9e918c049bf2567b",
     "cli.setup.shell.ci.stepCloud": "a754ea136edbecfb59ae8f9034c8fd34",
     "cli.setup.shell.ci.stepLocal": "28ea5084a6ea602b79081266aa6daca0",
@@ -679,45 +666,33 @@
     "cli.skills.bundled.comfyRelay": "1e6c1b74b1aa9b19a01d59e05a0e3b4b",
     "cli.skills.bundledLabel": "7c9882a2a10b5f7450007d565e935552",
     "cli.skills.card.characterSheets.prompt": {
-      "hash": "cda7ea17a5408349ce0f070b8bf443b0",
+      "hash": "a7075e75ccf4d82c9499bf43c9a519e9",
       "findings": [
         {
           "key": "cli.skills.card.characterSheets.prompt",
           "category": "fluency",
           "severity": "major",
-          "span": "./characters. 内の各主人公",
-          "suggestion": "./characters 内の各主人公",
-          "reason": "The English sentence-final period was pulled inside the file path, so the path now reads './characters.' followed by a stray space. This corrupts a literal path shown to users and reads as broken punctuation in Japanese."
+          "span": "./characters. 内の",
+          "suggestion": "./characters 内の各ヒーローの4面ターンアラウンドを生成。",
+          "reason": "The English sentence-final period was absorbed into the file path, producing a malformed path ('./characters.') followed by a stray space. The path should read './characters' and the sentence should end with the period/。 after the verb."
         }
       ]
     },
     "cli.skills.card.characterSheets.title": "ffd4fbc33fe716439accb25c2f6a9294",
     "cli.skills.card.heroProps.prompt": {
-      "hash": "c600f17a86271ffe23aa922414ed761c",
+      "hash": "544ca3aa714b7ec47974dfa48a5c15e1",
       "findings": [
         {
           "key": "cli.skills.card.heroProps.prompt",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "3D主人公プロップ",
-          "suggestion": "3Dヒーロープロップ",
-          "reason": "'Hero prop' is a 3D/game-art term for a high-detail showcase asset, not a prop belonging to the protagonist. '主人公プロップ' misstates the meaning for a professional 3D audience."
+          "category": "context",
+          "severity": "minor",
+          "span": "渡して。",
+          "suggestion": "Align register with the sibling prompt card (e.g. noun/plain form such as 「…を作成し、.glb を出力。」)",
+          "reason": "Sibling skill-card prompt (characterSheets) ends in a noun-style '生成。' while this one uses a casual spoken imperative '渡して。'; the two cards are read side by side and should share one register."
         }
       ]
     },
-    "cli.skills.card.heroProps.title": {
-      "hash": "bbf0deec3b7e46decf925b593c75a6d0",
-      "findings": [
-        {
-          "key": "cli.skills.card.heroProps.title",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "3D主人公プロップ",
-          "suggestion": "3Dヒーロープロップ",
-          "reason": "'Hero props' is a production term meaning high-detail featured props, not props belonging to a protagonist. Rendering it as 主人公プロップ ('protagonist prop') states something the English does not mean; keep it as ヒーロープロップ."
-        }
-      ]
-    },
+    "cli.skills.card.heroProps.title": "68d8428aebb5b454507abf2587118215",
     "cli.skills.card.keyArt.prompt": "d0cf897ea3f9121d86571a4da5d2bfbf",
     "cli.skills.card.keyArt.title": "cae3f12659bcdc9cfd998f55acfcfa2f",
     "cli.skills.card.keyframes.prompt": "aee8cc187dd2ce7e619973f86e16cfce",
@@ -742,19 +717,7 @@
     "cli.skills.label": "20495f0656dc9481b6fe4ccf40520ebe",
     "cli.skills.moreSkillsLinkLabel": "4cfde469db07e33353502aadbc316d06",
     "cli.skills.moreSkillsPrefix": "4046c791e651d6b29d26235c146317c9",
-    "cli.skills.moreSkillsSuffix": {
-      "hash": "fe8f5f9b55c7a13f68481ad0946b95e4",
-      "findings": [
-        {
-          "key": "cli.skills.moreSkillsSuffix",
-          "category": "fluency",
-          "severity": "major",
-          "span": "。",
-          "suggestion": "にあります。",
-          "reason": "The prefix + link + suffix concatenation produces 'さらに多くのエージェントスキルは Comfy Skills リポジトリ。', a sentence with no predicate. Japanese needs a verb in the suffix (e.g. にあります) for the assembled sentence to be grammatical."
-        }
-      ]
-    },
+    "cli.skills.moreSkillsSuffix": "75b7f9375e5c89715118161ea2ec6d95",
     "cli.skills.subtitle": "050439a021db1e203929af6e343ad9c6",
     "cli.why.1.description": "c13860ad63f2f2f6190a2bc33d16e95c",
     "cli.why.1.title": "25a8639589142acb478b6c7a339cc0eb",
@@ -862,15 +825,15 @@
     "cloud.faq.7.a": "c91e8c98dc30c8d39aa0876ded68e9c2",
     "cloud.faq.7.q": "75a38f471770eeb7c918c6bfb29de5f6",
     "cloud.faq.8.a": {
-      "hash": "cc7323f0878869d0e3e7e0a3b5d087c3",
+      "hash": "fa76e0abe4cf55bf3054b6d7c39a89b4",
       "findings": [
         {
           "key": "cloud.faq.8.a",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "CivitAIまたはHuggingFaceでファインチューニングした独自のLoRAを持ち込み",
-          "suggestion": "CivitAIやHuggingFaceから、ご自身のファインチューニング済みLoRAを取り込み",
-          "reason": "Mistranslates 'bring in your own fine-tuned LoRAs from CivitAI or HuggingFace': the Japanese states the LoRAs were fine-tuned ON CivitAI/HuggingFace, whereas the English says they are imported FROM those sites."
+          "category": "fluency",
+          "severity": "minor",
+          "span": "独自にファインチューニングしたLoRAを持ち込み、独自のスタイルを仕上げられます",
+          "suggestion": "ファインチューニング済みのLoRAを持ち込み、自分だけのスタイルを追求できます",
+          "reason": "'独自' is repeated twice in one clause, which reads clumsy in Japanese; vary the wording."
         }
       ]
     },
@@ -911,15 +874,15 @@
     "cloud.reason.4.description": "9a68ed73acb93b7c32753f556d65c502",
     "cloud.reason.4.title": "2c2e76eceb7bc5c7d6772ba2a3c0a5ce",
     "cloud.reason.heading": {
-      "hash": "25b2f80cab7b4d080a8cd9fcc72138bf",
+      "hash": "49e61a2c62712066a7c512b64afa83a8",
       "findings": [
         {
           "key": "cloud.reason.heading",
           "category": "context",
           "severity": "major",
-          "span": "プロフェッショナルに\n選ばれる\n理由",
-          "suggestion": "プロフェッショナルが\n選ぶ理由 — (leave the sentence open so the highlighted \"Cloud\" reads correctly, e.g. \"プロフェッショナルが選ぶ\" + \"Cloud\" + \"の理由\" handled via markup, or restructure as \"プロフェッショナルが\\nComfy \" )",
-          "reason": "This heading is concatenated with cloud.reason.headingHighlight (\"Cloud\"), so the rendered heading becomes \"プロフェッショナルに選ばれる理由Cloud\" — the brand name is dangling after the noun that should close the phrase, which is ungrammatical in Japanese. The translation needs to be structured so the appended \"Cloud\" lands in a grammatical position."
+          "span": "選ぶ理由",
+          "suggestion": "プロフェッショナルが\\n選ぶのは\\n",
+          "reason": "The English heading is an incomplete sentence ending in 'choose ' because the product name is appended after it by the layout. The Japanese ends with the noun '理由' ('the reason'), so the appended product name will follow the completed phrase and produce broken word order (e.g. 'プロフェッショナルが選ぶ理由 Comfy Cloud'). The fragment needs to end in a form that a following product name can complete."
         }
       ]
     },
@@ -1033,12 +996,9 @@
     "cloudNodesLaunch.models.footnoteLink": "111b09f798baa279b8b522c3c5fac19e",
     "cloudNodesLaunch.models.heading": "ab37bb23842cf5ac6f86c11b2986c313",
     "cloudNodesLaunch.models.mageFlow": "ecac7a24485da3a03f5c1dd7b48af4d6",
-    "cloudNodesLaunch.models.mageFlowTurbo": "8d8f7cbc55efcc09f9b6cb048329864a",
     "cloudNodesLaunch.models.minimaxH3": "6cd9d6a1ff4ed7220689938d5fe6c5e4",
     "cloudNodesLaunch.models.minimaxMusic3": "a2d1d4e36fbb01f0c627ec7ff81407d0",
-    "cloudNodesLaunch.models.oneNode": "060cf3cc9d0c89fc2a6505bc95ec7840",
     "cloudNodesLaunch.models.subtitle": "e3e9b5c82cc1d8096c02bce595c2170b",
-    "cloudNodesLaunch.models.threeNodes": "25e4f35f60534a0bc029fed30321a0a8",
     "cloudNodesLaunch.models.zImageTurbo": "b9939233c68b593d34f9e5deadb928aa",
     "cloudNodesLaunch.setup.heading": "f1af544a5c4d17f3475573f031e9b5d2",
     "cloudNodesLaunch.setup.step1.description": "e842d1c6663821721291860a82dc5ea7",
@@ -1159,10 +1119,10 @@
     "cta.tryWorkflow": "12ac661a8dab4bc1b95156dc6ca24cf2",
     "cta.watchDemo": "4e5045daf2ad7e99133491b94f795273",
     "cta.watchNow": "b687eb2d76085c9a1a9261828d9fc2fd",
+    "customers.article.watchVideo": "ec54aaf5b49256673aa313c7879d5bcd",
     "customers.contact.heading": "89e937befc19b13a576725009ec85d3b",
     "customers.contact.label": "1dad798ecbf925b2ccf2577bf524ddf9",
     "customers.feedback.name1": "0f90ad3ec2a56bba7b2a0f51d69bbeb2",
-    "customers.feedback.name2": "4418b91a78e7906d3483b09cc5d21d42",
     "customers.feedback.name3": "1bb71439d2026fd755e74c61516915ce",
     "customers.feedback.quote1": "bb7fb1939e4ffedbbeb995f33fbd82ae",
     "customers.feedback.quote2": "df6189f7bc8f715f302d289d89c018c9",
@@ -1190,26 +1150,32 @@
     "customers.feedback.role1": "17a9c0c09ae4beb32c182502f0b82ea4",
     "customers.feedback.role2": "a99fbd9a3c856b5e590ef626579beda2",
     "customers.feedback.role3": "256d2ad8b522b57f4790e3752c6977f2",
+    "customers.group.read": "6cdf2393ec9db6739303cc707d6f3187",
+    "customers.group.watch": "6558e67fd4a722fefdd69382df153f07",
     "customers.hero.body": "51ff56e8c060b0301a4531916a571ddb",
     "customers.hero.heading": {
-      "hash": "e4a817e39861b62012e4fa46a07b356b",
+      "hash": "01798f9a949c437efb76084183ce66d3",
       "findings": [
         {
           "key": "customers.hero.heading",
           "category": "accuracy",
-          "severity": "major",
-          "span": "創造性を重視する企業によるComfyの活用方法",
-          "suggestion": "最も革新的でクリエイティブな企業によるComfyの活用方法",
-          "reason": "The English says \"the most innovative and creative companies\"; the translation reduces this to \"companies that value creativity\", dropping \"most innovative\" and weakening the superlative claim in a page heading."
+          "severity": "minor",
+          "span": "革新的でクリエイティブな企業",
+          "suggestion": "最も革新的でクリエイティブな企業",
+          "reason": "The English superlative 'the most innovative and creative' is flattened to a plain adjective; the intensifier is omitted."
         }
       ]
     },
     "customers.hero.label": "e98f8f0fcc55c60cd55c2b4ac3cae530",
-    "customers.meta.description": "cb4b1035207f65a04f32bfd0e22ee73b",
-    "customers.meta.title": "a5a507ba09f4cf0ac7bac7fcad9b4aed",
+    "customers.meta.description": "5701f66d4e8fd20ca699d0593cb53f5a",
+    "customers.meta.title": "f710b586d99abe05ee71e5e3c1917f57",
     "customers.story.readMore": "1c0b96a59b94f7b53a537e27386f87bc",
     "customers.story.viewArticle": "f8a1a71b56cef168946e74556cb1e6de",
     "customers.story.whatsNext": "76819631ae660eb88ddd20251a4623ef",
+    "customers.video.watchStory": "09a0cd749b7b67fcdfe41b8ad9d67d6e",
+    "customers.watch.browseAll": "0d3048ac163564ee135cb04332fb646d",
+    "customers.watch.readWrittenStory": "523de80d53f904682937aaa5b47e5c14",
+    "customers.watch.transcript": "5f472dc4330737d9b3337606b17a7039",
     "demos.breadcrumb.demos": "9381f28a172478287d565c452076c4aa",
     "demos.category.gettingStarted": "59e9a9cf9f0a7924821be5a3eed36ad2",
     "demos.category.templates": "91540a3f79eab577e572befc37479e2b",
@@ -1352,15 +1318,15 @@
     "download.reason.4.description": "098462cac4067da1c6071e12a1458ede",
     "download.reason.4.title": "975d59ee4f8dd4d9f2c9bebe34570850",
     "download.reason.heading": {
-      "hash": "d54e99ffb2ad2d3fe3dbb1c0075959d3",
+      "hash": "49e61a2c62712066a7c512b64afa83a8",
       "findings": [
         {
           "key": "download.reason.heading",
           "category": "context",
           "severity": "major",
-          "span": "プロに\n選ばれる\n理由",
-          "suggestion": "Restructure so the highlighted word fits, e.g. \"プロが\\n選ぶ\\n理由 — \" with the highlight following, or request a reordered composition such as \"Desktop が プロに選ばれる理由\"",
-          "reason": "This heading is concatenated with the highlighted fragment 'Desktop' (download.reason.headingHighlight). In English the highlight completes the phrase ('...choose Desktop'), but the Japanese ends with the noun 理由, so the rendered heading becomes 'プロに選ばれる理由Desktop', which is ungrammatical word order in Japanese."
+          "span": "プロフェッショナルが\\n選ぶ理由\\n",
+          "suggestion": "…をプロフェッショナルが選ぶ理由 (place the appended product name before the Japanese text, e.g. by restructuring the fragment so the concatenated name reads naturally)",
+          "reason": "The English ends with a trailing space, indicating a product name is concatenated after this heading fragment ('Why professionals choose <Product>'). The Japanese ends with 理由 ('the reason'), so the appended product name would dangle after the completed sentence, producing an ungrammatical heading. The fragment also replaces the trailing space with a newline, further breaking the concatenation."
         }
       ]
     },
@@ -1437,13 +1403,56 @@
     "enterprise.byoKey.card2.title": "0aca2083b70f163da3bbf1fc5f2a06b3",
     "enterprise.byoKey.heading": "ad3e02c609be39c1be36267c0897d987",
     "enterprise.byoKey.subtitle": "d168999d7120ac872731dfe358f64c6a",
+    "enterprise.closing.heading": "9a5f6757ba4044cd5ae1bd2fd3ba6dab",
+    "enterprise.closing.subtitle": "5d29593ef9d68d9bcc4b2cec799ba8c4",
+    "enterprise.configurator.body": {
+      "hash": "88296f50c80b7a2acdce05825bf0e57d",
+      "findings": [
+        {
+          "key": "enterprise.configurator.body",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "チームで実行を承認するComfyUIリリース",
+          "suggestion": "チームが実行を承認されているComfyUIリリース",
+          "reason": "English says the team is approved (by the organization) to run these; the translation makes the team the approver, reversing who grants approval."
+        }
+      ]
+    },
+    "enterprise.configurator.feature1": "27945a593e2863167756dc4ff7df65b8",
+    "enterprise.configurator.feature2": "fac83f5699641aa7bc3df0f1d2c6a0eb",
+    "enterprise.configurator.feature3": "32f825c4991b34ddcff3d1475b348552",
+    "enterprise.configurator.heading": "4d56a547164519d6cce67fda88b612ff",
+    "enterprise.configurator.modelsLabel": "443267b573c547b973b0e83b95cf0e77",
+    "enterprise.configurator.modelsUnit": "3db3c2a540e4d16f1213ce939ce8c38e",
+    "enterprise.configurator.moreOptions": "7fc982b44a728525ffd0784b73ed269f",
+    "enterprise.configurator.nodesLabel": "d4e946ce6aa0cec2323c0e94b8d2d966",
+    "enterprise.configurator.nodesUnit": "c25c07ad2e5fa4f5f52632da384e1b02",
+    "enterprise.configurator.pinned": "dddc5fba129a458c8cd17dc04e9ac988",
+    "enterprise.configurator.privateModel": "d528bf070f43884da1566135c3d89dcf",
+    "enterprise.configurator.privateNodes": "8cfff33d5c55c0c91b1da3ab782c09ff",
+    "enterprise.configurator.releasesLabel": {
+      "hash": "9da5c122439ba83cd88a3d61bfe7f6b9",
+      "findings": [
+        {
+          "key": "enterprise.configurator.releasesLabel",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "COMFYUIリリース",
+          "suggestion": "ComfyUIリリース",
+          "reason": "Product name should keep its exact casing 'ComfyUI'; the English all-caps is display styling only, and all-caps is not used for Latin product names in Japanese copy."
+        }
+      ]
+    },
+    "enterprise.cta.requestDemo": "240730c82cf6f861b07f23899ae901d1",
+    "enterprise.cta.viewTrustCenter": "237ad3eefbe304e5c9a10bb9f728168e",
     "enterprise.faq.builds-vs-managed-builds.answer": "a10738b0208545c5ea59fb0434a62d13",
     "enterprise.faq.builds-vs-managed-builds.question": "ecf87234bc3bbbbfd21466566fbdec3d",
     "enterprise.faq.capacity-and-support.answer": "321567b8842d78bc35664f0cb849a7c4",
     "enterprise.faq.capacity-and-support.question": "484ef0b7e9558506e8d3ccf84678783b",
     "enterprise.faq.commercial-models.answer": "b8e700276c0f78a898a1b0d415ff42ea",
     "enterprise.faq.commercial-models.question": "53f48a869c4c65ea7aa20831fbccfc7b",
-    "enterprise.faq.heading": "2fb4d9c9ed17ddae82585a09a0e8defe",
+    "enterprise.faq.heading": "97b4971c1ace4c57d127952721490f93",
+    "enterprise.faq.security.answer": "632a87aca4ca77a61d40ade243fda9de",
     "enterprise.faq.security.question": "405e4c58e261ab4dc42e3f50c6a93e80",
     "enterprise.faq.team-plan.answer": "56a266be9cad063b29dcff78eba0fcc4",
     "enterprise.faq.team-plan.question": "9b4e82bbbb0ef7ae67a1cb20adfbc6da",
@@ -1467,21 +1476,37 @@
     "enterprise.faq.where-runs.question": "fb2bcdf62435325dd1881f813e4393c0",
     "enterprise.governance.build-policy.description": "cecde958d499ae943a465552e0b9c97c",
     "enterprise.governance.build-policy.title": "4535b9c25aa61f8900970134d7272f23",
+    "enterprise.governance.footnote": "c0757538989a2faa926a9045d1192668",
+    "enterprise.governance.heading": "e5fea8c6297ba8e79c3add5e9ad18585",
     "enterprise.governance.model-policy.description": "5e892d34b25a107068beb4a20e2c6450",
     "enterprise.governance.model-policy.title": "aca6b45b2c032bb2e2e793e1569735f0",
-    "enterprise.governance.people-access.description": "15e225f306271d4eee4f52b6e37427ad",
+    "enterprise.governance.people-access.description": {
+      "hash": "4c607ec02cf425010bd60070d4bc90c9",
+      "findings": [
+        {
+          "key": "enterprise.governance.people-access.description",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "企業IDとSSOを使用して",
+          "suggestion": "会社IDとSSOを使用して",
+          "reason": "'company identity' is rendered as 会社ID in enterprise.configurator.feature3 but 企業ID here; the two strings appear on the same page and should use one term."
+        }
+      ]
+    },
     "enterprise.governance.people-access.title": "ee485a553e0e9c0c51956426f5e66522",
     "enterprise.governance.usage-records.description": "f8d57b4cebf593904cf05a74d5edab13",
     "enterprise.governance.usage-records.title": "9571b38af10ba38a3d4cd7399237e35d",
     "enterprise.hero.contactSales": "240730c82cf6f861b07f23899ae901d1",
+    "enterprise.hero.feature1": "21d63fe66edd3bfd08ff300afa3d6b0a",
+    "enterprise.hero.feature2": "9ee7719ff7796968b508786fc3254f04",
+    "enterprise.hero.feature3": "9e7b5ebacfd013651346475e44076206",
     "enterprise.hero.heading": "9409b8d4fe39ac5dfd45a0004b6356bb",
-    "enterprise.hero.subtitle": "556f6694c0e87fe57e90f22a11295f68",
-    "enterprise.industries.games.description": "74140d3db97cf21712a3ff47e212b22f",
-    "enterprise.industries.games.title": "c4952fd728e93dfe901dd3a0f3330007",
-    "enterprise.industries.onboarding.description": "3a6fee2a453d28d8a8ae63e060e9c830",
-    "enterprise.industries.onboarding.title": "1d396321c6f0c9839395772260c5c959",
-    "enterprise.industries.vfx.description": "ec7a80b17685f1cdd4b065f9eaa8f503",
-    "enterprise.industries.vfx.title": "4d5819958ac40a69bb290f7de9e115e0",
+    "enterprise.hero.subtitle": "5120cf0afdd1f05f365a5bbf17c4d45e",
+    "enterprise.hero.title": "35d685fa4991112bd19322f59ace5c7d",
+    "enterprise.industries.heading": "f68e518ceb407851cc96c4b090e49e6d",
+    "enterprise.intro.eyebrow": "992311f08fa9788279b6df6a7f77c75b",
+    "enterprise.intro.heading": "2e1d2d65383a1db1a94e237ae8ef06be",
+    "enterprise.intro.subtitle": "36d27c50bb5e208eea768848e8193ede",
     "enterprise.managedBuilds.1.description": "8da552509739711a639144c44ae63be3",
     "enterprise.managedBuilds.1.title": "ba3ede6b9ed2e6111cf6d3a2308c563e",
     "enterprise.managedBuilds.2.description": "d016ca457f220298bcd1c84c23af6a87",
@@ -1524,6 +1549,25 @@
     "enterprise.managedBuilds.6.title": "eb0c5a1d33ce0baac056c7aa9ddbcad0",
     "enterprise.managedBuilds.aboutBuilder": "93865f92b58052606ed092ad2800ad09",
     "enterprise.managedBuilds.badge": "a797bdb9175beec4f21d71a4ab4d0df2",
+    "enterprise.managedBuilds.build.governance.description": "347395ab6974bdd96b0f5c64f14bc695",
+    "enterprise.managedBuilds.build.governance.title": "fdfa874b77b4b8959c0eee683d64f836",
+    "enterprise.managedBuilds.build.heading": "779e84708a57f63f57190e0a74d8de09",
+    "enterprise.managedBuilds.build.packaging.description": "5f34915c075b363b7202d8de07a8c96c",
+    "enterprise.managedBuilds.build.packaging.title": "4e5db7009664179dc6b2dab0ee4087d9",
+    "enterprise.managedBuilds.build.rollout.description": {
+      "hash": "56659fb3e4c1118818ed289840091db6",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.build.rollout.description",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "企業アイデンティティを通じて",
+          "suggestion": "企業のID基盤（SSO）経由で",
+          "reason": "'company identity' here means the corporate identity provider / SSO; the literal rendering '企業アイデンティティ' reads as brand identity and is unnatural in Japanese IT copy."
+        }
+      ]
+    },
+    "enterprise.managedBuilds.build.rollout.title": "3711a3d31b4f0178edc7574e88462ded",
     "enterprise.managedBuilds.builderNote.description": {
       "hash": "ec89ff5185a960aa91af08f78a11a4b0",
       "findings": [
@@ -1547,9 +1591,35 @@
     },
     "enterprise.managedBuilds.builderNote.title": "538b44a495d913228904f9870dabcf8d",
     "enterprise.managedBuilds.closing.heading": "154dca3a38ac9cdd0038c5464c07fbff",
+    "enterprise.managedBuilds.closing.headingAfterBadge": "0a5407c74e058bc9a1a8cea5c86f6e84",
+    "enterprise.managedBuilds.compare.columnBuilds": "c169ce1f7a1bea1a168a48ee0265e0fd",
+    "enterprise.managedBuilds.compare.columnManaged": "b30ba6853a1604a1c23eaaeb9331554e",
+    "enterprise.managedBuilds.compare.enterpriseOnly": "60e00d9db12fd97385065b09997e1525",
+    "enterprise.managedBuilds.compare.exploreBuilds": "ac64965648e72acde55640cf02b529cd",
+    "enterprise.managedBuilds.compare.governance.feature": "63d7d6f8aab6aef928949146fbcb31e5",
+    "enterprise.managedBuilds.compare.heading": "6af4b2c54085be07c7f6477006006ba2",
+    "enterprise.managedBuilds.compare.included": "53256c561af49f7364cefc39aca8af79",
+    "enterprise.managedBuilds.compare.notIncluded": "02792e076ecfe6c8b1c328a9b0d5bee0",
+    "enterprise.managedBuilds.compare.packaging.feature": "b471f279495d48a43184f740cceb88cb",
+    "enterprise.managedBuilds.compare.python.feature": "e0184e30c6f13b6187e9230639e3dbe1",
+    "enterprise.managedBuilds.compare.sharing.feature": "8d5b2efa501df2fc7fbf6277e6075725",
+    "enterprise.managedBuilds.compare.subtitle": "f6bff7481b836248d46a60d124832f36",
     "enterprise.managedBuilds.explore": "2353df01872c158706186ae8b9812ace",
     "enterprise.managedBuilds.faq.access.answer": "5820299990892195cb300fc070f6b548",
     "enterprise.managedBuilds.faq.access.question": "45ecd2ca0e46b61cd42304c58362799a",
+    "enterprise.managedBuilds.faq.heading": {
+      "hash": "2057aa20ba0e472b6924f45c21610eb7",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.faq.heading",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "マネージドビルド",
+          "suggestion": "Managed Builds",
+          "reason": "Same product-name inconsistency: transliterated here while left in English in compare.subtitle."
+        }
+      ]
+    },
     "enterprise.managedBuilds.faq.models.answer": "0f213581d994de5d522d5435b845032a",
     "enterprise.managedBuilds.faq.models.question": "04204e5e7202908e0a552a04edbe6d0d",
     "enterprise.managedBuilds.faq.nodes.answer": "8442db31a14f9d7b45c7c71f71c34f1b",
@@ -1562,6 +1632,7 @@
     "enterprise.managedBuilds.faq.what.question": "de5516ac67b7e6376c53c3c755d142c2",
     "enterprise.managedBuilds.faq.where.answer": "7f2fd4c3a2a048275cd0b181682a1e72",
     "enterprise.managedBuilds.faq.where.question": "41413ae2b3c8eb6af2a741d02d3711f4",
+    "enterprise.managedBuilds.fdcBand.text": "0a6a3a66357cd6fd3bda97658993baae",
     "enterprise.managedBuilds.governance.build-policy.description": "5348b19fbcd34e429bb0c6a485454602",
     "enterprise.managedBuilds.governance.build-policy.title": "4535b9c25aa61f8900970134d7272f23",
     "enterprise.managedBuilds.governance.model-policy.description": "8a0a22049a9eadbb39ad9367dc1ae8c0",
@@ -1573,18 +1644,19 @@
     "enterprise.managedBuilds.gridHeading": "c970c0e9d7075b0960754a930f2d4587",
     "enterprise.managedBuilds.gridSubtitle": "5045aa83e2a2815a16135654889f89f7",
     "enterprise.managedBuilds.heading": {
-      "hash": "9a44c429257bd8ef883da0ffaa8f1ba7",
+      "hash": "8ff0cebbbc4c21fcab2e8b102258f368",
       "findings": [
         {
           "key": "enterprise.managedBuilds.heading",
           "category": "terminology",
           "severity": "major",
-          "span": "管理対象のBuild",
+          "span": "マネージドビルド",
           "suggestion": "Managed Builds",
-          "reason": "'Managed Builds' is a product/feature name that must stay in English. It is left in English in the sibling strings (gridSubtitle, meta.title, enterprise.meta.description) but partially translated here, so the page heading contradicts the body copy."
+          "reason": "The product name is kept in English elsewhere in the same page (see compare.subtitle: 'Managed Builds では...'), but transliterated here in the main heading. Inconsistent naming for the same product within one section."
         }
       ]
     },
+    "enterprise.managedBuilds.hero.body": "0237c5bd042bfc731856440258a950dc",
     "enterprise.managedBuilds.hero.subtitle": "2b508918f5e64df988812ed7de1ad399",
     "enterprise.managedBuilds.industries.games.description": "c1a27d8d8d58336ed73390c268c65768",
     "enterprise.managedBuilds.industries.games.title": "c4952fd728e93dfe901dd3a0f3330007",
@@ -1618,6 +1690,49 @@
         }
       ]
     },
+    "enterprise.managedBuilds.security.access.description": {
+      "hash": "3118f8358862b34b53e3959c64315033",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.security.access.description",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "既存契約に対応するプロバイダーキー",
+          "suggestion": "既存契約で利用できるサポート対象のプロバイダーキー",
+          "reason": "English says 'supported provider keys with existing contracts'; the translation shifts 'supported' onto the contract relationship, losing the sense that only supported providers can be used."
+        }
+      ]
+    },
+    "enterprise.managedBuilds.security.access.title": "fb65205993bd67dbc2d558d3e979cc3c",
+    "enterprise.managedBuilds.security.footnote": "21150c543bcf164962d0e0712cf6d85a",
+    "enterprise.managedBuilds.security.heading": "b3c1ec6921e22fe33f15b5ca55408ff5",
+    "enterprise.managedBuilds.security.local.description": "c47a85861713135cd4d9ca66c6d74b45",
+    "enterprise.managedBuilds.security.local.title": "e93edc1e3db3fc7d5beb103aa893db7b",
+    "enterprise.managedBuilds.security.private-assets.description": "410cbb87c5047fc6bb1608d28ee1fd69",
+    "enterprise.managedBuilds.security.private-assets.title": "ef2fd7a71daa7aa47e89e6b102437fc9",
+    "enterprise.managedBuilds.security.usage.description": "d993daee1b1bfdace375975109cb1fa8",
+    "enterprise.managedBuilds.security.usage.title": "3f8998f45be0e28c93bace7e55f762c5",
+    "enterprise.managedBuilds.steps.build.description": "6b112cd27045aa1c215c93e6190c7eea",
+    "enterprise.managedBuilds.steps.build.title": {
+      "hash": "662c295ab282568741b7c462176449c9",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.steps.build.title",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "一度ビルド",
+          "suggestion": "一度だけビルド",
+          "reason": "'一度ビルド' reads clipped/unnatural as a standalone step title; adding だけ conveys 'build it once' idiomatically."
+        }
+      ]
+    },
+    "enterprise.managedBuilds.steps.define.description": "10ba173b78d170080b2bbe27d1a4511c",
+    "enterprise.managedBuilds.steps.define.title": "b6f999a8ce0ae9f66af6f5f6a19db42e",
+    "enterprise.managedBuilds.steps.deploy.description": "46efebe50c00d3488e2a607f4c8eeaa1",
+    "enterprise.managedBuilds.steps.deploy.title": "104c9bae039c80a6614266fb5b97c525",
+    "enterprise.managedBuilds.steps.heading": "1a358d725a29619bf4b3908130201749",
+    "enterprise.managedBuilds.steps.update.description": "03c2cb20ae433688be6d536d0bb6a520",
+    "enterprise.managedBuilds.steps.update.title": "da89f493965ad4dcce9ed4844a789bd1",
     "enterprise.managedBuilds.subtitle": "ef27038c40cbe6943e6ef5a1b04acc11",
     "enterprise.managedBuilds.talkToUs": "50375daa703964c9c6ae76517bdc6cd7",
     "enterprise.meta.description": "e2f70386ca13bf14bdf6f473d9bdacc4",
@@ -1636,19 +1751,7 @@
         }
       ]
     },
-    "enterprise.minimaxBand.text": {
-      "hash": "5f4a0018f1d69dc98a1b8a000ceda810",
-      "findings": [
-        {
-          "key": "enterprise.minimaxBand.text",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "地域別の商用利用権",
-          "suggestion": "ローカル環境での商用利用権",
-          "reason": "\"local commercial rights\" refers to rights for locally-run (self-hosted) models, but 地域別 means \"region-specific/by region\", which changes the meaning. It also conflicts with the sibling string enterprise.offers.commercial-licensing.description, where \"local model terms\" is correctly rendered as ローカルモデルの条件."
-        }
-      ]
-    },
+    "enterprise.minimaxBand.text": "209b4bc7b3bdfadfd26e9cfc81189770",
     "enterprise.offers.commercial-licensing.cta.label": "7ac6ac4d68e4ab50f37c9f5597cf34f5",
     "enterprise.offers.commercial-licensing.description": "943cf18a712028e540a724e04c888ec5",
     "enterprise.offers.commercial-licensing.label": "d265d95b37e569ba714c54ca52a7ee2d",
@@ -1657,9 +1760,6 @@
     "enterprise.offers.forward-deployed-creatives.description": "befc50397ef689c025dd551e77938e47",
     "enterprise.offers.forward-deployed-creatives.label": "b48c269e9eef7462631fe6d5ed1cad2a",
     "enterprise.offers.forward-deployed-creatives.title": "684c80ce1c175e8a08fb8aed7eeecc2a",
-    "enterprise.offers.team-plans.description": "0664d0423099d8d9221e4714e93f461c",
-    "enterprise.offers.team-plans.label": "2a79f5fbebb4957c1eca9955512d5370",
-    "enterprise.offers.team-plans.title": "e4f9e1b9154be32f52307e1d3462b0a7",
     "enterprise.orchestration.description": "d91493b9f900045a1abea9e6cd43a933",
     "enterprise.orchestration.footer": "b38274a7a94d581659b5ff6807517e60",
     "enterprise.orchestration.heading": "ea85d55a688ece43c2c1e6c477c54fd8",
@@ -1673,6 +1773,8 @@
     "enterprise.production.dedicated-capacity.title": "4f41909912034b803bc5297cf3f036ad",
     "enterprise.production.deployment.description": "983405800ddc834cf5035a388ddcbbb9",
     "enterprise.production.deployment.title": "f22beb26897bc0e7cd82cb8c8bb2bbc3",
+    "enterprise.production.footnote": "beeaaeec8fcd772d219841571eebe421",
+    "enterprise.production.heading": "63e79831e8b13dea4037d1968c988fca",
     "enterprise.production.priority-queueing.description": "5a2e1e1603833a66ea4b2f345e7287a9",
     "enterprise.production.priority-queueing.title": "fd2830584cc1a3757a57f9ab3d2a2f99",
     "enterprise.production.support.description": {
@@ -1713,6 +1815,27 @@
     "enterprise.reason.5.title": "2cd5d0f464d0df28f7a4b053e8dcc941",
     "enterprise.reason.heading": "b80b2a54729f613e085539ecf13d8502",
     "enterprise.reason.subtitle": "b95ece4e7a9ccbaa3f566379694ab377",
+    "enterprise.security.data.description": "40828b7328702903bb69c8ca1907378d",
+    "enterprise.security.data.title": "306cfa1e3fd6d7712ff5cebf444d2195",
+    "enterprise.security.dpa.description": "10f95418b17c0ff5217357cc534e671b",
+    "enterprise.security.dpa.title": "916ab82ccd04ada623014d4ded8f91ad",
+    "enterprise.security.footnote": "8bcbb48d344d61acd4ad81ce1c8abb8f",
+    "enterprise.security.heading": "b17b76ff9a909f7f6ed76e06097e1591",
+    "enterprise.security.soc2.description": {
+      "hash": "10bdf1df2e4ded362586ea03797ff036",
+      "findings": [
+        {
+          "key": "enterprise.security.soc2.description",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "Type II監査を進行中です。",
+          "suggestion": "Type II監査を実施中です。",
+          "reason": "進行 is intransitive in standard Japanese, so 「監査を進行中」 reads awkwardly; 実施中 (or 監査は進行中です) is the natural phrasing."
+        }
+      ]
+    },
+    "enterprise.security.sso.description": "1d05357069bd8dad7ec64106cf7662df",
+    "enterprise.security.sso.title": "85134c9ba25ce7ce302fa421813388e4",
     "enterprise.team.feature1.description": {
       "hash": "585d6436ce32db79edb48ed202afb385",
       "findings": [
@@ -1734,6 +1857,9 @@
     "enterprise.team.feature3.title": "f6f18553a4bb32bfd37c66df58b7a081",
     "enterprise.team.heading": "60f328ec4a3ee413efcdc0768d069116",
     "enterprise.team.subtitle": "10757cd7026da2e4732c3ad78486e4ec",
+    "enterprise.teamBand.cta": "dde385a125b5de27a274ece8f61cf5f3",
+    "enterprise.teamBand.label": "e4f9e1b9154be32f52307e1d3462b0a7",
+    "enterprise.teamBand.text": "7631dbd5bad3a43f3579374de60d6f26",
     "events.UPCOMING_LIVESTREAM": "d07219f1ffbea7c67832dc5a4b954849",
     "events.beyond-the-models.dateLabel": {
       "hash": "32c82810d2a6427d5066869f41065b00",
@@ -1795,19 +1921,7 @@
       ]
     },
     "events.comfy-agent-ga.title": "16125d97e50868523c24788ef57df70e",
-    "events.comfy-creatives-model-jam.description": {
-      "hash": "e06093209a21984715b5fb187fc2ad62",
-      "findings": [
-        {
-          "key": "events.comfy-creatives-model-jam.description",
-          "category": "terminology",
-          "severity": "major",
-          "span": "Comfyクリエイティブコミュニティ",
-          "suggestion": "Comfy Creatives コミュニティ",
-          "reason": "Third variant of the 'Comfy Creatives' name within one event block; inconsistent with the title and media strings and translates a proper community/brand name."
-        }
-      ]
-    },
+    "events.comfy-creatives-model-jam.description": "4fe6385960ce99cd9d9d62e521a47b22",
     "events.comfy-creatives-model-jam.location": "f79474d19ac9e661438e0489634bd084",
     "events.comfy-creatives-model-jam.media": {
       "hash": "7665cf640d02f0274eb71ce85b3c85f5",
@@ -1822,19 +1936,7 @@
         }
       ]
     },
-    "events.comfy-creatives-model-jam.title": {
-      "hash": "0641c5715dc864f6d7aac0a8d8b4700d",
-      "findings": [
-        {
-          "key": "events.comfy-creatives-model-jam.title",
-          "category": "terminology",
-          "severity": "major",
-          "span": "Comfy クリエイティブ・モデル・ジャム",
-          "suggestion": "Comfy Creatives モデルジャム",
-          "reason": "The event/series name 'Comfy Creatives' is partially transliterated here, but kept in English in the .media string of the same event ('Comfy Creativesモデルジャム') and rendered a third way in the description ('Comfyクリエイティブコミュニティ'). The brand name should stay in Latin script and be identical across the title, media and description of the same event."
-        }
-      ]
-    },
+    "events.comfy-creatives-model-jam.title": "8714c84710bdac8f9a65174b7bbf57d6",
     "events.comfy-mcp-claude-cursor.description": "80b6cd8d09a787869de68abcc03ccce3",
     "events.comfy-mcp-claude-cursor.media": "2b0bca13cfefc3b071d91f052a269323",
     "events.comfy-mcp-claude-cursor.title": "a551f59ef1da772464319e7e0aed0b99",
@@ -2028,15 +2130,15 @@
     "faq.pricing.difference-between-plans.body": "5ceb8f0010db2a32b227e5805df83641",
     "faq.pricing.difference-between-plans.question": "23e985cdeb4d1f5e740484175c9f01cf",
     "faq.pricing.do-credits-roll-over.body": {
-      "hash": "7e91873278dd1867ad81f200729af092",
+      "hash": "83d06103abf65596080a037654357fcf",
       "findings": [
         {
           "key": "faq.pricing.do-credits-roll-over.body",
-          "category": "terminology",
+          "category": "accuracy",
           "severity": "minor",
-          "span": "追加購入クレジットは繰り越されます。",
-          "suggestion": "追加クレジットは繰り越されます。",
-          "reason": "\"Top-up credits\" is rendered as 追加購入クレジット here but as 追加クレジット in faq.pricing.run-out-of-credits.body (and 追加クレジット in partner/team strings). Same page should use one term consistently."
+          "span": "追加購入クレジットは失効しません。",
+          "suggestion": "追加購入クレジットはそのまま残ります。",
+          "reason": "English says top-up credits 'do persist' (i.e. survive the plan reset), not that they never expire. '失効しません' (do not expire) contradicts the following sentence stating they are valid for one year."
         }
       ]
     },
@@ -2045,13 +2147,13 @@
     "faq.pricing.find-invoices-tax-id.question": "9e70545ba8b793ee9bb5bfbf34743b83",
     "faq.pricing.forward-deployed-creatives.body": "fb314039b0d2d11f0439fe41a5dd15a6",
     "faq.pricing.forward-deployed-creatives.question": "77ae2595f661f0f379776005464bfea9",
-    "faq.pricing.how-does-pricing-work.body": "ddc7c504a73dfbc6c80ded213dc3646a",
+    "faq.pricing.how-does-pricing-work.body": "d4148f4addfb72f3f70d6ac468b785fe",
     "faq.pricing.how-does-pricing-work.question": "7cd1545b88b333f55a92fc4ab3fad894",
     "faq.pricing.how-does-team-plan-work.body": "4f0ee37d689b6917fb3d6d135f7cc36a",
     "faq.pricing.how-does-team-plan-work.question": "7097af2d3fd7981ce26a8ac213bc2080",
     "faq.pricing.partner-nodes-cost.body": "f3961dc1cbe825e4616e9ea2aeeb363c",
     "faq.pricing.partner-nodes-cost.question": "f588d31d0492d3345525b638f41dd04f",
-    "faq.pricing.run-out-of-credits.body": "1bf5e42597a70fc5b58fd1ee3e664248",
+    "faq.pricing.run-out-of-credits.body": "fc1d753b9b32378b53b156953f0c8ec2",
     "faq.pricing.run-out-of-credits.question": "0e5e52861883d57a949e3e86ca5b42bc",
     "faq.pricing.run-workflows-via-api.body": {
       "hash": "51cdc56c9025d5bb8afb448e2406e4a3",
@@ -2087,37 +2189,13 @@
       ]
     },
     "faq.pricing.team-concurrency.question": "64c4fb43a4f10c04fce5e00416cb492b",
-    "faq.pricing.team-per-seat-pricing.body": {
-      "hash": "2d3df2a6cff5425ca852743a7f751f2c",
-      "findings": [
-        {
-          "key": "faq.pricing.team-per-seat-pricing.body",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "月間クレジット利用額",
-          "suggestion": "月間クレジットコミット（月額のクレジット確約額）",
-          "reason": "'monthly credit commit' is a committed monthly spend, not actual usage ('利用額' = amount used). It also contradicts faq.pricing.team-tier-pricing.body on the same page, which renders 'credit commit' as 'クレジットコミット' / '月額コミット'."
-        }
-      ]
-    },
+    "faq.pricing.team-per-seat-pricing.body": "98b7974699dd63c87e5739fce8ed5d5d",
     "faq.pricing.team-per-seat-pricing.question": "a74472abdeb4bce35d45a3ec42d2ffff",
     "faq.pricing.team-spending-controls.body": "f8d738f9b182026ff4273ef8f63b3e57",
     "faq.pricing.team-spending-controls.question": "c1ec8f9aa01a347ea2cf1d9d6a1a812b",
     "faq.pricing.team-tier-pricing.body": "419783ddee986023f090b4a6fcac2392",
     "faq.pricing.team-tier-pricing.question": "5710821875e2cd3689e03662701cd830",
-    "faq.pricing.team-upgrade-carryover.body": {
-      "hash": "56039c94aabfa9d39e2649455d58187b",
-      "findings": [
-        {
-          "key": "faq.pricing.team-upgrade-carryover.body",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "旧プランの未使用の月額クレジットは新しいクレジット枠に移行するため",
-          "suggestion": "新しいクレジット枠に切り替わるため、旧プランの未使用の月額クレジットは",
-          "reason": "In the English, it is the user/workspace that moves to a new credit allowance; the Japanese phrasing makes 'unused monthly credits' the subject of '移行する', so it reads as if the old credits transfer to the new allowance — which contradicts the rest of the sentence stating they expire."
-        }
-      ]
-    },
+    "faq.pricing.team-upgrade-carryover.body": "37d7fe1c93a892d6813d65d61408ca68",
     "faq.pricing.team-upgrade-carryover.question": "770fd7e1efb3214a14402261a8d3fb74",
     "faq.pricing.what-is-a-credit-worth.body": "8c135096595a0d29e4444ace3d22cfd4",
     "faq.pricing.what-is-a-credit-worth.question": "4b499ad33d7d10e3b8255861e5c32f46",
@@ -2528,29 +2606,17 @@
     "geminiOmni.geminiOmniPage.cavemen-discover-fire.name": "83f61b521473253eaddee8b269b72342",
     "geminiOmni.geminiOmniPage.commercial-use.answer": "f1e9acb54a27b8520d81b9bb0d8ab340",
     "geminiOmni.geminiOmniPage.commercial-use.question": "df14c6fb3e940aded8bebecd80b6bc79",
-    "geminiOmni.geminiOmniPage.compared-to-previous-omni-flash.answer": {
-      "hash": "c5244cff2d4cb57de88a89c752089a09",
-      "findings": [
-        {
-          "key": "geminiOmni.geminiOmniPage.compared-to-previous-omni-flash.answer",
-          "category": "accuracy",
-          "severity": "critical",
-          "span": "従来のOmni 1.1 Flashバージョンを完全に置き換えるモデルです",
-          "suggestion": "従来のOmni Flashバージョンを完全に置き換えるモデルです",
-          "reason": "The English says the model replaces earlier 'Omni Flash' versions; the translation inserts '1.1', so the text claims Gemini Omni 1.1 Flash replaces itself. Contradicts the source and confuses the version story."
-        }
-      ]
-    },
+    "geminiOmni.geminiOmniPage.compared-to-previous-omni-flash.answer": "b5693a1abf6dafcb18a511cd760970df",
     "geminiOmni.geminiOmniPage.compared-to-previous-omni-flash.question": {
-      "hash": "5e536f3fa15d60198c879578dfb7d6cd",
+      "hash": "da98f189300506ad4c9d3c0199c3c2e6",
       "findings": [
         {
           "key": "geminiOmni.geminiOmniPage.compared-to-previous-omni-flash.question",
           "category": "accuracy",
-          "severity": "critical",
+          "severity": "major",
           "span": "以前のOmni 1.1 Flash",
           "suggestion": "以前のOmni Flash",
-          "reason": "English reads 'the previous Omni Flash'; adding '1.1' makes the question compare the model with itself, a wrong model name."
+          "reason": "The English refers to 'the previous Omni Flash', not 'Omni 1.1 Flash'. Adding the version number 1.1 makes the sentence self-contradictory (comparing 1.1 to itself) and names a product version the English never mentions here."
         }
       ]
     },
@@ -2706,6 +2772,9 @@
     "home.platform.cta": "fe34021e1d195b7ca22f49359467e624",
     "home.platform.docs": "fe14fbd29e24fae758b63a9d8d4ff513",
     "home.platform.eyebrow": "8fb60d379c1d1adc6e6ab5a37a92b497",
+    "home.workshop.browseAll": "4e78da3af6f54075652978b03623c105",
+    "home.workshop.heading": "d994a3bb57c3d610d1d6afa71707d6f3",
+    "home.workshop.subheading": "2725a533884cccc7088c17aaafd97a59",
     "hubspotForm.embedLoadErrorPrefix": "806d97ee54df2c12fa21d0ad60a2efec",
     "hubspotForm.embedLoadErrorSuffix": "74bcd25c37a452b1a74cbfc5c3d9bb61",
     "individualSubmission.cta.label": "94dee25fa2e03e2354ea846c8840fb93",
@@ -3136,20 +3205,7 @@
     "mcp.setup.clients.claudeDesktop.manualTitle": "4a1adc4caca9729d5bd6c7e62ee148b7",
     "mcp.setup.clients.claudeDesktop.step": "9f0c56eb78b1266f2ed80df6b4cf9beb",
     "mcp.setup.clients.codex.step": "6afaff15f4f48381b20e9b415ef506fa",
-    "mcp.setup.clients.cursor.linkLabel": "8df962e59bf0dcaf9f8b453f6cfd93cc",
-    "mcp.setup.clients.cursor.step": {
-      "hash": "56c0781d9929348d76db9c0b37657623",
-      "findings": [
-        {
-          "key": "mcp.setup.clients.cursor.step",
-          "category": "context",
-          "severity": "major",
-          "span": "キーは以下で作成してください。",
-          "suggestion": "キーの作成は",
-          "reason": "The English sentence is deliberately left open ('Create your key at ') because the link label (platform.comfy.org) is concatenated right after it. The translation closes the sentence with a full stop and adds '以下で' ('below'), which the English does not say, leaving the appended link dangling after a completed sentence. Compare mcp.setup.clients.other.step, which correctly ends without punctuation so the link continues the phrase."
-        }
-      ]
-    },
+    "mcp.setup.clients.cursor.step": "77bd98d376e5f765ba7d88695f609b7b",
     "mcp.setup.clients.openclaw.step": "4fde71fedc35c5ab0c8196ff1f3f1142",
     "mcp.setup.clients.other.linkLabel": "ef44ecc07f6637a6d9408f2e83e86a0b",
     "mcp.setup.clients.other.name": "0d084bd1ba38635e6742e0df01d1b7b0",
@@ -3543,7 +3599,19 @@
     "models.index.title": "64b75431848b5b4409574085824b39bf",
     "models.list.card.workflows": "39b55069e02c6a162885142aaa072359",
     "models.list.contact.heading": "940944624b46db3f1ab4d534e6770b95",
-    "models.list.contact.label": "edcfa0fc0de526b71be7b4f5838d68e2",
+    "models.list.contact.label": {
+      "hash": "8c0b7e19b659aedcd6e44b402c669e6d",
+      "findings": [
+        {
+          "key": "models.list.contact.label",
+          "category": "terminology",
+          "severity": "critical",
+          "span": "COMFY ワークフロー",
+          "suggestion": "COMFY WORKFLOWS",
+          "reason": "'Comfy Workflows' is a protected product name that must remain entirely in English; here the second word was translated into katakana, altering the product name."
+        }
+      ]
+    },
     "models.list.creations.cta": "639a3b60de6e9d43722aab31a8fcbfc6",
     "models.list.creations.title": "709aeeceb7c48d207784c3ad61471ccb",
     "models.list.heroCta": "6bdebff7b40fcada2c095bd477b9f912",
@@ -3655,6 +3723,7 @@
     "nav.launches": "706bd0f59d4d9a30c0291aa5f9f6bc13",
     "nav.learning": "a73867d8eb0889a11600523cefab5b2d",
     "nav.linkedin": "5e1571680b8108462d7a76f1850454a7",
+    "nav.managedBuilds": "8ff0cebbbc4c21fcab2e8b102258f368",
     "nav.mcpServer": "57fedc8f432e1f9a76b03333b7fe61d6",
     "nav.menu": "2f5004e444e56d98631f7e32a61aa784",
     "nav.mobileMenuDescription": "1660ce409c384a947d3f2aa1e9f99fa9",
@@ -3677,15 +3746,15 @@
     "payment.failed.statusPrompt.statusLink": "84d18ca93cf49ffbab2cafe1c7921baa",
     "payment.failed.statusPrompt.suffix": "b8d33697fc31b5f6a9177031d835dede",
     "payment.failed.subtitle": {
-      "hash": "739e3f0d89855c477c3c45d88233456c",
+      "hash": "e32fa2807e6bc4efab66ec221b064723",
       "findings": [
         {
           "key": "payment.failed.subtitle",
-          "category": "fluency",
-          "severity": "major",
-          "span": "サポートへのお問い合わせ、またはサブスクリプションのドキュメントをご確認ください。",
-          "suggestion": "サポートへお問い合わせいただくか、サブスクリプションのドキュメントをご確認ください。",
-          "reason": "Grammatically broken: the single verb ご確認ください cannot govern both 'contacting support' and 'the docs' — it literally says 'please check the inquiry to support'. The English clause 'if you need help' is also dropped."
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "サポートにお問い合わせいただくか、サブスクリプションのドキュメントをご確認ください。",
+          "suggestion": "お困りの場合は、サポートにお問い合わせいただくか、サブスクリプションのドキュメントをご確認ください。",
+          "reason": "The conditional 'if you need help' is dropped, turning an optional suggestion into a flat instruction."
         }
       ]
     },
@@ -3693,19 +3762,7 @@
     "payment.success.label": "749ba72a695210e1916f9a52a7a7a7b0",
     "payment.success.meta.description": "2e52c6788aac2c01868162e930641780",
     "payment.success.meta.title": "c0cb3b9f3d85dfeb9ba154bd76ba81b7",
-    "payment.success.primaryCta": {
-      "hash": "f3dbcaa61ee0f12386b5dc7041e7d562",
-      "findings": [
-        {
-          "key": "payment.success.primaryCta",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "COMFY CLOUD を続ける",
-          "suggestion": "Comfy Cloud へ進む",
-          "reason": "\"Continue to Comfy Cloud\" means proceed/navigate to Comfy Cloud, not 'continue Comfy Cloud'. The current wording reads as an unnatural button label. Also the product name is rendered in all caps ('COMFY CLOUD') instead of the required exact form 'Comfy Cloud'."
-        }
-      ]
-    },
+    "payment.success.primaryCta": "ed7a3ddec8342ee42cb44ee4adb3354e",
     "payment.success.secondaryCta": "c9c5388d69e658c157a89df245c8c075",
     "payment.success.subtitle": "0d20db9b87ee35ac77a8a483a28f5a58",
     "payment.success.title": "e331a19f8e03fc56976b3e17b72f3596",
@@ -3713,23 +3770,31 @@
     "platform.builderEnterprise.enterpriseOnly": "60e00d9db12fd97385065b09997e1525",
     "platform.builderEnterprise.feature": "22db376de4a92e54f3bd1af5b826ce0f",
     "platform.builderEnterprise.governance.label": "63d7d6f8aab6aef928949146fbcb31e5",
-    "platform.builderEnterprise.heading": {
-      "hash": "f1ee405095bfb5f0f998aa8931b41631",
-      "findings": [
-        {
-          "key": "platform.builderEnterprise.heading",
-          "category": "terminology",
-          "severity": "major",
-          "span": "ビルドとマネージドビルド",
-          "suggestion": "BuildとManaged Builds",
-          "reason": "The product term 'Build'/'Managed Builds' is kept in Latin script elsewhere in this same section (e.g. 'ComfyUI Buildをチームで共有', 'Managed Buildsでは、チーム共有と…'), but is transliterated to katakana here. Same heading/body pair must use one form."
-        }
-      ]
-    },
+    "platform.builderEnterprise.heading": "c36fd527f2401a207c5c8d18a83e0f3d",
     "platform.builderEnterprise.included": "53256c561af49f7364cefc39aca8af79",
     "platform.builderEnterprise.notIncluded": "02792e076ecfe6c8b1c328a9b0d5bee0",
     "platform.builderEnterprise.pythonDependencies.label": "e0184e30c6f13b6187e9230639e3dbe1",
-    "platform.builderEnterprise.subtitle": "91b7393832c476a2f933d9d7ffac8492",
+    "platform.builderEnterprise.subtitle": {
+      "hash": "5682b562e05522e595c439b6295ba028",
+      "findings": [
+        {
+          "key": "platform.builderEnterprise.subtitle",
+          "category": "terminology",
+          "severity": "major",
+          "span": "マネージドビルド",
+          "suggestion": "マネージドBuild",
+          "reason": "The heading in the same section renders 'Managed Builds' as 'マネージドBuild' (Latin script), while the body transliterates it as 'マネージドビルド'. The product feature name must be rendered consistently across heading and body."
+        },
+        {
+          "key": "platform.builderEnterprise.subtitle",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "Builds は",
+          "suggestion": "Build は",
+          "reason": "The feature is called 'Build' (singular) in the heading and in platform.builderPillars.3.description, but 'Builds' here; pick one form for the whole section."
+        }
+      ]
+    },
     "platform.builderEnterprise.teamSharing.label": "8d5b2efa501df2fc7fbf6277e6075725",
     "platform.builderHero.heading": "1b71ecc2ce33ec611f084318c5a64a35",
     "platform.builderHero.subtitle": "a1347655b121731e588e4036438cf851",
@@ -3737,19 +3802,7 @@
     "platform.builderPillars.1.title": "846c44e5997ac64f52f2e07baa10ad95",
     "platform.builderPillars.2.description": "ce5678b28d65155b33c3f2a6c175aaef",
     "platform.builderPillars.2.title": "08e2ac63cfe11faa59e72a8e8b5807a2",
-    "platform.builderPillars.3.description": {
-      "hash": "19c19a18f89f43ff9e5ca3b5b147d21a",
-      "findings": [
-        {
-          "key": "platform.builderPillars.3.description",
-          "category": "terminology",
-          "severity": "major",
-          "span": "ビルドはComfy APIにデプロイし",
-          "suggestion": "BuildはComfy APIにデプロイし",
-          "reason": "Inconsistent rendering of the product term 'Build': the adjacent pillar descriptions keep it as Latin 'Build' ('DesktopでBuildをローカル実行'), while this one uses katakana ビルド."
-        }
-      ]
-    },
+    "platform.builderPillars.3.description": "1f0fe7cfe4168e8c6f3d264c03a2618e",
     "platform.builderPillars.3.title": "f2c2e84c0f1755e8258382c4d83a8534",
     "platform.builderPillars.4.description": "343aec71d0a63c2a7dbf059a6d87145a",
     "platform.builderPillars.4.title": "1063c6e35b4b54ebb7998de0333191d0",
@@ -3778,19 +3831,7 @@
     "platform.customers.enterprise.description": "ad09c1995c857c67815b51cfb35289da",
     "platform.customers.enterprise.title": "a797bdb9175beec4f21d71a4ab4d0df2",
     "platform.customers.heading": "f820b39d47a6d7fe7809805779e04155",
-    "platform.customers.quote": {
-      "hash": "e22996b8959804e3b24de093c9d9f5a0",
-      "findings": [
-        {
-          "key": "platform.customers.quote",
-          "category": "fluency",
-          "severity": "major",
-          "span": "10×高速",
-          "suggestion": "10倍高速",
-          "reason": "The multiplication sign '10×' is not used in Japanese prose; a native reader expects '10倍'. As written it reads as untranslated/machine output."
-        }
-      ]
-    },
+    "platform.customers.quote": "6c6e828d1f4bb7921988281f3c52004b",
     "platform.customers.quoteAttribution": "04d4c3f66ba0a19bf899858d7c3c45c9",
     "platform.customers.solo.cta": "c19e75d0e9ab3eb54ed5479381092cba",
     "platform.customers.solo.description": "d719fa0b7948ef53a63bed867f0c0907",
@@ -3836,19 +3877,7 @@
     "platform.faq.10.q": "cac66a16283714d037a83fce80078a79",
     "platform.faq.11.a": "68eec5a531393ede7defe3fa8ecb2889",
     "platform.faq.11.q": "23e593062e57ecae639ebdc2c3414bb2",
-    "platform.faq.2.a": {
-      "hash": "6e49ab21b22d308b1b1d13fa39d0662f",
-      "findings": [
-        {
-          "key": "platform.faq.2.a",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "現在実行しているワークフローのAPI形式のJSONをエクスポートし、そのままデプロイできます。",
-          "suggestion": "いいえ。現在実行しているワークフローのAPI形式のJSONをエクスポートし、そのままデプロイできます。",
-          "reason": "The English answer opens with 'No.' answering the yes/no question ('Does my workflow need to change?'). The translation omits this direct answer, weakening the FAQ format."
-        }
-      ]
-    },
+    "platform.faq.2.a": "9ab376fdb6dcb130396c5d19f80c323e",
     "platform.faq.2.q": "1a0141cc4d0e6ec108584343d7d1480d",
     "platform.faq.3.a": "7bec41c353aedb3da3e6fb31dcb5af34",
     "platform.faq.3.q": "f2add00b0e4c30eff3a89c8503d70105",
@@ -4064,6 +4093,8 @@
     "pricing.banner.subtitle": "e3a111cf635996923959712f064855d4",
     "pricing.banner.title": "e5a4ee97c50615a3c823472cc2586494",
     "pricing.creditsLabel": "1a8f9e006ef54155cf5e04e489697b43",
+    "pricing.creditsLabelYearly": "975cfeea5346f5c05f50d80f4f2e0e65",
+    "pricing.customerProof.heading": "20a3e4d1f2f3535bbb689403a031d007",
     "pricing.enterprise.andMore": "d6578ab827589c6f09c208d42aa3161e",
     "pricing.enterprise.cta": "a6bddf272676ca2da8f17f1707dbfbc0",
     "pricing.enterprise.description": {
@@ -4143,7 +4174,7 @@
       ]
     },
     "pricing.included.feature3.title": "fe7b72a32123116fc0a523d9aee6aef2",
-    "pricing.included.feature4.description": "6b49de5320922f7e277c5bcbdd80e71f",
+    "pricing.included.feature4.description": "a87a2f45c74ac25b8df72b110f3aa006",
     "pricing.included.feature4.title": "8b7843110f8c93da0a2fc48573b0f884",
     "pricing.included.feature5.description": "bc956c8b1ad34531f1f3ad06fb485006",
     "pricing.included.feature5.title": "45a3e6061c4252b4d1c7ac111027d2af",
@@ -4151,19 +4182,7 @@
     "pricing.included.feature6.title": "a21826e630f8974e826490ffba98080b",
     "pricing.included.feature7.description": "1047b336ac2dc5fca721552dccefbbde",
     "pricing.included.feature7.title": "09f1c87d0fde88a7292b4c2b87921aed",
-    "pricing.included.feature8.description": {
-      "hash": "bac9817759d4580ef38be83867951773",
-      "findings": [
-        {
-          "key": "pricing.included.feature8.description",
-          "category": "terminology",
-          "severity": "major",
-          "span": "Partner Nodes",
-          "suggestion": "パートナーノード",
-          "reason": "Inconsistent rendering of the same term within one section: the heading (feature8.title) and feature4.description use 'パートナーノード', while this body copy leaves it as English 'Partner Nodes' (twice). Pick one form, matching the section heading."
-        }
-      ]
-    },
+    "pricing.included.feature8.description": "cdd6f537c65d1417846c303f20928c06",
     "pricing.included.feature8.title": "6adf3181730c6ad1fb12916145da7a1e",
     "pricing.included.feature9.description": "4e908e549529b1438c31134551ab4d17",
     "pricing.included.feature9.title": "837099135040d09fe7a6996867d323a6",
@@ -4214,6 +4233,8 @@
       ]
     },
     "pricing.plan.creator.price": "1b53eec18371578038bb9bbca99c6977",
+    "pricing.plan.creator.yearlyCredits": "483abbdedaca873840a3b98ed3eca100",
+    "pricing.plan.creator.yearlyEstimate": "7ffeef5dbddfab7becc4132305f7c4fc",
     "pricing.plan.creator.yearlyPrice": "d3ff54f4e04bc97c4b94e5526123397f",
     "pricing.plan.creator.yearlyTotal": "4fbb4444bb5fd2856556a58ddd0c2c97",
     "pricing.plan.feature.status.coming": "659fbe02884e9a78dc6d2fba4aa40cba",
@@ -4247,6 +4268,8 @@
       ]
     },
     "pricing.plan.pro.price": "59d0d61a6c9ee37b6fda59718d71db3b",
+    "pricing.plan.pro.yearlyCredits": "91b57a290dc11fa1601a258649b95b71",
+    "pricing.plan.pro.yearlyEstimate": "cb7f906313e5f2b48066c666ea11b2ac",
     "pricing.plan.pro.yearlyPrice": "e5f3941bb161059ae096ff46c3829225",
     "pricing.plan.pro.yearlyTotal": "276fd8eef94b0206b3eebf36e43f8e24",
     "pricing.plan.standard.credits": "9fee7b77cc96fd2970eb2b6abd66cd8a",
@@ -4269,6 +4292,8 @@
     },
     "pricing.plan.standard.label": "ee32532728ffb74bee22c095f86d664b",
     "pricing.plan.standard.price": "ac1f2806649f19f68e71f934ca727714",
+    "pricing.plan.standard.yearlyCredits": "f486c4c77fce45ec5a7ef91b236f1882",
+    "pricing.plan.standard.yearlyEstimate": "9230ca51f1ba2c71dcf99e172145ea0e",
     "pricing.plan.standard.yearlyPrice": "5d9344904ca66d998654a576164de9cf",
     "pricing.plan.standard.yearlyTotal": "40f54ca26f2730f5464c0aa4eb3b0eb2",
     "pricing.plan.team.comingSoon": "739bdfb6b4b260fb56a5f2edcab39757",
@@ -4306,19 +4331,7 @@
         }
       ]
     },
-    "pricing.team.sliderLabel": {
-      "hash": "82a424d97fd79853ab6e6e65d5827fd3",
-      "findings": [
-        {
-          "key": "pricing.team.sliderLabel",
-          "category": "accuracy",
-          "severity": "major",
-          "span": "チームの月間クレジット利用額",
-          "suggestion": "チームの月間クレジットコミット額",
-          "reason": "'commitment' (a pledged minimum spend) is rendered as '利用額' (amount used), which describes actual consumption rather than a committed amount — this misstates how the slider works."
-        }
-      ]
-    },
+    "pricing.team.sliderLabel": "98c6bc3649d4f36fc0420834efe14f17",
     "pricing.team.videosEstimate": "f76ddbf82829d19b4ffb075310fd4055",
     "pricing.title": "eaacafccda2748bfeae76c9ff43aa312",
     "products.ctaShort": "e2089d7669f4bef10d26712cd4b1e18d",
@@ -4480,31 +4493,15 @@
     "story.golan-levin.category": "18a5444155b23b2794a699d8eb592d37",
     "story.golan-levin.description": "2c3fcc83055447ef55bbeca9d47a2a39",
     "story.golan-levin.section.topic-1.body": {
-      "hash": "9817e5c72844028a4ad532bc89fac3e2",
+      "hash": "205704781058ab25c503f4dbe38c6c1d",
       "findings": [
         {
           "key": "story.golan-levin.section.topic-1.body",
-          "category": "terminology",
-          "severity": "major",
-          "span": "ゴーラン・レヴィン『Augmented Hand Series』",
-          "suggestion": "Golan Levin『Augmented Hand Series』",
-          "reason": "The subject's name is kept in Latin script (\"Golan Levin\") in the author bio on the same page but transliterated to katakana here in the figure alt text and caption. Same-page rendering of a person's name must be consistent."
-        },
-        {
-          "key": "story.golan-levin.section.topic-1.body",
-          "category": "terminology",
+          "category": "accuracy",
           "severity": "minor",
-          "span": "クリス・シュグルー、カイル・マクドナルドとの共同制作。写真：ゲルリンデ・デ・ホイス",
-          "suggestion": "Chris Sugrue、Kyle McDonaldとの共同制作。写真：Gerlinde de Geus",
-          "reason": "Collaborator and photographer names are transliterated here while the same collaborators (Kyle McDonald, Christine Sugrue) are left in Latin script in the author bio; photo credits normally stay in Latin script."
-        },
-        {
-          "key": "story.golan-levin.section.topic-1.body",
-          "category": "fluency",
-          "severity": "minor",
-          "span": "画像生成器",
-          "suggestion": "画像生成ツール",
-          "reason": "\"画像生成器\" reads as a literal machine rendering of \"image generator\"; native Japanese copy would use 画像生成ツール or 画像ジェネレーター."
+          "span": "積極的に活用しています",
+          "suggestion": "ComfyUIの活用を広げています / 次第に多く用いるようになっています",
+          "reason": "English says 'increasingly used', indicating growing use over time; the translation renders it as 'actively uses', losing the progressive nuance."
         }
       ]
     },
@@ -4538,23 +4535,15 @@
       ]
     },
     "story.golan-levin.section.topic-4.body": {
-      "hash": "09b889e100ec2286c1d589c0912a819a",
+      "hash": "70e3f5d97d759daff54099d60a00f4e5",
       "findings": [
         {
           "key": "story.golan-levin.section.topic-4.body",
-          "category": "fluency",
-          "severity": "major",
-          "span": "高度なツールへのアクセスを各自のハードウェア性能に左右されたくありません",
-          "suggestion": "高度なツールを使えるかどうかが、各自のハードウェア性能に左右されてほしくありません",
-          "reason": "Ungrammatical particle use: the object marker を cannot take the passive 左右される in this construction. A native speaker would use が/は with the passive, or restructure the sentence."
-        },
-        {
-          "key": "story.golan-levin.section.topic-4.body",
-          "category": "fluency",
+          "category": "accuracy",
           "severity": "minor",
-          "span": "ほぼすぐに根底のアイデアを探究し始められます",
-          "suggestion": "ほぼすぐに根底にあるアイデアを探究し始められます",
-          "reason": "'根底のアイデア' is awkward; the natural collocation for 'the underlying ideas' is 根底にあるアイデア."
+          "span": "私はAIを知覚を拡張するための枠組みとして捉えています",
+          "suggestion": "私はAIを知覚を拡張する枠組みとして捉えることに関心があります",
+          "reason": "The English says the speaker is 'interested in AI as a framework for expanded perception'; the translation states he 'regards AI as' such a framework, dropping the expression of interest. Minor nuance shift."
         }
       ]
     },
@@ -4715,7 +4704,7 @@
     },
     "story.ina-conradi.section.topic-3.label": "cdce478d90411feb334ec3cb2276a874",
     "story.ina-conradi.section.topic-4.body": {
-      "hash": "1e4e31f552c1f0cc3caf8e4a7f78ec58",
+      "hash": "932c4f5376463eb64bbbf6c5911d6167",
       "findings": [
         {
           "key": "story.ina-conradi.section.topic-4.body",
@@ -4723,23 +4712,7 @@
           "severity": "major",
           "span": "課題は明確です",
           "suggestion": "課題は厳格です",
-          "reason": "English says the brief is 'strict', but the translation says it is 'clear' (明確). This changes the meaning of the assignment description."
-        },
-        {
-          "key": "story.ina-conradi.section.topic-4.body",
-          "category": "accuracy",
-          "severity": "minor",
-          "span": "プロンプト入力欄だけでは満たせない課題です",
-          "suggestion": "プロンプト入力欄では満たせない課題です",
-          "reason": "The added だけ ('alone') weakens the English claim 'no prompt box can fill', implying a prompt box could partly do the job."
-        },
-        {
-          "key": "story.ina-conradi.section.topic-4.body",
-          "category": "accuracy",
-          "severity": "minor",
-          "span": "二つの実際の締切に向けて作業しています",
-          "suggestion": "二つの実際の締切に同時に向けて作業しています",
-          "reason": "Omits 'at once' from 'working towards two real deadlines at once', losing the simultaneity the English emphasises."
+          "reason": "English says 'The brief is strict', but the Japanese says 'the brief is clear'. 'Strict' conveys a constraint imposed on students; 'clear' changes the meaning."
         }
       ]
     },
@@ -5029,15 +5002,15 @@
     "story.open-story-movement.section.topic-5.body": "80fb3d8aaff59e3e69f5742021c283a7",
     "story.open-story-movement.section.topic-5.label": "38ae12030d57dcf74e7e1c8f6dae7258",
     "story.open-story-movement.title": {
-      "hash": "a56a405a37b787ad837b00c09a04b0a4",
+      "hash": "6a92fa17d0f439cc8c873a1c8a02340c",
       "findings": [
         {
           "key": "story.open-story-movement.title",
-          "category": "fluency",
+          "category": "accuracy",
           "severity": "major",
-          "span": "アーティストのルールを変える方法",
-          "suggestion": "アーティストのルールを書き換えている",
-          "reason": "The English 'How X Are Rewriting the Rules' is a rhetorical headline, not a description of a method. Rendering it with 方法 ('method/way') reads as 'the method for changing artists' rules' and is awkward as a story title."
+          "span": "Doodles、SYSTMS、ComfyUIなどのオープンソースツールが",
+          "suggestion": "Doodles、SYSTMS、そしてComfyUIのようなオープンソースツールが",
+          "reason": "The English lists three separate subjects: Doodles, SYSTMS, and open-source tools like ComfyUI. The Japanese phrasing reads as 'open-source tools such as Doodles, SYSTMS and ComfyUI', wrongly labelling the two studios/brands as open-source tools."
         }
       ]
     },
@@ -5084,6 +5057,572 @@
     },
     "story.series-entertainment.section.topic-2.label": "b7717ad7f84159a57254ca4794b5a7d0",
     "story.series-entertainment.section.topic-3.body": "cb92d5e5c57940cb52a7e04fc2d77faa",
-    "story.series-entertainment.section.topic-3.label": "c77f785885cb0a7615b78cc33c1d7472"
+    "story.series-entertainment.section.topic-3.label": "c77f785885cb0a7615b78cc33c1d7472",
+    "story.series-entertainment.section.topic-4.body": {
+      "hash": "dd44363a8b5f355a494bf555ed16e842",
+      "findings": [
+        {
+          "key": "story.series-entertainment.section.topic-4.body",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "週15分を超える完成動画を提供できます。",
+          "suggestion": "**週15分を超える完成動画**を提供できます。",
+          "reason": "Markdown bold emphasis from the English source (**15 minutes of final video per week**) is dropped, so this key statistic loses the visual emphasis the parallel 180× figure retains."
+        }
+      ]
+    },
+    "story.series-entertainment.section.topic-4.label": "740592a1b55c70ca122532b1337c0690",
+    "story.series-entertainment.section.topic-5.body": "3724a0355c11a83fffa61e684f750e90",
+    "story.series-entertainment.section.topic-5.label": {
+      "hash": "0c05746e7ffa0391a229e2b645a44524",
+      "findings": [
+        {
+          "key": "story.series-entertainment.section.topic-5.label",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "COMFYUIを選ぶ理由",
+          "suggestion": "ComfyUIを選ぶ理由",
+          "reason": "The product name is written in all caps ('COMFYUI'). The proper noun must keep its exact English casing 'ComfyUI'; the English source only uses caps as a label style."
+        }
+      ]
+    },
+    "story.series-entertainment.section.topic-6.body": "5354b7dfa6664da24900f5ffb46138ce",
+    "story.series-entertainment.section.topic-6.label": "9736c18d5170d6f472c11db5bf28c9e4",
+    "story.series-entertainment.title": {
+      "hash": "b914ed8df73c3f0d209a1a48ad76c50c",
+      "findings": [
+        {
+          "key": "story.series-entertainment.title",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "ゲーム・映像制作",
+          "suggestion": "ゲーム・動画制作",
+          "reason": "'video' is rendered 映像 in the title but 動画 in the body (動画生成, ゲームと動画の制作方法) of the same story; keep one rendering."
+        }
+      ]
+    },
+    "story.svedka-silverside.category": "b3be87fbd76b48bda44f682550870755",
+    "story.svedka-silverside.description": {
+      "hash": "892eb5eff7d2374168c407575734c175",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.description",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "Super Bowl史上初",
+          "suggestion": "スーパーボウル史上初",
+          "reason": "'Super Bowl' is left in Latin script here but rendered as katakana 'スーパーボウル' in topic-1 and topic-2 of the same page; the term should be handled consistently across the story."
+        }
+      ]
+    },
+    "story.svedka-silverside.section.topic-1.body": {
+      "hash": "86af8627383b8f3df6a37516b24d59e8",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.section.topic-1.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "試合史上初となる",
+          "suggestion": "スーパーボウル史上初となる",
+          "reason": "'試合史上' ('in the history of the game/match') is unnatural Japanese and unclear; the English 'the game's history' refers to the Super Bowl itself."
+        }
+      ]
+    },
+    "story.svedka-silverside.section.topic-1.label": {
+      "hash": "849afcb4566c26258ef54ee86ff88160",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.section.topic-1.label",
+          "category": "context",
+          "severity": "minor",
+          "span": "概要",
+          "suggestion": "はじめに",
+          "reason": "'INTRO' is rendered as 概要, the same word used for the 'At a glance' section title in topic-2, so two adjacent section labels on the same page read identically. Use a distinct label such as はじめに for the intro."
+        }
+      ]
+    },
+    "story.svedka-silverside.section.topic-2.body": "d9885c78eced65e45c622b0dbbf57445",
+    "story.svedka-silverside.section.topic-2.label": "efee0e160944a94739882efdb885dfa8",
+    "story.svedka-silverside.section.topic-3.body": "210ec90881560d397814539ffeff3c98",
+    "story.svedka-silverside.section.topic-3.label": "72691407eb80d70afab7c2b51355c8fe",
+    "story.svedka-silverside.section.topic-4.body": {
+      "hash": "b86d386f53584c12ca2b0049fdf589fb",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.section.topic-4.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "批判や議論、批判する人たちは",
+          "suggestion": "批判や議論、アンチの存在は",
+          "reason": "The word 批判 is repeated twice in the same clause ('the criticism' and 'the haters'), which reads clumsily; 'haters' is better rendered as アンチ."
+        }
+      ]
+    },
+    "story.svedka-silverside.section.topic-4.label": "c77f785885cb0a7615b78cc33c1d7472",
+    "story.svedka-silverside.section.topic-5.body": {
+      "hash": "510d4cab9c5837a74ced6789919d1023",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.section.topic-5.body",
+          "category": "accuracy",
+          "severity": "major",
+          "span": "この柔軟性はプロセスを簡略化するどころか、むしろ密度を高めました。",
+          "suggestion": "この柔軟性はプロセスを安易にするどころか、むしろ密度を高めました。",
+          "reason": "English says the openness was 'far from cheapening the process' (i.e. lowering its quality/craft), not 'far from simplifying' it. 簡略化 (simplifying) states something different from the source."
+        },
+        {
+          "key": "story.svedka-silverside.section.topic-5.body",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "ダンスは視聴者から生まれた",
+          "suggestion": "ダンスは一般公募から生まれた",
+          "reason": "'The dance came from the crowd' refers to crowdsourcing / the general public, not to 視聴者 (viewers/audience); the body text below correctly uses クラウドソーシング, so the heading is inconsistent."
+        },
+        {
+          "key": "story.svedka-silverside.section.topic-5.body",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "NBCへ納品した後にも、「これ、少し調整できる？」という連絡が来ていました。",
+          "suggestion": "NBCに納品したのに、今も「これ、少し調整できる？」という連絡が来ます。",
+          "reason": "English 'I'm still getting calls' is ongoing present; the translation puts it entirely in the past, losing the point that requests continue even after delivery."
+        },
+        {
+          "key": "story.svedka-silverside.section.topic-5.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "アイコンの再構築を、3チームで同時進行",
+          "suggestion": "象徴的キャラクターの再構築を、3チームで同時進行",
+          "reason": "アイコン in Japanese software copy reads as a UI icon; here 'an icon' means the iconic Fembot character, so the heading is misleading."
+        }
+      ]
+    },
+    "story.svedka-silverside.section.topic-5.label": "740592a1b55c70ca122532b1337c0690",
+    "story.svedka-silverside.section.topic-6.body": "a585c0dd459b5aff20e33b83d42b292a",
+    "story.svedka-silverside.section.topic-6.label": {
+      "hash": "0c05746e7ffa0391a229e2b645a44524",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.section.topic-6.label",
+          "category": "terminology",
+          "severity": "major",
+          "span": "COMFYUIを選ぶ理由",
+          "suggestion": "ComfyUIを選んだ理由",
+          "reason": "The product name must appear exactly as \"ComfyUI\"; it has been uppercased to \"COMFYUI\" (the English source was simply set in all caps as a label style). It is also worded differently from the section title rendered in the topic-6 body (\"ComfyUIを選んだ理由\"), which sits directly beneath this label."
+        }
+      ]
+    },
+    "story.svedka-silverside.section.topic-7.body": "4be7cf7ce9954281862c67af283b22fd",
+    "story.svedka-silverside.section.topic-7.label": {
+      "hash": "90e059a8396908b913de5cb2f5a9c1eb",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.section.topic-7.label",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "ポイント",
+          "suggestion": "まとめ",
+          "reason": "\"The Takeaway\" is rendered as \"まとめ\" in the topic-7 body section title but as \"ポイント\" in this label for the same heading; the two are read together and should match."
+        }
+      ]
+    },
+    "story.svedka-silverside.title": {
+      "hash": "f138b9ce4ca05952d2c0dae0635d01d8",
+      "findings": [
+        {
+          "key": "story.svedka-silverside.title",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "Super Bowl初のAI生成CM",
+          "suggestion": "スーパーボウル初のAI生成CM",
+          "reason": "\"Super Bowl\" is left in Latin script in the headline but written as スーパーボウル in the topic-6 and topic-7 body copy of the same story; inconsistent rendering of the same name."
+        },
+        {
+          "key": "story.svedka-silverside.title",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "ボットを振り払え",
+          "suggestion": "Shake Your Bots Off",
+          "reason": "The ad campaign name is translated in the headline but kept in English elsewhere in the same story (embed title and quote attribution in topic-7); a campaign/spot name should be rendered consistently."
+        }
+      ]
+    },
+    "story.ual-cci.category": "49b0013d1fc0f67e34e2b9a197ea256a",
+    "story.ual-cci.description": "b631f3b3f11b0e67e61ebdadf143668d",
+    "story.ual-cci.section.topic-1.body": "d9c1010beccad6d9e5fa5c3ca163f9e0",
+    "story.ual-cci.section.topic-1.label": "849afcb4566c26258ef54ee86ff88160",
+    "story.ual-cci.section.topic-2.body": {
+      "hash": "200d19e5944287585fec06e7db080a5c",
+      "findings": [
+        {
+          "key": "story.ual-cci.section.topic-2.body",
+          "category": "accuracy",
+          "severity": "major",
+          "span": "ComfyUIは、私たちの教育、研究、産業界との協働に欠かせないものになっています。",
+          "suggestion": "ComfyUIは、私たちの教育、研究、産業界との協働のあり方の一部になっています。",
+          "reason": "The English quote says ComfyUI 'has become part of how we teach, research, and work with industry'. The translation upgrades this to 'has become indispensable', a stronger claim than the source — and it is inside an attributed quotation, so the speaker is made to say something he did not."
+        },
+        {
+          "key": "story.ual-cci.section.topic-2.body",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "研究所のあらゆる段階でComfyUIを活用しています",
+          "suggestion": "研究所のあらゆるレベル（学部から博士課程まで）でComfyUIを活用しています",
+          "reason": "'at every level of the institute' refers to levels of study/organisation; 段階 reads as 'at every stage/phase', which shifts the meaning to a temporal sequence."
+        }
+      ]
+    },
+    "story.ual-cci.section.topic-2.label": "f91357d72e8a635af0c69cdfe65e657d",
+    "story.ual-cci.section.topic-3.body": "ce0f4430280b67a463249b6e9d3afa39",
+    "story.ual-cci.section.topic-3.label": "c5fad4ca2b15e6644002c4a3a802ccb4",
+    "story.ual-cci.section.topic-4.body": "f9511bd8c7ad0c571b7de15dd44f1d70",
+    "story.ual-cci.section.topic-4.label": "2e21cd8c6e16f7f7f59dae1c148afbca",
+    "story.ual-cci.title": "cd01db7057b3991e85e10364bae63fe9",
+    "story.ubisoft-chord.category": "5e3a76bd36443e631359c56c1d888040",
+    "story.ubisoft-chord.description": "fb62a1e3820329037e5d7d5b8f616a5c",
+    "story.ubisoft-chord.section.topic-1.body": "f69d1cb14d2778dca91b02fe9a7328c7",
+    "story.ubisoft-chord.section.topic-1.label": "849afcb4566c26258ef54ee86ff88160",
+    "story.ubisoft-chord.section.topic-2.body": {
+      "hash": "5fbda13d44d54327427721d46e3b571a",
+      "findings": [
+        {
+          "key": "story.ubisoft-chord.section.topic-2.body",
+          "category": "accuracy",
+          "severity": "major",
+          "span": "この制作上のボトルネックを直接的に解決します",
+          "suggestion": "この制作上のボトルネックに直接狙いを定めたものです",
+          "reason": "The English says the prototype 'directly targets' the bottleneck; the translation claims it 'solves' it, an unsupported capability claim (the prototype only outputs prototyping/placeholder assets)."
+        }
+      ]
+    },
+    "story.ubisoft-chord.section.topic-2.label": "c77f785885cb0a7615b78cc33c1d7472",
+    "story.ubisoft-chord.section.topic-3.body": "bb81aaaab470139179882fca7c393b04",
+    "story.ubisoft-chord.section.topic-3.label": "cdce478d90411feb334ec3cb2276a874",
+    "story.ubisoft-chord.section.topic-4.body": {
+      "hash": "77e0c0b9780f2d6c4c4f2251d26e2b9b",
+      "findings": [
+        {
+          "key": "story.ubisoft-chord.section.topic-4.body",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "第1ステージでは",
+          "suggestion": "ステージ1では",
+          "reason": "Inconsistent naming within the same section: headings use 'ステージ1 / ステージ3' while the body text uses '第1ステージ / 第3ステージ' for the same items."
+        }
+      ]
+    },
+    "story.ubisoft-chord.section.topic-4.label": "cb1041b23dfd0c75af7b5b64eed2ae0e",
+    "story.ubisoft-chord.section.topic-5.body": {
+      "hash": "f70a18531af0853a25ffc619c527ece4",
+      "findings": [
+        {
+          "key": "story.ubisoft-chord.section.topic-5.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "ComfyUIを最新バージョンにインストールまたはアップデートする",
+          "suggestion": "ComfyUIをインストール、または最新バージョンにアップデートする",
+          "reason": "The English is 'install or update ComfyUI to the latest version'; the Japanese binds '最新バージョンに' to 'インストール', producing the odd reading 'install ComfyUI to the latest version'. Splitting the two verbs reads naturally."
+        }
+      ]
+    },
+    "story.ubisoft-chord.section.topic-5.label": "8293aacac24fd41e78295a3d81d84432",
+    "story.ubisoft-chord.section.topic-6.body": "f0f8df7b09796c490d7b5bf6b856b52f",
+    "story.ubisoft-chord.section.topic-6.label": "587ed03950a00e4ebcaffd910a7a39d5",
+    "story.ubisoft-chord.title": "d3d1c3f8ba13408532f21789c9996b79",
+    "story.xindi-zhang.between.0": "7d284bdc481d1b34af2b42a870423420",
+    "story.xindi-zhang.category": "8c2c7be0c39dcbe6b7ab35eb574b22fb",
+    "story.xindi-zhang.description": "25673f9959f3d23ac0d546f0c8c19696",
+    "story.xindi-zhang.section.topic-1.body": "4de8ec38214198807b2ab95c7b0aa69c",
+    "story.xindi-zhang.section.topic-1.label": "bc0891b84d840b0f3d8d9ee78f8363fb",
+    "story.xindi-zhang.section.topic-2.body": {
+      "hash": "958e53124a1a9687e25f063bb719583a",
+      "findings": [
+        {
+          "key": "story.xindi-zhang.section.topic-2.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "私のようなアーティストにとって、何かを自動化したいとは思いません。",
+          "suggestion": "私のようなアーティストは、何も自動化したくありません。",
+          "reason": "Subject/predicate mismatch: the topic marker 「〜にとって」 does not agree with the volitional predicate 「したいとは思いません」, which reads awkwardly. A native writer would use 「私のようなアーティストは…したくありません」."
+        }
+      ]
+    },
+    "story.xindi-zhang.section.topic-2.label": "00cdc6ff8bdeec335919ec70a5eddbc9",
+    "story.xindi-zhang.section.topic-3.body": {
+      "hash": "e997b83b87e6dbc9adcc0782276bed6d",
+      "findings": [
+        {
+          "key": "story.xindi-zhang.section.topic-3.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "IP-AdapterとControlNetで駆動するStable Diffusion 1.5でのスタイル転写",
+          "suggestion": "IP-AdapterとControlNetで駆動されるStable Diffusion 1.5でのスタイル転写",
+          "reason": "Active 「駆動する」 makes Stable Diffusion the driver rather than the thing being driven; the English has it driven BY IP-Adapter and ControlNet, so the passive form is needed."
+        },
+        {
+          "key": "story.xindi-zhang.section.topic-3.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "カスタムLoRAsも学習させました",
+          "suggestion": "カスタムLoRAも学習させました",
+          "reason": "Japanese does not take the English plural -s on loanwords; the approved term form is 'LoRA'. Same issue recurs in the At a glance table."
+        }
+      ]
+    },
+    "story.xindi-zhang.section.topic-3.label": "cb1041b23dfd0c75af7b5b64eed2ae0e",
+    "story.xindi-zhang.section.topic-4.body": {
+      "hash": "7db6b1c962388806b9bf3e5c65f92c9f",
+      "findings": [
+        {
+          "key": "story.xindi-zhang.section.topic-4.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "自身で撮影した都市映像で学習したカスタムLoRAs",
+          "suggestion": "自身で撮影した都市映像で学習したカスタムLoRA",
+          "reason": "English plural '-s' retained on the term LoRA; Japanese should use the singular Latin-script form 'LoRA'."
+        },
+        {
+          "key": "story.xindi-zhang.section.topic-4.body",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "複雑なコンポジット",
+          "suggestion": "大量のコンポジット作業",
+          "reason": "'heavy compositing' refers to the amount/intensity of compositing work, not its complexity; 複雑な states something the English does not claim."
+        }
+      ]
+    },
+    "story.xindi-zhang.section.topic-4.label": "beb7b115b8d73b65067e03de856be328",
+    "story.xindi-zhang.section.topic-5.body": {
+      "hash": "3e5745811c0a01194a460edd0819c71c",
+      "findings": [
+        {
+          "key": "story.xindi-zhang.section.topic-5.body",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "私のアートを奪うのはツールではありません。私のアートを広げるツールです。",
+          "suggestion": "ツールは私のアートを奪うものではなく、広げてくれるものです。",
+          "reason": "The second sentence has no subject and reads as a fragment in Japanese; merging the contrast into one sentence reads more naturally as a pull quote."
+        },
+        {
+          "key": "story.xindi-zhang.section.topic-5.body",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "Golden Awardを受賞し",
+          "suggestion": "金賞を受賞し",
+          "reason": "The same prize is called 金賞 in the heading but left as 'Golden Award' in the body of the same section; use one form consistently."
+        }
+      ]
+    },
+    "story.xindi-zhang.section.topic-5.label": "6ba4573c33b4ccecdf17d3c051bc9ed8",
+    "story.xindi-zhang.title": "75e82d1d2a4003cd09d8725f115ded6d",
+    "surfaces.cli.name": "6f493ee0237eaa8f176346910dd46e2d",
+    "surfaces.cli.tagline": "e11a3918f2d7fdbbaddf4ef0fef0b9ec",
+    "surfaces.mcp.name": "57fedc8f432e1f9a76b03333b7fe61d6",
+    "surfaces.mcp.tagline": "285bb07092ffa86fb016962f1c66b3eb",
+    "surfaces.tabsLabel": "64c46279babcbe2877402994260401b4",
+    "tags.bRoll": "41253825e07f1ff96b264689ad619a5e",
+    "tags.backgrounds": "0f1072034b0bcfeaaacfbe03584e6453",
+    "tags.characterDesign": "1dd10bae54fbaa412829a6a3a6f691db",
+    "tags.compositing": "cf8189ffa74a5ad21db83b8797333d13",
+    "tags.controlNet": "7c8939bcb79036626f66adce89ce79b3",
+    "tags.fundamentals": "b36f3f447d631347ef62d761161ed0e1",
+    "tags.imageGeneration": "7a9ae0f0ee869c5f399902a811f89a3b",
+    "tags.imageToImage": "5132dd265fcf0a4d93c077b0beba5339",
+    "tags.imageToVideo": "faa2c13de7e3c10b028f3b2b47482f57",
+    "tags.inBetweening": "9253a0081b4d6b61a30c0e01fae05b9a",
+    "tags.inpainting": "0be9f71a5a8a51cfbed57263ceec90b2",
+    "tags.keyframing": "868d0134a768584b5cc7bc666770de2b",
+    "tags.lora": "34e2755890a0fc6de711beee46c78760",
+    "tags.moodboards": "f7b72ccbb86d06848aa061aae73db161",
+    "tags.motionControl": "39efe7c93c8d562f3b8c0afcac5f96ce",
+    "tags.nodeGraph": "9291e06b663bb879679243d95c6e31f5",
+    "tags.openSource": "870795bb7c074763579f7c22aa760400",
+    "tags.openWeights": "9ade14f98987b3cecd9725bfd9b0d0fc",
+    "tags.outOfHome": "1726882f94b087fddddd546e203fff9d",
+    "tags.outpainting": "0abc954d98f52c54c88d397ebbea3a1e",
+    "tags.partnerNodes": "6adf3181730c6ad1fb12916145da7a1e",
+    "tags.previsualization": "ac741ec649579c9776d650965a789b92",
+    "tags.productPhotography": "87727b7c0f1dabe068c11a91d383546b",
+    "tags.storyboarding": "dcb9e6ceb09d7b18dfd78976c34a0081",
+    "tags.styleTransfer": "7493c132867810fe86eca624dfb58c2a",
+    "tags.textToImage": "68867a58af98e372285a2846ba52845b",
+    "tags.threeD": "0b08de4ea8b3f29ac9cfe9ecc6c0e09d",
+    "tags.upscaling": "462cadebcde571c428770240db724760",
+    "ui.breadcrumb": "27829e62857e1f3656f048e2990ffcf3",
+    "ui.copied": "cb546320be5fe5196fedfcc30d19054f",
+    "ui.copy": "170d2789d563baaa754f11a2e9d53e49",
+    "ui.readLess": "31f07ba67a754a964750162d68cffea1",
+    "ui.readMore": "111bb252149fe89bbb8bf9d0ba114e52",
+    "videos.meta.title": "2404976438192a40fe65810591acd8b0",
+    "wan3.breadcrumb.model": "fb4291e34fd4b7190e6c0aa1e333b7d4",
+    "wan3.breadcrumb.updated": "d038a73332f47898bb92fe752ed4fdfa",
+    "wan3.faq.heading": "c1efc89dd7741241cc5fdfcef1f45ed8",
+    "wan3.hero.description": "d83592491e2b931bb680e741a6943ce9",
+    "wan3.hero.primaryCta": {
+      "hash": "abf9f2d0c60e72a55ad4ebf90431312f",
+      "findings": [
+        {
+          "key": "wan3.hero.primaryCta",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "WAN 3.0を実行",
+          "suggestion": "Wan 3.0を実行",
+          "reason": "Product name must appear exactly as 'Wan 3.0'; the all-caps 'WAN 3.0' comes from the English button styling and is not a Japanese typographic convention, and it also mismatches 'Wan 3.0' used in every other string on this page."
+        }
+      ]
+    },
+    "wan3.hero.secondaryCta": "ea648d74dcd4030b92230ec09c3657b1",
+    "wan3.hero.tagImageToVideo": "3cbd30c83353c0c880c8847caf2de894",
+    "wan3.hero.tagReferenceToVideo": "432cdf188de275c14c5051246c233253",
+    "wan3.hero.tagTextToVideo": "d3a870f25f0ceb1562695ae370e062ce",
+    "wan3.hero.title": "2df477cd869958fb4ca48ff87b850b68",
+    "wan3.meta.description": "8cf74f0130571b993098454d6bc931ba",
+    "wan3.meta.title": "16de650abc362f2cef1d2ab471c3af2b",
+    "wan3.pricing.banner.cta": "2b3bb2c0c8d4bbdbaaad16bc4b2010c5",
+    "wan3.pricing.banner.subtitle": "90256721c7b54347176e94ecd0fd5d21",
+    "wan3.pricing.banner.title": "185abf8945db8c2ed92cc8415ce42618",
+    "wan3.reviews.heading": "de16b93bc0046024231427ad7d902f03",
+    "wan3.reviews.highlightCta": "0522511f7d7ab913ff530cdedebe8f1c",
+    "wan3.reviews.highlightDescription": "5de8134edaad4302d9e0b8fd89cf310a",
+    "wan3.reviews.highlightTitle": "aba65d7ae8fdc1027edf4eaa29519937",
+    "wan3.runOptions.cta": "d4a023c0f05fc9eccf3117eda3f191ae",
+    "wan3.runOptions.heading": "8daf6844d3e6d54ae7e66b46645314da",
+    "wan3.runOptions.subtitle": "eb76975d47f35a12369f2df0981b6fe5",
+    "wan3.wan3Page.clip-length.answer": "2802ed74f9fb9bd13161ae614fd7b401",
+    "wan3.wan3Page.clip-length.question": "fbf7ae3874b37c33e5af1483f81f20d7",
+    "wan3.wan3Page.how-to-run.question": "bb8d0fc1f6febcdbb2c2aa64b9860746",
+    "wan3.wan3Page.prompting.answer": "375f6214b67a16686d0015d671330b77",
+    "wan3.wan3Page.prompting.question": "d8a54d15c94dd629e274573f72736c8b",
+    "wan3.wan3Page.video-editing.answer": "9c1d58049c80ab33268f550f7dd25374",
+    "wan3.wan3Page.video-editing.question": "bdec3928a3e5fda241639da859c447e8",
+    "wan3.wan3Page.what-is-wan-3.answer": "3f001217ce63e6a9e4b6f78a826ff491",
+    "wan3.wan3Page.what-is-wan-3.question": "60c63ec579efc8644bfbfe3ff478927f",
+    "wan3.wan3Page.whats-new.answer": "7f3f326b0c81c11c553fbbb2e0acce88",
+    "wan3.wan3Page.whats-new.question": {
+      "hash": "7f950dd54728cd8c9384ad1ed1c13673",
+      "findings": [
+        {
+          "key": "wan3.wan3Page.whats-new.question",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "Wan 3.0 は Wan 2.7 から何が新しくなりましたか？",
+          "suggestion": "Wan 3.0はWan 2.7から何が新しくなりましたか？",
+          "reason": "Inconsistent spacing: this string inserts ASCII spaces around the Japanese particles/product names, while the sibling FAQ strings in the same block (e.g. 'Wan 3.0へのプロンプト', 'Wan 3.0で手持ちの動画') use no spaces. Should match the rest of the section."
+        }
+      ]
+    },
+    "wanAnimate2.breadcrumb.model": "bda2ee44b5bc9d25b275ecc4f142dba2",
+    "wanAnimate2.breadcrumb.updated": "d038a73332f47898bb92fe752ed4fdfa",
+    "wanAnimate2.hero.description": "3cd02e254e1b4a06334d9454290c1343",
+    "wanAnimate2.hero.primaryCta": "c34c30a532f8085e375253a1556f2a4d",
+    "wanAnimate2.hero.tagOpenSource": "870795bb7c074763579f7c22aa760400",
+    "wanAnimate2.hero.tagReferenceToVideo": "4afaf075b4783188533606c31d38d6cb",
+    "wanAnimate2.hero.title": "16c0443600046051bb22fdc92d4e41af",
+    "wanAnimate2.meta.description": "a35c7e5b5a8b5b75066954190c101093",
+    "wanAnimate2.meta.title": "1e80d1a8ed47183491b709d88f23a3d8",
+    "wanAnimate2.pricing.banner.cta": "2b3bb2c0c8d4bbdbaaad16bc4b2010c5",
+    "wanAnimate2.pricing.banner.subtitle": "0f514d3df4be12fed6ea0bcd325a13fe",
+    "wanAnimate2.pricing.banner.title": "f44743db37da862e068c31c568178ad9",
+    "wanAnimate2.reviews.heading": "de16b93bc0046024231427ad7d902f03",
+    "wanAnimate2.reviews.highlightCta": "0522511f7d7ab913ff530cdedebe8f1c",
+    "wanAnimate2.reviews.highlightDescription": "5de8134edaad4302d9e0b8fd89cf310a",
+    "wanAnimate2.reviews.highlightTitle": "aba65d7ae8fdc1027edf4eaa29519937",
+    "wanAnimate2.runOptions.cta": "d4a023c0f05fc9eccf3117eda3f191ae",
+    "wanAnimate2.runOptions.heading": "8daf6844d3e6d54ae7e66b46645314da",
+    "wanAnimate2.runOptions.subtitle": "326b8ab34642ad7a20535a940603dd6c",
+    "wanAnimate2.steps.heading": "99967821344da9a865fa8ed7496305aa",
+    "wanAnimate2.steps.primaryCta": {
+      "hash": "8f1e72e779b9045961ffd87c2159813c",
+      "findings": [
+        {
+          "key": "wanAnimate2.steps.primaryCta",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "WAN ANIMATE 2 を実行",
+          "suggestion": "Wan Animate 2 を実行",
+          "reason": "Product name is set in all caps, altering the required exact form of the proper noun, and it is inconsistent with wanAnimate2.hero.primaryCta on the same page, which uses 'Wan Animate 2を実行'."
+        }
+      ]
+    },
+    "wanAnimate2.steps.step": "25e7567490cd44d1feba159af9af546b",
+    "wanAnimate2.wanAnimate2Page.run-wan-animate-2.description": "f3e79bf605fb20fea7f3bf4d80b21d03",
+    "wanAnimate2.wanAnimate2Page.run-wan-animate-2.title": "10fd21518506fb9776f1592ff7fb1636",
+    "wanAnimate2.wanAnimate2Page.upload-your-reference.description": {
+      "hash": "9c29a8866d90abe28b177be6843d62df",
+      "findings": [
+        {
+          "key": "wanAnimate2.wanAnimate2Page.upload-your-reference.description",
+          "category": "terminology",
+          "severity": "minor",
+          "span": "ドライビング動画",
+          "suggestion": "動きの元となる動画",
+          "reason": "'Driving video' is rendered as a transliteration here but as '動きの元となる動画' in wanAnimate2.meta.description on the same page; the two should match."
+        },
+        {
+          "key": "wanAnimate2.wanAnimate2Page.upload-your-reference.description",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "転送したい動き",
+          "suggestion": "適用したい動き",
+          "reason": "転送 means data forwarding/transmission in Japanese and reads oddly for motion transfer; other strings on the page use 適用 for the same concept."
+        }
+      ]
+    },
+    "wanAnimate2.wanAnimate2Page.upload-your-reference.title": "03650f4df3d1bd4c0be05f614402b6a3",
+    "wanAnimate2.wanAnimate2Page.write-the-shot.description": "56cbd77b13b843eedc9ae0e75294831d",
+    "wanAnimate2.wanAnimate2Page.write-the-shot.title": {
+      "hash": "b0d88cb064e75e258cd09e08913d8796",
+      "findings": [
+        {
+          "key": "wanAnimate2.wanAnimate2Page.write-the-shot.title",
+          "category": "context",
+          "severity": "minor",
+          "span": "ショットを書く",
+          "suggestion": "ショットを記述",
+          "reason": "Heading style is inconsistent with the sibling step title '参照素材をアップロード', which uses a noun/stem ending as Japanese UI headings do; this one uses a plain dictionary-form verb sentence."
+        }
+      ]
+    },
+    "workshop.empty": "8d0452a8ca48cf9966cd7888de8da2fa",
+    "workshop.filter.3d": "0b08de4ea8b3f29ac9cfe9ecc6c0e09d",
+    "workshop.filter.all": "c9e31c29ebbf5baa29fa8eddb80a1e6e",
+    "workshop.filter.audio": "4e5aa89db5c698071503abcf4853b5d5",
+    "workshop.filter.image": "0d436c45ef0284ecdaa55f71f63acac8",
+    "workshop.filter.video": "36a171409cf5a82222364e1b2537e595",
+    "workshop.hero.eyebrow": "29ba8b60e45d6d6be9bf88ead4e0a88f",
+    "workshop.hero.heading": {
+      "hash": "5b9be2818e69ede0bfa126480de05593",
+      "findings": [
+        {
+          "key": "workshop.hero.heading",
+          "category": "accuracy",
+          "severity": "minor",
+          "span": "最適なAIモデルで構築",
+          "suggestion": "最高のAIモデルで構築",
+          "reason": "'最適な' means 'most suitable/optimal', shifting the meaning of 'the best' toward 'the right one for you'. '最高の' matches the English claim more directly."
+        }
+      ]
+    },
+    "workshop.hero.subtitle": "44cd17c2110efcabb68a8e5508d50807",
+    "workshop.meta.description": "36535268c838adb46816089a3f53385b",
+    "workshop.meta.title": "29ba8b60e45d6d6be9bf88ead4e0a88f",
+    "workshop.model.breadcrumb": "62d3edd7d2d44688186df208fabb8172",
+    "workshop.model.browseAll": "4e78da3af6f54075652978b03623c105",
+    "workshop.model.codeLanguage": "789beff355c61e81155524e7516331f6",
+    "workshop.model.copied": "cb546320be5fe5196fedfcc30d19054f",
+    "workshop.model.copy": "43e094e722ea10158862beccd93bbced",
+    "workshop.model.getApiKey": "e3d5bbc71753665391fc8ed6ef5d07a9",
+    "workshop.model.inputs": "e1a3c6549f3fb0de71d6a3de12a17764",
+    "workshop.model.invalidJson": "09f6922c9ffd3e6a9dba4b5f8b33751b",
+    "workshop.model.maxFiles": "b711800222899409474151520e1c44f6",
+    "workshop.model.related": "9c44092bbc6bd6ca7df260ecc6c4071b",
+    "workshop.model.runNext": "dc6f2c281d8163677385668052f6e86d",
+    "workshop.model.select": "9f7ec0af0fcf50ba20a3fc163f2d55c4",
+    "workshop.provider.all": "03ce30e2e2e5c686dce911a0e55efdff",
+    "workshop.provider.label": "1b66c2990542f2f16b726ae463bf6105",
+    "workshop.result": "26ace53d9b70d16dffec3a34dd7a4031",
+    "workshop.results": "c439254a42d16d69e39bfa431b12e74b",
+    "workshop.search.label": "2fd0f8b6a153475353c3a00de6007e74",
+    "workshop.search.placeholder": "914da293508225b3a3fdd05d1639e405",
+    "workshop.showMore": "fd205a768677f49600fa659a32575004"
   }
 }

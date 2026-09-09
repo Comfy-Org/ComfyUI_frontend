@@ -663,11 +663,6 @@ Enterprise`
     en: 'Govern ComfyUI across every team and runtime.',
     'zh-CN': '在每个团队和运行环境中治理 ComfyUI。'
   },
-  'enterprise.hero.subtitle': {
-    en: 'Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, team plans, commercial licensing, and hands-on implementation support.',
-    'zh-CN':
-      '通过 ComfyUI Managed Builds、团队方案、商业许可和实施支持，统一团队构建、运行和部署视觉 AI 的方式。'
-  },
   'enterprise.hero.contactSales': {
     en: 'REQUEST DEMO',
     'zh-CN': '申请演示'
@@ -757,10 +752,6 @@ Enterprise`
   'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
 
   // Enterprise – FAQ
-  'enterprise.faq.heading': {
-    en: 'FAQs',
-    'zh-CN': '常见问题'
-  },
 
   // API – StepsSection
   'api.steps.heading': {
@@ -1795,9 +1786,9 @@ Enterprise`
     'zh-CN': '积分余额'
   },
   'pricing.included.feature4.description': {
-    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    en: 'Every plan includes a pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro. Monthly plans refill the pool each month; annual plans grant the whole year up front.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+      '所有计划均包含积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。按月订阅每月重置积分，按年订阅在开通时一次性发放全年积分。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',
@@ -1830,9 +1821,9 @@ Enterprise`
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与订阅赠送的积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -2881,214 +2872,270 @@ Enterprise`
   // rendered English on /zh-CN/enterprise and /ja/enterprise with nothing to
   // report it — no key means no adapter, no coverage number, no warning.
   'enterprise.faq.what-is-enterprise.question': {
-    en: 'What is included in Comfy Enterprise?'
+    en: 'What is included in Comfy Enterprise?',
+    'zh-CN': 'Comfy Enterprise 包含哪些内容？'
   },
   'enterprise.faq.what-is-enterprise.answer': {
-    en: 'Comfy Enterprise can combine ComfyUI Managed Builds, dedicated production capacity and support, commercial model licensing, and Forward Deployed Creatives. Teams that only need shared Cloud usage can start with the self-serve Team plan.'
+    en: 'Comfy Enterprise can combine ComfyUI Managed Builds, dedicated production capacity and support, commercial model licensing, and Forward Deployed Creatives. Teams that only need shared Cloud usage can start with the self-serve Team plan.',
+    'zh-CN':
+      'Comfy Enterprise 可以组合 ComfyUI Managed Builds、专属生产算力与支持、模型商用授权以及 Forward Deployed Creatives。只需要共享 Cloud 用量的团队可以从自助式 Team 方案开始。'
   },
   'enterprise.faq.where-runs.question': {
-    en: 'Where can our Comfy Workflows run?'
+    en: 'Where can our Comfy Workflows run?',
+    'zh-CN': '我们的 Comfy Workflows 可以在哪里运行？'
   },
   'enterprise.faq.where-runs.answer': {
-    en: 'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.'
+    en: 'Comfy Workflows can run locally, on infrastructure you control, or through the Developer Platform. ComfyUI Managed Builds are designed for approved environments on your machines and infrastructure.',
+    'zh-CN':
+      'Comfy Workflows 可以在本地、您掌控的基础设施上，或通过 Developer Platform 运行。ComfyUI Managed Builds 专为您的设备和基础设施上的受批准环境而设计。'
   },
   'enterprise.faq.builds-vs-managed-builds.question': {
-    en: 'How are Builds different from ComfyUI Managed Builds?'
+    en: 'How are Builds different from ComfyUI Managed Builds?',
+    'zh-CN': 'Builds 与 ComfyUI Managed Builds 有什么区别？'
   },
   'enterprise.faq.builds-vs-managed-builds.answer': {
-    en: 'Builds are the self-serve way to package ComfyUI, custom nodes, models, and dependencies into a reproducible environment. ComfyUI Managed Builds add team distribution, governance, controlled rollout, enterprise terms, and support across the environments your organization runs.'
+    en: 'Builds are the self-serve way to package ComfyUI, custom nodes, models, and dependencies into a reproducible environment. ComfyUI Managed Builds add team distribution, governance, controlled rollout, enterprise terms, and support across the environments your organization runs.',
+    'zh-CN':
+      'Builds 是将 ComfyUI、自定义节点、模型和依赖打包成可复现环境的自助方式。ComfyUI Managed Builds 在此之上增加了团队分发、治理、受控发布、企业条款，以及覆盖组织所有运行环境的支持。'
   },
   'enterprise.faq.commercial-models.question': {
-    en: 'Can we use models commercially?'
+    en: 'Can we use models commercially?',
+    'zh-CN': '我们可以将模型用于商业用途吗？'
   },
   'enterprise.faq.commercial-models.answer': {
-    en: 'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.'
+    en: 'On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.',
+    'zh-CN':
+      '在 Cloud 上，所有模型均已获得商用授权。在本地，授权因供应商而异，可按需获取商用条款。Comfy 也是 MiniMax 商用授权的官方经销商。'
   },
   'enterprise.faq.security.question': {
-    en: 'How does Comfy support security review?'
+    en: 'How does Comfy support security review?',
+    'zh-CN': 'Comfy 如何支持安全审查？'
   },
   'enterprise.faq.usage.question': {
-    en: 'What usage and audit information is available?'
+    en: 'What usage and audit information is available?',
+    'zh-CN': '可以获取哪些用量与审计信息？'
   },
   'enterprise.faq.usage.answer': {
-    en: 'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.'
+    en: 'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
+    'zh-CN':
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。身份验证、构建分配、发布、留存和导出要求会在企业安全审查中明确界定。'
   },
   'enterprise.faq.team-plan.question': {
-    en: 'Is there a self-serve Team plan?'
+    en: 'Is there a self-serve Team plan?',
+    'zh-CN': '有自助式 Team 方案吗？'
   },
   'enterprise.faq.team-plan.answer': {
-    en: 'Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.'
+    en: 'Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.',
+    'zh-CN':
+      '有。Team 是自助式 Comfy Cloud 方案，支持成员邀请、并发运行工作流、集中计费的共享积分池以及基于角色的权限管理。共享工作流、素材和项目即将推出。'
   },
   'enterprise.faq.capacity-and-support.question': {
-    en: 'What production capacity and support are available?'
+    en: 'What production capacity and support are available?',
+    'zh-CN': '提供哪些生产算力与支持？'
   },
   'enterprise.faq.capacity-and-support.answer': {
-    en: 'Enterprise agreements can include dedicated GPU capacity, priority queueing, guided onboarding, direct access to Comfy engineers, and uptime and response commitments scoped to your requirements.'
-  },
-  'enterprise.offers.team-plans.label': {
-    en: 'SELF-SERVE FOR TEAMS'
-  },
-  'enterprise.offers.team-plans.title': {
-    en: 'Team plans'
-  },
-  'enterprise.offers.team-plans.description': {
-    en: 'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.'
+    en: 'Enterprise agreements can include dedicated GPU capacity, priority queueing, guided onboarding, direct access to Comfy engineers, and uptime and response commitments scoped to your requirements.',
+    'zh-CN':
+      '企业协议可包含专属 GPU 算力、优先排队、上手指导、直接对接 Comfy 工程师，以及按您的需求界定的可用性与响应承诺。'
   },
   'enterprise.offers.commercial-licensing.label': {
-    en: 'COMMERCIAL RIGHTS'
+    en: 'COMMERCIAL RIGHTS',
+    'zh-CN': '商业权利'
   },
   'enterprise.offers.commercial-licensing.title': {
-    en: 'Model licensing'
+    en: 'Model licensing',
+    'zh-CN': '模型授权'
   },
   'enterprise.offers.commercial-licensing.description': {
-    en: 'Commercial terms for MiniMax today, with local model terms available by provider on request.'
+    en: 'Commercial terms for MiniMax today, with local model terms available by provider on request.',
+    'zh-CN': 'MiniMax 商用条款现已提供，本地模型条款可按供应商申请获取。'
   },
   'enterprise.offers.commercial-licensing.cta.label': {
-    en: 'VIEW MINIMAX LICENSING'
+    en: 'VIEW MINIMAX LICENSING',
+    'zh-CN': '查看 MINIMAX 授权'
   },
   'enterprise.offers.forward-deployed-creatives.label': {
-    en: 'HANDS-ON DELIVERY'
+    en: 'HANDS-ON DELIVERY',
+    'zh-CN': '驻场交付'
   },
   'enterprise.offers.forward-deployed-creatives.title': {
-    en: 'Forward Deployed Creatives'
+    en: 'Forward Deployed Creatives',
+    'zh-CN': 'Forward Deployed Creatives'
   },
   'enterprise.offers.forward-deployed-creatives.description': {
-    en: 'Work with ComfyUI specialists who design production Comfy Workflows alongside your creative and technical teams, then leave your team with workflows it can run, inspect, and extend.'
+    en: 'Work with ComfyUI specialists who design production Comfy Workflows alongside your creative and technical teams, then leave your team with workflows it can run, inspect, and extend.',
+    'zh-CN':
+      '与 ComfyUI 专家合作，与您的创意和技术团队一起设计生产级 Comfy Workflows，并为您的团队留下可运行、可审查、可扩展的工作流。'
   },
   'enterprise.offers.forward-deployed-creatives.cta.label': {
-    en: 'VIEW THE OFFERING'
+    en: 'VIEW THE OFFERING',
+    'zh-CN': '查看服务详情'
   },
   'enterprise.governance.build-policy.title': {
-    en: 'Build policy'
+    en: 'Build policy',
+    'zh-CN': '构建策略'
   },
   'enterprise.governance.build-policy.description': {
-    en: 'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.'
+    en: 'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+    'zh-CN': '固定受批准构建中包含的 ComfyUI 版本、自定义节点、模型和依赖。'
   },
   'enterprise.governance.model-policy.title': {
-    en: 'Model policy and BYOK'
+    en: 'Model policy and BYOK',
+    'zh-CN': '模型策略与 BYOK'
   },
   'enterprise.governance.model-policy.description': {
-    en: 'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.'
+    en: 'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+    'zh-CN':
+      '选择团队可用的合作伙伴模型、开源模型和私有模型。使用受支持的供应商密钥和现有合同。'
   },
   'enterprise.governance.people-access.title': {
-    en: 'People and access'
+    en: 'People and access',
+    'zh-CN': '人员与访问'
   },
   'enterprise.governance.people-access.description': {
-    en: 'Use company identity and SSO to assign approved environments, with App Mode for simplified, approved experiences.'
+    en: 'Use company identity and SSO to assign approved environments to the teams that need them.',
+    'zh-CN': '使用企业身份和 SSO 将受批准的环境分配给需要的团队。'
   },
   'enterprise.governance.usage-records.title': {
-    en: 'Usage visibility and audit requirements'
+    en: 'Usage visibility and audit requirements',
+    'zh-CN': '用量可见性与审计要求'
   },
   'enterprise.governance.usage-records.description': {
-    en: 'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.'
+    en: 'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+    'zh-CN':
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。在企业安全审查中界定身份验证、构建分配、发布、留存和导出要求。'
   },
   'enterprise.production.dedicated-capacity.title': {
-    en: 'Dedicated GPU capacity'
+    en: 'Dedicated GPU capacity',
+    'zh-CN': '专属 GPU 算力'
   },
   'enterprise.production.dedicated-capacity.description': {
-    en: 'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.'
+    en: 'Reserve GPU capacity for production workloads through the Developer Platform, sized around your deployment plan.',
+    'zh-CN':
+      '通过 Developer Platform 为生产工作负载预留 GPU 算力，并按您的部署方案确定规模。'
   },
   'enterprise.production.priority-queueing.title': {
-    en: 'Priority queueing'
+    en: 'Priority queueing',
+    'zh-CN': '优先排队'
   },
   'enterprise.production.priority-queueing.description': {
-    en: 'Production jobs run ahead of standard shared-capacity traffic when demand spikes.'
+    en: 'Production jobs run ahead of standard shared-capacity traffic when demand spikes.',
+    'zh-CN': '需求高峰时，生产任务优先于标准共享算力流量运行。'
   },
   'enterprise.production.deployment.title': {
-    en: 'Flexible deployment'
+    en: 'Flexible deployment',
+    'zh-CN': '灵活部署'
   },
   'enterprise.production.deployment.description': {
-    en: 'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.'
+    en: 'Run Comfy Workflows on Comfy Cloud, through the Developer Platform, or on infrastructure you control.',
+    'zh-CN':
+      '在 Comfy Cloud 上、通过 Developer Platform，或在您掌控的基础设施上运行 Comfy Workflows。'
   },
   'enterprise.production.support.title': {
-    en: 'Custom SLAs and support'
+    en: 'Custom SLAs and support',
+    'zh-CN': '定制 SLA 与支持'
   },
   'enterprise.production.support.description': {
-    en: 'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.'
-  },
-  'enterprise.industries.games.title': {
-    en: 'Game studios'
-  },
-  'enterprise.industries.games.description': {
-    en: 'Keep art, UA, and marketing teams on one pinned toolchain while each group works in the Comfy Workflows built for its job.'
-  },
-  'enterprise.industries.vfx.title': {
-    en: 'VFX and animation'
-  },
-  'enterprise.industries.vfx.description': {
-    en: 'Lock the environment per show, keep private nodes and models inside the build, and run IP-sensitive work on infrastructure you control.'
-  },
-  'enterprise.industries.onboarding.title': {
-    en: 'Studios you onboard'
-  },
-  'enterprise.industries.onboarding.description': {
-    en: 'Give a new studio or client an approved build aligned to its stack, then release updates deliberately instead of repeating setup by hand.'
+    en: 'Get guided onboarding, priority support, direct access to Comfy engineering, and response commitments defined in your agreement.',
+    'zh-CN':
+      '获得上手指导、优先支持、直接对接 Comfy 工程团队，以及协议中界定的响应承诺。'
   },
   'enterprise.managedBuilds.faq.what.question': {
-    en: 'What is a ComfyUI Managed Build?'
+    en: 'What is a ComfyUI Managed Build?',
+    'zh-CN': '什么是 ComfyUI Managed Build？'
   },
   'enterprise.managedBuilds.faq.what.answer': {
-    en: 'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.'
+    en: 'A Managed Build is an approved, reproducible ComfyUI environment. It pins the ComfyUI version, custom nodes, models, and dependencies your team needs so the same setup can be assigned and updated across machines.',
+    'zh-CN':
+      'Managed Build 是一个受批准、可复现的 ComfyUI 环境。它固定团队所需的 ComfyUI 版本、自定义节点、模型和依赖，让同一套环境可以在多台设备间分配和更新。'
   },
   'enterprise.managedBuilds.faq.where.question': {
-    en: 'Where do Managed Builds run?'
+    en: 'Where do Managed Builds run?',
+    'zh-CN': 'Managed Builds 在哪里运行？'
   },
   'enterprise.managedBuilds.faq.where.answer': {
-    en: 'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.'
+    en: 'Managed Builds run on your workstations, studio GPU servers, or customer cloud infrastructure. Your Comfy Workflows stay on the machines where they run.',
+    'zh-CN':
+      'Managed Builds 运行在您的工作站、工作室 GPU 服务器或客户的云基础设施上。您的 Comfy Workflows 保留在运行它们的设备上。'
   },
   'enterprise.managedBuilds.faq.models.question': {
-    en: 'Can we use private models and our own provider keys?'
+    en: 'Can we use private models and our own provider keys?',
+    'zh-CN': '我们可以使用私有模型和自己的供应商密钥吗？'
   },
   'enterprise.managedBuilds.faq.models.answer': {
-    en: 'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.'
+    en: 'Yes. Teams can include private fine-tuned models, govern which models and partner providers are available in a build, and use supported provider keys with their existing contracts.',
+    'zh-CN':
+      '可以。团队可以纳入私有微调模型，治理构建中可用的模型与合作伙伴供应商，并使用受支持的供应商密钥和现有合同。'
   },
   'enterprise.managedBuilds.faq.nodes.question': {
-    en: 'How are custom nodes governed?'
+    en: 'How are custom nodes governed?',
+    'zh-CN': '如何治理自定义节点？'
   },
   'enterprise.managedBuilds.faq.nodes.answer': {
-    en: 'Administrators choose which custom nodes belong in each build, then pin them with the rest of the environment for controlled rollout.'
+    en: 'Administrators choose which custom nodes belong in each build, then pin them with the rest of the environment for controlled rollout.',
+    'zh-CN':
+      '管理员选择每个构建应包含哪些自定义节点，然后将它们与环境的其余部分一起固定，实现受控发布。'
   },
   'enterprise.managedBuilds.faq.access.question': {
-    en: 'How are users and teams assigned?'
+    en: 'How are users and teams assigned?',
+    'zh-CN': '如何分配用户和团队？'
   },
   'enterprise.managedBuilds.faq.access.answer': {
-    en: 'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.'
+    en: 'Company identity and SSO can gate access to approved builds. Teams receive the environments assigned to them instead of configuring every machine independently.',
+    'zh-CN':
+      '企业身份和 SSO 可以控制对受批准构建的访问。团队直接获得分配给他们的环境，而无需逐台配置设备。'
   },
   'enterprise.managedBuilds.faq.usage.question': {
-    en: 'What usage and audit information is available?'
+    en: 'What usage and audit information is available?',
+    'zh-CN': '可以获取哪些用量与审计信息？'
   },
   'enterprise.managedBuilds.faq.usage.answer': {
-    en: 'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.'
+    en: 'Track usage by model and partner on the Developer Platform. Authentication, build-assignment, release, retention, and export requirements are scoped explicitly during enterprise security review.',
+    'zh-CN':
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。身份验证、构建分配、发布、留存和导出要求会在企业安全审查中明确界定。'
   },
   'enterprise.managedBuilds.faq.start.question': {
-    en: 'How do we get started?'
+    en: 'How do we get started?',
+    'zh-CN': '如何开始？'
   },
   'enterprise.managedBuilds.faq.start.answer': {
-    en: 'Request a demo and bring one known-good environment. Comfy engineers will map the current setup, deployment targets, governance requirements, onboarding plan, and path to the first approved build.'
+    en: 'Request a demo and bring one known-good environment. Comfy engineers will map the current setup, deployment targets, governance requirements, onboarding plan, and path to the first approved build.',
+    'zh-CN':
+      '申请演示并带上一个可用的环境。Comfy 工程师将梳理当前配置、部署目标、治理要求、上手方案，以及通向第一个受批准构建的路径。'
   },
   'enterprise.managedBuilds.governance.build-policy.title': {
-    en: 'Build policy'
+    en: 'Build policy',
+    'zh-CN': '构建策略'
   },
   'enterprise.managedBuilds.governance.build-policy.description': {
-    en: 'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.'
+    en: 'Pin the ComfyUI release, custom nodes, models, and dependencies that belong in an approved build.',
+    'zh-CN': '固定受批准构建中包含的 ComfyUI 版本、自定义节点、模型和依赖。'
   },
   'enterprise.managedBuilds.governance.model-policy.title': {
-    en: 'Model policy and BYOK'
+    en: 'Model policy and BYOK',
+    'zh-CN': '模型策略与 BYOK'
   },
   'enterprise.managedBuilds.governance.model-policy.description': {
-    en: 'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.'
+    en: 'Choose the partner, open, and private models teams can use. Bring supported provider keys and existing contracts.',
+    'zh-CN':
+      '选择团队可用的合作伙伴模型、开源模型和私有模型。使用受支持的供应商密钥和现有合同。'
   },
   'enterprise.managedBuilds.governance.people-access.title': {
-    en: 'People and access'
+    en: 'People and access',
+    'zh-CN': '人员与访问'
   },
   'enterprise.managedBuilds.governance.people-access.description': {
-    en: 'Use company identity and SSO to assign approved environments to the teams that need them.'
+    en: 'Use company identity and SSO to assign approved environments to the teams that need them.',
+    'zh-CN': '使用企业身份和 SSO 将受批准的环境分配给需要的团队。'
   },
   'enterprise.managedBuilds.governance.usage-records.title': {
-    en: 'Usage visibility and audit requirements'
+    en: 'Usage visibility and audit requirements',
+    'zh-CN': '用量可见性与审计要求'
   },
   'enterprise.managedBuilds.governance.usage-records.description': {
-    en: 'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.'
+    en: 'Track usage by model and partner on the Developer Platform. Scope authentication, build-assignment, release, retention, and export requirements during enterprise security review.',
+    'zh-CN':
+      '在 Developer Platform 上按模型和合作伙伴追踪用量。在企业安全审查中界定身份验证、构建分配、发布、留存和导出要求。'
   },
   'enterprise.managedBuilds.industries.games.title': {
     en: 'Game studios'
@@ -8616,7 +8663,7 @@ Enterprise`
     'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {
-    en: 'Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
+    en: 'Builds is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
     'zh-CN':
       'Builder 可用于自助打包和测试自己的环境。托管构建增加了团队共享和企业治理。'
   },
@@ -8737,17 +8784,23 @@ Enterprise`
   },
   // enterprise/index.astro
   'enterprise.meta.title': {
-    en: 'Comfy Enterprise | Govern visual AI across every team'
+    en: 'Comfy Enterprise | Govern visual AI across every team',
+    'zh-CN': 'Comfy Enterprise | 治理每个团队的视觉 AI'
   },
   'enterprise.meta.description': {
-    en: 'Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery.'
+    en: 'Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery.',
+    'zh-CN':
+      '通过 Managed Builds、自助式 Team 方案、模型商用授权、企业级安全与驻场交付，让 ComfyUI 在各团队与运行环境中标准化。'
   },
   // enterprise/managed-builds.astro
   'enterprise.managedBuilds.meta.title': {
-    en: 'ComfyUI Managed Builds | Govern ComfyUI across your fleet'
+    en: 'ComfyUI Managed Builds | Govern ComfyUI across your fleet',
+    'zh-CN': 'ComfyUI Managed Builds | 治理整个团队的 ComfyUI'
   },
   'enterprise.managedBuilds.meta.description': {
-    en: 'Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure.'
+    en: 'Create approved, reproducible ComfyUI environments and deploy them across workstations, studios, and customer infrastructure.',
+    'zh-CN':
+      '创建受批准、可复现的 ComfyUI 环境，并将其部署到工作站、工作室与客户基础设施。'
   },
   // gallery.astro
   'gallery.meta.title': {
@@ -9108,14 +9161,6 @@ Enterprise`
     en: 'See the node reference',
     'zh-CN': '查看节点参考'
   },
-  'cloudNodesLaunch.models.oneNode': {
-    en: '1 node',
-    'zh-CN': '1 个节点'
-  },
-  'cloudNodesLaunch.models.threeNodes': {
-    en: '3 nodes',
-    'zh-CN': '3 个节点'
-  },
   'cloudNodesLaunch.models.flux2': {
     en: 'Flux 2',
     'zh-CN': 'Flux 2'
@@ -9301,6 +9346,493 @@ Enterprise`
   'footer.language': {
     en: 'Language',
     'zh-CN': '语言'
+  },
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
+  'workshop.meta.title': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run AI models with Comfy.',
+    'zh-CN': '使用 Comfy 浏览并运行 AI 模型。'
+  },
+  'workshop.hero.eyebrow': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.hero.heading': {
+    en: 'Build with the best AI models',
+    'zh-CN': '使用顶尖 AI 模型进行创作'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Compare models, try their inputs, and use the same API from your own application.',
+    'zh-CN': '比较模型、尝试输入，并在你自己的应用中使用相同的 API。'
+  },
+  'workshop.search.label': {
+    en: 'Search models',
+    'zh-CN': '搜索模型'
+  },
+  'workshop.search.placeholder': {
+    en: 'Search models, providers, and capabilities',
+    'zh-CN': '搜索模型、提供商和功能'
+  },
+  'workshop.provider.label': {
+    en: 'Filter by provider',
+    'zh-CN': '按提供商筛选'
+  },
+  'workshop.provider.all': {
+    en: 'All providers',
+    'zh-CN': '所有提供商'
+  },
+  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.result': {
+    en: '{count} model',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.results': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.empty': {
+    en: 'No models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的模型。'
+  },
+  'workshop.showMore': {
+    en: 'Show more models',
+    'zh-CN': '显示更多模型'
+  },
+  'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
+  'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
+  'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
+  'workshop.model.maxFiles': {
+    en: 'Select no more than {count} files.',
+    'zh-CN': '最多选择 {count} 个文件。'
+  },
+  'workshop.model.invalidJson': {
+    en: "Enter JSON that matches this model input's schema.",
+    'zh-CN': '请输入符合此模型输入架构的 JSON。'
+  },
+  'workshop.model.runNext': {
+    en: 'Run model — sign-in coming next',
+    'zh-CN': '运行模型 — 登录功能即将推出'
+  },
+  'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
+  'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.model.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
+  'workshop.model.related': { en: 'Related models', 'zh-CN': '相关模型' },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
+  },
+  'pricing.creditsLabelYearly': {
+    en: 'credits per year',
+    'zh-CN': '年度积分'
+  },
+  'pricing.plan.standard.yearlyCredits': { en: '50,400', 'zh-CN': '50,400' },
+  'pricing.plan.standard.yearlyEstimate': {
+    en: 'Generates ~4,560 5s videos*',
+    'zh-CN': '约可生成 4,560 个 5 秒视频*'
+  },
+  'pricing.plan.creator.yearlyCredits': { en: '88,800', 'zh-CN': '88,800' },
+  'pricing.plan.creator.yearlyEstimate': {
+    en: 'Generates ~8,040 5s videos*',
+    'zh-CN': '约可生成 8,040 个 5 秒视频*'
+  },
+  'pricing.plan.pro.yearlyCredits': { en: '253,200', 'zh-CN': '253,200' },
+  'pricing.plan.pro.yearlyEstimate': {
+    en: 'Generates ~22,980 5s videos*',
+    'zh-CN': '约可生成 22,980 个 5 秒视频*'
+  },
+  'enterprise.managedBuilds.closing.headingAfterBadge': {
+    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
+    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+  },
+  'cloudNodesLaunch.models.nodeCount': {
+    en: '{count} node | {count} nodes',
+    'zh-CN': '{count} 个节点'
+  },
+  'enterprise.hero.title': {
+    en: 'Govern ComfyUI across\nevery team and runtime.',
+    'zh-CN': '治理每个团队、每个运行环境中的 ComfyUI。'
+  },
+  'enterprise.hero.subtitle': {
+    en: 'Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, commercial licensing, and hands-on implementation support.',
+    'zh-CN':
+      '借助 ComfyUI Managed Builds、生产算力、商用授权与驻场实施支持，让团队构建、运行和部署视觉 AI 的方式标准化。'
+  },
+  'enterprise.hero.feature1': {
+    en: 'Approved, reproducible ComfyUI Managed Builds',
+    'zh-CN': '受批准、可复现的 ComfyUI Managed Builds'
+  },
+  'enterprise.hero.feature2': {
+    en: 'Dedicated GPU capacity, priority queueing, and enterprise SLAs',
+    'zh-CN': '专属 GPU 算力、优先排队与企业级 SLA'
+  },
+  'enterprise.hero.feature3': {
+    en: 'Commercial licensing, security review, and hands-on delivery',
+    'zh-CN': '商用授权、安全审查与驻场交付'
+  },
+  'enterprise.cta.requestDemo': {
+    en: 'REQUEST DEMO',
+    'zh-CN': '申请演示'
+  },
+  'enterprise.cta.viewTrustCenter': {
+    en: 'VIEW TRUST CENTER',
+    'zh-CN': '查看 TRUST CENTER'
+  },
+  'enterprise.intro.eyebrow': {
+    en: 'WAYS TO SCALE WITH COMFY',
+    'zh-CN': '与 COMFY 一起规模化'
+  },
+  'enterprise.intro.heading': {
+    en: 'The open standard for visual AI, ready for your organization.',
+    'zh-CN': '视觉 AI 的开放标准，随时服务您的组织。'
+  },
+  'enterprise.intro.subtitle': {
+    en: 'Your team builds the workflows. Comfy runs them, governs them, and licenses them for commercial use.',
+    'zh-CN': '您的团队构建工作流。Comfy 负责运行、治理，并为其提供商用授权。'
+  },
+  'enterprise.configurator.heading': {
+    en: 'One approved ComfyUI environment,\neverywhere your team runs it.',
+    'zh-CN': '一个受批准的 ComfyUI 环境，随团队运行到任何地方。'
+  },
+  'enterprise.configurator.body': {
+    en: 'Define the ComfyUI release, custom nodes, models, and dependencies your team is approved to run. Ship the same versioned build wherever the work happens.',
+    'zh-CN':
+      '定义团队获准运行的 ComfyUI 版本、自定义节点、模型和依赖。无论工作在哪里进行，都交付同一个版本化构建。'
+  },
+  'enterprise.configurator.feature1': {
+    en: 'Private custom nodes and models',
+    'zh-CN': '私有自定义节点与模型'
+  },
+  'enterprise.configurator.feature2': {
+    en: 'Use supported provider keys and existing contracts',
+    'zh-CN': '使用受支持的供应商密钥和现有合同'
+  },
+  'enterprise.configurator.feature3': {
+    en: 'Assign approved builds through company identity',
+    'zh-CN': '通过企业身份分配受批准的构建'
+  },
+  'enterprise.configurator.releasesLabel': {
+    en: 'COMFYUI RELEASE',
+    'zh-CN': 'COMFYUI 版本'
+  },
+  'enterprise.configurator.nodesLabel': {
+    en: 'CUSTOM NODES',
+    'zh-CN': '自定义节点'
+  },
+  'enterprise.configurator.privateNodes': {
+    en: 'studio-nodes (private)',
+    'zh-CN': 'studio-nodes（私有）'
+  },
+  'enterprise.configurator.modelsLabel': {
+    en: 'MODELS',
+    'zh-CN': '模型'
+  },
+  'enterprise.configurator.privateModel': {
+    en: 'brand-lora (private)',
+    'zh-CN': 'brand-lora（私有）'
+  },
+  'enterprise.governance.heading': {
+    en: 'Govern the build, models, people, and usage.',
+    'zh-CN': '治理构建、模型、人员与用量。'
+  },
+  'enterprise.governance.footnote': {
+    en: 'The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization.',
+    'zh-CN': '计算图保持灵活。围绕它的环境则成为组织受批准、可审查的运营模式。'
+  },
+  'enterprise.production.heading': {
+    en: 'Capacity and support for production.',
+    'zh-CN': '面向生产的算力与支持。'
+  },
+  'enterprise.production.footnote': {
+    en: 'Enterprise includes a 99.5% workflow-execution uptime SLA. Dedicated capacity, response commitments, and custom SLA terms are defined in your agreement.',
+    'zh-CN':
+      'Enterprise 包含 99.5% 工作流执行可用性 SLA。专属算力、响应承诺与定制 SLA 条款在您的协议中界定。'
+  },
+  'enterprise.industries.heading': {
+    en: 'Built with studios in the room',
+    'zh-CN': '与工作室共同打造'
+  },
+  'enterprise.security.heading': {
+    en: 'A clearer path through security review.',
+    'zh-CN': '更顺畅的安全审查路径。'
+  },
+  'enterprise.security.soc2.description': {
+    en: 'Type II audit in progress.',
+    'zh-CN': 'Type II 审计正在进行中。'
+  },
+  'enterprise.security.sso.title': {
+    en: 'Identity',
+    'zh-CN': '身份认证'
+  },
+  'enterprise.security.sso.description': {
+    en: 'Single Sign-On is available for enterprise teams.',
+    'zh-CN': '企业团队可使用单点登录（SSO）。'
+  },
+  'enterprise.security.data.title': {
+    en: 'Data control',
+    'zh-CN': '数据控制'
+  },
+  'enterprise.security.data.description': {
+    en: 'For local deployments, Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.',
+    'zh-CN':
+      '对于本地部署，您的 Comfy Workflows 和输出保留在运行它们的设备上。Comfy 不会使用客户数据进行训练。'
+  },
+  'enterprise.security.dpa.title': {
+    en: 'Procurement',
+    'zh-CN': '采购流程'
+  },
+  'enterprise.security.dpa.description': {
+    en: 'A DPA and enterprise agreement are available.',
+    'zh-CN': '提供 DPA 与企业协议。'
+  },
+  'enterprise.security.footnote': {
+    en: 'Processing is in the United States on Google Cloud. Enterprise includes a 99.5% workflow-execution uptime SLA.',
+    'zh-CN':
+      '数据在美国的 Google Cloud 上处理。Enterprise 包含 99.5% 工作流执行可用性 SLA。'
+  },
+  'enterprise.faq.heading': {
+    en: 'Enterprise, answered.',
+    'zh-CN': '关于 Enterprise 的常见问题。'
+  },
+  'enterprise.closing.heading': {
+    en: 'Bring the open standard for visual AI\nto your organization.',
+    'zh-CN': '把视觉 AI 的开放标准\n带进您的组织。'
+  },
+  'enterprise.closing.subtitle': {
+    en: 'Bring one known-good environment or the production requirement your team needs to scale. We will map deployment, governance, capacity, commercial terms, and the right implementation path.',
+    'zh-CN':
+      '带上一个可用的环境，或您的团队需要规模化的生产需求。我们将为您梳理部署、治理、算力、商业条款以及合适的实施路径。'
+  },
+  'enterprise.teamBand.label': {
+    en: 'Team plans',
+    'zh-CN': 'Team 方案'
+  },
+  'enterprise.teamBand.text': {
+    en: 'Give teams a shared credit pool for Cloud GPU time and partner-model usage, plus centralized billing, single sign-on, and App mode.',
+    'zh-CN':
+      '为团队提供覆盖 Cloud GPU 时长与合作伙伴模型用量的共享积分池，外加集中计费、单点登录和 App 模式。'
+  },
+  'enterprise.teamBand.cta': {
+    en: 'SEE PRICING',
+    'zh-CN': '查看定价'
+  },
+  'enterprise.faq.security.answer': {
+    en: 'SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center]({url}).',
+    'zh-CN':
+      '提供 SSO 和 DPA。Comfy 不会使用客户数据进行训练，SOC 2 Type II 审计正在进行中。请在 [Comfy Trust Center]({url}) 查看当前的安全控制措施。'
+  },
+  'enterprise.managedBuilds.hero.body': {
+    en: 'Govern the models, custom nodes, and dependencies your team runs. Create a managed distribution of ComfyUI and deploy the same build anywhere, local or serverless cloud.',
+    'zh-CN':
+      '治理团队运行的模型、自定义节点和依赖。创建 ComfyUI 的托管发行版，并将同一个构建部署到任何地方——本地或无服务器云端。'
+  },
+  'enterprise.managedBuilds.build.heading': {
+    en: 'One ComfyUI build for the whole team',
+    'zh-CN': '整个团队共用一个 ComfyUI 构建'
+  },
+  'enterprise.managedBuilds.build.packaging.title': {
+    en: 'Environment packaging',
+    'zh-CN': '环境打包'
+  },
+  'enterprise.managedBuilds.build.packaging.description': {
+    en: 'Replace one-off install scripts, dependency matrices, and machine-specific fixes with one versioned build.',
+    'zh-CN': '用一个版本化构建取代零散的安装脚本、依赖矩阵和逐台设备的修补。'
+  },
+  'enterprise.managedBuilds.build.governance.title': {
+    en: 'Node governance',
+    'zh-CN': '节点治理'
+  },
+  'enterprise.managedBuilds.build.governance.description': {
+    en: 'ComfyUI’s ecosystem spans 5,000+ extensions and 60,000+ community nodes. Pin and approve the nodes included in each build.',
+    'zh-CN':
+      'ComfyUI 生态涵盖 5,000+ 扩展和 60,000+ 社区节点。固定并批准每个构建中包含的节点。'
+  },
+  'enterprise.managedBuilds.build.rollout.title': {
+    en: 'Onboarding and rollout',
+    'zh-CN': '上手与发布'
+  },
+  'enterprise.managedBuilds.build.rollout.description': {
+    en: 'Assign known-good builds through company identity, onboard new teammates, and move the fleet together when a release is ready.',
+    'zh-CN':
+      '通过企业身份分配可用的构建，让新成员快速上手，并在版本就绪时让整个团队一起升级。'
+  },
+  'enterprise.managedBuilds.security.heading': {
+    en: 'Ready for your security review',
+    'zh-CN': '随时接受您的安全审查'
+  },
+  'enterprise.managedBuilds.security.local.title': {
+    en: 'Workflows stay local',
+    'zh-CN': '工作流保留在本地'
+  },
+  'enterprise.managedBuilds.security.local.description': {
+    en: 'For local deployments, your Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.',
+    'zh-CN':
+      '对于本地部署，您的 Comfy Workflows 和输出保留在运行它们的设备上。Comfy 不会使用客户数据进行训练。'
+  },
+  'enterprise.managedBuilds.security.private-assets.title': {
+    en: 'Private models and nodes',
+    'zh-CN': '私有模型与节点'
+  },
+  'enterprise.managedBuilds.security.private-assets.description': {
+    en: 'Include internal node packs and fine-tuned models inside a team-controlled build.',
+    'zh-CN': '将内部节点包和微调模型纳入团队掌控的构建中。'
+  },
+  'enterprise.managedBuilds.security.access.title': {
+    en: 'Identity and BYOK',
+    'zh-CN': '身份认证与 BYOK'
+  },
+  'enterprise.managedBuilds.security.access.description': {
+    en: 'Gate build assignment through company identity and use supported provider keys with existing contracts.',
+    'zh-CN': '通过企业身份控制构建分配，并使用受支持的供应商密钥和现有合同。'
+  },
+  'enterprise.managedBuilds.security.usage.title': {
+    en: 'Audit requirements',
+    'zh-CN': '审计要求'
+  },
+  'enterprise.managedBuilds.security.usage.description': {
+    en: 'Define the model, partner, authentication, release, retention, and export events your organization needs.',
+    'zh-CN': '定义组织所需的模型、合作伙伴、身份验证、发布、留存和导出事件。'
+  },
+  'enterprise.managedBuilds.security.footnote': {
+    en: 'DPA and enterprise agreement available. US processing on Google Cloud. 99.5% workflow-execution uptime SLA. SOC 2 Type II audit in progress.',
+    'zh-CN':
+      '提供 DPA 与企业协议。数据在美国的 Google Cloud 上处理。99.5% 工作流执行可用性 SLA。SOC 2 Type II 审计正在进行中。'
+  },
+  'enterprise.managedBuilds.compare.heading': {
+    en: 'Builds vs. Managed Builds',
+    'zh-CN': 'Builder 与 Managed Builds 对比'
+  },
+  'enterprise.managedBuilds.faq.heading': {
+    en: 'Managed Builds, answered.',
+    'zh-CN': '关于 Managed Builds 的常见问题。'
+  },
+  'enterprise.managedBuilds.fdcBand.text': {
+    en: 'Builders, not advisors. Forward Deployed Creatives build production Comfy Workflows inside approved environments, alongside the teams that will own and extend them.',
+    'zh-CN':
+      '是建设者，而不是顾问。Forward Deployed Creatives 在受批准的环境中构建生产级 Comfy Workflows，并与将要拥有和扩展这些工作流的团队并肩工作。'
+  },
+  'enterprise.managedBuilds.compare.packaging.feature': {
+    en: 'Custom nodes packaging',
+    'zh-CN': '自定义节点打包'
+  },
+  'enterprise.managedBuilds.compare.sharing.feature': {
+    en: 'Team sharing',
+    'zh-CN': '团队共享'
+  },
+  'enterprise.managedBuilds.compare.governance.feature': {
+    en: 'Governance',
+    'zh-CN': '治理'
+  },
+  'enterprise.managedBuilds.compare.python.feature': {
+    en: 'Python dependency auto-resolution',
+    'zh-CN': 'Python 依赖自动解析'
+  },
+  'enterprise.managedBuilds.steps.heading': {
+    en: 'From one working setup to an approved fleet',
+    'zh-CN': '从一套可用配置到受批准的团队环境'
+  },
+  'enterprise.managedBuilds.steps.define.title': {
+    en: 'Define the build',
+    'zh-CN': '定义构建'
+  },
+  'enterprise.managedBuilds.steps.define.description': {
+    en: 'Start from a known-good environment or import a snapshot of a setup you already run.',
+    'zh-CN': '从一个可用的环境开始，或导入您已在运行的配置快照。'
+  },
+  'enterprise.managedBuilds.steps.build.title': {
+    en: 'Build it once',
+    'zh-CN': '一次构建'
+  },
+  'enterprise.managedBuilds.steps.build.description': {
+    en: 'Pin the ComfyUI release, Python and CUDA versions, custom nodes, models, and dependencies.',
+    'zh-CN': '固定 ComfyUI 版本、Python 和 CUDA 版本、自定义节点、模型和依赖。'
+  },
+  'enterprise.managedBuilds.steps.update.title': {
+    en: 'Update deliberately',
+    'zh-CN': '有计划地更新'
+  },
+  'enterprise.managedBuilds.steps.update.description': {
+    en: 'Cut a new version when you decide. Move the team together without changing work already in flight.',
+    'zh-CN': '由您决定何时发布新版本。让团队一起升级，而不影响进行中的工作。'
+  },
+  'enterprise.managedBuilds.steps.deploy.title': {
+    en: 'Roll out to the fleet',
+    'zh-CN': '发布到整个团队'
+  },
+  'enterprise.managedBuilds.steps.deploy.description': {
+    en: 'Assign the build through Comfy Desktop or your GPU servers. Deploy endpoints through the Developer Platform.',
+    'zh-CN':
+      '通过 Comfy Desktop 或您的 GPU 服务器分配构建。通过 Developer Platform 部署端点。'
+  },
+  // The Chinese page still said BUILDER here: it never received the rename in
+  // #17198. The corrected English is the right value for both.
+  'enterprise.managedBuilds.compare.columnBuilds': {
+    en: 'BUILDS',
+    'zh-CN': 'BUILDS'
+  },
+  'enterprise.managedBuilds.compare.columnManaged': {
+    en: 'MANAGED BUILDS',
+    'zh-CN': 'MANAGED BUILDS'
+  },
+  // Added to the English page by #17203 and never to its Chinese twin, so there
+  // is no approved translation to carry across. The machine layer fills it.
+  'enterprise.managedBuilds.compare.exploreBuilds': {
+    en: 'EXPLORE BUILDS'
+  },
+  'enterprise.configurator.moreOptions': {
+    en: 'more options',
+    'zh-CN': '更多选项'
+  },
+  'enterprise.configurator.nodesUnit': {
+    en: 'nodes',
+    'zh-CN': '个节点'
+  },
+  'enterprise.configurator.modelsUnit': {
+    en: 'models',
+    'zh-CN': '个模型'
+  },
+  'enterprise.configurator.pinned': {
+    en: 'pinned',
+    'zh-CN': '已固定'
+  },
+  'enterprise.managedBuilds.compare.subtitle': {
+    en: 'Builds is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
+    'zh-CN':
+      'Builder 是自助打包和测试环境的方式。Managed Builds 在此之上增加团队共享与企业级治理。'
+  },
+  'enterprise.managedBuilds.compare.included': {
+    en: 'Included',
+    'zh-CN': '包含'
+  },
+  'enterprise.managedBuilds.compare.notIncluded': {
+    en: 'Not included',
+    'zh-CN': '不包含'
+  },
+  'enterprise.managedBuilds.compare.enterpriseOnly': {
+    en: 'Enterprise only',
+    'zh-CN': '仅限 Enterprise'
   }
 } as const satisfies Record<string, LocalizedText>
 

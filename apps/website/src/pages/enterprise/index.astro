@@ -1,20 +1,23 @@
 ---
+import IndustriesSection from '@/components/home/IndustriesSection.vue'
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
-import BuildManifestSplit01 from '../../components/blocks/BuildManifestSplit01.vue'
+import BuildConfiguratorSplit01 from '../../components/blocks/BuildConfiguratorSplit01.vue'
+import CardSplitContent02 from '../../components/blocks/CardSplitContent02.vue'
 import CtaBands01 from '../../components/blocks/CtaBands01.vue'
 import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
+import FeatureRows02 from '../../components/blocks/FeatureRows02.vue'
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
-import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
+import SectionIntro01 from '../../components/blocks/SectionIntro01.vue'
 import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
 import { externalLinks, localizeHref } from '../../config/routes'
+import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
-import { t } from '../../i18n/translations'
 
-const { locale, canonicalUrl, canonicalLocale } = pageContext(
+const { url, locale, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale,
@@ -24,341 +27,308 @@ const faqs = [
   {
     id: 'what-is-enterprise',
     question: t('enterprise.faq.what-is-enterprise.question', locale),
-    answer:
-      t('enterprise.faq.what-is-enterprise.answer', locale),
+    answer: t('enterprise.faq.what-is-enterprise.answer', locale),
   },
   {
     id: 'where-runs',
     question: t('enterprise.faq.where-runs.question', locale),
-    answer:
-      t('enterprise.faq.where-runs.answer', locale),
+    answer: t('enterprise.faq.where-runs.answer', locale),
   },
   {
     id: 'builds-vs-managed-builds',
     question: t('enterprise.faq.builds-vs-managed-builds.question', locale),
-    answer:
-      t('enterprise.faq.builds-vs-managed-builds.answer', locale),
+    answer: t('enterprise.faq.builds-vs-managed-builds.answer', locale),
   },
   {
     id: 'commercial-models',
     question: t('enterprise.faq.commercial-models.question', locale),
-    answer:
-      t('enterprise.faq.commercial-models.answer', locale),
+    answer: t('enterprise.faq.commercial-models.answer', locale),
   },
   {
     id: 'security',
     question: t('enterprise.faq.security.question', locale),
-    answer: `SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center](${externalLinks.trustCenter}).`,
+    // One key with a placeholder, not a sentence split around the link. The
+    // Chinese puts text after the link where the English ends on it, so any
+    // before/after split renders one of the two languages backwards.
+    answer: t('enterprise.faq.security.answer', locale).replace(
+      '{url}',
+      externalLinks.trustCenter,
+    ),
   },
   {
     id: 'usage',
     question: t('enterprise.faq.usage.question', locale),
-    answer:
-      t('enterprise.faq.usage.answer', locale),
+    answer: t('enterprise.faq.usage.answer', locale),
   },
   {
     id: 'team-plan',
     question: t('enterprise.faq.team-plan.question', locale),
-    answer:
-      t('enterprise.faq.team-plan.answer', locale),
+    answer: t('enterprise.faq.team-plan.answer', locale),
   },
   {
     id: 'capacity-and-support',
     question: t('enterprise.faq.capacity-and-support.question', locale),
-    answer:
-      t('enterprise.faq.capacity-and-support.answer', locale),
+    answer: t('enterprise.faq.capacity-and-support.answer', locale),
   },
 ] as const
 
 const enterpriseOffers = [
   {
-    id: 'team-plans',
-    label: t('enterprise.offers.team-plans.label', locale),
-    title: t('enterprise.offers.team-plans.title', locale),
-    description:
-      t('enterprise.offers.team-plans.description', locale),
-    cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
-  },
-  {
     id: 'commercial-licensing',
     label: t('enterprise.offers.commercial-licensing.label', locale),
     title: t('enterprise.offers.commercial-licensing.title', locale),
-    description:
-      t('enterprise.offers.commercial-licensing.description', locale),
+    description: t('enterprise.offers.commercial-licensing.description', locale),
     cta: {
       label: t('enterprise.offers.commercial-licensing.cta.label', locale),
-      href: '/minimax/license/',
+      href: localizeHref('/minimax/license/', locale),
     },
   },
   {
     id: 'forward-deployed-creatives',
     label: t('enterprise.offers.forward-deployed-creatives.label', locale),
     title: t('enterprise.offers.forward-deployed-creatives.title', locale),
-    description:
-      t('enterprise.offers.forward-deployed-creatives.description', locale),
+    description: t(
+      'enterprise.offers.forward-deployed-creatives.description',
+      locale,
+    ),
     cta: {
       label: t('enterprise.offers.forward-deployed-creatives.cta.label', locale),
-      href: '/forward-deployed-creatives/',
+      href: localizeHref('/forward-deployed-creatives/', locale),
     },
   },
 ] as const
 
-const governanceBenefits = [
+const governanceRows = [
   {
     id: 'build-policy',
-    title: t('enterprise.governance.build-policy.title', locale),
-    description:
-      t('enterprise.governance.build-policy.description', locale),
+    term: t('enterprise.governance.build-policy.title', locale),
+    description: t('enterprise.governance.build-policy.description', locale),
   },
   {
     id: 'model-policy',
-    title: t('enterprise.governance.model-policy.title', locale),
-    description:
-      t('enterprise.governance.model-policy.description', locale),
+    term: t('enterprise.governance.model-policy.title', locale),
+    description: t('enterprise.governance.model-policy.description', locale),
   },
   {
     id: 'people-access',
-    title: t('enterprise.governance.people-access.title', locale),
-    description:
-      t('enterprise.governance.people-access.description', locale),
+    term: t('enterprise.governance.people-access.title', locale),
+    description: t('enterprise.governance.people-access.description', locale),
   },
   {
     id: 'usage-records',
-    title: t('enterprise.governance.usage-records.title', locale),
-    description:
-      t('enterprise.governance.usage-records.description', locale),
+    term: t('enterprise.governance.usage-records.title', locale),
+    description: t('enterprise.governance.usage-records.description', locale),
   },
 ] as const
 
-const productionBenefits = [
+const productionRows = [
   {
     id: 'dedicated-capacity',
-    title: t('enterprise.production.dedicated-capacity.title', locale),
-    description:
-      t('enterprise.production.dedicated-capacity.description', locale),
+    term: t('enterprise.production.dedicated-capacity.title', locale),
+    description: t(
+      'enterprise.production.dedicated-capacity.description',
+      locale,
+    ),
   },
   {
     id: 'priority-queueing',
-    title: t('enterprise.production.priority-queueing.title', locale),
-    description:
-      t('enterprise.production.priority-queueing.description', locale),
+    term: t('enterprise.production.priority-queueing.title', locale),
+    description: t(
+      'enterprise.production.priority-queueing.description',
+      locale,
+    ),
   },
   {
     id: 'deployment',
-    title: t('enterprise.production.deployment.title', locale),
-    description:
-      t('enterprise.production.deployment.description', locale),
+    term: t('enterprise.production.deployment.title', locale),
+    description: t('enterprise.production.deployment.description', locale),
   },
   {
     id: 'support',
-    title: t('enterprise.production.support.title', locale),
-    description:
-      t('enterprise.production.support.description', locale),
+    term: t('enterprise.production.support.title', locale),
+    description: t('enterprise.production.support.description', locale),
   },
 ] as const
 
-const industries = [
-  {
-    id: 'games',
-    title: t('enterprise.industries.games.title', locale),
-    description:
-      t('enterprise.industries.games.description', locale),
-  },
-  {
-    id: 'vfx',
-    title: t('enterprise.industries.vfx.title', locale),
-    description:
-      t('enterprise.industries.vfx.description', locale),
-  },
-  {
-    id: 'onboarding',
-    title: t('enterprise.industries.onboarding.title', locale),
-    description:
-      t('enterprise.industries.onboarding.description', locale),
-  },
-] as const
+const requestDemo = {
+  label: t('enterprise.cta.requestDemo', locale),
+  href: localizeHref('/contact/', locale),
+}
+const trustCenter = {
+  label: t('enterprise.cta.viewTrustCenter', locale),
+  href: externalLinks.trustCenter,
+  target: '_blank' as const,
+}
 
-const faqPage = buildFaqPageNode(canonicalUrl, faqs)---
+const faqPage = buildFaqPageNode(url, faqs)
+---
 
 <BaseLayout
   title={t('enterprise.meta.title', locale)}
   description={t('enterprise.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: 'Home', url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
+    {
+      name: t('breadcrumb.home', locale),
+      url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)),
+    },
     { name: 'Enterprise' },
   ]}
   extraJsonLd={[faqPage]}
 >
-  <HeroSplit01 locale={locale}
+  <HeroSplit01
     badgeText="ENTERPRISE"
-    title={'Govern ComfyUI across\nevery team and runtime.'}
-    subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, commercial licensing, and hands-on implementation support."
+    title={t('enterprise.hero.title', locale)}
+    subtitle={t('enterprise.hero.subtitle', locale)}
     features={[
-      'Approved, reproducible ComfyUI Managed Builds',
-      'Dedicated GPU capacity, priority queueing, and enterprise SLAs',
-      'Commercial licensing, security review, and hands-on delivery',
+      t('enterprise.hero.feature1', locale),
+      t('enterprise.hero.feature2', locale),
+      t('enterprise.hero.feature3', locale),
     ]}
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
-    secondaryCta={{
-      label: 'VIEW TRUST CENTER',
-      href: externalLinks.trustCenter,
-      target: '_blank',
-    }}
+    primaryCta={requestDemo}
+    secondaryCta={trustCenter}
+    mediaWrapperClass="hidden lg:block"
   >
     <EnterpriseHeroScene slot="media" client:load />
   </HeroSplit01>
 
-  <OfferGrid01
-    eyebrow="WAYS TO SCALE WITH COMFY"
-    heading="The open standard for visual AI, ready for your organization."
-    description="Keep your team focused on the Comfy Workflows that differentiate your business. Comfy provides the governed environments, production runtimes, commercial terms, and hands-on builders you would otherwise assemble yourself."
-    featuredOffer={{
-      id: 'managed-builds',
-      title: 'ComfyUI Managed Builds',
-      description:
-        'Self-serve Builds package a reproducible environment. ComfyUI Managed Builds add team distribution, model and custom-node governance, controlled rollout, enterprise terms, and support across the fleet.',
-      cta: {
-        label: 'VIEW MANAGED BUILDS',
-        href: '/enterprise/managed-builds/',
-      },
-    }}
-    offers={enterpriseOffers}
+  <SectionIntro01
+    eyebrow={t('enterprise.intro.eyebrow', locale)}
+    heading={t('enterprise.intro.heading', locale)}
+    subtitle={t('enterprise.intro.subtitle', locale)}
+    maxWidth="xl"
   />
 
-  <BuildManifestSplit01
-    eyebrow="COMFYUI MANAGED BUILDS"
-    heading={'One approved build\nacross the fleet.'}
-    body="Keep ComfyUI. Let Comfy manage the versioned distribution, governance, and release layer around it. Replace machine-by-machine setup with deliberate assignment, rollout, and updates."
+  <BuildConfiguratorSplit01
+    eyebrow="MANAGED BUILDS"
+    heading={t('enterprise.configurator.heading', locale)}
+    body={t('enterprise.configurator.body', locale)}
     features={[
-      'Pin and approve the nodes each build needs across ComfyUI’s 5,000+ extensions and 60,000+ community nodes',
-      'Use supported provider keys and existing contracts',
-      'Run on workstations, GPU servers, or customer infrastructure',
+      t('enterprise.configurator.feature1', locale),
+      t('enterprise.configurator.feature2', locale),
+      t('enterprise.configurator.feature3', locale),
     ]}
-    primaryCta={{
-      label: 'VIEW MANAGED BUILDS',
-      href: '/enterprise/managed-builds/',
-    }}
-    secondaryCta={{
-      label: 'SEE THE DEVELOPER PLATFORM',
-      href: '/api/',
-    }}
-    manifestLabel="APPROVED BUILD"
-    manifestName="Production environment"
-    manifestVersion="CURRENT"
-    manifestItems={[
+    releasesLabel={t('enterprise.configurator.releasesLabel', locale)}
+    releases={['v0.3.41', 'v0.3.40', 'v0.3.38']}
+    environmentsLabel="PYTHON · PYTORCH · CUDA"
+    environments={[
+      { id: 'env-current', python: '3.12', torch: '2.6', cuda: '12.8' },
+      { id: 'env-previous', python: '3.12', torch: '2.5', cuda: '12.4' },
+      { id: 'env-legacy', python: '3.11', torch: '2.5', cuda: '12.4' },
+    ]}
+    nodesLabel={t('enterprise.configurator.nodesLabel', locale)}
+    nodes={[
+      { id: 'manager', label: 'ComfyUI-Manager', selected: true },
+      { id: 'ipadapter', label: 'IPAdapter Plus', selected: true },
+      { id: 'controlnet', label: 'ControlNet Aux' },
+      { id: 'videohelper', label: 'VideoHelperSuite', selected: true },
       {
-        id: 'dependencies',
-        label: 'ComfyUI and dependencies',
-        value: 'Pinned',
+        id: 'studio-nodes',
+        label: t('enterprise.configurator.privateNodes', locale),
+        selected: true,
       },
-      { id: 'nodes', label: 'Custom nodes', value: 'Allowlisted' },
-      { id: 'models', label: 'Models', value: 'Approved and private' },
-      { id: 'providers', label: 'Provider access', value: 'BYOK' },
     ]}
-    releaseLabels={[
-      { id: 'previous', label: 'Previous release' },
-      { id: 'current', label: 'Current release', current: true },
+    modelsLabel={t('enterprise.configurator.modelsLabel', locale)}
+    models={[
+      { id: 'flux', label: 'FLUX 3', selected: true },
+      { id: 'wan', label: 'Wan 3.0' },
+      { id: 'sdxl', label: 'SDXL Base', selected: true },
+      { id: 'ltx', label: 'LTX-2.5' },
+      {
+        id: 'brand-lora',
+        label: t('enterprise.configurator.privateModel', locale),
+        selected: true,
+      },
     ]}
-    deploymentTargets={[
-      { id: 'workstations', label: 'Workstations' },
-      { id: 'servers', label: 'GPU servers' },
-      { id: 'infrastructure', label: 'Customer infrastructure' },
-    ]}
+    nodesUnit={t('enterprise.configurator.nodesUnit', locale)}
+    modelsUnit={t('enterprise.configurator.modelsUnit', locale)}
+    pinnedLabel={t('enterprise.configurator.pinned', locale)}
+    moreOptionsLabel={t('enterprise.configurator.moreOptions', locale)}
+    cta={requestDemo}
+    client:visible
+  />
+
+  <OfferGrid01 offers={enterpriseOffers} />
+
+  <CardSplitContent02
+    title={t('enterprise.governance.heading', locale)}
+    imageSrc="https://media.comfy.org/website/enterprise/enterprise-featured.png"
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={governanceRows}
+    footnote={t('enterprise.governance.footnote', locale)}
+  />
+
+  <CardSplitContent02
+    title={t('enterprise.production.heading', locale)}
+    imageSrc="/assets/enterprise/capacity-checker-falls.webp"
+    reverse
+  />
+  <FeatureRows02
+    class="pt-0 lg:pt-0"
+    rows={productionRows}
+    footnote={t('enterprise.production.footnote', locale)}
+  />
+
+  <IndustriesSection
+    locale={locale}
+    heading={t('enterprise.industries.heading', locale)}
+    client:visible
   />
 
   <BenefitsGrid01
-    heading="Govern the build, models, people, and usage."
-    benefits={governanceBenefits}
-    footnote="The graph stays flexible. The environment around it becomes an approved, reviewable operating model for the organization."
-  />
-
-  <CtaBands01
-    bands={[
-      {
-        id: 'team-plans',
-        label: 'TEAM PLANS',
-        text: 'Invite members, run workflows concurrently, share one credit pool with centralized billing, and manage role-based permissions in a self-serve Comfy Cloud plan.',
-        cta: { label: 'SUBSCRIBE NOW', href: '/pricing' },
-      },
-      {
-        id: 'commercial-rights',
-        label: 'COMMERCIAL RIGHTS',
-        text: 'Every model on Cloud is licensed for commercial use. Local terms vary by provider, and Comfy is an official reseller for MiniMax commercial-use licenses.',
-        cta: {
-          label: 'VIEW MINIMAX LICENSING',
-          href: '/minimax/license/',
-        },
-      },
-      {
-        id: 'fdc',
-        label: 'FORWARD DEPLOYED CREATIVES',
-        text: 'Builders, not advisors. Work directly with Comfy specialists to design, validate, and operationalize production Comfy Workflows your team owns and extends.',
-        cta: {
-          label: 'VIEW THE OFFERING',
-          href: '/forward-deployed-creatives/',
-        },
-      },
-    ]}
-  />
-
-  <BenefitsGrid01
-    heading="Capacity and support for production."
-    benefits={productionBenefits}
-    footnote="Enterprise includes a 99.5% workflow-execution uptime SLA. Dedicated capacity, response commitments, and custom SLA terms are defined in your agreement."
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
-  />
-
-  <ReasonsSplit01
-    heading={'Built with studios\n'}
-    headingHighlight="in the room."
-    highlightClass="text-primary-comfy-yellow"
-    subtitle="For teams that need ComfyUI to move between people, productions, and partners without changing underneath them."
-    reasons={industries}
-  />
-
-  <BenefitsGrid01
-    heading="A clearer path through security review."
+    heading={t('enterprise.security.heading', locale)}
+    numbered={false}
     benefits={[
       {
         id: 'soc2',
         title: 'SOC 2',
-        description: 'Type II audit in progress.',
+        description: t('enterprise.security.soc2.description', locale),
       },
       {
         id: 'sso',
-        title: 'Identity',
-        description: 'Single Sign-On is available for enterprise teams.',
+        title: t('enterprise.security.sso.title', locale),
+        description: t('enterprise.security.sso.description', locale),
       },
       {
         id: 'data',
-        title: 'Data control',
-        description:
-          'For local deployments, Comfy Workflows and outputs stay where they run. Comfy does not train on customer data.',
+        title: t('enterprise.security.data.title', locale),
+        description: t('enterprise.security.data.description', locale),
       },
       {
         id: 'dpa',
-        title: 'Procurement',
-        description: 'A DPA and enterprise agreement are available.',
+        title: t('enterprise.security.dpa.title', locale),
+        description: t('enterprise.security.dpa.description', locale),
       },
     ]}
-    footnote="Processing is in the United States on Google Cloud. Enterprise includes a 99.5% workflow-execution uptime SLA."
-    primaryCta={{
-      label: 'VIEW TRUST CENTER',
-      href: externalLinks.trustCenter,
-      target: '_blank',
-    }}
+    footnote={t('enterprise.security.footnote', locale)}
+    primaryCta={trustCenter}
   />
 
   <FAQSplit01
     id="faq"
-    heading="Enterprise, answered."
+    heading={t('enterprise.faq.heading', locale)}
     faqs={faqs}
     client:visible
   />
   <CtaCenter01
-    heading={'Bring the open standard for visual AI\nto your organization.'}
-    subtitle="Bring one known-good environment or the production requirement your team needs to scale. We will map deployment, governance, capacity, commercial terms, and the right implementation path."
-    primaryCta={{ label: 'REQUEST DEMO', href: '/contact/' }}
+    heading={t('enterprise.closing.heading', locale)}
+    subtitle={t('enterprise.closing.subtitle', locale)}
+    primaryCta={requestDemo}
+  />
+  <CtaBands01
+    variant="highlight"
+    bands={[
+      {
+        id: 'team-plans',
+        label: t('enterprise.teamBand.label', locale),
+        text: t('enterprise.teamBand.text', locale),
+        cta: {
+          label: t('enterprise.teamBand.cta', locale),
+          href: localizeHref('/pricing', locale),
+        },
+      },
+    ]}
   />
 </BaseLayout>

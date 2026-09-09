@@ -7,6 +7,7 @@ import {
   pendingSource,
   translatableEntries,
   hashValue,
+  pruneApprovedKeys,
   pruneOrphanKeys,
   pruneStaleKeys,
   staleKeys
@@ -234,5 +235,33 @@ describe('pruneOrphanKeys', () => {
   it('drops machine entries whose English key no longer exists', () => {
     const machine = { a: 'ア', gone: 'ゴ' }
     expect(pruneOrphanKeys(machine, new Set(['a']))).toEqual({ a: 'ア' })
+  })
+})
+
+describe('pruneApprovedKeys', () => {
+  /**
+   * A key can gain an approved translation after the model has already produced
+   * one. The resolver prefers approved, so the machine value stops being
+   * reachable, but nothing removed it: it is neither stale (the English did not
+   * move) nor orphaned (the key still exists). It then sits in the published
+   * layer for good, and `approved-chinese.test.ts` fails on exactly that — which
+   * is how these four turned up when the enterprise pages gained Chinese.
+   */
+  it('drops machine entries the locale now has approved copy for', () => {
+    const entries: SourceEntry[] = [
+      { key: 'a', english: 'A', approved: { 'zh-CN': '甲' } },
+      { key: 'b', english: 'B', approved: {} }
+    ]
+    const machine = { a: '机器', b: '机器' }
+
+    expect(pruneApprovedKeys(machine, entries, 'zh-CN')).toEqual({ b: '机器' })
+  })
+
+  it('leaves a locale alone when another locale is the approved one', () => {
+    const entries: SourceEntry[] = [
+      { key: 'a', english: 'A', approved: { 'zh-CN': '甲' } }
+    ]
+
+    expect(pruneApprovedKeys({ a: 'ア' }, entries, 'ja')).toEqual({ a: 'ア' })
   })
 })

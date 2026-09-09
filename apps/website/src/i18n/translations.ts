@@ -165,6 +165,36 @@ export function t(
 }
 
 /**
+ * A count-dependent message, in the form `singular | plural`.
+ *
+ * The form is chosen with the rules of the language the message is WRITTEN in,
+ * which is not always the locale asked for. A resolved dictionary has already
+ * applied the English fallback, so a key Japanese does not translate arrives
+ * here as the English message: pluralising it with Japanese rules would render
+ * "1 nodes", because `Intl.PluralRules('ja').select(1)` is 'other'.
+ *
+ * The provenance that would answer this exactly is discarded when the
+ * dictionaries are flattened, so a multi-form message is taken to be English.
+ * That holds because the only other languages this site serves are Japanese and
+ * Chinese, whose plural category set is the single value 'other' — a translator
+ * working in either has no second form to supply. `collectViolations` enforces
+ * that rather than trusting it, so the day a locale with real plural forms is
+ * added, the build says so instead of quietly picking the wrong one.
+ */
+export function tPlural(
+  key: TranslationKey,
+  count: number,
+  locale: Locale = DEFAULT_LOCALE
+): string {
+  const forms = t(key, locale).split('|')
+  const form =
+    new Intl.PluralRules(DEFAULT_LOCALE).select(count) === 'one'
+      ? forms[0]
+      : forms[forms.length - 1]
+  return form.trim().replace('{count}', String(count))
+}
+
+/**
  * Every key, in the order `source.ts` declares them.
  *
  * The order is load-bearing: `LegalContentSection.vue` walks this list to decide

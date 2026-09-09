@@ -27,7 +27,7 @@ const mockStoreDef = vi.hoisted(() => ({
 }))
 
 // vi.mock factory runs after hoisting — ref/computed from Vue are available
-vi.mock('./useGPUResources', () => {
+vi.mock(import('./useGPUResources'), () => {
   // Singletons shared across all calls to useGPUResources() in this test file
   const isSavingHistory = ref(false)
   const dirtyRect = ref({
@@ -64,28 +64,28 @@ vi.mock('./useGPUResources', () => {
   }
 })
 
-vi.mock('./useCoordinateTransform', () => ({
+vi.mock<unknown>(import('./useCoordinateTransform'), () => ({
   useCoordinateTransform: () => ({
     screenToCanvas: vi.fn(({ x, y }: { x: number; y: number }) => ({ x, y }))
   })
 }))
 
-vi.mock('./useBrushPersistence', () => ({
+vi.mock(import('./useBrushPersistence'), () => ({
   useBrushPersistence: () => ({ loadAndApply: vi.fn(), save: vi.fn() })
 }))
 
-vi.mock('./useBrushAdjustment', () => ({
+vi.mock(import('./useBrushAdjustment'), () => ({
   useBrushAdjustment: () => ({
     startBrushAdjustment: vi.fn(),
     handleBrushAdjustment: vi.fn()
   })
 }))
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockStoreDef)
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { registerExtension: vi.fn() }
 }))
 

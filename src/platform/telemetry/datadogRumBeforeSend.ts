@@ -2,6 +2,8 @@ import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
+import { REPORTED_ERROR_PREFIX } from './reportError'
+
 const RUM_NOISE_HOSTS = [
   'facebook.com',
   'px.ads.linkedin.com',
@@ -57,9 +59,21 @@ function isConsoleEchoOfReportedAssertion(event: RumErrorEvent): boolean {
   )
 }
 
+/**
+ * `reportError` logs every report, so its console line arrives here as a
+ * second, untagged copy of an error RUM already has.
+ */
+function isConsoleEchoOfReportedError(event: RumErrorEvent): boolean {
+  return (
+    event.error.source === 'console' &&
+    event.error.message.startsWith(REPORTED_ERROR_PREFIX)
+  )
+}
+
 function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (event.type !== 'error') return true
   if (isConsoleEchoOfReportedAssertion(event)) return false
+  if (isConsoleEchoOfReportedError(event)) return false
 
   const message = event.error.message
   if (message.startsWith('intervention:')) return false

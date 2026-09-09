@@ -31,6 +31,7 @@ import {
   buildEnglishSource,
   buildManifest,
   pendingSource,
+  pruneApprovedKeys,
   pruneOrphanKeys,
   pruneStaleKeys,
   staleKeys,
@@ -112,7 +113,11 @@ function main(): void {
   for (const locale of LOCALIZED_CODES) {
     const machineFile = path.join(CONTENT_DIR, `${locale}.json`)
     const before = readJson(machineFile)
-    const machine = pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale)
+    const machine = pruneApprovedKeys(
+      pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale),
+      entriesToTranslate,
+      locale
+    )
     writeJson(machineFile, machine)
 
     const pending = pendingSource(entriesToTranslate, locale, machine)

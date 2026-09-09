@@ -7,6 +7,7 @@ import {
 import type { Locale } from './locales'
 import { isLocaleInvariantPath } from './routes'
 import { models } from './models'
+import { isWorkshopInBuild, isWorkshopRoute } from './workshop-release'
 
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
@@ -75,8 +76,11 @@ function splitLocale(pathname: string): { locale: Locale; route: string } {
 export function isExcludedFromSitemap(page: string): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   if (
-    NOINDEX_PATHNAMES.has(pathname) ||
-    MODEL_REDIRECT_PATHNAMES.has(pathname)
+    isNoindexPathname(pathname) ||
+    MODEL_REDIRECT_PATHNAMES.has(pathname) ||
+    // Workshop is unreleased. When the build excludes it, the sitemap must not
+    // advertise routes the deploy does not carry.
+    (!isWorkshopInBuild() && isWorkshopRoute(pathname))
   ) {
     return true
   }

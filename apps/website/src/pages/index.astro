@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import WorkshopSection from "../components/home/WorkshopSection.vue";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
@@ -11,6 +12,9 @@ import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vu
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
+import { getCollection } from "astro:content";
+import { isWorkshopInBuild } from "../config/workshop-release";
+import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -26,6 +30,14 @@ const { siteUrl, locale } = pageContext(
 );
 
 
+// The same switch that decides whether Workshop is built at all. A release
+// build has no Workshop routes, so the homepage must not link to them; one
+// control rather than two that can drift apart.
+const workshopModels = await resolveHomepageWorkshopModels(
+  isWorkshopInBuild(),
+  async () =>
+    (await getCollection("workshopModels")).map((entry) => entry.data),
+);
 ---
 
 <BaseLayout
@@ -44,6 +56,11 @@ const { siteUrl, locale } = pageContext(
   <MinimaxLicenseHeroSection locale={locale} client:visible />
   <ModelReleaseSection locale={locale} client:visible />
   <FeaturedWorkflowsSection locale={locale} client:load />
+  {
+    workshopModels.length > 0 && (
+      <WorkshopSection locale={locale} models={workshopModels} />
+    )
+  }
   <ProductShowcaseSection locale={locale} client:load />
   <IndustriesSection locale={locale} client:load />
   <GetStartedSection locale={locale} />

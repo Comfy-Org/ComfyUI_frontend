@@ -69,7 +69,13 @@ describe('per-locale dictionary budget', () => {
   // is the largest at 320,832 bytes raw because kana and kanji are three bytes
   // each in UTF-8 where Latin is one — compressed it is 87 KB against English's
   // 78 KB, so the gap a reader actually pays is about 9 KB, not 44 KB.
-  const BUDGET_BYTES = 340_000
+  //
+  // Raised again from 340,000 on 2026-09-09, for copy this branch did not
+  // write: merging main brought the Workshop feature (52 keys) and a redesigned
+  // enterprise pair whose sections are now keyed rather than hardcoded English.
+  // Japanese is 346,305 raw and 92 KB gzipped against English's 81 KB, so the
+  // extra a Japanese reader pays over an English one is still about 11 KB.
+  const BUDGET_BYTES = 360_000
 
   it.for(LOCALE_CODES)('keeps %s within budget', (locale) => {
     const file = join(i18nDir, 'resolved', `${locale}.json`)

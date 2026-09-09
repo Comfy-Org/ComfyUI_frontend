@@ -118,7 +118,7 @@ export function buildManifest(entries: SourceEntry[]): Manifest {
  * So the test is presence, not difference.
  */
 export function approvedLayer(
-  entries: SourceEntry[],
+  entries: readonly SourceEntry[],
   locale: Locale
 ): TranslationLayer {
   const layer: TranslationLayer = {}
@@ -197,6 +197,31 @@ export function pruneOrphanKeys(
   const pruned: TranslationLayer = {}
   for (const [key, value] of Object.entries(machine)) {
     if (currentKeys.has(key)) pruned[key] = value
+  }
+  return pruned
+}
+
+/**
+ * Machine translations for keys the locale has since had approved.
+ *
+ * A key can gain approved copy after the model already produced some. The
+ * resolver prefers approved, so the machine value becomes unreachable — but
+ * nothing was removing it: it is neither stale, because the English did not
+ * move, nor orphaned, because the key still exists. It would sit in the
+ * published layer for good.
+ *
+ * `approved-chinese.test.ts` fails on exactly that, which is how four of these
+ * surfaced the moment the enterprise pages gained Chinese.
+ */
+export function pruneApprovedKeys(
+  machine: TranslationLayer,
+  entries: readonly SourceEntry[],
+  locale: Locale
+): TranslationLayer {
+  const approved = approvedLayer(entries, locale)
+  const pruned: TranslationLayer = {}
+  for (const [key, value] of Object.entries(machine)) {
+    if (!Object.hasOwn(approved, key)) pruned[key] = value
   }
   return pruned
 }
