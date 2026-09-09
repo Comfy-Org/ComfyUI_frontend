@@ -161,11 +161,21 @@ function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? structuredClone(value) : {}
 }
 
-function prepareInputSlots(value: unknown): NodeState['inputs'] {
+/**
+ * A supplied input slot whose record has no `link` key carries no link
+ * information (as opposed to `link: null`, which means unlinked). Such slots
+ * keep the link of the `existing` slot at the same index, or `null` when the
+ * node has no slot there yet.
+ */
+function prepareInputSlots(
+  value: unknown,
+  existing?: NodeState['inputs']
+): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw) => {
+  return value.filter(isRecord).map((raw, index) => {
     const slot = structuredClone(raw)
     if (typeof slot.link === 'number') slot.link = toLinkId(slot.link)
+    if (slot.link === undefined) slot.link = existing?.[index]?.link ?? null
     return {
       ...slot,
       boundingRect: [0, 0, 0, 0]
@@ -231,7 +241,8 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
 
 function prepareNode(
   payload: SemanticNodePayload,
-  scope: GraphScope
+  scope: GraphScope,
+  existing?: NodeState
 ): PreparedNode {
   const id = toNodeId(payload.id)
   const [x, y] = readPair(payload.pos, [0, 0])
@@ -246,7 +257,7 @@ function prepareNode(
         ? payload.title
         : payload.type,
     flags: cloneRecord(payload.flags),
-    inputs: prepareInputSlots(payload.inputs),
+    inputs: prepareInputSlots(payload.inputs, existing?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
@@ -358,7 +369,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             return 'addNode requires a payload id and type'
           }
-          const node = prepareNode(mutation.payload, scope)
+          const node = prepareNode(
+            mutation.payload,
+            scope,
+            nodes.get(nodeKey(toNodeId(mutation.payload.id)))
+          )
           const key = nodeKey(node.state.id)
           const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
@@ -430,13 +445,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
           const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
+            ? prepareInputSlots(mutation.link.targetInputs, target.inputs)
             : target.inputs
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
           if (topology.targetSlot >= targetInputs.length) {
             return `connect target slot ${topology.targetSlot} does not exist`
+          }
+          if (mutation.link.originOutputs) {
+            nodes.set(nodeKey(topology.originNodeId), {
+              ...origin,
+              outputs: originOutputs
+            })
+          }
+          if (mutation.link.targetInputs) {
+            nodes.set(nodeKey(topology.targetNodeId), {
+              ...target,
+              inputs: targetInputs
+            })
           }
           links.delete(topology.id)
           for (const [id, incumbent] of links) {

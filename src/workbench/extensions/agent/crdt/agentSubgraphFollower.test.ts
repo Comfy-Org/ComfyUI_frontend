@@ -346,6 +346,47 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     })
   })
 
+  it('S2e keeps a live host link when the doc host slot list omits that declared slot', () => {
+    // cmp writes host slots only as `grow` claims them, so a doc host's slot
+    // list can be a strict subset of the definition's declared inputs while a
+    // link to an omitted slot is still live. Synthesizing the omitted slot as
+    // `link: null` would sever it on the next node change while the link map
+    // still holds it; the follower must keep the existing live link instead.
+    const state = startFollower({ extraInput: true })
+    deliver(
+      state,
+      {
+        op: 'connect',
+        link_id: 8,
+        from_node: 2,
+        from_slot: 0,
+        to_node: 1,
+        to_slot: 0,
+        link_type: 'NUMBER'
+      },
+      1
+    )
+    const extraInput = () =>
+      state.instance.inputs.find((i) => i.name === 'extra')
+    expect(extraInput()?.link).toBe(8)
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        const inputs = nodes.get('1')?.get('inputs') as Y.Array<Y.Map<unknown>>
+        expect(inputs.get(0).get('name')).toBe('extra')
+        inputs.delete(0, 1)
+      },
+      2
+    )
+
+    expect(state.graph.links.has(toLinkId(8))).toBe(true)
+    expect(state.instance.inputs.map((i) => [i.name, i.link ?? null])).toEqual([
+      ['extra', 8],
+      ['value', null]
+    ])
+  })
+
   it('S2c skips a promoted connect whose slot name the definition does not declare', () => {
     // cmp `claimPromotedInput` never validates `grow.name` against the
     // definition: it appends a `{name: 'bogus'}` slot to the doc host. With the
