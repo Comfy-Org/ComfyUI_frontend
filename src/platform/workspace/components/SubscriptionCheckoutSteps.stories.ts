@@ -87,6 +87,45 @@ export const ConfirmNewSubscription: Story = {
   })
 }
 
+/** Receipt ledger with a promo applied — subtotal, promo row, chip (#15159). */
+export const ConfirmPromoApplied: Story = {
+  render: () => ({
+    components: { SubscriptionAddPaymentPreviewWorkspace },
+    data: () => ({
+      previewData: {
+        allowed: true,
+        transition_type: 'new_subscription',
+        effective_at: TODAY,
+        is_immediate: true,
+        cost_today_cents: 26_880,
+        cost_next_period_cents: 33_600,
+        credits_today_cents: 0,
+        credits_next_period_cents: 0,
+        amount_due_cents: 26_880,
+        currency: 'usd',
+        renewal_amount_cents: 33_600,
+        renewal_at: NEXT_YEAR,
+        promotion_code: 'COMFY20',
+        discounts: [
+          {
+            kind: 'plan',
+            code: 'annual_commitment',
+            amount_off_cents: 8_400
+          },
+          {
+            kind: 'promotion',
+            code: 'COMFY20',
+            name: '20% off first year',
+            amount_off_cents: 6_720
+          }
+        ],
+        new_plan: creatorAnnual
+      } satisfies PreviewSubscribeResponse
+    }),
+    template: `${shell}<SubscriptionAddPaymentPreviewWorkspace tier-key="creator" billing-cycle="yearly" :preview-data="previewData" /></div>`
+  })
+}
+
 /** Team subscription — "Confirm your payment" rendered from a slider stop. */
 export const ConfirmTeamSubscription: Story = {
   render: () => ({
