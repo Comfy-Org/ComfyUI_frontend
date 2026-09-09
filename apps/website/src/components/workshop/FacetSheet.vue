@@ -131,10 +131,11 @@ function visibleOptions(group: FacetSheetGroup) {
           />
         </div>
 
-        <!-- One height whatever the facet holds, so switching tab does not
-          resize the sheet under the thumb. -->
+        <!-- On a phone one height whatever the facet holds, so switching tab
+          does not resize the sheet under the thumb. On a pointer the popover
+          hugs its list instead of standing half empty. -->
         <ul
-          class="h-72 scrollbar-thin overflow-y-auto py-1"
+          class="scrollbar-thin overflow-y-auto py-1 max-sm:h-72 sm:max-h-72 sm:min-h-32"
           role="listbox"
           aria-multiselectable="true"
         >
