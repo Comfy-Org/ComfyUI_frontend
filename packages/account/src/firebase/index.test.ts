@@ -101,19 +101,6 @@ describe('createFirebaseIdentity over a host-owned Auth', () => {
     }
   })
 
-  it('leaves the network-shaped actions unbounded unless the host asks for a ceiling', async () => {
-    const identity = await makeHostBoundIdentity()
-    const settled = vi.fn()
-    identity.signInWithEmail('a@b.example', 'hunter22!').then(settled, settled)
-
-    await vi.advanceTimersByTimeAsync(15_000 * 10)
-
-    expect(
-      settled,
-      'the cloud app runs these calls without a timeout; adopting the entry must not add one'
-    ).not.toHaveBeenCalled()
-  })
-
   it('applies the ceiling the host asks for', async () => {
     const identity = await makeHostBoundIdentity(2_000)
     const outcome = vi.fn()
@@ -127,28 +114,39 @@ describe('createFirebaseIdentity over a host-owned Auth', () => {
 
 describe('createFirebaseIdentity action ceilings', () => {
   it.for([
-    ['signInWithEmail', () => sdk.signInWithEmailAndPassword],
-    ['createUserWithEmail', () => sdk.createUserWithEmailAndPassword],
-    ['sendPasswordReset', () => sdk.sendPasswordResetEmail]
+    ['signInWithEmail'],
+    ['createUserWithEmail'],
+    ['sendPasswordReset']
   ] as const)(
-    'bounds %s so a hung network call cannot lock a form forever',
+    'leaves %s unbounded by default, as the cloud app runs it',
     async ([method]) => {
       const identity = await makeIdentity()
       const pending =
         method === 'sendPasswordReset'
           ? identity.sendPasswordReset('a@b.example')
           : identity[method]('a@b.example', 'hunter22!')
-      const outcome = vi.fn()
-      pending.catch(outcome)
+      const settled = vi.fn()
+      pending.then(settled, settled)
 
-      await vi.advanceTimersByTimeAsync(15_000 + 10)
+      await vi.advanceTimersByTimeAsync(15_000 * 10)
 
-      expect(
-        outcome,
-        'a network-shaped auth call with no ceiling strands the form in its pending state'
-      ).toHaveBeenCalledOnce()
+      expect(settled).not.toHaveBeenCalled()
     }
   )
+
+  it('applies the ceiling a host asks for', async () => {
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      actionTimeoutMs: 2_000
+    })
+    const outcome = vi.fn()
+    identity.signInWithEmail('a@b.example', 'hunter22!').catch(outcome)
+
+    await vi.advanceTimersByTimeAsync(2_000 + 10)
+
+    expect(outcome).toHaveBeenCalledOnce()
+  })
 
   it('leaves the interactive popup unbounded', async () => {
     const identity = await makeIdentity()
@@ -189,17 +187,16 @@ describe('sign-in and sign-out delegation', () => {
     }
   )
 
-  it('resolves an email sign-in with the credential before the ceiling', async () => {
+  it('resolves an email sign-in with the credential', async () => {
     sdk.signInWithEmailAndPassword.mockResolvedValueOnce(testCredential)
     const identity = await makeIdentity()
 
     await expect(
-      identity.signInWithEmail('a@b.example', 'hunter22!'),
-      'the action ceiling must never swallow a sign-in that completed in time'
+      identity.signInWithEmail('a@b.example', 'hunter22!')
     ).resolves.toBe(testCredential)
   })
 
-  it('propagates an email sign-in failure as the SDK error, not a timeout', async () => {
+  it('propagates an email sign-in failure as the SDK error', async () => {
     sdk.signInWithEmailAndPassword.mockRejectedValueOnce(
       new Error('auth/wrong-password')
     )
@@ -217,17 +214,16 @@ describe('sign-in and sign-out delegation', () => {
     expect(sdk.signOut).toHaveBeenCalledOnce()
   })
 
-  it('resolves a password reset that completes before the ceiling', async () => {
+  it('resolves a password reset', async () => {
     sdk.sendPasswordResetEmail.mockResolvedValueOnce(undefined)
     const identity = await makeIdentity()
 
     await expect(
-      identity.sendPasswordReset('a@b.example'),
-      'the action ceiling must never swallow a reset that completed in time'
+      identity.sendPasswordReset('a@b.example')
     ).resolves.toBeUndefined()
   })
 
-  it('propagates a password-reset failure as the SDK error, not a timeout', async () => {
+  it('propagates a password-reset failure as the SDK error', async () => {
     sdk.sendPasswordResetEmail.mockRejectedValueOnce(
       new Error('auth/user-not-found')
     )

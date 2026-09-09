@@ -37,7 +37,9 @@ import {
   useWorkshopAuthFlag,
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
-import { AUTH_LINK_BUTTON_CLASS, AUTH_MESSAGE_ERROR_CLASS } from './authClasses'
+import { AUTH_LINK_BUTTON_CLASS } from '@comfyorg/account/authClasses'
+
+import { AUTH_MESSAGE_ERROR_CLASS } from './authClasses'
 import AuthFlagTimeout from './AuthFlagTimeout.vue'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{

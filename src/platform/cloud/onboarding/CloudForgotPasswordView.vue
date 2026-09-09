@@ -28,7 +28,7 @@
           v-model="email"
           type="email"
           :placeholder="t('cloudForgotPassword_emailPlaceholder')"
-          :class="CLOUD_AUTH_FIELD_CLASS"
+          :class="AUTH_FIELD_CLASS"
           :invalid="!!errorMessage && !email"
           autocomplete="email"
           required
@@ -55,7 +55,7 @@
 
       <button
         type="button"
-        :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
+        :class="AUTH_LINK_BUTTON_CLASS"
         @click="navigateToLogin"
       >
         {{ t('cloudForgotPassword_backToLogin') }}
@@ -78,9 +78,9 @@ import { useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import {
-  CLOUD_AUTH_FIELD_CLASS,
-  CLOUD_AUTH_LINK_BUTTON_CLASS
-} from '@/platform/cloud/onboarding/constants/authClasses'
+  AUTH_FIELD_CLASS,
+  AUTH_LINK_BUTTON_CLASS
+} from '@comfyorg/account/authClasses'
 
 const { t } = useI18n()
 const router = useRouter()
