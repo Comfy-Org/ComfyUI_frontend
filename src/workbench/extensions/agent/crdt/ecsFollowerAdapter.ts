@@ -592,12 +592,12 @@ export class EcsFollowerAdapter {
       }
     })
 
-    // Only clear the reconciliation flag once the batch actually commits.
-    // A rejected batch (no scope, or validation failure) must leave
-    // reconcileNextFrame set so the next frame retries authoritative
-    // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    // The pending sets were snapshotted and cleared before `batch` ran, so a
+    // rejected batch (no scope, or validation failure) has already lost the
+    // incremental record of this frame. Arm a full reconcile for the next
+    // frame so the dropped edits are re-read from the doc instead of falling
+    // through to incremental handling that never revisits them.
+    session.reconcileNextFrame = !committed
     return committed
   }
 
