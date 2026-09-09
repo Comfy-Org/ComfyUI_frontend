@@ -3386,6 +3386,14 @@ export class Subgraph
     this._configureSubgraph(cloned)
   }
 
+  /** Clones and registers the subgraph under a new ID. */
+  // fallow-ignore-next-line unused-class-member
+  clone(): Subgraph {
+    const exported = this.asSerialisable()
+    exported.id = createUuidv4()
+    return this.rootGraph.createSubgraph(structuredClone(exported))
+  }
+
   getIoNodeOnPos(
     x: number,
     y: number

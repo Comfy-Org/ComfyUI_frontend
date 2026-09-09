@@ -13,10 +13,12 @@ import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
+vi.mock(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
   useElementSize: vi.fn(() => ({
     width: ref(512),
-    height: ref(512)
+    height: ref(512),
+    stop: vi.fn()
   }))
 }))
 
@@ -31,20 +33,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => {
-  const store = { addAlert: vi.fn() }
-  return { useToastStore: () => store }
-})
-
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => {
-  const store = {
-    getNodeImageUrls: vi.fn(() => undefined),
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-  return { useNodeOutputStore: () => store }
-})
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
@@ -55,7 +43,11 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: { graph: { getNodeById: () => fixture.node } } }
+  app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
+    canvas: { graph: { getNodeById: () => fixture.node } }
+  }
 }))
 
 const i18n = createI18n({
