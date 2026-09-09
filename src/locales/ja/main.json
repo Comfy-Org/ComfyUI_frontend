@@ -4995,7 +4995,7 @@
       "accessDenied": "このワークスペースへのアクセス権がありません",
       "invalidFirebaseToken": "認証に失敗しました。もう一度ログインしてください。",
       "notAuthenticated": "ワークスペースにアクセスするにはログインが必要です",
-      "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
+      "tokenExchangeFailed": "ワークスペースの認証に失敗しました",
       "workspaceNotFound": "ワークスペースが見つかりません"
     },
     "initializationFailed": "ワークスペースを読み込めませんでした",
