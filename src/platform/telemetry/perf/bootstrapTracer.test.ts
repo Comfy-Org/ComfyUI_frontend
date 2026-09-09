@@ -32,11 +32,11 @@ const {
   }
 })
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction, addTiming, setViewLoadingTime }
 }))
-vi.mock('@/platform/distribution/types', () => distribution)
-vi.mock('@/platform/telemetry', () => ({ useTelemetry }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({ useTelemetry }))
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {

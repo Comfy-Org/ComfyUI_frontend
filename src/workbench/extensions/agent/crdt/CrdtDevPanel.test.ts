@@ -1,8 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
     getLogs: () => Promise.reject(new Error('offline')),
@@ -13,15 +14,15 @@ vi.mock('@/scripts/api', () => ({
     api_base: ''
   }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
-vi.mock('@/stores/extensionStore', () => ({
+vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
   useExtensionStore: () => ({ extensions: [] })
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
@@ -99,16 +100,43 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('7')
   })
 
-  it('opens and closes back to the chip', async () => {
+  it('moves focus into the panel and restores it after Escape closes', async () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(chip()!)
+    const chipButton = chip()!
+    await user.click(chipButton)
     expect(sheet()).toBeTruthy()
+    const closeButton = screen.getByTestId('crdt-dev-panel-close')
+    expect(closeButton).toHaveFocus()
 
-    await user.click(screen.getByTestId('crdt-dev-panel-close'))
+    const escapedToWindow = vi.fn()
+    window.addEventListener('keydown', escapedToWindow)
+
+    const verbosity = screen.getByTestId('crdt-dev-panel-verbosity')
+    await user.click(verbosity)
+    await user.keyboard('{Escape}')
+    expect(sheet()).toBeTruthy()
+    expect(escapedToWindow).not.toHaveBeenCalled()
+
+    verbosity.blur()
+
+    await user.keyboard('{Escape}')
+    window.removeEventListener('keydown', escapedToWindow)
     expect(chip()).toBeTruthy()
     expect(sheet()).toBeNull()
+    expect(chip()).toHaveFocus()
+    expect(escapedToWindow).not.toHaveBeenCalled()
+  })
+
+  it('focuses the close control when restoring an open panel', async () => {
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+
+    renderPanel()
+    await nextTick()
+
+    expect(sheet()).toBeTruthy()
+    expect(screen.getByTestId('crdt-dev-panel-close')).toHaveFocus()
   })
 
   it('replaces the instrument with a way to restore it when hidden', async () => {

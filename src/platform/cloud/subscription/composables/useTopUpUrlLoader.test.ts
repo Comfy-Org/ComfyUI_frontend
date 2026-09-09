@@ -10,7 +10,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -19,7 +19,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -32,7 +32,7 @@ const mockShowTopUpCreditsDialog = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   })
@@ -42,17 +42,20 @@ const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
 const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: mockCanTopUp,
-    canSubscribeSelfServe: mockCanSubscribeSelfServe,
-    initialize: mockInitialize
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: mockCanTopUp,
+      canSubscribeSelfServe: mockCanSubscribeSelfServe,
+      initialize: mockInitialize
+    })
   })
-}))
+)
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
   })

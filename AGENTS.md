@@ -222,7 +222,7 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 
 ### Entity Architecture Constraints (ADR-CRDT-LAYOUT-0003 + ADR-ECS-0008)
 
-1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
+1. **Command pattern for durable layout mutations**: Persistent node, group, and reroute geometry changes must flow through serializable `LayoutOperation` objects rather than direct property access. Transient renderer measurements remain outside that command stream. Do not generalize layout command coverage to all ECS mutations; non-layout stores currently expose direct actions, and graph operations still coordinate imperative class callbacks.
 2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by each concern's established ID type. Most entity IDs are branded numbers; node IDs may be numbers or strings, graph IDs are UUID strings, and scoped concerns may use composite string keys such as `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`). Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
 3. **No god-object growth**: Do not add methods to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables.
 4. **Plain data components**: ECS components are plain data objects — no methods, no back-references to parent entities. Behavior belongs in systems (pure functions).
@@ -232,6 +232,20 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
+- NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+- NEVER add `eslint-disable` or `oxlint-disable` as the first fix. Remove the
+  directive and repair the type, API, component semantics, or test. A comment
+  explaining why a workaround was convenient does not make it acceptable.
+  - Before keeping a rare lint exception or specific type assertion, inspect
+    the authoritative type or schema, search for an existing typed pattern, and
+    run the failing check without the override. Record the external constraint
+    that makes a compliant fix impossible.
+  - Scope a justified lint exception to one expression or line. File-wide and
+    multi-rule disables are review blockers.
+  - In tests, use typed builders, real platform objects, runtime narrowing,
+    semantic queries, and deterministic readiness signals instead of casts,
+    DOM traversal, or timing sleeps.
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
