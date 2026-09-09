@@ -125,6 +125,30 @@ const workspace = computed(() =>
 // On the MVP rail the gate is a link, not a trigger: the destination is known
 // at click time, so a plain anchor is enough and no popup can be blocked.
 const topUpHref = computed(() => platformTopUpHref(workspace.value))
+
+// "Out of credits" and "Not enough credits" are different situations and the
+// gate should not blur them: one is an empty wallet, the other is a wallet that
+// cannot cover this particular run.
+const noCreditsTitleKey = computed<TranslationKey>(() =>
+  credits.value > 0
+    ? 'workshop.error.lowCreditsTitle'
+    : 'workshop.error.noCreditsTitle'
+)
+const noCreditsBody = computed(() => {
+  if (topUpRail.value === 'platform')
+    return t('workshop.error.noCreditsPlatform', locale).replace(
+      '{workspace}',
+      workspace.value
+    )
+  if (credits.value > 0)
+    return t('workshop.error.lowCredits', locale)
+      .replace('{credits}', String(credits.value))
+      .replace('{n}', String(creditsPerRun))
+  return t('workshop.error.noCredits', locale).replace(
+    '{n}',
+    String(creditsPerRun)
+  )
+})
 const creditsPerRun = model.creditsPerRun
 const modelStatus = computed(() =>
   simGate.value === 'deprecated' || simGate.value === 'degraded'
@@ -386,29 +410,41 @@ function useInCode() {
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>
-          <Button
-            v-else-if="gate === 'noCredits' && topUpRail === 'platform'"
-            as="a"
-            :href="topUpHref"
-            target="_blank"
-            rel="noopener"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-          >
-            {{ t('workshop.run.buyCreditsPlatform', locale) }}
-          </Button>
-          <Button
-            v-else-if="gate === 'noCredits'"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-            @click="buyingCredits = true"
-          >
-            {{ t('workshop.run.buyCredits', locale) }}
-          </Button>
+          <!-- Same shape as the member gate: a bold lead states the problem and
+               the body says what to do, then the control. The title separates an
+               empty balance from one that is merely short, so the body does not
+               have to. -->
+          <template v-else-if="gate === 'noCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t(noCreditsTitleKey, locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">{{ noCreditsBody }}</p>
+            </div>
+            <Button
+              v-if="topUpRail === 'platform'"
+              as="a"
+              :href="topUpHref"
+              target="_blank"
+              rel="noopener"
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="noCredits"
+            >
+              {{ t('workshop.run.buyCreditsPlatform', locale) }}
+            </Button>
+            <Button
+              v-else
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="noCredits"
+              @click="buyingCredits = true"
+            >
+              {{ t('workshop.run.buyCredits', locale) }}
+            </Button>
+          </template>
           <!-- The reason comes before the escape. This state used to stack a
                disabled "Ask the owner for credits" button above the real one; a
                disabled control is a sentence wearing a button, and it took
@@ -481,25 +517,7 @@ function useInCode() {
             }}
           </Button>
           <p
-            v-if="gate === 'noCredits'"
-            class="mt-2 text-xs text-primary-warm-gray"
-            data-testid="gate-note"
-          >
-            {{
-              topUpRail === 'platform'
-                ? t('workshop.error.noCreditsPlatform', locale).replace(
-                    '{workspace}',
-                    workspace
-                  )
-                : credits > 0
-                  ? t('workshop.error.lowCredits', locale)
-                      .replace('{credits}', String(credits))
-                      .replace('{n}', String(creditsPerRun))
-                  : t('workshop.error.noCredits', locale)
-            }}
-          </p>
-          <p
-            v-else-if="modelStatus === 'degraded'"
+            v-if="modelStatus === 'degraded'"
             class="text-primary-comfy-orange mt-2 text-xs"
             data-testid="gate-note"
           >

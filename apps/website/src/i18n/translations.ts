@@ -8893,14 +8893,22 @@ Enterprise`
     en: 'Your workspace policy blocks this provider.',
     'zh-CN': '你的工作区策略禁止了该提供方。'
   },
+  'workshop.error.noCreditsTitle': {
+    en: 'Out of credits',
+    'zh-CN': '积分已用完'
+  },
+  'workshop.error.lowCreditsTitle': {
+    en: 'Not enough credits',
+    'zh-CN': '积分不足'
+  },
   'workshop.error.noCreditsPlatform': {
-    en: 'Not enough credits for this run. Add credits to {workspace} on your Comfy account. Your inputs stay here.',
+    en: 'Add credits to {workspace} on your Comfy account. Your inputs stay here.',
     'zh-CN':
-      '本次运行积分不足。请在你的 Comfy 账户中为 {workspace} 添加积分。你的输入会保留在这里。'
+      '请在你的 Comfy 账户中为 {workspace} 添加积分。你的输入会保留在这里。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits. Payment happens on Stripe.',
-    'zh-CN': '积分不足。支付在 Stripe 完成。'
+    en: 'This run needs {n} credits. Your inputs stay here while you buy.',
+    'zh-CN': '本次运行需要 {n} 积分。购买时你的输入会保留在这里。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',
@@ -8916,9 +8924,9 @@ Enterprise`
     'zh-CN': '提供方响应超时。未扣费。'
   },
   'workshop.error.lowCredits': {
-    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    en: 'You have {credits} credits and this run needs {n}. Your inputs stay here while you buy.',
     'zh-CN':
-      '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
+      '你有 {credits} 积分，本次运行需要 {n}。购买时你的输入会保留在这里。'
   },
   'workshop.error.memberNoCreditsTitle': {
     en: 'Out of credits',
