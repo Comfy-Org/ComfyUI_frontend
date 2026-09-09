@@ -22,16 +22,18 @@ const { model, locale = 'en' } = defineProps<{
 }>()
 const values = ref(defaultWorkshopValues(model.fields))
 const language = ref<WorkshopSnippetLanguage>('typescript')
-// The shared helper rather than a hand-rolled timer: it carries the
-// `isSupported` guard and legacy fallback that a bare `navigator.clipboard`
-// does not. Without them the button throws in an insecure context — a LAN-IP
-// or staging preview — and Vue swallows the rejection, so it silently does
-// nothing.
+// `legacy: true` on purpose. Without it `isSupported` is just the Clipboard
+// API check, so on an insecure origin — a LAN-IP or staging preview, where
+// `navigator.clipboard` is undefined — the button would be permanently
+// disabled. With it, the helper falls back to `execCommand` and copying
+// still works there. A bare `navigator.clipboard.writeText` would instead
+// throw, and Vue would swallow the rejection, so the button would appear to
+// do nothing at all.
 const {
   copy,
   copied: copiedRecently,
   isSupported: canCopy
-} = useClipboard({ copiedDuring: 1500 })
+} = useClipboard({ copiedDuring: 1500, legacy: true })
 /** Which language was on screen when the copy happened. */
 const copiedLanguage = ref<WorkshopSnippetLanguage>()
 const snippet = computed(() =>

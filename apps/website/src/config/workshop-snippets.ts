@@ -118,10 +118,19 @@ export function buildWorkshopSnippet(
   }
   const continuation = '\\'
   const endpoint = shellSingleQuote(modelEndpoint(modelId))
+  // An idempotency key, assigned once and reused. These are paid calls, and a
+  // disconnect can happen after the model has already run; retrying the same
+  // command without the same key runs and bills it a second time. Both SDKs
+  // mint one, so only the raw request needs this. Held in a variable rather
+  // than inlined so re-running just the curl — the actual retry — sends the
+  // key it sent the first time.
   return [
+    `IDEMPOTENCY_KEY=$(uuidgen)`,
+    ``,
     `curl --request POST '${endpoint}' ${continuation}`,
     `  --header 'Authorization: Bearer YOUR_API_KEY' ${continuation}`,
     `  --header 'Content-Type: application/json' ${continuation}`,
+    `  --header "Idempotency-Key: $IDEMPOTENCY_KEY" ${continuation}`,
     `  --data '${shellSingleQuote(JSON.stringify(input, null, 2))}'`
   ].join('\n')
 }

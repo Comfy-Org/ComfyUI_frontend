@@ -1,9 +1,12 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Workshop snippets > builds the http snippet from the current values 1`] = `
-"curl --request POST 'https://api.comfy.org/v2/models/bfl/flux-3' \\
+"IDEMPOTENCY_KEY=$(uuidgen)
+
+curl --request POST 'https://api.comfy.org/v2/models/bfl/flux-3' \\
   --header 'Authorization: Bearer YOUR_API_KEY' \\
   --header 'Content-Type: application/json' \\
+  --header "Idempotency-Key: $IDEMPOTENCY_KEY" \\
   --data '{
   "prompt": "A red fox",
   "enhance": true
