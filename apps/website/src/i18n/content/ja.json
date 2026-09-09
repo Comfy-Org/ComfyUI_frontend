@@ -1098,7 +1098,7 @@
   "faq.pricing.run-out-of-credits.question": "クレジットを使い切るとどうなりますか？",
   "faq.pricing.run-workflows-via-api.body": "はい。APIを使用してComfyワークフローをプログラムから実行できます。同時実行上限はプランに応じて異なり、Standard / Creator / Proで1 / 3 / 5です。ComfyUIをアプリに統合する場合、バッチジョブを自動化する場合、本番パイプラインを実行する場合に利用できます。上限の引き上げを申請する場合は、[こちら](https://comfysupport.portal.usepylon.com/forms/team-plan-requests)をご利用ください。",
   "faq.pricing.run-workflows-via-api.question": "API経由でワークフローを実行できますか？",
-  "faq.pricing.running-comfy-at-scale.body": "Comfyを本番環境で大規模運用するチーム向けに、Enterpriseではより高いAPIレート制限、高度なセキュリティ、専任サポートを提供します。[Enterpriseの詳細](https://comfy.org/cloud/enterprise) または [enterprise@comfy.org](mailto:enterprise@comfy.org) までお問い合わせください。",
+  "faq.pricing.running-comfy-at-scale.body": "Comfyを本番環境で大規模運用するチーム向けに、Enterpriseではより高いAPIレート制限、高度なセキュリティ、専任サポートを提供します。[Enterpriseの詳細](https://comfy.org/enterprise/) または [enterprise@comfy.org](mailto:enterprise@comfy.org) までお問い合わせください。",
   "faq.pricing.running-comfy-at-scale.question": "Comfyを大規模運用する場合はどうすればよいですか？",
   "faq.pricing.runtime-and-concurrency-limits.body": "各ワークフローの最大実行時間は、StandardとCreatorでは**30分**、Proでは**1時間**です。公平性と安定性を保つため、上限を超えたジョブは自動的にキャンセルされます。一度に最大**100件のワークフロー**をキューに追加でき、API経由ではStandard / Creator / Proで**1 / 3 / 5**件を同時実行できます。Teamプランの同時実行上限、ユーザー枠、またはAPIレート制限の引き上げが必要な場合は、[こちら](https://comfysupport.portal.usepylon.com/forms/team-plan-requests)からお問い合わせください。",
   "faq.pricing.runtime-and-concurrency-limits.question": "実行時間と同時実行の上限は？",
