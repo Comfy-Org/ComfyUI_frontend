@@ -444,15 +444,76 @@ describe('remint', () => {
   })
 })
 
-describe('clearCache', () => {
-  it('drops the cache', async () => {
-    const fetchImpl = vi.fn<typeof fetch>()
-    const { client, storage } = makeClient({ fetchImpl })
-    seedCache(storage)
+describe('clearStoredCredential', () => {
+  it('drops the stored copy and leaves the published session live', async () => {
+    const { client, storage } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
 
-    client.clearCache()
+    client.clearStoredCredential()
 
     expect(storage.raw()).toBeNull()
+    expect(
+      client.getToken(),
+      'storage is the reload cache, not the session; ending the session is invalidate() or detach'
+    ).toBe('workspace-jwt')
+  })
+})
+
+describe('storage outage', () => {
+  it('serves the published credential when storage cannot be read, instead of re-minting on every read', async () => {
+    const fetchImpl = okFetch()
+    const { client } = makeClient({
+      fetchImpl,
+      storage: {
+        read: () => {
+          throw new Error('blocked')
+        },
+        write: () => {
+          throw new Error('blocked')
+        },
+        clear: () => undefined
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    await client.ensureFresh()
+    await client.ensureFresh()
+
+    expect(
+      fetchImpl,
+      'a storage outage must degrade persistence only, never request volume'
+    ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('joined mint cancellation', () => {
+  it('releases a joiner on its own signal without cancelling the shared mint', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi.fn<typeof fetch>(
+      () => new Promise<Response>((resolve) => (release = resolve))
+    )
+    const { client } = makeClient({ fetchImpl })
+    const user = testUser()
+    const first = client.ensureFresh(user)
+    const controller = new AbortController()
+    const joiner = client.ensureFresh(user, { signal: controller.signal })
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+
+    controller.abort()
+
+    expect(await joiner).toEqual({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED'
+    })
+    release(jsonResponse(200, mintBody()))
+    expect((await first)?.status).toBe('ok')
   })
 })
 
@@ -695,7 +756,7 @@ describe('storage writes after identity changes', () => {
     const late = client.remint(user, {})
     await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
     detach()
-    client.clearCache()
+    client.clearStoredCredential()
     release(jsonResponse(200, mintBody({ token: 'stale-after-detach' })))
     await late
 

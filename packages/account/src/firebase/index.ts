@@ -32,9 +32,12 @@ import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
 interface ActionCeiling {
   /**
-   * Optional ceiling on the network-shaped actions (email sign-in/sign-up,
-   * password reset). None by default, as the cloud app runs them; popup
-   * sign-in is never bounded, the SDK raises its own cancellation errors.
+   * Optional ceiling on email sign-in and password reset, which leave no
+   * state behind when abandoned. None by default, as the cloud app runs
+   * them. Never applied to account creation: a ceiling rejects the caller
+   * while the SDK call may still succeed, leaving an orphaned account whose
+   * every retry fails with email-already-in-use. Popup sign-in is never
+   * bounded either; the SDK raises its own cancellation errors.
    */
   readonly actionTimeoutMs?: number
 }
@@ -121,16 +124,28 @@ function resolveUnknownEmailAsSent(error: unknown): void {
   throw error
 }
 
+/**
+ * Resolved once per identity. A named app this entry creates gets the
+ * host's persistence through `initializeAuth`; an app another entry already
+ * created keeps the persistence its creator chose, since Firebase allows one
+ * Auth per app.
+ */
 function authResolver(config: FirebaseIdentityConfig): () => Auth {
   if ('auth' in config) return () => config.auth
   const appName = config.appName ?? 'comfy-account'
+  let resolved: Auth | undefined
   return () => {
+    if (resolved) return resolved
     const existing = getApps().find((app) => app.name === appName)
-    if (existing) return getAuth(existing)
+    if (existing) {
+      resolved = getAuth(existing)
+      return resolved
+    }
     const app = initializeApp(config.options, appName)
-    return config.persistence
+    resolved = config.persistence
       ? initializeAuth(app, { persistence: config.persistence })
       : getAuth(app)
+    return resolved
   }
 }
 
@@ -149,7 +164,7 @@ export function createFirebaseIdentity(
     signInWithEmail: (email, password) =>
       bounded(signInWithEmailAndPassword(auth(), email, password)),
     createUserWithEmail: (email, password) =>
-      bounded(createUserWithEmailAndPassword(auth(), email, password)),
+      createUserWithEmailAndPassword(auth(), email, password),
     sendPasswordReset: (email) =>
       bounded(sendPasswordResetEmail(auth(), email)).catch(
         resolveUnknownEmailAsSent
