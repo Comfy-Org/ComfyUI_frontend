@@ -23,7 +23,7 @@ const i18n = createI18n({
   }
 })
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 
