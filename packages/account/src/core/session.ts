@@ -38,7 +38,9 @@ const CachedCredentialSchema = CredentialResponseSchema.omit({
   expires_at: true
 }).extend({
   expiresAt: z.number(),
-  uid: z.string()
+  uid: z.string(),
+  /** The workspace target the credential was minted for; absent = personal. */
+  target: z.string().optional()
 })
 
 export interface AccountCredential {
@@ -99,6 +101,8 @@ export type SessionRefreshOutcome =
   | 'retry_scheduled'
   | 'retries_exhausted'
   | 'permanent_failure'
+  /** The credential reached its expiry after retries ran out; the client failed closed. */
+  | 'expired'
 
 export type SessionResult =
   | { readonly status: 'ok'; readonly session: AccountCredential }
@@ -137,12 +141,46 @@ export interface SessionRequestOptions {
   readonly now?: () => number
   readonly signal?: AbortSignal
   readonly timeoutMs?: number
+  /** Mint for this workspace instead of the server-resolved personal one. */
+  readonly workspaceId?: string
+  /**
+   * On a transient remint failure, keep the currently published credential
+   * instead of committing the error — for hosts whose still-valid token
+   * must survive a failed proactive or reactive refresh. Permanent
+   * failures always commit.
+   */
+  readonly preserveCredentialOnTransientFailure?: boolean
+}
+
+/**
+ * Opt-in proactive refresh, mirroring the cloud store's scheduled-refresh
+ * semantics (its buffer, retry base, and retry cap are the defaults): arm at
+ * expiry minus the buffer, retry transient failures with doubling backoff,
+ * stop on sign-out, detach, or a permanent failure. Hosts whose consumers
+ * read the token synchronously need this; valid-on-read hosts do not.
+ */
+export interface RefreshSchedulerOptions {
+  readonly bufferMs?: number
+  readonly retryBaseMs?: number
+  readonly maxRetries?: number
+  /**
+   * Called with the outcome of every SCHEDULED refresh attempt (never a
+   * login or caller-initiated mint), so a host can feed its refresh
+   * telemetry without owning the scheduler. A permanent failure and an
+   * expiry carry the failure the client committed, so the host never has
+   * to read it back out of the snapshot.
+   */
+  readonly onScheduledOutcome?: (
+    outcome: SessionRefreshOutcome,
+    failure?: SessionFailure
+  ) => void
 }
 
 export interface SessionClientOptions extends SessionRequestOptions {
   readonly exchangeUrl: string
   readonly storage: CredentialStorage
   readonly freshMarginMs?: number
+  readonly refreshScheduler?: RefreshSchedulerOptions
 }
 
 export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
@@ -168,8 +206,19 @@ export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
       readonly failure: SessionFailure
     }
 
+export interface AttachIdentityOptions {
+  /**
+   * When false, an identity event sets the user and publishes without
+   * starting a warm-up mint — for hosts that drive every mint explicitly.
+   */
+  readonly autoMint?: boolean
+}
+
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
-  attachIdentity: (identity: IdentityPort<TUser>) => () => void
+  attachIdentity: (
+    identity: IdentityPort<TUser>,
+    options?: AttachIdentityOptions
+  ) => () => void
   getSnapshot: () => SessionSnapshot<TUser>
   subscribe: (
     listener: (snapshot: SessionSnapshot<TUser>) => void
@@ -179,8 +228,9 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
   /**
    * The valid-on-read entry point: resolves with a session that has more
    * than `freshMarginMs` of validity, minting inside the call when the
-   * cache cannot promise that. Resolves undefined when nobody is signed in
-   * or when the identity changed while the mint was in flight.
+   * cache cannot promise that. Resolves undefined when nobody is signed in,
+   * when the identity changed while the mint was in flight, or when a
+   * concurrent mint for a different target superseded this call.
    *
    * Concurrent callers for one user share one in-flight mint, which runs
    * with the first caller's `timeoutMs`; a later caller's own `signal`
@@ -201,6 +251,13 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
     requestedUser?: AccountUser,
     options?: SessionRequestOptions
   ) => Promise<SessionResult | undefined>
+  /**
+   * Fail closed on a host scope change: drop the published credential,
+   * cancel scheduled work, and invalidate in-flight mints. The identity
+   * stays, because it belongs to the port, so a targeted re-mint can
+   * follow at once. Identity changes fail closed through the port itself.
+   */
+  invalidate: () => void
   /**
    * Drops only the persisted copy of the credential. The published session
    * stays live; a host that must end it detaches or invalidates as well.
@@ -263,6 +320,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
   let currentUser: TUser | null = null
   let credential: AccountCredential | undefined
+  let credentialTarget: string | undefined
   let failure: SessionFailure | undefined
   let detachCurrent: (() => void) | undefined
   /**
@@ -271,11 +329,21 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * happened while I was in flight" (must invalidate).
    */
   let identityEpoch = 0
+  let invalidationEpoch = 0
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
 
   let inFlight: Promise<SessionResult> | undefined
   let inFlightUid: string | undefined
+  let inFlightTarget: string | undefined
   let inFlightForced = false
+  /**
+   * Monotonic id taken by every started mint; a commit is allowed only for
+   * the newest one. Target-agnostic on purpose — a slower mint for the old
+   * workspace resolving after a switch must never revert it. Ports the
+   * cloud store's unifiedRefreshRequestId guard.
+   */
+  let mintSequence = 0
+  let inFlightMintId = 0
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
@@ -319,7 +387,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
-  function readCached(uid: string): AccountCredential | undefined {
+  function readCached(
+    uid: string
+  ): { credential: AccountCredential; target: string | undefined } | undefined {
     const raw = safeRead()
     if (raw === null) return undefined
     let parsed: unknown
@@ -331,12 +401,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const result = CachedCredentialSchema.safeParse(parsed)
     if (!result.success || result.data.uid !== uid) return undefined
     return {
-      token: result.data.token,
-      expiresAt: result.data.expiresAt,
-      uid: result.data.uid,
-      workspace: result.data.workspace,
-      role: result.data.role,
-      permissions: result.data.permissions
+      credential: {
+        token: result.data.token,
+        expiresAt: result.data.expiresAt,
+        uid: result.data.uid,
+        workspace: result.data.workspace,
+        role: result.data.role,
+        permissions: result.data.permissions
+      },
+      target: result.data.target
     }
   }
 
@@ -353,7 +426,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const {
       fetchImpl = clientOptions.fetchImpl ?? globalThis.fetch,
       signal = clientOptions.signal,
-      timeoutMs = clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS
+      timeoutMs = clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS,
+      workspaceId = clientOptions.workspaceId
     } = options
 
     if (signal?.aborted) {
@@ -361,23 +435,45 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
 
     const startEpoch = identityEpoch
+    const startInvalidation = invalidationEpoch
     const controller = new AbortController()
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
+      let idToken: string
+      try {
+        idToken = await abortable(user.getIdToken(), controller.signal)
+      } catch (error) {
+        // requestToken treats a missing identity token as NOT_AUTHENTICATED;
+        // an identity failure carrying that code keeps it, anything else
+        // (including our own abort) stays in the transient bucket.
+        const coded =
+          !controller.signal.aborted &&
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'NOT_AUTHENTICATED'
+        return {
+          status: 'error',
+          code: coded ? 'NOT_AUTHENTICATED' : 'TOKEN_EXCHANGE_FAILED'
+        }
+      }
+
       let response: Response
       try {
-        const idToken = await abortable(user.getIdToken(), controller.signal)
         response = await fetchImpl(exchangeUrl, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${idToken}`,
             'Content-Type': 'application/json'
           },
-          // Empty body: the backend resolves the personal workspace.
-          body: JSON.stringify({}),
+          // Same body construction as requestToken: an explicit workspace_id,
+          // or an empty body the backend resolves to the personal workspace.
+          body: JSON.stringify(
+            workspaceId ? { workspace_id: workspaceId } : {}
+          ),
           signal: controller.signal
         })
       } catch {
@@ -434,12 +530,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         permissions: parseResult.data.permissions
       }
       // The cache write consults the identity epoch like the in-memory
-      // commit does: a mint outliving a sign-out or detach must not
-      // resurrect the session in persistent storage.
-      if (identityEpoch === startEpoch) {
+      // commit does: a mint outliving a sign-out, detach, or invalidation
+      // must not resurrect the session in persistent storage.
+      if (
+        identityEpoch === startEpoch &&
+        invalidationEpoch === startInvalidation
+      ) {
         safeWrite(
           JSON.stringify({
             ...session,
+            target: workspaceId,
             expires_at: parseResult.data.expires_at
           })
         )
@@ -456,43 +556,64 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * reuses an in-flight mint only when that one is also forced, so a 401
    * retry never resolves to a non-forced mint still holding the stale token.
    */
+  interface MintHandle {
+    readonly mintId: number
+    readonly response: Promise<SessionResult>
+  }
+
   function sharedMint(
     user: AccountUser,
     options: SessionRequestOptions,
     forced: boolean
-  ): Promise<SessionResult> {
+  ): MintHandle {
+    const target = options.workspaceId ?? clientOptions.workspaceId
     if (
       inFlight !== undefined &&
       inFlightUid === user.uid &&
+      inFlightTarget === target &&
       (!forced || inFlightForced)
     ) {
-      return inFlight
+      return { mintId: inFlightMintId, response: inFlight }
     }
     inFlightUid = user.uid
+    inFlightTarget = target
     inFlightForced = forced
+    const mintId = ++mintSequence
+    inFlightMintId = mintId
     const running = mint(user, options).finally(() => {
       if (inFlight !== running) return
       inFlight = undefined
       inFlightUid = undefined
+      inFlightTarget = undefined
       inFlightForced = false
     })
     inFlight = running
-    return running
+    return { mintId, response: running }
   }
 
   function ensureCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): Promise<SessionResult> {
+  ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
+    const target = options.workspaceId ?? clientOptions.workspaceId
     // Storage first (it survives a reload), then the published credential:
     // a host whose storage is blocked or full must not pay a full exchange
-    // on every read.
+    // on every read. Only a credential minted for this exact target counts:
+    // a target-less read must never adopt a team-scoped session, or the
+    // next scheduled refresh would quietly re-mint it as personal.
+    const stored = readCached(user.uid)
     const cached =
-      readCached(user.uid) ??
-      (credential?.uid === user.uid ? credential : undefined)
+      stored !== undefined && stored.target === target
+        ? stored.credential
+        : credential?.uid === user.uid && credentialTarget === target
+          ? credential
+          : undefined
     if (cached && isCredentialFresh(cached, now, freshMarginMs)) {
-      return Promise.resolve({ status: 'ok', session: cached })
+      return {
+        mintId: mintSequence,
+        response: Promise.resolve({ status: 'ok', session: cached })
+      }
     }
     return sharedMint(user, options, false)
   }
@@ -500,16 +621,158 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   function remintCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): Promise<SessionResult> {
+  ): MintHandle {
     safeClear()
     return sharedMint(user, options, true)
   }
 
+  const schedulerBufferMs =
+    clientOptions.refreshScheduler?.bufferMs ?? DEFAULT_FRESH_MARGIN_MS
+  const schedulerRetryBaseMs =
+    clientOptions.refreshScheduler?.retryBaseMs ?? 5000
+  const schedulerMaxRetries = clientOptions.refreshScheduler?.maxRetries ?? 3
+  let scheduledTimer: ReturnType<typeof setTimeout> | undefined
+  /**
+   * The hard fail-close for a credential whose refresh chain died. Its own
+   * timer on purpose: re-arming the refresh (a retry, a promotion) must not
+   * cancel it; only a committed credential or a teardown does.
+   */
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined
+  let scheduledRetryCount = 0
+
+  function stopScheduledRefresh(): void {
+    if (scheduledTimer !== undefined) {
+      clearTimeout(scheduledTimer)
+      scheduledTimer = undefined
+    }
+  }
+
+  function clearExpiry(): void {
+    if (expiryTimer !== undefined) {
+      clearTimeout(expiryTimer)
+      expiryTimer = undefined
+    }
+  }
+
+  function armScheduledRefresh(expiresAt: number, now: number): void {
+    if (!clientOptions.refreshScheduler) return
+    stopScheduledRefresh()
+    scheduledRetryCount = 0
+    // Never tighter than one retry interval: a token already inside the
+    // buffer (a host buffer at or above the TTL, a skewed clock) would
+    // otherwise re-mint in a loop with no backoff.
+    scheduledTimer = setTimeout(
+      () => {
+        scheduledTimer = undefined
+        void runScheduledRefresh()
+      },
+      Math.max(schedulerRetryBaseMs, expiresAt - schedulerBufferMs - now)
+    )
+  }
+
+  /**
+   * Retries are spent and the credential still has time on it: keep serving
+   * it until its expiry instant, then fail closed and tell the host, as the
+   * cloud store's clear-at-expiry does. A dead scheduler must never leave an
+   * expired token in circulation.
+   */
+  function armClearAtExpiry(expiring: AccountCredential): void {
+    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
+    const now = clientOptions.now?.() ?? Date.now()
+    clearExpiry()
+    expiryTimer = setTimeout(
+      () => {
+        expiryTimer = undefined
+        if (credential !== expiring) return
+        stopScheduledRefresh()
+        credential = undefined
+        credentialTarget = undefined
+        const expired: SessionFailure = {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED'
+        }
+        failure = expired
+        safeClear()
+        publish()
+        reportOutcome?.('expired', expired)
+      },
+      Math.max(0, expiring.expiresAt - now)
+    )
+  }
+
+  /**
+   * The scheduled re-mint mirrors the cloud store's refresh semantics: a
+   * transient failure keeps the still-valid credential and retries with
+   * doubling backoff; a permanent failure commits the error; exhausted
+   * retries keep the credential until it expires, then fail closed. Every
+   * commit runs publish() before reporting its outcome — host outcome
+   * handlers read state the publish just wrote.
+   */
+  async function runScheduledRefresh(): Promise<void> {
+    const user = currentUser
+    if (!user) return
+    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
+    const startEpoch = identityEpoch
+    const startInvalidation = invalidationEpoch
+    // Refresh with the target that produced the live credential, so a
+    // scheduled refresh reproduces the same session AND coalesces with any
+    // concurrent reactive re-mint for it.
+    const { mintId, response } = sharedMint(
+      user,
+      { workspaceId: credentialTarget },
+      true
+    )
+    let result: SessionResult
+    try {
+      result = await response
+    } catch {
+      result = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    }
+    if (
+      mintId !== mintSequence ||
+      currentUser?.uid !== user.uid ||
+      identityEpoch !== startEpoch ||
+      invalidationEpoch !== startInvalidation
+    )
+      return
+    if (result.status === 'ok') {
+      clearExpiry()
+      credential = result.session
+      failure = undefined
+      publish()
+      armScheduledRefresh(
+        result.session.expiresAt,
+        clientOptions.now?.() ?? Date.now()
+      )
+      reportOutcome?.('succeeded')
+      return
+    }
+    if (isPermanentSessionError(result.code)) {
+      credential = undefined
+      credentialTarget = undefined
+      failure = result
+      safeClear()
+      publish()
+      reportOutcome?.('permanent_failure', result)
+      return
+    }
+    if (scheduledRetryCount >= schedulerMaxRetries) {
+      if (credential !== undefined) armClearAtExpiry(credential)
+      reportOutcome?.('retries_exhausted')
+      return
+    }
+    const delay = schedulerRetryBaseMs * 2 ** scheduledRetryCount
+    scheduledRetryCount += 1
+    stopScheduledRefresh()
+    scheduledTimer = setTimeout(() => {
+      scheduledTimer = undefined
+      void runScheduledRefresh()
+    }, delay)
+    reportOutcome?.('retry_scheduled')
+  }
+
   async function refreshWith(
-    core: (
-      user: AccountUser,
-      options: SessionRequestOptions
-    ) => Promise<SessionResult>,
+    core: (user: AccountUser, options: SessionRequestOptions) => MintHandle,
     requestedUser?: AccountUser,
     options: SessionRequestOptions = {}
   ): Promise<SessionResult | undefined> {
@@ -517,16 +780,35 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (!user) return undefined
 
     const startEpoch = identityEpoch
+    const startInvalidation = invalidationEpoch
+    const { mintId, response } = core(user, options)
     // A caller that joined an in-flight mint still gets its own signal
     // honored: the shared mint runs on, this caller stops waiting for it.
     let result: SessionResult
     try {
-      const response = core(user, options)
       result = options.signal
         ? await abortable(response, options.signal)
         : await response
     } catch {
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    }
+    if (invalidationEpoch !== startInvalidation) {
+      return undefined
+    }
+    if (mintId !== mintSequence) {
+      // The newest mint won, but when it committed a credential for this
+      // caller's exact target, that credential answers the request — a lost
+      // race is not a failure. A different target (or none) stays undefined.
+      const requestedTarget = options.workspaceId ?? clientOptions.workspaceId
+      if (
+        credential !== undefined &&
+        credential.uid === user.uid &&
+        currentUser?.uid === user.uid &&
+        requestedTarget === credentialTarget
+      ) {
+        return { status: 'ok', session: credential }
+      }
+      return undefined
     }
     if (
       currentUser?.uid !== user.uid &&
@@ -535,8 +817,20 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return undefined
     }
     if (result.status === 'ok') {
+      clearExpiry()
       credential = result.session
+      credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
+      armScheduledRefresh(
+        result.session.expiresAt,
+        options.now?.() ?? clientOptions.now?.() ?? Date.now()
+      )
+    } else if (
+      options.preserveCredentialOnTransientFailure === true &&
+      credential !== undefined &&
+      !isPermanentSessionError(result.code)
+    ) {
+      return result
     } else {
       credential = undefined
       failure = result
@@ -546,14 +840,17 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   return {
-    attachIdentity(identity) {
+    attachIdentity(identity, attachOptions) {
       detachCurrent?.()
       let active = true
       const unsubscribe = identity.onUserChanged((next) => {
         if (!active) return
         identityEpoch += 1
+        stopScheduledRefresh()
+        clearExpiry()
         currentUser = next
         credential = undefined
+        credentialTarget = undefined
         failure = undefined
         if (!next) {
           safeClear()
@@ -561,7 +858,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
           return
         }
         publish()
-        void refreshWith(ensureCore, next)
+        if (attachOptions?.autoMint !== false) {
+          void refreshWith(ensureCore, next)
+        }
       })
       const detach = () => {
         if (!active) return
@@ -569,8 +868,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         identityEpoch += 1
         detachCurrent = undefined
         unsubscribe()
+        stopScheduledRefresh()
+        clearExpiry()
         currentUser = null
         credential = undefined
+        credentialTarget = undefined
         failure = undefined
         publish()
       }
@@ -592,6 +894,22 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       refreshWith(ensureCore, requestedUser, options),
     remint: (requestedUser, options) =>
       refreshWith(remintCore, requestedUser, options),
+    invalidate() {
+      invalidationEpoch += 1
+      stopScheduledRefresh()
+      clearExpiry()
+      // A mint still running belongs to the scope being discarded; a caller
+      // arriving after this must start its own rather than join it.
+      inFlight = undefined
+      inFlightUid = undefined
+      inFlightTarget = undefined
+      inFlightForced = false
+      credential = undefined
+      credentialTarget = undefined
+      failure = undefined
+      safeClear()
+      publish()
+    },
     clearStoredCredential() {
       safeClear()
     }

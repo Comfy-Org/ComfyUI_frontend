@@ -1,8 +1,10 @@
 export type {
   AccountCredential,
   AccountUser,
+  AttachIdentityOptions,
   CredentialStorage,
   IdentityPort,
+  RefreshSchedulerOptions,
   SessionClient,
   SessionClientOptions,
   SessionErrorCode,
