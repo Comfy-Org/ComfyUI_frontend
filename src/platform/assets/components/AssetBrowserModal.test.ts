@@ -195,9 +195,6 @@ describe('AssetBrowserModal', () => {
           'i-lucide:folder': {
             template: '<div data-testid="folder-icon"></div>'
           }
-        },
-        mocks: {
-          $t: (key: string) => key
         }
       }
     })
