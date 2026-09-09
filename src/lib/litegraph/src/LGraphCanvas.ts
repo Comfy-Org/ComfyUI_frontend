@@ -42,12 +42,7 @@ import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import {
-  compareNodeIds,
-  parseNodeId,
-  serializeNodeId,
-  toNodeId
-} from '@/types/nodeId'
+import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
@@ -68,7 +63,7 @@ import {
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
-import type { LinkBadgeLayout } from './canvas/linkBadges'
+import type { HiddenLinkBadge } from './canvas/linkBadges'
 import {
   hideLink,
   promptRenameLinkBadge,
@@ -6172,19 +6167,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const hiddenLinkIds = presentationStore.graphHiddenLinkIds(graphScope)
-    const hiddenLinks: LLink[] = []
+    const hiddenLinks: HiddenLinkBadge[] = []
     for (const linkId of hiddenLinkIds) {
       const link = graph.getLink(linkId)
-      if (link) hiddenLinks.push(link)
-    }
-    hiddenLinks.sort(
-      (first, second) =>
-        compareNodeIds(first.origin_id, second.origin_id) ||
-        first.origin_slot - second.origin_slot ||
-        first.id - second.id
-    )
-    const hiddenLinkLayouts = new Map<LinkId, LinkBadgeLayout>()
-    for (const link of hiddenLinks) {
+      if (!link) continue
       const endpoints = getLinkEndpointPositions(graph, link)
       const presentation = presentationStore.getPresentation(
         graphScope,
@@ -6192,21 +6178,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       )
       if (!endpoints || !presentation) continue
 
-      hiddenLinkLayouts.set(
-        link.id,
-        layoutHiddenLinkBadges(
-          this,
-          ctx,
-          link,
-          presentation,
-          endpoints[0],
-          endpoints[1],
+      hiddenLinks.push({
+        link,
+        presentation,
+        startPos: endpoints[0],
+        endPos: endpoints[1],
+        color:
           (typeof link.color === 'string' && link.color) ||
-            LGraphCanvas.link_type_colors[link.type] ||
-            this.default_link_color
-        )
-      )
+          LGraphCanvas.link_type_colors[link.type] ||
+          this.default_link_color
+      })
     }
+    const hiddenLinkLayouts = layoutHiddenLinkBadges(this, ctx, hiddenLinks)
 
     const renderConnection = (
       link: LLink,

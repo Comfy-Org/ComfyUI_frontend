@@ -5,6 +5,8 @@ import { LGraphBadge } from '../LGraphBadge'
 import type { LLink } from '../LLink'
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
+import { compareNodeIds } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { overlapBounding } from '../measure'
 
 export const BADGE_GAP = 14
@@ -22,7 +24,15 @@ interface BadgeHitArea {
   height: number
 }
 
-export interface LinkBadgeLayout {
+export interface HiddenLinkBadge {
+  link: LLink
+  presentation: Readonly<LinkPresentation>
+  startPos: Point
+  endPos: Point
+  color: string
+}
+
+interface LinkBadgeLayout {
   linkId: LinkId
   badge: LGraphBadge
   color: string
@@ -35,6 +45,14 @@ export interface LinkBadgeLayout {
   inputBadgeY: number
   outputTip: Point
   inputTip: Point
+}
+
+interface BadgeEndpoint {
+  nodeId: NodeId
+  slot: number
+  side: 'input' | 'output'
+  socket: Point
+  layout: LinkBadgeLayout
 }
 
 const hitAreasByHost = new WeakMap<object, BadgeHitArea[]>()
@@ -133,61 +151,94 @@ function createHitArea(
   }
 }
 
-export function layoutHiddenLinkBadges(
-  host: object,
+function createBadgeLayout(
   ctx: CanvasRenderingContext2D,
-  link: LLink,
-  presentation: Readonly<LinkPresentation>,
-  startPos: Point,
-  endPos: Point,
-  color: string
+  { link, presentation, startPos, endPos, color }: HiddenLinkBadge
 ): LinkBadgeLayout {
-  const hitAreas = hitAreasByHost.get(host) ?? []
   const text = linkBadgeText(link.type, presentation)
 
   const badge = makeBadge(text, color)
   const width = badge.getWidth(ctx)
   const [outputSocketX, outputSocketY] = startPos
   const outputBadgeX = outputSocketX + BADGE_GAP
-  const outputBadgeY = freeBadgeCenterY(
-    hitAreas,
-    outputBadgeX,
-    outputSocketY,
-    width
-  )
-  const outputHitArea = createHitArea(
-    link.id,
-    outputBadgeX,
-    outputBadgeY,
-    width
-  )
-
   const [inputSocketX, inputSocketY] = endPos
   const inputBadgeX = inputSocketX - BADGE_GAP - width
-  const inputBadgeY = freeBadgeCenterY(
-    [...hitAreas, outputHitArea],
-    inputBadgeX,
-    inputSocketY,
-    width
-  )
 
-  const layout: LinkBadgeLayout = {
+  return {
     linkId: link.id,
     badge,
     color,
     width,
     outputSocket: startPos,
     outputBadgeX,
-    outputBadgeY,
+    outputBadgeY: outputSocketY,
     inputSocket: endPos,
     inputBadgeX,
-    inputBadgeY,
-    outputTip: [outputBadgeX + width, outputBadgeY],
-    inputTip: [inputBadgeX, inputBadgeY]
+    inputBadgeY: inputSocketY,
+    outputTip: [outputBadgeX + width, outputSocketY],
+    inputTip: [inputBadgeX, inputSocketY]
   }
-  hitAreas.push(...getBadgeHitAreas(layout))
+}
+
+function compareBadgeEndpoints(
+  first: BadgeEndpoint,
+  second: BadgeEndpoint
+): number {
+  const nodeOrder = compareNodeIds(first.nodeId, second.nodeId)
+  if (nodeOrder) return nodeOrder
+  if (first.side !== second.side) return first.side === 'output' ? -1 : 1
+  return (
+    first.socket[1] - second.socket[1] ||
+    first.slot - second.slot ||
+    first.layout.linkId - second.layout.linkId
+  )
+}
+
+export function layoutHiddenLinkBadges(
+  host: object,
+  ctx: CanvasRenderingContext2D,
+  hiddenLinks: readonly HiddenLinkBadge[]
+): Map<LinkId, LinkBadgeLayout> {
+  const layouts = new Map<LinkId, LinkBadgeLayout>()
+  const endpoints: BadgeEndpoint[] = []
+  for (const hiddenLink of hiddenLinks) {
+    const { link, startPos, endPos } = hiddenLink
+    const layout = createBadgeLayout(ctx, hiddenLink)
+    layouts.set(link.id, layout)
+    endpoints.push(
+      {
+        nodeId: link.origin_id,
+        slot: link.origin_slot,
+        side: 'output',
+        socket: startPos,
+        layout
+      },
+      {
+        nodeId: link.target_id,
+        slot: link.target_slot,
+        side: 'input',
+        socket: endPos,
+        layout
+      }
+    )
+  }
+  endpoints.sort(compareBadgeEndpoints)
+
+  const hitAreas: BadgeHitArea[] = []
+  for (const { layout, side, socket } of endpoints) {
+    const x = side === 'output' ? layout.outputBadgeX : layout.inputBadgeX
+    const y = freeBadgeCenterY(hitAreas, x, socket[1], layout.width)
+    if (side === 'output') {
+      layout.outputBadgeY = y
+      layout.outputTip[1] = y
+    } else {
+      layout.inputBadgeY = y
+      layout.inputTip[1] = y
+    }
+    hitAreas.push(createHitArea(layout.linkId, x, y, layout.width))
+  }
   hitAreasByHost.set(host, hitAreas)
-  return layout
+  return layouts
 }
 
 function getBadgeHitAreas(

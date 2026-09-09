@@ -34,6 +34,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [PERF-BENCHMARKS-0022](PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md)                    | Performance Evidence and Regression Framework                   | Proposed | 2026-08-26 |
 | [RELEASES-CHANGELOG-0012](RELEASES-CHANGELOG-0012-cloud-release-notes-follow-the-comfyui-version.md)             | Cloud Release Notes Follow the ComfyUI Version                  | Accepted | 2026-07-13 |
 | [RENDERING-ATOMICITY-0020](RENDERING-ATOMICITY-0020-frame-atomic-rendering.md)                                   | Frame-Atomic Rendering                                          | Proposed | 2026-08-26 |
+| [RENDERING-BADGES-0030](RENDERING-BADGES-0030-slot-ordered-link-badges.md)                                       | Slot-Ordered Link Badges                                        | Proposed | 2026-09-09 |
 | [RENDERING-INVALIDATION-0021](RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md)     | Classified, Frame-Coalesced Canvas Invalidation                 | Proposed | 2026-08-26 |
 | [SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)                | Represent Promoted Widgets as Linked Inputs                     | Proposed | 2026-05-05 |
 | [SUBGRAPH-PROMOTION-0027](SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md)              | Defer Promoted-Widget Registration to `onAdded()`               | Accepted | 2026-09-01 |
