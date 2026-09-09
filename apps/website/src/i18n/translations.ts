@@ -242,6 +242,57 @@ const translations = {
     en: 'You are signed in, but account setup did not finish. Please try again shortly.',
     'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
   },
+  'auth.timeout.title': {
+    en: 'Connection Taking Too Long',
+    'zh-CN': '连接时间过长',
+    ja: '接続に時間がかかっています'
+  },
+  'auth.timeout.message': {
+    en: "We're having trouble connecting to ComfyUI Cloud. This could be due to a slow connection or temporary service issue.",
+    'zh-CN':
+      '我们无法连接到 ComfyUI 云端服务。这可能是由于网络连接缓慢或临时服务问题导致的。',
+    ja: 'ComfyUIクラウドへの接続に問題が発生しています。これは接続速度が遅いか、一時的なサービス障害が原因である可能性があります。'
+  },
+  'auth.timeout.troubleshooting': {
+    en: 'Common causes:',
+    'zh-CN': '常见原因：',
+    ja: '一般的な原因：'
+  },
+  'auth.timeout.causes.firewall': {
+    en: 'Corporate firewall or proxy blocking authentication services',
+    'zh-CN': 'Corporate firewall or proxy blocking authentication services'
+  },
+  'auth.timeout.causes.vpn': {
+    en: 'VPN or network restrictions',
+    'zh-CN': 'VPN or network restrictions'
+  },
+  'auth.timeout.causes.extensions': {
+    en: 'Browser extensions interfering with requests',
+    'zh-CN': 'Browser extensions interfering with requests'
+  },
+  'auth.timeout.causes.regional': {
+    en: 'Regional network limitations',
+    'zh-CN': 'Regional network limitations'
+  },
+  'auth.timeout.causes.differentBrowser': {
+    en: 'Try a different browser or network',
+    'zh-CN': 'Try a different browser or network'
+  },
+  'auth.timeout.helpText': {
+    en: 'Need help? Contact',
+    'zh-CN': '需要帮助？联系',
+    ja: 'ヘルプが必要ですか？サポートに連絡'
+  },
+  'auth.timeout.supportLink': {
+    en: 'support',
+    'zh-CN': '支持',
+    ja: 'サポート'
+  },
+  'auth.timeout.restart': {
+    en: 'Sign Out & Try Again',
+    'zh-CN': '退出并重试',
+    ja: 'サインアウトして再試行'
+  },
 
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {

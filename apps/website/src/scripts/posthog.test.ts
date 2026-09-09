@@ -205,6 +205,27 @@ describe('useWorkshopAuthFlag', () => {
     )
   })
 
+  it('reports settled only once PostHog has answered, whichever way', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopAuthFlag, useWorkshopAuthFlagSettled } =
+      await import('./posthog')
+    const settled = useWorkshopAuthFlagSettled()
+
+    initPostHog()
+    expect(settled.value, 'an unanswered flag is not a "no"').toBe(false)
+
+    emitFeatureFlags()
+    expect(settled.value).toBe(true)
+    expect(useWorkshopAuthFlag().value).toBe(false)
+  })
+
+  it('counts the build override as an answer', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    const { useWorkshopAuthFlagSettled } = await import('./posthog')
+
+    expect(useWorkshopAuthFlagSettled().value).toBe(true)
+  })
+
   it('honors the build override and keeps it sticky against a remote disable', async () => {
     vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
     hoisted.mockIsFeatureEnabled.mockReturnValue(false)
@@ -229,11 +250,21 @@ describe('auth funnel events', () => {
   })
 
   it("reports sign-up opens and auth failures under the cloud app's event names", async () => {
-    const { initPostHog, captureSignupOpened, captureAuthFailed } =
-      await import('./posthog')
+    const {
+      initPostHog,
+      captureSignupOpened,
+      captureAuthCompleted,
+      captureAuthFailed
+    } = await import('./posthog')
     initPostHog()
 
     captureSignupOpened()
+    captureAuthCompleted({
+      method: 'google',
+      is_new_user: false,
+      user_id: 'uid-1',
+      email: 'a@b.co'
+    })
     captureAuthFailed({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'google_sign_in'
@@ -242,6 +273,15 @@ describe('auth funnel events', () => {
     expect(hoisted.mockCapture).toHaveBeenCalledWith(
       AUTH_TELEMETRY_EVENT.signUpOpened,
       undefined
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.authCompleted,
+      {
+        method: 'google',
+        is_new_user: false,
+        user_id: 'uid-1',
+        email: 'a@b.co'
+      }
     )
     expect(hoisted.mockCapture).toHaveBeenCalledWith(
       AUTH_TELEMETRY_EVENT.authFailed,

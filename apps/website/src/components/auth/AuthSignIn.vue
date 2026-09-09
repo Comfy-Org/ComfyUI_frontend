@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { until } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { isFirebaseAuthErrorLike } from '@comfyorg/account/firebaseAuthError'
@@ -17,10 +18,13 @@ import {
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
+  captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
-  useWorkshopAuthFlag
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
+import AuthFlagTimeout from './AuthFlagTimeout.vue'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{
   /** Same flow either way for social providers; only the copy differs. */
@@ -28,7 +32,12 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
+/** The cloud app's router gives auth this long to answer before its timeout view. */
+const AUTH_FLAG_TIMEOUT_MS = 16_000
+
 const enabled = useWorkshopAuthFlag()
+const flagSettled = useWorkshopAuthFlagSettled()
+const flagTimedOut = ref(false)
 const state = ref<AuthSignInState>({ step: 'idle' })
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
@@ -50,6 +59,12 @@ async function signInWith(provider: AuthSignInProvider) {
       provider === 'google'
         ? await firebase.signInWorkshopWithGoogle()
         : await firebase.signInWorkshopWithGitHub()
+    captureAuthCompleted({
+      method: provider,
+      is_new_user: mode === 'signUp' || firebase.isNewWorkshopUser(credential),
+      user_id: credential.user.uid,
+      email: credential.user.email ?? undefined
+    })
     dispatch({
       type: 'signInSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
@@ -115,14 +130,24 @@ watch(
   },
   { immediate: true }
 )
+let flagTimer: ReturnType<typeof setTimeout> | undefined
 onBeforeUnmount(() => {
   listenerGeneration += 1
   stopUserListener?.()
+  clearTimeout(flagTimer)
 })
 
 onMounted(() => {
   inAppBrowser.value = isEmbeddedWebView()
-  if (mode === 'signUp') captureSignupOpened()
+  // Cloud reports the open when its sign-up page renders; here that is the
+  // moment the flag lets the page show.
+  if (mode === 'signUp')
+    void until(enabled).toBe(true).then(captureSignupOpened)
+  if (!flagSettled.value) {
+    flagTimer = setTimeout(() => {
+      flagTimedOut.value = !flagSettled.value
+    }, AUTH_FLAG_TIMEOUT_MS)
+  }
 })
 </script>
 
@@ -227,4 +252,5 @@ onMounted(() => {
       </p>
     </template>
   </section>
+  <AuthFlagTimeout v-else-if="flagTimedOut" :locale="locale" />
 </template>

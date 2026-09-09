@@ -3,7 +3,10 @@ import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { AUTH_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
-import type { AuthErrorMetadata } from '@comfyorg/account/telemetry'
+import type {
+  AuthCompletedMetadata,
+  AuthErrorMetadata
+} from '@comfyorg/account/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
@@ -27,6 +30,7 @@ const ANALYTICS_EVENT = {
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   signUpOpened: AUTH_TELEMETRY_EVENT.signUpOpened,
+  authCompleted: AUTH_TELEMETRY_EVENT.authCompleted,
   authFailed: AUTH_TELEMETRY_EVENT.authFailed
 } as const
 
@@ -62,6 +66,10 @@ type AnalyticsEvent =
     }
   | { name: typeof ANALYTICS_EVENT.signUpOpened; properties?: undefined }
   | {
+      name: typeof ANALYTICS_EVENT.authCompleted
+      properties: AuthCompletedMetadata
+    }
+  | {
       name: typeof ANALYTICS_EVENT.authFailed
       properties: AuthErrorMetadata
     }
@@ -79,9 +87,15 @@ const WORKSHOP_AUTH_FLAG = 'workshop-auth'
  */
 const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(OVERRIDDEN_ON)
+/** True once PostHog has answered (or the override stands in for it). */
+const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
 
 export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
+}
+
+export function useWorkshopAuthFlagSettled(): Readonly<Ref<boolean>> {
+  return readonly(workshopAuthFlagSettled)
 }
 
 export function initPostHog() {
@@ -98,6 +112,7 @@ export function initPostHog() {
     })
     initialized = true
     posthog.onFeatureFlags(() => {
+      workshopAuthFlagSettled.value = true
       if (OVERRIDDEN_ON) return
       workshopAuthEnabled.value =
         posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
@@ -157,6 +172,10 @@ export function captureMcpClientTabClick(client: McpClientId): void {
 
 export function captureSignupOpened(): void {
   captureEvent({ name: ANALYTICS_EVENT.signUpOpened })
+}
+
+export function captureAuthCompleted(metadata: AuthCompletedMetadata): void {
+  captureEvent({ name: ANALYTICS_EVENT.authCompleted, properties: metadata })
 }
 
 export function captureAuthFailed(metadata: AuthErrorMetadata): void {

@@ -5,10 +5,9 @@ import { test } from './fixtures/blockExternalMedia'
 
 const AUTH_PAGES = ['/login/', '/signup/'] as const
 
+/** The site's header nav and footer landmarks; the shell must carry neither. */
 const siteChrome = (page: Page) =>
-  page.locator(
-    'astro-island[component-url*="HeaderMain"], astro-island[component-url*="SiteFooter"], astro-island[component-url*="AnnouncementBanner"]'
-  )
+  page.getByRole('navigation').or(page.getByRole('contentinfo'))
 
 test.describe('Auth shell', () => {
   for (const path of AUTH_PAGES) {
@@ -29,13 +28,16 @@ test.describe('Auth shell', () => {
       ).toBeVisible()
     })
 
-    test(`${path} links out exactly like the cloud shell`, async ({ page }) => {
+    test(`${path} links out to the legal pages like the cloud shell`, async ({
+      page
+    }) => {
       await page.setViewportSize({ width: 1536, height: 864 })
       await page.goto(path)
 
       await expect(
-        page.getByRole('link', { name: 'ComfyOrg Logo' })
-      ).toHaveAttribute('href', '/')
+        page.getByRole('link', { name: 'ComfyOrg Logo' }),
+        'the cloud shell shows a plain wordmark'
+      ).toHaveCount(0)
       for (const [name, href] of [
         ['Terms of Use', 'https://comfy.org/terms-of-service/'],
         ['Privacy Policy', 'https://comfy.org/privacy-policy/'],
