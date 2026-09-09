@@ -121,7 +121,9 @@ describe('SignInForm', () => {
       useAuthStore().loading = true
       renderComponent()
 
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(
+        screen.getByRole('progressbar', { name: 'Loading' })
+      ).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: loginButtonText })
       ).not.toBeInTheDocument()
@@ -130,7 +132,7 @@ describe('SignInForm', () => {
     it('shows button when not loading', () => {
       renderComponent()
 
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
       expect(
         screen.getByRole('button', { name: loginButtonText })
       ).toBeInTheDocument()

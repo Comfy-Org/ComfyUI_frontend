@@ -30,7 +30,9 @@ describe('Badge', () => {
       global: { plugins: [i18n] }
     })
 
-    await user.click(screen.getByRole('button'))
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Remove' })).toHaveFocus()
+    await user.keyboard('{Enter}')
 
     expect(onRemove).toHaveBeenCalledOnce()
   })

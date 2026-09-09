@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: customClass = '' } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <svg
-    role="status"
+    role="progressbar"
+    :aria-label="t('g.loading')"
     :class="cn('size-6 animate-spin text-muted-foreground', customClass)"
     viewBox="0 0 24 24"
     fill="none"
