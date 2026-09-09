@@ -2,8 +2,13 @@ import type { APIRequestContext } from '@playwright/test'
 import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
+import type { components } from '@comfyorg/registry-types'
+
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+
+type ReleaseNote = components['schemas']['ReleaseNote']
 
 dotenvConfig()
 
@@ -115,6 +120,10 @@ export const networkIsolationFixture = base.extend<{
         route.fulfill({ path: assetPath('video/video-preview-portrait.webm') })
       )
     }
+    await context.route(
+      'https://{api,stagingapi}.comfy.org/releases**',
+      (route) => route.fulfill(jsonRoute([] satisfies ReleaseNote[]))
+    )
     await context.route(
       'https://{api,stagingapi}.comfy.org/comfy-nodes/*/node',
       (route) => route.fulfill({ status: 404, body: '' })
