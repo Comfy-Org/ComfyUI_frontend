@@ -46,7 +46,7 @@ test.describe('Auth shell', () => {
       for (const [name, href] of [
         ['Terms of Use', 'https://comfy.org/terms-of-service/'],
         ['Privacy Policy', 'https://comfy.org/privacy-policy/'],
-        ['here', 'https://support.comfy.org']
+        [termsNotice ? 'here' : 'Need Help?', 'https://support.comfy.org']
       ] as const) {
         const link = page.getByRole('link', { name })
         await expect(link).toHaveAttribute('href', href)
