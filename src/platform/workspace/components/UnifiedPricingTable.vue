@@ -651,7 +651,9 @@ const footerNotice = computed<FooterNotice | null>(() => {
   // Informational and lowest priority (DES-1023): a scheduled change is the
   // user's own act, so it never outranks a refusal. The Stay-on link lands
   // with the revert endpoint (BE-10873); until then the notice is link-less.
-  if (scheduledPlanChange.isDisplayable.value) {
+  // Cancellation suppresses it, mirroring the settings banner: the ending
+  // is the message once cancel_at is set, and the change won't happen.
+  if (scheduledPlanChange.isDisplayable.value && !isCancelled.value) {
     return {
       message: t('subscription.scheduledChangeNotice', {
         plan: scheduledPlanChange.planName.value,
@@ -1060,6 +1062,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
 
   if (
     scheduledPlanChange.isDisplayable.value &&
+    !isCancelled.value &&
     isScheduledDestination(tier.key)
   ) {
     return t('subscription.scheduledForDate', {

@@ -1195,6 +1195,32 @@ describe('UnifiedPricingTable scheduled plan change', () => {
     )
   })
 
+  it('shows the notice on the team tab too', () => {
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByRole('status').textContent).toContain(
+      'Your plan changes to Standard on'
+    )
+    expect(screen.getByText(/For teams wanting to collaborate/)).toBeTruthy()
+  })
+
+  it('suppresses the scheduled state when the plan is cancelled', () => {
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'MONTHLY',
+      isCancelled: true,
+      scheduledChange: {
+        plan_slug: 'standard-monthly',
+        effective_at: '2026-08-03T00:00:00Z'
+      }
+    }
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
+  })
+
   it('renders the normal fine print without a scheduled change', () => {
     mockSubscription.value = { tier: 'CREATOR', duration: 'MONTHLY' }
 
