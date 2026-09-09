@@ -446,7 +446,7 @@ function useInCode() {
           </Button>
           <p
             v-if="gate === 'noCredits'"
-            class="text-xs text-primary-warm-gray"
+            class="mt-2 text-xs text-primary-warm-gray"
             data-testid="gate-note"
           >
             {{
@@ -459,7 +459,7 @@ function useInCode() {
           </p>
           <p
             v-else-if="gate === 'memberNoCredits'"
-            class="text-xs text-primary-warm-gray"
+            class="mt-2 text-xs text-primary-warm-gray"
             data-testid="gate-note"
           >
             {{
@@ -471,7 +471,7 @@ function useInCode() {
           </p>
           <p
             v-else-if="modelStatus === 'degraded'"
-            class="text-primary-comfy-orange text-xs"
+            class="text-primary-comfy-orange mt-2 text-xs"
             data-testid="gate-note"
           >
             {{ t('workshop.run.degraded', locale) }}
