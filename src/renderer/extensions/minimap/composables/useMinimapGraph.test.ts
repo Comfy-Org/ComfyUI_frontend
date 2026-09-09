@@ -1,3 +1,5 @@
+import type * as VueUse from '@vueuse/core'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useThrottleFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -20,18 +22,9 @@ import {
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock(import('@vueuse/core'), () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
   useThrottleFn: vi.fn((fn) => fn)
-}))
-
-const { mockProgressStates } = vi.hoisted(() => ({
-  mockProgressStates: {} as Record<string, { state: string }>
-}))
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: mockProgressStates
-  }))
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -61,8 +54,8 @@ describe('useMinimapGraph', () => {
     })
 
     onGraphChangedMock = vi.fn()
-    for (const key of Object.keys(mockProgressStates)) {
-      delete mockProgressStates[key]
+    for (const key of Object.keys(useExecutionStore().nodeProgressStates)) {
+      delete useExecutionStore().nodeProgressStates[key]
     }
   })
 
@@ -500,11 +493,23 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
 
-    mockProgressStates['1'] = { state: 'running' }
+    useExecutionStore().nodeProgressStates['1'] = {
+      state: 'running',
+      value: 1,
+      max: 2,
+      node_id: '1',
+      prompt_id: 'job-1'
+    }
     expect(graphManager.checkForChanges()).toBe(true)
     expect(graphManager.checkForChanges()).toBe(false)
 
-    mockProgressStates['1'] = { state: 'finished' }
+    useExecutionStore().nodeProgressStates['1'] = {
+      state: 'finished',
+      value: 2,
+      max: 2,
+      node_id: '1',
+      prompt_id: 'job-1'
+    }
     expect(graphManager.checkForChanges()).toBe(true)
   })
 

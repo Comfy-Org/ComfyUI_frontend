@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
   ModelNodeProvider,
@@ -76,13 +74,11 @@ const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: vi.fn(() => ({
-    nodeDefsByName: mockNodeDefsByName
-  }))
-}))
-
 describe('useModelToNodeStore', () => {
+  beforeEach(() => {
+    useNodeDefStore().nodeDefsByName = mockNodeDefsByName
+  })
+
   describe('modelToNodeMap', () => {
     it('should initialize as empty', () => {
       const modelToNodeStore = useModelToNodeStore()
@@ -468,18 +464,10 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: {}
-      })
+      useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: mockNodeDefsByName
-      })
     })
   })
 
@@ -491,19 +479,11 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should return empty Record when nodeDefStore is empty', () => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: {}
-      })
+      useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()
 
       const result = modelToNodeStore.getRegisteredNodeTypes()
       expect(result).toStrictEqual({})
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: mockNodeDefsByName
-      })
     })
 
     it('should contain node types to resolve widget name', () => {
