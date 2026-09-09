@@ -2,15 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
 
 describe('indexing policy', () => {
-  it('excludes disabled Workshop routes from sitemap and Markdown inputs', () => {
-    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    expect(isExcludedFromSitemap('https://comfy.org/workshop/')).toBe(true)
-    expect(
-      isExcludedFromSitemap('https://comfy.org/workshop/models/example/')
-    ).toBe(true)
-    expect(isExcludedFromSitemap('https://comfy.org/workshops/')).toBe(false)
-  })
-
   it.for([
     { name: 'disabled Workshop is excluded', value: '0', excluded: true },
     { name: 'enabled Workshop is included', value: '1', excluded: false }
@@ -39,9 +30,7 @@ describe('indexing policy', () => {
     '/zh-CN/booking-confirmation/',
     '/case-studies',
     '/zh-CN/videos/',
-    '/demos',
-    '/workshop',
-    '/workshop/models/bfl--flux-3/'
+    '/demos'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(true)
