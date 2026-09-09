@@ -590,6 +590,90 @@ describe('AuthSignIn', () => {
     })
   })
 
+  it('switches to sign-up in place, keeping the shell mounted', async () => {
+    window.history.replaceState({}, '', '/login/?returnTo=%2Fworkshop%2F')
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: 'Sign up here' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Create an account' })
+    ).toBeTruthy()
+    expect(
+      assign,
+      'a reload would restart the hero and the session'
+    ).not.toHaveBeenCalled()
+    expect(window.location.pathname + window.location.search).toBe(
+      '/signup/?returnTo=%2Fworkshop%2F'
+    )
+    expect(document.title).toBe('Sign up - Comfy')
+  })
+
+  it('follows Back to the previous mode', async () => {
+    render(AuthSignIn)
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: 'Sign up here' }))
+    await screen.findByRole('heading', { name: 'Create an account' })
+
+    window.history.replaceState({}, '', '/login/')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Log in to your account' })
+    ).toBeTruthy()
+  })
+
+  it('shows the pop-up progress line and holds every option while the pop-up is open', async () => {
+    handles.google.mockImplementation(() => new Promise(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+
+    expect(
+      await screen.findByText('Finish signing in from the pop-up window.')
+    ).toBeTruthy()
+    for (const name of [
+      /log in with google/i,
+      /log in with github/i,
+      /use email instead/i
+    ]) {
+      expect(screen.getByRole('button', { name })).toHaveProperty(
+        'disabled',
+        true
+      )
+    }
+  })
+
+  it('says it is signing you in from the moment the pop-up closes until the page leaves', async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    handles.ensureFresh.mockImplementation(() => new Promise(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+
+    expect(await screen.findByText('Signing you in…')).toBeTruthy()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('says it is creating the account on the sign-up page', async () => {
+    handles.github.mockResolvedValue({
+      user: { uid: 'user-2', email: null, displayName: 'Octo' }
+    })
+    handles.ensureFresh.mockImplementation(() => new Promise(() => {}))
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /sign up with github/i }))
+
+    expect(await screen.findByText('Creating your account…')).toBeTruthy()
+  })
+
   it('does not report a sign-up open from the login page', async () => {
     render(AuthSignIn)
     await screen.findByRole('button', { name: /log in with google/i })

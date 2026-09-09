@@ -157,9 +157,15 @@ const translations = {
     en: 'Finish signing in from the pop-up window.',
     'zh-CN': '请在弹出窗口中完成登录。'
   },
-  'auth.signIn.pendingEmail': {
+  'auth.signIn.signingIn': {
     en: 'Signing you in…',
-    'zh-CN': '正在为你登录…'
+    'zh-CN': '正在为你登录…',
+    ja: 'サインインしています…'
+  },
+  'auth.signUp.creating': {
+    en: 'Creating your account…',
+    'zh-CN': '正在创建你的账户…',
+    ja: 'アカウントを作成しています…'
   },
   'auth.signIn.signOut': {
     en: 'Sign out',
@@ -321,10 +327,6 @@ const translations = {
   'auth.signIn.retry': {
     en: 'Retry session',
     'zh-CN': '重试会话'
-  },
-  'auth.signIn.starting': {
-    en: 'Starting your workspace session…',
-    'zh-CN': '正在启动工作区会话…'
   },
   // Auth validation copy, matching the platform app's messages. The {length}
   // and {prefix} tokens are interpolated by config/auth-schemas.ts.
