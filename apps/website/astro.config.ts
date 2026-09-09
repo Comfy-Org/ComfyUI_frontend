@@ -11,8 +11,12 @@ import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
 
+/** The canonical origin. One constant, because the sitemap integration
+ * needs the same value and a second literal can drift from this one. */
+const SITE = 'https://comfy.org'
+
 export default defineConfig({
-  site: 'https://comfy.org',
+  site: SITE,
   output: 'static',
   prefetch: { prefetchAll: true },
   // Astro 7 changed the compressHTML default to JSX-style whitespace stripping.
@@ -35,7 +39,7 @@ export default defineConfig({
     }),
     // After sitemap(): it builds from Astro's page list, which omits the routes
     // the i18n fallback produces for dynamic routes. This adds them back.
-    localizedSitemap('https://comfy.org'),
+    localizedSitemap(SITE),
     markdownTwins(),
     workshopReleaseGate()
   ],
@@ -68,10 +72,13 @@ export default defineConfig({
      * `hreflangAlternates` refuses to cluster it, so each canonicals to its
      * English original and is advertised nowhere.
      *
-     * Japanese is held back the same way by its own allowlist:
-     * `INDEXABLE_PAGES.ja` contains only `/`, so the other 559 pages are built,
-     * unadvertised and unlinked. That is the hub's behaviour for a locale that
-     * is not ready yet.
+     * Japanese is held back the same way, but by a different gate.
+     * `PARTIAL_LOCALE_ROUTES.ja` names the six routes it publishes — `/`,
+     * `/download`, `/cloud`, `/platform`, `/about`, `/pricing` — and everything
+     * else is built, unadvertised and unlinked. `INDEXABLE_PAGES.ja` is `'all'`
+     * because that gate has already decided; the two would otherwise have to
+     * agree about the same list twice. Widening Japanese means adding routes
+     * there, in a reviewed change of its own.
      */
     fallback: { ja: DEFAULT_LOCALE, 'zh-CN': DEFAULT_LOCALE },
     routing: {

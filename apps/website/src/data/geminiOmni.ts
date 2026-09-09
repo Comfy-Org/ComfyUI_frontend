@@ -389,13 +389,13 @@ export const geminiOmniPage: ModelLaunchPage = {
         question: {
           en: 'How does Gemini Omni 1.1 Flash compare to the previous Omni Flash?',
           'zh-CN': 'Gemini Omni 1.1 Flash 与上一代 Omni Flash 相比如何？',
-          ja: 'Gemini Omni 1.1 Flashは以前のOmni 1.1 Flashとどう違いますか？' /* machine */
+          ja: 'Gemini Omni 1.1 Flashは以前のOmni Flashとどう違いますか？' /* machine */
         },
         answer: {
           en: 'Gemini Omni 1.1 Flash is a full replacement for earlier Omni Flash versions, with the same generate-and-edit workflow and faster generation. The 1.1 release lets you draft videos more efficiently at 360p, upscale to 4K resolution, and extend scenes for longer storytelling.',
           'zh-CN':
             'Gemini Omni 1.1 Flash 完全取代此前各版本的 Omni Flash，沿用同样的生成与编辑工作流，且生成更快。1.1 版本让你能以 360p 更高效地打草稿，放大到 4K 分辨率，并延长场景以讲述更长的故事。',
-          ja: 'Gemini Omni 1.1 Flashは、従来のOmni 1.1 Flashバージョンを完全に置き換えるモデルです。同じ生成・編集ワークフローに対応し、生成速度が向上しています。1.1リリースでは、360pで効率よく動画の下書きを作成し、4K解像度へアップスケールし、シーンを延長してより長いストーリーを作成できます。' /* machine */
+          ja: 'Gemini Omni 1.1 Flashは、従来のOmni Flashバージョンを完全に置き換えるモデルです。同じ生成・編集ワークフローで、より高速に生成できます。1.1リリースでは、360pで効率よく動画を下書きし、4K解像度へアップスケールし、シーンを延長してより長いストーリーを作成できます。' /* machine */
         }
       },
       {

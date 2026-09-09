@@ -98,6 +98,19 @@ function main(): void {
       `English original.\n`
   )
 
+  // Nothing compared is not a pass. A `dist/` built without the locale
+  // directories — a partial build, a renamed prefix — skips every route and
+  // reaches here with no failures to report, so the gate would wave through
+  // exactly the state it exists to catch.
+  if (compared === 0) {
+    process.stderr.write(
+      '[localized-pages] no localized page was compared. Expected pages under ' +
+        `${LOCALIZED_CODES.map((code) => localePrefix(code)).join(', ')} in dist/. ` +
+        'Run `pnpm build` first.\n'
+    )
+    process.exit(1)
+  }
+
   if (failures.length > 0) {
     for (const failure of failures) {
       process.stderr.write(`[localized-pages] ${failure}\n`)

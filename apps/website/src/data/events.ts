@@ -652,13 +652,13 @@ const events: readonly ComfyEvent[] = [
       en: 'Comfy Creatives Model Jam: MiniMax H3, Seedance 2.5, Wan Animate 2 & More',
       'zh-CN':
         'Comfy Creatives 模型大乱斗：MiniMax H3、Seedance 2.5、Wan Animate 2 等',
-      ja: 'Comfy クリエイティブ・モデル・ジャム：MiniMax H3、Seedance 2.5、Wan Animate 2 ほか' /* machine */
+      ja: 'Comfy Creatives モデルジャム：MiniMax H3、Seedance 2.5、Wan Animate 2 ほか' /* machine */
     },
     description: {
       en: 'The Comfy Creatives community jams on the latest models — MiniMax H3, Seedance 2.5, Wan Animate 2, and more — in a hands-on livestream.',
       'zh-CN':
         'Comfy Creatives 社区在这场实战直播中集中体验最新模型——MiniMax H3、Seedance 2.5、Wan Animate 2 等。',
-      ja: 'Comfyクリエイティブコミュニティが、MiniMax H3、Seedance 2.5、Wan Animate 2などの最新モデルを実際に試すライブ配信です。' /* machine */
+      ja: 'Comfy Creativesコミュニティが、MiniMax H3、Seedance 2.5、Wan Animate 2などの最新モデルを試す、ハンズオンのライブ配信です。' /* machine */
     },
     location: { en: 'Online', 'zh-CN': '线上', ja: 'オンライン' /* machine */ },
     media: eventImage('livestream_aug-10.jpg', {
