@@ -227,7 +227,7 @@ function clearAll() {
               />
             </div>
             <ul
-              class="max-h-72 scrollbar-thin overflow-y-auto py-1"
+              class="max-h-72 scrollbar-thin overflow-y-auto py-1 max-sm:h-72"
               role="listbox"
               aria-multiselectable="true"
             >

@@ -439,7 +439,7 @@ function phoneToggle(value: string) {
           </div>
 
           <ul
-            class="max-h-72 scrollbar-thin overflow-y-auto py-1"
+            class="h-72 scrollbar-thin overflow-y-auto py-1"
             role="listbox"
             aria-multiselectable="true"
           >
