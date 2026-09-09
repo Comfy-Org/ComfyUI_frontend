@@ -259,6 +259,38 @@ const translations = {
     en: 'Starting your workspace session…',
     'zh-CN': '正在启动工作区会话…'
   },
+  'auth.header.signIn': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.header.account': {
+    en: 'Account',
+    'zh-CN': '账户'
+  },
+  'auth.header.credits': {
+    en: 'credits',
+    'zh-CN': '积分'
+  },
+  'auth.header.credit': {
+    en: 'credit',
+    'zh-CN': '积分'
+  },
+  'auth.header.signingIn': {
+    en: 'Signing in…',
+    'zh-CN': '正在登录…'
+  },
+  'auth.header.sessionRetry': {
+    en: 'Session error — retry',
+    'zh-CN': '会话错误 — 重试'
+  },
+  'auth.header.sessionRetrying': {
+    en: 'Retrying session…',
+    'zh-CN': '正在重试会话…'
+  },
+  'auth.header.balanceError': {
+    en: 'Balance unavailable right now.',
+    'zh-CN': '暂时无法获取余额。'
+  },
   'auth.timeout.title': {
     en: 'Connection Taking Too Long',
     'zh-CN': '连接时间过长',

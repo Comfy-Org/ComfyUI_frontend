@@ -12,7 +12,7 @@
 import type { User } from 'firebase/auth'
 import { computed, effectScope, readonly, ref, watch } from 'vue'
 
-import type { AccountCredential } from '@comfyorg/account/core'
+import type { AccountCredential, SessionFailure } from '@comfyorg/account/core'
 
 import { useWorkshopAuthFlag } from '../scripts/posthog'
 import { workshopSessionClient } from './workshop-account'
@@ -24,6 +24,7 @@ export type {
 
 const user = ref<User | null>(null)
 const session = ref<AccountCredential | undefined>(undefined)
+const sessionFailure = ref<SessionFailure | undefined>(undefined)
 /** True once Firebase has reported the restored user (or none) at least once. */
 const settled = ref(false)
 let started = false
@@ -49,6 +50,8 @@ async function begin(expectedGeneration: number): Promise<void> {
     user.value = snapshot.user
     session.value =
       snapshot.phase === 'authenticated' ? snapshot.session : undefined
+    sessionFailure.value =
+      snapshot.phase === 'error' ? snapshot.failure : undefined
   })
   detachIdentity = workshopSessionClient.attachIdentity({
     onUserChanged: (callback) =>
@@ -80,6 +83,7 @@ function start(): void {
         if (!on) {
           user.value = null
           session.value = undefined
+          sessionFailure.value = undefined
           // The flag starts false on every cold load until PostHog answers;
           // only a real on->off transition means the credential must go.
           if (wasOn) workshopSessionClient.clearStoredCredential()
@@ -106,6 +110,9 @@ export function useWorkshopSession() {
   return {
     user: readonly(user),
     session: readonly(session),
+    // Lets consumers tell "mint legitimately in flight" from "the last
+    // mint failed" instead of error-styling ordinary latency.
+    sessionFailure: readonly(sessionFailure),
     settled: readonly(settled),
     signedIn: computed(() => session.value !== undefined),
     ensureFresh: workshopSessionClient.ensureFresh,

@@ -7,8 +7,9 @@
  */
 import type { User } from 'firebase/auth'
 
-import type { SessionClient } from '@comfyorg/account/core'
+import type { BillingClient, SessionClient } from '@comfyorg/account/core'
 import {
+  createBillingClient,
   createSessionClient,
   isPermanentSessionError
 } from '@comfyorg/account/core'
@@ -24,7 +25,7 @@ const STORAGE_KEY = 'comfy.workshop.session.v1'
 const storage = {
   read(): string | null {
     try {
-      return globalThis.sessionStorage?.getItem(STORAGE_KEY) ?? null
+      return globalThis.sessionStorage.getItem(STORAGE_KEY) ?? null
     } catch {
       // Storage that throws outright (cookies disabled) behaves as no cache.
       return null
@@ -32,14 +33,14 @@ const storage = {
   },
   write(value: string): void {
     try {
-      globalThis.sessionStorage?.setItem(STORAGE_KEY, value)
+      globalThis.sessionStorage.setItem(STORAGE_KEY, value)
     } catch {
       // A session that only lives in memory still works for this page.
     }
   },
   clear(): void {
     try {
-      globalThis.sessionStorage?.removeItem(STORAGE_KEY)
+      globalThis.sessionStorage.removeItem(STORAGE_KEY)
     } catch {
       // Nothing to clear if storage is unavailable.
     }
@@ -51,6 +52,11 @@ export const workshopSessionClient: SessionClient<User> =
     exchangeUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/auth/token`,
     storage
   })
+
+export const workshopBillingClient: BillingClient = createBillingClient({
+  session: workshopSessionClient,
+  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
+})
 
 /**
  * Mirrors the cloud app's auth-refresh telemetry so both surfaces feed one
