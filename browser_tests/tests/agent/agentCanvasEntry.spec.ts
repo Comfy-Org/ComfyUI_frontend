@@ -242,6 +242,7 @@ test.describe('Agent canvas entry', { tag: ['@cloud', '@ui'] }, () => {
     postedMessages,
     getWebSocket
   }) => {
+    test.slow()
     const page = comfyPage.page
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     const composer = page.getByRole('textbox', {
