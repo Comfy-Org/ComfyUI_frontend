@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { onBeforeSignInLeave } from '../../config/workshop-return'
 import HeaderAccount from './HeaderAccount.vue'
@@ -179,6 +179,7 @@ describe('HeaderAccount sign-in link', () => {
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
     const stash = vi.fn()
     const stop = onBeforeSignInLeave(stash)
+    onTestFinished(stop)
     render(HeaderAccount)
 
     await userEvent
@@ -188,7 +189,6 @@ describe('HeaderAccount sign-in link', () => {
     expect(stash.mock.invocationCallOrder[0]).toBeLessThan(
       assign.mock.invocationCallOrder[0]
     )
-    stop()
   })
 
   it('sends the visitor to sign in with the current page as the return destination', async () => {

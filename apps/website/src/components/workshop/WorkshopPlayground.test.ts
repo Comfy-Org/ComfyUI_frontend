@@ -131,16 +131,18 @@ describe('WorkshopPlayground', () => {
     const user = userEvent.setup()
     const first = render(WorkshopPlayground, { props: { model } })
     const second = render(WorkshopPlayground, { props: { model } })
-    const [, secondPrompt] = screen.getAllByRole('textbox', { name: /Prompt/ })
-    await user.type(secondPrompt, 'Second fox')
-    first.unmount()
+    const [firstPrompt] = screen.getAllByRole('textbox', { name: /Prompt/ })
+    await user.type(firstPrompt, 'First fox')
+    // The later registration fires last; a stale one would clobber the live value.
+    second.unmount()
 
     runBeforeSignInLeave()
 
-    expect(popWorkshopForm(model.slug, model.fields)).toMatchObject({
-      prompt: 'Second fox'
-    })
-    second.unmount()
+    expect(
+      popWorkshopForm(model.slug, model.fields),
+      'an unmounted sibling must not overwrite the live island'
+    ).toMatchObject({ prompt: 'First fox' })
+    first.unmount()
   })
 
   it('updates every snippet from the current form values', async () => {
