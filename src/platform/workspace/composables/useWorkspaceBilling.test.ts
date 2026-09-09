@@ -123,6 +123,7 @@ const activeStatus = {
   max_seats: 73,
   occupied_seats: 72,
   has_funds: true,
+  scheduled_change: null,
   team_credit_stop: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
@@ -136,6 +137,7 @@ const freeStatus = {
   max_seats: 0,
   occupied_seats: 100,
   has_funds: true,
+  scheduled_change: null,
   team_credit_stop: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
@@ -524,6 +526,7 @@ describe('useWorkspaceBilling', () => {
       }
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
+        scheduled_change: null,
         team_credit_stop: teamStop
       } satisfies BillingStatusResponse)
 

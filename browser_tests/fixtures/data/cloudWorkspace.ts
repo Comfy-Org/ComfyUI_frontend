@@ -22,6 +22,7 @@ export const LEGACY_PERSONAL_BILLING_STATUS = {
   occupied_seats: 1,
   subscription_status: 'ended',
   subscription_tier: 'FREE',
+  scheduled_change: null,
   team_credit_stop: null
 } satisfies IngestBillingStatusResponse
 
@@ -106,6 +107,7 @@ export const TEAM_BILLING_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  scheduled_change: null,
   team_credit_stop: null,
   max_seats: 30,
   occupied_seats: DEFAULT_TEAM_MEMBERS.length
@@ -120,6 +122,7 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
   subscription_tier: 'STANDARD',
+  scheduled_change: null,
   team_credit_stop: null,
   max_seats: 1,
   occupied_seats: 1
