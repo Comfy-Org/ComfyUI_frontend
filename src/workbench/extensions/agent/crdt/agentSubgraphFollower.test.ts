@@ -1,6 +1,7 @@
 import {
   OPAQUE_WIDGETS_KEY,
   applyOps,
+  linksMap,
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
@@ -446,6 +447,43 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     )
   })
 
+  it('S2f reports an undeclared promoted slot once per session across frames', () => {
+    // The undeclared link stays in the doc, so any later frame that re-reads
+    // it (here: the link entry is rewritten) hits the same refusal. Report the
+    // drift once per session rather than once per frame.
+    const state = startFollower({ extraInput: true, stripHostInputs: true })
+    deliver(
+      state,
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 2,
+        from_slot: 0,
+        to_node: 1,
+        link_type: 'NUMBER',
+        grow: {
+          side: 'input',
+          slot: 'bogus',
+          name: 'bogus',
+          type: 'NUMBER',
+          promoted: true
+        }
+      },
+      1
+    )
+    forwardRaw(
+      state,
+      () => {
+        const links = linksMap(state.hostDoc)
+        links.set('9', structuredClone(links.get('9')))
+      },
+      2
+    )
+
+    expect(state.graph.links.has(toLinkId(9))).toBe(false)
+    expect(reportError).toHaveBeenCalledTimes(1)
+  })
+
   it('S2d removes a live promoted link when the same link id is retargeted onto an undeclared slot', () => {
     // cmp `claimLinkIdentity` deletes and re-mints link 9 under the new slot in
     // one op, so the doc still holds id 9 but the follower can no longer read
@@ -765,6 +803,19 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         context: expect.objectContaining({ expected: 1, actual: 0 })
       })
     )
+  })
+
+  it('S1n reports a persisting opaque length mismatch once per session', () => {
+    // Every frame that rewrites the still-short opaque array re-reads the host
+    // and would re-report the same drift. Sentry should see it once, not once
+    // per frame.
+    const state = startFollower()
+    deliver(state, hostSetWidget(46), 1)
+    forwardRaw(state, (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, []), 2)
+    forwardRaw(state, (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, []), 3)
+
+    expect(storedHostWidgets(state)).toEqual([['value', 46]])
+    expect(reportError).toHaveBeenCalledTimes(1)
   })
 })
 
