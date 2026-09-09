@@ -40,6 +40,20 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
   )
 }
 
+// Both billing adapters rebuild their BalanceInfo object from scratch on every
+// successful fetchBalance(), even when the underlying values haven't moved -
+// so a new object reference alone is not evidence of a genuine change.
+// Compare the stable value fields instead of relying on object identity.
+function balanceValuesEqual(a: BalanceInfo, b: BalanceInfo): boolean {
+  return (
+    a.amountMicros === b.amountMicros &&
+    a.currency === b.currency &&
+    a.effectiveBalanceMicros === b.effectiveBalanceMicros &&
+    a.prepaidBalanceMicros === b.prepaidBalanceMicros &&
+    a.cloudCreditBalanceMicros === b.cloudCreditBalanceMicros
+  )
+}
+
 /**
  * Unified billing context that selects billing state and account actions by
  * billing rail. When unified pricing is enabled, its catalog and checkout
@@ -127,6 +141,7 @@ function useBillingContextInternal(): BillingContext {
   const usageLogsRefreshSignal = ref(0)
   watch(balance, (next, previous) => {
     if (!next || !previous) return
+    if (balanceValuesEqual(next, previous)) return
     usageLogsRefreshSignal.value++
   })
 
