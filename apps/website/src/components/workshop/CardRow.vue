@@ -48,7 +48,7 @@ const arrowClass = (disabled: boolean) =>
 
 <template>
   <div>
-    <div class="mb-5 flex items-center justify-between gap-4">
+    <div class="mb-5 flex items-baseline justify-between gap-4">
       <slot name="heading" />
       <div class="flex items-center gap-3">
         <slot name="actions" />
