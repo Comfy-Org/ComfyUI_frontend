@@ -17,7 +17,7 @@ const h = vi.hoisted(() => {
     attachIdentity: vi.fn(() => () => undefined),
     ensureFresh: vi.fn(),
     remint: vi.fn(),
-    clearCache: vi.fn(),
+    clearStoredCredential: vi.fn(),
     publish(next: unknown) {
       state.snapshot = next
       state.listeners.forEach((listener) => listener(next))
@@ -26,14 +26,14 @@ const h = vi.hoisted(() => {
   return state
 })
 
-vi.mock('../scripts/posthog', async () => {
+vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(h.initialFlag)
   h.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('./workshop-firebase', () => {
+vi.mock<unknown>(import('./workshop-firebase'), () => {
   h.firebaseEvaluated()
   return {
     onWorkshopUserChanged: () => () => undefined,
@@ -41,7 +41,7 @@ vi.mock('./workshop-firebase', () => {
   }
 })
 
-vi.mock('./workshop-account', () => ({
+vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopSessionClient: {
     subscribe: (listener: (snapshot: unknown) => void) => {
       h.listeners.add(listener)
@@ -51,7 +51,7 @@ vi.mock('./workshop-account', () => ({
     attachIdentity: h.attachIdentity,
     ensureFresh: h.ensureFresh,
     remint: h.remint,
-    clearCache: h.clearCache,
+    clearStoredCredential: h.clearStoredCredential,
     getSnapshot: () => h.snapshot,
     getToken: vi.fn()
   }
@@ -152,25 +152,25 @@ describe('useWorkshopSession', () => {
 
   it('keeps the cached credential on a cold load while the flag is still unanswered', async () => {
     h.initialFlag = false
-    h.clearCache.mockClear()
+    h.clearStoredCredential.mockClear()
 
     await importFresh()
 
     expect(
-      h.clearCache,
+      h.clearStoredCredential,
       'the flag starts false until PostHog answers; wiping the cache here re-mints on every reload'
     ).not.toHaveBeenCalled()
   })
 
   it('clears the cache when the flag turns off', async () => {
     await importFresh()
-    const callsBefore = h.clearCache.mock.calls.length
+    const callsBefore = h.clearStoredCredential.mock.calls.length
 
     h.flag!.value = false
 
     await vi.waitFor(() =>
       expect(
-        h.clearCache.mock.calls.length,
+        h.clearStoredCredential.mock.calls.length,
         'flag-off must drop the cached credential'
       ).toBeGreaterThan(callsBefore)
     )
