@@ -7047,11 +7047,15 @@ Enterprise`
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'chatgptImage25.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
-  'chatgptImage25.comparison.heading': {
-    en: 'How it compares so far',
-    'zh-CN': '目前的对比情况'
+  'chatgptImage25.gallery.heading': {
+    en: 'What it makes',
+    'zh-CN': '它能创作什么'
   },
   'chatgptImage25.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'chatgptImage25.cta.heading': {
+    en: 'Sharper images, coming to Comfy.',
+    'zh-CN': '更清晰的图像，即将登陆 Comfy。'
+  },
   'chatgptImage25.runOptions.heading': {
     en: 'One engine, ready when it launches',
     'zh-CN': '同一引擎，上线即可使用'

@@ -1,14 +1,18 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchMedia,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { externalLinks } from '../config/routes'
 
 // ChatGPT Images 2.5 (OpenAI, announced 2026-09-08) has not shipped on Comfy
-// yet, so this duplicates the wan-3.0 launch page section-for-section (hero,
-// pricing, benchmarks, FAQ, run options, reviews) with only the hero's
-// "try it" CTA swapped for a coming-soon-appropriate one: an 'overlay' hero
-// with an eyebrow badge and a placeholder still standing in for real footage,
-// and a "get notified" CTA instead of a live run link. Swap in the real hero
-// video and CTA (and drop the placeholder) once the model is wired up to a
+// yet, so this duplicates the flux-3 launch page section-for-section (hero,
+// gallery, pricing, FAQ, closing CTA, run options, reviews) with the hero and
+// closing CTA swapped for coming-soon-appropriate ones: an 'overlay' hero
+// with an eyebrow badge and a placeholder still standing in for real footage
+// (per ModelLaunchHero's documented announcement-page pattern), and "get
+// notified" CTAs instead of a live run link. Swap in the real hero video, a
+// live run CTA, and real gallery stills once the model is wired up to a
 // partner node.
 const chatgptImage25Links = {
   contact: 'https://comfy.org/contact',
@@ -16,11 +20,19 @@ const chatgptImage25Links = {
 } as const
 
 // No real production stills exist yet (the Air board Robert shared is not
-// reachable from here), so the hero renders a plain placeholder panel rather
-// than a fabricated media.comfy.org path. Swap this for a real still once one
-// lands from that board.
+// reachable from here), so the hero and gallery render a plain local
+// placeholder panel rather than a fabricated media.comfy.org path. Swap this
+// for real stills once they land from that board. Because these are local
+// (not media.comfy.org) paths, this page is intentionally NOT registered in
+// modelLaunchPages.test.ts — that suite's media-url checks require every
+// gallery card to point at the CDN, which would force a fabricated path here.
 const CHATGPT_IMAGE_25_PLACEHOLDER_SRC =
   '/images/models/chatgpt-image-2-5-placeholder.png'
+
+const placeholderMedia: ModelLaunchMedia = {
+  kind: 'image',
+  src: CHATGPT_IMAGE_25_PLACEHOLDER_SRC
+}
 
 export const chatgptImage25Page: ModelLaunchPage = {
   metaTitleKey: 'chatgptImage25.meta.title',
@@ -47,6 +59,65 @@ export const chatgptImage25Page: ModelLaunchPage = {
       href: chatgptImage25Links.models
     }
   },
+  // Feature claims are OpenAI's own, from its 2026-09-08 launch announcement
+  // (https://openai.com/index/introducing-chatgpt-images-2-5/), cited so
+  // nothing here reads as an independent benchmark. The image on every card
+  // is the same local placeholder still, not a real generated example.
+  gallery: {
+    headingKey: 'chatgptImage25.gallery.heading',
+    cards: [
+      {
+        id: 'text-to-image',
+        name: { en: 'ChatGPT Images 2.5', 'zh-CN': 'ChatGPT Images 2.5' },
+        tier: 'premium',
+        note: { en: 'Coming soon', 'zh-CN': '即将推出' },
+        description: {
+          en: 'Sharper detail and richer texture from a single prompt, per OpenAI.',
+          'zh-CN':
+            '据 OpenAI 介绍，仅需一句提示词即可获得更清晰的细节与更丰富的质感。'
+        },
+        media: placeholderMedia,
+        href: externalLinks.workflows
+      },
+      {
+        id: 'multi-turn-editing',
+        name: { en: 'ChatGPT Images 2.5', 'zh-CN': 'ChatGPT Images 2.5' },
+        tier: 'premium',
+        note: { en: 'Coming soon', 'zh-CN': '即将推出' },
+        description: {
+          en: 'Layer edits across turns while the model holds your reference subject steady.',
+          'zh-CN': '在多轮编辑中持续叠加改动，模型会稳定保持你的参考主体。'
+        },
+        media: placeholderMedia,
+        href: externalLinks.workflows
+      },
+      {
+        id: 'sketch-to-image',
+        name: { en: 'ChatGPT Images 2.5', 'zh-CN': 'ChatGPT Images 2.5' },
+        tier: 'premium',
+        note: { en: 'Coming soon', 'zh-CN': '即将推出' },
+        description: {
+          en: 'Sketch a rough layout and render it out — a new input mode OpenAI added at launch.',
+          'zh-CN':
+            '画一个粗略的构图草稿即可渲染成图 — OpenAI 发布时新增的输入方式。'
+        },
+        media: placeholderMedia,
+        href: externalLinks.workflows
+      },
+      {
+        id: 'faster-iteration',
+        name: { en: 'ChatGPT Images 2.5', 'zh-CN': 'ChatGPT Images 2.5' },
+        tier: 'premium',
+        note: { en: 'Coming soon', 'zh-CN': '即将推出' },
+        description: {
+          en: 'Up to 50% lower generation latency than Images 2.0, so you iterate quicker.',
+          'zh-CN': '生成延迟比 Images 2.0 最多降低 50%，迭代更快。'
+        },
+        media: placeholderMedia,
+        href: externalLinks.workflows
+      }
+    ]
+  },
   pricing: {
     defaultBillingCycle: 'monthly',
     banner: {
@@ -58,71 +129,6 @@ export const chatgptImage25Page: ModelLaunchPage = {
         target: '_blank'
       }
     }
-  },
-  // Benchmarks: the latency figure is OpenAI's own launch-day claim (cited in
-  // the row), not an independent measurement. Neither Artificial Analysis nor
-  // LMArena had scored ChatGPT Images 2.5 as of 2026-09-09, so that row is an
-  // honest TBD rather than an invented number. Source:
-  // https://openai.com/index/introducing-chatgpt-images-2-5/
-  comparison: {
-    headingKey: 'chatgptImage25.comparison.heading',
-    columns: [
-      {
-        id: 'images-2-0',
-        label: { en: 'ChatGPT Images 2.0', 'zh-CN': 'ChatGPT Images 2.0' }
-      },
-      {
-        id: 'images-2-5',
-        label: { en: 'ChatGPT Images 2.5', 'zh-CN': 'ChatGPT Images 2.5' }
-      }
-    ],
-    rows: [
-      {
-        id: 'latency',
-        label: {
-          en: 'Generation latency',
-          'zh-CN': '生成延迟'
-        },
-        cells: [
-          { en: 'Baseline', 'zh-CN': '基准水平' },
-          {
-            en: 'Up to 50% faster (OpenAI, Sept 2026)',
-            'zh-CN': '最多快 50%（OpenAI，2026 年 9 月）'
-          }
-        ]
-      },
-      {
-        id: 'editing',
-        label: {
-          en: 'Multi-turn edit consistency',
-          'zh-CN': '多轮编辑一致性'
-        },
-        cells: [
-          { en: 'Good', 'zh-CN': '良好' },
-          {
-            en: 'Improved subject preservation (OpenAI)',
-            'zh-CN': '主体保持能力更强（OpenAI 说法）'
-          }
-        ]
-      },
-      {
-        id: 'independent-benchmark',
-        label: {
-          en: 'Independent arena Elo',
-          'zh-CN': '第三方竞技场 Elo 评分'
-        },
-        cells: [
-          {
-            en: '1178 (Artificial Analysis, Jul 2026)',
-            'zh-CN': '1178（Artificial Analysis，2026 年 7 月）'
-          },
-          {
-            en: 'TBD — not yet independently benchmarked',
-            'zh-CN': '待定 — 尚无第三方评测数据'
-          }
-        ]
-      }
-    ]
   },
   faq: {
     headingKey: 'chatgptImage25.faq.heading',
@@ -146,8 +152,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
           'zh-CN': '什么时候能在 Comfy 上使用？'
         },
         answer: {
-          en: `We're wiring up partner-node support now. This page swaps in a live run button the moment it ships — [contact us](${chatgptImage25Links.contact}) to get notified.`,
-          'zh-CN': `我们正在接入合作伙伴节点支持。上线后，本页面会立即替换为可用的运行按钮 — [联系我们](${chatgptImage25Links.contact})以获取上线通知。`
+          en: `We're wiring up partner-node support now. This page swaps in a live run button and real gallery stills the moment it ships — [contact us](${chatgptImage25Links.contact}) to get notified.`,
+          'zh-CN': `我们正在接入合作伙伴节点支持。上线后，本页面会立即替换为可用的运行按钮与真实图库素材 — [联系我们](${chatgptImage25Links.contact})以获取上线通知。`
         }
       },
       {
@@ -163,6 +169,17 @@ export const chatgptImage25Page: ModelLaunchPage = {
         }
       }
     ]
+  },
+  closingCta: {
+    headingKey: 'chatgptImage25.cta.heading',
+    primaryCta: {
+      labelKey: 'chatgptImage25.hero.primaryCta',
+      href: chatgptImage25Links.contact
+    },
+    secondaryCta: {
+      labelKey: 'chatgptImage25.hero.secondaryCta',
+      href: chatgptImage25Links.models
+    }
   },
   runOptions: {
     headingKey: 'chatgptImage25.runOptions.heading',
