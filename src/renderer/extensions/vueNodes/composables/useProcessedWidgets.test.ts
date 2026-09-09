@@ -168,6 +168,58 @@ describe('widget slot ownership', () => {
 
     expect(processedWidget.slotMetadata).toBeUndefined()
   })
+
+  it('uses the first same-named widget input slot', () => {
+    const nodeId = toNodeId(1)
+    const { graph, node } = createGraphWithNode([], nodeId)
+    const widget = node.addWidget('text', 'value', '', () => {})
+    node.inputs = [
+      {
+        name: 'value',
+        type: 'STRING',
+        widget: { name: 'value' },
+        boundingRect: [0, 0, 0, 0]
+      },
+      {
+        name: 'value',
+        type: 'STRING',
+        widget: { name: 'value' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    useLinkStore().registerLink(
+      {
+        rootGraphId: toRootGraphId(GRAPH_ID),
+        owningGraphId: toOwningGraphId(GRAPH_ID)
+      },
+      {
+        id: toLinkId(1),
+        graphId: toOwningGraphId(GRAPH_ID),
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: nodeId,
+        targetSlot: 1,
+        type: 'STRING'
+      }
+    )
+    const id = widget.widgetId
+    if (!id) throw new Error('Missing widget ID')
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: [id],
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toMatchObject({
+      index: 0,
+      linked: false
+    })
+  })
 })
 
 describe('widget visibility', () => {

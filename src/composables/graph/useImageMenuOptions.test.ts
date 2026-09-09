@@ -23,10 +23,6 @@ const i18n = createI18n({
   }
 })
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
 function mountComposable(): ReturnType<typeof useImageMenuOptions> {
   let composable!: ReturnType<typeof useImageMenuOptions>
   render(
