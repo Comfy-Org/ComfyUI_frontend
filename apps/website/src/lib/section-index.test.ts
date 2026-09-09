@@ -18,6 +18,7 @@ async function seed() {
   const root = await mkdtemp(join(tmpdir(), 'index-'))
   await mkdir(join(root, 'learning', 'vfx'), { recursive: true })
   await mkdir(join(root, 'zh-CN'), { recursive: true })
+  await mkdir(join(root, 'ja'), { recursive: true })
   await writeFile(
     join(root, 'index.md'),
     twin('Comfy', 'Home.', '# Comfy\n\nHome body.', 'https://comfy.org/')
@@ -44,6 +45,20 @@ async function seed() {
     join(root, 'zh-CN', 'cli.md'),
     twin('Comfy CLI 中文', 'CLI.', '# CLI 中文')
   )
+  await writeFile(
+    join(root, 'ja', 'cli.md'),
+    twin('Comfy CLI 日本語', 'CLI.', '# CLI 日本語')
+  )
+  // A locale's HOME page twin is `/zh-CN.md`, not `/zh-CN/index.md`, so it does
+  // not sit under the locale directory and a prefix+slash test never sees it.
+  await writeFile(
+    join(root, 'zh-CN.md'),
+    twin('Comfy 首页', 'Home.', '# Comfy 首页')
+  )
+  await writeFile(
+    join(root, 'ja.md'),
+    twin('Comfy ホーム', 'Home.', '# Comfy ホーム')
+  )
   await writeFile(join(root, '404.md'), twin('Not found', '', '# 404'))
   return root
 }
@@ -55,6 +70,9 @@ const twins = [
   '/learning/vfx/sky-replacement.md',
   '/cli.md',
   '/zh-CN/cli.md',
+  '/ja/cli.md',
+  '/zh-CN.md',
+  '/ja.md',
   '/404.md'
 ]
 
@@ -98,6 +116,13 @@ describe('writeFullText', () => {
     expect(full).toContain('# Comfy\n\n> Home.\n\nHome body.')
     expect(full).toContain('# Sky Replacement\n\nSteps.')
     expect(full).not.toContain('CLI 中文')
+    // Every locale, not just Chinese. The filter named only /zh-CN/, so once
+    // /ja/ existed its pages leaked into what is meant to be the English corpus.
+    expect(full).not.toContain('CLI 日本語')
+    // And every locale's HOME page, whose twin is /zh-CN.md rather than
+    // /zh-CN/index.md. Both of these were shipping inside llms-full.txt.
+    expect(full).not.toContain('Comfy 首页')
+    expect(full).not.toContain('Comfy ホーム')
     expect(full).not.toContain('# 404')
   })
 
