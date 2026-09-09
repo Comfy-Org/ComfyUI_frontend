@@ -3224,6 +3224,58 @@ describe('useSubscriptionCheckout', () => {
       await payment
     })
 
+    it("does not let a finished attempt release a newer attempt's lock", async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockGetOperation.mockReturnValue({
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        phase: 'awaiting_payment_method'
+      })
+
+      // A adopts a parked operation and releases the lock, then stays suspended.
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+      let resolveA!: (operation: { status: 'pending' }) => void
+      mockStartOperation.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveA = resolve
+          })
+      )
+      const attemptA = checkout.handleAddCreditCard()
+      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+
+      // B takes the lock and is held inside subscribe().
+      let releaseB!: () => void
+      mockSubscribe.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseB = () =>
+              resolve({
+                status: 'needs_payment_method',
+                billing_op_id: 'op-b',
+                payment_method_url: 'https://stripe.com/pay'
+              })
+          })
+      )
+      const attemptB = checkout.handleAddCreditCard()
+      await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledTimes(2))
+
+      // A finishes. Its finally must not hand B's lock to C.
+      resolveA({ status: 'pending' })
+      await attemptA
+
+      await checkout.handleAddCreditCard()
+      expect(mockSubscribe).toHaveBeenCalledTimes(2)
+
+      releaseB()
+      await attemptB
+    })
+
     it('keeps polling an operation parked on an invoice instead of prompting', async () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
