@@ -279,9 +279,11 @@ const placeholderHint = computed(() => {
   }
 })
 
+const running = computed(() => streaming || submitting)
+
 const composer = useComposer({
   onSend: (text, attachments) => emit('send', text, attachments),
-  isStreaming: () => streaming,
+  isStreaming: () => running.value,
   onStop: () => emit('stop')
 })
 
@@ -291,12 +293,12 @@ function onEnter(event: KeyboardEvent): void {
   composer.submit()
 }
 
-const running = computed(() => streaming || submitting)
-const primaryActionTooltip = computed(() =>
-  composer.canSend.value
+const primaryActionTooltip = computed(() => {
+  if (running.value) return t('agent.stopHint')
+  return composer.canSend.value
     ? t('agent.send')
     : t('agent.addPromptToSend', 'Add a prompt to send')
-)
+})
 
 function onPrimaryAction(): void {
   if (running.value) emit('stop')
@@ -551,7 +553,7 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AgentTooltip :label="primaryActionTooltip" :disabled="running">
+          <AgentTooltip :label="primaryActionTooltip">
             <button
               type="button"
               :aria-label="running ? t('agent.stop') : t('agent.send')"

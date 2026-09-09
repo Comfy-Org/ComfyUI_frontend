@@ -5247,6 +5247,7 @@
     "addPromptToSend": "Add a prompt to send",
     "send": "Send",
     "stop": "Stop",
+    "stopHint": "Click or enter ↵ to stop",
     "thinking": "Thinking...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",

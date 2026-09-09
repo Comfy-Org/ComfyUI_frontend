@@ -162,6 +162,22 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('explains click or Enter on the Stop button tooltip while running', async () => {
+    mount({ streaming: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    await userEvent.hover(stop)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Click or enter ↵ to stop')
+  })
+
+  it('emits stop on Enter while submitting', async () => {
+    const { emitted } = mount({ submitting: true })
+    await userEvent.type(screen.getByRole('textbox'), 'hello{Enter}')
+    expect(emitted().stop).toHaveLength(1)
+    expect(emitted().send).toBeUndefined()
+  })
+
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
