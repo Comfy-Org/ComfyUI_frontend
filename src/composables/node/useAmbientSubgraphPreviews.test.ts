@@ -23,7 +23,7 @@ type MockNodeOutputStore = Pick<
   | 'getNodeImageUrlsByExecutionId'
 >
 
-vi.mock('@/stores/nodeOutputStore', () => {
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => {
   // Reused (keyed by `NodeExecutionId` strings, not `NodeLocatorId`s) as the
   // backing store for `getNodePreviewImagesByExecutionId` below, so seeding
   // it stays a plain reactive write — see "Mocking Composables with Reactive

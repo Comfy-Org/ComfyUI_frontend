@@ -11,39 +11,47 @@ import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-const initialMock = () =>
-  reactive({
+const initialImage = (): { src: string } | null => ({
+  src: 'https://example.com/base.png'
+})
+
+const initialMock = () => {
+  return reactive({
     maskOpacity: 0.8,
     maskBlendMode: MaskBlendMode.Black,
-    activeLayer: 'mask' as 'mask' | 'rgb',
+    activeLayer: 'mask',
     currentTool: Tools.MaskPen,
-    image: { src: 'https://example.com/base.png' } as { src: string } | null,
+    image: initialImage(),
     maskCanvas: null as HTMLCanvasElement | null,
     rgbCanvas: null as HTMLCanvasElement | null,
     imgCanvas: null as HTMLCanvasElement | null,
     setMaskOpacity: vi.fn()
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
 const mockSetActiveLayer = vi.fn()
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-vi.mock('@/composables/maskeditor/useCanvasManager', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useCanvasManager'), () => ({
   useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
 }))
 
-vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
-  default: {
-    name: 'SliderControlStub',
-    props: ['label', 'min', 'max', 'step', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/SliderControl.vue'),
+  () => ({
+    default: {
+      name: 'SliderControlStub',
+      props: ['label', 'min', 'max', 'step', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

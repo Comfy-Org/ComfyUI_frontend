@@ -1,5 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
+import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -10,10 +12,8 @@ import type {
 } from '@/stores/maskEditorDataStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 // Private layer filename functions
 interface ImageLayerFilenames {
@@ -40,7 +40,7 @@ export function useMaskEditorSaver() {
   const nodeOutputStore = useNodeOutputStore()
 
   const save = async (): Promise<void> => {
-    const sourceNode = dataStore.sourceNode as LGraphNode
+    const sourceNode = dataStore.sourceNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
@@ -247,7 +247,7 @@ export function useMaskEditorSaver() {
       )
     }
 
-    if (!data?.name) {
+    if (!data.name) {
       throw new Error(
         `Upload response missing 'name' for ${layer.ref.filename}`
       )
@@ -277,34 +277,24 @@ export function useMaskEditorSaver() {
     node: LGraphNode,
     outputData: EditorOutputData
   ): void {
+    if (!node.graph) return
+
     const mainRef = outputData.paintedMaskedImage.ref
 
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      const widgetValue =
-        mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-
-      imageWidget.value = widgetValue
-
-      if (node.properties) {
-        node.properties['image'] = widgetValue
-      }
-
-      if (node.widgets_values && node.widgets) {
-        const widgetIndex = node.widgets.indexOf(imageWidget)
-        if (widgetIndex >= 0) {
-          node.widgets_values[widgetIndex] = widgetValue
-        }
-      }
-    }
+    writeImageWidgetValue(
+      node,
+      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+    )
 
     node.imgs = undefined
-    const annotatedPath = createAnnotatedPath(mainRef.filename, {
-      subfolder: mainRef.subfolder,
-      rootFolder: isResultItemType(mainRef.type) ? mainRef.type : undefined
-    })
-    nodeOutputStore.setNodeOutputs(node, annotatedPath, { folder: 'input' })
-    node.graph?.setDirtyCanvas(true)
+    nodeOutputStore.replaceNodeOutputImages(node, [
+      {
+        filename: mainRef.filename,
+        subfolder: mainRef.subfolder,
+        type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
+      }
+    ])
+    node.graph.setDirtyCanvas(true)
   }
 
   function loadImageFromUrl(url: string): Promise<HTMLImageElement> {

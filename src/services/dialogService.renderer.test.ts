@@ -7,23 +7,23 @@ import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: { value: true },
     isTeamPlan: { value: false },
@@ -31,6 +31,17 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     type: { value: 'legacy' }
   })
 }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: { value: true },
+      canSubscribeSelfServe: { value: false },
+      isReady: { value: true }
+    })
+  })
+)
 
 import { useDialogService } from '@/services/dialogService'
 

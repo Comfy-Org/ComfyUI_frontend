@@ -1,5 +1,3 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
@@ -9,13 +7,14 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia({ stubActions: false }))
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
 
-const { addNodeInput } = useLitegraphService()
+let addNodeInput: ReturnType<typeof useLitegraphService>['addNodeInput']
+beforeEach(() => {
+  ;({ addNodeInput } = useLitegraphService())
+})
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
@@ -141,6 +140,30 @@ describe('Dynamic Combos', () => {
       link,
       node.inputs[1]
     )
+  })
+  test('Restoring serialised state preserves the saved node height', () => {
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.widgets[0].value = '1'
+    node.setSize([node.size[0], 500])
+    const data = node.serialize()
+
+    const restored = testNode()
+    addDynamicCombo(restored, [['INT'], ['INT', 'STRING']])
+    restored.configure(data)
+
+    expect(restored.widgets[0].value).toBe('1')
+    expect(restored.widgets.length).toBe(3)
+    expect(restored.size[1]).toBe(500)
+  })
+  test('Interactive combo selection still refits the node height', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.setSize([node.size[0], 500])
+    node.widgets[0].value = '1'
+    node.widgets[0].callback?.('1')
+    expect(node.size[1]).toBeLessThan(500)
   })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
@@ -358,7 +381,7 @@ describe('Autogrow', () => {
     const serialized = graph.serialize()
     graph.clear()
     graph.configure(serialized)
-    const newNode = graph.nodes[0]!
+    const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
       '0.a0',

@@ -9,17 +9,20 @@ export function toNodeId(value: ToNodeIdInput): NodeId {
 }
 
 export function compareNodeIds(left: NodeId, right: NodeId): number {
-  const leftNumber = Number(left)
-  const rightNumber = Number(right)
-  const leftIsNumber = Number.isFinite(leftNumber)
-  const rightIsNumber = Number.isFinite(rightNumber)
+  const integerPattern = /^[+-]?\d+$/
+  const leftInteger = integerPattern.test(left) ? BigInt(left) : undefined
+  const rightInteger = integerPattern.test(right) ? BigInt(right) : undefined
   const lexicalOrder = left < right ? -1 : left > right ? 1 : 0
 
-  if (leftIsNumber && rightIsNumber) {
-    return leftNumber - rightNumber || lexicalOrder
+  if (leftInteger !== undefined && rightInteger !== undefined) {
+    return leftInteger < rightInteger
+      ? -1
+      : leftInteger > rightInteger
+        ? 1
+        : lexicalOrder
   }
-  if (leftIsNumber) return -1
-  if (rightIsNumber) return 1
+  if (leftInteger !== undefined) return -1
+  if (rightInteger !== undefined) return 1
   return lexicalOrder
 }
 

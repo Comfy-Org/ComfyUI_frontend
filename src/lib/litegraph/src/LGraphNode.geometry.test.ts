@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import type { Rect } from './interfaces'
@@ -11,7 +9,6 @@ import { toNodeId } from '@/types/nodeId'
 
 describe('layout geometry projection', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
   })
 
@@ -86,6 +83,21 @@ describe('layout geometry projection', () => {
     })
   })
 
+  test('keeps detached setPos and setSize writes local', () => {
+    const { graph, node } = nodeWithStoredBounds(30, 40)
+    const graphId = graph.rootGraph.id
+    const nodeId = node.id
+    graph.remove(node)
+
+    node.setPos(70, 90)
+    node.setSize([320, 180])
+
+    expect([...node.pos]).toEqual([70, 90])
+    expect([...node.size]).toEqual([320, 180])
+    expect(layoutStore.getNodeLayout(graphId, nodeId)).toBeNull()
+    expect(graph.getNodeById(nodeId)).toBeNull()
+  })
+
   test('refreshes stable views before indexed mutations', () => {
     const { graph, node } = nodeWithStoredBounds(30, 40, true)
     const pos = node.pos
@@ -121,6 +133,23 @@ describe('layout geometry projection', () => {
     expect(node.size).toBe(size)
     expect(node._pos).toBe(posBuffer)
     expect(node._size).toBe(sizeBuffer)
+  })
+
+  test('reads stored geometry once per layout revision', () => {
+    const { graph, node } = nodeWithStoredBounds(30, 40)
+    void node.renderingSize
+    const readNodeRect = vi.spyOn(layoutStore, 'readNodeRect')
+
+    void node.pos[0]
+    void node.size[0]
+    void node.renderingSize[0]
+    expect(readNodeRect).not.toHaveBeenCalled()
+
+    updateBounds(graph, node, 50, 60)
+    expect([...node.pos]).toEqual([50, 60])
+    expect([...node.size]).toEqual([200, 80])
+    expect([...node.renderingSize]).toEqual([200, 80])
+    expect(readNodeRect).toHaveBeenCalledOnce()
   })
 
   test('preserves stored size when assigning position', () => {

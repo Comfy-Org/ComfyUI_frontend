@@ -113,8 +113,8 @@ test.describe(
         ).app.graph
         const host = graph?.nodes.find((node) => node.title === 'Host A')
         return {
-          exposed: (host?.properties?.previewExposures ?? []).map((entry) =>
-            String(entry.sourceNodeId)
+          exposed: (host?.properties?.previewExposures ?? []).map(
+            (entry) => entry.sourceNodeId
           ),
           interior: (host?.subgraph?.nodes ?? []).map((node) => String(node.id))
         }

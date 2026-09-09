@@ -24,7 +24,7 @@ const mockCustomerEventsService = vi.hoisted(() => ({
   isLoading: { value: false }
 }))
 
-vi.mock('@/services/customerEventsService', () => ({
+vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
   useCustomerEventsService: () => mockCustomerEventsService,
   EventType: {
     CREDIT_ADDED: 'credit_added',
@@ -35,33 +35,43 @@ vi.mock('@/services/customerEventsService', () => ({
 }))
 
 const mockTelemetry = vi.hoisted(() => ({
-  checkForCompletedTopup: vi.fn()
+  trackApiCreditTopupSucceeded: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mockTelemetry
+}))
+
+const mockPendingTopup = vi.hoisted(() => ({
+  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+}))
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
+  usePendingTopup: () => mockPendingTopup
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: false
 }))
-vi.mock('@/composables/billing/useBillingRouting', async () => {
-  const { ref } = await import('vue')
-  const shouldUseWorkspaceBilling = ref(false)
-  Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
-    get: () => shouldUseWorkspaceBilling.value,
-    set: (value: boolean) => {
-      shouldUseWorkspaceBilling.value = value
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingRouting'),
+  async () => {
+    const { ref } = await import('vue')
+    const shouldUseWorkspaceBilling = ref(false)
+    Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
+      get: () => shouldUseWorkspaceBilling.value,
+      set: (value: boolean) => {
+        shouldUseWorkspaceBilling.value = value
+      }
+    })
+    return {
+      useBillingRouting: () => ({ shouldUseWorkspaceBilling })
     }
-  })
-  return {
-    useBillingRouting: () => ({ shouldUseWorkspaceBilling })
   }
-})
+)
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingEvents: vi.fn()
 }))
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi
 }))
 
@@ -177,7 +187,7 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
       (event: AuditLog) => {
         const { amount, api_name, model, ...otherParams } =
-          (event.params as Record<string, unknown>) ?? {}
+          event.params as Record<string, unknown>
         return Object.keys(otherParams).length > 0
       }
     )
@@ -423,6 +433,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
         new Promise((resolve) => {
@@ -458,10 +469,22 @@ describe('UsageLogsTable', () => {
       resolveLegacy(legacyResponse)
 
       await waitFor(() => {
-        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
+        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
+    })
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
     })
   })
 

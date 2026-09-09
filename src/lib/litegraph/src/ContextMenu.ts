@@ -71,9 +71,8 @@ export class ContextMenu<TValue = unknown> {
    */
   constructor(
     values: readonly (string | IContextMenuValue<TValue> | null)[],
-    options: IContextMenuOptions<TValue>
+    options: IContextMenuOptions<TValue> = {}
   ) {
-    options ||= {}
     this.options = options
 
     // to link a menu with its parent
@@ -87,7 +86,7 @@ export class ContextMenu<TValue = unknown> {
         this.parentMenu.lock = true
         this.parentMenu.current_submenu = this
       }
-      if (parent.options?.className === 'dark') {
+      if (parent.options.className === 'dark') {
         options.className = 'dark'
       }
     }
@@ -240,10 +239,8 @@ export class ContextMenu<TValue = unknown> {
   addItem(
     name: string | null,
     value: string | IContextMenuValue<TValue> | null,
-    options: IContextMenuOptions<TValue>
+    options: IContextMenuOptions<TValue> = {}
   ): HTMLElement {
-    options ||= {}
-
     const element: ContextMenuDivElement<TValue> = document.createElement('div')
     element.className = 'litemenu-entry submenu'
 
@@ -252,17 +249,17 @@ export class ContextMenu<TValue = unknown> {
     if (value === null) {
       element.classList.add('separator')
     } else {
-      const label = name === null ? '' : String(name)
+      const label = name ?? ''
       if (typeof value === 'string') {
         element.textContent = label
       } else {
         // Use innerHTML for content that contains HTML tags, textContent otherwise
         const hasHtmlContent =
-          value?.content !== undefined && /<[a-z][\s\S]*>/i.test(value.content)
+          value.content !== undefined && /<[a-z][\s\S]*>/i.test(value.content)
         if (hasHtmlContent) {
           element.innerHTML = sanitizeMenuHTML(value.content!)
         } else {
-          element.textContent = value?.title ?? label
+          element.textContent = value.title ?? label
         }
 
         if (value.disabled) {
@@ -297,10 +294,8 @@ export class ContextMenu<TValue = unknown> {
       const entries = this.root.querySelectorAll(
         'div.litemenu-entry.has_submenu'
       )
-      if (entries) {
-        for (const entry of entries) {
-          entry.setAttribute('aria-expanded', 'false')
-        }
+      for (const entry of entries) {
+        entry.setAttribute('aria-expanded', 'false')
       }
       element.setAttribute('aria-expanded', 'true')
     }
@@ -323,8 +318,8 @@ export class ContextMenu<TValue = unknown> {
 
       that.current_submenu?.close(e)
       if (
-        (value as IContextMenuValue)?.has_submenu ||
-        (value as IContextMenuValue)?.submenu
+        (value as IContextMenuValue).has_submenu ||
+        (value as IContextMenuValue).submenu
       ) {
         setAriaExpanded()
       }
@@ -361,8 +356,6 @@ export class ContextMenu<TValue = unknown> {
           if (r === true) close_parent = false
         }
         if (value.submenu) {
-          if (!value.submenu.options) throw 'ContextMenu submenu needs options'
-
           new that.constructor(value.submenu.options, {
             callback: value.submenu.callback,
             event: e,
@@ -390,10 +383,7 @@ export class ContextMenu<TValue = unknown> {
       this.parentMenu.current_submenu = undefined
       if (e === undefined) {
         this.parentMenu.close()
-      } else if (
-        e &&
-        !ContextMenu.isCursorOverElement(e, this.parentMenu.root)
-      ) {
+      } else if (!ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
         ContextMenu.trigger(
           this.parentMenu.root,
           `${LiteGraph.pointerevents_method}leave`,
@@ -413,7 +403,7 @@ export class ContextMenu<TValue = unknown> {
   ): CustomEvent {
     const evt = document.createEvent('CustomEvent')
     evt.initCustomEvent(event_name, true, true, params)
-    if (element.dispatchEvent) element.dispatchEvent(evt)
+    element.dispatchEvent(evt)
     // else nothing seems bound here so nothing to do
     return evt
   }
@@ -437,8 +427,6 @@ export class ContextMenu<TValue = unknown> {
     const left = event.clientX
     const top = event.clientY
     const rect = element.getBoundingClientRect()
-    if (!rect) return false
-
     if (
       top > rect.top &&
       top < rect.top + rect.height &&

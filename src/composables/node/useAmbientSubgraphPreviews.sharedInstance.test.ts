@@ -22,18 +22,21 @@ import { useAmbientSubgraphPreviews } from './useAmbientSubgraphPreviews'
 // collapse — two instances of the same subgraph definition resolve to the
 // same `NodeLocatorId` — rather than a mock that pretends instances stay
 // distinct at the storage layer.
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) =>
-      createNodeLocatorId(null, toNodeId(id))
-    ),
-    nodeToNodeLocatorId: vi.fn((node: LGraphNodeType) =>
-      isSubgraph(node.graph)
-        ? createNodeLocatorId(node.graph.id, node.id)
-        : createNodeLocatorId(null, node.id)
-    )
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      nodeIdToNodeLocatorId: vi.fn((id: string | number) =>
+        createNodeLocatorId(null, toNodeId(id))
+      ),
+      nodeToNodeLocatorId: vi.fn((node: LGraphNodeType) =>
+        isSubgraph(node.graph)
+          ? createNodeLocatorId(node.graph.id, node.id)
+          : createNodeLocatorId(null, node.id)
+      )
+    }))
+  })
+)
 
 describe('useAmbientSubgraphPreviews with a shared subgraph definition', () => {
   beforeEach(() => {

@@ -11,15 +11,19 @@ const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
   })
 )
 
-vi.mock('@stripe/stripe-js/pure', () => ({
+vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
 }))
 
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
+const mockRefreshCapabilities = vi.fn()
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
@@ -27,7 +31,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      refresh: mockRefreshCapabilities
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
   })
@@ -36,26 +49,26 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 const mockToastAdd = vi.fn()
 const mockToastRemove = vi.fn()
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     add: mockToastAdd,
     remove: mockToastRemove
   })
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingOpStatus: vi.fn()
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
 const mockSettingsDialogShow = vi.fn()
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: () => ({
     show: mockSettingsDialogShow,
     hide: vi.fn(),
@@ -65,7 +78,7 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 const mockCloseDialog = vi.fn()
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
@@ -74,7 +87,7 @@ vi.mock('@/stores/dialogStore', () => ({
 const mockTrackBillingEvent = vi.fn()
 const mockTrackMonthlySubscriptionSucceeded = vi.fn()
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent,
     trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
@@ -84,14 +97,17 @@ vi.mock('@/platform/telemetry', () => ({
 const mockUpdateActiveWorkspace = vi.fn()
 const mockActiveWorkspaceId = ref('workspace-1')
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
-    updateActiveWorkspace: mockUpdateActiveWorkspace
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return mockActiveWorkspaceId.value
+      },
+      updateActiveWorkspace: mockUpdateActiveWorkspace
+    })
   })
-}))
+)
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
@@ -99,6 +115,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
     mockFeatureFlags.embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
@@ -347,7 +364,6 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString()
       })
-
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
@@ -356,6 +372,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
+      expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
 
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(mockFetchStatus).not.toHaveBeenCalled()
@@ -401,6 +418,22 @@ describe('billingOperationStore', () => {
 
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+    })
+
+    it('opens Credits settings after a polled local topup succeeds', async () => {
+      mockDistributionTypes.isCloud = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -1047,7 +1080,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-3ds')).toMatchObject({
         status: 'pending',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         isAuthenticating: false,
         errorMessage: 'Stripe.js blocked'
       })
@@ -1079,7 +1112,7 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-3ds')).toMatchObject({
         status: 'pending',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         isAuthenticating: false,
         errorMessage: 'Challenge was closed'
       })
@@ -1133,12 +1166,94 @@ describe('billingOperationStore', () => {
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
     })
 
-    it('retries explicitly and resumes polling after verification succeeds', async () => {
+    it('reports a resume that returns an unmoved intent as failed, not processing', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'requires_payment_method' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockHandleNextAction).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: false,
+        isAuthenticating: false,
+        errorMessage: 'billingOperation.authenticationFailedDetail'
+      })
+    })
+
+    it('treats an unlisted intent status as advanced rather than failed', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'requires_confirmation' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockHandleNextAction).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'processing',
+        errorMessage: null
+      })
+    })
+
+    it('reports a resume that canceled the intent as failed', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-3ds',
+        status: 'pending',
+        authentication_state: 'requires_action',
+        payment_intent_client_secret: 'pi_secret_current',
+        started_at: new Date().toISOString()
+      })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'canceled' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        autoHandleRequiresAction: true,
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        status: 'pending',
+        authenticationState: 'failed_retryable',
+        errorMessage: 'billingOperation.authenticationFailedDetail'
+      })
+    })
+
+    it('resumes a live challenge explicitly and polls on after verification succeeds', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus)
         .mockResolvedValueOnce({
           id: 'op-3ds',
           status: 'pending',
-          authentication_state: 'failed_retryable',
+          authentication_state: 'requires_action',
           payment_intent_client_secret: 'pi_secret_current',
           started_at: new Date().toISOString()
         })
@@ -1162,7 +1277,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(store.getOperation('op-3ds')?.authenticationState).toBe(
-        'failed_retryable'
+        'requires_action'
       )
       await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
         true
@@ -1183,7 +1298,7 @@ describe('billingOperationStore', () => {
       )
     })
 
-    it('shows a safe declined-card detail while preserving authentication retry', async () => {
+    it('shows a safe declined-card detail without offering to resume the challenge', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-declined',
         status: 'pending',
@@ -1203,20 +1318,17 @@ describe('billingOperationStore', () => {
         opId: 'op-declined',
         status: 'pending',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'billingOperation.paymentDeclinedDetail'
       })
-      expect(mockHandleNextAction).not.toHaveBeenCalled()
 
       await expect(
         store.retryPaymentAuthentication('op-declined')
-      ).resolves.toBe(true)
-      expect(mockHandleNextAction).toHaveBeenCalledWith({
-        clientSecret: 'pi_secret_current'
-      })
+      ).resolves.toBe(false)
+      expect(mockHandleNextAction).not.toHaveBeenCalled()
     })
 
-    it('keeps authentication declines actionable without retrying automatically', async () => {
+    it('keeps authentication declines visible without retrying automatically', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-authentication-failed',
         status: 'pending',
@@ -1234,17 +1346,17 @@ describe('billingOperationStore', () => {
 
       expect(store.subscriptionActionOperation).toMatchObject({
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'billingOperation.authenticationFailedDetail'
       })
       expect(mockHandleNextAction).not.toHaveBeenCalled()
     })
 
-    it('remains retryable after retry failure and never relaunches Stripe automatically', async () => {
+    it('stops offering the challenge once resuming it fails, and never relaunches Stripe automatically', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-3ds',
         status: 'pending',
-        authentication_state: 'failed_retryable',
+        authentication_state: 'requires_action',
         payment_intent_client_secret: 'pi_secret_current',
         started_at: new Date().toISOString()
       })
@@ -1261,14 +1373,17 @@ describe('billingOperationStore', () => {
 
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'Verification failed again'
       })
+      await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
+        false
+      )
       await vi.advanceTimersByTimeAsync(60_000)
       expect(mockHandleNextAction).toHaveBeenCalledOnce()
       expect(store.getOperation('op-3ds')).toMatchObject({
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true,
+        canRetryAuthentication: false,
         errorMessage: 'Verification failed again'
       })
     })
@@ -1289,7 +1404,7 @@ describe('billingOperationStore', () => {
       expect(store.subscriptionActionOperation).toMatchObject({
         opId: 'op-recovered',
         authenticationState: 'failed_retryable',
-        canRetryAuthentication: true
+        canRetryAuthentication: false
       })
       expect(mockHandleNextAction).not.toHaveBeenCalled()
     })
@@ -1338,6 +1453,50 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(60_000)
       expect((await terminal).status).toBe('succeeded')
+    })
+
+    it('offers a genuinely new challenge to resume, even after a prior one failed', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'failed_retryable',
+          payment_intent_client_secret: 'pi_secret_old',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-3ds',
+          status: 'pending',
+          authentication_state: 'requires_action',
+          payment_intent_client_secret: 'pi_secret_new',
+          started_at: new Date().toISOString()
+        })
+      mockHandleNextAction.mockResolvedValue({
+        paymentIntent: { status: 'processing' }
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-3ds', 'subscription', {
+        suppressProcessingToast: true
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'failed_retryable',
+        canRetryAuthentication: false
+      })
+
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(store.getOperation('op-3ds')).toMatchObject({
+        authenticationState: 'requires_action',
+        canRetryAuthentication: true
+      })
+
+      await expect(store.retryPaymentAuthentication('op-3ds')).resolves.toBe(
+        true
+      )
+      expect(mockHandleNextAction).toHaveBeenCalledWith({
+        clientSecret: 'pi_secret_new'
+      })
     })
 
     it('notices a payment completed outside the tab while parked on verification', async () => {
@@ -1592,6 +1751,26 @@ describe('billingOperationStore', () => {
         failure_category: 'reconciliation_needed',
         duration_ms: 0
       })
+    })
+
+    it('terminates polling for reconciliation_needed while the embedded flag is off', async () => {
+      mockFeatureFlags.embeddedCheckoutEnabled = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-reconcile-legacy',
+        status: 'reconciliation_needed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation(
+        'op-reconcile-legacy',
+        'subscription'
+      )
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect((await terminal).status).toBe('reconciliation_needed')
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
     })
 
     it('handles a redacted retryable status without a capability', async () => {
@@ -2345,6 +2524,59 @@ describe('billingOperationStore', () => {
     })
   })
 
+  describe('dismissOperation', () => {
+    it('hides a failed topup from the selectors without stopping it', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.topupActionOperation).toMatchObject({ opId: 'op-1' })
+
+      store.dismissOperation('op-1')
+
+      expect(store.topupActionOperation).toBeUndefined()
+      expect(store.isAddingCredits).toBe(false)
+      expect(store.operations.size).toBe(1)
+      expect(store.getOperation('op-1')).toMatchObject({
+        status: 'pending',
+        dismissed: true
+      })
+    })
+
+    it('still resolves normally if the dismissed operation later succeeds', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-1',
+          status: 'pending',
+          authentication_state: 'failed_retryable',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-1',
+          status: 'succeeded',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      store.dismissOperation('op-1')
+      expect(store.topupActionOperation).toBeUndefined()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect((await terminal).status).toBe('succeeded')
+    })
+  })
+
   describe('multiple operations', () => {
     it('can track multiple operations concurrently', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
@@ -2460,6 +2692,21 @@ describe('billingOperationStore', () => {
 
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
+
+      expect(store.isAddingCredits).toBe(false)
+    })
+
+    it('returns false for a topup parked on a failed challenge, so a fresh top-up is not locked out', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        authentication_state: 'failed_retryable',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
 
       expect(store.isAddingCredits).toBe(false)
     })

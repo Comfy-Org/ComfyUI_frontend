@@ -11,12 +11,19 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
 // Mock downloadFile to avoid DOM errors
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 
-vi.mock('@/services/hdrViewerService', () => ({
+vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
+}))
+
+const mockTrackImageLoadFailed = vi.fn()
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({
+    trackImageLoadFailed: mockTrackImageLoadFailed
+  })
 }))
 
 const i18n = createI18n({
@@ -168,6 +175,9 @@ describe('ImagePreview', () => {
     expect(
       screen.queryByRole('button', { name: 'Download image' })
     ).not.toBeInTheDocument()
+    expect(mockTrackImageLoadFailed).toHaveBeenCalledExactlyOnceWith({
+      source: 'node_image_preview'
+    })
   })
 
   it('handles download button click', async () => {

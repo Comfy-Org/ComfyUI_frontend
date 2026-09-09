@@ -7,31 +7,35 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 const { downloadAssets } = vi.hoisted(() => ({
   downloadAssets: vi.fn()
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({ isAssetDeleting: () => false })
 }))
 
-vi.mock('../composables/useMediaAssetActions', () => ({
+vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => ({
-    allOutputs: [
-      {
-        filename: 'a.png',
-        subfolder: '',
-        type: 'output',
-        display_name: 'Display A'
-      }
-    ]
+vi.mock<unknown>(
+  import('@/platform/assets/schemas/assetMetadataSchema'),
+  () => ({
+    getOutputAssetMetadata: () => ({
+      allOutputs: [
+        {
+          filename: 'a.png',
+          subfolder: '',
+          type: 'output',
+          display_name: 'Display A'
+        }
+      ]
+    })
   })
-}))
+)
 
 const asset: AssetItem = fromPartial({
   id: 'a',
@@ -106,14 +110,31 @@ describe('MediaAssetCard', () => {
       const { event, add } = dispatchDragStart(container)
 
       expect(event.defaultPrevented).toBe(false)
-      expect(add).toHaveBeenCalledWith(
+      expect(add).toHaveBeenNthCalledWith(
+        1,
         JSON.stringify({
           filename: 'a.png',
           subfolder: '',
           type: 'output',
-          display_name: 'Display A'
+          display_name: 'Display A',
+          // The agent composer resolves an attachment from these three.
+          attachment_ref: 'a.png',
+          media_kind: 'image',
+          preview_url: 'http://localhost:3000/api/preview.png'
         }),
-        expect.any(String)
+        MIME_ASSET_INFO
+      )
+    })
+
+    it('offers the preview URL as a uri-list flavour for external drop targets', () => {
+      const { container } = renderCard()
+
+      const { add } = dispatchDragStart(container)
+
+      expect(add).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:3000/api/preview.png',
+        'text/uri-list'
       )
     })
   })

@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISlotType,
@@ -7,6 +7,7 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   BaseWidget,
   LGraphNode,
@@ -42,10 +43,7 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
@@ -122,7 +120,6 @@ function writePromotedWidgetValue(
   value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 
@@ -147,6 +144,47 @@ describe('SubgraphWidgetPromotion', () => {
         type: 'number',
         value: 42
       })
+    })
+
+    it('does not persist source connection suppression on the promoted widget', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget('Test Node')
+
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const input = promotedInputs(subgraphNode).at(0)
+      if (!input) throw new Error('Missing promoted input')
+
+      expect(widget.visibility.suppression.byConnection).toBe(true)
+      expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
+        {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          suppression: { byExtension: false, byConnection: false }
+        }
+      )
+    })
+
+    it('preserves extension-owned visible state without promoting connection suppression', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget('Test Node')
+      widget.options.hidden = false
+
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const input = promotedInputs(subgraphNode).at(0)
+      if (!input) throw new Error('Missing promoted input')
+      const promotedWidget = promotedWidgetStateByName(subgraphNode, 'value')
+
+      expect(widget.visibility.suppression.byConnection).toBe(true)
+      expect(useWidgetValueStore().getWidgetVisibility(input.widgetId)).toEqual(
+        {
+          surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+          suppression: { byExtension: false, byConnection: false }
+        }
+      )
+      expect(promotedWidget.options.hidden).toBe(false)
     })
 
     it('resolves nested promoted widgets before the inner host input is hydrated', () => {
@@ -194,7 +232,6 @@ describe('SubgraphWidgetPromotion', () => {
         }
       }
       LiteGraph.registerNodeType(sourceType, SourceNode)
-      onTestFinished(() => LiteGraph.unregisterNodeType(sourceType))
       registerTestSubgraphNodeTypes(rootGraph)
 
       const source = LiteGraph.createNode(sourceType)
@@ -411,8 +448,12 @@ describe('SubgraphWidgetPromotion', () => {
         inputs: [{ name: 'value', type: 'number' }]
       })
 
-      const { node: first } = createNodeWithWidget('First', 'number', 42)
-      const { node: second } = createNodeWithWidget('Second', 'number', 42)
+      const { node: first } = createNodeWithWidget('First', 'number', 13)
+      const { node: second, widget: secondWidget } = createNodeWithWidget(
+        'Second',
+        'number',
+        27
+      )
       subgraph.add(first)
       subgraph.add(second)
       subgraph.inputNode.slots[0].connect(first.inputs[0], first)
@@ -421,12 +462,28 @@ describe('SubgraphWidgetPromotion', () => {
       const subgraphNode = createTestSubgraphNode(subgraph)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+      // linkIds resolve in connection order, so `first` seeds the store.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
+      const repromotions: IBaseWidget[] = []
+      subgraph.events.addEventListener('widget-promoted', (e) => {
+        repromotions.push(e.detail.widget)
+      })
+
+      // Disconnect the interior widget that currently backs the promotion.
+      // The input must re-resolve to the remaining interior widget — observable
+      // as a repromotion event carrying that widget — not merely survive as a
+      // stale binding to the removed source.
       first.disconnectInput(0, true)
 
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraphNode.widgets).toHaveLength(1)
+      expect(repromotions).toStrictEqual([secondWidget])
+      // Re-resolution deliberately keeps the store-backed value (see
+      // widgetValueStore.registerWidget): rebinding must not clobber the
+      // promoted value the user may have edited.
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(13)
 
       second.disconnectInput(0, true)
 
