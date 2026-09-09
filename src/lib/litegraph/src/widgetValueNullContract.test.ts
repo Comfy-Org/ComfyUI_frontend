@@ -1,10 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
@@ -49,7 +48,7 @@ function makeGraphWithWidget(value: TWidgetValue): {
 
 function roundTripGraphWithoutLiveWidgetState(graph: LGraph): LGraph {
   const text = JSON.stringify(graph.serialize())
-  setActivePinia(createTestingPinia({ stubActions: false }))
+  useWidgetValueStore().clearGraph(graph.id)
   const reloaded = new LGraph()
   reloaded.configure(JSON.parse(text))
   return reloaded
@@ -66,7 +65,6 @@ describe('widget value null contract', () => {
   const origNamedValuesRestore = LiteGraph.namedValuesRestore
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     registerNullContractNode()
   })
 
