@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
   captureAuthFailed: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   const settled = ref(true)
@@ -26,7 +26,7 @@ vi.mock('../../scripts/posthog', async () => {
   }
 })
 
-vi.mock('../../config/workshop-firebase', () => ({
+vi.mock(import('../../config/workshop-firebase'), () => ({
   sendWorkshopPasswordReset: h.sendReset
 }))
 
@@ -111,13 +111,13 @@ describe('AuthForgotPassword', () => {
     )
   })
 
-  it("toasts the cloud app's line for an unregistered email, then still confirms and returns to login", async () => {
+  it('toasts a failed send, then still confirms and returns to login', async () => {
     h.sendReset.mockRejectedValue({
-      code: 'auth/user-not-found',
+      code: 'auth/too-many-requests',
       message: 'x'
     })
     render(AuthForgotPassword)
-    await typeEmail('ghost@example.com')
+    await typeEmail('user@example.com')
     await clickSend()
 
     expect(
@@ -128,9 +128,9 @@ describe('AuthForgotPassword', () => {
       'error',
       'success'
     ])
-    expect(toasts.value[0].detail).toContain('No account found with this email')
+    expect(toasts.value[0].detail).toContain('Too many login attempts')
     expect(h.captureAuthFailed).toHaveBeenCalledWith({
-      error_code: 'auth/user-not-found',
+      error_code: 'auth/too-many-requests',
       auth_action: 'password_reset'
     })
     await vi.advanceTimersByTimeAsync(3000)
