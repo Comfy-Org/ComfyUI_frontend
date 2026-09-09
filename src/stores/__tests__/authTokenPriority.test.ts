@@ -543,7 +543,9 @@ describe('auth token priority chain', () => {
     })
 
     it('getAuthToken resolves instead of throwing when the unified mint rejects outright', async () => {
-      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockRejectedValueOnce(new Error('mint request failed'))
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockRejectedValueOnce(
+        new Error('mint request failed')
+      )
       authStateCallback({ ...mockUser, uid: 'token-reject-user' })
       useWorkspaceAuthStore().unifiedToken = null
 
@@ -610,11 +612,15 @@ describe('auth token priority chain', () => {
       )
       authStateCallback({ ...mockUser, uid: 'concurrent-user' })
       useWorkspaceAuthStore().unifiedToken = null
-      expect(vi.mocked(useWorkspaceAuthStore().mintAtLogin)).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(1)
 
       const header1Promise = store.getAuthHeader()
       const header2Promise = store.getAuthHeader()
-      expect(vi.mocked(useWorkspaceAuthStore().mintAtLogin)).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(1)
 
       resolveMint(false)
       const [header1, header2] = await Promise.all([
@@ -628,26 +634,34 @@ describe('auth token priority chain', () => {
 
     it('retries the unified mint after a failed attempt but dedupes once it succeeds', async () => {
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
-      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValueOnce(false)
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValueOnce(
+        false
+      )
       authStateCallback({ ...mockUser, uid: 'retry-user' })
       useWorkspaceAuthStore().unifiedToken = null
 
       const header1 = await store.getAuthHeader()
 
       expect(header1).toEqual({ Authorization: 'Bearer firebase-token' })
-      expect(vi.mocked(useWorkspaceAuthStore().mintAtLogin)).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(1)
 
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValueOnce(true)
       useWorkspaceAuthStore().unifiedToken = 'retry-jwt'
       const header2 = await store.getAuthHeader()
 
       expect(header2).toEqual({ Authorization: 'Bearer retry-jwt' })
-      expect(vi.mocked(useWorkspaceAuthStore().mintAtLogin)).toHaveBeenCalledTimes(2)
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(2)
 
       const header3 = await store.getAuthHeader()
 
       expect(header3).toEqual({ Authorization: 'Bearer retry-jwt' })
-      expect(vi.mocked(useWorkspaceAuthStore().mintAtLogin)).toHaveBeenCalledTimes(2)
+      expect(
+        vi.mocked(useWorkspaceAuthStore().mintAtLogin)
+      ).toHaveBeenCalledTimes(2)
     })
 
     it('does not let a stale mint from a previous identity clobber the new identity', async () => {
@@ -682,7 +696,9 @@ describe('auth token priority chain', () => {
       const header = await headerPromise
 
       expect(header).toEqual({ Authorization: 'Bearer b-token' })
-      expect(vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext)).toHaveBeenCalledTimes(2)
+      expect(
+        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext)
+      ).toHaveBeenCalledTimes(2)
     })
 
     it('fails closed when an A-started getAuthHeader call outlives an A->B switch', async () => {
