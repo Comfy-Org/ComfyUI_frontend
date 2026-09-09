@@ -16,13 +16,21 @@ const mockFetchStatus = vi.fn()
 const mockManageSubscription = vi.fn<() => Promise<void>>()
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
 const mockRetryPaymentAuthentication = vi.fn()
+const mockDismissOperation = vi.fn((opId: string) => {
+  if (mockBillingOperationState.topupActionOperation?.value?.opId === opId) {
+    mockBillingOperationState.topupActionOperation.value = undefined
+  }
+  if (mockBillingOperationState.isAddingCredits) {
+    mockBillingOperationState.isAddingCredits.value = false
+  }
+})
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 const mockCloseDialog = vi.fn()
@@ -33,14 +41,14 @@ const mockCanTopUp = vi.hoisted(() => ({
 }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 const mockHasSavedPaymentMethod = vi.hoisted(() => ({
   ref: undefined as { value: boolean | null } | undefined
 }))
 
-vi.mock(
-  '@/platform/workspace/composables/useHasSavedPaymentMethod',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useHasSavedPaymentMethod'),
   async () => {
     const { ref } = await import('vue')
     mockHasSavedPaymentMethod.ref = ref<boolean | null>(null)
@@ -69,7 +77,7 @@ const mockBillingOperationState = vi.hoisted(() => ({
     | undefined
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchBalance: mockFetchBalance,
     fetchStatus: mockFetchStatus,
@@ -78,42 +86,52 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
-  const { ref } = await import('vue')
-  mockBillingOperationState.isAddingCredits = ref(false)
-  mockBillingOperationState.topupActionOperation = ref(undefined)
-  return {
-    useBillingOperationStore: () => ({
-      hasPendingOperations: true,
-      get isAddingCredits() {
-        return mockBillingOperationState.isAddingCredits?.value ?? false
-      },
-      get topupActionOperation() {
-        return mockBillingOperationState.topupActionOperation?.value
-      },
-      startOperation: mockStartOperation,
-      retryPaymentAuthentication: mockRetryPaymentAuthentication
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  async () => {
+    const { ref } = await import('vue')
+    mockBillingOperationState.isAddingCredits = ref(false)
+    mockBillingOperationState.topupActionOperation = ref(undefined)
+    return {
+      useBillingOperationStore: () => ({
+        hasPendingOperations: true,
+        get isAddingCredits() {
+          return mockBillingOperationState.isAddingCredits?.value ?? false
+        },
+        get topupActionOperation() {
+          return mockBillingOperationState.topupActionOperation?.value
+        },
+        startOperation: mockStartOperation,
+        retryPaymentAuthentication: mockRetryPaymentAuthentication,
+        dismissOperation: mockDismissOperation
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', async () => {
-  const { ref } = await import('vue')
-  mockCanTopUp.ref = ref(true)
-  return {
-    useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  async () => {
+    const { ref } = await import('vue')
+    mockCanTopUp.ref = ref(true)
+    return {
+      useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
+    }
   }
-})
+)
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: mockShowSettings })
-}))
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({ show: mockShowSettings })
+  })
+)
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
     trackBillingEvent: mockTrackBillingEvent
@@ -121,22 +139,25 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: () => 'https://docs.comfy.org',
     docsPaths: { partnerNodesPricing: '' }
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
+  })
+)
 
-vi.mock('@/base/credits/comfyCredits', () => ({
+vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
   usdToCredits: (usd: number) => usd
 }))
@@ -449,27 +470,89 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('retries failed payment authentication', async () => {
+  it('enters verification once permission resolves after an operation already exists', async () => {
+    setCanTopUp(false)
+    setTopupActionOperation({
+      opId: 'op-action',
+      status: 'pending',
+      actionUrl: 'https://verify.example/sensitive-token'
+    })
+
+    renderDialog()
+    expect(screen.getByText('Select amount')).toBeInTheDocument()
+
+    setCanTopUp(true)
+    await nextTick()
+
+    expect(screen.getByText('Verify your payment')).toBeInTheDocument()
+    expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
+  })
+
+  it('resumes a live challenge in page', async () => {
     renderDialog()
 
     setIsAddingCredits(true)
     setTopupActionOperation({
-      opId: 'op-retry',
+      opId: 'op-resume',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'requires_action',
+      canRetryAuthentication: true
+    })
+    await nextTick()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Complete verification' })
+    )
+    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-resume')
+  })
+
+  it('reports a failed challenge without offering to resume it', async () => {
+    renderDialog()
+
+    setTopupActionOperation({
+      opId: 'op-failed',
       status: 'pending',
       actionUrl: null,
       authenticationState: 'failed_retryable',
-      errorMessage: 'Your bank rejected the verification.',
-      canRetryAuthentication: true
+      errorMessage: 'Your bank rejected the verification.'
     })
     await nextTick()
 
     expect(
       screen.getByText('Your bank rejected the verification.')
     ).toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Retry verification' })
-    )
-    expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-retry')
+    expect(
+      screen.queryByRole('button', { name: 'Complete verification' })
+    ).not.toBeInTheDocument()
+    expect(mockRetryPaymentAuthentication).not.toHaveBeenCalled()
+  })
+
+  it('lets the customer start over after a failed challenge', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await nextTick()
+
+    setTopupActionOperation({
+      opId: 'op-1',
+      status: 'pending',
+      actionUrl: null,
+      authenticationState: 'failed_retryable',
+      errorMessage: 'Your bank rejected the verification.'
+    })
+    await nextTick()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }))
+    await nextTick()
+
+    expect(mockDismissOperation).toHaveBeenCalledWith('op-1')
+    expect(
+      screen.queryByText('Your bank rejected the verification.')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
   it('keeps a top-up locked when reconciliation needs support', () => {

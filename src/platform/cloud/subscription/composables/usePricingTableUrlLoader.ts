@@ -145,8 +145,10 @@ export function usePricingTableUrlLoader() {
     // The loader can run before the capability snapshot resolves; a
     // sales-managed workspace must not see the table through that gap.
     await initializeCapabilities()
+    const canManageSubscriptionAfterCapabilities: unknown =
+      permissions.value.canManageSubscription
     if (
-      !permissions.value.canManageSubscription ||
+      canManageSubscriptionAfterCapabilities !== true ||
       !canOpenPricingSurface.value
     ) {
       return
@@ -166,13 +168,17 @@ export function usePricingTableUrlLoader() {
           error
         )
       }
+
+      const canManageSubscriptionAfterPlans: unknown =
+        permissions.value.canManageSubscription
       if (
-        !permissions.value.canManageSubscription ||
+        canManageSubscriptionAfterPlans !== true ||
         !canOpenPricingSurface.value
       ) {
         return
       }
-      if (!teamCreditStops.value) {
+      const availableTeamCreditStops: unknown = teamCreditStops.value
+      if (!availableTeamCreditStops) {
         subscriptionDialog.showPricingTable({
           reason: 'deep_link',
           planMode: 'team'
@@ -209,7 +215,9 @@ export function usePricingTableUrlLoader() {
         : undefined
 
     if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
-    if (!permissions.value.canManageSubscription) return
+    const canManageSubscription: unknown =
+      permissions.value.canManageSubscription
+    if (canManageSubscription !== true) return
 
     subscriptionDialog.showPricingTable({
       reason: 'deep_link',

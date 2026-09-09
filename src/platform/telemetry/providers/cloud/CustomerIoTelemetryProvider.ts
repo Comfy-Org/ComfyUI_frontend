@@ -233,7 +233,7 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   private sendPageView(): void {
-    void this.analytics?.page()?.catch((error) => {
+    void Promise.resolve(this.analytics?.page()).catch((error) => {
       console.error('Failed to track Customer.io page view:', error)
     })
   }

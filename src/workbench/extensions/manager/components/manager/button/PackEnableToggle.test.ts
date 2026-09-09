@@ -11,13 +11,9 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-vi.mock('es-toolkit/compat', async () => {
-  const actual = await vi.importActual('es-toolkit/compat')
-  return {
-    ...actual,
-    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
-  }
-})
+vi.mock(import('es-toolkit/compat'), () => ({
+  debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
+}))
 
 const {
   acknowledgmentState,
@@ -37,8 +33,9 @@ const {
   mockShowNodeConflictDialog: vi.fn()
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+
   () => ({
     useConflictAcknowledgment: () => ({
       acknowledgmentState,
@@ -47,8 +44,9 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useImportFailedDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useImportFailedDetection'),
+
   () => ({
     useImportFailedDetection: () => ({
       showImportFailedDialog: mockShowImportFailedDialog
@@ -56,8 +54,9 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useNodeConflictDialog',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useNodeConflictDialog'),
+
   () => ({
     useNodeConflictDialog: () => ({ show: mockShowNodeConflictDialog })
   })
@@ -77,20 +76,28 @@ const mockEnablePack = vi.fn().mockResolvedValue(undefined)
 const mockDisablePack = vi.fn().mockResolvedValue(undefined)
 const mockGetConflictsForPackageByID = vi.fn()
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    isPackEnabled: mockIsPackEnabled,
-    enablePack: mockEnablePack,
-    disablePack: mockDisablePack,
-    installedPacks: {}
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
 
-vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
-  useConflictDetectionStore: vi.fn(() => ({
-    getConflictsForPackageByID: mockGetConflictsForPackageByID
-  }))
-}))
+  () => ({
+    useComfyManagerStore: vi.fn(() => ({
+      isPackEnabled: mockIsPackEnabled,
+      enablePack: mockEnablePack,
+      disablePack: mockDisablePack,
+      installedPacks: {}
+    }))
+  })
+)
+
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/conflictDetectionStore'),
+
+  () => ({
+    useConflictDetectionStore: vi.fn(() => ({
+      getConflictsForPackageByID: mockGetConflictsForPackageByID
+    }))
+  })
+)
 
 describe('PackEnableToggle', () => {
   const user = userEvent.setup()

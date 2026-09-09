@@ -75,37 +75,103 @@ export type WidgetTypeMap = {
 
 const toWidgetClass = instantiateClass
 
-function adoptConcreteWidget<C extends object>(widget: object, concrete: C): C {
+function collectDescriptors(value: object) {
+  const descriptors = new Map<PropertyKey, PropertyDescriptor>()
+  let current: object | null = value
+  while (current && current !== Object.prototype) {
+    for (const key of Reflect.ownKeys(current)) {
+      if (key === 'constructor' || descriptors.has(key)) continue
+      const descriptor = Object.getOwnPropertyDescriptor(current, key)
+      if (descriptor) descriptors.set(key, descriptor)
+    }
+    current = Object.getPrototypeOf(current) as object | null
+  }
+  return descriptors
+}
+
+function preserveHiddenFacade(
+  descriptors: Map<PropertyKey, PropertyDescriptor>,
+  foreignDescriptors: Map<PropertyKey, PropertyDescriptor>
+): void {
+  const concrete = descriptors.get('hidden')
+  const foreign = foreignDescriptors.get('hidden')
+  if (!concrete?.get || !concrete.set || !foreign || foreign.get || foreign.set)
+    return
+
+  descriptors.set('hidden', {
+    configurable: foreign.configurable,
+    enumerable: foreign.enumerable,
+    get: concrete.get,
+    set: concrete.set
+  })
+}
+
+function mergeDescriptor(
+  concrete: PropertyDescriptor | undefined,
+  foreign: PropertyDescriptor,
+  ownForeign: PropertyDescriptor | undefined
+): PropertyDescriptor {
+  if (!concrete) return foreign
+
+  const concreteIsGetterOnly = concrete.get && !concrete.set
+  if (concreteIsGetterOnly && foreign.set) {
+    return { ...foreign, get: foreign.get ?? concrete.get }
+  }
+  if (concreteIsGetterOnly && ownForeign?.writable) return foreign
+  if (!foreign.get && !foreign.set) return concrete
+  if (!concrete.get || !concrete.set) return concrete
+
+  return {
+    configurable: foreign.configurable,
+    enumerable: foreign.enumerable,
+    get() {
+      foreign.get?.call(this)
+      return concrete.get?.call(this)
+    },
+    set(value: unknown) {
+      foreign.set?.call(this, value)
+      const normalised = foreign.get?.call(this)
+      concrete.set?.call(this, normalised === undefined ? value : normalised)
+    }
+  }
+}
+
+function adoptConcreteWidget<C extends BaseWidget>(
+  widget: IBaseWidget,
+  concrete: C
+): C {
   if (concrete === widget || !Object.isExtensible(widget)) return concrete
 
-  const descriptors: PropertyDescriptorMap = {
-    ...Object.getOwnPropertyDescriptors(concrete)
-  }
-  let prototype = Object.getPrototypeOf(concrete) as object | null
-  while (prototype && prototype !== Object.prototype) {
-    for (const [key, descriptor] of Object.entries(
-      Object.getOwnPropertyDescriptors(prototype)
-    )) {
-      if (
-        descriptors[key] === undefined &&
-        (descriptor.get !== undefined || descriptor.set !== undefined)
+  const rawOptions = widget.options
+  const descriptors = collectDescriptors(concrete)
+  const foreignDescriptors = collectDescriptors(widget)
+  for (const [key, foreignDescriptor] of foreignDescriptors) {
+    if (key === 'options') continue
+    descriptors.set(
+      key,
+      mergeDescriptor(
+        descriptors.get(key),
+        foreignDescriptor,
+        Object.getOwnPropertyDescriptor(widget, key)
       )
-        descriptors[key] = descriptor
-    }
-    prototype = Object.getPrototypeOf(prototype) as object | null
+    )
   }
+  preserveHiddenFacade(descriptors, foreignDescriptors)
 
-  const existingDescriptors = Object.getOwnPropertyDescriptors(widget)
   if (
-    Object.keys(descriptors).some(
-      (key) => existingDescriptors[key]?.configurable === false
+    Reflect.ownKeys(widget).some(
+      (key) =>
+        descriptors.has(key) &&
+        Object.getOwnPropertyDescriptor(widget, key)?.configurable === false
     ) ||
     !Reflect.setPrototypeOf(widget, Object.getPrototypeOf(concrete))
   )
     return concrete
 
-  Object.defineProperties(widget, descriptors)
-  return widget as unknown as C
+  Object.defineProperties(widget, Object.fromEntries(descriptors))
+  const adopted = widget as unknown as C
+  if (adopted instanceof BaseWidget) adopted.options = rawOptions
+  return adopted
 }
 
 /**

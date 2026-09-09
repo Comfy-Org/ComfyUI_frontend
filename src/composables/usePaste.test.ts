@@ -79,44 +79,55 @@ const mockWorkspaceStore = {
   shiftDown: false
 }
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useEventListener: vi.fn((target, event, handler) => {
     target.addEventListener(event, handler)
     return () => target.removeEventListener(event, handler)
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/workspaceStore', () => ({
+  () => ({
+    useCanvasStore: () => mockCanvasStore
+  })
+)
+
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => mockWorkspaceStore
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn()
   }
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
-  ...(await importOriginal()),
-  LiteGraph: {
-    createNode: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/litegraph'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    LiteGraph: {
+      createNode: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
   isAudioNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn()
 }))
 
-vi.mock('@/workbench/eventHelpers', () => ({
-  shouldIgnoreCopyPaste: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/eventHelpers'),
+
+  () => ({
+    shouldIgnoreCopyPaste: vi.fn()
+  })
+)
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
@@ -506,6 +517,46 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(app.loadGraphData).toHaveBeenCalledWith(workflow)
+    })
+  })
+
+  it.for([
+    { version: '1.0', extra: {} },
+    { version: '1.0', nodes: [] },
+    { version: '1.0', nodes: {}, extra: {} }
+  ])('does not load malformed workflow JSON', async (workflow) => {
+    usePaste()
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify(workflow))
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it('preserves text input paste for malformed workflow JSON', async () => {
+    usePaste()
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify({ version: '1.0' }))
+
+    input.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        clipboardData: dataTransfer
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
 

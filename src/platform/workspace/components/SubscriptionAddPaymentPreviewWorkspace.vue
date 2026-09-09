@@ -27,7 +27,6 @@
         :class="cn('mb-8 flex items-center gap-3', captureMode && 'xl:mb-10')"
       >
         <Button
-          v-if="usePaymentElement"
           size="icon"
           variant="muted-textonly"
           class="shrink-0 rounded-full"
@@ -101,6 +100,7 @@
 
       <!-- Total Due Section -->
       <div
+        v-if="totalDueToday"
         :class="
           cn(
             'flex flex-col gap-2 border-t border-border-subtle pt-8',
@@ -245,43 +245,12 @@
       >
         {{
           authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
+          $t('billingOperation.authenticationFailedDetail')
         }}
       </div>
 
       <Button
-        v-if="
-          embeddedCheckoutEnabled &&
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
-          canRetryAuthentication
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isAuthenticating"
-        @click="$emit('retryAuthentication')"
-      >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
-      </Button>
-
-      <Button
-        v-if="
-          actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
-        "
+        v-if="actionUrl && authenticationState !== 'failed_retryable'"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -366,7 +335,12 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isYearlyCheckout } from '@/platform/cloud/subscription/utils/planDuration'
-import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import {
+  formatAmountDueToday,
+  formatQuoteMoney,
+  formatRenewalAmount,
+  resolveRenewalDate
+} from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   BillingAuthenticationState,
@@ -389,8 +363,6 @@ interface Props {
   actionUrl?: string | null
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
   reconciliationOperationId?: string | null
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
@@ -413,8 +385,6 @@ const {
   actionUrl = null,
   authenticationState = null,
   authenticationError = null,
-  canRetryAuthentication = false,
-  isAuthenticating = false,
   reconciliationOperationId = null,
   usePaymentElement = false,
   savedMethods = null,
@@ -430,7 +400,6 @@ const emit = defineEmits<{
   changePaymentMethod: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
-  retryAuthentication: []
 }>()
 
 const { locale, n, t } = useI18n()
@@ -560,35 +529,21 @@ const creditsRefillLabelKey = computed(() =>
 )
 
 const totalDueToday = computed(() =>
-  previewData?.amount_due_cents === undefined
-    ? ''
-    : formatQuoteMoney(
-        previewData.amount_due_cents,
-        previewData.currency,
-        locale.value
-      )
+  previewData ? formatAmountDueToday(previewData, locale.value) : ''
 )
 
 const renewalTerms = computed(() => {
-  if (
-    previewData?.renewal_amount_cents === undefined ||
-    !previewData.renewal_at
-  ) {
-    return ''
-  }
-  const date = new Date(previewData.renewal_at).toLocaleDateString(undefined, {
+  if (!previewData) return ''
+  const amount = formatRenewalAmount(previewData, locale.value)
+  if (!amount) return ''
+  const renewsAt = resolveRenewalDate(previewData)
+  if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
+  const date = new Date(renewsAt).toLocaleDateString(locale.value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     timeZone: 'UTC'
   })
-  return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(
-      previewData.renewal_amount_cents,
-      previewData.currency,
-      locale.value
-    ),
-    date
-  })
+  return t('subscription.preview.renewsAt', { amount, date })
 })
 </script>

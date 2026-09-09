@@ -16,32 +16,37 @@ const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
 const ACCEPT_DEADLINE_MS = 15_000
 
-const mocks = vi.hoisted(() => ({
-  canRunWorkflows: { value: true },
-  showSubscriptionDialog: vi.fn(),
-  workflowStatus: { value: new Map<unknown, string>() },
-  executionErrors: { hasNodeError: false, hasPromptError: false },
-  activeWorkflow: { value: null as unknown },
-  queuedJobs: { value: {} as Record<string, { workflow?: unknown }> },
-  linearMode: { value: false },
-  vueNodesEnabled: true,
-  setSetting: vi.fn(),
-  steps: [] as CoachStep[],
-  runState: { value: 'idle' } as Ref<string>,
-  releaseFirstRunTargets: vi.fn(),
-  engine: {
-    activeTour: null as string | null,
-    lastEnding: null as TourEnding | null,
-    step: null as CoachStep | null,
-    isLast: false,
-    startTour: vi.fn(),
-    next: vi.fn(),
-    skip: vi.fn(),
-    postpone: vi.fn()
+const mocks = vi.hoisted(() => {
+  const queuedJobs: { value: Record<string, { workflow?: unknown }> } = {
+    value: {}
   }
-}))
+  return {
+    canRunWorkflows: { value: true },
+    showSubscriptionDialog: vi.fn(),
+    workflowStatus: { value: new Map<unknown, string>() },
+    executionErrors: { hasNodeError: false, hasPromptError: false },
+    activeWorkflow: { value: null as { path: string } | null },
+    queuedJobs,
+    linearMode: { value: false },
+    vueNodesEnabled: true,
+    setSetting: vi.fn(),
+    steps: [] as CoachStep[],
+    runState: { value: 'idle' } as Ref<string>,
+    releaseFirstRunTargets: vi.fn(),
+    engine: {
+      activeTour: null as string | null,
+      lastEnding: null as TourEnding | null,
+      step: null as CoachStep | null,
+      isLast: false,
+      startTour: vi.fn(),
+      next: vi.fn(),
+      skip: vi.fn(),
+      postpone: vi.fn()
+    }
+  }
+})
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canRunWorkflows: mocks.canRunWorkflows,
     showSubscriptionDialog: mocks.showSubscriptionDialog
@@ -51,7 +56,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 // Each factory runs on the first dynamic import, which lands mid-test for
 // whichever test runs first. Seed the new ref from the holder so that test's
 // setup survives instead of being discarded.
-vi.mock('@/stores/executionStore', async () => {
+vi.mock<unknown>(import('@/stores/executionStore'), async () => {
   const { shallowRef } = await import('vue')
   mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
   mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
@@ -66,25 +71,28 @@ vi.mock('@/stores/executionStore', async () => {
   }
 })
 
-vi.mock('@/stores/executionErrorStore', async () => {
+vi.mock<unknown>(import('@/stores/executionErrorStore'), async () => {
   const { reactive } = await import('vue')
   mocks.executionErrors = reactive({ ...mocks.executionErrors })
   return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { shallowRef } = await import('vue')
-  mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
-  return {
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return mocks.activeWorkflow.value
-      }
-    })
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { shallowRef } = await import('vue')
+    mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
+    return {
+      useWorkflowStore: () => ({
+        get activeWorkflow() {
+          return mocks.activeWorkflow.value
+        }
+      })
+    }
   }
-})
+)
 
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
   const { shallowRef } = await import('vue')
   mocks.linearMode = shallowRef(mocks.linearMode.value)
   return {
@@ -96,7 +104,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: () => mocks.vueNodesEnabled,
     // A spy, not a plain writer: a value that was flipped and put back reads
@@ -105,7 +113,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('./firstRunTourDefinition', () => ({
+vi.mock<unknown>(import('./firstRunTourDefinition'), () => ({
   firstRunTourSteps: (_templateId: string, runState: Ref<string>) => {
     mocks.runState = runState
     return Promise.resolve(mocks.steps)
@@ -113,11 +121,14 @@ vi.mock('./firstRunTourDefinition', () => ({
   releaseFirstRunTargets: mocks.releaseFirstRunTargets
 }))
 
-vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
-  const { reactive } = await import('vue')
-  mocks.engine = reactive(mocks.engine)
-  return { useOnboardingTourStore: () => mocks.engine }
-})
+vi.mock<unknown>(
+  import('@/platform/onboarding/onboardingTourStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    mocks.engine = reactive(mocks.engine)
+    return { useOnboardingTourStore: () => mocks.engine }
+  }
+)
 
 function runStep(): SpotlightStep {
   return {
@@ -619,7 +630,7 @@ describe('useFirstRunTourController', () => {
 
       expect(
         mocks.runState.value,
-        'a run cut short for credits keeps its running status, so losing the job is the only signal left'
+        'a stagnated run keeps its running status, so losing the job is the only signal left'
       ).toBe('failed')
     })
 

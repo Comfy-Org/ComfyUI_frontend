@@ -8,7 +8,6 @@ import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -859,7 +858,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, unknown>,
+    defaultValue: {},
     versionAdded: '1.4.8'
   },
   {
@@ -868,7 +867,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'These are the actual arguments that are passed to the server when it is launched.',
     type: 'hidden',
-    defaultValue: {} as Record<string, string>,
+    defaultValue: {},
     versionAdded: '1.4.8'
   },
   {
@@ -954,7 +953,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.CustomColorPalettes',
     name: 'Custom color palettes',
     type: 'hidden',
-    defaultValue: {} as ColorPalettes,
+    defaultValue: {},
     versionModified: '1.6.7'
   },
   {

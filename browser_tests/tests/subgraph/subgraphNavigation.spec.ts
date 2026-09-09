@@ -8,7 +8,7 @@ const UPDATED_SUBGRAPH_TITLE = 'Updated Subgraph Title'
 
 function hasVisibleNodeInViewport() {
   const canvas = window.app!.canvas
-  if (!canvas?.graph?._nodes?.length) return false
+  if (!canvas.graph?._nodes.length) return false
 
   const ds = canvas.ds
   const cw = canvas.canvas.width / window.devicePixelRatio
@@ -127,6 +127,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
       ])
 
       await comfyPage.page.reload()
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup()
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 

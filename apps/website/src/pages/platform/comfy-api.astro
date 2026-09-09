@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
+import ServerlessDeploySection from '../../templates/platform/ServerlessDeploySection.vue'
+import ServerlessHero from '../../templates/platform/ServerlessHero.vue'
+import ServerlessHowItWorksSection from '../../templates/platform/ServerlessHowItWorksSection.vue'
+import ServerlessScaleSection from '../../templates/platform/ServerlessScaleSection.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('platform.products.serverless.title', 'en')} · ${t('platform.meta.title', 'en')}`}
+  description={t('platform.products.serverless.description', 'en')}
+>
+  <ServerlessHero locale="en" client:load />
+  <ServerlessHowItWorksSection locale="en" client:visible />
+  <ServerlessDeploySection locale="en" client:visible />
+  <ServerlessScaleSection locale="en" client:visible />
+  <ClosingCtaSection
+    locale="en"
+    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    client:visible
+  />
+  <ProductCardsSection
+    locale="en"
+    label-key="products.labelProducts"
+  />
+</BaseLayout>

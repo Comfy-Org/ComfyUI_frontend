@@ -9,11 +9,11 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('@/components/ui/select/Select.vue')
-vi.mock('@/components/ui/select/SelectContent.vue')
-vi.mock('@/components/ui/select/SelectItem.vue')
-vi.mock('@/components/ui/select/SelectTrigger.vue')
-vi.mock('@/components/ui/select/SelectValue.vue')
+vi.mock(import('@/components/ui/select/Select.vue'))
+vi.mock(import('@/components/ui/select/SelectContent.vue'))
+vi.mock(import('@/components/ui/select/SelectItem.vue'))
+vi.mock(import('@/components/ui/select/SelectTrigger.vue'))
+vi.mock(import('@/components/ui/select/SelectValue.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -101,7 +101,7 @@ describe('ViewerModelControls', () => {
       const [upDirectionSelect] = screen.getAllByRole('combobox')
       const options = getOptions(upDirectionSelect)
 
-      expect(options.map((o) => o.textContent?.trim())).toEqual([
+      expect(options.map((o) => o.textContent.trim())).toEqual([
         'Original',
         '-X',
         '+X',
@@ -124,7 +124,7 @@ describe('ViewerModelControls', () => {
         'normal',
         'wireframe'
       ])
-      expect(options.map((o) => o.textContent?.trim())).toEqual([
+      expect(options.map((o) => o.textContent.trim())).toEqual([
         'Original',
         'Normal',
         'Wireframe'
@@ -139,7 +139,7 @@ describe('ViewerModelControls', () => {
       const options = getOptions(materialModeSelect)
 
       expect(options).toHaveLength(4)
-      expect(options[1].textContent?.trim()).toBe('Point Cloud')
+      expect(options[1].textContent.trim()).toBe('Point Cloud')
       expect(options[1].getAttribute('value')).toBe('pointCloud')
     })
   })

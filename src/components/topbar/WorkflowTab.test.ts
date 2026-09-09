@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw } from 'vue'
+import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -20,7 +21,7 @@ const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     currentUser: null,
     isAuthenticated: false,
@@ -28,7 +29,7 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', async (importOriginal) => {
+vi.mock<unknown>(import('@/stores/executionStore'), async (importOriginal) => {
   const actual = await importOriginal<typeof ExecutionStoreModule>()
   return {
     WORKFLOW_STATUS_I18N_KEYS: actual.WORKFLOW_STATUS_I18N_KEYS,
@@ -41,30 +42,37 @@ vi.mock('@/stores/executionStore', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
+vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
   usePragmaticDroppable: vi.fn()
 }))
 
-vi.mock('@/composables/useWorkflowActionsMenu', () => ({
+vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   useWorkflowActionsMenu: () => ({
     menuItems: { value: [] }
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    closeWorkflow: mockCloseWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      closeWorkflow: mockCloseWorkflow
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    getThumbnail: vi.fn(() => null)
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
+
+  () => ({
+    useWorkflowThumbnail: () => ({
+      getThumbnail: vi.fn(() => null)
+    })
   })
-}))
+)
 
-vi.mock('./WorkflowTabPopover.vue', () => ({
+vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
   default: {
     render: () => null,
     methods: {
@@ -74,6 +82,8 @@ vi.mock('./WorkflowTabPopover.vue', () => ({
     }
   }
 }))
+
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 
@@ -85,12 +95,17 @@ const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
   failed: 'Failed'
 }
 
+const agentAriaLabels = {
+  agentWorking: 'Agent is working on this workflow',
+  agentModified: 'Agent updated this workflow'
+}
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', ...statusAriaLabels }
+      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels }
     }
   }
 })
@@ -99,12 +114,8 @@ type WorkflowOption = WorkflowTabProps['workflowOption']
 type Workflow = WorkflowOption['workflow']
 type WorkflowOverrides = Partial<Workflow>
 
-// ComfyWorkflow has many required fields the component never reads (file
-// IO, change tracking). Validate the fields we *do* set against the real
-// type via Partial<Workflow>, then cast — adding/renaming a read field in
-// the component will fail typecheck on the override map.
 function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
-  const workflow = {
+  const workflow = fromPartial<Workflow>({
     key: 'test-key',
     path: '/workflows/test.json',
     filename: 'test.json',
@@ -113,19 +124,27 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
     activeMode: 'graph',
     changeTracker: null,
     ...overrides
-  } satisfies WorkflowOverrides
+  })
   // markRaw keeps a stable identity through prop reactivity so the store's
   // identity-based status lookup resolves against the same object.
-  return { value: 'test-key', workflow: markRaw(workflow) as Workflow }
+  return { value: 'test-key', workflow: markRaw(workflow) }
 }
 
 function renderTab({
   workflowOption = makeWorkflowOption(),
-  activeWorkflowKey = 'other-key'
+  activeWorkflowKey = 'other-key',
+  activeWorkflowPath
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
+  activeWorkflowPath?: string
 } = {}) {
+  const resolvedActiveWorkflowPath =
+    activeWorkflowPath ??
+    (activeWorkflowKey === workflowOption.workflow.key
+      ? workflowOption.workflow.path
+      : '/workflows/other.json')
+
   return render(WorkflowTab, {
     global: {
       plugins: [
@@ -134,7 +153,10 @@ function renderTab({
           initialState: {
             workspace: { shiftDown: false },
             workflow: {
-              activeWorkflow: { key: activeWorkflowKey }
+              activeWorkflow: {
+                key: activeWorkflowKey,
+                path: resolvedActiveWorkflowPath
+              }
             },
             setting: { settingValues: { 'Comfy.Workflow.AutoSave': 'off' } }
           }
@@ -186,13 +208,29 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'bg-smoke-800'
+    )
+  })
+
+  it('keeps an unsaved inactive tab dot muted when workflow keys collide', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ isPersisted: false }),
+      activeWorkflowKey: 'test-key',
+      activeWorkflowPath: '/workflows/other.json'
+    })
+
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'bg-smoke-800'
+    )
   })
 
   it('shows the unsaved dot when modified and autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'rounded-full'
+    )
   })
 
   it('workflow status replaces the unsaved dot', () => {
@@ -204,6 +242,77 @@ describe('WorkflowTab - workflow status indicator', () => {
       screen.getByRole('img', { name: statusAriaLabels.running })
     ).toBeTruthy()
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+  })
+})
+
+describe('WorkflowTab - agent activity indicators', () => {
+  beforeEach(() => {
+    mockWorkflowStatus.value = new Map()
+  })
+
+  it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeTruthy()
+  })
+
+  it('the agent spinner wins over the unseen-changes dot', async () => {
+    renderTab()
+    const activity = useWorkflowTabActivityStore()
+    activity.setEditing('/workflows/test.json')
+    activity.markModified('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeTruthy()
+    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+
+  it('shows the unseen-changes dot ahead of non-failed execution status', async () => {
+    const workflowOption = makeWorkflowOption()
+    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+    renderTab({ workflowOption })
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
+    expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
+      'size-2',
+      'bg-primary-background'
+    )
+    expect(
+      screen.queryByRole('img', { name: statusAriaLabels.running })
+    ).toBeNull()
+  })
+
+  it('a failed run outranks the unseen-changes dot', async () => {
+    const workflowOption = makeWorkflowOption()
+    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'failed']])
+    renderTab({ workflowOption })
+    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.failed })
+    ).toBeTruthy()
+    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+  })
+
+  it('clearing the store restores the existing indicators', async () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
+    const activity = useWorkflowTabActivityStore()
+    activity.markModified('/workflows/test.json')
+    await nextTick()
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+
+    activity.markSeen('/workflows/test.json')
+    await nextTick()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeTruthy()
+    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
   })
 })
 

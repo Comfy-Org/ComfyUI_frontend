@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -118,25 +119,32 @@ describe('updateTextPreviewWidgets', () => {
   )
 
   it('drops null entries instead of rendering blank separators', () => {
-    updateTextPreviewWidgets(node, {
-      text: ['first', null, 'second']
-    } as unknown as NodeExecutionOutput)
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({
+        text: ['first', null, 'second']
+      })
+    )
 
     expect(node.widgets[0].value).toBe('first\n\nsecond')
   })
 
   it('renders non-string entries rather than blanking the node', () => {
-    updateTextPreviewWidgets(node, {
-      text: ['first', 23.976, null, 'second']
-    } as unknown as NodeExecutionOutput)
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({
+        text: ['first', 23.976, null, 'second']
+      })
+    )
 
     expect(node.widgets[0].value).toBe('first\n\n23.976\n\nsecond')
   })
 
   it('stringifies a bare non-string scalar payload', () => {
-    updateTextPreviewWidgets(node, {
-      text: 23.976
-    } as unknown as NodeExecutionOutput)
+    updateTextPreviewWidgets(
+      node,
+      fromAny<NodeExecutionOutput, unknown>({ text: 23.976 })
+    )
     expect(node.widgets[0].value).toBe('23.976')
   })
 })

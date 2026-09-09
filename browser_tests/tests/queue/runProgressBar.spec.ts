@@ -49,3 +49,62 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
     }
   )
 })
+
+wstest.describe('Queue progress overlay', { tag: ['@ui'] }, () => {
+  wstest.use({
+    initialSettings: {
+      'Comfy.Queue.QPOV2': false
+    }
+  })
+
+  wstest(
+    'updates visual progress without changing layout width',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const jobId = await execution.run()
+      execution.executionStart(jobId)
+      execution.nodeRunning(jobId, '3', 5, 20)
+
+      const { progressNodeFill } = comfyPage.queuePanel
+      await expect(progressNodeFill).toBeVisible()
+      await expect
+        .poll(() =>
+          progressNodeFill.evaluate(
+            (element) =>
+              element.getBoundingClientRect().width /
+              (element as HTMLElement).offsetWidth
+          )
+        )
+        .toBeCloseTo(0.25, 1)
+
+      const initialLayoutWidth = await progressNodeFill.evaluate(
+        (element) => (element as HTMLElement).offsetWidth
+      )
+
+      const transitionProperties = await progressNodeFill.evaluate((element) =>
+        getComputedStyle(element).transitionProperty.split(', ')
+      )
+      expect(transitionProperties).toContain('transform')
+      expect(transitionProperties).not.toContain('width')
+
+      execution.nodeRunning(jobId, '3', 18, 20)
+      await expect
+        .poll(() =>
+          progressNodeFill.evaluate(
+            (element) =>
+              element.getBoundingClientRect().width /
+              (element as HTMLElement).offsetWidth
+          )
+        )
+        .toBeCloseTo(0.9, 1)
+
+      await expect
+        .poll(() =>
+          progressNodeFill.evaluate(
+            (element) => (element as HTMLElement).offsetWidth
+          )
+        )
+        .toBe(initialLayoutWidth)
+    }
+  )
+})

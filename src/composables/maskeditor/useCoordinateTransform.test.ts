@@ -14,11 +14,11 @@ const mockStore: MockStore = {
   maskCanvas: null
 }
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))
@@ -36,7 +36,7 @@ const createElementWithRect = (rect: Partial<DOMRect>): HTMLElement => {
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return el
 }
 
@@ -59,7 +59,7 @@ const createCanvasWithRect = (
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return canvas
 }
 

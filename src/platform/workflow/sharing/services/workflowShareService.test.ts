@@ -7,30 +7,32 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,
+  get isGraphReady() {
+    return this.rootGraph !== null
+  },
   graphToPrompt: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
-const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
+const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
+  useAssetsStore: () => ({
+    inputAssets: { invalidate: mockInvalidateInputAssets }
+  })
+}))
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
     fileURL: (route: string) => route
-  }
-}))
-
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    invalidateInputAssetsIncludingPublic:
-      mockInvalidateInputAssetsIncludingPublic
   }
 }))
 
@@ -385,7 +387,7 @@ describe(useWorkflowShareService, () => {
         share_id: 'share-id-1'
       })
     })
-    expect(mockInvalidateInputAssetsIncludingPublic).toHaveBeenCalledTimes(1)
+    expect(mockInvalidateInputAssets).toHaveBeenCalledOnce()
   })
 
   it('omits share_id from the payload when not provided', async () => {
@@ -422,7 +424,7 @@ describe(useWorkflowShareService, () => {
     await expect(
       service.importPublishedAssets(['bad-id'], 'share-id-1')
     ).rejects.toThrow('Failed to import assets: 400')
-    expect(mockInvalidateInputAssetsIncludingPublic).not.toHaveBeenCalled()
+    expect(mockInvalidateInputAssets).not.toHaveBeenCalled()
   })
 
   it('throws when shared workflow payload is invalid', async () => {

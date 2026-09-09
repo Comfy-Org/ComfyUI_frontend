@@ -76,6 +76,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'downloads MiDaS weights via torch hub at execution; same non-interruptible download class as BLIP',
     'CLIPSeg Model Loader':
       'downloads a CLIPSeg segmentation model at execution; same non-interruptible download class as BLIP',
+    'CLIPSeg Masking':
+      'runs CLIPSeg inference, which downloads its model on first use; same network/model-dependent class as CLIPSeg Model Loader',
     'CLIPSeg Batch Masking':
       'runs CLIPSeg inference, which downloads its model on first use; same network/model-dependent class as CLIPSeg Model Loader',
     'True Random.org Number Generator':
@@ -314,17 +316,17 @@ async function runBatch(
       const ids: string[] = []
       const allIds: string[] = []
       const nodeIdByKey: Record<string, string> = {}
-      const sinkIdByKey: Record<string, string> = {}
+      const sinkIdByKey: Partial<Record<string, string>> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key, undefined, {
-          pos: [0, index * (spacingY as number)]
+          pos: [0, index * spacingY]
         })
         if (!node) throw new Error(`${spec.key}: createNode returned null`)
         window.app!.graph.add(node)
         ids.push(String(node.id))
         allIds.push(String(node.id))
         nodeIdByKey[spec.key] = String(node.id)
-        for (const [name, value] of Object.entries(spec.widgetInputs ?? {})) {
+        for (const [name, value] of Object.entries(spec.widgetInputs)) {
           const widget = node.widgets?.find(
             (candidate) => candidate.name === name
           )
@@ -348,7 +350,7 @@ async function runBatch(
             {
               pos: [
                 -420 - socketIndex * 40,
-                index * (spacingY as number) + socketIndex * 90
+                index * spacingY + socketIndex * 90
               ]
             }
           )
@@ -359,7 +361,7 @@ async function runBatch(
         }
         if (spec.needsPreviewSink) {
           const sink = window.LiteGraph!.createNode('PreviewAny', undefined, {
-            pos: [460, index * (spacingY as number)]
+            pos: [460, index * spacingY]
           })!
           window.app!.graph.add(sink)
           node.connect(0, sink, 0)
@@ -376,10 +378,9 @@ async function runBatch(
     expectedNodeIds: ids,
     graphNodeIds: allIds,
     proofOutputNodeByExpectedNode: Object.fromEntries(
-      Object.entries(sinkIdByKey).map(([key, sinkId]) => [
-        nodeIdByKey[key],
-        sinkId
-      ])
+      Object.entries(sinkIdByKey).flatMap(([key, sinkId]) =>
+        sinkId === undefined ? [] : [[nodeIdByKey[key], sinkId]]
+      )
     ),
     timeoutMs
   })

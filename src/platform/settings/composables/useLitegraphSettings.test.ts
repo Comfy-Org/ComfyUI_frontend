@@ -13,11 +13,15 @@ const testState = vi.hoisted(
   })
 )
 
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { reactive } = await import('vue')
-  testState.canvasStore = reactive({ canvas: null })
-  return { useCanvasStore: () => testState.canvasStore }
-})
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
+
+  async () => {
+    const { reactive } = await import('vue')
+    testState.canvasStore = reactive({ canvas: null })
+    return { useCanvasStore: () => testState.canvasStore }
+  }
+)
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 
@@ -68,7 +72,7 @@ describe('useLitegraphSettings', () => {
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
     await nextTick()
 
-    expect(canvasStore.canvas?.show_info).toBe(true)
+    expect(canvasStore.canvas.show_info).toBe(true)
     expect(firstDraw).toHaveBeenCalledTimes(2)
 
     canvasStore.canvas = createCanvas(secondDraw)
