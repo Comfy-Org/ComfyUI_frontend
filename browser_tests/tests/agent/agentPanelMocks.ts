@@ -1,5 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -130,6 +132,15 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
   }
 }
 
+/**
+ * Requires a cloud-distribution build: `registerAgentPanelExtension` returns
+ * early on non-cloud builds, so against a default build every flag-on test
+ * fails and the flag-off test passes vacuously.
+ *
+ * The `/api/users` and `/api/settings` routes serve only the page's own
+ * fetches: `ComfyPage.setupUser` goes through the APIRequestContext, which
+ * `page.route` does not intercept.
+ */
 async function mockAgentBoot(
   page: Page,
   {
@@ -142,8 +153,17 @@ async function mockAgentBoot(
   })
 
   await mockBilling(page)
-  await page.route('**/api/assets**', (r) =>
-    r.fulfill(jsonRoute({ assets: [] }))
+  const emptyAssets: ListAssetsResponse = {
+    assets: [],
+    total: 0,
+    has_more: false
+  }
+  await page.route('**/api/assets**', (r) => r.fulfill(jsonRoute(emptyAssets)))
+  // The bootstrapped project token makes PostHogTelemetryProvider run a real
+  // posthog.init(); route its ingest host so CI never emits live third-party
+  // traffic under the fabricated token.
+  await page.route('**://t.comfy.org/**', (r) =>
+    r.fulfill(jsonRoute({ status: 1 }))
   )
 
   await page.route('**/api/features', (r) =>
