@@ -64,7 +64,6 @@ describe('AppBuilder', () => {
       vi.spyOn(node, 'getWidgetOnPos').mockReturnValue(widget)
       vi.spyOn(canvas, 'adjustMouseEvent').mockImplementation(() => {})
       useCanvasStore().canvas = canvas
-      useAppModeStore().selectedInputs = []
 
       render(AppBuilder, {
         global: {

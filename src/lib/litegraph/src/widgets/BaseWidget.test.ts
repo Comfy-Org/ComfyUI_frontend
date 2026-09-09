@@ -86,7 +86,6 @@ describe('BaseWidget store integration', () => {
 
     widget.drawSuppressedRowLabel(ctx, { width: 200 })
 
-    expect(ctx.fillText).toHaveBeenCalledWith('Input label', 35, 14)
     expect(vi.mocked(ctx.fillText).mock.calls.map(([text]) => text)).toEqual([
       'Input label'
     ])

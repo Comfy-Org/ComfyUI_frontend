@@ -50,7 +50,7 @@ class FixtureStringConcatenateNode extends LGraphNode {
 
 class FixtureTestNode extends LGraphNode {
   constructor(title = 'Test Node') {
-    super(title)
+    super(title, FIXTURE_TEST_NODE_TYPE)
     this.addInput('in', '*')
     this.addOutput('out', '*')
   }
@@ -287,7 +287,7 @@ export function createTestSubgraph(
 
   // Add test nodes if requested
   if (options.nodeCount) {
-    LiteGraph.registerNodeType(FIXTURE_TEST_NODE_TYPE, FixtureTestNode)
+    LiteGraph.registered_node_types[FIXTURE_TEST_NODE_TYPE] ??= FixtureTestNode
     for (let i = 0; i < options.nodeCount; i++) {
       subgraph.add(new FixtureTestNode(`Test Node ${i}`))
     }

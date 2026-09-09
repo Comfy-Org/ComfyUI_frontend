@@ -73,7 +73,8 @@ describe('Subgraph Construction', () => {
       nodeCount: 1,
       inputs: [{ name: 'source input', type: 'number' }]
     })
-    const sourceBeforeClone = subgraph.asSerialisable()
+    subgraph.rootGraph.subgraphs.set(subgraph.id, subgraph)
+    const sourceBeforeClone = structuredClone(subgraph.asSerialisable())
 
     const clone = subgraph.clone()
     for (const node of clone.nodes) node.title = 'Changed clone node'
@@ -81,7 +82,13 @@ describe('Subgraph Construction', () => {
 
     expect(clone).not.toBe(subgraph)
     expect(clone.id).not.toBe(subgraph.id)
+    expect(subgraph.rootGraph.subgraphs.get(clone.id)).toBe(clone)
     expect(clone.name).toBe(subgraph.name)
+    expect(clone.nodes.map(({ id }) => id)).not.toEqual(
+      subgraph.nodes.map(({ id }) => id)
+    )
+    expect(clone.nodes.map(({ type }) => type)).toEqual(['Fixture/TestNode'])
+    expect(clone.nodes.every(({ has_errors }) => !has_errors)).toBe(true)
     expect(clone.nodes.map(({ title }) => title)).toEqual([
       'Changed clone node'
     ])
@@ -91,7 +98,13 @@ describe('Subgraph Construction', () => {
     ])
     expect(subgraph.nodes).toHaveLength(1)
     expect(subgraph.nodes.map(({ title }) => title)).toEqual(['Test Node 0'])
-    expect(subgraph.asSerialisable()).toEqual(sourceBeforeClone)
+
+    subgraph.rootGraph.releaseSubgraphs([clone])
+    expect(subgraph.rootGraph.subgraphs.has(clone.id)).toBe(false)
+    expect(subgraph.asSerialisable()).toEqual({
+      ...sourceBeforeClone,
+      state: subgraph.state
+    })
   })
 })
 
