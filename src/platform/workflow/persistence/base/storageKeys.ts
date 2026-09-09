@@ -29,6 +29,19 @@ export function getWorkspaceId(): string {
 }
 
 /**
+ * Resolves the localStorage scope for workflow drafts.
+ * Cloud drafts belong to one user in one workspace, so the scope is
+ * `${userId}:${workspaceId}` and unresolvable until the user is known.
+ */
+export function resolveStorageScope(
+  userId: string | null,
+  workspaceId: string
+): string | null {
+  if (!isCloud) return 'personal'
+  return userId ? `${userId}:${workspaceId}` : null
+}
+
+/**
  * Storage key generators for V2 workflow persistence.
  *
  * localStorage keys are scoped by workspaceId.
