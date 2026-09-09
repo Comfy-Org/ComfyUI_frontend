@@ -1,4 +1,5 @@
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
@@ -18,8 +19,36 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
   }
 }
 
+function createImageData(): ImageData {
+  if (typeof ImageData !== 'undefined') {
+    return new ImageData(100, 100)
+  }
+
+  return {
+    colorSpace: 'srgb',
+    data: new Uint8ClampedArray(100 * 100 * 4),
+    width: 100,
+    height: 100
+  }
+}
+
+function createContext(): CanvasRenderingContext2D {
+  return createMockCanvasRenderingContext2D({
+    getImageData: vi.fn(createImageData),
+    putImageData: vi.fn(),
+    drawImage: vi.fn()
+  })
+}
+
+function createCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = 100
+  canvas.height = 100
+  return canvas
+}
+
 describe('useCanvasHistory', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockRefs = useMaskEditorStore()
     let rafCallCount = 0
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
@@ -31,54 +60,15 @@ describe('useCanvasHistory', () => {
       }
     )
 
-    const createMockImageData = (): ImageData => {
-      return {
-        data: new Uint8ClampedArray(100 * 100 * 4),
-        width: 100,
-        height: 100
-      } as ImageData
-    }
+    mockRefs.maskCanvas = createCanvas()
+    mockRefs.rgbCanvas = createCanvas()
+    mockRefs.imgCanvas = createCanvas()
 
-    // Mock contexts using explicit partial-cast pattern
-    mockRefs.maskCtx = {
-      getImageData: vi.fn(() => createMockImageData()),
-      putImageData: vi.fn(),
-      clearRect: vi.fn(),
-      drawImage: vi.fn()
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+    await nextTick()
 
-    mockRefs.rgbCtx = {
-      getImageData: vi.fn(() => createMockImageData()),
-      putImageData: vi.fn(),
-      clearRect: vi.fn(),
-      drawImage: vi.fn()
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
-
-    mockRefs.imgCtx = {
-      getImageData: vi.fn(() => createMockImageData()),
-      putImageData: vi.fn(),
-      clearRect: vi.fn(),
-      drawImage: vi.fn()
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
-
-    // Mock canvases using explicit partial-cast pattern
-    mockRefs.maskCanvas = {
-      getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
-      width: 100,
-      height: 100
-    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
-
-    mockRefs.rgbCanvas = {
-      getContext: vi.fn().mockImplementation(() => mockRefs.rgbCtx),
-      width: 100,
-      height: 100
-    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
-
-    mockRefs.imgCanvas = {
-      getContext: vi.fn().mockImplementation(() => mockRefs.imgCtx),
-      width: 100,
-      height: 100
-    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
+    mockRefs.maskCtx = createContext()
+    mockRefs.rgbCtx = createContext()
+    mockRefs.imgCtx = createContext()
   })
 
   describe('initialization', () => {
@@ -109,24 +99,16 @@ describe('useCanvasHistory', () => {
     it('should wait for canvas to be ready', () => {
       const rafSpy = vi.spyOn(window, 'requestAnimationFrame')
 
-      mockRefs.maskCanvas = {
-        getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
-        // oxlint-disable-next-line no-misused-spread
-        ...mockRefs.maskCanvas,
-        width: 0,
-        height: 0
-      } as Partial<HTMLCanvasElement> as HTMLCanvasElement
+      mockRefs.maskCanvas!.width = 0
+      mockRefs.maskCanvas!.height = 0
 
       const history = useCanvasHistory()
       history.saveInitialState()
 
       expect(rafSpy).toHaveBeenCalled()
 
-      mockRefs.maskCanvas = {
-        getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
-        width: 100,
-        height: 100
-      } as Partial<HTMLCanvasElement> as HTMLCanvasElement
+      mockRefs.maskCanvas!.width = 100
+      mockRefs.maskCanvas!.height = 100
     })
 
     it('should wait for context to be ready', () => {
@@ -139,20 +121,7 @@ describe('useCanvasHistory', () => {
 
       expect(rafSpy).toHaveBeenCalled()
 
-      const createMockImageData = (): ImageData => {
-        return {
-          data: new Uint8ClampedArray(100 * 100 * 4),
-          width: 100,
-          height: 100
-        } as ImageData
-      }
-
-      mockRefs.maskCtx = {
-        getImageData: vi.fn(() => createMockImageData()),
-        putImageData: vi.fn(),
-        clearRect: vi.fn(),
-        drawImage: vi.fn()
-      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+      mockRefs.maskCtx = createContext()
     })
   })
 
@@ -567,13 +536,8 @@ describe('useCanvasHistory', () => {
     })
 
     it('should handle zero-sized canvas', () => {
-      if (mockRefs.maskCanvas) {
-        mockRefs.maskCanvas = {
-          getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
-          width: 0,
-          height: 0
-        } as Partial<HTMLCanvasElement> as HTMLCanvasElement
-      }
+      mockRefs.maskCanvas!.width = 0
+      mockRefs.maskCanvas!.height = 0
 
       const history = useCanvasHistory()
 

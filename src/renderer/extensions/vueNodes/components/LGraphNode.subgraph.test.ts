@@ -1,9 +1,9 @@
 /**
  * Tests for NodeHeader subgraph functionality
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -65,7 +65,7 @@ const i18n = createI18n({
 
 describe('Vue Node - Subgraph Functionality', () => {
   let rootGraph: LGraph
-  let pinia: ReturnType<typeof createTestingPinia>
+  let pinia: Pinia
 
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
@@ -78,8 +78,7 @@ describe('Vue Node - Subgraph Functionality', () => {
   }
 
   beforeEach(() => {
-    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     rootGraph = new LGraph()
   })
 
