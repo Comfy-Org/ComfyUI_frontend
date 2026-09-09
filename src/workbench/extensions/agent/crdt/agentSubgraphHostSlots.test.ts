@@ -254,6 +254,22 @@ describe('agentSubgraphHostSlots', () => {
     expect(index.lookups).toBeLessThan(50)
   })
 
+  it('excludes a promoted input whose name is declared twice', () => {
+    // Both `value` slots land on widgets, but the name cannot be mapped back
+    // to one host slot, so `hostSlotIndex` rejects it. Reporting it as a
+    // promoted widget would let `setWidget` target a slot we refuse to wire.
+    const def = definition()
+    def.inputs!.push({
+      id: 'in-value-2',
+      name: 'value',
+      type: 'NUMBER',
+      linkIds: [2]
+    })
+    const index = indexSubgraphDefinitions([def])
+    expect(promotedWidgetNames(def, index)).toEqual([])
+    expect(hostSlotIndex(def, 'value')).toBe(-1)
+  })
+
   it('resolves host slot index from definition order, not doc order', () => {
     const def = definition()
     expect(hostSlotIndex(def, 'extra')).toBe(0)

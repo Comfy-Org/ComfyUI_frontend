@@ -86,8 +86,14 @@ export function promotedWidgetNames(
     capHits: 0,
     lookups: new Map()
   }
+  // A name declared twice cannot be mapped to one host slot (`hostSlotIndex`
+  // rejects it), so it must not be reported as a settable promoted widget.
+  const ambiguous = ambiguousInputNames(definition)
   return (definition.inputs ?? []).flatMap((input, inputIndex) =>
-    isPromoted(definition, inputIndex, traversal, 0) ? [input.name] : []
+    !ambiguous.has(input.name) &&
+    isPromoted(definition, inputIndex, traversal, 0)
+      ? [input.name]
+      : []
   )
 }
 
