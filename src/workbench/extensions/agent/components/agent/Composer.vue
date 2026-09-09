@@ -251,6 +251,11 @@ function onComposerKeydown(event: KeyboardEvent): void {
     }
   }
   if (event.key === 'Enter') onEnter(event)
+  if (event.key === 'Escape' && running.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('stop')
+  }
 }
 
 const CARET_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
@@ -290,11 +295,15 @@ const composer = useComposer({
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
+  if (running.value) return
   composer.submit()
 }
 
 const primaryActionTooltip = computed(() =>
-  running.value ? t('agent.stopHint') : t('agent.send')
+  running.value ? t('agent.stop') : t('agent.send')
+)
+const primaryActionShortcut = computed(() =>
+  running.value ? t('agent.stopShortcut') : undefined
 )
 
 function onPrimaryAction(): void {
@@ -550,7 +559,10 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AgentTooltip :label="primaryActionTooltip">
+          <AgentTooltip
+            :label="primaryActionTooltip"
+            :shortcut="primaryActionShortcut"
+          >
             <button
               type="button"
               :aria-label="running ? t('agent.stop') : t('agent.send')"

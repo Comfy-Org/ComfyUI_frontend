@@ -5246,7 +5246,7 @@
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
     "send": "Send",
     "stop": "Stop",
-    "stopHint": "Stop ↵",
+    "stopShortcut": "Esc",
     "thinking": "Thinking...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",

@@ -156,20 +156,38 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
-  it('shows the Stop ↵ tooltip while running', async () => {
+  it('shows the Stop tooltip with the Esc shortcut while running', async () => {
     mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.hover(stop)
     expect(
       await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop ↵')
+    ).toHaveTextContent('Stop Esc')
   })
 
-  it('emits stop on Enter while submitting', async () => {
+  it('emits stop on Escape while running and ignores Enter', async () => {
     const { emitted } = mount({ submitting: true })
-    await userEvent.type(screen.getByRole('textbox'), 'hello{Enter}')
-    expect(emitted().stop).toHaveLength(1)
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('lets Escape close the mention list before it stops a run', async () => {
+    const { emitted } = mount({
+      streaming: true,
+      getMentionNodes: () => [{ id: '2', title: 'KSampler' }]
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, '@k')
+    await screen.findByRole('option', { name: /KSampler/ })
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
   })
 
   describe('run permissions popover', () => {
