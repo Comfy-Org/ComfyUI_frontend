@@ -19,7 +19,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
     type="button"
     :aria-label="copied ? copiedLabel : label"
     :title="copied ? copiedLabel : label"
-    class="hover:text-primary-comfy-yellow inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-primary-warm-gray transition-colors"
+    class="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow"
     @click="void copy(value)"
   >
     <component :is="copied ? Check : Copy" class="size-5" />

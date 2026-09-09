@@ -2,7 +2,7 @@
 
 <template>
   <span
-    class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+    class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
   >
     <slot />
   </span>

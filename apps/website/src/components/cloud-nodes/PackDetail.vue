@@ -32,13 +32,13 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <a
         :href="backHref"
-        class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 w-fit text-sm font-semibold underline"
+        class="w-fit text-sm font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
       >
         {{ t('cloudNodes.detail.back', locale) }}
       </a>
 
       <div
-        class="bg-transparency-white-t5 border-primary-warm-gray/20 overflow-hidden rounded-3xl border"
+        class="bg-transparency-white-t5 overflow-hidden rounded-3xl border border-primary-warm-gray/20"
       >
         <PackBanner
           :banner-url="pack.bannerUrl"
@@ -55,7 +55,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
               {{ pack.displayName }}
             </h1>
             <p
-              class="text-primary-warm-gray text-sm/relaxed md:text-base/relaxed"
+              class="text-sm/relaxed text-primary-warm-gray md:text-base/relaxed"
             >
               {{
                 pack.description ||
@@ -75,7 +75,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                   :href="pack.repoUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 font-semibold underline"
+                  class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
                 >
                   {{ pack.repoUrl }}
                 </a>
@@ -148,7 +148,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
             <section
               v-for="group in groupedNodes"
               :key="group.category"
-              class="border-primary-warm-gray/20 rounded-2xl border p-4"
+              class="rounded-2xl border border-primary-warm-gray/20 p-4"
             >
               <h3 class="text-base font-semibold text-primary-comfy-canvas">
                 {{ group.category }}
@@ -157,7 +157,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                 <li
                   v-for="node in group.nodes"
                   :key="node.name"
-                  class="border-primary-warm-gray/20 rounded-xl border p-3"
+                  class="rounded-xl border border-primary-warm-gray/20 p-3"
                   data-testid="cloud-node-pack-detail-node"
                 >
                   <div class="flex flex-wrap items-center gap-2">
@@ -170,7 +170,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                       v-if="node.experimental"
                       :class="
                         cn(
-                          'bg-primary-comfy-yellow/20 rounded-full px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
+                          'rounded-full bg-primary-comfy-yellow/20 px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
                         )
                       "
                     >
@@ -189,7 +189,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                   </div>
                   <p
                     v-if="node.description"
-                    class="text-primary-warm-gray mt-2 text-sm/relaxed"
+                    class="mt-2 text-sm/relaxed text-primary-warm-gray"
                   >
                     {{ node.description }}
                   </p>

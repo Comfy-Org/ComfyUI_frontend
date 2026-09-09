@@ -39,7 +39,7 @@ const events = computed(() =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <div
       class="rounded-5xl bg-transparency-white-t4 px-6 py-16 lg:px-14 lg:py-28"
     >

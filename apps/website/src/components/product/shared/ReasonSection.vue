@@ -30,7 +30,7 @@ const {
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
+    class="mx-auto flex max-w-9xl flex-col gap-4 px-4 py-24 lg:flex-row lg:gap-16 lg:px-20 lg:py-40"
   >
     <!-- Left heading -->
     <div

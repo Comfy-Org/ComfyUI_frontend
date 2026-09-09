@@ -14,7 +14,7 @@ const { columns, rows } = minimaxLicenseComparison
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('pricing.minimaxLicense.heading', locale) }}
       <template #subtitle>
@@ -25,13 +25,13 @@ const { columns, rows } = minimaxLicenseComparison
     </SectionHeader>
 
     <div
-      class="bg-transparency-white-t4 mx-auto mt-8 max-w-6xl rounded-4xl px-5 py-6 lg:px-8"
+      class="mx-auto mt-8 max-w-6xl rounded-4xl bg-transparency-white-t4 px-5 py-6 lg:px-8"
     >
       <div class="scrollbar-none overflow-x-auto">
         <table class="w-full min-w-130 text-left text-sm">
           <thead>
             <tr
-              class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+              class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
             >
               <th class="px-2 py-4" scope="col"></th>
               <th
@@ -67,7 +67,7 @@ const { columns, rows } = minimaxLicenseComparison
       <p class="mt-2 px-2">
         <a
           :href="licenseHref"
-          class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-sm underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+          class="rounded-sm text-sm text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >
           {{ t('pricing.minimaxLicense.cta', locale) }}
         </a>

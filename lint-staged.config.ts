@@ -18,8 +18,11 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const typecheckFiles = formattableFiles.filter((fileName) =>
-    /\.(ts|tsx|vue|mts)$/.test(fileName)
+  const astroFiles = relativePaths.filter((fileName) =>
+    fileName.endsWith('.astro')
+  )
+  const typecheckFiles = relativePaths.filter((fileName) =>
+    /\.(astro|ts|tsx|vue|mts)$/.test(fileName)
   )
 
   return [
@@ -27,13 +30,17 @@ export default function lintStaged(stagedFiles: string[]) {
       formattableFiles,
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
-    ...lintCommands(codeFiles, styleFiles),
+    ...lintCommands(codeFiles, styleFiles, astroFiles),
     ...typecheckCommands(typecheckFiles)
   ]
 }
 
-function lintCommands(codeFiles: string[], styleFiles: string[]) {
-  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
+function lintCommands(
+  codeFiles: string[],
+  styleFiles: string[],
+  astroFiles: string[]
+) {
+  if (new Set([...codeFiles, ...styleFiles, ...astroFiles]).size > 10) {
     return ['pnpm lint']
   }
 
@@ -41,7 +48,10 @@ function lintCommands(codeFiles: string[], styleFiles: string[]) {
     ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
     ...commandsWithFiles(
       codeFiles,
-      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
+    ),
+    ...commandsWithFiles(
+      [...codeFiles, ...astroFiles],
       'pnpm exec eslint --cache --fix --no-warn-ignored'
     )
   ]

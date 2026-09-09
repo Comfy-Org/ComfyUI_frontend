@@ -131,7 +131,7 @@ function listItems(key: TranslationKey): string[] {
       <aside class="lg:w-64 lg:shrink-0">
         <details
           :open="mobileTocOpen"
-          class="border-transparency-white-t4 mb-8 rounded-2xl border bg-(--site-bg-soft) lg:hidden"
+          class="mb-8 rounded-2xl border border-transparency-white-t4 bg-(--site-bg-soft) lg:hidden"
           @toggle="
             (e) => (mobileTocOpen = (e.target as HTMLDetailsElement).open)
           "
@@ -151,16 +151,16 @@ function listItems(key: TranslationKey): string[] {
               ▾
             </span>
           </summary>
-          <ul class="border-transparency-white-t4 border-t p-2">
+          <ul class="border-t border-transparency-white-t4 p-2">
             <li v-for="item in tocItems" :key="item.id">
               <a
                 :href="`#${item.id}`"
                 :aria-current="activeSection === item.id ? 'true' : undefined"
                 :class="
                   cn(
-                    'hover:bg-transparency-white-t4 block rounded-lg px-3 py-2 text-sm transition-colors',
+                    'block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-transparency-white-t4',
                     activeSection === item.id
-                      ? 'text-primary-comfy-yellow font-semibold'
+                      ? 'font-semibold text-primary-comfy-yellow'
                       : 'text-primary-warm-gray'
                   )
                 "
@@ -189,7 +189,7 @@ function listItems(key: TranslationKey): string[] {
                 class="block text-sm/snug transition-colors hover:text-primary-comfy-canvas"
                 :class="
                   activeSection === item.id
-                    ? 'text-primary-comfy-yellow font-semibold'
+                    ? 'font-semibold text-primary-comfy-yellow'
                     : 'text-primary-warm-gray'
                 "
                 @click.prevent="scrollToSection(item.id)"
@@ -232,7 +232,7 @@ function listItems(key: TranslationKey): string[] {
                 class="flex items-start gap-2 text-primary-comfy-canvas"
               >
                 <span
-                  class="bg-primary-comfy-yellow mt-2 size-1.5 shrink-0 rounded-full"
+                  class="mt-2 size-1.5 shrink-0 rounded-full bg-primary-comfy-yellow"
                   aria-hidden="true"
                 />
                 <SafeRichText as="span" :html="item" />

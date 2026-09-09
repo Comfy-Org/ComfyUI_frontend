@@ -72,7 +72,7 @@ const itemClass =
       <DropdownMenuContent
         align="start"
         :side-offset="8"
-        class="bg-site-dropdown border-primary-comfy-ink-light z-50 min-w-56 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="z-50 min-w-56 rounded-2xl border border-primary-comfy-ink-light bg-site-dropdown p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <DropdownMenuItem as-child>
           <a

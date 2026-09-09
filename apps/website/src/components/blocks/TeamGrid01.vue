@@ -33,7 +33,7 @@ const {
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <h2
       v-if="heading"
       class="text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
@@ -67,7 +67,7 @@ const {
           <template #trigger>
             <button
               :aria-label="person.ctaLabel ?? person.name"
-              class="rounded-4.5xl focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 cursor-pointer focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              class="absolute inset-0 z-10 cursor-pointer rounded-4.5xl focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
             />
           </template>
         </TeamMemberDialog01>
@@ -92,7 +92,7 @@ const {
             variant="outline"
             aria-hidden="true"
             tabindex="-1"
-            class="group-hover:bg-primary-comfy-yellow pointer-events-none mt-1 h-12 min-w-40 self-start border-2 px-5 text-sm font-extrabold uppercase group-hover:text-primary-comfy-ink"
+            class="pointer-events-none mt-1 h-12 min-w-40 self-start border-2 px-5 text-sm font-extrabold uppercase group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink"
           >
             {{ person.ctaLabel }}
           </BrandButton>

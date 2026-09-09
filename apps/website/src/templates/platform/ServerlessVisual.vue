@@ -141,11 +141,11 @@ watch(
     </div>
 
     <div
-      class="bg-primary-comfy-plum absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2"
+      class="absolute top-1/2 left-[14%] h-px w-[16%] -translate-y-1/2 bg-primary-comfy-plum"
       aria-hidden="true"
     >
       <span
-        class="bg-primary-comfy-yellow absolute top-1/2 size-2 -translate-1/2 rounded-full"
+        class="absolute top-1/2 size-2 -translate-1/2 rounded-full bg-primary-comfy-yellow"
         :style="{
           left: `${linePulseProgress * 100}%`,
           opacity: linePulseProgress < 0.08 || linePulseProgress > 0.92 ? 0 : 1
@@ -160,7 +160,7 @@ watch(
       <span
         v-for="cell in visualCells"
         :key="cell.id"
-        class="bg-primary-comfy-yellow rounded-sm transition-opacity duration-300"
+        class="rounded-sm bg-primary-comfy-yellow transition-opacity duration-300"
         :style="{
           opacity: cell.state === 'idle' ? 0.14 + cell.opacity * 0.16 : 0.62
         }"
@@ -168,7 +168,7 @@ watch(
     </div>
 
     <div
-      class="text-primary-comfy-yellow/80 absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest uppercase sm:text-[9px] lg:text-[10px]"
+      class="absolute right-[5%] bottom-[6%] left-3/10 grid grid-cols-3 text-[7px] tracking-widest text-primary-comfy-yellow/80 uppercase sm:text-[9px] lg:text-[10px]"
     >
       <span
         v-for="(gpu, index) in GPUS"

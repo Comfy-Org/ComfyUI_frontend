@@ -9,7 +9,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('pricing.lookingForElse.heading', locale) }}
     </SectionHeader>
@@ -24,7 +24,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           :href="externalLinks.github"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-sm underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+          class="rounded-sm text-sm text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >
           {{ t('pricing.lookingForElse.community.github', locale) }}
         </a>
@@ -32,7 +32,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           :href="externalLinks.docsSelfHosted"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-sm underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+          class="rounded-sm text-sm text-primary-comfy-yellow underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
         >
           {{ t('pricing.lookingForElse.community.docs', locale) }}
         </a>

@@ -7,7 +7,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-12 lg:px-20">
+  <section class="mx-auto max-w-9xl px-6 py-12 lg:px-20">
     <h2
       class="text-center text-sm font-extrabold tracking-wider text-primary-warm-gray uppercase"
     >
@@ -18,7 +18,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         v-for="story in customerVideoStories"
         :key="story.slug"
         :href="`/customers/videos/${story.slug}`"
-        class="bg-transparency-white-t4 flex items-center gap-4 rounded-2xl p-4 transition-colors hover:bg-white/8"
+        class="flex items-center gap-4 rounded-2xl bg-transparency-white-t4 p-4 transition-colors hover:bg-white/8"
       >
         <img
           :src="story.poster"
@@ -31,7 +31,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         />
         <div>
           <p
-            class="text-primary-comfy-yellow text-[10px] font-semibold tracking-widest uppercase"
+            class="text-[10px] font-semibold tracking-widest text-primary-comfy-yellow uppercase"
           >
             {{ story.company }}
           </p>

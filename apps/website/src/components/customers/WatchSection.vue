@@ -23,7 +23,7 @@ const { stories, locale = 'en' } = defineProps<{
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 pt-4 pb-8 lg:px-16">
+  <section class="mx-auto max-w-9xl px-6 pt-4 pb-8 lg:px-16">
     <SectionLabel>{{ t('customers.group.watch', locale) }}</SectionLabel>
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
       <VideoStoryCard

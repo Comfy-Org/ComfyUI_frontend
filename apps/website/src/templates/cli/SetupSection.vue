@@ -175,7 +175,7 @@ const copiedLabel = t('ui.copied', locale)
 <template>
   <section
     id="setup"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:scroll-mt-36 lg:py-24"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-16 lg:scroll-mt-36 lg:py-24"
   >
     <SectionHeader
       max-width="xl"
@@ -196,7 +196,7 @@ const copiedLabel = t('ui.copied', locale)
           {{ t('cli.setup.requirementPrefix', locale)
           }}<a
             :href="getRoutes(locale).pricing"
-            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
             >{{ t('cli.setup.requirementLinkLabel', locale) }}</a
           >{{ t('cli.setup.requirementSuffix', locale)
           }}{{ t('cli.setup.requirementFootnote', locale) }}
@@ -207,7 +207,7 @@ const copiedLabel = t('ui.copied', locale)
             :href="externalLinks.comfyCliRepo"
             target="_blank"
             rel="noopener noreferrer"
-            class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
             >{{ t('cli.setup.local.requirementLinkLabel', locale) }}</a
           >{{ t('cli.setup.local.requirementSuffix', locale) }}
         </p>
@@ -230,7 +230,7 @@ const copiedLabel = t('ui.copied', locale)
           v-for="(conn, connId) in connections"
           :key="connId"
           :value="connId"
-          class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:border-primary-comfy-yellow cursor-pointer rounded-2xl border border-white/15 bg-white/4 p-5 text-left transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:outline-none data-[state=active]:bg-white/8"
+          class="cursor-pointer rounded-2xl border border-white/15 bg-white/4 p-5 text-left transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:border-primary-comfy-yellow data-[state=active]:bg-white/8"
         >
           <span
             class="block text-sm font-bold tracking-wider text-primary-comfy-canvas uppercase"
@@ -263,7 +263,7 @@ const copiedLabel = t('ui.copied', locale)
               v-for="(client, clientId) in clients"
               :key="clientId"
               :value="clientId"
-              class="focus-visible:ring-primary-comfy-yellow/50 data-[state=active]:bg-primary-comfy-yellow shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
+              class="shrink-0 cursor-pointer rounded-lg bg-white/8 px-2 py-2.5 text-[10px] font-bold tracking-wider whitespace-nowrap text-smoke-700 uppercase transition-colors hover:text-primary-comfy-canvas focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none data-[state=active]:bg-primary-comfy-yellow data-[state=active]:text-primary-comfy-ink lg:rounded-none lg:px-6 lg:text-xs lg:first:rounded-l-xl lg:last:rounded-r-xl"
             >
               {{ client.name }}
             </TabsTrigger>
@@ -271,7 +271,7 @@ const copiedLabel = t('ui.copied', locale)
 
           <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div
-              class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
+              class="flex flex-col rounded-3xl bg-transparency-white-t4 p-6 lg:p-8"
             >
               <h3
                 class="text-xl font-light text-primary-comfy-canvas lg:text-2xl"
@@ -301,7 +301,7 @@ const copiedLabel = t('ui.copied', locale)
             </div>
 
             <div
-              class="bg-transparency-white-t4 flex flex-col rounded-3xl p-6 lg:p-8"
+              class="flex flex-col rounded-3xl bg-transparency-white-t4 p-6 lg:p-8"
             >
               <template v-if="activeClientFor(connId).kind === 'agent'">
                 <h3
@@ -349,7 +349,7 @@ const copiedLabel = t('ui.copied', locale)
                     :href="externalLinks.apiKeys"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+                    class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
                     >{{ t('cli.setup.shell.ci.keyLinkLabel', locale) }}</a
                   >
                 </p>
@@ -370,7 +370,7 @@ const copiedLabel = t('ui.copied', locale)
           :href="externalLinks.docsCliReference"
           target="_blank"
           rel="noopener noreferrer"
-          class="focus-visible:ring-primary-comfy-yellow/50 rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:outline-none"
+          class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >{{ t('cli.setup.docsLinkLabel', locale) }}</a
         >{{ t('cli.setup.docsSuffix', locale) }}
       </p>
