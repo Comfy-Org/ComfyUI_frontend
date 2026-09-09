@@ -11,6 +11,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
 
@@ -53,16 +54,6 @@ vi.mock<unknown>(
     }
   }
 )
-
-interface MockTopupOperation {
-  opId: string
-  status: 'pending' | 'reconciliation_needed'
-  actionUrl: string | null
-  authenticationState?: string
-  errorMessage?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
-}
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -163,8 +154,14 @@ function setIsAddingCredits(isAddingCredits: boolean) {
   Object.assign(useBillingOperationStore(), { isAddingCredits })
 }
 
-function setTopupActionOperation(operation: MockTopupOperation | undefined) {
-  Object.assign(useBillingOperationStore(), { topupActionOperation: operation })
+function setTopupActionOperation(
+  operation: Partial<BillingOperation> | undefined
+) {
+  Object.assign(useBillingOperationStore(), {
+    topupActionOperation: operation
+      ? billingOperation({ type: 'topup', ...operation })
+      : undefined
+  })
 }
 
 function setHasSavedPaymentMethod(value: boolean | null) {

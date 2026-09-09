@@ -41,12 +41,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-vi.mock(import('@/scripts/api'), async (importOriginal) => ({
-  api: Object.assign((await importOriginal()).api, {
-    apiURL: (route: string) => `https://api.example.com/api${route}`
-  })
-}))
-
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))

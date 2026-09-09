@@ -165,11 +165,6 @@ describe('useBillingCapabilities', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-    Object.assign(useAuthStore(), { userId: 'firebase-user-1' })
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspace: { id: 'workspace-1', role: 'owner' }
-    })
     scope = effectScope()
     billingCapabilities = scope.run(() => useBillingCapabilities())!
   })
