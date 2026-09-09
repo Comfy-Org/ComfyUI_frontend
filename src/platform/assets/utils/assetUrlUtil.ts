@@ -55,17 +55,11 @@ export function getAssetSubfolder(asset: AssetItem): string {
 }
 
 /**
- * Id of the assets-API asset holding this item's own file.
- *
- * A card grouped per job carries the job id as its `id`; its own file is the
- * `allOutputs` entry with the same filename, which keeps the real asset id.
+ * Id of the assets-API asset holding this item's own file. A card grouped per
+ * job carries the job id as its `id` and keeps its own asset id in metadata.
  */
 function getAssetContentId(asset: AssetItem): string {
-  const outputs = getOutputAssetMetadata(asset.user_metadata)?.allOutputs
-  const ownOutput = outputs?.find(
-    (output) => output.filename === asset.name && output.assetId
-  )
-  return ownOutput?.assetId ?? asset.id
+  return getOutputAssetMetadata(asset.user_metadata)?.assetId || asset.id
 }
 
 /**

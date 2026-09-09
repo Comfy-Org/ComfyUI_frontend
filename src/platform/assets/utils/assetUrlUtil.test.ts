@@ -99,23 +99,24 @@ describe('getAssetFileUrl', () => {
       )
     })
 
-    it('uses the own output asset id of a card grouped per job', () => {
+    it('uses the own asset id kept by a card grouped per job', () => {
       const asset = createAsset({
         id: 'job-1',
         name: 'ComfyUI_00110.glb',
         user_metadata: {
           jobId: 'job-1',
           subfolder: '',
+          assetId: 'asset-model-later',
           outputCount: 2,
           allOutputs: [
-            { assetId: 'asset-image', filename: 'ComfyUI_00109.png' },
-            { assetId: 'asset-model', filename: 'ComfyUI_00110.glb' }
+            { assetId: 'asset-model-earlier', filename: 'ComfyUI_00110.glb' },
+            { assetId: 'asset-model-later', filename: 'ComfyUI_00110.glb' }
           ] as AugmentedResultItem[]
         }
       })
 
       expect(getAssetFileUrl(asset)).toBe(
-        'http://localhost:8188/api/assets/asset-model/content'
+        'http://localhost:8188/api/assets/asset-model-later/content'
       )
     })
 
