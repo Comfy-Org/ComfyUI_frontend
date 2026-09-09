@@ -1,5 +1,9 @@
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
@@ -26,6 +30,7 @@ import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
 
 class PromotedWidgetNode extends LGraphNode {
   constructor() {
@@ -53,12 +58,12 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function operation(id: string, version: number, payload: object) {
+function operation(id: string, version: number, payload: GraphOperation): Op {
   return {
     op_id: id,
     actor: 'agent:test',
     base_version: version,
-    stamp: [version, 'agent:test', id],
+    stamp: [version, 'agent:test'],
     ...payload
   }
 }
@@ -156,16 +161,12 @@ function startFollower(options: FixtureOptions = {}) {
 
 function deliver(
   state: ReturnType<typeof startFollower>,
-  payload: object,
+  payload: GraphOperation,
   seq: number
 ) {
   const vector = Y.encodeStateVector(state.hostDoc)
   const id = `op-${seq}`
-  const result = applyOps(
-    state.hostDoc,
-    [operation(id, seq, payload)] as Parameters<typeof applyOps>[1],
-    CATALOG
-  )
+  const result = applyOps(state.hostDoc, [operation(id, seq, payload)], CATALOG)
   expect(result.outcomes).toEqual([{ op_id: id, outcome: 'applied' }])
   const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
   state.follower.applyRemoteUpdate(update)
@@ -354,7 +355,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     // unreadable must be retired live, not left connected to its old slot.
     const state = startFollower()
     const connect = {
-      op: 'connect',
+      op: 'connect' as const,
       link_id: 9,
       from_node: 2,
       from_slot: 0,
