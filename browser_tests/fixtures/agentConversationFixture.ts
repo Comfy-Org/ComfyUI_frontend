@@ -1,11 +1,10 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { marked } from 'marked'
 import { z } from 'zod'
 
+import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import { resolveMarkdownUrl } from '@/utils/markdownRendererUtil'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -24,6 +23,8 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -39,12 +40,12 @@ const CANCEL_TIMEOUT = 10_000
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
+// The composer names itself with the rendered message, escapes resolved.
+const COMPOSER_LABEL = i18n.global.t('agent.placeholder')
 const GROUP_LABEL = /^Ran (\d+) tool calls?/
-
-interface RecordedToolCall {
-  callId: string
-  failed: boolean
-}
+const FAILED_GLYPH = /lucide--circle-x/
+// Painted pixels may be antialiased against the grid; the marker centre is solid.
+const COLOR_TOLERANCE = 48
 
 interface RecordedLink {
   fromNode: string
@@ -99,26 +100,6 @@ function collapse(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-// The recorded markdown as the panel's own renderer lays it out (marked, with
-// the panel's URL rebasing applied first), reduced to the words a user reads.
-function visibleText(markdown: string, apiBase: string): string {
-  return collapse(
-    marked
-      .parse(
-        markdown.replace(/https?:\/\/[^\s)\]]+/g, (url) =>
-          resolveMarkdownUrl(url, apiBase)
-        ),
-        { async: false }
-      )
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-  )
-}
-
 async function withTimeout(
   promise: Promise<void>,
   ms: number,
@@ -144,6 +125,9 @@ class AgentConversationHarness {
   private readonly streams: Locator
   private readonly groups: Locator
   private readonly seedIds: Set<string>
+  // Every node id the host has held so far, seed included.
+  private readonly seenIds: Set<string>
+  private readonly expectations: ExpectedTurn[]
   private socket: WebSocketRoute | null = null
   private postedTurns = 0
   private readonly displayNames = new Map<string, string>()
@@ -157,11 +141,20 @@ class AgentConversationHarness {
   constructor(
     private readonly page: Page,
     readonly conversation: AgentConversation,
-    readonly replayTiming: ReplayTiming
+    readonly replayTiming: ReplayTiming,
+    caseId: string
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
     this.seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
+    this.seenIds = new Set(this.seedIds)
+    const expectations = RECORDED_EXPECTATIONS[caseId]
+    const recorded = expectations?.length ?? 0
+    if (recorded !== conversation.turns.length)
+      throw new Error(
+        `agentConversationExpectations.ts records ${recorded} turn(s) for ${caseId}; the recording has ${conversation.turns.length}`
+      )
+    this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
     this.groups = this.panel.getByRole('button', { name: GROUP_LABEL })
@@ -203,9 +196,7 @@ class AgentConversationHarness {
 
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
-    const composer = this.panel.getByRole('textbox', {
-      name: /^Describe ideas/
-    })
+    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     // Replay frames are dropped until the page has applied the ack's thread id.
@@ -231,6 +222,8 @@ class AgentConversationHarness {
       else {
         await this.waitForSubscribe()
         this.send(this.host.apply(entry.ops))
+        for (const id of Object.keys(this.host.graph().nodes))
+          this.seenIds.add(id)
       }
       // The recorded turn was stopped here, so the panel stops here too.
       if (index === this.conversation.turns[turn].cancel_after)
@@ -289,21 +282,6 @@ class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
-  // One row per tool call the turn recorded, in first-seen order; failed when
-  // the recording reported an error status for it.
-  private recordedToolCalls(turn: number): RecordedToolCall[] {
-    const calls = new Map<string, RecordedToolCall>()
-    for (const entry of this.conversation.turns[turn].response) {
-      if (entry.kind !== 'event' || entry.event.type !== 'agent_tool_call')
-        continue
-      const { tool_call_id: callId, status } = entry.event.data
-      const call = calls.get(callId) ?? { callId, failed: false }
-      if (status === 'error') call.failed = true
-      calls.set(callId, call)
-    }
-    return [...calls.values()]
-  }
-
   // Last write wins per widget; the rendered control shows only the final value.
   private recordedWidgetValues(throughTurn: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
@@ -323,29 +301,6 @@ class AgentConversationHarness {
       }
     }
     return [...latest.values()]
-  }
-
-  // Every node the recording seeded or placed through the given turn.
-  private placedNodeIds(throughTurn: number): string[] {
-    const placed = this.entries(throughTurn).flatMap((entry) =>
-      entry.kind === 'graph_ops'
-        ? entry.ops.flatMap((op) =>
-            op.op === 'add_node' ? [String(op.node.id)] : []
-          )
-        : []
-    )
-    return [...this.seedIds, ...placed]
-  }
-
-  // The assistant text a turn recorded, concatenated as the panel streams it.
-  recordedAssistantText(turn: number): string {
-    return this.conversation.turns[turn].response
-      .flatMap((entry) =>
-        entry.kind === 'event' && entry.event.type === 'agent_message_delta'
-          ? [entry.event.data.delta]
-          : []
-      )
-      .join('')
   }
 
   private displayName(type: string): string {
@@ -371,9 +326,8 @@ class AgentConversationHarness {
     return new RegExp(`^(?:${escape(name)}|${escape(node.type)})$`)
   }
 
-  // The renderer's link map is the one structure the canvas painter draws
-  // wires from; the slot rows below show a user that both ends are wired, but
-  // no DOM surface names the endpoints, so the pairs are read from the map.
+  // The renderer's link map coordinates the wire checks: it names the
+  // endpoints no DOM surface does, and unpaintedLinks below reads the pixels.
   private async renderedLinks(): Promise<RecordedLink[]> {
     const links = await this.page.evaluate(() =>
       [...window.app!.graph.links.values()].map((link) => ({
@@ -386,43 +340,101 @@ class AgentConversationHarness {
     return links.sort(byLinkKey)
   }
 
-  // What this turn put on the panel: its complete assistant text, and tool
-  // call groups that add up to every recorded call and stay open exactly
-  // where a call failed.
+  // Samples the background canvas at each link's painted midpoint for the
+  // colour the renderer gives that link. A link whose endpoints the map holds
+  // but whose wire nobody painted is returned.
+  private unpaintedLinks(): Promise<string[]> {
+    return this.page.evaluate((tolerance: number) => {
+      const app = window.app!
+      const canvas = app.canvas
+      canvas.draw(true, true)
+      const context = canvas.bgcanvas.getContext('2d')!
+      const scale = canvas.bgcanvas.width / canvas.canvas.clientWidth
+      // The static palette the renderer resolves a link's type through.
+      const { link_type_colors: colors } = canvas.constructor as unknown as {
+        link_type_colors: Partial<Record<string, string>>
+      }
+      const channels = (color: string): number[] => {
+        const hex = color.replace('#', '')
+        const wide =
+          hex.length === 3
+            ? hex
+                .split('')
+                .map((digit) => digit + digit)
+                .join('')
+            : hex
+        return [0, 2, 4].map((at) => parseInt(wide.slice(at, at + 2), 16))
+      }
+      return [...app.graph.links.values()].flatMap((link) => {
+        const expected = channels(
+          (typeof link.color === 'string' ? link.color : undefined) ??
+            colors[String(link.type)] ??
+            canvas.default_link_color
+        )
+        const [x, y] = canvas.ds.convertOffsetToCanvas(link._pos)
+        const { data } = context.getImageData(
+          Math.round(x * scale) - 3,
+          Math.round(y * scale) - 3,
+          7,
+          7
+        )
+        for (let at = 0; at < data.length; at += 4) {
+          const off = Math.max(
+            Math.abs(data[at] - expected[0]),
+            Math.abs(data[at + 1] - expected[1]),
+            Math.abs(data[at + 2] - expected[2])
+          )
+          if (data[at + 3] > 0 && off <= tolerance) return []
+        }
+        return [
+          `${link.origin_id}:${link.origin_slot}->${link.target_id}:${link.target_slot}`
+        ]
+      })
+    }, COLOR_TOLERANCE)
+  }
+
+  // What this turn put on the panel, against the recording's explicit
+  // expectations: the complete assistant text, and every tool call group in
+  // order with the rows a user reads once it is open.
   private async expectTurnRendered(
     turn: number,
     before: PanelCounts
   ): Promise<void> {
-    const apiBase = new URL('/api', this.page.url()).href.replace(/\/+$/, '')
-    const text = visibleText(this.recordedAssistantText(turn), apiBase)
-    if (text !== '')
+    const expected = this.expectations[turn]
+    if (expected.text === '')
+      await expect(this.streams).toHaveCount(before.streams)
+    else
       await expect
         .poll(async () =>
           collapse(
             (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
           )
         )
-        .toBe(text)
+        .toBe(expected.text)
 
-    const calls = this.recordedToolCalls(turn)
-    await expect
-      .poll(async () => {
-        const groups = (await this.groups.all()).slice(before.groups)
-        let taken = 0
-        let total = 0
-        let misplaced = 0
-        for (const group of groups) {
-          const size = Number(GROUP_LABEL.exec(await group.innerText())?.[1])
-          const expanded =
-            (await group.getAttribute('aria-expanded')) === 'true'
-          const failed = calls.slice(taken, taken + size).some((c) => c.failed)
-          if (expanded !== failed) misplaced += 1
-          taken += size
-          total += size
-        }
-        return { total, misplaced }
-      })
-      .toEqual({ total: calls.length, misplaced: 0 })
+    await expect(this.groups).toHaveCount(
+      before.groups + expected.groups.length
+    )
+    for (const [index, rows] of expected.groups.entries()) {
+      const group = this.groups.nth(before.groups + index)
+      const failed = rows.some((row) => row.failed)
+      const calls = rows.reduce((sum, row) => sum + row.count, 0)
+      await expect(group).toHaveText(new RegExp(`^Ran ${calls} tool call`))
+      // A group stays open exactly where a call failed.
+      await expect(group).toHaveAttribute('aria-expanded', String(failed))
+      if (!failed) await group.click()
+      const items = group.locator('..').getByRole('listitem')
+      await expect(items).toHaveCount(rows.length)
+      for (const [at, row] of rows.entries()) {
+        const item = items.nth(at)
+        await expect(item.locator('span').nth(1)).toHaveText(row.label)
+        const glyph = item.locator('span').first()
+        if (row.failed) await expect(glyph).toHaveClass(FAILED_GLYPH)
+        else await expect(glyph).not.toHaveClass(FAILED_GLYPH)
+        if (row.count > 1) await expect(item).toContainText(`×${row.count}`)
+        else await expect(item).not.toContainText('×')
+      }
+    }
   }
 
   // What the canvas shows after the given turn, judged the way a user would
@@ -432,7 +444,7 @@ class AgentConversationHarness {
     const projected = this.host.projection()
     const nodes = projected.nodes.map((node) => zProjectedNode.parse(node))
     const present = new Set(nodes.map((node) => String(node.id)))
-    for (const id of this.placedNodeIds(throughTurn))
+    for (const id of this.seenIds)
       if (!present.has(id))
         await expect(this.vueNodes.getNodeLocator(id)).toHaveCount(0)
     for (const node of nodes) {
@@ -477,6 +489,11 @@ class AgentConversationHarness {
       })
       .sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
+    await expect
+      .poll(() => this.unpaintedLinks(), {
+        message: 'every wire is painted at its midpoint'
+      })
+      .toEqual([])
     // A widget-backed input renders no slot row on an uncollapsed node
     // (NodeSlots.vue); the wire above already covers that end.
     for (const link of links) {
@@ -632,7 +649,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     const harness = new AgentConversationHarness(
       page,
       loadAgentConversation(conversationCase),
-      replayTiming
+      replayTiming,
+      conversationCase
     )
     await harness.boot(agentFlagEnabled)
     await use(harness)
