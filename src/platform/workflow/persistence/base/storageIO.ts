@@ -10,9 +10,10 @@ import type {
   DraftPayloadV2,
   OpenPathsPointer
 } from './draftTypes'
-import { StorageKeys } from './storageKeys'
+import { StorageKeys, getWorkspaceId, resolveStorageScope } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
+type StorageWriteGate = 'open' | 'deferred' | 'closed'
 type WorkflowStorageState =
   | { status: 'ready'; availability: StorageAvailability }
   | {
@@ -31,7 +32,22 @@ let workflowStorageState: WorkflowStorageState = {
   status: 'ready',
   availability: 'available'
 }
+let storageIdentity: string | null = null
 const pendingPersistenceFlushes = new Set<() => void>()
+
+export function setStorageIdentity(userId: string | null): void {
+  storageIdentity = userId
+}
+
+export function getStorageScope(): string | null {
+  return resolveStorageScope(storageIdentity, getWorkspaceId())
+}
+
+export function getStorageWriteGate(): StorageWriteGate {
+  if (workflowStorageState.status === 'transitioning') return 'deferred'
+  if (getStorageScope() === null) return 'deferred'
+  return workflowStorageState.availability === 'available' ? 'open' : 'closed'
+}
 
 export function registerWorkflowPersistenceFlush(
   flush: () => void
@@ -51,10 +67,7 @@ function flushPendingWorkflowPersistence(): void {
 }
 
 export function isStorageAvailable(): boolean {
-  return (
-    workflowStorageState.status === 'ready' &&
-    workflowStorageState.availability === 'available'
-  )
+  return getStorageWriteGate() === 'open'
 }
 
 export function markStorageUnavailable(): void {
@@ -550,6 +563,21 @@ export function completeWorkflowLogoutTransition(): void {
     status: 'ready',
     availability: workflowStorageState.resumeAvailability
   }
+}
+
+export function clearWorkflowStorageForScope(scope: string): void {
+  const localKeys = [
+    StorageKeys.draftIndex(scope),
+    StorageKeys.lastActivePath(scope),
+    StorageKeys.lastOpenPaths(scope),
+    `Comfy.Workflow.Drafts:${scope}`,
+    `Comfy.Workflow.DraftOrder:${scope}`,
+    ...legacyLocalRestoreKeys
+  ]
+  const localPrefixes = [`${StorageKeys.prefixes.draftPayload}${scope}:`]
+
+  removeStorageKeys(localStorage, localKeys, localPrefixes)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
 
 export function clearAllWorkflowStorage(): void {
