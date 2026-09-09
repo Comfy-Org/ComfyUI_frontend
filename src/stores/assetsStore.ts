@@ -736,7 +736,7 @@ export const useAssetsStore = defineStore('assets', () => {
       if (resolved) categories.add(resolved)
 
       for (const [category, state] of modelStateByCategory.value.entries()) {
-        if (state.assets?.has(assetId)) categories.add(category)
+        if (state.assets.has(assetId)) categories.add(category)
       }
       for (const category of categories) invalidateCategory(category)
     }
