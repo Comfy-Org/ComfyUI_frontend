@@ -269,6 +269,10 @@ async function recordTurns(
       opening ??= ack.data.message_id
       if (options.cancel?.turn === index + 1) {
         await sleep(options.cancel.afterMs)
+        if (done(ack.data.message_id))
+          refuse(
+            `${turnLabel(index)} completed before the cancel was sent; lower --cancel-after-ms`
+          )
         turn.cancel_sent_at_ms = Date.now()
         turn.cancel_ack = await postCancel(thread, ack.data.message_id)
         if (turn.cancel_ack.status !== 202)
@@ -298,7 +302,7 @@ async function recordTurns(
 
 async function main(argv: string[]): Promise<void> {
   const positional: string[] = []
-  const flags: Record<string, string> = {}
+  const flags: Partial<Record<string, string>> = {}
   const prompts: string[] = []
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -448,10 +452,8 @@ async function main(argv: string[]): Promise<void> {
   }
 }
 
-if (
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+const entry = process.argv.at(1)
+if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
   main(process.argv.slice(2)).catch((error: unknown) => {
     const refused = error instanceof RecordRefusal
     process.stderr.write(

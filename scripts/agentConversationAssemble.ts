@@ -2,16 +2,21 @@
 // recording must clear. Nothing here touches the network, a socket or disk.
 import { basename } from 'node:path'
 
-import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
+import { FROZEN_OPS, readGraph } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type { zAgentConversationRequest } from '../browser_tests/fixtures/data/agent/agentConversation'
+import type {
+  AgentConversation,
+  zAgentConversationRequest
+} from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
   OP_ENVELOPE_KEYS,
+  assertOpsApply,
   mintedIds,
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { GraphOperation } from '../src/workbench/extensions/agent/crdt/graphOperations'
 import { AGENT_WS_EVENT_TYPES } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 
 // The replay accepts exactly the agent events the panel itself parses.
@@ -345,6 +350,10 @@ function appliedOps(
   return ops
 }
 
+const repeated = (values: string[]): string[] => [
+  ...new Set(values.filter((value, index) => values.indexOf(value) !== index))
+]
+
 function parentToolCall(
   row: ParentRow,
   workflowId: string
@@ -352,6 +361,11 @@ function parentToolCall(
   const applied = row.children.flatMap((child) =>
     child.status === 'ok' && child.op_id ? [child.op_id] : []
   )
+  const repeatedIds = repeated(applied)
+  if (repeatedIds.length > 0)
+    refuse(
+      `parent row ${row.id} applies op ids ${list(repeatedIds)} more than once; the replay would apply them once per child row`
+    )
   if (row.result === null && applied.length > 0)
     refuse(`parent row ${row.id} has applied ops but a NULL result`)
 
@@ -404,10 +418,6 @@ function buildResponse(
   return { response, cancelAfter }
 }
 
-const repeated = (values: string[]): string[] => [
-  ...new Set(values.filter((value, index) => values.indexOf(value) !== index))
-]
-
 // The frames and the audit rows must describe the same turn's tool calls, one
 // terminal frame and one parent row each. Set equality alone hides multiplicity:
 // a second terminal frame replays the call's ops again, and a second parent row
@@ -442,54 +452,78 @@ function checkTurnAgreement(
     )
 }
 
+// The emitted operation stream, in the order the replay applies it: the one
+// list both the replay entries and the draft check are derived from.
+function emittedOps(conversation: AgentConversation): GraphOperation[] {
+  return conversation.turns.flatMap((turn) =>
+    turn.response.flatMap((entry) =>
+      entry.kind === 'graph_ops' ? entry.ops : []
+    )
+  )
+}
+
+// The node ids the production applier leaves after the emitted stream, and
+// every id the stream names; a name absent from the outcome was removed.
+function appliedNodeIds(conversation: AgentConversation): {
+  outcome: Set<string>
+  named: Set<string>
+} {
+  let outcome: Set<string>
+  try {
+    outcome = new Set(
+      Object.keys(readGraph(assertOpsApply(conversation)).nodes)
+    )
+  } catch (error) {
+    refuse(
+      `the replay applier rejects this recording: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+  const named = new Set(
+    emittedOps(conversation)
+      .flatMap((op) =>
+        op.op === 'clear'
+          ? op.removed_nodes
+          : op.op === 'add_node' || op.op === 'delete_node'
+            ? [op.node_id]
+            : []
+      )
+      .map(String)
+  )
+  return { outcome, named }
+}
+
 // The draft is the only witness that the applied ops reached the document.
 function checkDraft(
   draft: NormalizedRows['draft'],
   seedIds: Set<string>,
-  appliedOps: Array<Record<string, unknown>>,
+  applied: { outcome: Set<string>; named: Set<string> },
   workflowId: string
 ): DraftCounts {
   if (draft === null)
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
   const draftIds = new Set(draft.nodes.map((node) => node.id))
+  const { outcome, named } = applied
 
-  // Replay the ops in order over the seed rather than collecting membership:
-  // a delete_node followed by an add_node of the same id leaves the node in
-  // place, which unordered sets read as a node the delete failed to remove.
-  const expected = new Set(seedIds)
-  const touched = new Set<string>()
-  for (const op of appliedOps) {
-    if ((op.node_id ?? null) === null) continue
-    const id = String(op.node_id)
-    if (op.op === 'delete_node') {
-      expected.delete(id)
-      touched.add(id)
-    } else if (op.op === 'add_node') {
-      expected.add(id)
-      touched.add(id)
-    }
-  }
-
-  const missing = [...expected].filter((id) => !draftIds.has(id))
+  const missing = [...outcome].filter((id) => !draftIds.has(id))
   if (missing.length > 0)
     refuse(
       `draft for ${workflowId} lacks node ids ${list(missing)} that the applied ops leave in place`
     )
   // Still present although the ops ended by removing it: the ops did not reach
-  // the document. A node the ops never mention is merely unexplained.
+  // the document. A node the ops never name is merely unexplained.
   const undeleted = [...draftIds].filter(
-    (id) => touched.has(id) && !expected.has(id)
+    (id) => named.has(id) && !outcome.has(id)
   )
   if (undeleted.length > 0)
     refuse(
-      `draft for ${workflowId} still holds node ids ${list(undeleted)} that applied delete_node ops removed`
+      `draft for ${workflowId} still holds node ids ${list(undeleted)} that the applied ops removed`
     )
 
   return {
     draft_nodes: draftIds.size,
-    added_nodes: [...expected].filter((id) => !seedIds.has(id)).length,
-    deleted_nodes: [...seedIds].filter((id) => !expected.has(id)).length,
-    unexplained_draft_nodes: [...draftIds].filter((id) => !expected.has(id))
+    added_nodes: [...outcome].filter((id) => !seedIds.has(id)).length,
+    deleted_nodes: [...seedIds].filter((id) => !outcome.has(id)).length,
+    unexplained_draft_nodes: [...draftIds].filter((id) => !outcome.has(id))
       .length
   }
 }
@@ -497,14 +531,13 @@ function checkDraft(
 // An uncatalogued class is stored opaquely by the applier, so a later
 // set_widget on it throws.
 function checkAddedClasses(
-  appliedOps: Array<Record<string, unknown>>,
+  ops: GraphOperation[],
   catalog: SeedFixture['workflow']['catalog']
 ): void {
   const types = new Set(Object.keys(catalog.types))
   const offCatalog = new Set(
-    appliedOps
-      .filter((op) => op.op === 'add_node')
-      .map((op) => String(op.class_type))
+    ops
+      .flatMap((op) => (op.op === 'add_node' ? [op.class_type] : []))
       .filter((type) => !types.has(type))
   )
   if (offCatalog.size > 0)
@@ -608,6 +641,34 @@ function childStatuses(parents: ParentRow[]): Record<string, number> {
   return tally
 }
 
+// Where an accepted cancel falls among the turn's frames. The last kept frame
+// is agent_message_done (keepTurnFrames), so a cancel at or after it reached
+// a turn that had already completed: the replay would stop a finished turn.
+function cancelAfterFrame(
+  turn: RecordedTurn,
+  frames: RecordedFrame[],
+  label: string
+): number | undefined {
+  const sent = turn.cancel_sent_at_ms
+  if (sent === undefined) return undefined
+  if (turn.cancel_ack?.status !== 202)
+    refuse(
+      `${label} cancel was not accepted: ${JSON.stringify(turn.cancel_ack ?? null)}`
+    )
+  const stamps = frames.map((frame) => frame.at_ms)
+  if (stamps.some((stamp) => stamp === undefined))
+    refuse(`${label} was cancelled but its frames carry no at_ms to place it`)
+  const before = stamps.filter(
+    (stamp) => stamp !== undefined && stamp <= sent
+  ).length
+  if (before === 0) refuse(`${label} was cancelled before any frame arrived`)
+  if (before === frames.length)
+    refuse(
+      `${label} was cancelled after agent_message_done; the turn had already completed`
+    )
+  return before - 1
+}
+
 // One recorded turn: its own frames, its own rows, and the gates binding them.
 function assembleTurn(
   turn: RecordedTurn,
@@ -616,25 +677,14 @@ function assembleTurn(
   rows: NormalizedRows,
   workflowId: string,
   label: string
-): { turn: DraftTurn; receipt: TurnReceipt; appliedOps: GraphOps } {
+): { turn: DraftTurn; receipt: TurnReceipt } {
   const calls = rows.parents.map((row) => parentToolCall(row, workflowId))
   checkTurnAgreement(frames, rows.parents, label)
-  const sent = turn.cancel_sent_at_ms
-  const before =
-    sent === undefined
-      ? []
-      : frames.filter((frame) => (frame.at_ms ?? 0) <= sent)
-  if (sent !== undefined && turn.cancel_ack?.status !== 202)
-    refuse(
-      `${label} cancel was not accepted: ${JSON.stringify(turn.cancel_ack ?? null)}`
-    )
-  if (sent !== undefined && before.length === 0)
-    refuse(`${label} was cancelled before any frame arrived`)
-  const cancelAfterFrame = sent === undefined ? undefined : before.length - 1
+  const cancelAfterIndex = cancelAfterFrame(turn, frames, label)
   const { response, cancelAfter } = buildResponse(
     frames,
     new Map(calls.map((call) => [call.toolCallId, call.appliedOps])),
-    cancelAfterFrame,
+    cancelAfterIndex,
     label
   )
   return {
@@ -647,15 +697,14 @@ function assembleTurn(
     receipt: {
       message_id: ids.messageId,
       frames_kept: frames.length,
-      cancel_after_frame: cancelAfterFrame,
+      cancel_after_frame: cancelAfterIndex,
       parents: rows.parents.length,
       mutating_parents: calls.filter((call) => call.appliedOps.length > 0)
         .length,
       child_statuses: childStatuses(rows.parents),
       rows: rows.path,
       rows_sha256: rows.sha256
-    },
-    appliedOps: calls.flatMap((call) => call.appliedOps)
+    }
   }
 }
 
@@ -693,18 +742,24 @@ export function assembleConversation(input: AssembleInput) {
     )
   )
 
-  const appliedOps = turns.flatMap((turn) => turn.appliedOps)
-  const draft = checkDraft(rows.at(-1)!.draft, seedIds, appliedOps, workflowId)
-  checkAddedClasses(appliedOps, workflow.catalog)
+  const conversation = buildConversation({
+    input,
+    threadId,
+    workflowId,
+    seedMessageId: seedTurn?.messageId ?? null,
+    turns: turns.map((turn) => turn.turn)
+  })
+  // The draft agrees with what the replay itself applies, in emitted order.
+  const draft = checkDraft(
+    rows.at(-1)!.draft,
+    seedIds,
+    appliedNodeIds(conversation),
+    workflowId
+  )
+  checkAddedClasses(emittedOps(conversation), workflow.catalog)
 
   return {
-    conversation: buildConversation({
-      input,
-      threadId,
-      workflowId,
-      seedMessageId: seedTurn?.messageId ?? null,
-      turns: turns.map((turn) => turn.turn)
-    }),
+    conversation,
     receipt: buildReceipt({
       input,
       threadId,
