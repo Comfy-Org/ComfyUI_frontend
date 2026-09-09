@@ -12,16 +12,16 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: { value: {} }
 }))
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { getServerFeature: vi.fn() }
 }))
-vi.mock('@/utils/devFeatureFlagOverride', () => ({
+vi.mock(import('@/utils/devFeatureFlagOverride'), () => ({
   getDevOverride: vi.fn()
 }))
-vi.mock('@/config/turnstile', () => ({
+vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: vi.fn()
 }))
 

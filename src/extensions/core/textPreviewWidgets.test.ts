@@ -24,10 +24,6 @@ vi.mock(
   })
 )
 
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({ getWidget: () => undefined })
-}))
-
 vi.mock('@/scripts/domWidget', () => ({
   ComponentWidgetImpl: class {
     name: string

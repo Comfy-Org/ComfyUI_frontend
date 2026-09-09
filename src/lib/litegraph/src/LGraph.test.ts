@@ -1,7 +1,5 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -62,12 +60,11 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   mockReportError.mockClear()
 })
@@ -2306,10 +2303,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 })
 
 describe('Zero UUID handling in configure', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {
     const graph = new LGraph()
     const data = graph.serialize()

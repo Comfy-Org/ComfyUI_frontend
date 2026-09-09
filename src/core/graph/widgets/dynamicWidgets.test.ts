@@ -1,5 +1,3 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
@@ -9,13 +7,14 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia({ stubActions: false }))
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
 
-const { addNodeInput } = useLitegraphService()
+let addNodeInput: ReturnType<typeof useLitegraphService>['addNodeInput']
+beforeEach(() => {
+  ;({ addNodeInput } = useLitegraphService())
+})
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))

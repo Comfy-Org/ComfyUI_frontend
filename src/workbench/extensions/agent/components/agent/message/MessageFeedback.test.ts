@@ -12,19 +12,19 @@ import MessageFeedback from './MessageFeedback.vue'
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => '/api' + route,
     fetchApi
   }
 }))
 
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useClipboard: () => ({
     copy: clipboard.copy,
     copied: ref(false),

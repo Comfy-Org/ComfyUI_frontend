@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -9,45 +11,42 @@ type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
-  useComfyManagerService: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
-  const enqueueTaskMock = vi.fn()
+  () => ({
+    useComfyManagerService: vi.fn()
+  })
+)
 
-  return {
-    useManagerQueue: () => {
-      const isProcessing = ref(false)
-      return {
-        statusMessage: ref(''),
-        allTasksDone: ref(false),
-        enqueueTask: enqueueTaskMock,
-        isProcessing,
-        isProcessingTasks: isProcessing
-      }
-    },
-    enqueueTask: enqueueTaskMock
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerQueue'),
+
+  () => {
+    const enqueueTaskMock = vi.fn()
+
+    return {
+      useManagerQueue: () => {
+        const isProcessing = ref(false)
+        return {
+          statusMessage: ref(''),
+          allTasksDone: ref(false),
+          enqueueTask: enqueueTaskMock,
+          isProcessing,
+          isProcessingTasks: isProcessing
+        }
+      },
+      enqueueTask: enqueueTaskMock
+    }
   }
-})
+)
 
-vi.mock('@/composables/useServerLogs', () => ({
+vi.mock(import('@/composables/useServerLogs'), () => ({
   useServerLogs: () => ({
     startListening: vi.fn(),
     stopListening: vi.fn(),
     logs: ref([])
   })
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
 }))
 
 interface EnabledDisabledTestCase {
@@ -72,6 +71,7 @@ describe('useComfyManagerStore', () => {
   }
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     mockManagerService = {
       isLoading: ref(false),
       error: ref(null),

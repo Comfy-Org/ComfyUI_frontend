@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     settings: {}
   })
