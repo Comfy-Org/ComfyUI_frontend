@@ -6471,6 +6471,10 @@ Enterprise`
     en: 'Map of events around the world',
     'zh-CN': '世界各地活动地图'
   },
+  'events.directory.clusterLabel': {
+    en: 'Zoom to {count} events here',
+    'zh-CN': '放大查看此处的 {count} 场活动'
+  },
   'events.directory.saveTheDate': {
     en: 'Save the date?',
     'zh-CN': '标记日期？'

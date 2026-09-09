@@ -27,6 +27,16 @@ const chipClass =
   </AddToCalendarButton>
 
   <a
+    v-if="row.register"
+    :href="row.register.href"
+    :target="row.register.newTab ? '_blank' : undefined"
+    :rel="row.register.newTab ? resolveRel({ target: '_blank' }) : undefined"
+    :class="chipClass"
+  >
+    {{ row.register.label }}
+  </a>
+
+  <a
     v-else-if="row.watch"
     :href="row.watch.href"
     :target="row.watch.newTab ? '_blank' : undefined"

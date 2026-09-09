@@ -56,7 +56,7 @@ const meta: Meta<typeof MapPins01> = {
   component: MapPins01,
   tags: ['autodocs'],
   args: {
-    ariaLabel: 'Events around the world',
+    regionLabel: 'Events around the world',
     markers: worldMarkers
   }
 }

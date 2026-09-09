@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CalendarDays, MapPin } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 
 import type { Locale } from '../../i18n/translations'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
@@ -26,6 +27,10 @@ const { rows, locale = 'en' } = defineProps<{
 // slot for.
 
 const metaClass = 'flex items-center gap-1.5 text-primary-comfy-canvas/70'
+
+// Several looping clips can animate at once in the grid, and the cards offer
+// no pause control — a visitor asking for reduced motion gets the poster.
+const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 </script>
 
 <template>
@@ -56,12 +61,20 @@ const metaClass = 'flex items-center gap-1.5 text-primary-comfy-canvas/70'
               decoding="async"
               class="size-full object-cover object-center"
             />
+            <img
+              v-else-if="reducedMotion && row.media.poster"
+              :src="row.media.poster"
+              :alt="row.media.alt"
+              loading="lazy"
+              decoding="async"
+              class="size-full object-cover object-center"
+            />
             <video
               v-else
               :src="row.media.src"
               :poster="row.media.poster"
               :aria-label="row.media.alt"
-              autoplay
+              :autoplay="!reducedMotion"
               loop
               muted
               playsinline

@@ -1583,15 +1583,15 @@ const events: readonly ComfyEvent[] = [
 // again in the browser when the events islands hydrate. An event therefore
 // leaves the upcoming section on the first page load after it ends, rather than
 // on the next deploy; a page left open keeps the list it hydrated with.
-const NOW = new Date()
+export const eventsDerivedAt = new Date()
 
-export const upcomingEvents = deriveUpcomingEvents(events, NOW)
+export const upcomingEvents = deriveUpcomingEvents(events, eventsDerivedAt)
 
-export const pastEvents = derivePastEvents(events, NOW)
+export const pastEvents = derivePastEvents(events, eventsDerivedAt)
 
-export const featuredEvents = deriveFeaturedEvents(events, NOW)
+export const featuredEvents = deriveFeaturedEvents(events, eventsDerivedAt)
 
-export const directoryEvents = deriveDirectoryEvents(events, NOW)
+export const directoryEvents = deriveDirectoryEvents(events, eventsDerivedAt)
 
 export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
   (event) => eventVideoId(event)

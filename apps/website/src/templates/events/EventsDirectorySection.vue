@@ -13,7 +13,7 @@ import Button from '../../components/ui/button/Button.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
 import { externalLinks } from '../../config/routes'
-import { directoryEvents } from '../../data/events'
+import { directoryEvents, eventsDerivedAt } from '../../data/events'
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import {
@@ -38,14 +38,13 @@ const visibleEvents = computed(() =>
   filterDirectoryEvents(directoryEvents, filters, locale)
 )
 
-// `directoryEvents` is already ordered upcoming-then-past against the data
-// module's load-time clock; classifying a row only needs the same boundary,
-// not a second reactive clock.
-const NOW = new Date()
-
 // Derived once and handed to whichever view is showing, so the list and the
-// cards can never disagree about a CTA or a date.
-const rows = computed(() => directoryRows(visibleEvents.value, locale, NOW))
+// cards can never disagree about a CTA or a date. Classification reuses the
+// clock that ordered `directoryEvents`, so a row's position and its CTA can
+// never straddle the upcoming/past boundary.
+const rows = computed(() =>
+  directoryRows(visibleEvents.value, locale, eventsDerivedAt)
+)
 
 // Pins are the filtered events that have coordinates; virtual events stay in
 // the list and never reach the map. The block takes a generic markers prop, so
@@ -66,6 +65,13 @@ const selectedEventId = computed(() =>
     ? pinnedId.value
     : null
 )
+
+// Names a cluster badge for screen readers: the count plus what a click does.
+const clusterLabel = (labels: string[]) =>
+  t('events.directory.clusterLabel', locale).replace(
+    '{count}',
+    String(labels.length)
+  )
 
 // `t()` has neither interpolation nor plurals, so both are resolved here.
 const countLabel = computed(() => {
@@ -245,7 +251,8 @@ const caretClass =
     >
       <MapPins01
         :markers
-        :aria-label="t('events.directory.mapLabel', locale)"
+        :region-label="t('events.directory.mapLabel', locale)"
+        :cluster-label="clusterLabel"
         class="h-80 sm:h-96 lg:h-140"
         @select="pinnedId = $event"
       />

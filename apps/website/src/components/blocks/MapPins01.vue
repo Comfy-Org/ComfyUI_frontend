@@ -15,11 +15,15 @@ export type MapPinMarker = {
 
 const {
   markers,
-  ariaLabel,
+  regionLabel,
+  clusterLabel = (labels: string[]) => labels.join(', '),
   class: className
 } = defineProps<{
   markers: MapPinMarker[]
-  ariaLabel?: string
+  /** Names the `role="region"` landmark — WAI-ARIA requires one. */
+  regionLabel: string
+  /** Accessible name for a cluster badge, built from its pins' labels. */
+  clusterLabel?: (labels: string[]) => string
   class?: HTMLAttributes['class']
 }>()
 
@@ -37,21 +41,24 @@ let leaflet: typeof Leaflet | null = null
 let map: Leaflet.Map | null = null
 let pinLayer: Leaflet.LayerGroup | null = null
 
-// Ocean/land contrast was 1.12:1, which read as a single flat field. Land is
-// lifted and the water dropped to put them ~1.9:1 apart, enough to separate
-// continents from oceans while staying inside the page's dark palette.
-const OCEAN = '#171320'
-const COUNTRY_FILL = '#4d4359'
-const COUNTRY_BORDER = '#6b5f7d'
-const PIN_FILL = '#f0efed'
-const CLUSTER_FILL = '#f2ff59'
-const CLUSTER_TEXT = '#211927'
+// Aborts the world-shape fetch and stops `mountMap` from touching the cleared
+// template ref when the component unmounts mid-setup.
+const disposal = new AbortController()
+
+// The palette comes from the site theme tokens in `global.css`. The divIcon
+// HTML resolves `var()` like any inline style, but Leaflet writes its vector
+// colors into SVG presentation attributes, where `var()` never resolves — so
+// those are read into concrete values once the container is in the DOM.
+const PIN_FILL = 'var(--color-primary-warm-white)'
+let countryFill = ''
+let countryBorder = ''
+let legStroke = ''
 
 function pinHtml(count: number): string {
   if (count === 1) {
     return `<div style="width:8px;height:8px;border-radius:9999px;background:${PIN_FILL};box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`
   }
-  return `<div style="display:flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:10px;background:${CLUSTER_FILL};color:${CLUSTER_TEXT};font-weight:600;font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.4)">${count}</div>`
+  return `<div style="display:flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:10px;background:var(--color-primary-comfy-yellow);color:var(--color-primary-comfy-ink);font-weight:600;font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.4)">${count}</div>`
 }
 
 // Events that share (near-)identical coordinates project to the same pixel at
@@ -97,7 +104,9 @@ function addClusterMarker(L: typeof Leaflet, cluster: PixelGroup) {
       className: '',
       iconSize: [31, 31]
     }),
-    alt: cluster.items.map((item) => item.label).join(', ')
+    // `alt` names only `<img>` icons; a divIcon renders a `<div>`, which
+    // Leaflet names via the `title` attribute instead.
+    title: clusterLabel(cluster.items.map((item) => item.label))
   })
   marker.on('click', () => onClusterClick(cluster.items))
   marker.addTo(pinLayer)
@@ -116,7 +125,7 @@ function addSpiderfiedGroup(L: typeof Leaflet, group: PixelGroup) {
     )
     L.polyline(
       [map!.containerPointToLatLng(point), map!.containerPointToLatLng(legEnd)],
-      { color: PIN_FILL, weight: 1, opacity: 0.35, interactive: false }
+      { color: legStroke, weight: 1, opacity: 0.35, interactive: false }
     ).addTo(pinLayer!)
     addLeafMarker(L, legEnd, item)
   })
@@ -172,6 +181,7 @@ function rebuildPins() {
 
 onMounted(async () => {
   await mountMap().catch((error: unknown) => {
+    if (disposal.signal.aborted) return
     // Without this the map just stays blank: an async onMounted that throws
     // surfaces only as an unhandled rejection, if at all.
     console.error('[MapPins01] failed to initialise the map', error)
@@ -180,10 +190,19 @@ onMounted(async () => {
 
 async function mountMap() {
   if (!container.value) return
+  const styles = getComputedStyle(container.value)
+  countryFill = styles.getPropertyValue('--color-site-map-land').trim()
+  countryBorder = styles.getPropertyValue('--color-site-map-land-border').trim()
+  legStroke = styles.getPropertyValue('--color-primary-warm-white').trim()
   const [imported, geoJson] = await Promise.all([
     import('leaflet') as Promise<LeafletModule>,
-    fetch(worldCountriesUrl).then((res) => res.json() as Promise<WorldGeoJson>)
+    fetch(worldCountriesUrl, { signal: disposal.signal }).then(
+      (res) => res.json() as Promise<WorldGeoJson>
+    )
   ])
+  // Vue clears the template ref if the component unmounts while the imports
+  // above are in flight; `L.map(null)` would then throw and stay blank.
+  if (disposal.signal.aborted || !container.value) return
   // `leaflet` publishes only a UMD build — no "module" or "exports" entry — so
   // the bundler's CJS interop hangs the whole namespace off `default`. The
   // named exports its types promise are not there at runtime.
@@ -203,9 +222,9 @@ async function mountMap() {
   })
   L.geoJSON(geoJson, {
     style: {
-      color: COUNTRY_BORDER,
+      color: countryBorder,
       weight: 0.75,
-      fillColor: COUNTRY_FILL,
+      fillColor: countryFill,
       fillOpacity: 1
     }
   }).addTo(map)
@@ -223,6 +242,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  disposal.abort()
   map?.remove()
   map = null
 })
@@ -234,15 +254,15 @@ onBeforeUnmount(() => {
   SAVE THE DATE? menu sits right beside the map). -->
   <div
     role="region"
-    :aria-label="ariaLabel"
-    :class="cn('relative isolate h-140 overflow-hidden rounded-3xl', className)"
-    :style="{ background: OCEAN }"
+    :aria-label="regionLabel"
+    :class="
+      cn(
+        'bg-site-map-ocean relative isolate h-140 overflow-hidden rounded-3xl',
+        className
+      )
+    "
   >
-    <div
-      ref="container"
-      class="absolute inset-0"
-      :style="{ background: OCEAN }"
-    />
+    <div ref="container" class="bg-site-map-ocean absolute inset-0" />
   </div>
 </template>
 
@@ -254,19 +274,23 @@ template — the scoped block reskins its zoom control to the site palette. -->
 }
 
 :deep(.leaflet-bar a) {
-  border-color: rgb(255 255 255 / 0.1);
-  background-color: #2a2330;
-  color: #f0efed;
+  border-color: var(--color-transparency-white-t8);
+  background-color: var(--color-primary-comfy-ink-light);
+  color: var(--color-primary-warm-white);
 }
 
 :deep(.leaflet-bar a:hover),
 :deep(.leaflet-bar a:focus) {
-  background-color: #3b3242;
-  color: #f2ff59;
+  background-color: color-mix(
+    in srgb,
+    var(--color-primary-comfy-ink-light) 88%,
+    white 12%
+  );
+  color: var(--color-primary-comfy-yellow);
 }
 
 :deep(.leaflet-bar a.leaflet-disabled) {
-  background-color: #2a2330;
-  color: rgb(240 239 237 / 0.3);
+  background-color: var(--color-primary-comfy-ink-light);
+  color: color-mix(in srgb, var(--color-primary-warm-white) 30%, transparent);
 }
 </style>

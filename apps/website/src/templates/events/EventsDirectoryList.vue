@@ -30,7 +30,12 @@ watch(
     await nextTick()
     listElement.value
       ?.querySelector(`[data-event-id="${CSS.escape(id)}"]`)
-      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      ?.scrollIntoView({
+        block: 'nearest',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth'
+      })
   }
 )
 </script>

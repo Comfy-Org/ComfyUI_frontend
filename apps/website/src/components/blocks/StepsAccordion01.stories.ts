@@ -72,3 +72,12 @@ export const Default: Story = {}
 export const SecondStepOpen: Story = { args: { defaultOpen: 'plan' } }
 
 export const WithoutCta: Story = { args: { cta: undefined, lead: undefined } }
+
+export const Empty: Story = {
+  args: { steps: [] },
+  render: (args) => ({
+    components: { StepsAccordion01 },
+    setup: () => ({ args }),
+    template: '<StepsAccordion01 v-bind="args" />'
+  })
+}

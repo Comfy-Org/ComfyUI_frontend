@@ -120,6 +120,9 @@ export type DirectoryRow = {
   media?: { src: string; alt: string; poster?: string; isVideo: boolean }
   /** Past rows link out; upcoming rows offer the calendar menu instead. */
   watch?: { href: string; newTab: boolean; label: string }
+  /** An upcoming event's outbound link (registration and the like), shown
+   * beside the calendar menu so the visitor can actually sign up. */
+  register?: { href: string; newTab: boolean; label: string }
   calendar?: CalendarEvent
 }
 
@@ -145,6 +148,21 @@ export function pastCtaLabel(event: ComfyEvent, locale: Locale): string {
     eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore',
     locale
   )
+}
+
+function registerOf(
+  event: ComfyEvent,
+  locale: Locale
+): DirectoryRow['register'] {
+  if (!event.link) return undefined
+  return {
+    href: event.link.href[locale] || event.link.href.en,
+    newTab: event.link.newTab ?? false,
+    label:
+      event.ctaLabel?.[locale] ||
+      event.ctaLabel?.en ||
+      t('events.past.learnMore', locale)
+  }
 }
 
 function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
@@ -184,6 +202,7 @@ export function directoryRows(
         t('events.directory.virtual', locale),
       media: mediaOf(event, locale),
       watch: upcoming ? undefined : watchOf(event, locale),
+      register: upcoming ? registerOf(event, locale) : undefined,
       calendar: upcoming ? toCalendarEvent(event, locale) : undefined
     }
   })
