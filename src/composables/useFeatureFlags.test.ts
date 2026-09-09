@@ -32,23 +32,23 @@ const telemetry = vi.hoisted(() => ({
 const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
 
 // Mock the API module
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getServerFeature: vi.fn()
   }
 }))
 
-vi.mock('@/utils/sessionFeatureFlagOverride', () => ({
+vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
   getSessionOverride: vi.fn()
 }))
 
 // Mock the distribution types module
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     telemetry.enabled
       ? { trackFeatureFlagEvaluation: telemetry.trackFeatureFlagEvaluation }
