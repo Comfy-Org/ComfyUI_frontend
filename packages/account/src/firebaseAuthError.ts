@@ -76,6 +76,11 @@ export function classifyAuthError(error: unknown): AuthErrorClassification {
  * never invent independently worded copy for the same failure. Keyed by the
  * Firebase code, plus the two named fallbacks. `AUTH_ERROR_COPY` carries the
  * same table per shipped locale; `authErrorMessage` resolves one failure.
+ *
+ * `auth/user-not-found` and `auth/wrong-password` are the one deliberate
+ * exception: both collapse to the generic invalid-credentials line here
+ * regardless of what a host's own locale files say, so a sign-in attempt
+ * can never be used to tell whether an email has an account.
  */
 export const AUTH_ERROR_MESSAGES: AuthErrorCopy = {
   'auth/invalid-email': 'Please enter a valid email address.',
