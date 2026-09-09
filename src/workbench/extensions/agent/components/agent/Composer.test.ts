@@ -299,6 +299,9 @@ describe('Composer', () => {
           screen.getByRole('button', { name: 'Save changes' })
         )
 
+        await vi.waitFor(() => expect(useAgentRunModeStore().mode).toBe(mode))
+        await nextTick()
+
         expect(fetchApi).toHaveBeenCalledWith(
           '/agent/run-mode',
           expect.objectContaining({ method: 'PUT' })
@@ -307,7 +310,6 @@ describe('Composer', () => {
           mode,
           credit_limit: null
         })
-        expect(useAgentRunModeStore().mode).toBe(mode)
         expect(useAgentRunModeStore().creditLimit).toBeNull()
       }
     )
