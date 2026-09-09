@@ -21,11 +21,13 @@ import type {
   ResultItem
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
 import { isImageResult } from '@/utils/resultItem'
 
+import { resolvePinnedImageOutput } from '../roles/resolvePinnedImageOutput'
 import { transitionFirstRunCorrelation } from './firstRunCorrelation'
 import type {
   FirstRunCorrelationEvent,
@@ -58,6 +60,7 @@ function useFirstRunTourControllerInternal() {
   const settingStore = useSettingStore()
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
+  let tourTemplateId: string | undefined
   const nudgeArmed = ref(false)
   const runCorrelation = shallowRef<FirstRunCorrelationState>({
     phase: 'idle',
@@ -301,6 +304,7 @@ function useFirstRunTourControllerInternal() {
     dispatchRunCorrelation({
       type: 'output-received',
       jobId: detail.prompt_id,
+      nodeId: String(detail.display_node || detail.node),
       output
     })
   })
@@ -326,6 +330,10 @@ function useFirstRunTourControllerInternal() {
       if (tourWorkflow.value) {
         dispatchRunCorrelation({
           type: 'submitted',
+          outputNodeId: resolvePinnedImageOutput(
+            app.rootGraphOrUndefined,
+            tourTemplateId
+          ),
           workflow: tourWorkflow.value,
           previousJobIds: new Set(Object.keys(executionStore.queuedJobs))
         })
@@ -345,6 +353,7 @@ function useFirstRunTourControllerInternal() {
       releaseFirstRunTargets()
       runState.value = 'idle'
       tourWorkflow.value = null
+      tourTemplateId = undefined
     }
   )
 
@@ -366,6 +375,7 @@ function useFirstRunTourControllerInternal() {
     if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
+    tourTemplateId = templateId
     runState.value = 'idle'
     nudgeArmed.value = false
     dispatchRunCorrelation({ type: 'reset' })
@@ -382,6 +392,7 @@ function useFirstRunTourControllerInternal() {
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
+      tourTemplateId = undefined
       if (enabledForTour)
         await settingStore.set('Comfy.VueNodes.Enabled', false)
     }

@@ -1,26 +1,32 @@
 import type { DetachedWindowAPI } from 'happy-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
 import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
 import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
+import { toNodeId } from '@/types/nodeId'
+
+import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 
 const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
 const ACCEPT_DEADLINE_MS = 15_000
+const IMAGE_SINK = TOUR_ROLE_PINS.image_z_image_turbo.sink
 
 const mocks = vi.hoisted(() => {
   const queuedJobs: { value: Record<string, { workflow?: unknown }> } = {
     value: {}
   }
   return {
+    graph: undefined as LGraph | undefined,
     canRunWorkflows: { value: true },
     showSubscriptionDialog: vi.fn(),
     workflowStatus: { value: new Map<unknown, string>() },
@@ -45,6 +51,14 @@ const mocks = vi.hoisted(() => {
     }
   }
 })
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get rootGraphOrUndefined() {
+      return mocks.graph
+    }
+  }
+}))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -155,7 +169,10 @@ async function freshController(beforeStart?: () => Promise<void>) {
 }
 
 /** A started tour sitting on its Run step, the state every run outcome acts on. */
-async function tourOnRunStep(beforeStart?: () => Promise<void>) {
+async function tourOnRunStep(
+  beforeStart?: () => Promise<void>,
+  templateId = 'image_z_image_turbo'
+) {
   mocks.steps = [runStep()]
   mocks.activeWorkflow.value = TOUR_WORKFLOW
   mocks.engine.startTour.mockImplementation(async () => {
@@ -166,7 +183,7 @@ async function tourOnRunStep(beforeStart?: () => Promise<void>) {
   })
   const controller = await freshController(beforeStart)
 
-  const starting = controller.beginTour('image_z_image_turbo')
+  const starting = controller.beginTour(templateId)
   await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
 
   return { controller, started: await starting }
@@ -238,8 +255,8 @@ async function captureFirstImage(promptId = 'tour-job') {
   })
   api.dispatchCustomEvent('executed', {
     prompt_id: promptId,
-    node: 1,
-    display_node: 1,
+    node: IMAGE_SINK.id,
+    display_node: IMAGE_SINK.id,
     output: {
       images: [
         {
@@ -283,6 +300,10 @@ function mountRunButton(
 
 describe('useFirstRunTourController', () => {
   beforeEach(() => {
+    mocks.graph = new LGraph()
+    const output = new LGraphNode(IMAGE_SINK.type, IMAGE_SINK.type)
+    output.id = toNodeId(IMAGE_SINK.id)
+    mocks.graph.add(output)
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
     mocks.queuedJobs.value = {}
@@ -935,6 +956,85 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('the nudge', () => {
+    it.for([true, false])(
+      'uses the configured result when intermediate output arrives first: %s',
+      async (intermediateFirst) => {
+        const { controller } = await tourOnRunStep()
+        mountRunButton('queue-button', () => {}).click()
+        await endTour(COMPLETED)
+        const { api } = await import('@/scripts/api')
+        const outputs = [
+          { node: 1, filename: 'intermediate.png' },
+          { node: IMAGE_SINK.id, filename: 'final.png' }
+        ]
+        for (const output of intermediateFirst
+          ? outputs
+          : outputs.toReversed()) {
+          api.dispatchCustomEvent('executed', {
+            prompt_id: 'tour-job',
+            node: output.node,
+            display_node: output.node,
+            output: { images: [{ filename: output.filename, type: 'output' }] }
+          })
+        }
+        await acceptRun(TOUR_WORKFLOW, 'tour-job')
+        api.dispatchCustomEvent('execution_success', {
+          prompt_id: 'tour-job',
+          timestamp: 1
+        })
+
+        expect(controller.nudgeOutput.value?.filename).toBe('final.png')
+      }
+    )
+
+    it.for(['shared-workflow', 'video_wan2_2_14B_i2v'])(
+      'leaves image continuations unavailable for %s',
+      async (templateId) => {
+        const { controller } = await tourOnRunStep(undefined, templateId)
+        mountRunButton('queue-button', () => {}).click()
+        await captureFirstImage()
+        const { api } = await import('@/scripts/api')
+        api.dispatchCustomEvent('execution_success', {
+          prompt_id: 'tour-job',
+          timestamp: 1
+        })
+        await endTour(COMPLETED)
+
+        expect(controller.nudgeArmed.value).toBe(true)
+        expect(controller.nudgeCompletedAt.value).not.toBeNull()
+        expect(controller.nudgeOutput.value).toBeNull()
+      }
+    )
+
+    it.for(['missing', 'different type'])(
+      'rejects a declared node that is %s when Run is clicked',
+      async (change) => {
+        const { controller } = await tourOnRunStep()
+        const node = mocks.graph?.getNodeById(toNodeId(IMAGE_SINK.id))
+        assert(node)
+        if (change === 'missing') mocks.graph?.remove(node)
+        else node.type = 'LoadImage'
+
+        mountRunButton('queue-button', () => {}).click()
+        await captureFirstImage()
+        await endTour(COMPLETED)
+
+        expect(controller.nudgeOutput.value).toBeNull()
+      }
+    )
+
+    it('keeps the submitted result identity after the canvas changes', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await endTour(COMPLETED)
+      mocks.activeWorkflow.value = OTHER_WORKFLOW
+      mocks.graph = new LGraph()
+
+      await captureFirstImage()
+
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+    })
+
     it('records success before an earlier store listener removes the job', async () => {
       const { controller } = await tourOnRunStep(async () => {
         const { api } = await import('@/scripts/api')
@@ -1113,8 +1213,8 @@ describe('useFirstRunTourController', () => {
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'late.png', type: 'output' }] }
       })
       await nextTick()
@@ -1140,8 +1240,8 @@ describe('useFirstRunTourController', () => {
         if (event === 'output') {
           api.dispatchCustomEvent('executed', {
             prompt_id: 'tour-job',
-            node: 1,
-            display_node: 1,
+            node: IMAGE_SINK.id,
+            display_node: IMAGE_SINK.id,
             output: { images: [{ filename: 'late.png', type: 'output' }] }
           })
           await nextTick()
@@ -1163,8 +1263,8 @@ describe('useFirstRunTourController', () => {
       for (const jobId of ['old-job', 'other-job', 'tour-job']) {
         api.dispatchCustomEvent('executed', {
           prompt_id: jobId,
-          node: 1,
-          display_node: 1,
+          node: IMAGE_SINK.id,
+          display_node: IMAGE_SINK.id,
           output: { images: [{ filename: `${jobId}.png`, type: 'output' }] }
         })
       }
@@ -1267,8 +1367,8 @@ describe('useFirstRunTourController', () => {
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'old.png', type: 'output' }] }
       })
       await endTour(COMPLETED)
@@ -1288,8 +1388,8 @@ describe('useFirstRunTourController', () => {
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { video: [{ filename: 'result.mp4', type: 'output' }] }
       })
 
@@ -1309,8 +1409,8 @@ describe('useFirstRunTourController', () => {
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'preview.png', type: 'temp' }] }
       })
 
@@ -1318,7 +1418,7 @@ describe('useFirstRunTourController', () => {
 
       expect(
         controller.nudgeOutput.value,
-        'a PreviewImage sink is the whole result, and the backend still serves it'
+        'temporary output from the configured result node can still seed a continuation'
       ).toEqual({ filename: 'preview.png', subfolder: '', type: 'temp' })
     })
 
@@ -1328,14 +1428,14 @@ describe('useFirstRunTourController', () => {
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'preview.png', type: 'temp' }] }
       })
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 2,
-        display_node: 2,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'saved.png', type: 'output' }] }
       })
 
@@ -1359,14 +1459,14 @@ describe('useFirstRunTourController', () => {
       })
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'preview.png', type: 'temp' }] }
       })
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 2,
-        display_node: 2,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: { images: [{ filename: 'saved.png', type: 'output' }] }
       })
 
@@ -1389,8 +1489,8 @@ describe('useFirstRunTourController', () => {
       })
       api.dispatchCustomEvent('executed', {
         prompt_id: 'other-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: {
           images: [{ filename: 'other.png', type: 'output' }]
         }
@@ -1411,8 +1511,8 @@ describe('useFirstRunTourController', () => {
       })
       api.dispatchCustomEvent('executed', {
         prompt_id: 'other-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: {
           images: [{ filename: 'other.png', type: 'output' }]
         }
@@ -1431,8 +1531,8 @@ describe('useFirstRunTourController', () => {
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('executed', {
         prompt_id: 'tour-job',
-        node: 1,
-        display_node: 1,
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
         output: {
           images: [{ filename: 'early.png', type: 'output' }]
         }

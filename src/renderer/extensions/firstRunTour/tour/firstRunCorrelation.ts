@@ -1,17 +1,29 @@
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ResultItem } from '@/schemas/apiSchema'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export type FirstRunCorrelationState = { output: ResultItem | null } & (
   | { phase: 'idle' }
   | {
       phase: 'pending'
+      outputNodeId: NodeExecutionId | null
       workflow: ComfyWorkflow
       previousJobIds: ReadonlySet<string>
       pendingOutputs: ReadonlyMap<string, ResultItem>
       pendingCompletions: ReadonlyMap<string, number>
     }
-  | { phase: 'accepted'; workflow: ComfyWorkflow; jobId: string }
-  | { phase: 'succeeded'; jobId: string; completedAt: number }
+  | {
+      phase: 'accepted'
+      workflow: ComfyWorkflow
+      jobId: string
+      outputNodeId: NodeExecutionId | null
+    }
+  | {
+      phase: 'succeeded'
+      jobId: string
+      completedAt: number
+      outputNodeId: NodeExecutionId | null
+    }
 )
 
 export type FirstRunCorrelationEvent =
@@ -19,12 +31,18 @@ export type FirstRunCorrelationEvent =
   | { type: 'released' }
   | {
       type: 'submitted'
+      outputNodeId: NodeExecutionId | null
       workflow: ComfyWorkflow
       previousJobIds: ReadonlySet<string>
     }
   | { type: 'accepted'; jobId: string }
   | { type: 'succeeded'; jobId: string; completedAt: number }
-  | { type: 'output-received'; jobId: string; output: ResultItem }
+  | {
+      type: 'output-received'
+      jobId: string
+      nodeId: string
+      output: ResultItem
+    }
 
 export function transitionFirstRunCorrelation(
   state: FirstRunCorrelationState,
@@ -38,6 +56,7 @@ export function transitionFirstRunCorrelation(
     case 'submitted':
       return {
         phase: 'pending',
+        outputNodeId: event.outputNodeId,
         output: state.output,
         workflow: event.workflow,
         previousJobIds: event.previousJobIds,
@@ -51,9 +70,16 @@ export function transitionFirstRunCorrelation(
         state.output ?? state.pendingOutputs.get(event.jobId) ?? null
       const completedAt = state.pendingCompletions.get(event.jobId)
       if (completedAt !== undefined)
-        return { phase: 'succeeded', jobId: event.jobId, completedAt, output }
+        return {
+          phase: 'succeeded',
+          jobId: event.jobId,
+          completedAt,
+          output,
+          outputNodeId: state.outputNodeId
+        }
       return {
         phase: 'accepted',
+        outputNodeId: state.outputNodeId,
         workflow: state.workflow,
         jobId: event.jobId,
         output
@@ -64,6 +90,7 @@ export function transitionFirstRunCorrelation(
         return state.jobId === event.jobId
           ? {
               phase: 'succeeded',
+              outputNodeId: state.outputNodeId,
               jobId: event.jobId,
               completedAt: event.completedAt,
               output: state.output
@@ -85,6 +112,7 @@ export function transitionFirstRunCorrelation(
     case 'output-received': {
       if (
         state.phase === 'idle' ||
+        event.nodeId !== state.outputNodeId ||
         (state.output && state.output.type !== 'temp')
       )
         return state
