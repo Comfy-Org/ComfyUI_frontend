@@ -1,7 +1,7 @@
 export type {
   AccountCredential,
-  AttachIdentityOptions,
   AccountUser,
+  AttachIdentityOptions,
   CredentialStorage,
   CrossTabRefreshPort,
   IdentityPort,
