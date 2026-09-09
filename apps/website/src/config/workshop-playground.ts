@@ -1,5 +1,7 @@
 import { t } from '../i18n/translations'
+import { isSeedField } from './seed-fields'
 import type {
+  ExampleInput,
   GeneratedExample,
   GeneratedField,
   Modality,
@@ -38,7 +40,8 @@ export type FieldSchema =
       readonly min: number
       readonly max: number
       readonly step: number
-      readonly defaultValue: number
+      /** Absent on seed-like fields: empty means the provider picks. */
+      readonly defaultValue?: number
     }
   | {
       readonly kind: 'toggle'
@@ -59,20 +62,32 @@ export type FieldSchema =
       readonly accept: readonly string[]
       readonly maxBytes: number
       readonly required: boolean
+      /** Several files, held as an array value; limits from the Router role. */
+      readonly multiple?: boolean
+      readonly minItems?: number
+      readonly maxItems?: number
     }
 
-interface FileValue {
+export interface FileValue {
   readonly name: string
   readonly size: number
   readonly type: string
   readonly previewUrl?: string
 }
 
-export type FieldValue = string | number | boolean | FileValue | undefined
+export type FieldValue =
+  | string
+  | number
+  | boolean
+  | FileValue
+  | readonly FileValue[]
+  | undefined
 export type FormValues = Readonly<Record<string, FieldValue>>
 export type FieldErrorCode =
   | 'required'
   | 'tooLarge'
+  | 'tooMany'
+  | 'tooFew'
   | 'badType'
   | 'outOfRange'
   | 'badOption'
@@ -164,7 +179,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         min: field.min,
         max: field.max,
         step: field.step,
-        defaultValue: field.default
+        ...(field.default === undefined ? {} : { defaultValue: field.default })
       }
     case 'select':
       return {
@@ -194,7 +209,10 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         ...(field.hint ? { hint: field.hint } : {}),
         accept: ACCEPT[field.accept],
         maxBytes: MAX_UPLOAD_BYTES,
-        required: field.required
+        required: field.required,
+        ...(field.multiple ? { multiple: true } : {}),
+        ...(field.minItems === undefined ? {} : { minItems: field.minItems }),
+        ...(field.maxItems === undefined ? {} : { maxItems: field.maxItems })
       }
   }
 }
@@ -285,6 +303,25 @@ export function defaultValues(
   )
 }
 
+export function isFileList(value: FieldValue): value is readonly FileValue[] {
+  return Array.isArray(value)
+}
+
+/** The files a field holds, as a list; undefined when the value is not a file. */
+export function fileList(value: FieldValue): readonly FileValue[] | undefined {
+  if (value === undefined || value === '') return []
+  if (isFileList(value)) return value
+  return typeof value === 'object' ? [value] : undefined
+}
+
+/** How many files a field accepts: its Router limit, else one unless `multiple`. */
+export function maxFiles(
+  field: Extract<FieldSchema, { kind: 'file' }>
+): number {
+  if (!field.multiple) return 1
+  return field.maxItems ?? Number.POSITIVE_INFINITY
+}
+
 export function validateForm(
   schema: readonly FieldSchema[],
   values: FormValues
@@ -297,16 +334,32 @@ export function validateForm(
         errors[field.name] = 'required'
       }
     } else if (field.kind === 'file') {
-      if (value === undefined) {
-        if (field.required) errors[field.name] = 'required'
-      } else if (typeof value === 'object') {
-        if (!field.accept.includes(value.type)) errors[field.name] = 'badType'
-        else if (value.size > field.maxBytes) errors[field.name] = 'tooLarge'
-      } else {
+      const files = fileList(value)
+      if (files === undefined) {
         errors[field.name] = 'badType'
+      } else if (files.length === 0) {
+        if (field.required) errors[field.name] = 'required'
+      } else if (files.some((file) => !field.accept.includes(file.type))) {
+        errors[field.name] = 'badType'
+      } else if (files.some((file) => file.size > field.maxBytes)) {
+        errors[field.name] = 'tooLarge'
+      } else if (files.length > maxFiles(field)) {
+        errors[field.name] = 'tooMany'
+      } else if (
+        field.minItems !== undefined &&
+        files.length < field.minItems
+      ) {
+        errors[field.name] = 'tooFew'
       }
     } else if (field.kind === 'number') {
-      if (typeof value !== 'number' || !isWithinRange(value, field)) {
+      // A seed-like field has no default and may stay empty: the request
+      // then omits it and the provider randomises.
+      const empty = value === undefined || value === ''
+      if (
+        empty
+          ? field.defaultValue !== undefined
+          : typeof value !== 'number' || !isWithinRange(value, field)
+      ) {
         errors[field.name] = 'outOfRange'
       }
     } else if (field.kind === 'select') {
@@ -337,6 +390,8 @@ export interface PlaygroundExample {
   readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly nodeDisplayName?: string
   readonly fields?: readonly GeneratedField[]
+  /** The input media the example ran with, by Router role. */
+  readonly inputs?: readonly ExampleInput[]
 }
 
 const SIZE_KEYS = ['resolution', 'size', 'aspect_ratio', 'ratio'] as const
@@ -391,40 +446,77 @@ export function examplesForModel(
       outputUrl: example.thumbnailUrl,
       ...(example.mediaKind ? { mediaKind: example.mediaKind } : {}),
       ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
-      ...(example.fields ? { fields: example.fields } : {})
+      ...(example.fields ? { fields: example.fields } : {}),
+      ...(example.inputs ? { inputs: example.inputs } : {})
     }
   })
 }
 
-// Prefills the form with an example: its values plus a stand-in upload for
-// every file field, so the page arrives ready to run.
+const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav'
+}
+
+function fileNameOf(url: string): string {
+  const path = url.split(/[?#]/)[0] ?? url
+  return decodeURIComponent(path.slice(path.lastIndexOf('/') + 1))
+}
+
+function fileFromUrl(url: string): FileValue {
+  const name = fileNameOf(url)
+  const extension = name.slice(name.lastIndexOf('.') + 1).toLowerCase()
+  const type = MIME_BY_EXTENSION[extension] ?? 'application/octet-stream'
+  return {
+    name,
+    size: 1,
+    type,
+    ...(type.startsWith('image/') ? { previewUrl: url } : {})
+  }
+}
+
+// Prefills the form with an example: its values plus, for every file field
+// the example ran with an input for, that input (its real URL, previewed
+// when it is an image), so the page arrives showing what produced the output.
+// A role the example did not use stays empty rather than getting a stand-in.
 export function exampleValues(
   schema: readonly FieldSchema[],
   example: PlaygroundExample
 ): FormValues {
+  const inputs = example.inputs ?? []
   const uploads = Object.fromEntries(
-    schema.flatMap((field) => {
+    schema.flatMap((field): [string, FieldValue][] => {
       if (field.kind !== 'file') return []
-      const type = field.accept.includes('image/webp')
-        ? 'image/webp'
-        : (field.accept[0] ?? 'application/octet-stream')
-      const extension = type.split('/')[1] ?? 'bin'
+      const role = field.name.replace(/^media_/, '')
+      const matching = inputs.filter((input) => input.role === role)
+      if (matching.length === 0) return []
+      const files = matching.map((input) => fileFromUrl(input.url))
+      // A "many" role holds every input; a single-file role keeps the first
+      // and says how many the example actually used.
+      if (field.multiple) return [[field.name, files]]
+      const first = files[0]
       return [
         [
           field.name,
-          {
-            name: `${example.id}-${field.name}.${extension}`,
-            size: 1,
-            type,
-            ...(type.startsWith('image/')
-              ? { previewUrl: example.outputUrl }
-              : {})
-          }
+          matching.length > 1
+            ? { ...first, name: `${first.name} (+${matching.length - 1} more)` }
+            : first
         ]
       ]
     })
   )
-  return { ...defaultValues(schema, example.values), ...uploads }
+  // The seed an example ran with is never prefilled: every page loads with
+  // an empty seed, so a run varies unless the visitor pins one.
+  const values = Object.fromEntries(
+    Object.entries(example.values).filter(([name]) => !isSeedField(name))
+  )
+  return { ...defaultValues(schema, values), ...uploads }
 }
 
 export function isVideoUrl(url: string): boolean {

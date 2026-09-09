@@ -8,8 +8,10 @@ import type {
   FieldErrors,
   FieldSchema,
   FieldValue,
+  FileValue,
   FormValues
 } from '../../config/workshop-playground'
+import { fileList, maxFiles } from '../../config/workshop-playground'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -30,6 +32,8 @@ const values = defineModel<FormValues>({ required: true })
 const errorKey: Record<FieldErrorCode, TranslationKey> = {
   required: 'workshop.form.required',
   tooLarge: 'workshop.form.tooLarge',
+  tooMany: 'workshop.form.tooMany',
+  tooFew: 'workshop.form.tooFew',
   badType: 'workshop.form.badType',
   outOfRange: 'workshop.form.outOfRange',
   badOption: 'workshop.form.badOption',
@@ -54,14 +58,53 @@ function onNumber(event: Event) {
   set(Number((event.target as HTMLInputElement).value))
 }
 
-function onFile(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  set(file ? { name: file.name, size: file.size, type: file.type } : undefined)
+// A seed-like field has no default: empty means the provider randomises.
+function onOptionalNumber(event: Event) {
+  const raw = (event.target as HTMLInputElement).value
+  set(raw === '' ? undefined : Number(raw))
 }
 
-function fileValue() {
-  const value = values.value[field.name]
-  return typeof value === 'object' ? value : undefined
+// The files a file field holds, whatever shape the value takes.
+function fileValues(): readonly FileValue[] {
+  return fileList(values.value[field.name]) ?? []
+}
+
+function fileLimit(): number {
+  return field.kind === 'file' ? maxFiles(field) : 1
+}
+
+// A "many" role appends; a single-file role replaces. The picker is reset so
+// choosing the same file again still fires `change`.
+function onFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const picked = [...(input.files ?? [])].map((file) => ({
+    name: file.name,
+    size: file.size,
+    type: file.type
+  }))
+  input.value = ''
+  if (picked.length === 0) return
+  if (field.kind !== 'file' || !field.multiple) {
+    set(picked[0])
+    return
+  }
+  const kept = fileValues().filter(
+    (file) => !picked.some((next) => next.name === file.name)
+  )
+  set([...kept, ...picked])
+}
+
+function removeFile(index: number) {
+  const rest = fileValues().filter((_, i) => i !== index)
+  if (field.kind === 'file' && field.multiple) {
+    set(rest.length === 0 ? undefined : rest)
+  } else {
+    set(undefined)
+  }
+}
+
+function canAddFile(): boolean {
+  return fileValues().length < fileLimit()
 }
 
 function stringValue(): string {
@@ -71,16 +114,24 @@ function stringValue(): string {
 
 // Painting the filled part ourselves keeps the track identical across browsers,
 // which accent-color does not.
-function sliderFill(field: { min: number; max: number; defaultValue: number }) {
+function sliderFill(field: {
+  min: number
+  max: number
+  defaultValue?: number
+}) {
   const span = field.max - field.min
   const value = numberValue(field.defaultValue)
   const ratio = span > 0 ? (value - field.min) / span : 0
   return `${Math.min(Math.max(ratio, 0), 1) * 100}%`
 }
 
-function numberValue(fallback: number): number {
+function numberValue(fallback: number | undefined): number {
   const value = values.value[field.name]
-  return typeof value === 'number' ? value : fallback
+  return typeof value === 'number' ? value : (fallback ?? 0)
+}
+
+function hasNumber(): boolean {
+  return typeof values.value[field.name] === 'number'
 }
 
 function booleanValue(fallback: boolean): boolean {
@@ -121,7 +172,7 @@ function acceptHint(accept: readonly string[]): string {
           </span>
         </label>
         <span
-          v-if="field.kind === 'number'"
+          v-if="field.kind === 'number' && field.defaultValue !== undefined"
           class="text-xs text-primary-warm-white tabular-nums"
         >
           {{ numberValue(field.defaultValue) }}
@@ -186,6 +237,23 @@ function acceptHint(accept: readonly string[]): string {
     </div>
 
     <input
+      v-else-if="field.kind === 'number' && field.defaultValue === undefined"
+      :id="`field-${field.name}`"
+      type="number"
+      :min="field.min"
+      :max="field.max"
+      :step="field.step"
+      :value="hasNumber() ? numberValue(undefined) : ''"
+      :placeholder="t('workshop.field.randomSeed', locale)"
+      :disabled
+      :aria-invalid="invalid()"
+      :aria-describedby="errorId()"
+      :data-testid="`field-${field.name}`"
+      :class="cn(inputClass, 'h-11')"
+      @input="onOptionalNumber"
+    />
+
+    <input
       v-else-if="field.kind === 'number'"
       :id="`field-${field.name}`"
       type="range"
@@ -236,18 +304,20 @@ function acceptHint(accept: readonly string[]): string {
 
     <template v-else-if="field.kind === 'file'">
       <div
-        v-if="fileValue()"
+        v-for="(file, index) in fileValues()"
+        :key="`${file.name}-${index}`"
         class="bg-transparency-white-t4 flex h-11 items-center justify-between gap-3 rounded-2xl border border-transparency-white-t20 px-4 text-sm"
+        :data-testid="`file-${field.name}-${index}`"
       >
         <span class="flex min-w-0 items-center gap-2">
           <img
-            v-if="fileValue()?.previewUrl"
-            :src="fileValue()?.previewUrl"
+            v-if="file.previewUrl"
+            :src="file.previewUrl"
             alt=""
             class="size-7 shrink-0 rounded-lg object-cover"
           />
           <span class="truncate text-primary-warm-white">
-            {{ fileValue()?.name }}
+            {{ file.name }}
           </span>
         </span>
         <button
@@ -255,16 +325,17 @@ function acceptHint(accept: readonly string[]): string {
           :aria-label="t('workshop.field.remove', locale)"
           :disabled
           class="cursor-pointer text-primary-warm-gray hover:text-primary-warm-white"
-          @click="set(undefined)"
+          @click="removeFile(index)"
         >
           <X class="size-4" aria-hidden="true" />
         </button>
       </div>
       <label
-        v-else
+        v-if="canAddFile()"
         :class="
           cn(
-            'flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed text-xs text-primary-warm-gray transition-colors hover:border-transparency-white-t20 hover:text-primary-warm-white',
+            'flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed text-xs text-primary-warm-gray transition-colors hover:border-transparency-white-t20 hover:text-primary-warm-white',
+            fileValues().length === 0 ? 'h-24' : 'h-14',
             invalid()
               ? 'border-primary-comfy-red'
               : 'border-transparency-white-t20',
@@ -274,16 +345,32 @@ function acceptHint(accept: readonly string[]): string {
       >
         <Upload class="size-5" aria-hidden="true" />
         <span class="font-bold tracking-wider uppercase">
-          {{ t('workshop.field.upload', locale) }}
+          {{
+            fileValues().length === 0
+              ? t('workshop.field.upload', locale)
+              : t('workshop.field.addAnother', locale)
+          }}
         </span>
-        <span class="text-[11px] text-primary-warm-gray">
+        <span
+          v-if="fileValues().length === 0"
+          class="text-[11px] text-primary-warm-gray"
+        >
           {{ acceptHint(field.accept) }} ·
           {{ t('workshop.field.uploadLimit', locale) }}
+          <template v-if="field.multiple">
+            ·
+            {{
+              field.maxItems === undefined
+                ? t('workshop.field.multipleFiles', locale)
+                : `${t('workshop.field.upTo', locale)} ${field.maxItems} ${t('workshop.field.files', locale)}`
+            }}
+          </template>
         </span>
         <input
           :id="`field-${field.name}`"
           type="file"
           :accept="field.accept.join(',')"
+          :multiple="field.multiple"
           :disabled
           :aria-invalid="invalid()"
           :aria-describedby="errorId()"

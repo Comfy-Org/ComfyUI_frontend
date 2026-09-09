@@ -1,4 +1,5 @@
 import type { FormValues } from './workshop-playground'
+import { isFileList } from './workshop-playground'
 
 export type SnippetLanguage = 'python' | 'typescript' | 'curl'
 
@@ -10,15 +11,24 @@ export const SNIPPET_LANGUAGES: readonly SnippetLanguage[] = [
 
 const ROUTER_API = 'https://api.comfy.org'
 
+type SerializableValue = string | number | boolean | readonly string[]
+
 function serializableInput(
   values: FormValues
-): Record<string, string | number | boolean> {
+): Record<string, SerializableValue> {
   return Object.fromEntries(
-    Object.entries(values).flatMap(([key, value]) => {
-      if (value === undefined) return []
-      if (typeof value === 'object') return [[key, `<${value.name}>`]]
-      return [[key, value]]
-    })
+    Object.entries(values).flatMap(
+      ([key, value]): [string, SerializableValue][] => {
+        if (value === undefined || value === '') return []
+        if (isFileList(value)) {
+          return value.length === 0
+            ? []
+            : [[key, value.map((file) => `<${file.name}>`)]]
+        }
+        if (typeof value === 'object') return [[key, `<${value.name}>`]]
+        return [[key, value]]
+      }
+    )
   )
 }
 
@@ -28,7 +38,7 @@ function serializableInput(
 function requestBody(
   routerId: string,
   values: FormValues
-): Record<string, string | number | boolean> {
+): Record<string, SerializableValue> {
   return {
     model: routerId.split('/').at(-1) ?? routerId,
     ...serializableInput(values)
