@@ -77,7 +77,7 @@ vi.mock('@/components/ui/toast', () => ({
     loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
     custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
   })
-)
+}))
 
 const apps: App<Element>[] = []
 

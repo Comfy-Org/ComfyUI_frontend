@@ -343,7 +343,8 @@ describe('ComfyHubPublishDialog', () => {
       'error',
       expect.any(String),
       expect.objectContaining({
-        description: 'comfyHubPublish.publishFailedDescription'
+        description:
+          'Something went wrong while publishing your workflow. Please try again.'
       })
     )
     expect(onClose).not.toHaveBeenCalled()
