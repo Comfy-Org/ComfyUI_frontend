@@ -2201,6 +2201,36 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
+    it('a failed workspace switch does not become the next login mint target', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          text: () => Promise.resolve(JSON.stringify({ message: 'revoked' }))
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await expect(store.switchWorkspace('workspace-revoked')).rejects.toThrow()
+
+      const result = await store.mintAtLogin()
+
+      expect(result).toBe(true)
+      expect(
+        JSON.parse(mockFetch.mock.calls[1][1].body),
+        'the login must fall back to the personal default, not retry the workspace that refused us'
+      ).toEqual({})
+      expect(store.unifiedToken).toBe('unified-token-1')
+    })
+
     it('a slower login mint resolving after a workspace switch never reverts it', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')

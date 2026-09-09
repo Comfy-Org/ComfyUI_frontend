@@ -4995,7 +4995,7 @@
       "accessDenied": "Bu çalışma alanına erişiminiz yok",
       "invalidFirebaseToken": "Kimlik doğrulama başarısız oldu. Lütfen tekrar giriş yapmayı deneyin.",
       "notAuthenticated": "Çalışma alanlarına erişmek için giriş yapmalısınız",
-      "tokenExchangeFailed": "Çalışma alanı ile kimlik doğrulama başarısız oldu: {error}",
+      "tokenExchangeFailed": "Çalışma alanı ile kimlik doğrulama başarısız oldu",
       "workspaceNotFound": "Çalışma alanı bulunamadı"
     },
     "initializationFailed": "Çalışma alanınız yüklenemedi",
