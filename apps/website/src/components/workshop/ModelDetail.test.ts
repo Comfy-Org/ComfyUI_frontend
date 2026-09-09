@@ -231,7 +231,8 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
       'memberNoCredits'
     )
-    await user().click(screen.getByTestId('switch-personal'))
+    // Option A leaves one control in the run slot, so it is the run button.
+    await user().click(screen.getByTestId('run-button'))
     expect(credits(api)).toBe(EXISTING_CREDITS)
     expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
       'ready'

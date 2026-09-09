@@ -409,21 +409,29 @@ function useInCode() {
           >
             {{ t('workshop.run.buyCredits', locale) }}
           </Button>
+          <!-- The reason comes before the escape. This state used to stack a
+               disabled "Ask the owner for credits" button above the real one; a
+               disabled control is a sentence wearing a button, and it took
+               weight from the only thing a member can actually do here. The
+               explanation carries that meaning, the button carries the action.
+               See DES-1015. -->
           <template v-else-if="gate === 'memberNoCredits'">
+            <p
+              class="mb-2 text-xs text-primary-warm-gray"
+              data-testid="gate-note"
+            >
+              {{
+                t('workshop.error.memberNoCredits', locale).replace(
+                  '{workspace}',
+                  workspace
+                )
+              }}
+            </p>
             <Button
               size="lg"
               class="w-full px-5"
-              disabled
               data-testid="run-button"
               data-gate="memberNoCredits"
-            >
-              {{ t('workshop.run.memberNoCredits', locale) }}
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              class="w-full px-5"
-              data-testid="switch-personal"
               @click="switchWorkspace(PERSONAL_WORKSPACE)"
             >
               {{ t('workshop.run.switchPersonal', locale) }}
@@ -481,18 +489,6 @@ function useInCode() {
                       .replace('{credits}', String(credits))
                       .replace('{n}', String(creditsPerRun))
                   : t('workshop.error.noCredits', locale)
-            }}
-          </p>
-          <p
-            v-else-if="gate === 'memberNoCredits'"
-            class="mt-2 text-xs text-primary-warm-gray"
-            data-testid="gate-note"
-          >
-            {{
-              t('workshop.error.memberNoCredits', locale).replace(
-                '{workspace}',
-                session.status === 'signedIn' ? session.account.workspace : ''
-              )
             }}
           </p>
           <p

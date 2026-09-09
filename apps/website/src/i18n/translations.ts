@@ -8925,10 +8925,6 @@ Enterprise`
     'zh-CN':
       '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
   },
-  'workshop.run.memberNoCredits': {
-    en: 'Ask the owner for credits',
-    'zh-CN': '请所有者购买积分'
-  },
   'workshop.run.switchPersonal': {
     en: 'Switch to personal workspace',
     'zh-CN': '切换到个人工作区'
