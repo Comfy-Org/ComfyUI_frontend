@@ -22,7 +22,7 @@ const i18n = createI18n({
   }
 })
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     balance: computed(() => mockBillingBalance),
     isLoading: computed(() => mockBillingIsLoading)

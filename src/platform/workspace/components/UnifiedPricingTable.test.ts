@@ -65,7 +65,7 @@ const mockPermissions = ref({
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     plans: computed(() => mockApiPlans.value),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
@@ -77,23 +77,29 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-    canReactivate: computed(() => mockRawCanReactivate.value),
-    canChangeSeats: computed(() => mockCanChangeSeats.value),
-    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
-    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+      canReactivate: computed(() => mockRawCanReactivate.value),
+      canChangeSeats: computed(() => mockCanChangeSeats.value),
+      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
+      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => mockPermissions.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => mockPermissions.value)
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
