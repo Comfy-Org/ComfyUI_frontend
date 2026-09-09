@@ -1,28 +1,13 @@
+import type * as DistributionModule from '@/platform/distribution/types'
 import { render } from '@testing-library/vue'
 import { useAsyncState } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
 
-const settingState = {
-  shown: false
-}
-
-const settingStore = {
-  get error(): unknown {
-    return undefined
-  },
-  load: vi.fn<() => Promise<void>>(),
-  get: vi.fn((key: string) =>
-    key === 'Comfy.Desktop.CloudNotificationShown'
-      ? settingState.shown
-      : undefined
-  ),
-  set: vi.fn(async (_key: string, value: boolean) => {
-    settingState.shown = value
-  })
-}
+let settingStore: ReturnType<typeof useSettingStore>
 
 const dialogService = {
   showCloudNotification: vi.fn<() => Promise<void>>()
@@ -34,12 +19,9 @@ const electron = {
 
 const errorReporter = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isDesktop: true
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => settingStore
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -65,12 +47,16 @@ function createDeferred() {
 
 describe('DesktopCloudNotificationController', () => {
   beforeEach(() => {
-    settingState.shown = false
+    settingStore = useSettingStore()
+    useSettingStore().settingValues['Comfy.Desktop.CloudNotificationShown'] =
+      false
     electron.getPlatform.mockReturnValue('darwin')
-    settingStore.load.mockResolvedValue(undefined)
-    settingStore.set.mockImplementation(
+    vi.mocked(settingStore.load).mockResolvedValue(undefined)
+    vi.mocked(settingStore.set).mockImplementation(
       async (_key: string, value: boolean) => {
-        settingState.shown = value
+        useSettingStore().settingValues[
+          'Comfy.Desktop.CloudNotificationShown'
+        ] = value
       }
     )
     dialogService.showCloudNotification.mockResolvedValue(undefined)
@@ -78,12 +64,13 @@ describe('DesktopCloudNotificationController', () => {
 
   it('waits for settings to load before deciding whether to show the notification', async () => {
     const loadSettings = createDeferred()
-    settingStore.load.mockImplementation(() => loadSettings.promise)
+    vi.mocked(settingStore.load).mockImplementation(() => loadSettings.promise)
 
     const { unmount } = render(DesktopCloudNotificationController)
     await nextTick()
 
-    settingState.shown = true
+    useSettingStore().settingValues['Comfy.Desktop.CloudNotificationShown'] =
+      true
     loadSettings.resolve()
 
     await vi.advanceTimersByTimeAsync(0)
@@ -96,7 +83,7 @@ describe('DesktopCloudNotificationController', () => {
 
   it('does not schedule or show the notification after unmounting before settings load resolves', async () => {
     const loadSettings = createDeferred()
-    settingStore.load.mockImplementation(() => loadSettings.promise)
+    vi.mocked(settingStore.load).mockImplementation(() => loadSettings.promise)
 
     const { unmount } = render(DesktopCloudNotificationController)
     await nextTick()
@@ -126,7 +113,9 @@ describe('DesktopCloudNotificationController', () => {
       'Comfy.Desktop.CloudNotificationShown',
       true
     )
-    expect(settingStore.set.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(
+      vi.mocked(settingStore.set).mock.invocationCallOrder[0]
+    ).toBeLessThan(
       dialogService.showCloudNotification.mock.invocationCallOrder[0]
     )
 
@@ -141,7 +130,7 @@ describe('DesktopCloudNotificationController', () => {
     const settingsLoad = useAsyncState(() => Promise.reject(error), undefined, {
       immediate: false
     })
-    settingStore.load.mockImplementation(async () => {
+    vi.mocked(settingStore.load).mockImplementation(async () => {
       await settingsLoad.execute()
     })
     vi.spyOn(settingStore, 'error', 'get').mockImplementation(
@@ -179,7 +168,7 @@ describe('DesktopCloudNotificationController', () => {
 
   it('reports an initial save failure, resets state, and never opens the dialog', async () => {
     const error = new Error('save failed')
-    settingStore.set.mockRejectedValueOnce(error)
+    vi.mocked(settingStore.set).mockRejectedValueOnce(error)
 
     const { unmount } = render(DesktopCloudNotificationController)
     await vi.advanceTimersByTimeAsync(2000)
@@ -255,11 +244,13 @@ describe('DesktopCloudNotificationController', () => {
       const initialError = new Error('initial failure')
       const resetError = new Error('reset failed')
       dialogService.showCloudNotification.mockRejectedValue(initialError)
-      settingStore.set.mockImplementation(
+      vi.mocked(settingStore.set).mockImplementation(
         async (_key: string, value: boolean) => {
           if (!value) throw resetError
           if (failure === 'save') throw initialError
-          settingState.shown = value
+          useSettingStore().settingValues[
+            'Comfy.Desktop.CloudNotificationShown'
+          ] = value
         }
       )
 
