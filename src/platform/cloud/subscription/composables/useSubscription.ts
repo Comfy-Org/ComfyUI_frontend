@@ -184,7 +184,7 @@ function useSubscriptionInternal() {
             : 'missing_event',
           feature_area: 'billing',
           operation: 'sync',
-          outcome: didLastRecoveryAttemptThrow ? 'failed' : 'timed_out'
+          outcome: didLastRecoveryAttemptThrow ? 'aborted' : 'timed_out'
         },
         context: {
           checkout_attempt_id: attempt.attempt_id,
