@@ -12,6 +12,7 @@ import type {
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
   BootstrapCompleteMetadata,
+  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -65,6 +66,14 @@ import type {
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
 } from './types'
+
+function createTelemetryEventId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+
+  return `event-${Date.now()}`
+}
 
 /**
  * Registry that holds multiple telemetry providers and dispatches
@@ -191,6 +200,13 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackBillingEvent(event: BillingTelemetryEvent): void {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
+  }
+
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    const eventId = createTelemetryEventId()
+    this.dispatch((provider) =>
+      provider.trackCheckoutJourneyEvent?.(event, eventId)
+    )
   }
 
   trackRunButton(properties: RunButtonProperties): void {
