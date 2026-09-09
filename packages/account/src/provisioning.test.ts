@@ -234,13 +234,15 @@ describe('customerProvisioningRequest', () => {
     expect(JSON.parse(String(request.body))).toEqual({ signup_source: 'cloud' })
   })
 
-  it('bounds the request with a timeout signal unless the caller brings one', () => {
-    const bounded = customerProvisioningRequest({
+  it('carries only the signal the caller brings, never a bound of its own', () => {
+    const unbounded = customerProvisioningRequest({
       authHeaders: {},
       signupSource: 'cloud'
     })
-    expect(bounded.signal).toBeInstanceOf(AbortSignal)
-    expect(bounded.signal?.aborted).toBe(false)
+    expect(
+      'signal' in unbounded,
+      'the cloud app sends this request without a timeout; the helper must not add one'
+    ).toBe(false)
 
     const controller = new AbortController()
     const own = customerProvisioningRequest({
