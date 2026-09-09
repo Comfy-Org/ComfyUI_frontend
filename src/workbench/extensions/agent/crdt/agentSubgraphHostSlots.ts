@@ -74,10 +74,18 @@ export function promotedWidgetNames(definition: ExportedSubgraph): string[] {
 }
 
 /**
- * The host's full input slot list in definition order, with `link` taken
- * from whatever slots the doc does carry (matched by name). Declared inputs
- * the doc omits, and inputs whose name is declared more than once, are
- * unlinked.
+ * The host's full input slot list in definition order. Each slot starts from
+ * the declared input's presentation fields (label, shape, etc.; never the
+ * definition-only `id`/`linkIds`), then takes whatever the doc carries for a
+ * slot of the same name on top. `name` and `type` always come from the
+ * definition.
+ *
+ * `link` is only present when the doc supplies it. Declared inputs the doc
+ * omits, and inputs whose name is declared more than once, carry no `link`
+ * key at all: cmp writes only the grown slot after a promoted connect, so an
+ * omitted slot means "no information", not "unlinked". The graph mutation
+ * layer resolves an absent `link` against the live host's slot at the same
+ * index (see `graphMutations` `prepareInputSlots`).
  */
 export function hostInputs(
   definition: ExportedSubgraph,
@@ -86,14 +94,15 @@ export function hostInputs(
   const ambiguous = ambiguousInputNames(definition)
   const docByName = new Map(docInputs.map((input) => [input.name, input]))
   return (definition.inputs ?? []).map((input) => {
+    const { id: _id, linkIds: _linkIds, ...declared } = input
     const fromDoc = ambiguous.has(input.name)
       ? undefined
       : docByName.get(input.name)
     return {
+      ...declared,
       ...fromDoc,
       name: input.name,
-      type: input.type,
-      link: fromDoc?.link ?? null
+      type: input.type
     }
   })
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
 import {
@@ -127,7 +128,15 @@ describe('agentSubgraphHostSlots', () => {
       'dangling',
       'value'
     ])
-    expect(inputs.map((input) => input.link)).toEqual([null, null, null, null])
+    // No slot is unlinked outright: an ambiguous or omitted declared slot
+    // leaves `link` undefined so the mutation layer keeps the live link.
+    expect(inputs.map((input) => input.link)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined
+    ])
+    expect(inputs.every((input) => !('link' in input))).toBe(true)
   })
 
   it('reports only inputs linked to a widget-bearing interior slot, in order', () => {
@@ -152,9 +161,40 @@ describe('agentSubgraphHostSlots', () => {
       'value',
       'dangling'
     ])
-    expect(inputs[0].link).toBeNull()
+    // Slots the doc omits are left without a `link` key so the mutation
+    // layer preserves whatever live link the host already carries there.
+    expect('link' in inputs[0]).toBe(false)
     expect(inputs[1].link).toBe(9)
-    expect(inputs[2].link).toBeNull()
+    expect('link' in inputs[2]).toBe(false)
+  })
+
+  it('carries declared slot fields onto host inputs, letting doc fields override', () => {
+    const def = definition()
+    def.inputs![0] = {
+      ...def.inputs![0],
+      label: 'Extra label',
+      shape: RenderShape.GRID,
+      localized_name: 'Extra'
+    }
+    def.inputs![1] = { ...def.inputs![1], label: 'Definition label' }
+    const inputs = hostInputs(def, [
+      { name: 'value', type: 'NUMBER', link: 9, label: 'Doc label' }
+    ])
+    expect(inputs[0]).toMatchObject({
+      name: 'extra',
+      type: 'NUMBER',
+      label: 'Extra label',
+      shape: RenderShape.GRID,
+      localized_name: 'Extra'
+    })
+    // definition-only bookkeeping never leaks onto a live host slot
+    expect('id' in inputs[0]).toBe(false)
+    expect('linkIds' in inputs[0]).toBe(false)
+    expect(inputs[1]).toMatchObject({
+      name: 'value',
+      link: 9,
+      label: 'Doc label'
+    })
   })
 
   it('returns no slots for a definition without inputs', () => {
