@@ -165,7 +165,7 @@ describe('CreditSlider', () => {
     await flush()
 
     const stops = within(screen.getByTestId('credit-slider-stops'))
-    for (const label of ['506.4K', '1M', '1.8M', '3.5M', '6.3M']) {
+    for (const label of ['506.4K', '1M', '1.7M', '3.5M', '6.3M']) {
       expect(stops.getByText(label)).toBeInTheDocument()
     }
     expect(stops.queryByText('147.7K')).not.toBeInTheDocument()
@@ -179,6 +179,20 @@ describe('CreditSlider', () => {
     for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
       expect(stops.getByText(label)).toBeInTheDocument()
     }
+  })
+
+  it('re-labels the stops when the cycle changes after mount', async () => {
+    const { rerender } = renderSlider({ modelValue: 700, cycle: 'monthly' })
+    await flush()
+
+    const stops = within(screen.getByTestId('credit-slider-stops'))
+    expect(stops.getByText('147.7K')).toBeInTheDocument()
+
+    await rerender({ modelValue: 700, cycle: 'yearly' })
+    await flush()
+
+    expect(stops.getByText('1.7M')).toBeInTheDocument()
+    expect(stops.queryByText('147.7K')).not.toBeInTheDocument()
   })
 
   it('renders stops + default index supplied via props (BE-sourced override)', async () => {

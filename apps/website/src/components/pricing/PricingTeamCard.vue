@@ -5,11 +5,10 @@ import { computed, ref } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
+import { formatCreditsCompact } from '@comfyorg/shared-frontend-utils/creditsUtil'
+
 import { subscribeUrl } from '../../data/pricingPlans'
-import {
-  formatTeamCreditsShort,
-  teamCreditTiers
-} from '../../data/teamCreditTiers'
+import { teamCreditTiers } from '../../data/teamCreditTiers'
 import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
@@ -64,7 +63,7 @@ const teamSliderLabel = computed(() =>
 
 const tickCreditLabels = computed(() =>
   teamCreditTiers.map((tier) =>
-    formatTeamCreditsShort(amountForBillingPeriod(tier.credits))
+    formatCreditsCompact(amountForBillingPeriod(tier.credits))
   )
 )
 

@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { formatCreditsCompact } from '@/base/credits/comfyCredits'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -130,11 +131,6 @@ const sliderModel = computed<number[]>({
 const lastIndex = computed(() => Math.max(stops.length - 1, 0))
 
 const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
-const formatCreditsCompact = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(value)
 
 const stopCreditLabels = computed(() =>
   stops.map((stop) =>

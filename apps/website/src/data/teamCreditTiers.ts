@@ -55,13 +55,3 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     videos: 47875
   }
 ]
-
-// Yearly totals reach seven figures, where a K unit stops abbreviating
-// ("1772.4K"), so the unit follows the magnitude — the same compact formatting
-// the in-app slider uses, so the two surfaces read identically.
-export function formatTeamCreditsShort(n: number): string {
-  return new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(n)
-}

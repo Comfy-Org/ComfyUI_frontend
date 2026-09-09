@@ -8,6 +8,7 @@ import {
   creditsToCents,
   creditsToUsd,
   formatCredits,
+  formatCreditsCompact,
   formatCreditsFromCents,
   formatCreditsFromUsd,
   formatUsd,
@@ -68,5 +69,22 @@ describe('comfyCredits helpers', () => {
     expect(clampUsd(0.5)).toBe(1)
     expect(clampUsd(2000)).toBe(1000)
     expect(clampUsd(NaN)).toBe(0)
+  })
+
+  test('formatCreditsCompact abbreviates with the unit the magnitude calls for', () => {
+    expect(formatCreditsCompact(42_200)).toBe('42.2K')
+    expect(formatCreditsCompact(506_400)).toBe('506.4K')
+    expect(formatCreditsCompact(1_012_800)).toBe('1M')
+    expect(formatCreditsCompact(6_330_000)).toBe('6.3M')
+  })
+
+  test('formatCreditsCompact truncates, so it never overstates the amount', () => {
+    expect(formatCreditsCompact(1_772_400)).toBe('1.7M')
+    expect(formatCreditsCompact(10_550)).toBe('10.5K')
+  })
+
+  test('formatCreditsCompact leaves amounts below a thousand unabbreviated', () => {
+    expect(formatCreditsCompact(0)).toBe('0')
+    expect(formatCreditsCompact(999)).toBe('999')
   })
 })

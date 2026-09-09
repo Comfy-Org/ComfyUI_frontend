@@ -65,7 +65,7 @@ describe('PricingSection credit allotment copy', () => {
     await user.click(screen.getByRole('button', { name: /^Yearly/ }))
     await nextTick()
 
-    for (const label of ['506.4K', '1M', '1.8M', '3.5M', '6.3M']) {
+    for (const label of ['506.4K', '1M', '1.7M', '3.5M', '6.3M']) {
       expect(screen.getByText(label)).toBeTruthy()
     }
     expect(screen.queryByText('147.7K')).toBeNull()

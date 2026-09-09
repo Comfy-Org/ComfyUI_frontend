@@ -92,6 +92,18 @@ export const formatCreditsFromUsd = ({
     numberOptions
   })
 
+/**
+ * Abbreviates a credit amount to one fraction digit ("42.2K", "1.7M"),
+ * truncating rather than rounding so the short form never claims more credits
+ * than the amount it stands for.
+ */
+export const formatCreditsCompact = (credits: number): string =>
+  new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+    roundingMode: 'trunc'
+  }).format(credits)
+
 export const formatUsd = ({
   value,
   locale,
