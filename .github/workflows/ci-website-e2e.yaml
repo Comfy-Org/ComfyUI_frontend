@@ -119,9 +119,11 @@ jobs:
             const report = JSON.parse(fs.readFileSync('apps/website/results.json', 'utf8'))
 
             function isFailed(t) { return t.status === 'unexpected' || t.status === 'flaky' }
-            function isVisual(spec) {
-              return spec.file?.includes('visual') ||
-                spec.tests?.some(t => t.results?.some(r => r.error?.message?.includes('toHaveScreenshot')))
+            // Classified per FAILING TEST from its own result, not the spec
+            // file's path or any other test in the same file — a functional
+            // failure sitting next to a screenshot test must still block.
+            function isScreenshotFailure(t) {
+              return t.results?.some(r => r.error?.message?.includes('toHaveScreenshot'))
             }
             function specsOf(suite) {
               return [
@@ -130,14 +132,9 @@ jobs:
               ]
             }
 
-            // True:  Visual
-            // False: Other
-            const failed = specsOf(report)
-              .flatMap(spec => (spec.tests || [])
-              .filter(isFailed)
-              .map(() => isVisual(spec)))
+            const failed = specsOf(report).flatMap(spec => (spec.tests || []).filter(isFailed))
 
-            const screenshotFailures = failed.filter(Boolean).length
+            const screenshotFailures = failed.filter(isScreenshotFailure).length
             core.setOutput('screenshot', screenshotFailures)
             core.setOutput('other', failed.length - screenshotFailures)
 
@@ -151,15 +148,22 @@ jobs:
         if: always() && !cancelled()
         env:
           TEST_OUTCOME: ${{ steps.tests.outcome }}
+          CATEGORIZE_OUTCOME: ${{ steps.failures.outcome }}
           OTHER_FAILURES: ${{ steps.failures.outputs.other }}
         run: |
           if [ "$TEST_OUTCOME" = "success" ]; then
             echo "required-passed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "$TEST_OUTCOME" = "cancelled" ]; then
+          # The screenshot-only exception requires the tests to have actually
+          # run and failed AND categorization to have completed cleanly.
+          # Anything else (cancelled, skipped because an earlier step like
+          # "Build website" failed, or "Categorize failures" itself erroring
+          # on a missing/malformed results.json) fails closed rather than
+          # defaulting a missing OTHER_FAILURES to 0.
+          if [ "$TEST_OUTCOME" != "failure" ] || [ "$CATEGORIZE_OUTCOME" != "success" ]; then
             echo "required-passed=false" >> "$GITHUB_OUTPUT"
-            echo "::error::Website E2E run was cancelled."
+            echo "::error::Website e2e did not complete cleanly (test outcome: ${TEST_OUTCOME}, failure categorization: ${CATEGORIZE_OUTCOME}) — blocking merge."
             exit 1
           fi
           OTHER="${OTHER_FAILURES:-0}"

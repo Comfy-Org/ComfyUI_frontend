@@ -237,6 +237,7 @@
       "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money. Excludes src/content/** and src/i18n/** (see the website-content class): grading is worst(...)-over-matches with no negation, so those paths must be carved out here rather than merely added elsewhere, or this rule's R2 would still win.",
       "paths": [
         "apps/website/README.md",
+        "apps/website/.gitignore",
         "apps/website/astro.config.ts",
         "apps/website/components.json",
         "apps/website/design/**",
