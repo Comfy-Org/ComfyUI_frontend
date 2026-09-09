@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  customerProvisioningRequest,
+  isCustomerProvisioned,
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from './provisioning'
@@ -201,5 +203,66 @@ describe('socialSignInWithProvisioning', () => {
     ).rejects.toThrow()
 
     expect(provisionCustomer).not.toHaveBeenCalled()
+  })
+})
+
+describe('customerProvisioningRequest', () => {
+  it('sends the signup source and the Turnstile token under the API wire names', () => {
+    const request = customerProvisioningRequest({
+      authHeaders: { Authorization: 'Bearer id-token' },
+      signupSource: 'comfy-workshop',
+      turnstileToken: 'cf-token'
+    })
+
+    expect(request.method).toBe('POST')
+    expect(request.headers).toEqual({
+      Authorization: 'Bearer id-token',
+      'Content-Type': 'application/json'
+    })
+    expect(JSON.parse(String(request.body))).toEqual({
+      signup_source: 'comfy-workshop',
+      turnstile_token: 'cf-token'
+    })
+  })
+
+  it('omits the Turnstile field entirely when there is no token', () => {
+    const request = customerProvisioningRequest({
+      authHeaders: {},
+      signupSource: 'cloud'
+    })
+
+    expect(JSON.parse(String(request.body))).toEqual({ signup_source: 'cloud' })
+  })
+
+  it('carries only the signal the caller brings, never a bound of its own', () => {
+    const unbounded = customerProvisioningRequest({
+      authHeaders: {},
+      signupSource: 'cloud'
+    })
+    expect(
+      'signal' in unbounded,
+      'the cloud app sends this request without a timeout; the helper must not add one'
+    ).toBe(false)
+
+    const controller = new AbortController()
+    const own = customerProvisioningRequest({
+      authHeaders: {},
+      signupSource: 'cloud',
+      signal: controller.signal
+    })
+    expect(own.signal).toBe(controller.signal)
+  })
+})
+
+describe('isCustomerProvisioned', () => {
+  it('accepts the created and already-exists answers', () => {
+    expect(isCustomerProvisioned({ ok: true })).toBe(true)
+  })
+
+  it('treats a 409 as a failure, never as an existing customer', () => {
+    expect(
+      isCustomerProvisioned({ ok: false }),
+      'the backend returns 200 for an existing customer; a 409 here is a real conflict'
+    ).toBe(false)
   })
 })

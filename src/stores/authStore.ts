@@ -1,25 +1,20 @@
 import { FirebaseError } from 'firebase/app'
 import {
   AuthErrorCodes,
-  GithubAuthProvider,
-  GoogleAuthProvider,
   browserLocalPersistence,
-  createUserWithEmailAndPassword,
   getAdditionalUserInfo,
   onAuthStateChanged,
   onIdTokenChanged,
-  sendPasswordResetEmail,
   setPersistence,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
   updatePassword
 } from 'firebase/auth'
-import type { Auth, User, UserCredential } from 'firebase/auth'
+import type { User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
+import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/core'
+import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   signUpWithProvisioning,
   socialSignInWithProvisioning
@@ -109,18 +104,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
-  // Providers
-  const googleProvider = new GoogleAuthProvider()
-  googleProvider.addScope('email')
-  googleProvider.setCustomParameters({
-    prompt: 'select_account'
-  })
-  const githubProvider = new GithubAuthProvider()
-  githubProvider.addScope('user:email')
-  githubProvider.setCustomParameters({
-    prompt: 'select_account'
-  })
-
   // Getters
   const isAuthenticated = computed(() => !!currentUser.value)
   const userEmail = computed(() => currentUser.value?.email)
@@ -140,6 +123,8 @@ export const useAuthStore = defineStore('auth', () => {
   // Retrieves the Firebase Auth instance. Returns `null` on the server.
   // When using this function on the client in TypeScript, you can force the type with `useFirebaseAuth()!`.
   const auth = useFirebaseAuth()!
+  // The package's sign-in actions over this same instance: no second app.
+  const identity = createFirebaseIdentity({ auth })
   // Set persistence to localStorage (works in both browser and Electron)
   void setPersistence(auth, browserLocalPersistence)
 
@@ -558,104 +543,27 @@ export const useAuthStore = defineStore('auth', () => {
     return customerRecovery
   }
 
-  /**
-   * Fetch wrapper for /customers/* endpoints that self-heals accounts whose
-   * customer record was never provisioned.
-   *
-   * Customer creation runs after the Firebase session is established during
-   * sign-in/sign-up, so an interruption (navigation, closed window, network
-   * failure) can leave a permanently signed-in user without a customer
-   * record. Sessions restored from persisted credentials never re-run the
-   * sign-in flow, so every /customers/* request fails with 409 and nothing
-   * ever retries the creation.
-   *
-   * On a 409 response this provisions the customer record (deduplicated
-   * across concurrent callers) and retries the original request a single
-   * time. If recovery fails, the original 409 response is returned so
-   * callers surface their normal error handling.
-   */
-  /**
-   * The auth middleware rejects requests for accounts without a customer
-   * record using this exact message. Business-level 409s from /customers/*
-   * endpoints (e.g. conflicting subscription state) must NOT trigger
-   * provisioning or a blind retry of a payment request.
-   */
-  const MISSING_CUSTOMER_MESSAGE = 'Failed to find customer'
-
-  const isMissingCustomerResponse = async (
-    response: Response
-  ): Promise<boolean> => {
-    if (response.status !== 409) return false
-    try {
-      const body: unknown = await response.clone().json()
-      return (
-        typeof body === 'object' &&
-        body !== null &&
-        'message' in body &&
-        body.message === MISSING_CUSTOMER_MESSAGE
-      )
-    } catch {
-      return false
-    }
-  }
-
-  const isCustomerEndpoint = (input: string): boolean => {
-    try {
-      const { pathname } = new URL(input, window.location.href)
-      return pathname === '/customers' || pathname.startsWith('/customers/')
-    } catch {
-      return false
-    }
-  }
-
-  const fetchWithCustomerRecovery = async (
+  /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account). */
+  const fetchWithCustomerRecovery = (
     input: string,
     init?: RequestInit
   ): Promise<Response> => {
     const requestOwner = currentUserIdentity()
-    const remintFetch = (): Promise<Response> =>
-      fetchWithUnifiedRemint(
-        input,
-        init ?? {},
-        isCloud && flags.unifiedCloudAuthEnabled
-      )
-
-    const response = await remintFetch()
-    if (
-      !isCustomerEndpoint(input) ||
-      !(await isMissingCustomerResponse(response)) ||
-      currentUserIdentity() !== requestOwner
-    ) {
-      return response
-    }
-
-    try {
-      await recoverMissingCustomer()
-    } catch (error) {
-      console.warn(
-        'Customer provisioning during 409 recovery failed; returning original response',
-        error
-      )
-      return response
-    }
-
-    if (currentUserIdentity() !== requestOwner) {
-      return response
-    }
-
-    try {
-      return await remintFetch()
-    } catch (error) {
-      console.warn(
-        'Retry after customer provisioning failed; returning original 409 response',
-        error
-      )
-      return response
-    }
+    return fetchHealingMissingCustomer(input, {
+      request: () =>
+        fetchWithUnifiedRemint(
+          input,
+          init ?? {},
+          isCloud && flags.unifiedCloudAuthEnabled
+        ),
+      recoverMissingCustomer,
+      identityUnchanged: () => currentUserIdentity() === requestOwner,
+      base: window.location.href
+    })
   }
 
   const executeAuthAction = async <T>(
-    action: (auth: Auth) => Promise<T>,
+    action: () => Promise<T>,
     options: {
       createCustomer?: boolean
       customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
@@ -664,7 +572,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
 
     try {
-      const result = await action(auth)
+      const result = await action()
 
       // Create customer if needed
       if (options.createCustomer) {
@@ -686,8 +594,7 @@ export const useAuthStore = defineStore('auth', () => {
     password: string
   ): Promise<UserCredential> => {
     const result = await executeAuthAction(
-      (authInstance) =>
-        signInWithEmailAndPassword(authInstance, email, password),
+      () => identity.signInWithEmail(email, password),
       { createCustomer: true }
     )
 
@@ -707,10 +614,9 @@ export const useAuthStore = defineStore('auth', () => {
     password: string,
     turnstileToken?: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction((authInstance) =>
+    const result = await executeAuthAction(() =>
       signUpWithProvisioning({
-        createUser: () =>
-          createUserWithEmailAndPassword(authInstance, email, password),
+        createUser: () => identity.createUserWithEmail(email, password),
         provisionCustomer: () =>
           createCustomer(
             turnstileToken ? { turnstile_token: turnstileToken } : undefined
@@ -748,9 +654,9 @@ export const useAuthStore = defineStore('auth', () => {
   const loginWithGoogle = async (options?: {
     isNewUser?: boolean
   }): Promise<UserCredential> => {
-    const result = await executeAuthAction((authInstance) =>
+    const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: () => signInWithPopup(authInstance, googleProvider),
+        signIn: identity.signInWithGoogle,
         provisionCustomer: provisionSocialCustomer
       })
     )
@@ -770,9 +676,9 @@ export const useAuthStore = defineStore('auth', () => {
   const loginWithGithub = async (options?: {
     isNewUser?: boolean
   }): Promise<UserCredential> => {
-    const result = await executeAuthAction((authInstance) =>
+    const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
-        signIn: () => signInWithPopup(authInstance, githubProvider),
+        signIn: identity.signInWithGitHub,
         provisionCustomer: provisionSocialCustomer
       })
     )
@@ -789,13 +695,10 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction((authInstance) => signOut(authInstance))
+  const logout = async (): Promise<void> => executeAuthAction(identity.signOut)
 
   const sendPasswordReset = async (email: string): Promise<void> =>
-    executeAuthAction((authInstance) =>
-      sendPasswordResetEmail(authInstance, email)
-    )
+    executeAuthAction(() => identity.sendPasswordReset(email))
 
   /** Update password for current user */
   const _updatePassword = async (newPassword: string): Promise<void> => {
@@ -855,7 +758,7 @@ export const useAuthStore = defineStore('auth', () => {
   const initiateCreditPurchase = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> =>
-    executeAuthAction((_) => addCredits(requestBodyContent))
+    executeAuthAction(() => addCredits(requestBodyContent))
 
   const accessBillingPortal = async (
     targetTier?: BillingPortalTargetTier

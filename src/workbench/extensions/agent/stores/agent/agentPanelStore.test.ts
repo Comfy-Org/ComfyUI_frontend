@@ -6,7 +6,7 @@ const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 

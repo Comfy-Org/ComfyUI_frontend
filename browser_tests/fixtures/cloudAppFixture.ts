@@ -1,5 +1,7 @@
-import { expect as baseExpect, test as base } from '@playwright/test'
+import { expect as baseExpect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 const CLOUD_APP_BOOT_TIMEOUT = 45_000
 

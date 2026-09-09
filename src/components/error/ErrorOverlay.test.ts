@@ -25,15 +25,18 @@ const mockErrorGroups = vi.hoisted(() => ({
 
 const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
-vi.mock('@/components/rightSidePanel/errors/useErrorGroups', () => ({
-  useErrorGroups: () => mockErrorGroups
-}))
+vi.mock<unknown>(
+  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  () => ({
+    useErrorGroups: () => mockErrorGroups
+  })
+)
 
-vi.mock('@/composables/graph/useNodeErrorFlagSync', () => ({
+vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     isGraphReady: false,
     rootGraph: {
@@ -43,7 +46,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
   getActiveGraphNodeIds: vi.fn(() => new Set()),
   getExecutionIdByNode: vi.fn(),
@@ -51,7 +54,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 const mockOpenPanel = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/rightSidePanelStore'), () => ({
   useRightSidePanelStore: () => ({ openPanel: mockOpenPanel })
 }))
 
@@ -61,7 +64,7 @@ const mockCanvasStore = vi.hoisted(() => ({
   currentGraph: null,
   updateSelectedItems: vi.fn()
 }))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => mockCanvasStore
 }))
 

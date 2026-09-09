@@ -62,7 +62,7 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

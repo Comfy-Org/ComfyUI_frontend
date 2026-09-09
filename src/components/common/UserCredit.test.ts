@@ -1,17 +1,18 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import UserCredit from './UserCredit.vue'
 
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -19,8 +20,6 @@ vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: vi.fn(),
   signOut: vi.fn()
 }))
-
-vi.mock('pinia')
 
 const mockBalance = vi.hoisted(() => ({
   value: {
@@ -32,7 +31,7 @@ const mockBalance = vi.hoisted(() => ({
 
 const mockIsFetchingBalance = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     balance: mockBalance.value,
     isFetchingBalance: mockIsFetchingBalance.value
@@ -59,7 +58,7 @@ describe('UserCredit', () => {
     return render(UserCredit, {
       props,
       global: {
-        plugins: [i18n],
+        plugins: [i18n, createPinia()],
         stubs: {
           Skeleton: { template: '<div data-testid="skeleton" />' },
           Tag: true
