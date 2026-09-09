@@ -11,7 +11,7 @@ const { mockHandleNextAction, mockLoadStripe, mockFeatureFlags } = vi.hoisted(
   })
 )
 
-vi.mock('@stripe/stripe-js/pure', () => ({
+vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
   loadStripe: mockLoadStripe
 }))
 
@@ -21,9 +21,9 @@ const mockReconcileSubscriptionSuccess = vi.fn()
 const mockRefreshCapabilities = vi.fn()
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
@@ -31,13 +31,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    refresh: mockRefreshCapabilities
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      refresh: mockRefreshCapabilities
+    })
   })
-}))
+)
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
   })
@@ -46,26 +49,26 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 const mockToastAdd = vi.fn()
 const mockToastRemove = vi.fn()
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     add: mockToastAdd,
     remove: mockToastRemove
   })
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingOpStatus: vi.fn()
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
 const mockSettingsDialogShow = vi.fn()
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: () => ({
     show: mockSettingsDialogShow,
     hide: vi.fn(),
@@ -75,7 +78,7 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 const mockCloseDialog = vi.fn()
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
@@ -84,7 +87,7 @@ vi.mock('@/stores/dialogStore', () => ({
 const mockTrackBillingEvent = vi.fn()
 const mockTrackMonthlySubscriptionSucceeded = vi.fn()
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent,
     trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
@@ -94,14 +97,17 @@ vi.mock('@/platform/telemetry', () => ({
 const mockUpdateActiveWorkspace = vi.fn()
 const mockActiveWorkspaceId = ref('workspace-1')
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
-    updateActiveWorkspace: mockUpdateActiveWorkspace
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return mockActiveWorkspaceId.value
+      },
+      updateActiveWorkspace: mockUpdateActiveWorkspace
+    })
   })
-}))
+)
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 

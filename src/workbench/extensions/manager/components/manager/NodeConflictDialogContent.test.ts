@@ -4,39 +4,30 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 // Mock getConflictMessage utility
-vi.mock('@/workbench/extensions/manager/utils/conflictMessageUtil', () => ({
-  getConflictMessage: vi.fn((conflict) => {
-    return `${conflict.type}: ${conflict.current_value} vs ${conflict.required_value}`
-  })
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/utils/conflictMessageUtil'),
 
-// Mock dependencies
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: vi.fn((key: string) => {
-      const translations: Record<string, string> = {
-        'manager.conflicts.description': 'Some extensions are not compatible',
-        'manager.conflicts.info': 'Additional info about conflicts',
-        'manager.conflicts.conflicts': 'Conflicts',
-        'manager.conflicts.extensionAtRisk': 'Extensions at Risk',
-        'manager.conflicts.importFailedExtensions': 'Import Failed Extensions'
-      }
-      return translations[key] || key
+  () => ({
+    getConflictMessage: vi.fn((conflict) => {
+      return `${conflict.type}: ${conflict.current_value} vs ${conflict.required_value}`
     })
-  }))
-}))
+  })
+)
 
 // Mock data for conflict detection
 const mockConflictData = ref<ConflictDetectionResult[]>([])
 
 // Mock useConflictDetection composable
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
+
   () => ({
     useConflictDetection: () => ({
       conflictedPackages: computed(() => mockConflictData.value)
@@ -55,27 +46,18 @@ describe('NodeConflictDialogContent', () => {
 
   function renderComponent(props = {}) {
     const user = userEvent.setup()
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
     const result = render(NodeConflictDialogContent, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [pinia, i18n],
         stubs: {
           ContentDivider: true,
           Button: { template: '<button><slot /></button>' }
-        },
-        mocks: {
-          $t: vi.fn((key: string) => {
-            const translations: Record<string, string> = {
-              'manager.conflicts.description':
-                'Some extensions are not compatible',
-              'manager.conflicts.info': 'Additional info about conflicts',
-              'manager.conflicts.conflicts': 'Conflicts',
-              'manager.conflicts.extensionAtRisk': 'Extensions at Risk',
-              'manager.conflicts.importFailedExtensions':
-                'Import Failed Extensions'
-            }
-            return translations[key] || key
-          })
         }
       }
     })
@@ -147,7 +129,7 @@ describe('NodeConflictDialogContent', () => {
 
       expect(container.textContent).toContain('3')
       expect(container.textContent).toContain('Conflicts')
-      expect(container.textContent).toContain('Extensions at Risk')
+      expect(container.textContent).toContain('Extension at Risk')
       expect(container.textContent).toContain('Import Failed Extensions')
       expect(container.textContent).toContain('1')
     })
@@ -158,9 +140,11 @@ describe('NodeConflictDialogContent', () => {
       })
 
       expect(container.textContent).toContain(
-        'Some extensions are not compatible'
+        "We've detected conflicts between some of your extensions"
       )
-      expect(container.textContent).toContain('Additional info about conflicts')
+      expect(container.textContent).toContain(
+        'the conflicting extensions will be disabled automatically'
+      )
     })
 
     it('should not show description when showAfterWhatsNew is false', () => {
@@ -169,10 +153,10 @@ describe('NodeConflictDialogContent', () => {
       })
 
       expect(container.textContent).not.toContain(
-        'Some extensions are not compatible'
+        "We've detected conflicts between some of your extensions"
       )
       expect(container.textContent).not.toContain(
-        'Additional info about conflicts'
+        'the conflicting extensions will be disabled automatically'
       )
     })
 
