@@ -92,11 +92,46 @@ function modelEndpoint(modelId: string): string {
   return `https://api.comfy.org/v2/models/${encodedId}`
 }
 
+/**
+ * A v4 UUID for the raw request's `Idempotency-Key`.
+ *
+ * Not `crypto.randomUUID()`: that one is restricted to secure contexts, and it
+ * is undefined on exactly the insecure LAN-IP and staging origins the clipboard
+ * fallback in `WorkshopPlayground.vue` exists for. `getRandomValues` carries no
+ * such restriction, so this works everywhere the page does.
+ *
+ * The value is rendered into the snippet as a literal rather than computed by
+ * the shell. An earlier version used `$(uuidgen)`, which is absent on most
+ * Linux images — the command failed and the request went out with an empty key,
+ * which is the one thing the header must never be.
+ */
+export function workshopIdempotencyKey(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('')
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20)
+  ].join('-')
+}
+
 export function buildWorkshopSnippet(
   language: WorkshopSnippetLanguage,
   modelId: string,
   fields: readonly WorkshopField[],
-  values: WorkshopFormValues
+  values: WorkshopFormValues,
+  /**
+   * Required rather than defaulted, so no call site can quietly emit a snippet
+   * with no key. Only the raw request uses it; both SDKs mint their own.
+   */
+  idempotencyKey: string
 ): string {
   const input = buildWorkshopInput(fields, values)
   const modelIdLiteral = JSON.stringify(modelId)
@@ -118,19 +153,18 @@ export function buildWorkshopSnippet(
   }
   const continuation = '\\'
   const endpoint = shellSingleQuote(modelEndpoint(modelId))
-  // An idempotency key, assigned once and reused. These are paid calls, and a
-  // disconnect can happen after the model has already run; retrying the same
-  // command without the same key runs and bills it a second time. Both SDKs
-  // mint one, so only the raw request needs this. Held in a variable rather
-  // than inlined so re-running just the curl — the actual retry — sends the
-  // key it sent the first time.
+  // These are paid calls, and a disconnect can happen after the model has
+  // already run, so a retry that does not carry the same key runs and bills it
+  // a second time. The key is baked in as a literal, which is what makes the
+  // copied block stable: re-running it — the whole thing, however the reader
+  // pasted it — sends the key it sent the first time, which is precisely what a
+  // retry needs. A fresh key means a deliberately new call, and comes from
+  // reloading the page.
   return [
-    `IDEMPOTENCY_KEY=$(uuidgen)`,
-    ``,
     `curl --request POST '${endpoint}' ${continuation}`,
     `  --header 'Authorization: Bearer YOUR_API_KEY' ${continuation}`,
     `  --header 'Content-Type: application/json' ${continuation}`,
-    `  --header "Idempotency-Key: $IDEMPOTENCY_KEY" ${continuation}`,
+    `  --header 'Idempotency-Key: ${shellSingleQuote(idempotencyKey)}' ${continuation}`,
     `  --data '${shellSingleQuote(JSON.stringify(input, null, 2))}'`
   ].join('\n')
 }

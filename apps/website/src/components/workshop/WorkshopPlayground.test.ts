@@ -74,6 +74,45 @@ describe('WorkshopPlayground', () => {
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
   })
 
+  it('replaces the placeholder key with a real one, per mount', async () => {
+    // The placeholder is what the prerendered island contains. If it survived
+    // into the browser, every reader would send the same Idempotency-Key and
+    // the Router would treat one reader's run as a repeat of another's.
+    const keyOf = (container: Element): string => {
+      const match = /Idempotency-Key: ([^']+)'/.exec(container.textContent)
+      expect(match).not.toBeNull()
+      return match?.[1] ?? ''
+    }
+
+    // Only the active tab's panel is in the DOM, and the key lives in the raw
+    // HTTP request. Driven by the keyboard because `TabsRoot` activates on
+    // arrow navigation; a bare click does not move the selection here.
+    const user = userEvent.setup()
+    const showHttp = async (): Promise<void> => {
+      screen.getByRole('tab', { name: 'TypeScript' }).focus()
+      await user.keyboard('{ArrowRight}{ArrowRight}')
+      await nextTick()
+      expect(screen.getByRole('tab', { selected: true }).textContent).toContain(
+        'HTTP'
+      )
+    }
+
+    const first = render(WorkshopPlayground, { props: { model } })
+    await showHttp()
+    const firstKey = keyOf(first.container)
+
+    expect(firstKey).not.toBe('REPLACE-WITH-A-UUID')
+    expect(firstKey).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    )
+
+    first.unmount()
+    const second = render(WorkshopPlayground, { props: { model } })
+    await showHttp()
+
+    expect(keyOf(second.container)).not.toBe(firstKey)
+  })
+
   it('copies the selected snippet and confirms the action', async () => {
     const user = userEvent.setup()
     render(WorkshopPlayground, { props: { model } })
