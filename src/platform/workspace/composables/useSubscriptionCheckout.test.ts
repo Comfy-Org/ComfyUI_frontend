@@ -3128,18 +3128,16 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-parked'
       })
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: 'awaiting_payment_method'
-      })
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({ phase: 'awaiting_payment_method' })
+      )
 
       await checkout.handleAddCreditCard()
 
       expect(checkout.parkedCheckoutRecovery.value).toBe(true)
       // Adopted rather than skipped: the operation is still polled, so it
       // resolves on its own if the customer finishes checkout elsewhere.
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-parked',
         'subscription',
         expect.any(Object)
@@ -3154,11 +3152,9 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-parked'
       })
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: 'awaiting_payment_method'
-      })
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({ phase: 'awaiting_payment_method' })
+      )
 
       await checkout.handleAddCreditCard()
 
@@ -3187,13 +3183,13 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-parked'
       })
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: 'awaiting_payment_method'
-      })
-      let resolveOperation!: (operation: { status: 'pending' }) => void
-      mockStartOperation.mockImplementationOnce(
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({ phase: 'awaiting_payment_method' })
+      )
+      let resolveOperation!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveOperation = resolve
@@ -3201,7 +3197,9 @@ describe('useSubscriptionCheckout', () => {
       )
 
       const payment = checkout.handleAddCreditCard()
-      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+      await vi.waitFor(() =>
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      )
 
       expect(checkout.parkedCheckoutRecovery.value).toBe(true)
       expect(checkout.isSubscribing.value).toBe(false)
@@ -3220,7 +3218,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockSubscribe).toHaveBeenCalledTimes(2)
 
-      resolveOperation({ status: 'pending' })
+      resolveOperation(billingOperation({ status: 'pending' }))
       await payment
     })
 
@@ -3228,26 +3226,28 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: 'awaiting_payment_method'
-      })
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({ phase: 'awaiting_payment_method' })
+      )
 
       // A adopts a parked operation and releases the lock, then stays suspended.
       mockSubscribe.mockResolvedValueOnce({
         status: 'pending_payment',
         billing_op_id: 'op-parked'
       })
-      let resolveA!: (operation: { status: 'pending' }) => void
-      mockStartOperation.mockImplementationOnce(
+      let resolveA!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveA = resolve
           })
       )
       const attemptA = checkout.handleAddCreditCard()
-      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+      await vi.waitFor(() =>
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      )
 
       // B takes the lock and is held inside subscribe().
       let releaseB!: () => void
@@ -3266,7 +3266,7 @@ describe('useSubscriptionCheckout', () => {
       await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledTimes(2))
 
       // A finishes. Its finally must not hand B's lock to C.
-      resolveA({ status: 'pending' })
+      resolveA(billingOperation({ status: 'pending' }))
       await attemptA
 
       await checkout.handleAddCreditCard()
@@ -3286,11 +3286,9 @@ describe('useSubscriptionCheckout', () => {
       })
       // Also blocked on the customer, but it needs authentication rather than a
       // card — actionUrl drives that, and offering this prompt would misdirect.
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: 'awaiting_invoice_payment'
-      })
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({ phase: 'awaiting_invoice_payment' })
+      )
 
       await checkout.handleAddCreditCard()
 
@@ -3307,11 +3305,9 @@ describe('useSubscriptionCheckout', () => {
       })
       // Absent is no claim, never an implied in_progress — but it is equally
       // not a licence to stop polling and prompt.
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: null
-      })
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({ phase: null })
+      )
 
       await checkout.handleAddCreditCard()
 
@@ -3330,7 +3326,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(checkout.parkedCheckoutRecovery.value).toBe(false)
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-live',
         'subscription',
         expect.any(Object)
