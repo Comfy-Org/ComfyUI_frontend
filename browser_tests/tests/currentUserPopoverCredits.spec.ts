@@ -134,7 +134,6 @@ function extendWithBilling(billingStatus: BillingStatusResponse) {
         })
       )
 
-      // The popover sources its data from the workspace billing endpoints.
       await page.route('**/api/billing/capabilities', (route) => {
         if (route.request().method() !== 'GET') return route.fallback()
         return route.fulfill({
@@ -147,14 +146,6 @@ function extendWithBilling(billingStatus: BillingStatusResponse) {
           )
         })
       })
-
-      await page.route('**/api/billing/status', (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(mockBillingStatus)
-        })
-      )
 
       await page.route('**/api/billing/plans', (route) =>
         route.fulfill({
