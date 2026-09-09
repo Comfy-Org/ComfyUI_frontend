@@ -6878,6 +6878,85 @@ Enterprise`
   },
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  // ChatGPT Images 2.5 announcement page (/chatgpt-image-2.5)
+  'chatgptImage25.meta.title': {
+    en: 'ChatGPT Images 2.5 on Comfy: Coming Soon',
+    'zh-CN': 'Comfy 上的 ChatGPT Images 2.5：即将推出'
+  },
+  'chatgptImage25.meta.description': {
+    en: "OpenAI's ChatGPT Images 2.5 is coming to Comfy. Get notified when text-to-image and editing support goes live.",
+    'zh-CN':
+      'OpenAI 的 ChatGPT Images 2.5 即将登陆 Comfy。获取文生图与图像编辑功能上线的通知。'
+  },
+  'chatgptImage25.breadcrumb.model': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
+  'chatgptImage25.breadcrumb.updated': {
+    en: 'Updated September 2026',
+    'zh-CN': '更新于 2026 年 9 月'
+  },
+  'chatgptImage25.hero.title': {
+    en: 'ChatGPT Images 2.5 is coming to Comfy',
+    'zh-CN': 'ChatGPT Images 2.5 即将登陆 Comfy'
+  },
+  'chatgptImage25.hero.description': {
+    en: "OpenAI's newest image model: sharper detail, steadier reference subjects across edits, and — per OpenAI — up to 50% lower generation latency than Images 2.0. We're wiring up Comfy support now.",
+    'zh-CN':
+      'OpenAI 最新的图像模型：细节更清晰，编辑过程中参考主体更稳定，且据 OpenAI 介绍，生成延迟比 Images 2.0 最多降低 50%。我们正在接入 Comfy 支持。'
+  },
+  'chatgptImage25.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'chatgptImage25.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'chatgptImage25.hero.primaryCta': {
+    en: 'GET NOTIFIED',
+    'zh-CN': '获取上线通知'
+  },
+  'chatgptImage25.hero.secondaryCta': {
+    en: 'BROWSE MODELS',
+    'zh-CN': '浏览模型'
+  },
+  'chatgptImage25.comparison.heading': {
+    en: 'How it compares so far',
+    'zh-CN': '目前的对比情况'
+  },
+  'chatgptImage25.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'chatgptImage25.runOptions.heading': {
+    en: 'One engine, ready when it launches',
+    'zh-CN': '同一引擎，上线即可使用'
+  },
+  'chatgptImage25.runOptions.subtitle': {
+    en: "Comfy Cloud, the API, or self-hosted — pick how you'll run it the moment ChatGPT Images 2.5 goes live.",
+    'zh-CN':
+      '云端、API 或自托管 — ChatGPT Images 2.5 上线的瞬间，随你选择运行方式。'
+  },
+  'chatgptImage25.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'chatgptImage25.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'chatgptImage25.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'chatgptImage25.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'chatgptImage25.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'footer.chatgptImage25': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
