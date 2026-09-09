@@ -166,9 +166,14 @@ export interface RefreshSchedulerOptions {
   /**
    * Called with the outcome of every SCHEDULED refresh attempt (never a
    * login or caller-initiated mint), so a host can feed its refresh
-   * telemetry without owning the scheduler.
+   * telemetry without owning the scheduler. A permanent failure and an
+   * expiry carry the failure the client committed, so the host never has
+   * to read it back out of the snapshot.
    */
-  readonly onScheduledOutcome?: (outcome: SessionRefreshOutcome) => void
+  readonly onScheduledOutcome?: (
+    outcome: SessionRefreshOutcome,
+    failure?: SessionFailure
+  ) => void
 }
 
 export interface SessionClientOptions extends SessionRequestOptions {
@@ -668,10 +673,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         if (credential !== expiring) return
         credential = undefined
         credentialTarget = undefined
-        failure = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+        const expired: SessionFailure = {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED'
+        }
+        failure = expired
         safeClear()
         publish()
-        reportOutcome?.('expired')
+        reportOutcome?.('expired', expired)
       },
       Math.max(0, expiring.expiresAt - now)
     )
@@ -729,7 +738,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       failure = result
       safeClear()
       publish()
-      reportOutcome?.('permanent_failure')
+      reportOutcome?.('permanent_failure', result)
       return
     }
     if (scheduledRetryCount >= schedulerMaxRetries) {
