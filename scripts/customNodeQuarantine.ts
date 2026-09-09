@@ -35,6 +35,7 @@ import {
 import { ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH } from '../browser_tests/fixtures/customNode/valueDrift'
 import {
   provesRefIsMissing,
+  provesRepositoryIsUnavailable,
   provesRequirementIsUnsatisfiable
 } from './customNodeQuarantineProbe'
 
@@ -69,6 +70,29 @@ async function dryRunPython(): Promise<string> {
 async function refStillMissing(deployRef: string): Promise<boolean> {
   const [url, sha] = deployRef.split(/@(?=[^@]*$)/)
   if (!url || !sha) throw new Error(`invalid git deployRef: ${deployRef}`)
+  const slug = url.match(
+    /^https:\/\/github\.com\/([^/]+\/[^/]+?)(?:\.git)?$/
+  )?.[1]
+  if (slug) {
+    const repositoryStatus = await run(
+      'curl',
+      [
+        '-sS',
+        '-o',
+        '/dev/null',
+        '-w',
+        '%{http_code}',
+        '--max-time',
+        '30',
+        `https://api.github.com/repos/${slug}`
+      ],
+      { timeout: 35_000 }
+    ).then(
+      ({ stdout }) => stdout,
+      () => ''
+    )
+    if (provesRepositoryIsUnavailable(repositoryStatus)) return true
+  }
   const dir = mkdtempSync(join(tmpdir(), 'cnq-'))
   await run('git', ['init', '-q', dir], { timeout: 30_000 })
   await run('git', ['-C', dir, 'remote', 'add', 'origin', url])
@@ -98,7 +122,7 @@ async function requirementsStillUnsatisfiable(
   failurePattern: string
 ): Promise<boolean> {
   const [url, sha] = deployRef.split(/@(?=[^@]*$)/)
-  const slug = url?.split('github.com/')[1]
+  const slug = url.split('github.com/')[1]
   if (!slug || !sha) throw new Error(`invalid git deployRef: ${deployRef}`)
   let body: string
   try {
