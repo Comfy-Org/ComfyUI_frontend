@@ -2,6 +2,9 @@
 
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
+/* Tailwind's auto-detection skips node_modules, so classes used only inside
+   the shared auth components would silently generate nothing. */
+@source '../../node_modules/@comfyorg/account/src';
 @import 'tw-animate-css';
 
 /* PP Formula's native vertical metrics place the baseline too high, so caps
@@ -598,4 +601,12 @@ video::-webkit-media-controls-panel {
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+}
+
+/* WebKit shows its own play button on .cloud-hero-video when autoplay is
+   refused (iOS Low Power Mode); the UA rule only yields to !important. */
+.cloud-hero-video::-webkit-media-controls-start-playback-button,
+.cloud-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
 }

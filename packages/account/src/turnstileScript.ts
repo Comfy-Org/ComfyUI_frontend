@@ -1,4 +1,4 @@
-import { createScriptLoader } from '@/utils/loadExternalScript'
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 
 const TURNSTILE_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
