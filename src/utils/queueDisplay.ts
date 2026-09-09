@@ -1,4 +1,6 @@
 import type { TaskItemImpl } from '@/stores/queueStore'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
@@ -124,7 +126,8 @@ export const buildJobDisplay = (
   if (state === 'completed') {
     const time = task.executionTimeInSeconds
     const preview = task.previewOutput
-    const iconImageUrl = preview && preview.isImage ? preview.url : undefined
+    const iconImageUrl =
+      preview && isImageResult(preview) ? resultItemUrl(preview) : undefined
 
     // Cloud shows "Completed in Xh Ym Zs", non-cloud shows filename
     const primary = ctx.isCloud

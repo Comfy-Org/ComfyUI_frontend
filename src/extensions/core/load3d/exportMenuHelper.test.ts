@@ -1,12 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
 
-const { contextMenuMock, addToastMock, addAlertMock } = vi.hoisted(() => ({
-  contextMenuMock: vi.fn(),
-  addToastMock: vi.fn(),
-  addAlertMock: vi.fn()
+const { contextMenuMock } = vi.hoisted(() => ({
+  contextMenuMock: vi.fn()
 }))
 
 vi.mock('@/i18n', () => ({
@@ -14,9 +14,12 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: addToastMock, addAlert: addAlertMock })
-}))
+let addToastMock: ReturnType<typeof useToastStore>['add']
+let addAlertMock: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  addToastMock = useToastStore().add
+  addAlertMock = useToastStore().addAlert
+})
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
   const actual = await importOriginal()
