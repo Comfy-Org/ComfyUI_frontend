@@ -1,3 +1,5 @@
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -5,25 +7,6 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
-}))
-
-const mockUpdateModelsForNodeType = vi.fn()
-const mockGetCategoryForNodeType = vi.fn()
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    getAssets: () => [],
-    isModelLoading: () => false,
-    getError: () => undefined,
-    hasAssetKey: () => false,
-    updateModelsForNodeType: mockUpdateModelsForNodeType
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
-  useModelToNodeStore: () => ({
-    getCategoryForNodeType: mockGetCategoryForNodeType
-  })
 }))
 
 describe('useAssetWidgetData (desktop/isCloud=false)', () => {
@@ -35,7 +18,7 @@ describe('useAssetWidgetData (desktop/isCloud=false)', () => {
     expect(assets.value).toEqual([])
     expect(isLoading.value).toBe(false)
     expect(error.value).toBeNull()
-    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
-    expect(mockGetCategoryForNodeType).not.toHaveBeenCalled()
+    expect(useAssetsStore().updateModelsForNodeType).not.toHaveBeenCalled()
+    expect(useModelToNodeStore().getCategoryForNodeType).not.toHaveBeenCalled()
   })
 })

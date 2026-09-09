@@ -4,16 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { EssentialTile } from '@/constants/essentialsNodes'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
-  })
-}))
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+})
 
 const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
   mockStartDrag: vi.fn(),
