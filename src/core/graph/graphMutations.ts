@@ -223,6 +223,28 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+function reconcileInputSlots(
+  current: NodeState,
+  next: Pick<NodeState, 'inputs' | 'properties'>
+): NodeState['inputs'] {
+  const promoted = new Map(
+    current.inputs
+      .filter((input) => '_subgraphSlot' in input && input._subgraphSlot)
+      .map((input) => [input.name, input])
+  )
+  const inputs = next.inputs.map((input) => {
+    const existing = promoted.get(input.name)
+    promoted.delete(input.name)
+    const { link: _link, boundingRect: _bounds, ...metadata } = input
+    return existing?.type === input.type
+      ? Object.assign(existing, metadata)
+      : input
+  })
+  return Array.isArray(next.properties.proxyWidgets)
+    ? [...inputs, ...promoted.values()]
+    : inputs
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope
@@ -647,8 +669,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const { state, widgets } = mutation.node
           const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
+            if (existing.type === state.type)
+              state.inputs = reconcileInputSlots(existing, state)
             nodeStore.updateNode(scope, state.id, state, context)
-            const names = new Set(widgets.map(({ name }) => name))
+            const names = new Set([
+              ...widgets.map(({ name }) => name),
+              ...state.inputs
+                .filter((input) => input.widgetId)
+                .map((input) => input.name)
+            ])
             for (const widget of widgetStore.getNodeWidgets(
               scope.rootGraphId,
               state.id
@@ -774,7 +803,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               scope,
               target.id,
               {
-                inputs: mutation.targetInputs,
+                inputs: reconcileInputSlots(target, {
+                  inputs: mutation.targetInputs,
+                  properties: target.properties
+                }),
                 outputs: target.outputs
               },
               context

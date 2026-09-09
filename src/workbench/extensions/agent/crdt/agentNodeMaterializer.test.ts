@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   LGraph,
   LGraphNode,
@@ -21,7 +22,8 @@ import {
 import {
   createTestSubgraphData,
   createTestSubgraphNode,
-  enableSubgraphNodeCreation
+  enableSubgraphNodeCreation,
+  setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
@@ -212,6 +214,103 @@ beforeEach(() => {
 })
 
 describe('reconcileAgentAdapters', () => {
+  it.for([false, true])(
+    'retains promoted controls after reconciling a live subgraph (empty values: %s)',
+    (emptyValues) => {
+      const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+      const settings = new LGraphNode('Settings')
+      subgraph.add(settings)
+      const steps = settings.addWidget('number', 'steps', 8, () => {}, {
+        min: 1,
+        max: 100
+      })
+      settings.addInput('steps', 'INT').widget = { name: 'steps' }
+      expect(
+        promoteValueWidgetViaSubgraphInput(hostNode, settings, steps).ok
+      ).toBe(true)
+      useWidgetValueStore().setValue(
+        widgetId(graph.id, hostNode.id, 'steps'),
+        12
+      )
+      const widgets = hostNode.widgets.map(({ name, value, type }) => ({
+        name,
+        value,
+        type
+      }))
+      expect(widgets.length).toBeGreaterThan(0)
+      const inputs = hostNode.inputs.map((input) => input.widgetId)
+      const serialized = hostNode.serialize()
+      const floating = new LLink(
+        toLinkId(98),
+        'INT',
+        UNASSIGNED_NODE_ID,
+        -1,
+        hostNode.id,
+        1
+      )
+      graph.addFloatingLink(floating)
+      hostNode.inputs[0].boundingRect = [10, 20, 30, 40]
+
+      expect(
+        remoteMutations(graphScopeOf(graph)).batch(REMOTE, (batch) =>
+          batch.reconcileNode({
+            ...serialized,
+            widgets_values: emptyValues ? [] : serialized.widgets_values,
+            inputs: emptyValues
+              ? serialized.inputs?.slice(0, 1)
+              : serialized.inputs,
+            properties: emptyValues
+              ? {
+                  ...serialized.properties,
+                  proxyWidgets: [[String(settings.id), 'steps']]
+                }
+              : serialized.properties
+          })
+        )
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+
+      expect(graph.getNodeById(hostNode.id)).toBe(hostNode)
+      expect(
+        hostNode.widgets.map(({ name, value, type }) => ({ name, value, type }))
+      ).toEqual(widgets)
+      expect(hostNode.inputs.map((input) => input.widgetId)).toEqual(inputs)
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(hostNode.inputs[0].boundingRect).toEqual([10, 20, 30, 40])
+      expect(hostNode.serialize().widgets_values).toEqual(
+        serialized.widgets_values
+      )
+
+      const upstream = new LGraphNode('Upstream')
+      upstream.addOutput('text', 'STRING')
+      graph.add(upstream)
+      expect(
+        remoteMutations(graphScopeOf(graph)).connect(
+          {
+            id: 99,
+            originNodeId: upstream.id,
+            originSlot: 0,
+            targetNodeId: hostNode.id,
+            targetSlot: 0,
+            type: 'STRING',
+            targetInputs: serialized.inputs?.map((input, index) => ({
+              ...input,
+              link: index === 0 ? 99 : input.link
+            }))
+          },
+          REMOTE
+        )
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+      expect(hostNode.inputs[0].link).toBe(toLinkId(99))
+      expect(graph.floatingLinks.get(floating.id)).toBe(floating)
+      expect(hostNode.inputs[0].boundingRect).toEqual([10, 20, 30, 40])
+      expect(hostNode.widgets.map(({ value }) => value)).toEqual(
+        widgets.map(({ value }) => value)
+      )
+    }
+  )
+
   it('converges create, connect, save/reload, readback, and delete across every graph surface', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)
