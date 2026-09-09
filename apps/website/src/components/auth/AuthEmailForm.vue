@@ -259,6 +259,7 @@ defineExpose({ resetTurnstile })
       theme="dark"
       :expired-message="TURNSTILE_MESSAGES[locale].expired"
       :failed-message="TURNSTILE_MESSAGES[locale].failed"
+      error-class="text-red-500"
     />
     <small
       v-show="waiting"
