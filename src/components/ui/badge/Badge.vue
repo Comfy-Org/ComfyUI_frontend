@@ -11,8 +11,8 @@ import { badgeVariants } from './badge.variants'
 
 const {
   value,
-  variant = 'tag',
-  severity = 'secondary',
+  variant,
+  severity,
   removable = false,
   class: customClass = ''
 } = defineProps<{
