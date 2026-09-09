@@ -1,10 +1,15 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ISerialisedGraph,
+  SerialisableGraph,
+  SerialisableLLink
+} from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -15,10 +20,11 @@ import {
   conflictingOriginLinksRoot,
   duplicateLinksRoot
 } from './__fixtures__/duplicateLinks'
+import { normalizeConfiguredTopology } from './linkDeduplication'
 
 const trackLinkDedupDrop = vi.fn()
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackLinkDedupDrop
   })
@@ -167,5 +173,127 @@ describe('legacy mirror link creation (#15577 reachability)', () => {
       linksIntoTargetSlot(graph.serialize().links, target.id, 0)
     ).toHaveLength(1)
     expect(target.getInputLink(0)?.origin_id).toBe(sourceA.id)
+  })
+})
+
+describe('normalizeConfiguredTopology presentation sidecar', () => {
+  it('does not turn a noncanonical presentation key into a valid survivor ID', () => {
+    const data = structuredClone(duplicateLinksRoot)
+    data.extra = { linkPresentation: { '02': { hidden: true } } }
+
+    const result = normalizeConfiguredTopology(data)
+
+    expect(result.extra?.linkPresentation).not.toHaveProperty('1')
+  })
+
+  it('drops a losing entry when the survivor already carries presentation', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const data = fromPartial<SerialisableGraph>({
+      links: [
+        {
+          id: 1,
+          origin_id: 10,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'number'
+        },
+        {
+          id: 2,
+          origin_id: 11,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'number'
+        }
+      ],
+      nodes: [{ id: 2, inputs: [{ link: 2 }] }],
+      extra: {
+        linkPresentation: { '1': { label: 'Loser' }, '2': { hidden: true } }
+      }
+    })
+
+    const result = normalizeConfiguredTopology(data)
+
+    expect(result.extra?.linkPresentation).toEqual({ '2': { hidden: true } })
+  })
+
+  it.for([false, true])(
+    'keeps default survivor presentation across competing origins (reversed: %s)',
+    (reversed) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const links: SerialisedLLinkArray[] = [
+        [1, 10, 0, 2, 0, 'number'],
+        [3, 10, 0, 2, 0, 'number'],
+        [2, 11, 0, 2, 0, 'number']
+      ]
+      const data = fromPartial<ISerialisedGraph>({
+        version: 0.4,
+        links: reversed ? links.toReversed() : links,
+        nodes: [{ id: 2, inputs: [{ link: 2 }] }],
+        extra: {
+          linkPresentation: {
+            '1': { label: 'Discarded' },
+            '3': { hidden: true }
+          }
+        }
+      })
+
+      const result = normalizeConfiguredTopology(data)
+
+      expect(result.links.map((link) => link[0])).toEqual([2])
+      expect(result.extra?.linkPresentation).toEqual({})
+      expect(data.extra?.linkPresentation).toEqual({
+        '1': { label: 'Discarded' },
+        '3': { hidden: true }
+      })
+    }
+  )
+
+  it('preserves presentation when competing links reuse the survivor id', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const data = fromPartial<ISerialisedGraph>({
+      version: 0.4,
+      links: [
+        [1, 10, 0, 2, 0, 'number'],
+        [1, 11, 0, 2, 0, 'number']
+      ],
+      nodes: [{ id: 2, inputs: [{ link: 1 }] }],
+      extra: { linkPresentation: { '1': { hidden: true } } }
+    })
+
+    const result = normalizeConfiguredTopology(data)
+
+    expect(result.links).toEqual([[1, 10, 0, 2, 0, 'number']])
+    expect(result.extra?.linkPresentation).toEqual({ '1': { hidden: true } })
+  })
+
+  it('moves a dropped duplicate entry onto the surviving id', () => {
+    const data = fromPartial<SerialisableGraph>({
+      links: [
+        {
+          id: 1,
+          origin_id: 10,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'number'
+        },
+        {
+          id: 2,
+          origin_id: 10,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'number'
+        }
+      ],
+      nodes: [{ id: 2, inputs: [{ link: 2 }] }],
+      extra: { linkPresentation: { '2': { hidden: true } } }
+    })
+
+    const result = normalizeConfiguredTopology(data)
+
+    expect(result.extra?.linkPresentation).toEqual({ '1': { hidden: true } })
   })
 })

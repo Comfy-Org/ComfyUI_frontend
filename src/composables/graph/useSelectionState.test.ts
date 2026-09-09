@@ -16,12 +16,12 @@ import {
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),
   isImageNode: vi.fn()
 }))
 
-vi.mock('@/utils/nodeFilterUtil', () => ({
+vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   filterOutputNodes: vi.fn()
 }))
 
