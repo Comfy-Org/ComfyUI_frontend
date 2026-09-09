@@ -50,8 +50,12 @@ The adapter is a documented transitional seam governed by these rules:
    tear down and delivers directly. `invalidate()` fails closed — the
    client drops its credential, its cache, and its identity snapshot, and
    reads signed-out until the next delivery.
-5. Nothing in `src/` may bind the package's `createFirebaseIdentity` while
-   this adapter exists; a second auth instance diverges the session.
+5. Nothing in `src/` may initialize a second Firebase app through the
+   package's `createFirebaseIdentity` while this adapter exists; a second
+   auth instance diverges the session. Binding the entry to the vuefire
+   instance (`createFirebaseIdentity({ auth })`) is how the cloud app runs
+   its sign-in actions; identity delivery to the session client still goes
+   through this adapter, not through that entry's `onUserChanged`.
 
 The contract is pinned by the "unified identity push" test in
 `authStore.test.ts` and the flag-off dormancy suite in
