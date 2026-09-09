@@ -1178,7 +1178,7 @@ export function useSubscriptionCheckout(
   function trackSubscriptionFailure(
     context: SubscriptionOutcomeContext,
     error?: unknown,
-    errorCode?: 'missing_checkout_response' | 'parked_checkout_recovery_offered'
+    errorCode?: 'missing_checkout_response'
   ) {
     if (context.attemptStartedAt === undefined) return
 
