@@ -234,8 +234,44 @@
     {
       "class": "website",
       "tier": "R2",
-      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
-      "paths": ["apps/website/**"]
+      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money. Excludes src/content/** and src/i18n/** (see the website-content class): grading is worst(...)-over-matches with no negation, so those paths must be carved out here rather than merely added elsewhere, or this rule's R2 would still win.",
+      "paths": [
+        "apps/website/README.md",
+        "apps/website/astro.config.ts",
+        "apps/website/components.json",
+        "apps/website/design/**",
+        "apps/website/e2e/**",
+        "apps/website/package.json",
+        "apps/website/playwright.config.ts",
+        "apps/website/public/**",
+        "apps/website/scripts/**",
+        "apps/website/tsconfig.json",
+        "apps/website/tsconfig.stories.json",
+        "apps/website/vercel.json",
+        "apps/website/vitest.config.ts",
+        "apps/website/src/assets/**",
+        "apps/website/src/components/**",
+        "apps/website/src/composables/**",
+        "apps/website/src/config/**",
+        "apps/website/src/content.config.ts",
+        "apps/website/src/data/**",
+        "apps/website/src/env.d.ts",
+        "apps/website/src/integrations/**",
+        "apps/website/src/layouts/**",
+        "apps/website/src/lib/**",
+        "apps/website/src/pages/**",
+        "apps/website/src/scripts/**",
+        "apps/website/src/styles/**",
+        "apps/website/src/templates/**",
+        "apps/website/src/test/**",
+        "apps/website/src/utils/**"
+      ]
+    },
+    {
+      "class": "website-content",
+      "tier": "R1",
+      "why": "Astro content collections and translation copy under apps/website ship to users but are schema-validated prose/data \u2014 they cannot corrupt a saved workflow, move money, or change build/routing behaviour the way the rest of the website tree can",
+      "paths": ["apps/website/src/content/**", "apps/website/src/i18n/**"]
     },
     {
       "class": "docs",

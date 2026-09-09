@@ -34,7 +34,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      test-outcome: ${{ steps.tests.outcome }}
+      required-passed: ${{ steps.gate.outputs.required-passed }}
       report-url: ${{ steps.deploy.outputs.url }}
       screenshot-failures: ${{ steps.failures.outputs.screenshot }}
       other-failures: ${{ steps.failures.outputs.other }}
@@ -59,6 +59,10 @@ jobs:
 
       - name: Run Playwright tests
         id: tests
+        # A screenshot-only failure must not fail this step outright — the
+        # gate step below decides pass/fail from the visual/other split so
+        # content PRs aren't blocked by pixel diffs alone.
+        continue-on-error: true
         run: pnpm --filter @comfyorg/website test:e2e
 
       - name: Upload test report
@@ -137,34 +141,67 @@ jobs:
             core.setOutput('screenshot', screenshotFailures)
             core.setOutput('other', failed.length - screenshotFailures)
 
+      # Screenshot-only failures don't block merge (there's a one-click fix:
+      # the "Update Website Screenshots" checkbox below); only a non-visual
+      # e2e failure, or the run being cancelled outright, fails this required
+      # check. This is the step whose exit code decides the job's conclusion,
+      # since "Run Playwright tests" above no longer can (continue-on-error).
+      - name: Determine required gate result
+        id: gate
+        if: always() && !cancelled()
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          OTHER_FAILURES: ${{ steps.failures.outputs.other }}
+        run: |
+          if [ "$TEST_OUTCOME" = "success" ]; then
+            echo "required-passed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$TEST_OUTCOME" = "cancelled" ]; then
+            echo "required-passed=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Website E2E run was cancelled."
+            exit 1
+          fi
+          OTHER="${OTHER_FAILURES:-0}"
+          if [ "$OTHER" -gt 0 ]; then
+            echo "required-passed=false" >> "$GITHUB_OUTPUT"
+            echo "::error::${OTHER} non-screenshot e2e failure(s) — these block merge."
+            exit 1
+          fi
+          echo "required-passed=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Only screenshot diffs failed; not blocking merge. Use the 'Update Website Screenshots' checkbox to refresh expectations."
+
       - name: Write job summary
         if: always() && !cancelled()
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          REQUIRED_PASSED: ${{ steps.gate.outputs.required-passed }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
           SCREENSHOT_FAILURES: ${{ steps.failures.outputs.screenshot }}
           OTHER_FAILURES: ${{ steps.failures.outputs.other }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const requiredPassed = process.env.REQUIRED_PASSED === 'true'
             const reportUrl = process.env.REPORT_URL
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
+            const hasScreenshotDiffs = screenshotFailures > 0
 
             const lines = ['## 🌐 Website E2E', '']
 
-            if (passed) {
+            if (requiredPassed && !hasScreenshotDiffs) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (requiredPassed) {
+              lines.push('> [!WARNING]', '> Functional tests passed. Screenshot diffs found — non-blocking, but review before merging.')
             } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
+              lines.push('> [!CAUTION]', '> Functional tests failed — this blocks merge.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Status', requiredPassed ? (hasScreenshotDiffs ? '⚠️ Passed (screenshot diffs)' : '✅ Passed') : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
+            if (hasScreenshotDiffs || otherFailures > 0) {
               rows.push(
                 ['Screenshot diffs', String(screenshotFailures)],
                 ['Other failures', String(otherFailures)]
@@ -226,30 +263,33 @@ jobs:
         id: content
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
+          REQUIRED_PASSED: ${{ needs.website-e2e.outputs.required-passed }}
           REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
           SCREENSHOT_FAILURES: ${{ needs.website-e2e.outputs.screenshot-failures }}
           OTHER_FAILURES: ${{ needs.website-e2e.outputs.other-failures }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const requiredPassed = process.env.REQUIRED_PASSED === 'true'
             const reportUrl = process.env.REPORT_URL
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
+            const hasScreenshotDiffs = screenshotFailures > 0
 
             const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
 
-            if (passed) {
+            if (requiredPassed && !hasScreenshotDiffs) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (requiredPassed) {
+              lines.push('> [!WARNING]', '> Functional tests passed. Screenshot diffs found — non-blocking, but review before merging.')
             } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
+              lines.push('> [!CAUTION]', '> Functional tests failed — this blocks merge.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Status', requiredPassed ? (hasScreenshotDiffs ? '⚠️ Passed (screenshot diffs)' : '✅ Passed') : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
+            if (hasScreenshotDiffs || otherFailures > 0) {
               rows.push(
                 ['Screenshot diffs', String(screenshotFailures)],
                 ['Other failures', String(otherFailures)]
@@ -265,13 +305,6 @@ jobs:
             if (screenshotFailures > 0) {
               const s = screenshotFailures === 1 ? '' : 's'
               lines.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
-            }
-            if (otherFailures > 0) {
-              lines.push(
-                '',
-                '> [!WARNING]',
-                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
-              )
             }
 
             core.setOutput('section-content', lines.join('\n'))
