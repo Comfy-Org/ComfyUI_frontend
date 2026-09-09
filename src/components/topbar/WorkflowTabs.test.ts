@@ -13,8 +13,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
-vi.mock('firebase/auth')
-vi.mock('vuefire', () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('firebase/auth'))
+vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
@@ -29,7 +29,7 @@ const overflowObservers = vi.hoisted<
   }>
 >(() => [])
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
@@ -41,7 +41,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: { value: false },
     userEmail: { value: undefined }
@@ -50,47 +50,53 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
 const openWorkflow = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/support/feedbackDialog', () => ({
+vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
 
-vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
+vi.mock(import('@/composables/useWorkflowStatusDismissal'), () => ({
   useWorkflowStatusDismissal: vi.fn()
 }))
 
-vi.mock('@/composables/element/useOverflowObserver', async () => {
-  const { ref } = await import('vue')
-  return {
-    useOverflowObserver: () => {
-      const observer = {
-        isOverflowing: ref(false),
-        checkOverflow: vi.fn()
+vi.mock<unknown>(
+  import('@/composables/element/useOverflowObserver'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useOverflowObserver: () => {
+        const observer = {
+          isOverflowing: ref(false),
+          checkOverflow: vi.fn()
+        }
+        overflowObservers.push(observer)
+        return observer
       }
-      overflowObservers.push(observer)
-      return observer
     }
   }
-})
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    openWorkflow,
-    closeWorkflow: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      openWorkflow,
+      closeWorkflow: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/utils/mouseDownUtil', () => ({
+vi.mock(import('@/utils/mouseDownUtil'), () => ({
   whileMouseDown: vi.fn()
 }))
 
-vi.mock('./WorkflowOverflowMenu.vue', () => ({
+vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
     render: () => h('div', { 'data-testid': 'workflow-overflow-menu' })
   })
 }))
 
-vi.mock('./WorkflowTab.vue', () => ({
+vi.mock(import('./WorkflowTab.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowTabStub',
     props: {
@@ -105,14 +111,14 @@ vi.mock('./WorkflowTab.vue', () => ({
   })
 }))
 
-vi.mock('./CurrentUserButton.vue', () => ({
+vi.mock(import('./CurrentUserButton.vue'), () => ({
   default: defineComponent({
     name: 'CurrentUserButtonStub',
     render: () => h('div')
   })
 }))
 
-vi.mock('./LoginButton.vue', () => ({
+vi.mock(import('./LoginButton.vue'), () => ({
   default: defineComponent({
     name: 'LoginButtonStub',
     render: () => h('div')

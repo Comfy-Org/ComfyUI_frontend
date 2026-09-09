@@ -79,37 +79,45 @@ const mockWorkspaceStore = {
   shiftDown: false
 }
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   useEventListener: vi.fn((target, event, handler) => {
     target.addEventListener(event, handler)
     return () => target.removeEventListener(event, handler)
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/workspaceStore', () => ({
+  () => ({
+    useCanvasStore: () => mockCanvasStore
+  })
+)
+
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => mockWorkspaceStore
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn()
   }
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
   isAudioNode: vi.fn(),
   isImageNode: vi.fn(),
   isVideoNode: vi.fn()
 }))
 
-vi.mock('@/workbench/eventHelpers', () => ({
-  shouldIgnoreCopyPaste: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/eventHelpers'),
+
+  () => ({
+    shouldIgnoreCopyPaste: vi.fn()
+  })
+)
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
