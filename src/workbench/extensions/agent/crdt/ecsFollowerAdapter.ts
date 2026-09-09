@@ -460,8 +460,12 @@ export class EcsFollowerAdapter {
       // instead; `readSemanticNode` has already keyed them from the
       // definition. A host whose stored values are not a record (malformed
       // opaque payload) keeps its widgets untouched rather than wiped.
+      // The live node must already carry the host type: a plain node whose doc
+      // entry is replaced by a host-typed map (or a host retyped to another
+      // definition) has no promoted widgets to preserve and must be rebuilt.
       const isLiveHost = (payload: SemanticNodePayload) =>
-        definitions().has(payload.type) && batch.hasNode(toNodeId(payload.id))
+        definitions().has(payload.type) &&
+        batch.getNodeType(toNodeId(payload.id)) === payload.type
       const upsertNode = (
         payload: SemanticNodePayload,
         mode: 'add' | 'reconcile'

@@ -863,6 +863,63 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(storedHostWidgets(state)).toEqual([['value', 46]])
     expect(state.instance.widgets[0]?.value).toBe(46)
   })
+
+  it('S1p rebuilds a plain node whose doc entry becomes a subgraph host', () => {
+    // "Already live" must mean the same node *type*, not merely the same id.
+    // When a plain node's map is replaced by a host-typed map, keeping the
+    // incumbent would leave a promoted-widget node standing in for the host.
+    const state = startFollower({ rootWidgetNode: true })
+    expect(state.graph.getNodeById(toNodeId(3))).not.toBeInstanceOf(
+      SubgraphNode
+    )
+    forwardRaw(
+      state,
+      (nodes) => {
+        const host = nodes.get('1')!.toJSON() as Record<string, unknown>
+        const replacement = new Y.Map<unknown>()
+        for (const [key, value] of Object.entries(host)) {
+          if (key === OPAQUE_WIDGETS_KEY) continue
+          replacement.set(key, value)
+        }
+        replacement.set('id', 3)
+        replacement.set(OPAQUE_WIDGETS_KEY, [44])
+        nodes.set('3', replacement)
+      },
+      1
+    )
+
+    const rebuilt = state.graph.getNodeById(toNodeId(3))
+    expect(rebuilt).toBeInstanceOf(SubgraphNode)
+    expect(rebuilt?.widgets?.map((w) => w.name)).toEqual(['value'])
+    expect(rebuilt?.widgets?.[0]?.value).toBe(44)
+  })
+
+  it('S1q rebuilds a host whose doc entry becomes a plain node', () => {
+    const state = startFollower()
+    forwardRaw(
+      state,
+      (nodes) => {
+        const replacement = new Y.Map<unknown>()
+        replacement.set('id', 1)
+        replacement.set('type', 'source')
+        replacement.set('pos', [0, 0])
+        replacement.set('size', [100, 60])
+        replacement.set('mode', 0)
+        replacement.set('order', 0)
+        replacement.set('flags', {})
+        replacement.set('properties', {})
+        replacement.set('inputs', [])
+        replacement.set('outputs', [])
+        nodes.set('1', replacement)
+      },
+      1
+    )
+
+    const rebuilt = state.graph.getNodeById(toNodeId(1))
+    expect(rebuilt).toBeDefined()
+    expect(rebuilt).not.toBeInstanceOf(SubgraphNode)
+    expect(rebuilt?.type).toBe('source')
+  })
 })
 
 function hostSetWidget(value: number): GraphOperation {
