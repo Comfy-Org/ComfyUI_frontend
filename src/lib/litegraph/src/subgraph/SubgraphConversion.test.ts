@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import {
   assert,
   beforeEach,
@@ -31,7 +29,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 

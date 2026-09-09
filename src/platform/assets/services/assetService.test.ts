@@ -1,3 +1,9 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import type * as I18nModule from '@/i18n'
+import type { ComfyApp } from '@/scripts/app'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -19,7 +25,8 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockDistributionState.isCloud
   }
@@ -35,47 +42,19 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
-}))
-
-vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => {
-  const registeredNodeTypes: Record<string, string> = {
-    CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
-  }
-  const nodeTypeCategories: Record<string, string> = {
-    CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
-  }
-  return {
-    useModelToNodeStore: vi.fn(() => ({
-      getRegisteredNodeTypes: () => registeredNodeTypes,
-      getCategoryForNodeType: vi.fn(
-        (nodeType: string) => nodeTypeCategories[nodeType]
-      )
-    }))
-  }
-})
-
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputAssets }
-  })
-}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
     addCustomEventListener: vi.fn(),
     removeCustomEventListener: vi.fn()
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -126,6 +105,30 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     ...overrides
   }
 }
+
+beforeEach(() => {
+  const registeredNodeTypes: Record<string, string> = {
+    CheckpointLoaderSimple: 'ckpt_name',
+    LoraLoader: 'lora_name'
+  }
+  const nodeTypeCategories: Record<string, string> = {
+    CheckpointLoaderSimple: 'checkpoints',
+    LoraLoader: 'loras'
+  }
+  vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
+    () => registeredNodeTypes
+  )
+  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
+    (nodeType: string) => nodeTypeCategories[nodeType]
+  )
+  vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
+    mockInvalidateInputAssets
+  )
+})
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(mockSettingStoreGet)
+})
 
 describe(assetService.shouldUseAssetBrowser, () => {
   beforeEach(() => {
@@ -1193,4 +1196,9 @@ describe(assetService.getAssetsForNodeType, () => {
     expect(assets).toEqual([])
     expect(fetchApiMock).not.toHaveBeenCalled()
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

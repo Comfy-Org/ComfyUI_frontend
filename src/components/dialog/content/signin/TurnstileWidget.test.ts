@@ -1,35 +1,23 @@
+import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render } from '@testing-library/vue'
-
 import type { TurnstileRenderOptions } from '@/composables/auth/turnstileScript'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
-const { mockLoadTurnstile, mockGetSiteKey, mockLightTheme } = vi.hoisted(
-  () => ({
-    mockLoadTurnstile: vi.fn(),
-    mockGetSiteKey: vi.fn(() => 'site-key'),
-    mockLightTheme: { value: true }
-  })
-)
+const { mockLoadTurnstile, mockGetSiteKey } = vi.hoisted(() => ({
+  mockLoadTurnstile: vi.fn(),
+  mockGetSiteKey: vi.fn(() => 'site-key')
+}))
 
 vi.mock(import('@/composables/auth/turnstileScript'), () => ({
   loadTurnstile: mockLoadTurnstile
 }))
 vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: mockGetSiteKey
-}))
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: {
-      get light_theme() {
-        return mockLightTheme.value
-      }
-    }
-  })
 }))
 
 const i18n = createI18n({
@@ -98,7 +86,7 @@ const renderWidgetWithExpose = () => {
 describe('TurnstileWidget', () => {
   beforeEach(() => {
     mockGetSiteKey.mockReturnValue('site-key')
-    mockLightTheme.value = true
+    useColorPaletteStore().activePaletteId = 'light'
     delete window.turnstile
   })
 
@@ -120,7 +108,7 @@ describe('TurnstileWidget', () => {
   })
 
   it('uses the dark theme when the active palette is not light', async () => {
-    mockLightTheme.value = false
+    useColorPaletteStore().activePaletteId = 'dark'
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
 

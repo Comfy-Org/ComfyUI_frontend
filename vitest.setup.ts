@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { disposePinia, getActivePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, vi } from 'vitest'
 import 'vue'
 import DOMPurify from 'dompurify'
@@ -13,6 +13,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  const pinia = getActivePinia()
+  if (pinia) disposePinia(pinia)
   clearRegisteredLiteGraphTypes()
 })
 

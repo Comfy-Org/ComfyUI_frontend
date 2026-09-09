@@ -1,7 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { readFileSync } from 'fs'
-import { setActivePinia } from 'pinia'
 import { resolve } from 'path'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -11,10 +10,8 @@ import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitter
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() => ({ currentUser: null, loading: false }))
-}))
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 /**
  * Regression test: the graph-canvas-panel SplitterPanel must not clip
@@ -52,7 +49,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
         'agent-panel': '<div data-testid="agent-panel-probe">docked panel</div>'
       },
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: { Splitter: true, SplitterPanel: true }
       }
     })
@@ -62,8 +59,7 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
   })
 
   it('keeps tabs with the graph and Agent panel during graph node selection', async () => {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     vi.mocked(useSettingStore().get).mockImplementation((id) => {
       if (id === 'Comfy.Sidebar.Location') return 'left'
       if (id === 'Comfy.UseNewMenu') return 'Top'
