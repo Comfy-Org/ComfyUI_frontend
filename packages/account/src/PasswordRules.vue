@@ -1,5 +1,5 @@
 <template>
-  <small :class="rootClass">
+  <div :class="rootClass">
     {{ copy.requirements }}:
     <ul :class="listClass">
       <li :class="cn(!checks.length && unmetClass)">
@@ -18,7 +18,7 @@
         {{ copy.special }}
       </li>
     </ul>
-  </small>
+  </div>
 </template>
 
 <script setup lang="ts">
