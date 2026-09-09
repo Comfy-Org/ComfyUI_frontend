@@ -187,22 +187,25 @@ describe('Composer', () => {
       expect(
         screen.getByRole('button', { name: 'Save changes' })
       ).toBeDisabled()
+      expect(screen.getAllByRole('radio')).toHaveLength(2)
+      expect(
+        screen.getByRole('radio', { name: /Auto-run without approval/ })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+      ).not.toBeInTheDocument()
+      expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
     })
 
-    it('saves a new run mode with its credit limit and closes', async () => {
+    it('saves auto mode and closes', async () => {
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run with limits/ })
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       const save = screen.getByRole('button', { name: 'Save changes' })
-      expect(save).toBeEnabled()
-      const input = screen.getByRole('spinbutton', { name: 'credits' })
-      expect(input).toHaveValue(300)
-      await userEvent.clear(input)
-      await userEvent.type(input, '500')
       expect(save).toBeEnabled()
       await userEvent.click(save)
 
@@ -210,10 +213,10 @@ describe('Composer', () => {
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
+        await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto_limited')
-      expect(store.creditLimit).toBe(500)
+      expect(store.mode).toBe('auto')
+      expect(store.creditLimit).toBeNull()
     })
 
     it('keeps the popover open and reports a failed save', async () => {
@@ -238,46 +241,75 @@ describe('Composer', () => {
       })
     })
 
-    it('keeps Save disabled while the limit draft is invalid', async () => {
-      mount()
-      const store = useAgentRunModeStore()
-      await store.save('auto_limited', 450)
+    it.for(['local', 'server'] as const)(
+      'presents a restored %s limited preference as Ask without rewriting it',
+      async (source) => {
+        const preference = { mode: 'auto_limited', credit_limit: 450 }
+        if (source === 'local') {
+          localStorage.setItem(
+            'Comfy.Agent.RunModePreference',
+            JSON.stringify(preference)
+          )
+        }
+        mount()
+        const store = useAgentRunModeStore()
+        if (source === 'server') {
+          fetchApi.mockResolvedValueOnce(jsonResponse(200, preference))
+          await store.load()
+        }
 
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
-      )
-      const input = await screen.findByRole('spinbutton', { name: 'credits' })
-      await userEvent.clear(input)
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Ask' })
+        )
+        expect(
+          await screen.findByRole('radio', {
+            name: /Ask before a workflow runs/
+          })
+        ).toBeChecked()
+        expect(store.mode).toBe('auto_limited')
+        expect(store.creditLimit).toBe(450)
+        expect(
+          fetchApi.mock.calls.some(([, init]) => init?.method === 'PUT')
+        ).toBe(false)
+      }
+    )
 
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
+    it.for(['ask_approval', 'auto'] as const)(
+      'replaces a restored limited preference only when saving %s',
+      async (mode) => {
+        localStorage.setItem(
+          'Comfy.Agent.RunModePreference',
+          JSON.stringify({ mode: 'auto_limited', credit_limit: 450 })
+        )
+        fetchApi.mockResolvedValueOnce(
+          jsonResponse(200, { mode, credit_limit: null })
+        )
+        mount()
 
-      await userEvent.type(input, '1.5')
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-    })
+        await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+        await userEvent.click(
+          await screen.findByRole('radio', {
+            name:
+              mode === 'auto'
+                ? /Auto-run without approval/
+                : /Ask before a workflow runs/
+          })
+        )
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Save changes' })
+        )
 
-    it('enables Save when only the credit limit changes', async () => {
-      mount()
-      const store = useAgentRunModeStore()
-      await store.save('auto_limited', 450)
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
-      )
-      const save = await screen.findByRole('button', { name: 'Save changes' })
-      expect(save).toBeDisabled()
-
-      const input = screen.getByRole('spinbutton', { name: 'credits' })
-      await userEvent.clear(input)
-      await userEvent.type(input, '460')
-      expect(save).toBeEnabled()
-
-      await userEvent.click(save)
-      await vi.waitFor(() => expect(store.creditLimit).toBe(460))
-    })
+        expect(fetchApi).toHaveBeenCalledWith(
+          '/agent/run-mode',
+          expect.objectContaining({
+            method: 'PUT',
+            body: JSON.stringify({ mode, credit_limit: null })
+          })
+        )
+        expect(useAgentRunModeStore().mode).toBe(mode)
+        expect(useAgentRunModeStore().creditLimit).toBeNull()
+      }
+    )
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
       const store = useAgentRunModeStore()
@@ -294,7 +326,7 @@ describe('Composer', () => {
     it.for([
       ['ask_approval', 'Ask', 'Ask for permission'],
       ['auto', 'Auto', 'Run workflow without permission'],
-      ['auto_limited', 'Auto (limited)', 'Ask when credit limit is reached']
+      ['auto_limited', 'Ask', 'Ask for permission']
     ] as const)(
       'shows the %s mode tooltip copy',
       async ([mode, triggerName, tooltipCopy]) => {
