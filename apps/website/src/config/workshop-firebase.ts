@@ -9,7 +9,12 @@
 import type { User, UserCredential } from 'firebase/auth'
 
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
-import { socialSignInWithProvisioning } from '@comfyorg/account/provisioning'
+import {
+  CUSTOMER_PROVISIONING_PATH,
+  customerProvisioningRequest,
+  isCustomerProvisioned,
+  socialSignInWithProvisioning
+} from '@comfyorg/account/provisioning'
 
 import {
   WORKSHOP_FIREBASE_OPTIONS,
@@ -19,22 +24,10 @@ import {
 // Named app: never contend with a default app another script might create.
 const WORKSHOP_APP_NAME = 'workshop'
 
-/** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
-const WORKSHOP_PROVISION_TIMEOUT_MS = 15_000
-
 const identity = createFirebaseIdentity({
   options: WORKSHOP_FIREBASE_OPTIONS,
   appName: WORKSHOP_APP_NAME
 })
-
-/**
- * Whether a `POST /customers` response means the customer is provisioned. A
- * 409 counts as success: the record already exists, which is the norm when a
- * social user signs in again.
- */
-export function isCustomerProvisioned(status: number, ok: boolean): boolean {
-  return ok || status === 409
-}
 
 /** The slice of a Firebase user this call needs; injectable in tests. */
 interface ProvisionableUser {
@@ -62,16 +55,14 @@ export async function provisionCustomer(
   fetchImpl: typeof fetch = globalThis.fetch
 ): Promise<void> {
   const token = await user.getIdToken()
-  const response = await fetchImpl(`${WORKSHOP_ROUTER_BASE_URL}/customers`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ signup_source: 'comfy-workshop' }),
-    signal: AbortSignal.timeout(WORKSHOP_PROVISION_TIMEOUT_MS)
-  })
-  if (!isCustomerProvisioned(response.status, response.ok)) {
+  const response = await fetchImpl(
+    `${WORKSHOP_ROUTER_BASE_URL}${CUSTOMER_PROVISIONING_PATH}`,
+    customerProvisioningRequest({
+      authHeaders: { Authorization: `Bearer ${token}` },
+      signupSource: 'comfy-workshop'
+    })
+  )
+  if (!isCustomerProvisioned(response)) {
     throw new Error(`Customer provisioning failed: ${response.status}`)
   }
 }

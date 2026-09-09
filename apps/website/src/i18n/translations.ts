@@ -142,6 +142,12 @@ const translations = {
     en: 'Continue with GitHub',
     'zh-CN': '使用 GitHub 继续'
   },
+  'auth.signIn.googleSsoInAppBrowserNotice': {
+    en: "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
+    'zh-CN':
+      '如果您是从应用内浏览器（如 Instagram、LinkedIn）打开的，Google 登录可能无法使用。请使用 GitHub 或邮箱登录，或在设备默认浏览器中打开此页面。',
+    ja: 'アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。'
+  },
   'auth.signIn.pending': {
     en: 'Finish signing in from the pop-up window.',
     'zh-CN': '请在弹出窗口中完成登录。'

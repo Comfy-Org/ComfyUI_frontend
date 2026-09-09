@@ -17,15 +17,26 @@ const handles = vi.hoisted(() => ({
   ensureFresh: vi.fn(),
   google: vi.fn(),
   github: vi.fn(),
-  isProvisioningError: vi.fn()
+  isProvisioningError: vi.fn(),
+  captureAuthFailed: vi.fn(),
+  captureSignupOpened: vi.fn(),
+  embedded: false
 }))
 
 vi.mock('../../scripts/posthog', async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   handles.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+  return {
+    useWorkshopAuthFlag: () => flag,
+    captureAuthFailed: handles.captureAuthFailed,
+    captureSignupOpened: handles.captureSignupOpened
+  }
 })
+
+vi.mock('@comfyorg/account/webviewDetection', () => ({
+  isEmbeddedWebView: () => handles.embedded
+}))
 
 vi.mock('../../config/workshop-firebase', () => {
   if (handles.chunkFails) {
@@ -68,6 +79,9 @@ beforeEach(() => {
   handles.google.mockReset()
   handles.github.mockReset()
   handles.isProvisioningError.mockReset().mockReturnValue(false)
+  handles.captureAuthFailed.mockClear()
+  handles.captureSignupOpened.mockClear()
+  handles.embedded = false
   removeAllToasts()
   window.history.replaceState({}, '', '/')
   replace.mockReset()
@@ -169,6 +183,53 @@ describe('AuthSignIn', () => {
       AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
     )
     expect(toasts.value).toHaveLength(1)
+    expect(
+      handles.captureAuthFailed,
+      'the failure joins the cloud funnel under the same action vocabulary'
+    ).toHaveBeenCalledWith({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'github_sign_in'
+    })
+  })
+
+  it('reports a sign-up page open and names sign-up actions in failures', async () => {
+    handles.google.mockRejectedValue(new Error('not a firebase error'))
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await waitFor(() =>
+      expect(handles.captureSignupOpened).toHaveBeenCalledOnce()
+    )
+    await clickGoogle()
+
+    await waitFor(() =>
+      expect(handles.captureAuthFailed).toHaveBeenCalledWith({
+        error_code: 'unknown',
+        auth_action: 'google_sign_up'
+      })
+    )
+  })
+
+  it('does not report a sign-up open from the login page', async () => {
+    render(AuthSignIn)
+    await screen.findByRole('button', { name: /continue with google/i })
+
+    expect(handles.captureSignupOpened).not.toHaveBeenCalled()
+  })
+
+  it('warns about Google sign-in only inside an in-app browser', async () => {
+    handles.embedded = true
+    render(AuthSignIn)
+
+    expect(
+      await screen.findByTestId('google-sso-in-app-browser-notice')
+    ).toBeTruthy()
+  })
+
+  it('shows no in-app browser notice in a regular browser', async () => {
+    render(AuthSignIn)
+    await screen.findByRole('button', { name: /continue with google/i })
+
+    expect(screen.queryByTestId('google-sso-in-app-browser-notice')).toBeNull()
   })
 
   it.for([
