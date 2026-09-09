@@ -2,7 +2,6 @@
 import {
   ArrowRight,
   ArrowUpDown,
-  Check,
   ChevronDown,
   LayoutGrid,
   SlidersHorizontal,
@@ -39,6 +38,8 @@ import type {
   HubTab
 } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
+import type { FacetSheetGroup } from '../workshop/FacetSheet.vue'
+import FacetSheet from '../workshop/FacetSheet.vue'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
@@ -246,35 +247,36 @@ const groupTitleClass = 'text-content-muted text-base'
 
 // A phone shows the facets the way the hub does: one at a time, behind a row of
 // names, with a search and a list you tick. The wide panel keeps its chips.
-const phoneFacet = ref<string>()
-const facetTabs = computed(() =>
-  groups.value.map((group) => ({ key: group.key, label: group.label }))
+const phoneGroups = computed<FacetSheetGroup[]>(() =>
+  groups.value.map((group) => ({
+    key: group.key,
+    label: group.label,
+    options: group.values.map((value) => ({
+      value: value.value,
+      label: value.displayValue,
+      count: value.count
+    })),
+    selected: group.values
+      .map((value) => value.value)
+      .filter((value) => isBadgeActive(group.type, value))
+  }))
 )
-const currentFacet = computed(
-  () => phoneFacet.value ?? facetTabs.value[0]?.key ?? ''
-)
-const currentGroup = computed(() =>
-  groups.value.find((group) => group.key === currentFacet.value)
-)
-const phoneOptions = computed(() => {
-  const group = currentGroup.value
-  return group
-    ? matchingValues(group).map((value) => ({
-        value: value.value,
-        label: value.displayValue,
-        count: value.count
-      }))
-    : []
-})
-const isPhoneChosen = (value: string) => {
-  const group = currentGroup.value
-  return group ? isBadgeActive(group.type, value) : false
-}
 
-function phoneToggle(value: string) {
-  const group = currentGroup.value
+const sheetLabels = computed(() => ({
+  title: labels.filter,
+  search: labels.searchPlaceholder,
+  noMatches: labels.noResults,
+  applied: labels.selected,
+  clearAll: labels.clearAll,
+  show: showLabel.value,
+  close: labels.filter
+}))
+
+function phoneToggle(key: string, value: string) {
+  const group = groups.value.find((entry) => entry.key === key)
   if (!group) return
   const badge = { type: group.type, value }
+  // Media is one choice, not a set.
   if (group.display === 'segmented') store.selectBadge(badge)
   else store.toggleBadge(badge)
 }
@@ -427,108 +429,15 @@ function phoneToggle(value: string) {
         class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:gap-4 max-sm:rounded-t-3xl max-sm:p-5 sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
         data-testid="hub-filter-menu"
       >
-        <span
-          class="mx-auto -mb-2 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
-          aria-hidden="true"
+        <FacetSheet
+          class="sm:hidden"
+          :groups="phoneGroups"
+          :labels="sheetLabels"
+          :result-count="resultCount"
+          @toggle="phoneToggle"
+          @clear-all="clearAll"
+          @close="filterOpen = false"
         />
-
-        <div class="flex items-center justify-between sm:hidden">
-          <h2 class="text-content text-base font-bold">{{ labels.filter }}</h2>
-          <button
-            type="button"
-            :aria-label="labels.filter"
-            class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
-            data-testid="hub-filter-close"
-            @click="filterOpen = false"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-        </div>
-
-        <div
-          class="-mx-5 flex flex-col sm:hidden"
-          data-testid="hub-filter-phone"
-        >
-          <div
-            class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 px-3 py-2"
-            role="tablist"
-          >
-            <button
-              v-for="tab in facetTabs"
-              :key="tab.key"
-              type="button"
-              role="tab"
-              :aria-selected="currentFacet === tab.key"
-              :data-testid="`hub-phone-facet-${tab.key}`"
-              :class="
-                cn(
-                  'cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors',
-                  currentFacet === tab.key
-                    ? 'text-content bg-white/8'
-                    : 'text-content-secondary'
-                )
-              "
-              @click="phoneFacet = tab.key"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <div v-if="currentGroup" class="border-b border-white/10 p-2">
-            <input
-              v-model="facetSearch[currentFacet]"
-              type="search"
-              :placeholder="labels.searchPlaceholder"
-              :aria-label="labels.searchPlaceholder"
-              class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-base outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
-            />
-          </div>
-
-          <ul
-            class="h-72 scrollbar-thin overflow-y-auto py-1"
-            role="listbox"
-            aria-multiselectable="true"
-          >
-            <li v-for="option in phoneOptions" :key="option.value" role="none">
-              <button
-                type="button"
-                role="option"
-                :aria-selected="isPhoneChosen(option.value)"
-                class="text-content-secondary flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors outline-none hover:bg-white/5"
-                @click="phoneToggle(option.value)"
-              >
-                <span
-                  :class="
-                    cn(
-                      'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                      isPhoneChosen(option.value)
-                        ? 'border-brand bg-brand text-page'
-                        : 'border-white/25'
-                    )
-                  "
-                  aria-hidden="true"
-                >
-                  <Check
-                    v-if="isPhoneChosen(option.value)"
-                    class="size-3"
-                    :stroke-width="3"
-                  />
-                </span>
-                <span class="flex-1 truncate">{{ option.label }}</span>
-                <span class="text-content/30 shrink-0 tabular-nums">
-                  {{ option.count }}
-                </span>
-              </button>
-            </li>
-            <li
-              v-if="phoneOptions.length === 0"
-              role="none"
-              class="text-content-muted px-3 py-10 text-center text-sm"
-            >
-              {{ labels.noResults }}
-            </li>
-          </ul>
-        </div>
 
         <div class="hidden flex-wrap gap-x-12 gap-y-7 sm:flex">
           <div
@@ -702,7 +611,7 @@ function phoneToggle(value: string) {
         </div>
 
         <div
-          class="flex items-center justify-between gap-4 border-t border-white/10 pt-6 max-sm:pt-5"
+          class="flex items-center justify-between gap-4 border-t border-white/10 pt-6 max-sm:hidden"
         >
           <button
             v-if="resultCount > 0"

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { Check, ChevronDown, ListFilter, X } from '@lucide/vue'
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue'
+import { ChevronDown, ListFilter } from '@lucide/vue'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { onClickOutside, useMediaQuery } from '@vueuse/core'
 
@@ -9,6 +8,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { FacetSheetGroup } from './FacetSheet.vue'
+import FacetSheet from './FacetSheet.vue'
 
 export interface FacetMenuOption {
   readonly value: string
@@ -29,10 +30,10 @@ const {
   capabilityOptions: readonly FacetMenuOption[]
   providerOptions: readonly FacetMenuOption[]
   modalityOptions: readonly FacetMenuOption[]
-  /** What the catalogue holds under the current choices, for the way out. */
-  resultCount: number
   /** Only where the use-case row has no room of its own, on a phone. */
   useCaseOptions?: readonly FacetMenuOption[]
+  /** What the catalogue holds under the current choices, for the way out. */
+  resultCount: number
   locale?: Locale
 }>()
 
@@ -57,65 +58,7 @@ watchEffect((onCleanup) => {
   onCleanup(() => (document.body.style.overflow = previous))
 })
 
-const activeFacet = ref<Facet>('provider')
-const search = ref<Record<Facet, string>>({
-  provider: '',
-  capability: '',
-  modality: '',
-  useCase: ''
-})
-
-const facets = computed(() => [
-  ...(useCaseOptions
-    ? [
-        {
-          facet: 'useCase' as const,
-          label: t('workshop.launch.label', locale),
-          options: useCaseOptions,
-          selected: useCases
-        }
-      ]
-    : []),
-  {
-    facet: 'provider' as const,
-    label: t('workshop.filter.providerGroup', locale),
-    options: providerOptions,
-    selected: providers
-  },
-  {
-    facet: 'capability' as const,
-    label: t('workshop.filter.capabilityGroup', locale),
-    options: capabilityOptions,
-    selected: capabilities
-  },
-  {
-    facet: 'modality' as const,
-    label: t('workshop.filter.outputGroup', locale),
-    options: modalityOptions,
-    selected: modalities
-  }
-])
-
-const selectedCount = computed(() =>
-  facets.value.reduce((total, entry) => total + entry.selected.value.length, 0)
-)
-
-// The menu opens on the facet that leads the row, which on a phone is the
-// use cases the tab row no longer shows.
-watch(open, (value) => {
-  if (value) activeFacet.value = facets.value[0].facet
-})
-
-function visibleOptions(entry: (typeof facets.value)[number]) {
-  const needle = search.value[entry.facet].trim().toLowerCase()
-  return needle
-    ? entry.options.filter((option) =>
-        option.label.toLowerCase().includes(needle)
-      )
-    : entry.options
-}
-
-const modelFor = (facet: Facet) =>
+const selectedFor = (facet: Facet) =>
   facet === 'capability'
     ? capabilities
     : facet === 'modality'
@@ -124,8 +67,43 @@ const modelFor = (facet: Facet) =>
         ? useCases
         : providers
 
-function toggle(facet: Facet, value: string) {
-  const selected = modelFor(facet)
+const groups = computed<FacetSheetGroup[]>(() => [
+  ...(useCaseOptions
+    ? [
+        {
+          key: 'useCase',
+          label: t('workshop.launch.label', locale),
+          options: useCaseOptions,
+          selected: useCases.value
+        }
+      ]
+    : []),
+  {
+    key: 'provider',
+    label: t('workshop.filter.providerGroup', locale),
+    options: providerOptions,
+    selected: providers.value
+  },
+  {
+    key: 'capability',
+    label: t('workshop.filter.capabilityGroup', locale),
+    options: capabilityOptions,
+    selected: capabilities.value
+  },
+  {
+    key: 'modality',
+    label: t('workshop.filter.outputGroup', locale),
+    options: modalityOptions,
+    selected: modalities.value
+  }
+])
+
+const selectedCount = computed(() =>
+  groups.value.reduce((total, group) => total + group.selected.length, 0)
+)
+
+function toggle(facet: string, value: string) {
+  const selected = selectedFor(facet as Facet)
   selected.value = selected.value.includes(value)
     ? selected.value.filter((item) => item !== value)
     : [...selected.value, value]
@@ -137,6 +115,16 @@ function clearAll() {
   modalities.value = []
   useCases.value = []
 }
+
+const sheetLabels = computed(() => ({
+  title: t('workshop.filter.label', locale),
+  search: t('workshop.filter.search', locale),
+  noMatches: t('workshop.filter.noMatches', locale),
+  applied: t('workshop.filter.applied', locale),
+  clearAll: t('workshop.filter.clearAll', locale),
+  show: t('workshop.search.show', locale),
+  close: t('workshop.search.close', locale)
+}))
 </script>
 
 <template>
@@ -191,158 +179,14 @@ function clearAll() {
         data-testid="workshop-filter-menu"
         class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
       >
-        <span
-          class="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
-          aria-hidden="true"
+        <FacetSheet
+          :groups
+          :labels="sheetLabels"
+          :result-count
+          @toggle="toggle"
+          @clear-all="clearAll"
+          @close="open = false"
         />
-
-        <div class="flex items-center justify-between p-3 pb-1 sm:hidden">
-          <h2 class="text-content text-base font-bold">
-            {{ t('workshop.filter.label', locale) }}
-          </h2>
-          <button
-            type="button"
-            :aria-label="t('workshop.search.close', locale)"
-            class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
-            data-testid="workshop-filter-close"
-            @click="open = false"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-        </div>
-
-        <TabsRoot v-model="activeFacet" class="flex flex-col">
-          <TabsList
-            class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
-          >
-            <TabsTrigger
-              v-for="entry in facets"
-              :key="entry.facet"
-              :value="entry.facet"
-              :data-testid="`workshop-facet-${entry.facet}`"
-              class="text-content-secondary hover:text-content focus-visible:ring-brand data-[state=active]:text-content inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wider whitespace-nowrap uppercase transition-colors outline-none hover:bg-white/5 focus-visible:ring-2 data-[state=active]:bg-white/8"
-            >
-              {{ entry.label }}
-              <span
-                v-if="entry.selected.value.length"
-                class="bg-brand text-page inline-flex size-4 items-center justify-center rounded-full text-2xs font-bold tabular-nums"
-                :data-testid="`workshop-facet-${entry.facet}-count`"
-              >
-                {{ entry.selected.value.length }}
-              </span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent
-            v-for="entry in facets"
-            :key="entry.facet"
-            :value="entry.facet"
-            class="flex flex-col outline-none"
-          >
-            <div class="border-b border-white/10 p-2">
-              <input
-                v-model="search[entry.facet]"
-                type="search"
-                :placeholder="t('workshop.filter.search', locale)"
-                :aria-label="t('workshop.filter.search', locale)"
-                :data-testid="`workshop-filter-${entry.facet}-search`"
-                class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 max-sm:py-2.5 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
-              />
-            </div>
-            <ul
-              class="max-h-72 scrollbar-thin overflow-y-auto py-1 max-sm:h-72"
-              role="listbox"
-              aria-multiselectable="true"
-            >
-              <template
-                v-for="option in visibleOptions(entry)"
-                :key="option.value"
-              >
-                <li role="none">
-                  <button
-                    type="button"
-                    role="option"
-                    :aria-selected="entry.selected.value.includes(option.value)"
-                    :data-testid="`filter-${entry.facet}-${option.value}`"
-                    class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
-                    @click="toggle(entry.facet, option.value)"
-                  >
-                    <span
-                      :class="
-                        cn(
-                          'flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors',
-                          entry.selected.value.includes(option.value)
-                            ? 'border-brand bg-brand text-page'
-                            : 'border-white/25'
-                        )
-                      "
-                      aria-hidden="true"
-                    >
-                      <Check
-                        v-if="entry.selected.value.includes(option.value)"
-                        class="size-3"
-                        :stroke-width="3"
-                      />
-                    </span>
-                    <span class="flex-1 truncate">{{ option.label }}</span>
-                    <span class="text-content/30 shrink-0 tabular-nums">
-                      {{ option.count }}
-                    </span>
-                  </button>
-                </li>
-              </template>
-              <li
-                v-if="!visibleOptions(entry).length"
-                role="none"
-                class="text-content-muted px-3 py-2 text-xs max-sm:py-10 max-sm:text-center max-sm:text-sm"
-              >
-                {{ t('workshop.filter.noMatches', locale) }}
-              </li>
-            </ul>
-          </TabsContent>
-        </TabsRoot>
-
-        <div
-          v-if="selectedCount || isPhone"
-          class="flex items-center justify-between gap-3 border-t border-white/10 p-2 max-sm:p-3"
-        >
-          <span
-            v-if="selectedCount"
-            class="text-content-secondary px-1 text-xs"
-            data-testid="workshop-filter-applied"
-          >
-            {{
-              t('workshop.filter.applied', locale).replace(
-                '{n}',
-                String(selectedCount)
-              )
-            }}
-          </span>
-          <button
-            v-if="selectedCount"
-            type="button"
-            data-testid="workshop-filter-clear"
-            class="text-content-secondary hover:text-content cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/5"
-            @click="clearAll"
-          >
-            {{ t('workshop.filter.clearAll', locale) }}
-          </button>
-          <button
-            type="button"
-            class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink sm:hidden"
-            data-testid="workshop-filter-show"
-            @click="resultCount > 0 ? (open = false) : clearAll()"
-          >
-            {{
-              resultCount > 0
-                ? t('workshop.search.show', locale).replace(
-                    '{n}',
-                    String(resultCount)
-                  )
-                : t('workshop.filter.clearAll', locale)
-            }}
-          </button>
-        </div>
       </div>
     </Teleport>
   </div>

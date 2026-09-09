@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
@@ -140,9 +140,8 @@ describe('HubBrowse', () => {
     render(HubBrowse)
     await user.click(screen.getByTestId('hub-filter'))
 
-    const phone = within(screen.getByTestId('hub-filter-phone'))
-    await user.click(screen.getByTestId('hub-phone-facet-media'))
-    await user.click(await phone.findByRole('option', { name: /^Video/ }))
+    await user.click(screen.getByTestId('workshop-facet-media'))
+    await user.click(await screen.findByTestId('filter-media-video'))
 
     expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
   })
