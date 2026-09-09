@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -22,12 +23,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
       }
     }
   })
-}))
-
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string, params?: Record<string, string>) =>
-    params ? `${key}:${JSON.stringify(params)}` : key,
-  d: (date: Date) => date.toLocaleDateString()
 }))
 
 vi.mock<unknown>(import('@/stores/assetsStore'), () => {
@@ -163,19 +158,6 @@ vi.mock<unknown>(import('@/platform/assets/components/AssetGrid.vue'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string>) =>
-      params ? `${key}:${JSON.stringify(params)}` : key
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string, params?: Record<string, string>) =>
-        params ? `${key}:${JSON.stringify(params)}` : key
-    }
-  })
-}))
-
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
@@ -208,14 +190,11 @@ describe('AssetBrowserModal', () => {
     return render(AssetBrowserModal, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [pinia, i18n],
         stubs: {
           'i-lucide:folder': {
             template: '<div data-testid="folder-icon"></div>'
           }
-        },
-        mocks: {
-          $t: (key: string) => key
         }
       }
     })
@@ -428,7 +407,7 @@ describe('AssetBrowserModal', () => {
       await flushPromises()
 
       expect(screen.getByTestId('modal-title').textContent).toBe(
-        'assetBrowser.allCategory:{"category":"Checkpoints"}'
+        'All Checkpoints'
       )
     })
 
@@ -443,7 +422,7 @@ describe('AssetBrowserModal', () => {
       await flushPromises()
 
       expect(screen.getByTestId('modal-title').textContent).toBe(
-        'assetBrowser.allCategory:{"category":"Checkpoints"}'
+        'All Checkpoints'
       )
     })
   })

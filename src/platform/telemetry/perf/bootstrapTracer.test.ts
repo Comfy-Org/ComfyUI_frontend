@@ -28,11 +28,11 @@ const {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-vi.mock('@/platform/telemetry', () => ({ useTelemetry }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
-vi.mock(
-  '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider',
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({ useTelemetry }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock<unknown>(
+  import('@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'),
   () => ({
     DatadogRumTelemetryProvider: class {
       trackBootstrapComplete = trackEarlyBootstrapComplete

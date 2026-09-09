@@ -46,7 +46,7 @@ const getServerFeature = vi.hoisted(() =>
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/canvas/useFocusNode', () => ({
+vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
 }))
 
@@ -68,7 +68,7 @@ const ws = vi.hoisted(() => {
   return { add, remove, emit, clear }
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `/api${route}`,
     fetchApi: (route: string, options?: RequestInit) =>
@@ -118,10 +118,10 @@ const appMock = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/app', () => ({ app: appMock }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
-vi.mock(
-  '@/platform/workflow/validation/schemas/workflowSchema',
+vi.mock<unknown>(
+  import('@/platform/workflow/validation/schemas/workflowSchema'),
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
     validateComfyWorkflow: vi.fn(async (content: unknown) => content)
@@ -162,66 +162,78 @@ const hostStores = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  const tabs = new Map<string, FakeTab>()
-  const openTabPaths = reactive(new Set<string>())
-  const store = reactive({
-    activeWorkflow: null as FakeTab | null,
-    get openWorkflows() {
-      return Array.from(openTabPaths).flatMap((path) => {
-        const tab = tabs.get(path)
-        return tab === undefined ? [] : [tab]
-      })
-    },
-    tabs,
-    openTabPaths,
-    getWorkflowByPath: (path: string) => tabs.get(path) ?? null,
-    nodeToNodeLocatorId: (node: {
-      graph?: { id?: string }
-      id: string | number
-    }) => (node.graph?.id ? `${node.graph.id}:${node.id}` : String(node.id)),
-    closeWorkflow: vi.fn(async (tab: FakeTab) => {
-      openTabPaths.delete(tab.path)
-      if (tab.isTemporary) tabs.delete(tab.path)
-    }),
-    createTemporary: (path?: string, data?: ComfyWorkflowJSON) => {
-      const requested = (path ?? 'Unsaved Workflow.json').replace(/\.json$/, '')
-      let stem = requested
-      let counter = 2
-      while (tabs.has(`workflows/${stem}.json`))
-        stem = `${requested} (${counter++})`
-      const tab: FakeTab = {
-        path: `workflows/${stem}.json`,
-        directory: 'workflows',
-        filename: stem,
-        isTemporary: true,
-        isModified: false,
-        activeState: data ?? null
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    const tabs = new Map<string, FakeTab>()
+    const openTabPaths = reactive(new Set<string>())
+    const store = reactive({
+      activeWorkflow: null as FakeTab | null,
+      get openWorkflows() {
+        return Array.from(openTabPaths).flatMap((path) => {
+          const tab = tabs.get(path)
+          return tab === undefined ? [] : [tab]
+        })
+      },
+      tabs,
+      openTabPaths,
+      getWorkflowByPath: (path: string) => tabs.get(path) ?? null,
+      nodeToNodeLocatorId: (node: {
+        graph?: { id?: string }
+        id: string | number
+      }) => (node.graph?.id ? `${node.graph.id}:${node.id}` : String(node.id)),
+      closeWorkflow: vi.fn(async (tab: FakeTab) => {
+        openTabPaths.delete(tab.path)
+        if (tab.isTemporary) tabs.delete(tab.path)
+      }),
+      createTemporary: (path?: string, data?: ComfyWorkflowJSON) => {
+        const requested = (path ?? 'Unsaved Workflow.json').replace(
+          /\.json$/,
+          ''
+        )
+        let stem = requested
+        let counter = 2
+        while (tabs.has(`workflows/${stem}.json`))
+          stem = `${requested} (${counter++})`
+        const tab: FakeTab = {
+          path: `workflows/${stem}.json`,
+          directory: 'workflows',
+          filename: stem,
+          isTemporary: true,
+          isModified: false,
+          activeState: data ?? null
+        }
+        tabs.set(tab.path, tab)
+        openTabPaths.add(tab.path)
+        return tab
       }
-      tabs.set(tab.path, tab)
-      openTabPaths.add(tab.path)
-      return tab
-    }
-  })
-  hostStores.workflow = store
-  return { useWorkflowStore: () => store }
-})
-
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { reactive } = await import('vue')
-  const updateSelectedItems = () => {
-    hostStores.canvas.selectedItems = [...(appMock.canvas?.selectedItems ?? [])]
+    })
+    hostStores.workflow = store
+    return { useWorkflowStore: () => store }
   }
-  const store = reactive({
-    selectedItems: [] as unknown[],
-    updateSelectedItems,
-    currentGraph: null,
-    canvas: undefined
-  })
-  hostStores.canvas = store
-  return { useCanvasStore: () => store }
-})
+)
+
+vi.mock<unknown>(
+  // eslint-disable-next-line import-x/no-restricted-paths
+  import('@/renderer/core/canvas/canvasStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    const updateSelectedItems = () => {
+      hostStores.canvas.selectedItems = [
+        ...(appMock.canvas?.selectedItems ?? [])
+      ]
+    }
+    const store = reactive({
+      selectedItems: [] as unknown[],
+      updateSelectedItems,
+      currentGraph: null,
+      canvas: undefined
+    })
+    hostStores.canvas = store
+    return { useCanvasStore: () => store }
+  }
+)
 
 const workflowService = vi.hoisted(() => ({
   saveWorkflow: vi.fn(async (tab: { isModified: boolean }) => {
@@ -247,11 +259,14 @@ const workflowService = vi.hoisted(() => ({
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => workflowService
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => workflowService
+  })
+)
 
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
   ...(await importOriginal<object>()),
   isLGraphNode: (item: unknown) =>
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
@@ -273,17 +288,17 @@ const executionErrors = vi.hoisted(() => {
   return store
 })
 
-vi.mock('@/stores/executionErrorStore', () => ({
+vi.mock<unknown>(import('@/stores/executionErrorStore'), () => ({
   useExecutionErrorStore: () => executionErrors
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
   const { ref } = await import('vue')
   return {
     ...(await importOriginal<object>()),
@@ -306,18 +321,21 @@ const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  isCloud: true
-}))
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    isCloud: true
+  })
+)
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
-  '@/platform/cloud/subscription/composables/useAccountPreconditionDialog',
+  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
   () => ({
     useAccountPreconditionDialog: () => ({ open: openAccountPrecondition })
   })
@@ -335,34 +353,43 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
-  const { computed } = await import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      workspaceRole: computed(() => paywallWorkspace.role)
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        workspaceRole: computed(() => paywallWorkspace.role)
+      })
+    }
   }
-})
+)
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { computed } = await import('vue')
-  return {
-    useBillingContext: () => ({ tier: computed(() => paywallBilling.tier) })
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingContext: () => ({ tier: computed(() => paywallBilling.tier) })
+    }
   }
-})
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', async () => {
-  const { computed } = await import('vue')
-  return {
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => paywallCapabilities.canTopUp),
-      canSubscribeSelfServe: computed(
-        () => paywallCapabilities.canSubscribeSelfServe
-      ),
-      isReady: computed(() => paywallCapabilities.isReady)
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingCapabilities: () => ({
+        canTopUp: computed(() => paywallCapabilities.canTopUp),
+        canSubscribeSelfServe: computed(
+          () => paywallCapabilities.canSubscribeSelfServe
+        ),
+        isReady: computed(() => paywallCapabilities.isReady)
+      })
+    }
   }
-})
+)
 
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
