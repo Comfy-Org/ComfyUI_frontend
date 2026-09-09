@@ -68,7 +68,7 @@ const translations = {
     en: 'Show more models',
     'zh-CN': '显示更多模型'
   },
-  'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
+  'workshop.model.breadcrumb': { en: 'Models', 'zh-CN': '模型' },
   'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
   'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
   'workshop.model.maxFiles': {
