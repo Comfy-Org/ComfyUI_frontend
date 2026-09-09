@@ -45,20 +45,24 @@ let pinLayer: Leaflet.LayerGroup | null = null
 // template ref when the component unmounts mid-setup.
 const disposal = new AbortController()
 
-// The palette comes from the site theme tokens in `global.css`. The divIcon
-// HTML resolves `var()` like any inline style, but Leaflet writes its vector
-// colors into SVG presentation attributes, where `var()` never resolves — so
-// those are read into concrete values once the container is in the DOM.
-const PIN_FILL = 'var(--color-primary-warm-white)'
-let countryFill = ''
-let countryBorder = ''
-let legStroke = ''
+// Ocean/land contrast was 1.12:1, which read as a single flat field. Land is
+// lifted and the water dropped to put them ~1.9:1 apart, enough to separate
+// continents from oceans while staying inside the page's dark palette. The
+// values stay literal: Leaflet writes them into SVG presentation attributes,
+// where `var()` never resolves, and Tailwind 4 drops `@theme` tokens no
+// utility class uses, so a JS-only token read comes back empty.
+const OCEAN = '#171320'
+const COUNTRY_FILL = '#4d4359'
+const COUNTRY_BORDER = '#6b5f7d'
+const PIN_FILL = '#f0efed'
+const CLUSTER_FILL = '#f2ff59'
+const CLUSTER_TEXT = '#211927'
 
 function pinHtml(count: number): string {
   if (count === 1) {
     return `<div style="width:8px;height:8px;border-radius:9999px;background:${PIN_FILL};box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`
   }
-  return `<div style="display:flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:10px;background:var(--color-primary-comfy-yellow);color:var(--color-primary-comfy-ink);font-weight:600;font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.4)">${count}</div>`
+  return `<div style="display:flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:10px;background:${CLUSTER_FILL};color:${CLUSTER_TEXT};font-weight:600;font-size:14px;box-shadow:0 1px 6px rgba(0,0,0,0.4)">${count}</div>`
 }
 
 // Events that share (near-)identical coordinates project to the same pixel at
@@ -125,7 +129,7 @@ function addSpiderfiedGroup(L: typeof Leaflet, group: PixelGroup) {
     )
     L.polyline(
       [map!.containerPointToLatLng(point), map!.containerPointToLatLng(legEnd)],
-      { color: legStroke, weight: 1, opacity: 0.35, interactive: false }
+      { color: PIN_FILL, weight: 1, opacity: 0.35, interactive: false }
     ).addTo(pinLayer!)
     addLeafMarker(L, legEnd, item)
   })
@@ -190,10 +194,6 @@ onMounted(async () => {
 
 async function mountMap() {
   if (!container.value) return
-  const styles = getComputedStyle(container.value)
-  countryFill = styles.getPropertyValue('--color-site-map-land').trim()
-  countryBorder = styles.getPropertyValue('--color-site-map-land-border').trim()
-  legStroke = styles.getPropertyValue('--color-primary-warm-white').trim()
   const [imported, geoJson] = await Promise.all([
     import('leaflet') as Promise<LeafletModule>,
     fetch(worldCountriesUrl, { signal: disposal.signal }).then(
@@ -222,9 +222,9 @@ async function mountMap() {
   })
   L.geoJSON(geoJson, {
     style: {
-      color: countryBorder,
+      color: COUNTRY_BORDER,
       weight: 0.75,
-      fillColor: countryFill,
+      fillColor: COUNTRY_FILL,
       fillOpacity: 1
     }
   }).addTo(map)
@@ -255,14 +255,14 @@ onBeforeUnmount(() => {
   <div
     role="region"
     :aria-label="regionLabel"
-    :class="
-      cn(
-        'bg-site-map-ocean relative isolate h-140 overflow-hidden rounded-3xl',
-        className
-      )
-    "
+    :class="cn('relative isolate h-140 overflow-hidden rounded-3xl', className)"
+    :style="{ background: OCEAN }"
   >
-    <div ref="container" class="bg-site-map-ocean absolute inset-0" />
+    <div
+      ref="container"
+      class="absolute inset-0"
+      :style="{ background: OCEAN }"
+    />
   </div>
 </template>
 
@@ -274,23 +274,19 @@ template — the scoped block reskins its zoom control to the site palette. -->
 }
 
 :deep(.leaflet-bar a) {
-  border-color: var(--color-transparency-white-t8);
-  background-color: var(--color-primary-comfy-ink-light);
-  color: var(--color-primary-warm-white);
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: #2a2330;
+  color: #f0efed;
 }
 
 :deep(.leaflet-bar a:hover),
 :deep(.leaflet-bar a:focus) {
-  background-color: color-mix(
-    in srgb,
-    var(--color-primary-comfy-ink-light) 88%,
-    white 12%
-  );
-  color: var(--color-primary-comfy-yellow);
+  background-color: #3b3242;
+  color: #f2ff59;
 }
 
 :deep(.leaflet-bar a.leaflet-disabled) {
-  background-color: var(--color-primary-comfy-ink-light);
-  color: color-mix(in srgb, var(--color-primary-warm-white) 30%, transparent);
+  background-color: #2a2330;
+  color: rgb(240 239 237 / 0.3);
 }
 </style>
