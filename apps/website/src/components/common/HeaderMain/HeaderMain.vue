@@ -66,7 +66,13 @@ const ctaButtons = [
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop :locale class="hidden lg:block" />
-    <HeaderMainMobile :locale class="lg:hidden" />
+    <div
+      data-testid="mobile-nav-cta"
+      class="flex shrink-0 items-center gap-2 lg:hidden"
+    >
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
+      <HeaderMainMobile :locale />
+    </div>
 
     <!-- Desktop CTA buttons -->
     <div
