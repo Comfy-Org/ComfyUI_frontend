@@ -7,7 +7,7 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 export type OutputStackListItem = {
-  key: string
+  id: string
   asset: AssetItem
   isChild?: boolean
 }
@@ -27,7 +27,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     for (const asset of assets.value) {
       const jobId = getStackJobId(asset)
       items.push({
-        key: `asset-${asset.id}`,
+        id: asset.id,
         asset
       })
 
@@ -38,7 +38,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       const children = stackChildrenByJobId.value[jobId] ?? []
       for (const child of children) {
         items.push({
-          key: `asset-${child.id}`,
+          id: child.id,
           asset: child,
           isChild: true
         })

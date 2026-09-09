@@ -63,7 +63,7 @@ const buildAsset = (id: string, name: string): AssetItem =>
   })
 
 const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
-  key: `asset-${asset.id}`,
+  id: asset.id,
   asset
 })
 
