@@ -108,7 +108,7 @@ function readSemanticNode(
             `Subgraph host ${id} (${type}) carries ${opaque.length} opaque widget values but its definition promotes ${names.length}`
           ),
           {
-            errorType: 'agent_subgraph_host_widgets_mismatch',
+            errorType: 'error_reconciling_agent_subgraph_host_widgets',
             context: {
               nodeId: id,
               type,
@@ -164,7 +164,7 @@ function hostTarget(
         }), which its definition does not declare unambiguously`
       ),
       {
-        errorType: 'agent_subgraph_host_slot_undeclared',
+        errorType: 'error_reconciling_agent_subgraph_host_slot',
         context: { nodeId: targetId, type, slot: docSlot, name: name ?? null }
       }
     )
