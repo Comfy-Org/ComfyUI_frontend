@@ -11,6 +11,7 @@ import type {
 } from './agentConversationAssemble'
 import { assembleConversation, zRowsDump } from './agentConversationAssemble'
 import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
+import type { GraphOperation } from '../src/workbench/extensions/agent/crdt/graphOperations'
 import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/agentConversation'
 
 const THREAD = 'thread-1'
@@ -99,6 +100,17 @@ const addNodeOp = {
 // The same op as a recording carries it: the export drops the wire envelope.
 const { op_id: _addNodeOpId, ...addNodeOpSemantic } = addNodeOp
 
+type DraftNodes = Array<{ id: number | string; type: string }>
+
+// What the cloud caches as the draft: the host's projection after the given
+// op batches applied to the seed.
+const projected = (...batches: GraphOperation[][]) => {
+  const { workflow } = seed()
+  const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
+  for (const batch of batches) host.apply(batch)
+  return host.projection()
+}
+
 const parent = (
   overrides: Partial<RowsInput['parents'][number]> = {}
 ): RowsInput['parents'][number] => ({
@@ -154,7 +166,7 @@ const rows = (overrides: Partial<RowsInput> = {}): NormalizedRows => {
   const { parents, draft } = zRowsDump.parse({
     source: 'postgres',
     parents: [parent()],
-    draft: { nodes: [{ id: 3 }, { id: 4 }, { id: 10 }], links: [] },
+    draft: projected([addNodeOpSemantic as GraphOperation]),
     ...overrides
   })
   return {
@@ -237,6 +249,28 @@ describe('assembleConversation', () => {
     expect(conversation.turns[0].response.at(-1)).toMatchObject({
       event: { type: 'agent_message_done' }
     })
+  })
+
+  it('refuses a turn that carries two done frames, cancelled or not', () => {
+    const twoDone = [
+      ...frames(),
+      turnFrame('agent_message_done', {}, 1_700_000_000_400)
+    ]
+    expect(() =>
+      assembleConversation(input({ raw: raw({ frames: twoDone }) }))
+    ).toThrow(
+      'turn 1 carries 2 agent_message_done frames; exactly one closes a turn'
+    )
+    expect(() =>
+      assembleConversation(
+        input({
+          raw: {
+            ...cancelledTurn({ status: 202, body: {} }, 1_700_000_000_350),
+            frames: twoDone
+          }
+        })
+      )
+    ).toThrow('carries 2 agent_message_done frames')
   })
 
   it('refuses to place a cancel among frames without receipt times', () => {
@@ -428,7 +462,7 @@ describe('assembleConversation', () => {
               children: [{ op_id: 'op-1', status: 'error' }]
             })
           ],
-          draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+          draft: projected()
         })
       })
     )
@@ -448,7 +482,7 @@ describe('assembleConversation', () => {
               result: { ok: true, data: { ops: [addNodeOp] } }
             })
           ],
-          draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+          draft: projected()
         })
       })
     )
@@ -703,10 +737,79 @@ describe('assembleConversation', () => {
     expect(receipt.frames_dropped).toEqual({ 'type:agent_not_a_frame': 1 })
   })
 
+  const setSteps = (value: number, opId = 'op-1') => ({
+    op: 'set_widget',
+    op_id: opId,
+    node_id: 4,
+    widget: 'steps',
+    value
+  })
+
+  it('refuses a parent result that echoes one op id twice, in either order', () => {
+    for (const ops of [
+      [setSteps(30), setSteps(40)],
+      [setSteps(40), setSteps(30)]
+    ])
+      expect(() =>
+        assembleConversation(
+          input({
+            rows: rows({
+              parents: [parent({ result: { ok: true, data: { ops } } })]
+            })
+          })
+        )
+      ).toThrow('echoes op ids op-1 more than once')
+  })
+
+  it('refuses a draft that keeps the node ids but not the widget value', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          rows: rows({
+            parents: [
+              parent({ result: { ok: true, data: { ops: [setSteps(30)] } } })
+            ],
+            draft: projected()
+          })
+        })
+      )
+    ).toThrow(
+      'stores node 4 as KSampler [20] but the replayed ops leave KSampler [30]'
+    )
+  })
+
+  it('refuses a draft that keeps the node ids but not the link', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: { ok: true, data: { ops: [addNodeOp, connectOp] } },
+                children: [
+                  { op_id: 'op-1', status: 'ok' },
+                  { op_id: 'op-2', status: 'ok' }
+                ]
+              })
+            ],
+            draft: projected([addNodeOpSemantic as GraphOperation])
+          })
+        })
+      )
+    ).toThrow('stores links (none) but the replayed ops leave')
+  })
+
   it('refuses a draft that lost a seed node nothing deleted', () => {
     expect(() =>
       assembleConversation(
-        input({ rows: rows({ draft: { nodes: [{ id: 3 }], links: [] } }) })
+        input({
+          rows: rows({
+            draft: {
+              nodes: [{ id: 3, type: 'CheckpointLoaderSimple' }],
+              links: []
+            }
+          })
+        })
       )
     ).toThrow('holds node ids 3 but the replayed ops leave 10, 3, 4')
   })
@@ -837,7 +940,16 @@ describe('assembleConversation', () => {
           children: [{ op_id: 'op-a', status: 'ok' }]
         })
       ],
-      draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+      draft: projected(
+        [{ op: 'delete_node', node_id: 4, removed_links: [] }],
+        [
+          {
+            ...addNodeOpSemantic,
+            node_id: 4,
+            node: nodePayload(4, 'KSampler')
+          } as GraphOperation
+        ]
+      )
     })
 
   it('checks the draft against the emitted order, not the parent row order', () => {
@@ -859,7 +971,7 @@ describe('assembleConversation', () => {
     ).toThrow('holds node ids 3, 4 but the replayed ops leave 3')
   })
 
-  const clearRows = (draft: Array<{ id: number }>) =>
+  const clearRows = (draft: DraftNodes) =>
     rows({
       parents: [
         parent({
@@ -883,7 +995,14 @@ describe('assembleConversation', () => {
     })
 
     expect(() =>
-      assembleConversation(input({ rows: clearRows([{ id: 3 }, { id: 4 }]) }))
+      assembleConversation(
+        input({
+          rows: clearRows([
+            { id: 3, type: 'CheckpointLoaderSimple' },
+            { id: 4, type: 'KSampler' }
+          ])
+        })
+      )
     ).toThrow('holds node ids 3, 4 but the replayed ops leave (none)')
   })
 
@@ -988,6 +1107,7 @@ const connectOp = {
   to_slot: 0,
   link_type: 'LATENT'
 }
+const { op_id: _connectOpId, ...connectOpSemantic } = connectOp
 
 const secondTurnFrames = (): RecordedFrame[] => [
   {
@@ -1033,7 +1153,11 @@ const secondRows = (): NormalizedRows =>
         result: { ok: true, data: { ops: [connectOp] } },
         children: [{ op_id: 'op-2', status: 'ok' }]
       })
-    ]
+    ],
+    draft: projected(
+      [addNodeOpSemantic as GraphOperation],
+      [connectOpSemantic as GraphOperation]
+    )
   })
 
 const twoTurns = (overrides: Partial<AssembleInput> = {}): AssembleInput =>
@@ -1122,7 +1246,7 @@ describe('assembleConversation across turns', () => {
                   children: [{ op_id: 'op-2', status: 'ok' }]
                 })
               ],
-              draft: { nodes: [{ id: 3 }, { id: 4 }, { id: 10 }], links: [] }
+              draft: projected([addNodeOpSemantic as GraphOperation])
             })
           ]
         })
@@ -1203,7 +1327,13 @@ describe('zRowsDump', () => {
   it('decodes the draft column and normalises its node ids to strings', () => {
     const parsed = zRowsDump.parse({
       ...dump(null),
-      draft: JSON.stringify({ nodes: [{ id: 3 }, { id: '4' }], links: [] })
+      draft: JSON.stringify({
+        nodes: [
+          { id: 3, type: 'CheckpointLoaderSimple' },
+          { id: '4', type: 'KSampler' }
+        ],
+        links: []
+      })
     })
 
     expect(parsed.draft?.nodes.map((node) => node.id)).toEqual(['3', '4'])
@@ -1227,35 +1357,5 @@ describe('zRowsDump', () => {
     expect(() =>
       zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
     ).toThrow('postgres')
-  })
-
-  it('replays every accepted capture through the real host to the draft it validated', () => {
-    const cleared = rows({
-      parents: [
-        parent({
-          result: {
-            ok: true,
-            data: {
-              ops: [{ op: 'clear', op_id: 'op-1', removed_nodes: [3, 4] }]
-            }
-          }
-        })
-      ],
-      draft: { nodes: [], links: [] }
-    })
-    for (const capture of [input(), input({ rows: cleared }), twoTurns()]) {
-      const { conversation } = assembleConversation(capture)
-      const { workflow } = conversation
-      const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
-      for (const turn of conversation.turns)
-        for (const entry of turn.response)
-          if (entry.kind === 'graph_ops') host.apply(entry.ops)
-      expect(Object.keys(host.graph().nodes).sort()).toEqual(
-        capture.rows
-          .at(-1)!
-          .draft!.nodes.map((node) => node.id)
-          .sort()
-      )
-    }
   })
 })

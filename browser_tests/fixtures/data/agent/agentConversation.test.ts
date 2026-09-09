@@ -78,7 +78,7 @@ describe('zAgentConversation', () => {
           }
         ]
       })
-    ).toThrow('a turn ends with its agent_message_done event')
+    ).toThrow('exactly one agent_message_done event, as its last entry')
   })
 
   it('refuses a recorded label without backend provenance', () => {

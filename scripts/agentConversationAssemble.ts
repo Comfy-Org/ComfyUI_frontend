@@ -5,7 +5,7 @@ import { basename } from 'node:path'
 import { z } from 'zod'
 
 import type {
-  AgentConversation,
+  RecordedConversation,
   zAgentConversationRequest
 } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
@@ -15,6 +15,7 @@ import {
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 import type { AgentWsEvent } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AGENT_WS_EVENT_TYPES,
@@ -57,12 +58,22 @@ const zParentRow = z.object({
   )
 })
 
+// The draft is the doc host's projection as the cloud cached it, so it is read
+// as one: every node's class and widget values, and every link tuple.
+const zDraftNode = z
+  .object({
+    id: z.coerce.string(),
+    type: z.string(),
+    widgets_values: z.unknown().optional()
+  })
+  .passthrough()
+
 export const zRowsDump = z.object({
   source: z.literal('postgres'),
   parents: z.array(zParentRow),
   draft: zJsonColumn.pipe(
     z
-      .object({ nodes: z.array(z.object({ id: z.coerce.string() })) })
+      .object({ nodes: z.array(zDraftNode), links: z.array(z.unknown()) })
       .passthrough()
       .nullable()
   )
@@ -270,6 +281,13 @@ function keepTurnFrames(
   if (dropped.unparseable)
     refuse(`${dropped.unparseable} unparseable socket payload(s) recorded`)
   for (const [index, turn] of kept.entries()) {
+    const dones = turn.filter(
+      ({ event }) => event.type === 'agent_message_done'
+    ).length
+    if (dones > 1)
+      refuse(
+        `${turnLabel(index)} carries ${dones} agent_message_done frames; exactly one closes a turn`
+      )
     const last = turn.at(-1)
     if (last?.event.type !== 'agent_message_done')
       refuse(
@@ -312,12 +330,16 @@ function appliedOps(
   row: ParentRow,
   applied: string[]
 ): Array<Record<string, unknown>> {
-  const byId = new Map(
-    echoedOps(row).flatMap((op) => {
-      const opId = z.string().safeParse(op.op_id)
-      return opId.success ? [[opId.data, op] as const] : []
-    })
-  )
+  const echoed = echoedOps(row).flatMap((op) => {
+    const opId = z.string().safeParse(op.op_id)
+    return opId.success ? [[opId.data, op] as const] : []
+  })
+  const twice = repeated(echoed.map(([opId]) => opId))
+  if (twice.length > 0)
+    refuse(
+      `parent row ${row.id} echoes op ids ${list(twice)} more than once; an audit id names one operation`
+    )
+  const byId = new Map(echoed)
   const missing = applied.filter((opId) => !byId.has(opId))
   if (missing.length > 0)
     refuse(
@@ -431,10 +453,11 @@ function checkTurnAgreement(
     )
 }
 
-// The node ids the replay's own host is left with after the emitted stream.
-function replayOutcome(conversation: AgentConversation): Set<string> {
+// The replay's own host after the emitted stream; a stream it refuses is a
+// recording nobody can replay.
+function replayHost(conversation: RecordedConversation): HostDoc {
   try {
-    return new Set(Object.keys(assertOpsApply(conversation).graph().nodes))
+    return assertOpsApply(conversation).host
   } catch (error) {
     refuse(
       `the replay rejects this recording: ${error instanceof Error ? error.message : String(error)}`
@@ -442,19 +465,67 @@ function replayOutcome(conversation: AgentConversation): Set<string> {
   }
 }
 
-// The draft is the only witness that the applied ops reached the document.
+interface ProjectedState {
+  nodes: Array<{ id: string; type: string; widgets_values: string }>
+  links: string[]
+}
+
+// The projection reduced to what a replay must reproduce, in a fixed order:
+// each node's class and widget values, and each link tuple.
+function projectedState(workflow: {
+  nodes: Array<{ id: string | number; type: string; widgets_values?: unknown }>
+  links: unknown[]
+}): ProjectedState {
+  const digits = (value: unknown): unknown =>
+    typeof value === 'number' ? String(value) : value
+  return {
+    nodes: workflow.nodes
+      .map((node) => ({
+        id: String(node.id),
+        type: node.type,
+        widgets_values: JSON.stringify(node.widgets_values ?? null)
+      }))
+      .sort((a, b) => a.id.localeCompare(b.id)),
+    links: workflow.links
+      .map((link) =>
+        JSON.stringify(Array.isArray(link) ? link.map(digits) : link)
+      )
+      .sort()
+  }
+}
+
+// The draft is the only witness that the applied ops reached the document,
+// so it must agree with the replay's own projection on every node's class and
+// widget values and on every link, not only on which nodes exist.
 function checkDraft(
   draft: NormalizedRows['draft'],
   seedIds: Set<string>,
-  outcome: Set<string>,
+  host: HostDoc,
   workflowId: string
 ): DraftCounts {
   if (draft === null)
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
-  const draftIds = new Set(draft.nodes.map((node) => node.id))
+  const persisted = projectedState(draft)
+  const replayed = projectedState(host.projection())
+  const draftIds = new Set(persisted.nodes.map((node) => node.id))
+  const outcome = new Set(replayed.nodes.map((node) => node.id))
   if (!sameSet(draftIds, outcome))
     refuse(
       `draft for ${workflowId} holds node ids ${list(draftIds) || '(none)'} but the replayed ops leave ${list(outcome) || '(none)'}`
+    )
+  for (const [index, node] of replayed.nodes.entries()) {
+    const stored = persisted.nodes[index]
+    if (
+      stored.type !== node.type ||
+      stored.widgets_values !== node.widgets_values
+    )
+      refuse(
+        `draft for ${workflowId} stores node ${node.id} as ${stored.type} ${stored.widgets_values} but the replayed ops leave ${node.type} ${node.widgets_values}`
+      )
+  }
+  if (persisted.links.join('\n') !== replayed.links.join('\n'))
+    refuse(
+      `draft for ${workflowId} stores links ${persisted.links.join(', ') || '(none)'} but the replayed ops leave ${replayed.links.join(', ') || '(none)'}`
     )
   return {
     draft_nodes: draftIds.size,
@@ -650,11 +721,11 @@ export function assembleConversation(input: AssembleInput) {
     seedMessageId: seedTurn?.messageId ?? null,
     turns: turns.map((turn) => turn.turn)
   })
-  // The draft agrees with what the replay itself is left with.
+  // The draft agrees with the document the replay itself is left with.
   const draft = checkDraft(
     rows.at(-1)!.draft,
     seedIds,
-    replayOutcome(conversation),
+    replayHost(conversation),
     workflowId
   )
 
