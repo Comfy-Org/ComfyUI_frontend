@@ -1,3 +1,8 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import type { App } from 'vue'
@@ -10,13 +15,21 @@ const mockGetNodeByExecutionId = vi.fn()
 const mockResolveNodeDisplayName = vi.fn()
 const mockTrackDownload = vi.fn()
 const mockInvalidateModelsForCategory = vi.fn()
-const mockUpdateModelsForNodeType = vi.fn()
-const mockGetAllNodeProviders = vi.fn()
+const mockUpdateModelsForNodeType = vi.fn<
+  ReturnType<typeof useAssetsStore>['updateModelsForNodeType']
+>(async () => undefined)
+const mockGetAllNodeProviders = vi.fn<
+  ReturnType<typeof useModelToNodeStore>['getAllNodeProviders']
+>(() => [])
 const mockDownloadList = vi.fn(
-  (): Array<{ taskId: string; status: string }> => []
+  (): Pick<
+    ReturnType<typeof useAssetDownloadStore>['downloadList'][number],
+    'taskId' | 'status'
+  >[] => []
 )
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: false
 }))
 
@@ -34,37 +47,6 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: (...args: unknown[]) =>
     mockResolveNodeDisplayName(...args)
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => ({})
-  })
-)
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    updateModelsForNodeType: mockUpdateModelsForNodeType,
-    invalidateModelsForCategory: mockInvalidateModelsForCategory,
-    updateModelsForTag: vi.fn()
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/assetDownloadStore'), () => ({
-  useAssetDownloadStore: () => ({
-    get downloadList() {
-      return mockDownloadList()
-    },
-    trackDownload: mockTrackDownload
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
-  useModelToNodeStore: () => ({
-    getAllNodeProviders: mockGetAllNodeProviders
-  })
 }))
 
 import { app } from '@/scripts/app'
@@ -88,6 +70,31 @@ function makeCandidate(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+    mockUpdateModelsForNodeType
+  )
+  vi.mocked(useAssetsStore().invalidateModelsForCategory).mockImplementation(
+    mockInvalidateModelsForCategory
+  )
+  vi.mocked(useAssetsStore().updateModelsForTag).mockResolvedValue(undefined)
+  vi.spyOn(useAssetDownloadStore(), 'downloadList', 'get').mockImplementation(
+    () => {
+      return mockDownloadList().map((download) =>
+        fromPartial<
+          ReturnType<typeof useAssetDownloadStore>['downloadList'][number]
+        >(download)
+      )
+    }
+  )
+  vi.mocked(useAssetDownloadStore().trackDownload).mockImplementation(
+    mockTrackDownload
+  )
+  vi.mocked(useModelToNodeStore().getAllNodeProviders).mockImplementation(
+    mockGetAllNodeProviders
+  )
+})
 
 describe('useMissingModelInteractions', () => {
   const mountedApps: App<Element>[] = []
@@ -124,9 +131,7 @@ describe('useMissingModelInteractions', () => {
   }
 
   beforeEach(() => {
-    mockDownloadList.mockImplementation(
-      (): Array<{ taskId: string; status: string }> => []
-    )
+    mockDownloadList.mockReturnValue([])
     ;(app as { rootGraph: unknown }).rootGraph = null
   })
 
@@ -274,7 +279,7 @@ describe('useMissingModelInteractions', () => {
       ;(app as { rootGraph: unknown }).rootGraph = {}
       mockGetNodeByExecutionId.mockReturnValue(null)
       mockGetAllNodeProviders.mockReturnValue([
-        { nodeDef: { name: 'CheckpointLoaderSimple' } }
+        fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
       ])
 
       const store = useMissingModelStore()
