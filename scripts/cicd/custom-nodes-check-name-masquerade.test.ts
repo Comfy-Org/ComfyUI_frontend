@@ -447,27 +447,28 @@ describe('custom-node check-run names cannot masquerade as the ref grade', () =>
 
     expect(grepAssignments.length).toBeGreaterThan(0)
 
+    // `matrix.proof_row` is an expansion of `detection_proof_row`, so drive the
+    // cell from the input instead of pinning the two independently.
+    const dispatch = (overrides: Record<string, Value>): Context => {
+      const context = dispatchContext(overrides)
+      return { ...context, matrix: { proof_row: proofRowsFor(context)[0] } }
+    }
+
     for (const assignment of grepAssignments) {
       expect(
-        renderName(assignment, dispatchContext({ grep }, { proof_row: '0' })),
+        renderName(assignment, dispatch({ grep })),
         'a clean dispatch loses the caller grep'
       ).toBe(grep)
 
       expect(
-        renderName(
-          assignment,
-          dispatchContext(
-            { grep, record_interactions: true },
-            { proof_row: '0' }
-          )
-        ),
+        renderName(assignment, dispatch({ grep, record_interactions: true })),
         'a consumer reads the raw input under record_interactions'
       ).toBe('interaction profiles')
 
       for (const proofRow of PROOF_ROWS_WITH_OWN_REGEX) {
         const rendered = renderName(
           assignment,
-          dispatchContext({ grep }, { proof_row: proofRow })
+          dispatch({ grep, detection_proof_row: proofRow })
         )
 
         expect(rendered, `proof row ${proofRow} reports no filter`).not.toBe('')
@@ -484,10 +485,11 @@ describe('custom-node check-run names cannot masquerade as the ref grade', () =>
         expect(
           renderName(
             assignment,
-            dispatchContext(
-              { grep, record_interactions: true },
-              { proof_row: proofRow }
-            )
+            dispatch({
+              grep,
+              detection_proof_row: proofRow,
+              record_interactions: true
+            })
           ),
           `proof row ${proofRow} yields its regex to record_interactions`
         ).toBe(rendered)
