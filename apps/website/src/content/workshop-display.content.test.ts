@@ -76,17 +76,20 @@ describe('the display overlay against the catalog', () => {
     expect(stale).toEqual([])
   })
 
-  it('records the prototype disclosure choices explicitly', () => {
+  it('records the content-side disclosure choices explicitly', () => {
+    // The drop supplies `advancedFields` from one name-keyed table (seeds,
+    // watermarks, safety knobs, prompt rewriting, sampler and 3D tuning, ...)
+    // filtered to what each model exposes, so the positional fallback no
+    // longer applies to Router models.
     const grouped = display.filter((entry) => entry.advancedFields.length > 0)
-    expect(grouped).toHaveLength(31)
+    expect(grouped).toHaveLength(210)
     expect(
       grouped.reduce((count, entry) => count + entry.advancedFields.length, 0)
-    ).toBe(66)
+    ).toBe(696)
     expect(displayById.get('meshy/text-to-model')?.advancedFields).toEqual([
-      'symmetry_mode',
+      'seed',
       'target_polycount',
       'topology',
-      'should_remesh',
       'ultra_mode'
     ])
     expect(

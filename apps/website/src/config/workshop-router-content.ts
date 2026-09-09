@@ -4,7 +4,9 @@ import { workshopDisplaySchema } from '../content/workshop-display.schema'
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import { workshopModelSchema } from '../content/workshop-models.schema'
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import { isSeedField } from './seed-fields'
 import type {
+  ExampleInput,
   GeneratedExample,
   GeneratedField,
   Modality,
@@ -121,7 +123,7 @@ function fieldFor(
           : schema.type === 'integer'
             ? 1
             : 0.01,
-      default: defaultValue
+      ...(isSeedField(name) ? {} : { default: defaultValue })
     }
   }
   if (schema.type === 'boolean') {
@@ -179,7 +181,10 @@ function fieldsFor(
         name: `media_${role.role}`,
         label: labelFor(role.role),
         accept: acceptFor(role.role),
-        required: role.required
+        required: role.required,
+        ...(role.cardinality === 'many' ? { multiple: true } : {}),
+        ...(role.minItems === undefined ? {} : { minItems: role.minItems }),
+        ...(role.maxItems === undefined ? {} : { maxItems: role.maxItems })
       })
     )
   ]
@@ -230,6 +235,7 @@ function examplesFor(
   const samples = display.media.samples ?? []
   return samples.slice(0, 6).map((sample, index) => {
     const example = display.examples[index]
+    const inputs = exampleInputs(example?.values ?? {})
     return {
       name: `${model.slug}-example-${index + 1}`,
       title: example?.title ?? `Sample ${index + 1}`,
@@ -238,13 +244,29 @@ function examplesFor(
       thumbnailUrl: sample.url,
       mediaKind: sample.kind,
       values: Object.fromEntries(
-        Object.entries(example?.values ?? {}).map(([name, value]) => [
-          name,
-          formValue(value)
-        ])
-      )
+        Object.entries(example?.values ?? {})
+          .filter(([name]) => name !== 'medias')
+          .map(([name, value]) => [name, formValue(value)])
+      ),
+      ...(inputs.length > 0 ? { inputs } : {})
     }
   })
+}
+
+/**
+ * `values.medias` is the Router input-media array. Each item names the role
+ * it fills, which is also the file field's name (`media_<role>`).
+ */
+function exampleInputs(values: Record<string, unknown>): ExampleInput[] {
+  const medias = values.medias
+  if (!Array.isArray(medias)) return []
+  return medias.flatMap((item) =>
+    isRecord(item) &&
+    typeof item.role === 'string' &&
+    typeof item.value === 'string'
+      ? [{ role: item.role, url: item.value }]
+      : []
+  )
 }
 
 function modalityFor(model: WorkshopModelEntry): Modality {

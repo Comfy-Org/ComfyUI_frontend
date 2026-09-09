@@ -67,7 +67,10 @@ const model: WorkshopModelDetail = {
           required: true
         }
       ],
-      values: { prompt: 'a capybara' }
+      values: { prompt: 'a capybara' },
+      // The input the example ran with; the page shows it in the matching
+      // file field instead of inventing a stand-in.
+      inputs: [{ role: 'end_frame', url: 'https://example.com/pool-end.webp' }]
     }
   ]
 }
@@ -134,7 +137,7 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
       'a capybara'
     )
-    expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
+    expect(screen.getByText('pool-end.webp')).toBeTruthy()
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('example')
@@ -181,7 +184,7 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('example')
-    expect(screen.getByText('flf-end_frame.webp')).toBeTruthy()
+    expect(screen.getByText('pool-end.webp')).toBeTruthy()
     expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
       'a capybara'
     )

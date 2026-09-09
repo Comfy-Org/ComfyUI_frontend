@@ -9146,6 +9146,7 @@ Enterprise`
     'zh-CN': '价格：从高到低'
   },
   'workshop.form.advanced': { en: 'Advanced settings', 'zh-CN': '高级设置' },
+  'workshop.field.randomSeed': { en: 'Random', 'zh-CN': '随机' },
   'workshop.signIn.meta.title': {
     en: 'Sign in · Comfy Models',
     'zh-CN': '登录 · Comfy 模型'
@@ -9338,6 +9339,13 @@ Enterprise`
   'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
   'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
+  'workshop.field.addAnother': { en: 'Add another', 'zh-CN': '再添加一个' },
+  'workshop.field.multipleFiles': {
+    en: 'multiple files',
+    'zh-CN': '可多个文件'
+  },
+  'workshop.field.upTo': { en: 'up to', 'zh-CN': '最多' },
+  'workshop.field.files': { en: 'files', 'zh-CN': '个文件' },
   'workshop.form.required': {
     en: 'This field is required',
     'zh-CN': '此字段为必填项'
@@ -9345,6 +9353,14 @@ Enterprise`
   'workshop.form.tooLarge': {
     en: 'File is over 25 MB',
     'zh-CN': '文件超过 25 MB'
+  },
+  'workshop.form.tooMany': {
+    en: 'Too many files for this input',
+    'zh-CN': '此输入的文件数量过多'
+  },
+  'workshop.form.tooFew': {
+    en: 'This input needs more files',
+    'zh-CN': '此输入需要更多文件'
   },
   'workshop.form.badType': {
     en: 'File type not supported',

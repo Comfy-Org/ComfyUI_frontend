@@ -292,7 +292,7 @@ describe('workshopModels', () => {
       exampleCount += detail?.examples.length ?? 0
     }
     expect(workshopModels.filter((model) => model.thumbnail).length).toBe(261)
-    expect(exampleCount).toBe(113)
+    expect(exampleCount).toBe(121)
   })
 
   it('retains the legacy registry predicate for its remaining callers', () => {

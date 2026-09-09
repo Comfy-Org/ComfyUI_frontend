@@ -39,7 +39,8 @@ export type GeneratedField =
       readonly min: number
       readonly max: number
       readonly step: number
-      readonly default: number
+      /** Absent on seed-like fields: empty means the provider picks. */
+      readonly default?: number
     }
   | {
       readonly kind: 'select'
@@ -69,6 +70,10 @@ export type GeneratedField =
       readonly hint?: string
       readonly accept: 'image' | 'video' | 'audio'
       readonly required: boolean
+      /** The Router role takes several files (`cardinality: many`). */
+      readonly multiple?: boolean
+      readonly minItems?: number
+      readonly maxItems?: number
     }
 
 export interface GeneratedExample {
@@ -81,6 +86,17 @@ export interface GeneratedExample {
   readonly node?: { readonly id: string; readonly displayName: string }
   readonly fields?: readonly GeneratedField[]
   readonly values: Readonly<Record<string, string | number | boolean>>
+  /**
+   * The input media the example was run with, from the overlay's
+   * `values.medias` (`[{ role, value: url }]`, the Router request shape).
+   * Shown in the matching `media_<role>` file field, in order.
+   */
+  readonly inputs?: readonly ExampleInput[]
+}
+
+export interface ExampleInput {
+  readonly role: string
+  readonly url: string
 }
 
 interface GeneratedModel {

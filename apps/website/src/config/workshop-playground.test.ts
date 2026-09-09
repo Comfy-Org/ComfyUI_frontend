@@ -286,16 +286,142 @@ describe('exampleValues', () => {
       title: 'Demo',
       specs: [],
       values: { prompt: 'a capybara', size: '2K' },
-      outputUrl: 'https://example.com/out.webp'
+      outputUrl: 'https://example.com/out.webp',
+      inputs: [
+        { role: 'image', url: 'https://cdn.example/input/capybara.png' },
+        { role: 'image', url: 'https://cdn.example/input/pond.png' }
+      ]
     })
     expect(values.prompt).toBe('a capybara')
     expect(values.size).toBe('2K')
+    // The field shows the example's real input, not a stand-in named after
+    // the output; a second file for the same role is counted, not dropped.
     expect(values.image).toMatchObject({
-      name: 'demo-image.webp',
-      type: 'image/webp',
-      previewUrl: 'https://example.com/out.webp'
+      name: 'capybara.png (+1 more)',
+      type: 'image/png',
+      previewUrl: 'https://cdn.example/input/capybara.png'
     })
     expect(validateForm(schema, values)).toEqual({})
+  })
+
+  it('never prefills the seed an example ran with', () => {
+    const schema = schemaForModel({
+      fields: [
+        {
+          kind: 'number',
+          name: 'seed',
+          label: 'Seed',
+          min: 0,
+          max: 2147483647,
+          step: 1
+        }
+      ],
+      modality: 'image'
+    })
+    const values = exampleValues(schema, {
+      id: 'demo',
+      title: 'Demo',
+      specs: [],
+      values: { seed: 880926991 },
+      outputUrl: 'https://example.com/out.webp'
+    })
+    expect(values.seed).toBeUndefined()
+    expect(validateForm(schema, values)).toEqual({})
+  })
+
+  it('holds every input of a many-file role and validates the count', () => {
+    const schema = schemaForModel({
+      fields: [
+        {
+          kind: 'file',
+          name: 'media_image',
+          label: 'Image',
+          accept: 'image',
+          required: true,
+          multiple: true,
+          minItems: 1,
+          maxItems: 3
+        }
+      ],
+      modality: 'image'
+    })
+    const values = exampleValues(schema, {
+      id: 'demo',
+      title: 'Demo',
+      specs: [],
+      values: {},
+      outputUrl: 'https://example.com/out.webp',
+      inputs: [
+        { role: 'image', url: 'https://cdn.example/input/a.png' },
+        { role: 'image', url: 'https://cdn.example/input/b.png' }
+      ]
+    })
+    expect(values.media_image).toEqual([
+      {
+        name: 'a.png',
+        size: 1,
+        type: 'image/png',
+        previewUrl: 'https://cdn.example/input/a.png'
+      },
+      {
+        name: 'b.png',
+        size: 1,
+        type: 'image/png',
+        previewUrl: 'https://cdn.example/input/b.png'
+      }
+    ])
+    expect(validateForm(schema, values)).toEqual({})
+    const png = { name: 'x.png', size: 1, type: 'image/png' }
+    expect(validateForm(schema, { media_image: [png, png, png, png] })).toEqual(
+      {
+        media_image: 'tooMany'
+      }
+    )
+    expect(validateForm(schema, { media_image: [] })).toEqual({
+      media_image: 'required'
+    })
+    expect(
+      validateForm(schema, {
+        media_image: [png, { ...png, type: 'text/plain' }]
+      })
+    ).toEqual({ media_image: 'badType' })
+  })
+
+  it('leaves a file field empty when the example has no input for its role', () => {
+    const schema = schemaForModel({
+      fields: [
+        {
+          kind: 'file',
+          name: 'media_document',
+          label: 'Document',
+          accept: 'image',
+          required: false
+        },
+        {
+          kind: 'file',
+          name: 'media_video',
+          label: 'Video',
+          accept: 'video',
+          required: false
+        }
+      ],
+      modality: 'image'
+    })
+    const values = exampleValues(schema, {
+      id: 'demo',
+      title: 'Demo',
+      specs: [],
+      values: {},
+      outputUrl: 'https://example.com/out.webp',
+      inputs: [{ role: 'video', url: 'https://cdn.example/input/clip.mp4' }]
+    })
+    expect(values.media_document).toBeUndefined()
+    // A non-image input is named and typed but not previewed.
+    expect(values.media_video).toEqual({
+      name: 'clip.mp4',
+      size: 1,
+      type: 'video/mp4'
+    })
   })
 })
 
