@@ -162,6 +162,76 @@ const translations = {
     en: 'Back to Workshop',
     'zh-CN': '返回 Workshop'
   },
+  'auth.shell.logoAlt': {
+    en: 'ComfyOrg Logo',
+    'zh-CN': 'ComfyOrg 徽标',
+    ja: 'ComfyOrgロゴ'
+  },
+  'auth.shell.termsText': {
+    en: 'By clicking "Next" or "Sign Up", you agree to our',
+    'zh-CN': '点击“下一步”或“注册”即表示您同意我们的',
+    ja: '「次へ」または「サインアップ」をクリックすると、私たちの'
+  },
+  'auth.shell.termsLink': {
+    en: 'Terms of Use',
+    'zh-CN': '使用条款',
+    ja: '利用規約'
+  },
+  'auth.shell.andText': {
+    en: 'and',
+    'zh-CN': '和',
+    ja: 'および'
+  },
+  'auth.shell.privacyLink': {
+    en: 'Privacy Policy',
+    'zh-CN': '隐私政策',
+    ja: 'プライバシーポリシー'
+  },
+  'auth.shell.questionsText': {
+    en: 'Questions? Contact us',
+    'zh-CN': '有问题？联系我们',
+    ja: '質問がありますか？お問い合わせください'
+  },
+  'auth.shell.contactLink': {
+    en: 'here',
+    'zh-CN': '这里',
+    ja: 'こちら'
+  },
+  'auth.shell.needHelp': {
+    en: 'Need Help?',
+    'zh-CN': '需要帮助？',
+    ja: 'ヘルプが必要ですか？'
+  },
+  'auth.hero.carouselLabel': {
+    en: 'Featured models',
+    'zh-CN': '精选模型',
+    ja: '注目モデル'
+  },
+  'auth.hero.carouselRoleDescription': {
+    en: 'carousel',
+    'zh-CN': '轮播图',
+    ja: 'カルーセル'
+  },
+  'auth.hero.slideRoleDescription': {
+    en: 'slide',
+    'zh-CN': '幻灯片',
+    ja: 'スライド'
+  },
+  'auth.hero.slideStatus': {
+    en: '{title}, slide {current} of {total}',
+    'zh-CN': '{title}，第 {current} 张，共 {total} 张',
+    ja: '{title}、{total}枚中{current}枚目'
+  },
+  'auth.hero.previousSlide': {
+    en: 'Previous slide',
+    'zh-CN': '上一张幻灯片',
+    ja: '前のスライド'
+  },
+  'auth.hero.nextSlide': {
+    en: 'Next slide',
+    'zh-CN': '下一张幻灯片',
+    ja: '次のスライド'
+  },
   'auth.signIn.error.provisioning': {
     en: 'You are signed in, but account setup did not finish. Please try again shortly.',
     'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
