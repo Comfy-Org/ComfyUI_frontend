@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { loadTurnstile } from '@comfyorg/account/turnstileScript'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
@@ -28,19 +30,17 @@ function i18n() {
 }
 
 describe('TurnstileWidget, mounted through the real @comfyorg/account component', () => {
-  it('renders the shared widget markup, not a stub', () => {
+  it('mounts the shared widget, not a stub', () => {
     const store = useColorPaletteStore()
     store.completedActivePalette.light_theme = true
+    vi.mocked(loadTurnstile).mockClear()
 
-    const { container } = render(TurnstileWidget, {
-      global: { plugins: [i18n()] }
-    })
+    render(TurnstileWidget, { global: { plugins: [i18n()] } })
 
-    // The shared component's own root class, from
-    // packages/account/src/TurnstileWidget.vue. A stub or a broken import
-    // would not carry it.
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('.flex.flex-col.gap-2')).not.toBeNull()
+    expect(
+      loadTurnstile,
+      'only the shared component calls the loader; a stub or a broken import never would'
+    ).toHaveBeenCalledOnce()
   })
 
   it('renders no error alert before the challenge reports one', () => {

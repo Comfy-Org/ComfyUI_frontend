@@ -5,10 +5,15 @@ import { describe, expect, it, vi } from 'vitest'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
-const { lightTheme, sharedProps, sharedReset } = vi.hoisted(() => ({
+const { lightTheme, sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
   lightTheme: { value: true },
   sharedProps: { value: {} },
-  sharedReset: vi.fn()
+  sharedReset: vi.fn(),
+  sharedEmit: {
+    value: undefined as
+      | ((event: 'update:token' | 'update:unavailable', value: unknown) => void)
+      | undefined
+  }
 }))
 
 vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
@@ -20,10 +25,14 @@ vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
         theme: String,
         expiredMessage: String,
         failedMessage: String,
-        loader: Function
+        loader: Function,
+        token: String,
+        unavailable: Boolean
       },
-      setup(props, { expose }) {
+      emits: ['update:token', 'update:unavailable'],
+      setup(props, { expose, emit }) {
         sharedProps.value = props
+        sharedEmit.value = emit
         expose({ reset: sharedReset })
         return () => h('div', { 'data-testid': 'shared-turnstile' })
       }
@@ -91,6 +100,19 @@ describe('TurnstileWidget app adapter', () => {
       expiredMessage: 'Challenge expired',
       failedMessage: 'Verification failed'
     })
+  })
+
+  it("surfaces the shared widget's token and unavailable models on the adapter", () => {
+    const { emitted } = renderWidget(true)
+
+    sharedEmit.value?.('update:token', 'token-abc')
+    sharedEmit.value?.('update:unavailable', true)
+
+    expect(emitted('update:token').at(-1)).toEqual(['token-abc'])
+    expect(
+      emitted('update:unavailable').at(-1),
+      'without this channel a slow or blocked widget could block sign-up for good'
+    ).toEqual([true])
   })
 
   it('forwards reset to the shared widget', () => {
