@@ -1,11 +1,12 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
+import { FROZEN_OPS, applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 // A recording keeps every production field except the two ids the replay
@@ -47,8 +48,9 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
 }
 export const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
-// The vocabulary and the absence of the envelope are checked here; the applier
-// validates each payload at replay time, which is the rest of GraphOperation.
+// The vocabulary and the absence of the envelope are checked here; the
+// production applier proves the rest of GraphOperation when the conversation
+// is parsed (zAgentConversation), so the cast below is backed, not asserted.
 const zGraphOperation = z
   .object({ op: z.enum(FROZEN_OPS) })
   .passthrough()
@@ -150,6 +152,30 @@ export const zAgentConversation = z
     turns: z.array(zTurn).min(1)
   })
   .superRefine((conversation, ctx) => {
+    // The production applier is the parser for every recorded operation: a
+    // recording it would reject at replay is refused here, at the boundary.
+    const doc = mint(conversation.workflow.seed, conversation.workflow.catalog)
+    let version = 1
+    for (const [turnIndex, turn] of conversation.turns.entries())
+      for (const [entryIndex, entry] of turn.response.entries()) {
+        if (entry.kind !== 'graph_ops') continue
+        const ops = mintWireOps(entry.ops, {
+          actor: 'agent:comfy:host',
+          baseVersion: version
+        })
+        version += 1
+        const rejected = applyOps(
+          doc,
+          ops,
+          conversation.workflow.catalog
+        ).outcomes.filter((outcome) => outcome.outcome !== 'applied')
+        if (rejected.length > 0)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['turns', turnIndex, 'response', entryIndex, 'ops'],
+            message: `the applier rejected ${JSON.stringify(rejected)}`
+          })
+      }
     if (conversation.source.response_side !== 'recorded') return
     if (conversation.source.capture === undefined)
       ctx.addIssue({
