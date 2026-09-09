@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, ChevronDown, ListFilter } from '@lucide/vue'
+import { Check, ChevronDown, ListFilter, X } from '@lucide/vue'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue'
 
@@ -23,11 +23,14 @@ const {
   providerOptions,
   modalityOptions,
   useCaseOptions,
+  resultCount,
   locale = 'en'
 } = defineProps<{
   capabilityOptions: readonly FacetMenuOption[]
   providerOptions: readonly FacetMenuOption[]
   modalityOptions: readonly FacetMenuOption[]
+  /** What the catalogue holds under the current choices, for the way out. */
+  resultCount: number
   /** Only where the use-case row has no room of its own, on a phone. */
   useCaseOptions?: readonly FacetMenuOption[]
   locale?: Locale
@@ -188,6 +191,26 @@ function clearAll() {
         data-testid="workshop-filter-menu"
         class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
       >
+        <span
+          class="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
+          aria-hidden="true"
+        />
+
+        <div class="flex items-center justify-between p-3 pb-1 sm:hidden">
+          <h2 class="text-content text-base font-bold">
+            {{ t('workshop.filter.label', locale) }}
+          </h2>
+          <button
+            type="button"
+            :aria-label="t('workshop.search.close', locale)"
+            class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
+            data-testid="workshop-filter-close"
+            @click="open = false"
+          >
+            <X class="size-4" aria-hidden="true" />
+          </button>
+        </div>
+
         <TabsRoot v-model="activeFacet" class="flex flex-col">
           <TabsList
             class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
@@ -223,7 +246,7 @@ function clearAll() {
                 :placeholder="t('workshop.filter.search', locale)"
                 :aria-label="t('workshop.filter.search', locale)"
                 :data-testid="`workshop-filter-${entry.facet}-search`"
-                class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+                class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 max-sm:py-2.5 max-sm:text-base [&::-webkit-search-cancel-button]:hidden"
               />
             </div>
             <ul
@@ -241,7 +264,7 @@ function clearAll() {
                     role="option"
                     :aria-selected="entry.selected.value.includes(option.value)"
                     :data-testid="`filter-${entry.facet}-${option.value}`"
-                    class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5"
+                    class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
                     @click="toggle(entry.facet, option.value)"
                   >
                     <span
@@ -271,7 +294,7 @@ function clearAll() {
               <li
                 v-if="!visibleOptions(entry).length"
                 role="none"
-                class="text-content-muted px-3 py-2 text-xs"
+                class="text-content-muted px-3 py-2 text-xs max-sm:py-10 max-sm:text-center max-sm:text-sm"
               >
                 {{ t('workshop.filter.noMatches', locale) }}
               </li>
@@ -280,10 +303,11 @@ function clearAll() {
         </TabsRoot>
 
         <div
-          v-if="selectedCount"
-          class="flex items-center justify-between gap-3 border-t border-white/10 p-2"
+          v-if="selectedCount || isPhone"
+          class="flex items-center justify-between gap-3 border-t border-white/10 p-2 max-sm:p-3"
         >
           <span
+            v-if="selectedCount"
             class="text-content-secondary px-1 text-xs"
             data-testid="workshop-filter-applied"
           >
@@ -295,12 +319,28 @@ function clearAll() {
             }}
           </span>
           <button
+            v-if="selectedCount"
             type="button"
             data-testid="workshop-filter-clear"
             class="text-content-secondary hover:text-content cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/5"
             @click="clearAll"
           >
             {{ t('workshop.filter.clearAll', locale) }}
+          </button>
+          <button
+            type="button"
+            class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink sm:hidden"
+            data-testid="workshop-filter-show"
+            @click="resultCount > 0 ? (open = false) : clearAll()"
+          >
+            {{
+              resultCount > 0
+                ? t('workshop.search.show', locale).replace(
+                    '{n}',
+                    String(resultCount)
+                  )
+                : t('workshop.filter.clearAll', locale)
+            }}
           </button>
         </div>
       </div>

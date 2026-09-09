@@ -36,6 +36,7 @@ function mountMenu(withUseCases = false) {
           providerOptions,
           modalityOptions,
           useCaseOptions: withUseCases ? useCaseOptions : undefined,
+          resultCount: 12,
           capabilities: capabilities.value,
           providers: providers.value,
           modalities: modalities.value,

@@ -351,6 +351,7 @@ const menuItemClass =
             :provider-options="providerOptions"
             :modality-options="modalityOptions"
             :use-case-options="useCasesInFilter ? useCaseOptions : undefined"
+            :result-count="visible.length"
             :locale
           />
 
