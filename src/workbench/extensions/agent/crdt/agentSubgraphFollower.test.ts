@@ -872,26 +872,62 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(state.graph.getNodeById(toNodeId(3))).not.toBeInstanceOf(
       SubgraphNode
     )
-    forwardRaw(
-      state,
-      (nodes) => {
-        const host = nodes.get('1')!.toJSON() as Record<string, unknown>
-        const replacement = new Y.Map<unknown>()
-        for (const [key, value] of Object.entries(host)) {
-          if (key === OPAQUE_WIDGETS_KEY) continue
-          replacement.set(key, value)
-        }
-        replacement.set('id', 3)
-        replacement.set(OPAQUE_WIDGETS_KEY, [44])
-        nodes.set('3', replacement)
-      },
-      1
+    forwardRaw(state, retypeNode3AsHost, 1)
+
+    expectNode3RebuiltAsHost(state)
+  })
+
+  it('S1r rebuilds a retyped node through the reconcile path after a rejected frame', () => {
+    // The incremental path deletes + re-adds an `update`d node, but a frame
+    // rejected by `batch` (no graph scope) loses that action set and the next
+    // frame runs a full reconcile. `reconcileNode` on an existing node only
+    // updates its fields, so a plain node whose doc entry became a host would
+    // survive as a promoted-widget node unless reconcile also compares types.
+    const scope = { blocked: false }
+    const state = startFollower({ rootWidgetNode: true, scope })
+
+    scope.blocked = true
+    const vector = Y.encodeStateVector(state.hostDoc)
+    state.hostDoc.transact(() => {
+      retypeNode3AsHost(state.hostDoc.getMap<Y.Map<unknown>>('nodes'))
+    })
+    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+    state.follower.applyRemoteUpdate(update)
+    expect(
+      state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
+    ).toBe(false)
+    expect(state.graph.getNodeById(toNodeId(3))).not.toBeInstanceOf(
+      SubgraphNode
     )
 
+    scope.blocked = false
+    forwardRaw(state, (nodes) => nodes.get('2')!.set('title', 'Retitled'), 2)
+
+    expect(state.graph.getNodeById(toNodeId(2))?.title).toBe('Retitled')
+    expectNode3RebuiltAsHost(state)
+  })
+
+  it('S1s rebuilds a retyped node through the reconcile path after a rebind', () => {
+    // `bind` re-arms the session so its next frame reconciles everything, so
+    // a retype arriving in that frame must go through the reconcile branch.
+    const state = startFollower({ rootWidgetNode: true })
+    expect(state.graph.getNodeById(toNodeId(3))).not.toBeInstanceOf(
+      SubgraphNode
+    )
+
+    state.adapter.bind('workflow', state.follower)
+    forwardRaw(state, retypeNode3AsHost, 1)
+
+    expectNode3RebuiltAsHost(state)
     const rebuilt = state.graph.getNodeById(toNodeId(3))
-    expect(rebuilt).toBeInstanceOf(SubgraphNode)
-    expect(rebuilt?.widgets?.map((w) => w.name)).toEqual(['value'])
-    expect(rebuilt?.widgets?.[0]?.value).toBe(44)
+
+    // A second rebind reconciles a host whose type already matches: it must
+    // keep the live instance and its promoted widget value, not rebuild.
+    state.adapter.bind('workflow', state.follower)
+    forwardRaw(state, (nodes) => nodes.get('3')!.set('title', 'Host 3'), 3)
+    expect(state.graph.getNodeById(toNodeId(3))).toBe(rebuilt)
+    expect(rebuilt?.title).toBe('Host 3')
+    expectNode3RebuiltAsHost(state)
   })
 
   it('S1q rebuilds a host whose doc entry becomes a plain node', () => {
@@ -921,6 +957,30 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(rebuilt?.type).toBe('source')
   })
 })
+
+/**
+ * Replace plain node 3's doc entry with a copy of host 1's map (same type,
+ * inputs, outputs) carrying its own opaque widget value. Requires the
+ * `rootWidgetNode` fixture so node 3 exists.
+ */
+function retypeNode3AsHost(nodes: ReturnType<typeof nodesMap>) {
+  const host = nodes.get('1')!.toJSON() as Record<string, unknown>
+  const replacement = new Y.Map<unknown>()
+  for (const [key, value] of Object.entries(host)) {
+    if (key === OPAQUE_WIDGETS_KEY) continue
+    replacement.set(key, value)
+  }
+  replacement.set('id', 3)
+  replacement.set(OPAQUE_WIDGETS_KEY, [44])
+  nodes.set('3', replacement)
+}
+
+function expectNode3RebuiltAsHost(state: ReturnType<typeof startFollower>) {
+  const rebuilt = state.graph.getNodeById(toNodeId(3))
+  expect(rebuilt).toBeInstanceOf(SubgraphNode)
+  expect(rebuilt?.widgets?.map((w) => w.name)).toEqual(['value'])
+  expect(rebuilt?.widgets?.[0]?.value).toBe(44)
+}
 
 function hostSetWidget(value: number): GraphOperation {
   return {
