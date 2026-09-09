@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
@@ -139,10 +137,6 @@ describe('searchWidgetsAndNodes', () => {
 })
 
 describe('computedSectionDataList', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createWidget(
     name: string,
     options: IWidgetOptions = {}
