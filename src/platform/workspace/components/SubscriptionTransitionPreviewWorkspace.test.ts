@@ -28,6 +28,7 @@ const i18n = createI18n({
     en: {
       subscription: {
         preview: {
+          eachMonthCreditsRefill: 'Each month credits refill to',
           renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
           renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
         }
@@ -151,9 +152,7 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     })
     expect(screen.getByText('$100')).toBeTruthy()
     expect(screen.getByText('subscription.billedMonthly')).toBeTruthy()
-    expect(
-      screen.getByText('subscription.preview.eachMonthCreditsRefill')
-    ).toBeTruthy()
+    expect(screen.getByText('Each month credits refill to')).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
     expect(screen.getByText('$82.50')).toBeTruthy()
   })
@@ -175,7 +174,7 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(
       within(
         screen.getByRole('group', {
-          name: 'subscription.preview.eachMonthCreditsRefill'
+          name: 'Each month credits refill to'
         })
       ).getByText('0', { exact: true })
     ).toBeTruthy()
