@@ -70,14 +70,16 @@ function start(): void {
   lifecycle.run(() => {
     watch(
       enabled,
-      (on) => {
+      (on, wasOn) => {
         const expectedGeneration = ++generation
         stopListeners()
         if (!on) {
           user.value = null
           session.value = undefined
           sessionFailure.value = undefined
-          workshopSessionClient.clearCache()
+          // The flag starts false on every cold load until PostHog answers;
+          // only a real on->off transition means the credential must go.
+          if (wasOn) workshopSessionClient.clearCache()
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {

@@ -150,6 +150,18 @@ describe('useWorkshopSession', () => {
     expect(s.signedIn.value).toBe(false)
   })
 
+  it('keeps the cached credential on a cold load while the flag is still unanswered', async () => {
+    h.initialFlag = false
+    h.clearCache.mockClear()
+
+    await importFresh()
+
+    expect(
+      h.clearCache,
+      'the flag starts false until PostHog answers; wiping the cache here re-mints on every reload'
+    ).not.toHaveBeenCalled()
+  })
+
   it('clears the cache when the flag turns off', async () => {
     await importFresh()
     const callsBefore = h.clearCache.mock.calls.length
