@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 
 const mockAxiosInstance = vi.hoisted(() => ({
@@ -392,6 +393,42 @@ describe('useComfyManagerService', () => {
       expect(service.error.value).toBe(
         'Fetching installed packs failed: Network Error'
       )
+    })
+
+    it('resolves messages against the active locale, not the import-time one', async () => {
+      const originalLocale = i18n.global.locale.value
+      i18n.global.mergeLocaleMessage('ja', {
+        serviceErrors: {
+          manager: {
+            securityError: 'セキュリティエラーが発生しました'
+          }
+        }
+      })
+      mockAxiosInstance.post.mockRejectedValue({
+        response: { status: 403, data: {} }
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const installParams = {
+        id: 'pack',
+        version: '1.0.0',
+        selected_version: '1.0.0',
+        mode: 'remote' as const,
+        channel: 'default' as const
+      }
+
+      try {
+        await service.installPack(installParams)
+        expect(service.error.value).toBe(
+          'Forbidden: A security error has occurred. Please check the terminal logs'
+        )
+
+        i18n.global.locale.value = 'ja'
+        await service.installPack(installParams)
+        expect(service.error.value).toBe('セキュリティエラーが発生しました')
+      } finally {
+        i18n.global.locale.value = originalLocale
+      }
     })
   })
 })

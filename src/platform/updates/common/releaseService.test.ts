@@ -207,7 +207,7 @@ describe('useReleaseService', () => {
       const result = await service.getReleases({ project: 'comfyui' })
 
       expect(result).toBeNull()
-      expect(service.error.value).toBe('Failed to get releases: undefined')
+      expect(service.error.value).toBe('Failed to get releases: ')
     })
 
     it('should set loading state correctly', async () => {
