@@ -4,6 +4,7 @@ import {
   entriesFromStories,
   identifierValues,
   parseStory,
+  readStories,
   sectionsRequiringTranslation,
   storyAdapter
 } from './story'
@@ -133,15 +134,36 @@ describe('the story adapter over src/content/customers', () => {
     expect(new Set(entries.map((e) => e.key)).size).toBe(entries.length)
   })
 
-  it('covers all eleven stories', () => {
-    const slugs = new Set(entries.map((e) => e.key.split('.')[1]))
-    expect(slugs.size).toBe(11)
+  /*
+   * Stated as invariants rather than as a count and a coverage percentage.
+   * `covers all eleven stories` failed the moment a twelfth was written, and
+   * `has Chinese for every entry` failed when an English story landed before
+   * its translation — both naming the adapter, so a contributor goes looking
+   * for a defect that is not there. Whether Chinese is complete belongs to the
+   * coverage gate, not here.
+   */
+  it('contributes at least a title for every English story', () => {
+    const english = readStories().filter((story) => story.locale === 'en')
+
+    expect(english.length).toBeGreaterThan(0)
+    for (const story of english) {
+      expect(
+        entries.some((entry) => entry.key === `story.${story.slug}.title`),
+        `${story.slug} contributed no title`
+      ).toBe(true)
+    }
   })
 
-  it('has Chinese for every entry', () => {
-    expect(entries.filter((e) => e.approved['zh-CN']).length).toBe(
-      entries.length
-    )
+  it('carries the approved Chinese where a Chinese story supplies it', () => {
+    const chinese = readStories().filter((story) => story.locale === 'zh-CN')
+
+    expect(chinese.length).toBeGreaterThan(0)
+    for (const story of chinese) {
+      const title = entries.find(
+        (entry) => entry.key === `story.${story.slug}.title`
+      )
+      expect(title?.approved['zh-CN'], `${story.slug} title`).toBe(story.title)
+    }
   })
 
   it('never emits an entry with nothing to translate', () => {

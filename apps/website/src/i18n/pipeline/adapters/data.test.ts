@@ -131,8 +131,28 @@ describe('the data adapter over src/data', () => {
     expect(entries.filter((entry) => entry.english.trim() === '')).toEqual([])
   })
 
+  /*
+   * The name says the adapter reads existing Chinese; the assertion used to
+   * demand that every entry in the real `src/data` carry one. Any English-only
+   * `LocalizedText` added there failed this test, and the failure named the
+   * adapter rather than the untranslated copy. Whether Chinese is complete is
+   * the coverage gate's rule, not this file's.
+   */
   it('reads the Chinese that is already there', () => {
     const withChinese = entries.filter((entry) => entry.approved['zh-CN'])
-    expect(withChinese.length).toBe(entries.length)
+
+    expect(withChinese.length).toBeGreaterThan(0)
+    // Never blank: an empty approved value would resolve to nothing on the page
+    // while still counting as translated. Collected rather than asserted one at
+    // a time, so a failure names every offender instead of only the first.
+    const blank = withChinese
+      .filter((entry) => entry.approved['zh-CN']?.trim() === '')
+      .map((entry) => entry.key)
+    expect(blank).toEqual([])
+    // And genuinely read from the `zh-CN` field rather than echoed from the
+    // English one, which is how this would fail while still looking populated.
+    expect(
+      withChinese.some((entry) => entry.approved['zh-CN'] !== entry.english)
+    ).toBe(true)
   })
 })

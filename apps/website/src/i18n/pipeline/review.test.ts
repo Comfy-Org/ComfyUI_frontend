@@ -7,6 +7,8 @@ import {
   loadReviewState,
   parseFindings,
   parsePositiveInt,
+  buildUserPrompt,
+  glossaryFingerprint,
   planBatches,
   pruneOrphanedVerdicts,
   resolveReviewModel,
@@ -546,5 +548,79 @@ describe('batch grouping follows the page, not the namespace', () => {
     const keys = ['story.moment-factory.title', 'story.moment-factory.category']
 
     expect(planBatches(keys, layer(keys), layer(keys))).toEqual([keys])
+  })
+})
+
+describe('glossaryFingerprint', () => {
+  /**
+   * The documented invariant, and the one that costs money if it breaks.
+   * `loadReviewState` throws away every stored verdict for a locale when the
+   * fingerprint changes, so a fingerprint that moved with glossary line order
+   * would re-review a whole locale on any reordering — and one that failed to
+   * move would reuse verdicts reached under a different rubric.
+   */
+  it('does not change when the glossary is reordered', () => {
+    expect(glossaryFingerprint(['ComfyUI', 'Wan', 'AI'], 'g')).toBe(
+      glossaryFingerprint(['AI', 'ComfyUI', 'Wan'], 'g')
+    )
+  })
+
+  it('changes when a term is added', () => {
+    expect(glossaryFingerprint(['ComfyUI'], 'g')).not.toBe(
+      glossaryFingerprint(['ComfyUI', 'Wan'], 'g')
+    )
+  })
+
+  /** Changing how Japanese headings should read is a rubric change too. */
+  it('changes when the guidance changes', () => {
+    expect(glossaryFingerprint(['ComfyUI'], 'old')).not.toBe(
+      glossaryFingerprint(['ComfyUI'], 'new')
+    )
+  })
+
+  it('does not mutate the caller’s array while sorting', () => {
+    const terms = ['Wan', 'AI']
+
+    glossaryFingerprint(terms, 'g')
+
+    expect(terms).toEqual(['Wan', 'AI'])
+  })
+})
+
+describe('buildUserPrompt', () => {
+  const english = { 'a.b': 'Run the workflow', 'c.d': 'Save' }
+  const translated = { 'a.b': 'ワークフローを実行', 'c.d': '保存' }
+
+  it('pairs each key with its English and its translation', () => {
+    const prompt = buildUserPrompt(['a.b'], english, translated)
+
+    expect(prompt).toContain('## a.b')
+    expect(prompt).toContain('EN: "Run the workflow"')
+    expect(prompt).toContain('TRANSLATION: "ワークフローを実行"')
+  })
+
+  it('carries only the keys it was given', () => {
+    const prompt = buildUserPrompt(['c.d'], english, translated)
+
+    expect(prompt).toContain('## c.d')
+    expect(prompt).not.toContain('a.b')
+  })
+
+  /**
+   * Quoted through `JSON.stringify`, so a newline or a quote in the copy cannot
+   * end the line early and shift the following text into the wrong field —
+   * which would have the model grading one string against another's
+   * translation.
+   */
+  it('escapes copy that would otherwise break the line structure', () => {
+    const prompt = buildUserPrompt(
+      ['a.b'],
+      { 'a.b': 'Line one\nTRANSLATION: fake' },
+      { 'a.b': 'ok' }
+    )
+
+    expect(
+      prompt.split('\n').filter((l) => l.startsWith('TRANSLATION:'))
+    ).toHaveLength(1)
   })
 })
