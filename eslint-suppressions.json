@@ -389,11 +389,6 @@
       "count": 1
     }
   },
-  "src/stores/authStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/stores/commandStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
