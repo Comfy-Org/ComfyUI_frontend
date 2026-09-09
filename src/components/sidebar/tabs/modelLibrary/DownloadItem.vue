@@ -6,7 +6,8 @@
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Chip
         variant="chip"
-        class="mt-2 h-6 bg-red-700 text-sm font-light"
+        severity="danger"
+        class="mt-2 h-6 text-sm font-light"
         removable
         @remove="handleRemoveDownload"
       >
@@ -21,6 +22,7 @@
     >
       <div
         role="progressbar"
+        :aria-label="getDownloadLabel(download.savePath ?? '')"
         :aria-valuenow="downloadProgressPercent"
         aria-valuemin="0"
         aria-valuemax="100"

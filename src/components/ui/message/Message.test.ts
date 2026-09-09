@@ -12,15 +12,22 @@ const i18n = createI18n({
 })
 
 describe('Message', () => {
-  it('announces errors as alerts', () => {
-    render(Message, {
-      props: { severity: 'error' },
-      slots: { default: 'Could not save' },
-      global: { plugins: [i18n] }
-    })
+  it.for(['error', 'warn', 'info'] as const)(
+    'announces %s messages as alerts',
+    (severity) => {
+      render(Message, {
+        props: { severity },
+        slots: { default: 'Could not save' },
+        global: { plugins: [i18n] }
+      })
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Could not save')
-  })
+      const alert = screen.getByRole('alert')
+      expect(alert).toHaveTextContent('Could not save')
+      expect(alert).toHaveAttribute('aria-live', 'assertive')
+      expect(alert).toHaveAttribute('aria-atomic', 'true')
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    }
+  )
 
   it('dismisses a closable message and emits close', async () => {
     const user = userEvent.setup()
@@ -31,7 +38,7 @@ describe('Message', () => {
       global: { plugins: [i18n] }
     })
 
-    await user.click(screen.getByRole('button'))
+    await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(screen.queryByText('Helpful information')).not.toBeInTheDocument()
     expect(onClose).toHaveBeenCalledOnce()

@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full bg-transparent">
+  <div class="relative size-full bg-transparent">
     <p
       v-if="errorMessage"
       data-testid="terminal-error-message"
@@ -10,7 +10,7 @@
     <ProgressSpinner
       v-else-if="loading"
       data-testid="terminal-loading-spinner"
-      class="relative inset-0 z-10 m-auto size-8"
+      class="absolute inset-0 z-10 m-auto size-8"
     />
     <BaseTerminal
       v-show="!loading && !errorMessage"
