@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 import { app } from '@/scripts/app'
@@ -31,10 +30,6 @@ function stubCanvas(selectOnly: boolean) {
 }
 
 describe('useSelectionOperations delete guard', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('does not delete while the canvas is picking-only', () => {
     const { deleteSelected } = stubCanvas(true)
 

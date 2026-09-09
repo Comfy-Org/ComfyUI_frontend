@@ -1,37 +1,16 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { popoverCloseSpy } from '@/components/ui/__mocks__/popoverMockState'
+import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
-
-vi.mock(import('@/components/ui/Popover.vue'))
-
-const mockGetSetting = vi.fn<(key: string) => boolean | undefined>((key) =>
-  key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
-    ? true
-    : undefined
-)
-const mockSetSetting = vi.fn()
-const mockSetMany = vi.fn()
-const mockSidebarTabStore = {
-  activeSidebarTabId: null as string | null
-}
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: mockGetSetting,
-    set: mockSetSetting,
-    setMany: mockSetMany
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
-  useSidebarTabStore: () => mockSidebarTabStore
-}))
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
+
+vi.mock(import('@/components/ui/Popover.vue'))
 
 const tooltipDirectiveStub = {
   mounted: vi.fn(),
@@ -54,12 +33,15 @@ const renderHeader = (props = {}) =>
 describe('QueueOverlayHeader', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    mockSidebarTabStore.activeSidebarTabId = null
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' || key === 'Comfy.Queue.ShowRunProgressBar'
-        ? true
-        : undefined
-    )
+    useSidebarTabStore().activeSidebarTabId = null
+    useSettingStore().$patch({
+      settingValues: {
+        'Comfy.Queue.QPOV2': true,
+        'Comfy.Queue.ShowRunProgressBar': true
+      }
+    })
+    vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
+    vi.mocked(useSettingStore().setMany).mockResolvedValue(undefined)
   })
 
   it('renders header title', () => {
@@ -112,58 +94,64 @@ describe('QueueOverlayHeader', () => {
     await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
-    expect(mockSetMany).toHaveBeenCalledTimes(1)
-    expect(mockSetMany).toHaveBeenCalledWith({
+    expect(vi.mocked(useSettingStore().setMany)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useSettingStore().setMany)).toHaveBeenCalledWith({
       'Comfy.Queue.QPOV2': false,
       'Comfy.Queue.History.Expanded': true
     })
-    expect(mockSetSetting).not.toHaveBeenCalled()
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe(null)
+    expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalled()
+    expect(useSidebarTabStore().activeSidebarTabId).toBe(null)
   })
 
   it('opens docked job history sidebar when enabling from the menu', async () => {
     const user = userEvent.setup()
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? false : undefined
-    )
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = false
 
     renderHeader()
 
     await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
-    expect(mockSetSetting).toHaveBeenCalledTimes(1)
-    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
-    expect(mockSetMany).not.toHaveBeenCalled()
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
+    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+      'Comfy.Queue.QPOV2',
+      true
+    )
+    expect(vi.mocked(useSettingStore().setMany)).not.toHaveBeenCalled()
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('job-history')
   })
 
   it('keeps docked target open even when enabling persistence fails', async () => {
     const user = userEvent.setup()
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = false
+    vi.mocked(useSettingStore().set).mockRejectedValueOnce(
+      new Error('persistence failed')
     )
-    mockSetSetting.mockRejectedValueOnce(new Error('persistence failed'))
 
     renderHeader()
 
     await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
-    expect(mockSetSetting).toHaveBeenCalledWith('Comfy.Queue.QPOV2', true)
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe('job-history')
+    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+      'Comfy.Queue.QPOV2',
+      true
+    )
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('job-history')
   })
 
   it('closes the menu when disabling persistence fails', async () => {
     const user = userEvent.setup()
-    mockSetMany.mockRejectedValueOnce(new Error('persistence failed'))
+    vi.mocked(useSettingStore().setMany).mockRejectedValueOnce(
+      new Error('persistence failed')
+    )
 
     renderHeader()
 
     await user.click(screen.getByTestId('docked-job-history-action'))
 
     expect(popoverCloseSpy).toHaveBeenCalledTimes(1)
-    expect(mockSetMany).toHaveBeenCalledWith({
+    expect(vi.mocked(useSettingStore().setMany)).toHaveBeenCalledWith({
       'Comfy.Queue.QPOV2': false,
       'Comfy.Queue.History.Expanded': true
     })
@@ -176,8 +164,8 @@ describe('QueueOverlayHeader', () => {
 
     await user.click(screen.getByTestId('show-run-progress-bar-action'))
 
-    expect(mockSetSetting).toHaveBeenCalledTimes(1)
-    expect(mockSetSetting).toHaveBeenCalledWith(
+    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
       'Comfy.Queue.ShowRunProgressBar',
       false
     )

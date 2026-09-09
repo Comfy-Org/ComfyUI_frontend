@@ -1,8 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render, fireEvent } from '@testing-library/vue'
-import { defineComponent } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -16,12 +15,6 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    isAssetDeleting: () => false
-  })
-}))
 
 const VirtualGridStub = defineComponent({
   name: 'VirtualGrid',
