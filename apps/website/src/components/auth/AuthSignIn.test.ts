@@ -164,6 +164,27 @@ describe('AuthSignIn', () => {
     ).toBeNull()
   })
 
+  it('keeps a signed-in visitor on the page when they asked to switch accounts', async () => {
+    window.history.replaceState({}, '', '/login/?switchAccount=1')
+    render(AuthSignIn)
+
+    handles.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    }
+
+    expect(
+      await screen.findByRole('button', { name: /continue with google/i })
+    ).toBeTruthy()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(
+      replace,
+      'the cloud guard skips the redirect on switchAccount'
+    ).not.toHaveBeenCalled()
+    expect(handles.ensureFresh).not.toHaveBeenCalled()
+  })
+
   it('raises a warning toast when the visitor dismisses the pop-up', async () => {
     handles.github.mockRejectedValue({
       code: 'auth/popup-closed-by-user',

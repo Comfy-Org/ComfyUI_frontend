@@ -8,6 +8,7 @@ import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthErro
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
@@ -20,7 +21,10 @@ import {
   signInErrorMessage
 } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
-import { requestedReturnPath } from '../../config/workshop-return'
+import {
+  isSwitchingAccount,
+  requestedReturnPath
+} from '../../config/workshop-return'
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
@@ -130,6 +134,7 @@ const stopUserWatch = watch(
       dispatch({ type: 'signedOut' })
       return
     }
+    if (isSwitchingAccount(window.location.search)) return
     const before = state.value.step
     dispatch({
       type: 'userRestored',
@@ -209,7 +214,12 @@ onMounted(() => {
     </p>
 
     <template v-if="state.step === 'signedIn' && state.messageKey">
-      <div role="alert" :class="['mt-4', AUTH_MESSAGE_ERROR_CLASS]">
+      <div
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        :class="cn('mt-4', AUTH_MESSAGE_ERROR_CLASS)"
+      >
         {{ t(state.messageKey, locale) }}
       </div>
       <button

@@ -46,6 +46,15 @@ export function safeReturnPath(raw: string | null | undefined): string {
  * Resolve an explicit return destination. A plain visit to the sign-in page
  * has no destination and must remain there after sign-in.
  */
+/**
+ * `?switchAccount` keeps a signed-in visitor on the sign-in page instead of
+ * redirecting them away, same as the cloud app's route guard, so they can
+ * sign in as someone else.
+ */
+export function isSwitchingAccount(search: string): boolean {
+  return new URLSearchParams(search).has('switchAccount')
+}
+
 export function requestedReturnPath(search: string): string | undefined {
   const raw = new URLSearchParams(search).get('returnTo')
   return raw ? safeReturnPath(raw) : undefined

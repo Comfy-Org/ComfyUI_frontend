@@ -152,21 +152,9 @@ const translations = {
     en: 'Finish signing in from the pop-up window.',
     'zh-CN': '请在弹出窗口中完成登录。'
   },
-  'auth.signIn.signedInHeading': {
-    en: 'You are signed in',
-    'zh-CN': '已登录'
-  },
-  'auth.signIn.signedInAs': {
-    en: 'Signed in as',
-    'zh-CN': '当前账户：'
-  },
   'auth.signIn.signOut': {
     en: 'Sign out',
     'zh-CN': '退出登录'
-  },
-  'auth.signIn.backToWorkshop': {
-    en: 'Back to Workshop',
-    'zh-CN': '返回 Workshop'
   },
   'auth.shell.logoAlt': {
     en: 'ComfyOrg Logo',
