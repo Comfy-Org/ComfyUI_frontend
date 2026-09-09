@@ -18,19 +18,19 @@ const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
     mockStartDownload: vi.fn()
   }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockIsDesktop.value
   }
 }))
 
-vi.mock('@/stores/electronDownloadStore', () => ({
+vi.mock<unknown>(import('@/stores/electronDownloadStore'), () => ({
   useElectronDownloadStore: () => ({
     start: mockStartDownload
   })
 }))
 
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 

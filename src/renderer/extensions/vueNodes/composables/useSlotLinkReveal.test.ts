@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
   setDirty: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       graph: {

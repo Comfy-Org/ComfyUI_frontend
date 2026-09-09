@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "將細節關鍵影格附加至影片 latent。每個關鍵影格都是由 token 組成的一個 latent 影格，其 RoPE 位置涵蓋單一像素影格；它們會與影片一同去雜訊，且不屬於解碼輸出的一部分。會每隔 interval_frames 個像素影格放置一個位置，略過 I2V 影格、既有引導及 cond 上已有的細節關鍵影格。連接的關鍵影格僅作為內容使用，除非設定 frame_indices，否則會在此畫布上重新放置。可使用 LTXV Separate Generated Keyframes 將其取出。需要使用針對生成關鍵影格訓練的 checkpoint（含有 keyframes_abs_pos_embedding 的 checkpoint）。",
+    "display_name": "LTXV 新增生成關鍵影格",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "可選的像素影格索引。留空時，會依目前畫布上的 interval_frames 放置。設定後，此清單即為放置位置（依序對應連接的關鍵影格）。允許最後一個影格；不允許影格 0（它已經是獨立 token）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自動放置的像素影格步長。預設值 24 在 24 fps 時約為每秒一個關鍵影格。已占用的像素影格會略過。設定 frame_indices 時會忽略此值。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可選擇用於初始化新關鍵影格的內容。可連接先前 Separate 輸出的關鍵影格（相同空間尺寸），或連接普通影片 latent，以在每個新位置複製最近的影格（例如時間放大後）。這些影格仍會去雜訊，而不會固定為引導。除非設定 frame_indices，否則會忽略 keyframes latent 上記錄的索引。僅當採樣從低於 sigma 1 開始時才有效果。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "用於一併生成關鍵影格的普通 5D 影片 latent。請在 Concat AV Latent 之前新增它們。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "關鍵影格所附加的負向條件。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "關鍵影格所附加的正向條件。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "僅用於讀取 latent 縮放係數。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "附加生成關鍵影格注意力的正向條件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "附加生成關鍵影格注意力的負向條件。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "於 T 維度附加生成關鍵影格的影片 latent。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV 添加引導",
     "inputs": {
@@ -9752,6 +9800,55 @@
       },
       "2": {
         "name": "潛在空間",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "將已編碼的 latent 固定為引導，適用於引導來自較早階段而非影像的情況。效果與 LTXV Add Guide 相同，但無需進行 VAE 解碼／編碼往返。若引導的空間尺寸小於目標（IC-LoRA 或細節參考），會將其擴展至稀疏網格，並以相同比例擴大其 RoPE 終止位置，使其覆蓋目標畫布，而非僅對應其左上角。",
+    "display_name": "LTXV 新增 Latent 引導",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "可選的像素空間 mask。透過自注意力控制各區域的條件影響力，並乘以 strength。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "引導 latent。其空間尺寸在兩個軸向上都必須以相同整數比例整除目標尺寸；相同尺寸會原樣固定，半尺寸會視為 x2 IC-LoRA 參考。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "引導所固定至的目標影片 latent。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "引導開始位置的 latent 影格索引，以 latent 影格而非像素影格計算。負值會將引導放置於 latent 起始位置之前的影格，而非從結尾往回計算。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "上限為 1.0。擴展後的引導會以負值去雜訊 mask 標記其填補位置，讓模型捨棄它們；超過 1.0 時，保留的位置也會變成負值，導致整個引導被捨棄。請改用 attention_mask 放大至超過 1.0。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "將 noise_mask 設為 0，使此潛空間在取樣期間保持乾淨。適用於影片或音訊。常見用途：在 Concat AV 前凍結音訊，使其僅提供交叉注意力；或凍結任何不應去噪的潛空間。",
+    "display_name": "LTXV 凍結潛空間",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要凍結的影片或音訊潛空間。音訊為 4D；影片為 5D。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "將先前階段生成的關鍵影格固定為後續畫布上的凍結影像引導。它們會解碼為獨立影格，必要時調整大小，並以 noise_mask=0 寫入，因此不會再次去噪。在時間放大後，會將記錄的索引從生成時所在的畫布縮放至此畫布（相同時間點）。使用 override_frame_indices 可明確設定位置。若要在新位置持續生成（並去噪）關鍵影格，請改用「新增生成的關鍵影格」。",
+    "display_name": "LTXV 將生成的關鍵影格轉為引導",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "LTXV 分離生成的關鍵影格的 keyframes 輸出，包含每個關鍵影格生成時所在的像素影格索引。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "要加入引導的目標影片潛空間，例如經時間放大後的潛空間。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "選用：改為固定於這些像素影格，而非記錄的（或自動縮放的）位置。每個關鍵影格提供一個索引。留空即可重複使用記錄的位置；若目標畫布長度不同（例如時間 x2 後），則會縮放這些位置。"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "引導強度。1.0 為強制固定；較低值則較為寬鬆。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "已將關鍵影格固定為影像引導的正向條件化。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "已將關鍵影格固定為影像引導的負向條件化。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "已將關鍵影格作為凍結引導加入的目標影片潛空間。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV 圖片轉影片",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "從已取樣的潛空間中分離由 LTXV 新增生成的關鍵影格所加入的生成關鍵影格，並將其從條件化中移除。請在空間放大影片潛空間前分離它們。請勿先執行 LTXV 裁切引導，因其會將生成的關鍵影格視為可捨棄的引導並予以移除。",
+    "display_name": "LTXV 分離生成的關鍵影格",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "將關鍵影格以單影格潛空間的批次形式傳回。關閉此選項可將其作為一個多影格潛空間取得，這是潛空間放大器及後續「新增生成的關鍵影格」所預期的格式。"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "已移除生成關鍵影格中繼資料的正向條件化。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "已移除生成關鍵影格中繼資料的負向條件化。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "已移除生成關鍵影格的影片潛空間。"
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "已分離的關鍵影格，標記有 generated_keyframe_indices 與 generated_keyframe_num_frames。將其提供給後續的「新增生成的關鍵影格」以初始化新插槽，或提供給「生成的關鍵影格轉為引導」以將其固定為凍結影像引導（若畫布長度變更，索引會重新對應）。"
       }
     }
   },
@@ -16696,6 +16891,45 @@
       "image": {
         "name": "圖像",
         "tooltip": "來自 ImageCropToMask 的預處理圖像（Pixal3D 的 pad_factor=1.1）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D 多視角條件化",
+    "inputs": {
+      "back": {
+        "name": "後方",
+        "tooltip": "物件後側的方形視圖，含 Alpha 或使用黑色背景，構圖如同轉台：物件最寬處約佔畫面的 1/1.1，且每個視圖的比例相同。第一個連接的視圖（順序為前、左、後、右）即為網格模型所朝向的正面。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision，含隨附的 NAF 權重。"
+      },
+      "fov": {
+        "name": "視野角",
+        "tooltip": "依構圖而定的視圖水平 FOV（度）：轉台渲染與大多數多視角生成器設為 20；照片則在其中一個視圖使用 MoGeGeometryToFOV。"
+      },
+      "front": {
+        "name": "前方",
+        "tooltip": "物件前側的方形視圖，含 Alpha 或使用黑色背景，構圖如同轉台：物件最寬處約佔畫面的 1/1.1，且每個視圖的比例相同。第一個連接的視圖（順序為前、左、後、右）即為網格模型所朝向的正面。"
+      },
+      "left": {
+        "name": "左側",
+        "tooltip": "物件左側的方形視圖，含 Alpha 或使用黑色背景，構圖如同轉台：物件最寬處約佔畫面的 1/1.1，且每個視圖的比例相同。第一個連接的視圖（順序為前、左、後、右）即為網格模型所朝向的正面。"
+      },
+      "right": {
+        "name": "右側",
+        "tooltip": "物件右側的方形視圖，含 Alpha 或使用黑色背景，構圖如同轉台：物件最寬處約佔畫面的 1/1.1，且每個視圖的比例相同。第一個連接的視圖（順序為前、左、後、右）即為網格模型所朝向的正面。"
       }
     },
     "outputs": {

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -72,8 +70,6 @@ describe('drawConnections', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -622,7 +618,6 @@ describe('drawConnections hidden links', () => {
   let canvas: LGraphCanvas
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     graph = new LGraph()
     canvas = createTestCanvas(graph, createMockCtx())
     canvas.visible_area.set([0, 0, 800, 600])
