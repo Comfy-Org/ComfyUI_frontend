@@ -6,7 +6,7 @@ import {
   getAssetSubfolder,
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188/api${path}`)
@@ -17,7 +17,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: mockApiURL }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
@@ -110,7 +110,7 @@ describe('getAssetFileUrl', () => {
           allOutputs: [
             { assetId: 'asset-image', filename: 'ComfyUI_00109.png' },
             { assetId: 'asset-model', filename: 'ComfyUI_00110.glb' }
-          ] as ResultItemImpl[]
+          ] as AugmentedResultItem[]
         }
       })
 
