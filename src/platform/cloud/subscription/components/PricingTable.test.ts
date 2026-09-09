@@ -263,7 +263,7 @@ describe('PricingTable', () => {
 
       const creatorButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Creator'))
+        .find((b) => b.textContent.includes('Creator'))
 
       expect(creatorButton).toBeDefined()
       await userEvent.click(creatorButton!)
@@ -289,7 +289,7 @@ describe('PricingTable', () => {
 
       const proButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Pro'))
+        .find((b) => b.textContent.includes('Pro'))
 
       await userEvent.click(proButton!)
       await flushPromises()
@@ -309,7 +309,7 @@ describe('PricingTable', () => {
 
       const creatorButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Creator'))
+        .find((b) => b.textContent.includes('Creator'))
 
       await userEvent.click(creatorButton!)
       await flushPromises()
@@ -347,7 +347,7 @@ describe('PricingTable', () => {
 
       const creatorButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Creator'))
+        .find((b) => b.textContent.includes('Creator'))
 
       await userEvent.click(creatorButton!)
       await flushPromises()
@@ -370,7 +370,7 @@ describe('PricingTable', () => {
 
       const creatorButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Creator'))
+        .find((b) => b.textContent.includes('Creator'))
 
       await userEvent.click(creatorButton!)
       await flushPromises()
@@ -396,7 +396,7 @@ describe('PricingTable', () => {
 
       const currentPlanButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Current Plan'))
+        .find((b) => b.textContent.includes('Current Plan'))
 
       expect(currentPlanButton).toBeDefined()
       expect(currentPlanButton).toBeDisabled()
@@ -416,7 +416,7 @@ describe('PricingTable', () => {
 
       const currentPlanButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Current Plan'))
+        .find((b) => b.textContent.includes('Current Plan'))
 
       expect(currentPlanButton).toBeUndefined()
     })
@@ -433,7 +433,7 @@ describe('PricingTable', () => {
 
       const subscribeButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Subscribe'))
+        .find((b) => b.textContent.includes('Subscribe'))
 
       await userEvent.click(subscribeButton!)
       await flushPromises()
@@ -466,7 +466,7 @@ describe('PricingTable', () => {
 
       const subscribeButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Subscribe'))
+        .find((b) => b.textContent.includes('Subscribe'))
 
       await userEvent.click(subscribeButton!)
       await flushPromises()
@@ -495,7 +495,7 @@ describe('PricingTable', () => {
 
       const subscribeButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Subscribe'))
+        .find((b) => b.textContent.includes('Subscribe'))
 
       await userEvent.click(subscribeButton!)
       await flushPromises()
@@ -514,7 +514,7 @@ describe('PricingTable', () => {
 
       const standardButton = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Standard'))
+        .find((b) => b.textContent.includes('Standard'))
 
       await userEvent.click(standardButton!)
       await flushPromises()
@@ -530,7 +530,7 @@ describe('PricingTable', () => {
 
       const teamLink = screen
         .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Need team workspace?'))
+        .find((b) => b.textContent.includes('Need team workspace?'))
 
       expect(teamLink).toBeDefined()
       await userEvent.click(teamLink!)

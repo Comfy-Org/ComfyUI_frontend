@@ -100,6 +100,7 @@ function globalOptions() {
 
 describe('SignUpForm', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     mockLoadingRef.value = false
     mockTurnstileEnabled.value = false
     mockTurnstileToken.value = ''
@@ -194,6 +195,28 @@ describe('SignUpForm', () => {
         'new-password'
       )
     })
+  })
+
+  it('hides password requirements when the field loses focus', async () => {
+    const { user } = renderComponent()
+    const passwordInput = screen.getByLabelText(
+      enMessages.auth.signup.passwordLabel
+    )
+    const confirmPasswordInput = screen.getByLabelText(
+      enMessages.auth.login.confirmPasswordLabel
+    )
+    const requirementsText = `${enMessages.validation.password.requirements}:`
+
+    expect(screen.queryByText(requirementsText)).not.toBeInTheDocument()
+
+    await user.type(passwordInput, 'short')
+    const requirements = screen.getByText(requirementsText)
+    expect(requirements).toBeInTheDocument()
+
+    await user.tab()
+
+    expect(confirmPasswordInput).toHaveFocus()
+    expect(requirements).not.toBeInTheDocument()
   })
 
   describe('submit while loading', () => {

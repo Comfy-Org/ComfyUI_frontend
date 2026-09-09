@@ -1,410 +1,1086 @@
-// @vitest-environment jsdom
-import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
-import { initDoc, metaMap, nodesMap } from '@comfyorg/comfy-multi-player'
-import { setActivePinia } from 'pinia'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
-import * as Y from 'yjs'
+/**
+ * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
+ * the bridge/client mechanics have their own suites
+ * (followerSubscription.test.ts, docFrameClient.test.ts), so both are
+ * module-mocked here and every assertion targets what the COMPOSABLE adds -
+ * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
+ * the frame-handler status surface, and total teardown.
+ */
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref, shallowRef } from 'vue'
+import type { Ref } from 'vue'
 
-import { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { render } from '@testing-library/vue'
+
+import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
-import { DOC_PROTOCOL_VERSION, encodeBase64 } from './docFrameClient'
-import { OPAQUE_WIDGETS_KEY } from './docSchema'
+import type { MaterializableGraph } from './agentNodeMaterializer'
 
-const TEST_NODE_TYPE = 'MarkdownNote'
-const WORKFLOW_ID = 'wf-a'
-const ORIGINAL_NOTE = 'Enable multi-image input'
-const UPDATED_NOTE = 'Preserve this exact text after tab switching.'
+const bridgeState = vi.hoisted(() => {
+  class FakeBridge extends EventTarget {
+    subscribe = vi.fn()
+    unsubscribe = vi.fn()
+    resubscribe = vi.fn()
+    reconcile = vi.fn()
+    destroy = vi.fn()
+    sendHumanOps = vi.fn()
+    subscribedWorkflowId: string | null = 'wf-1'
+    lastSequence = 41
+    follower = {
+      updatesApplied: 0,
+      doc: {
+        getMap: () => ({ toJSON: () => ({}) })
+      }
+    }
+  }
+  return { FakeBridge, current: null as InstanceType<typeof FakeBridge> | null }
+})
 
-const appMock = vi.hoisted(() => ({
-  graph: null as LGraph | null,
-  get rootGraph() {
-    return this.graph!
-  },
-  registerExtension: vi.fn()
+const clientState = vi.hoisted(() => ({
+  destroy: vi.fn(),
+  sendOps: vi.fn(() => true)
 }))
-const apiMock = vi.hoisted(() => {
-  const listeners = new Map<string, Set<EventListener>>()
-  const send = vi.fn()
-  const addEventListener = (type: string, listener: EventListener) => {
-    const registered = listeners.get(type) ?? new Set<EventListener>()
-    registered.add(listener)
-    listeners.set(type, registered)
-  }
-  const removeEventListener = (type: string, listener: EventListener) => {
-    listeners.get(type)?.delete(listener)
-  }
+
+const adapterState = vi.hoisted(() => ({
+  bind: vi.fn(),
+  unbind: vi.fn(),
+  applyFrame: vi.fn(() => true),
+  clearForReset: vi.fn(),
+  discardPending: vi.fn(),
+  destroy: vi.fn()
+}))
+
+const materializerState = vi.hoisted(() => ({
+  reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
+}))
+
+// The reader is module-mocked too: these tests only check that the composable
+// hands whatever it read from the bridge's doc through to the materializer.
+const definitionsState = vi.hoisted(() => ({
+  fakeDefinitions: [
+    { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
+  ],
+  readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
+}))
+
+const apiState = vi.hoisted(() => {
+  const target = new EventTarget()
   return {
+    target,
     api: {
-      socket: { readyState: 1, send },
-      addCustomEventListener: addEventListener,
-      removeCustomEventListener: removeEventListener,
-      addEventListener,
-      removeEventListener
-    },
-    clear() {
-      listeners.clear()
-      send.mockClear()
-    },
-    emit(type: string, detail: unknown) {
-      const event = new CustomEvent(type, { detail })
-      for (const listener of listeners.get(type) ?? []) listener(event)
-    },
-    send
+      socket: { readyState: 1, send: vi.fn() },
+      addCustomEventListener: vi.fn(),
+      removeCustomEventListener: vi.fn(),
+      addEventListener: (type: string, listener: EventListener) =>
+        target.addEventListener(type, listener),
+      removeEventListener: vi.fn((type: string, listener: EventListener) =>
+        target.removeEventListener(type, listener)
+      )
+    }
   }
 })
 
-vi.mock('@/scripts/app', () => ({ app: appMock }))
-vi.mock('@/scripts/api', () => ({ api: apiMock.api }))
-vi.mock('./devPanelLog', () => ({ recordDevEvent: vi.fn() }))
-
-await import('@/extensions/core/noteNode')
-type TestExtension = {
-  name?: string
-  registerCustomNodes?: () => void
-}
-const noteNodeExtension = appMock.registerExtension.mock.calls
-  .map(([extension]) => extension as TestExtension)
-  .find((extension) => extension.name === 'Comfy.NoteNode')
-if (!noteNodeExtension)
-  throw new Error('Comfy.NoteNode was not registered on import')
-
-window.history.replaceState({}, '', '/?agentCrdtFollower=1')
-const { DOC_ID_SESSION_KEY, useAgentCrdtFollower } =
-  await import('./useAgentCrdtFollower')
-
-function addHostNode(
-  doc: Y.Doc,
-  id: number,
-  text = '',
-  type = TEST_NODE_TYPE
-): void {
-  const node = new Y.Map<unknown>()
-  node.set('type', type)
-  node.set('pos', [id * 100, 40])
-  node.set(OPAQUE_WIDGETS_KEY, [text])
-  nodesMap(doc).set(String(id), node)
-}
-
-function updateHostNote(doc: Y.Doc, id: number, text: string): void {
-  nodesMap(doc).get(String(id))?.set(OPAQUE_WIDGETS_KEY, [text])
-}
-
-function createMarkdownNote() {
-  const node = LiteGraph.createNode(TEST_NODE_TYPE)
-  if (!node) throw new Error('MarkdownNote was not registered')
-  return node
-}
-
-function deliverDoc(doc: Y.Doc, seq: number): void {
-  apiMock.emit('doc_update', {
-    v: DOC_PROTOCOL_VERSION,
-    workflow_id: WORKFLOW_ID,
-    seq,
-    update_b64: encodeBase64(Y.encodeStateAsUpdate(doc))
-  })
-}
-
-describe('useAgentCrdtFollower projection ownership', () => {
-  const registeredTypes: string[] = []
-
-  beforeAll(() => {
-    const types = ['Note', TEST_NODE_TYPE]
-    const existing = new Set(
-      types.filter((type) => LiteGraph.registered_node_types[type])
-    )
-    noteNodeExtension.registerCustomNodes?.()
-    registeredTypes.push(
-      ...types.filter(
-        (type) => !existing.has(type) && LiteGraph.registered_node_types[type]
-      )
-    )
-  })
-
-  afterAll(() => {
-    for (const type of registeredTypes) LiteGraph.unregisterNodeType(type)
-  })
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    apiMock.clear()
-    sessionStorage.clear()
-    window.history.replaceState({}, '', '/?agentCrdtFollower=1')
-    appMock.graph = new LGraph()
-  })
-
-  it('projects a persisted workflow before the draft binding restores', async () => {
-    sessionStorage.setItem(DOC_ID_SESSION_KEY, WORKFLOW_ID)
-    const workflowId = ref<string | null>(null)
-    const projectionWorkflowId = ref<string | null>(null)
-    let follower!: ReturnType<typeof useAgentCrdtFollower>
-    const wrapper = render(
-      defineComponent({
-        setup() {
-          follower = useAgentCrdtFollower(
-            workflowId,
-            projectionWorkflowId,
-            () => undefined
-          )
-          return () => h('div')
-        }
-      })
-    )
-    const hostDoc = initDoc(new Y.Doc())
-    expect(follower.status.value).toMatchObject({
-      enabled: true,
-      workflowId: WORKFLOW_ID
-    })
-    expect(apiMock.send).toHaveBeenCalled()
-    projectionWorkflowId.value = WORKFLOW_ID
-    await nextTick()
-    addHostNode(hostDoc, 1, ORIGINAL_NOTE)
-    deliverDoc(hostDoc, 1)
-    expect(workflowId.value).toBeNull()
-    expect(follower.status.value.updatesApplied).toBe(1)
-    expect(appMock.graph?._nodes).toHaveLength(1)
-
-    projectionWorkflowId.value = null
-    await nextTick()
-    const otherGraph = new LGraph()
-    appMock.graph = otherGraph
-    const otherNode = createMarkdownNote()
-    otherNode.id = toNodeId(9)
-    otherNode.title = 'Other workflow'
-    otherGraph.add(otherNode)
-    appMock.graph = otherGraph
-    updateHostNote(hostDoc, 1, UPDATED_NOTE)
-    addHostNode(hostDoc, 2, 'Other note')
-    deliverDoc(hostDoc, 2)
-
-    expect(follower.status.value.workflowId).toBe(WORKFLOW_ID)
-    expect(otherGraph._nodes).toEqual([otherNode])
-
-    const restoredGraph = new LGraph()
-    appMock.graph = restoredGraph
-    const restoredNode = createMarkdownNote()
-    restoredNode.id = toNodeId(1)
-    restoredNode.title = 'Nano Banana 2'
-    restoredNode.has_errors = false
-    restoredGraph.add(restoredNode)
-    restoredNode.widgets![0].value = ORIGINAL_NOTE
-    appMock.graph = restoredGraph
-    projectionWorkflowId.value = WORKFLOW_ID
-    await nextTick()
-
-    expect(restoredGraph._nodes).toHaveLength(2)
-    expect(restoredGraph.getNodeById(toNodeId(1))).toBe(restoredNode)
-    expect(restoredNode.title).toBe('Nano Banana 2')
-    expect(restoredNode.has_errors).toBe(false)
-    expect(restoredNode.strokeStyles.error.call(restoredNode)).toBeUndefined()
-    expect(restoredNode.widgets![0]).toMatchObject({
-      name: 'text',
-      type: 'MARKDOWN',
-      value: UPDATED_NOTE
-    })
-    expect(restoredNode.serialize()).toMatchObject({
-      type: TEST_NODE_TYPE,
-      widgets_values: [UPDATED_NOTE],
-      widgets_values_named: { text: UPDATED_NOTE }
-    })
-    wrapper.unmount()
-  })
-
-  it.for([
-    ['without reconnect', false],
-    ['after reconnect', true]
-  ])(
-    'reconciles the exact canvas after a same-workflow doc reset %s',
-    async ([_label, reconnect]) => {
-      sessionStorage.setItem(DOC_ID_SESSION_KEY, WORKFLOW_ID)
-      const workflowId = ref<string | null>(WORKFLOW_ID)
-      const projectionWorkflowId = ref<string | null>(WORKFLOW_ID)
-      const wrapper = render(
-        defineComponent({
-          setup() {
-            useAgentCrdtFollower(
-              workflowId,
-              projectionWorkflowId,
-              () => undefined
-            )
-            return () => h('div')
-          }
-        })
-      )
-      const originalDoc = initDoc(new Y.Doc())
-      addHostNode(originalDoc, 1, ORIGINAL_NOTE)
-      addHostNode(originalDoc, 2, 'Removed by reset')
-      addHostNode(originalDoc, 3, 'Replaced by reset')
-      deliverDoc(originalDoc, 1)
-
-      const retained = appMock.graph!.getNodeById(toNodeId(1))!
-      const replaced = appMock.graph!.getNodeById(toNodeId(3))!
-      retained.title = 'Retained presentation'
-      retained.has_errors = false
-
-      projectionWorkflowId.value = null
-      await nextTick()
-      if (reconnect) apiMock.emit('reconnected', {})
-      apiMock.emit('doc_reset', {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: WORKFLOW_ID,
-        seq: 2
-      })
-      projectionWorkflowId.value = WORKFLOW_ID
-      await nextTick()
-
-      expect(appMock.graph!._nodes).toHaveLength(3)
-      expect(appMock.graph!.getNodeById(toNodeId(1))).toBe(retained)
-      expect(appMock.graph!.getNodeById(toNodeId(3))).toBe(replaced)
-
-      const replacementDoc = initDoc(new Y.Doc())
-      addHostNode(replacementDoc, 1, UPDATED_NOTE)
-      addHostNode(replacementDoc, 3, 'New note type', 'Note')
-      deliverDoc(replacementDoc, 3)
-
-      expect(appMock.graph!._nodes.map((node) => node.id)).toEqual([
-        toNodeId(1),
-        toNodeId(3)
-      ])
-      expect(appMock.graph!.getNodeById(toNodeId(1))).toBe(retained)
-      expect(retained.title).toBe('Retained presentation')
-      expect(retained.has_errors).toBe(false)
-      expect(retained.widgets![0].value).toBe(UPDATED_NOTE)
-      expect(appMock.graph!.getNodeById(toNodeId(2))).toBeUndefined()
-      expect(appMock.graph!.getNodeById(toNodeId(3))).not.toBe(replaced)
-      expect(appMock.graph!.getNodeById(toNodeId(3))?.type).toBe('Note')
-      wrapper.unmount()
+vi.mock('./layoutFollowerBridge', () => ({
+  LayoutFollowerBridge: class {
+    constructor() {
+      const bridge = new bridgeState.FakeBridge()
+      bridgeState.current = bridge
+      return bridge
     }
+  }
+}))
+
+vi.mock('./docFrameClient', () => ({
+  DocFrameClient: class {
+    destroy = clientState.destroy
+    sendOps = clientState.sendOps
+  }
+}))
+
+vi.mock('./ecsFollowerAdapter', () => ({
+  EcsFollowerAdapter: class {
+    bind = adapterState.bind
+    unbind = adapterState.unbind
+    applyFrame = adapterState.applyFrame
+    clearForReset = adapterState.clearForReset
+    discardPending = adapterState.discardPending
+    destroy = adapterState.destroy
+  }
+}))
+
+vi.mock('./agentNodeMaterializer', () => ({
+  reconcileAgentAdapters: materializerState.reconcileAgentAdapters
+}))
+
+vi.mock('./agentSubgraphDefinitions', () => ({
+  readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
+}))
+
+vi.mock('./devPanelLog', () => ({
+  recordDevEvent: vi.fn()
+}))
+
+vi.mock('@/scripts/api', () => ({ api: apiState.api }))
+vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({ userId: 'user-1' })
+}))
+
+import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+
+const graphMutations = {} as GraphMutations
+const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
+
+function persistedRecord(): {
+  docId: string
+  nonce: string
+  expiresAt: number
+} | null {
+  const raw = sessionStorage.getItem(DOC_ID_KEY)
+  return raw ? JSON.parse(raw) : null
+}
+
+function writeRawRecord(overrides: {
+  docId: string
+  nonce?: string
+  expiresAt?: number
+}): void {
+  const base = persistedRecord()
+  sessionStorage.setItem(
+    DOC_ID_KEY,
+    JSON.stringify({
+      docId: overrides.docId,
+      nonce: overrides.nonce ?? base?.nonce ?? 'foreign-nonce',
+      expiresAt: overrides.expiresAt ?? Date.now() + 60_000
+    })
   )
+}
 
-  it('waits for reconnect catch-up before projecting queued updates', async () => {
-    sessionStorage.setItem(DOC_ID_SESSION_KEY, WORKFLOW_ID)
-    const workflowId = ref<string | null>(WORKFLOW_ID)
-    const projectionWorkflowId = ref<string | null>(WORKFLOW_ID)
-    const wrapper = render(
-      defineComponent({
-        setup() {
-          useAgentCrdtFollower(
-            workflowId,
-            projectionWorkflowId,
-            () => undefined
-          )
-          return () => h('div')
-        }
-      })
-    )
-    const hostDoc = initDoc(new Y.Doc())
-    addHostNode(hostDoc, 1, ORIGINAL_NOTE)
-    deliverDoc(hostDoc, 1)
-    const retained = appMock.graph!.getNodeById(toNodeId(1))!
+function mountFollower(
+  initial: string | null = null,
+  initiallyActive = true,
+  getGraph: () => MaterializableGraph | null = () => null
+): {
+  unmount: () => void
+  workflowId: Ref<string | null>
+  isTargetActive: Ref<boolean>
+  status: () => AgentCrdtStatus
+} {
+  const workflowId = ref<string | null>(initial)
+  const isTargetActive = ref(initiallyActive)
+  let exposedStatus!: () => AgentCrdtStatus
+  const host = defineComponent({
+    setup() {
+      const { status } = useAgentCrdtFollower(
+        workflowId,
+        graphMutations,
+        () => null,
+        isTargetActive,
+        getGraph
+      )
+      exposedStatus = () => status.value as AgentCrdtStatus
+      return () => null
+    }
+  })
+  const { unmount } = render(host)
+  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+}
 
-    projectionWorkflowId.value = null
-    await nextTick()
-    updateHostNote(hostDoc, 1, UPDATED_NOTE)
-    deliverDoc(hostDoc, 2)
-    apiMock.emit('reconnected', {})
-    projectionWorkflowId.value = WORKFLOW_ID
-    await nextTick()
+function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
+  const current = bridgeState.current
+  if (!current) throw new Error('no bridge constructed')
+  return current
+}
 
-    expect(appMock.graph!.getNodeById(toNodeId(1))).toBe(retained)
-    expect(retained.widgets![0].value).toBe(ORIGINAL_NOTE)
+function dispatchFrame(type: string, detail: unknown): void {
+  bridge().dispatchEvent(new CustomEvent(type, { detail }))
+}
 
-    deliverDoc(hostDoc, 3)
-
-    expect(appMock.graph!.getNodeById(toNodeId(1))).toBe(retained)
-    expect(retained.widgets![0].value).toBe(UPDATED_NOTE)
-    wrapper.unmount()
+describe('useAgentCrdtFollower', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    sessionStorage.clear()
+    bridgeState.current = null
+    materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    definitionsState.readSubgraphDefinitions.mockClear()
   })
 
-  it('does not project a rejected reset lineage when its tab becomes active', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    sessionStorage.setItem(DOC_ID_SESSION_KEY, WORKFLOW_ID)
-    const workflowId = ref<string | null>(WORKFLOW_ID)
-    const projectionWorkflowId = ref<string | null>(WORKFLOW_ID)
-    let follower!: ReturnType<typeof useAgentCrdtFollower>
-    const wrapper = render(
-      defineComponent({
-        setup() {
-          follower = useAgentCrdtFollower(
-            workflowId,
-            projectionWorkflowId,
-            () => undefined
-          )
-          return () => h('div')
-        }
-      })
-    )
-    const originalDoc = initDoc(new Y.Doc())
-    addHostNode(originalDoc, 1, ORIGINAL_NOTE)
-    deliverDoc(originalDoc, 1)
-    const retained = appMock.graph!.getNodeById(toNodeId(1))!
+  it('subscribes immediately to a bound workflow and reports it in status', () => {
+    const { unmount, status } = mountFollower('wf-1')
 
-    projectionWorkflowId.value = null
-    await nextTick()
-    apiMock.emit('doc_reset', {
-      v: DOC_PROTOCOL_VERSION,
-      workflow_id: WORKFLOW_ID,
-      seq: 2
-    })
-    const rejectedDoc = initDoc(new Y.Doc())
-    metaMap(rejectedDoc).set('schema_version', 2)
-    addHostNode(rejectedDoc, 1, UPDATED_NOTE)
-    deliverDoc(rejectedDoc, 3)
-    projectionWorkflowId.value = WORKFLOW_ID
-    await nextTick()
-
-    expect(follower.status.value.lastFrameType).toBe('schema_error')
-    expect(appMock.graph!.getNodeById(toNodeId(1))).toBe(retained)
-    expect(retained.widgets![0].value).toBe(ORIGINAL_NOTE)
-    expect(error).toHaveBeenCalled()
-    error.mockRestore()
-    wrapper.unmount()
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
+    expect(status().enabled).toBe(true)
+    unmount()
   })
 
-  it('binds a fresh active target before subscribing and projecting', async () => {
-    const workflowId = ref<string | null>(null)
-    const projectionWorkflowId = ref<string | null>(null)
-    let follower!: ReturnType<typeof useAgentCrdtFollower>
-    const wrapper = render(
-      defineComponent({
-        setup() {
-          follower = useAgentCrdtFollower(
-            workflowId,
-            projectionWorkflowId,
-            (id) => {
-              workflowId.value = id
-              projectionWorkflowId.value = id
-            }
-          )
-          return () => h('div')
-        }
-      })
-    )
+  it('FE-1901: retries a refused subscribe with bounded exponential backoff', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
 
-    const poc = (window as unknown as Record<string, unknown>)
-      .__agentCrdtPoc as { bindDoc: (id: string) => void }
-    poc.bindDoc(WORKFLOW_ID)
+    dispatchFrame('doc_subscribed', { ok: false })
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(999)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+
+    // Six attempts is the budget: refusals beyond it schedule nothing.
+    for (let attempt = 2; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(60_000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    unmount()
+  })
+
+  it('FE-1901: a confirmed subscribe clears the retry timer', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    dispatchFrame('doc_subscribed', { ok: true })
+    // Below the staleness budget: anything firing here would be the retry.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('FE-1901: a workflow switch cancels the pending retry', () => {
+    vi.useFakeTimers()
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    workflowId.value = 'wf-2'
+    return Promise.resolve().then(async () => {
+      await Promise.resolve()
+      vi.advanceTimersByTime(60_000)
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+      expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
+      unmount()
+    })
+  })
+
+  it('FE-1902: persists a binding only once the server confirms it', () => {
+    const { unmount } = mountFollower('wf-1')
+    expect(persistedRecord()).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(persistedRecord()?.docId).toBe('wf-1')
+    unmount()
+  })
+
+  it('FE-1902: a remount with no in-memory binding rebinds from sessionStorage', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
+    unmount()
+  })
+
+  it('FE-1902: a real detach clears the persisted binding and unsubscribes', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(persistedRecord()?.docId).toBe('wf-1')
+
+    workflowId.value = null
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(persistedRecord()).toBeNull()
+    expect(bridge().unsubscribe).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('FEC-5: refuses a record from a different page session (e.g. a duplicated tab)', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    // Simulate sessionStorage cloned into a fresh tab: same docId, foreign nonce.
+    writeRawRecord({ docId: 'wf-1', nonce: 'a-different-page-session' })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses an expired record', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    const record = persistedRecord()
+    writeRawRecord({
+      docId: 'wf-1',
+      nonce: record?.nonce,
+      expiresAt: Date.now() - 1
+    })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses a legacy bare-string record', () => {
+    sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: a refused legacy record is dropped by the first unbound mount', () => {
+    sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
+
+    const { unmount } = mountFollower(null)
+
+    expect(sessionStorage.getItem(DOC_ID_KEY)).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: live doc traffic slides the persisted expiry', () => {
+    vi.useFakeTimers()
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const stampedAt = persistedRecord()?.expiresAt
+    expect(stampedAt).toBeTypeOf('number')
+
+    // Six minutes of steady updates: past the 5-minute TTL, but the channel is
+    // healthy so the stale probe never fires and nothing resubscribes.
+    for (let seq = 1; seq <= 18; seq++) {
+      vi.advanceTimersByTime(20_000)
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq,
+        actor: 'agent',
+        update: new Uint8Array()
+      })
+    }
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+    setup.unmount()
+    bridgeState.current = null
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
+    expect(status().workflowId).toBe('wf-1')
+    unmount()
+  })
+
+  it('FEC-5: only active-workflow op results slide the persisted expiry', () => {
+    vi.useFakeTimers()
+    const { isTargetActive, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    const stampedAt = persistedRecord()?.expiresAt
+    expect(stampedAt).toBeTypeOf('number')
+
+    vi.advanceTimersByTime(3 * 60 * 1000)
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-2', ok: true })
+    expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+
+    isTargetActive.value = false
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    expect(persistedRecord()?.expiresAt).toBe(stampedAt)
+
+    isTargetActive.value = true
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1', ok: true })
+    expect(persistedRecord()?.expiresAt).toBeGreaterThan(stampedAt ?? 0)
+    unmount()
+  })
+
+  it('FEC-5: an idle doc still expires', () => {
+    vi.useFakeTimers()
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+
+    vi.advanceTimersByTime(5 * 60 * 1000)
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('retains the follower and resubscribes on a socket reconnect', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(status().connected).toBe(false)
+    expect(bridge().resubscribe).toHaveBeenCalled()
+    expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('clears only for an explicit reset and rebinds after replacement', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'agent:turn',
+      seq: 43
+    })
+    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'agent:turn',
+      opId: 'doc-reset:43'
+    })
+
+    bridge().follower.updatesApplied = 3
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
+    expect(status().updatesApplied).toBe(3)
+
+    dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
+    expect(status().updatesApplied).toBe(3)
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+    expect(status().updatesApplied).toBe(0)
+    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'agent-lineage',
+      opId: 'follower-replaced:wf-1'
+    })
+    expect(adapterState.bind).toHaveBeenCalledTimes(2)
+    expect(adapterState.bind).toHaveBeenLastCalledWith(
+      'wf-1',
+      bridge().follower
+    )
+    unmount()
+  })
+
+  it('re-drives subscription intent on every status frame', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().reconcile).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('drops to disconnected on a schema error without touching the binding', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+    expect(status().connected).toBe(false)
+    expect(status().workflowId).toBe('wf-1')
+    expect(adapterState.discardPending).toHaveBeenCalledWith('wf-1')
+    unmount()
+  })
+
+  it('surfaces applied updates and the last frame type in status', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    bridge().follower.updatesApplied = 3
+
+    const update = { workflowId: 'wf-1', seq: 7 }
+    dispatchFrame('doc_update', update)
+
+    expect(status().updatesApplied).toBe(3)
+    expect(status().lastFrameType).toBe('doc_update')
+    expect(adapterState.applyFrame).toHaveBeenCalledWith(update)
+    unmount()
+  })
+
+  describe('s5-metrics-1: per-outcome counters', () => {
+    it('counts received and applied for a frame that passes the filter', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+      expect(status().outcomes).toEqual({
+        received: 1,
+        applied: 1,
+        skipped: 0,
+        errored: 0,
+        gap: 0,
+        reset: 0,
+        dropped: 0
+      })
+      unmount()
+    })
+
+    it('counts received and skipped for a frame from an unsubscribed workflow, without applying it', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-other', seq: 7 })
+
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      expect(adapterState.applyFrame).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('counts skipped, not applied, while the target is inactive', () => {
+      const { unmount, status } = mountFollower('wf-a', false)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 7 })
+
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+
+      expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+      expect(status().outcomes.received).toBe(1)
+      expect(status().outcomes.skipped).toBe(1)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('counts errored on a schema_error and does not touch applied/received', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+      expect(status().outcomes.errored).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      unmount()
+    })
+
+    it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
+
+      expect(status().outcomes.gap).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('counts dropped on the bridge doc_stale signal, which never becomes a doc_update', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_stale', { workflowId: 'wf-1', seq: 2 })
+
+      expect(status().outcomes.dropped).toBe(1)
+      expect(status().outcomes.received).toBe(0)
+      unmount()
+    })
+
+    it('counts reset on an explicit doc_reset for the bound workflow', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(status().outcomes.reset).toBe(1)
+      unmount()
+    })
+
+    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+      const { unmount, status } = mountFollower('wf-a', false)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-a',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(status().outcomes.reset).toBe(1)
+      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('does not double-count reset on the follower_replaced that follows a doc_reset', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+      dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+      expect(status().outcomes.reset).toBe(1)
+      unmount()
+    })
+
+    it('accumulates received/applied/skipped across mixed frames without resetting on unrelated activity', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+      dispatchFrame('doc_update', { workflowId: 'wf-other', seq: 2 })
+      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 2, received: 4 })
+      dispatchFrame('doc_stale', { workflowId: 'wf-1', seq: 1 })
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
+
+      expect(status().outcomes).toEqual({
+        received: 3,
+        applied: 2,
+        skipped: 1,
+        errored: 1,
+        gap: 1,
+        reset: 0,
+        dropped: 1
+      })
+      unmount()
+    })
+  })
+
+  describe('live-graph reconcile', () => {
+    // The materializer is module-mocked, so the graph only needs to be a
+    // distinct reference the composable hands through.
+    const fakeGraph = {} as MaterializableGraph
+    const { fakeDefinitions } = definitionsState
+
+    it('reconciles the live graph after every applied frame', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions
+      )
+      // Definitions come from the doc the bridge currently follows, so a
+      // doc_reset remint (which swaps the FollowerDoc) is read fresh.
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
+        bridge().follower.doc
+      )
+      unmount()
+    })
+
+    it('does not reconcile after a frame the adapter skipped', () => {
+      adapterState.applyFrame.mockReturnValueOnce(false)
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(status().outcomes.skipped).toBe(1)
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('skips the reconcile while no graph exists', () => {
+      // Default getGraph (no override) always returns null — mirrors the
+      // panel mounting before the root graph exists.
+      const { unmount } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reconciles once the graph appears, without waiting for another frame', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(1)
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions
+      )
+      unmount()
+    })
+
+    it('does not reconcile for a graph that appears while the target is inactive', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', false, () => graph.value)
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+      unmount()
+    })
+
+    it('reconciles when the target is activated after the graph became ready', async () => {
+      // The other readiness ordering: the graph arrives while inactive, so the
+      // `getGraph` watcher correctly skips it. Activation does not change the
+      // graph identity, so nothing re-triggers that watcher -- the reconcile
+      // has to happen where the active binding is established.
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount, isTargetActive } = mountFollower(
+        'wf-1',
+        false,
+        () => graph.value
+      )
+
+      graph.value = fakeGraph
+      await nextTick()
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions
+      )
+      unmount()
+    })
+
+    it('reconciles after a doc_reset clear, without waiting for another frame', () => {
+      // `clearForReset` empties the stores only. Every live adapter survives it
+      // and would be serialised back into a save until some later frame landed.
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+
+      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions
+      )
+      unmount()
+    })
+
+    it('reconciles after a follower_replaced clear', () => {
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions
+      )
+      unmount()
+    })
+
+    it('records a dev event only when nodes were materialized', async () => {
+      const { recordDevEvent } = await import('./devPanelLog')
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 10 })
+
+      const materializedEvents = vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(
+          ([event]) => event === 'agent_node_adapters_materialized'
+        )
+      expect(materializedEvents).toEqual([
+        [
+          'agent_node_adapters_materialized',
+          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
+        ]
+      ])
+      unmount()
+    })
+  })
+
+  it('suspends a background target and catches up only after it becomes active', async () => {
+    const { unmount, isTargetActive } = mountFollower('wf-a', false)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 7 })
+    expect(adapterState.applyFrame).not.toHaveBeenCalled()
+
+    isTargetActive.value = true
+    await nextTick()
+    expect(bridge().subscribe).toHaveBeenCalledWith('wf-a')
+
+    const catchUp = { workflowId: 'wf-a', seq: 8 }
+    dispatchFrame('doc_update', catchUp)
+    expect(adapterState.applyFrame).toHaveBeenCalledWith(catchUp)
+    unmount()
+  })
+
+  it('sends minted human operations through the doc client', () => {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'delete_node',
+        node_id: '1',
+        removed_links: []
+      }
+    ])
+
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
+    )
+    unmount()
+  })
+
+  it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    // The real bridge clears its send reality on doc_subscribed{ok:false}
+    // (LayoutFollowerBridge.onDocSubscribed); FakeBridge does not, so mirror
+    // that effect by hand. The sender gates on this value alone.
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const settledStates = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as { state: string }).state)
+    expect(settledStates).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  it('a refused subscription settles the in-flight batch undeliverable immediately, without waiting the resend (residual of #16637)', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    // Mirror the real bridge's onDocSubscribed: it clears send reality
+    // BEFORE dispatching the event (layoutFollowerBridge.ts), so the
+    // composable's onSubscribed handler observes the clear synchronously.
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-1' })
+
+    // No timer advance: the refusal itself is the abort signal.
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const settledStates = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as { state: string }).state)
+    expect(settledStates).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  it('a doc switch settles the in-flight batch for the old doc undeliverable immediately, without waiting the resend', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    // Mirror the real bridge's reconcile(): a changed desired doc clears send
+    // reality synchronously inside subscribe()/unsubscribe().
+    bridge().subscribe.mockImplementation((next: string) => {
+      bridge().subscribedWorkflowId = next === 'wf-1' ? 'wf-1' : null
+    })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    workflowId.value = 'wf-2'
     await nextTick()
 
-    const hostDoc = initDoc(new Y.Doc())
-    addHostNode(hostDoc, 1)
-    deliverDoc(hostDoc, 1)
-    expect(follower.status.value).toMatchObject({
-      workflowId: WORKFLOW_ID,
-      updatesApplied: 1
+    // No timer advance: the retarget itself is the abort signal.
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const settledStates = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as { state: string }).state)
+    expect(settledStates).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('any doc-scoped frame slides the staleness window forward', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('never probes an unconfirmed binding (refused subscribe, switch, reconnect)', async () => {
+    vi.useFakeTimers()
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    // Never confirmed: no probe however long the silence.
+    vi.advanceTimersByTime(STALE_AFTER_MS * 3)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    // Confirmed then switched: the switch cancels the armed probe.
+    dispatchFrame('doc_subscribed', { ok: true })
+    workflowId.value = 'wf-2'
+    await Promise.resolve()
+    await Promise.resolve()
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    // Confirmed then reconnected: the reconnect's own resubscribe path owns
+    // recovery; the heartbeat stays disarmed until the next confirm.
+    dispatchFrame('doc_subscribed', { ok: true })
+    bridge().resubscribe.mockClear()
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    const reconnectResubscribes = bridge().resubscribe.mock.calls.length
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
+    unmount()
+  })
+
+  it('tears down totally on unmount, even when the bridge destroy throws', () => {
+    // Vue routes an onBeforeUnmount throw through the app error channel, so
+    // the throw is absorbed there; the contract under test is that the
+    // client teardown and listener removal still ran.
+    const hookErrors: unknown[] = []
+    const workflowId = ref<string | null>('wf-1')
+    const host = defineComponent({
+      setup() {
+        useAgentCrdtFollower(workflowId, graphMutations)
+        return () => null
+      }
     })
-    expect(appMock.graph?._nodes).toHaveLength(1)
-    wrapper.unmount()
+    const { unmount } = render(host, {
+      global: {
+        config: {
+          errorHandler: (error: unknown) => {
+            hookErrors.push(error)
+          }
+        }
+      }
+    })
+    bridge().destroy.mockImplementation(() => {
+      throw new Error('half-dead bridge')
+    })
+
+    unmount()
+
+    expect(String(hookErrors[0])).toContain('half-dead bridge')
+    expect(clientState.destroy).toHaveBeenCalled()
+    expect(adapterState.destroy).toHaveBeenCalled()
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'reconnected',
+      expect.any(Function)
+    )
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'status',
+      expect.any(Function)
+    )
   })
 })

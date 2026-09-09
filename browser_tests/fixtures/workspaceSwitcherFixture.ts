@@ -76,7 +76,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
     )
     await page.route('**/api/billing/capabilities', async (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
-      const token = route.request().headers().authorization
+      const token = await route.request().headerValue('authorization')
       const prefix = 'Bearer mock-workspace-token-'
       const workspaceId = token?.startsWith(prefix)
         ? token.slice(prefix.length)

@@ -469,22 +469,39 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { permissions } = useWorkspaceUI()
 
-const canSubscribeSelfServe = computed(() =>
-  isCloud
-    ? capabilities.canSubscribeSelfServe.value
-    : permissions.value.canManageSubscription
-)
-const canChangeSeats = computed(() =>
-  isCloud
-    ? capabilities.canChangeSeats.value
-    : permissions.value.canManageSubscription
-)
-const canDowngradeToPersonal = computed(() =>
-  isCloud
-    ? capabilities.canDowngradeToPersonal.value
-    : permissions.value.canDowngradeToPersonal
+// Every CTA here resolves to a billing write the server authorizes on its own,
+// so each catalog asks whether any write that reaches it is permitted instead of
+// mapping each card to one capability itself — that mapping is policy, and the
+// response carries no plan dimension to derive it from. An unresolved snapshot
+// is not a denial: the CTA stays live and the checkout endpoint answers, the
+// same trade canOpenPricingSurface and canTopUp already make.
+//
+// The team catalog is not reachable by downgrading to personal, so its gate
+// stops at the three writes that do reach it.
+const lifecycleActionPermitted = computed(() => {
+  if (!isCloud) return permissions.value.canManageSubscription
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return (
+    capabilities.canSubscribeSelfServe.value ||
+    capabilities.canChangeSeats.value ||
+    capabilities.canReactivate.value
+  )
+})
+
+// Read on its own by the plan-scope toggle, which offers or withholds the whole
+// personal catalog rather than one CTA, so it keeps its own capability.
+const canDowngradeToPersonal = computed(() => {
+  if (!isCloud) return permissions.value.canDowngradeToPersonal
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return capabilities.canDowngradeToPersonal.value
+})
+
+// A personal card is reachable by one further write the team catalog has no
+// counterpart for: leaving a team plan.
+const personalPlanActionPermitted = computed(
+  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
 )
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
@@ -658,6 +675,12 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 // held must not read as current — it is buyable again.
 const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
+// An active current plan has nothing to transition to, which describes the card
+// rather than the actor's permission — so it stays a client-side check while
+// permission comes from lifecycleActionPermitted.
+const offersTransition = (isCurrent: boolean): boolean =>
+  !isCurrent || isCancelled.value
+
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
@@ -761,14 +784,17 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-const isTeamButtonDisabled = computed(() => {
-  if (isLoading) return true
-  if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
-  if (isTeamCurrentPlanSelected.value) {
-    return !isCancelled.value || !canReactivatePlan.value
-  }
-  return !canChangeSeats.value
-})
+// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
+// subscription still reports, so it only means "current plan" while the team
+// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
+const isTeamButtonDisabled = computed(
+  () =>
+    isLoading ||
+    !offersTransition(
+      isTeamSubscribed.value && isTeamCurrentPlanSelected.value
+    ) ||
+    !lifecycleActionPermitted.value
+)
 
 // A subscriber moving off their current plan is a prorated change rather than a
 // fresh subscribe; re-subscribe and the locked current plan exit before the
@@ -852,16 +878,10 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
-  if (!canSelectPersonalPlan.value) return false
-  if (isTeamPlan.value) return canDowngradeToPersonal.value
-  if (isCurrentPlan(tierKey)) {
-    return isCancelled.value && canReactivatePlan.value
-  }
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? canChangeSeats.value
-    : canSubscribeSelfServe.value
-}
+const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
+  canSelectPersonalPlan.value &&
+  offersTransition(isCurrentPlan(tierKey)) &&
+  personalPlanActionPermitted.value
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
   isLoading || !canUsePersonalPlanAction(tier.key)

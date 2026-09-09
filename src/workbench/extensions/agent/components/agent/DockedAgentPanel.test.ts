@@ -4,36 +4,36 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
+import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { AgentRestClient } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => undefined
 }))
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+
+const fetchApi = vi.hoisted(() =>
+  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
+)
+vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
 
 const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
 
 vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
-  const { defineComponent, h, onBeforeUnmount, onUnmounted } =
-    await import('vue')
-  const { useAgentSession } =
-    await import('@/workbench/extensions/agent/composables/agent/useAgentSession')
-  const unusedRest = async (): Promise<never> => {
-    throw new Error('rest is unused in this harness')
-  }
-  const rest: AgentRestClient = {
-    postMessage: unusedRest,
-    getMessages: async () => [],
-    listThreads: unusedRest,
-    listCloudWorkflows: unusedRest,
-    cancelMessage: unusedRest,
-    getDraft: unusedRest,
-    uploadImage: unusedRest
-  }
+  const { defineComponent, h, onUnmounted } = await import('vue')
   return {
     __esModule: true,
     default: defineComponent({
@@ -41,12 +41,6 @@ vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
       setup() {
         rootLiveness.live++
         rootLiveness.maxLive = Math.max(rootLiveness.maxLive, rootLiveness.live)
-        const session = useAgentSession({
-          rest,
-          events: { subscribe: () => () => {} }
-        })
-        session.start()
-        onBeforeUnmount(() => session.stop())
         onUnmounted(() => {
           rootLiveness.live--
         })
@@ -63,17 +57,24 @@ function openPanel() {
   return store
 }
 
+function renderPanel() {
+  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+}
+
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    fetchApi.mockReset()
+    fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
+    vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
   })
 
   it('docks the panel at the store width when enabled and open', async () => {
     const store = openPanel()
-    render(DockedAgentPanel)
+    renderPanel()
 
     const container = screen.getByTestId('docked-agent-panel')
     expect(container.style.width).toBe(`${store.width}px`)
@@ -85,9 +86,34 @@ describe('DockedAgentPanel', () => {
     ).toBeTruthy()
   })
 
+  it('restores the server run mode when the panel initializes', async () => {
+    fetchApi.mockResolvedValueOnce(
+      jsonResponse(200, { mode: 'auto_limited', credit_limit: 25 })
+    )
+    openPanel()
+    renderPanel()
+
+    const runMode = useAgentRunModeStore()
+    await vi.waitFor(() => expect(runMode.mode).toBe('auto_limited'))
+    expect(runMode.creditLimit).toBe(25)
+    expect(fetchApi).toHaveBeenCalledWith('/agent/run-mode', { method: 'GET' })
+  })
+
+  it('reports non-404 run mode load failures', async () => {
+    fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+    openPanel()
+    renderPanel()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_run_mode_load_failure'
+      })
+    )
+  })
+
   it('fills the panel shell and draws the canvas seam border', () => {
     openPanel()
-    render(DockedAgentPanel)
+    renderPanel()
 
     const shell = screen.getByTestId('docked-agent-panel-shell')
 
@@ -97,7 +123,7 @@ describe('DockedAgentPanel', () => {
   it('renders nothing while the panel is closed', () => {
     const store = openPanel()
     store.isOpen = false
-    render(DockedAgentPanel)
+    renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
@@ -105,7 +131,7 @@ describe('DockedAgentPanel', () => {
   it('renders nothing while the feature is disabled', () => {
     const store = openPanel()
     store.enabled = false
-    render(DockedAgentPanel)
+    renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
@@ -113,7 +139,7 @@ describe('DockedAgentPanel', () => {
   it('resizes via pointer drag on the handle, clamped to the width bounds', async () => {
     const store = openPanel()
     const user = userEvent.setup()
-    render(DockedAgentPanel)
+    renderPanel()
 
     const handle = screen.getByTestId('agent-panel-resize-handle')
     handle.setPointerCapture = () => {}
@@ -154,7 +180,7 @@ describe('DockedAgentPanel', () => {
       `
     })
 
-    render(DualHostHarness)
+    render(DualHostHarness, { global: { plugins: [i18n] } })
     await screen.findByTestId('agent-panel-root-stub')
     expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
 
@@ -165,7 +191,8 @@ describe('DockedAgentPanel', () => {
 
     linearMode.value = true
     await nextTick()
-    expect(rootLiveness.maxLive).toBe(2)
+    await vi.waitFor(() => expect(rootLiveness.live).toBe(1))
+    expect(rootLiveness.maxLive).toBe(1)
     expect(rootLiveness.live).toBe(1)
     expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
     await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))
@@ -174,6 +201,7 @@ describe('DockedAgentPanel', () => {
 
     linearMode.value = false
     await nextTick()
+    await vi.waitFor(() => expect(rootLiveness.live).toBe(1))
     expect(rootLiveness.live).toBe(1)
     expect(screen.getAllByTestId('docked-agent-panel')).toHaveLength(1)
     await vi.waitFor(() => expect(conversation.activeTurnId).toBe('turn-live'))

@@ -27,8 +27,6 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
-  INodeOutputSlot,
-  IWidget,
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
@@ -39,6 +37,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -90,7 +89,7 @@ async function reencodeAsPngBlob(
   width: number,
   height: number
 ): Promise<Blob> {
-  const canvas = $el('canvas', { width, height }) as HTMLCanvasElement
+  const canvas = $el('canvas', { width, height })
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not get canvas context')
 
@@ -302,31 +301,40 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const {
-      widget,
-      minWidth = 1,
-      minHeight = 1
-    } = widgetConstructor(
+    const widgetsBefore = new Set(node.widgets ?? [])
+    const result = widgetConstructor(
       node,
       inputName,
       transformInputSpecV2ToV1(widgetInputSpec),
       app
-    ) ?? {}
-
-    if (widget) {
-      widget.label = resolveLabel(
-        widget.label ?? widgetInputSpec.display_name ?? inputName
-      )
-      widget.options ??= {}
-      Object.assign(widget.options, {
-        advanced: inputSpec.advanced,
-        hidden: inputSpec.hidden
-      })
-      if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
-      if (dynamic) widget.tooltip = inputSpec.tooltip
+    )
+    const wrappedResult = result && !('type' in result) ? result : undefined
+    const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
+    const returnedWidget = result && 'type' in result ? result : result?.widget
+    if (returnedWidget) {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
+      returnedWidget.options ??= {}
     }
+    const widget =
+      (node.widgets ?? []).find(
+        (candidate) =>
+          candidate === returnedWidget ||
+          (!widgetsBefore.has(candidate) &&
+            (!returnedWidget || candidate.name === returnedWidget.name))
+      ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
+    if (!widget) return
 
-    if (!widget?.options?.socketless) {
+    widget.label = resolveLabel(
+      widget.label ?? widgetInputSpec.display_name ?? inputName
+    )
+    Object.assign(widget.options, {
+      advanced: inputSpec.advanced,
+      hidden: inputSpec.hidden
+    })
+    if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
+    if (dynamic) widget.tooltip = inputSpec.tooltip
+
+    if (!widget.options.socketless) {
       const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
@@ -484,21 +492,17 @@ export const useLitegraphService = () => {
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? ({
+              ? {
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                } as ISerialisableNodeOutput)
-              : outputAsSerialisable(
-                  output as INodeOutputSlot & { widget?: IWidget },
-                  this,
-                  index
-                )
+                }
+              : outputAsSerialisable(output, this, index)
           }
         )
 
         data.widgets_values = migrateWidgetsValues(
           ComfyNode.nodeData.inputs,
-          this.widgets ?? [],
+          this.widgets,
           data.widgets_values ?? []
         )
 
@@ -591,15 +595,11 @@ export const useLitegraphService = () => {
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? ({
+              ? {
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                } as ISerialisableNodeOutput)
-              : outputAsSerialisable(
-                  output as INodeOutputSlot & { widget?: IWidget },
-                  this,
-                  index
-                )
+                }
+              : outputAsSerialisable(output, this, index)
           }
         )
 
@@ -881,7 +881,7 @@ export const useLitegraphService = () => {
         if (e.key === 'ArrowLeft') {
           // @ts-expect-error fixme ts strict error
           this.imageIndex -= 1
-        } else if (e.key === 'ArrowRight') {
+        } else {
           // @ts-expect-error fixme ts strict error
           this.imageIndex += 1
         }
@@ -899,7 +899,7 @@ export const useLitegraphService = () => {
         handled = true
       }
 
-      if (handled === true) {
+      if (handled) {
         e.preventDefault()
         e.stopImmediatePropagation()
         return false
@@ -950,18 +950,16 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
-    if (!graph || !node) return null
+    if (!node) return null
 
     graph.add(node, addOptions)
     return node
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const visibleArea = app.canvas?.ds?.visible_area
-    if (!visibleArea) {
-      return [0, 0]
-    }
+    const dpi = Math.max(window.devicePixelRatio || 1, 1)
+    if (!app.isGraphReady) return [0, 0]
+    const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }

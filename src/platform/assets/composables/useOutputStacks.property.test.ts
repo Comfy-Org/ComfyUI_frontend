@@ -6,10 +6,7 @@ import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  getOutputKey: () => null,
-  resolveOutputAssetItems: () => Promise.resolve([])
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
 
 vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: (metadata: Record<string, unknown> | undefined) => {

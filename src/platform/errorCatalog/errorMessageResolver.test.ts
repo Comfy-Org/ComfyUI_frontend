@@ -624,20 +624,21 @@ describe('errorMessageResolver', () => {
     })
   })
 
-  it('resolves the agent draft-apply failure to overlay copy', () => {
+  it('resolves an agent transport failure to overlay copy', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'prompt',
         isCloud: true,
         error: {
-          type: 'agent_draft_apply_failed',
-          message: "Couldn't apply the agent's draft to the canvas",
-          details: 'Validation error: Required at "version"'
+          type: 'apply_failed',
+          message: 'An agent edit could not be applied',
+          details: 'op_rejected: unknown_widget at seed'
         }
       })
     ).toEqual({
-      displayTitle: "Couldn't apply agent changes",
-      displayMessage: "Couldn't apply the agent's draft to the canvas."
+      displayTitle: 'Agent edit failed',
+      displayMessage:
+        'An agent edit could not be applied to the workflow document.'
     })
   })
 

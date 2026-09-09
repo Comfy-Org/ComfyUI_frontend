@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISlotType,
@@ -123,7 +123,6 @@ function writePromotedWidgetValue(
   value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 
@@ -195,7 +194,6 @@ describe('SubgraphWidgetPromotion', () => {
         }
       }
       LiteGraph.registerNodeType(sourceType, SourceNode)
-      onTestFinished(() => LiteGraph.unregisterNodeType(sourceType))
       registerTestSubgraphNodeTypes(rootGraph)
 
       const source = LiteGraph.createNode(sourceType)
@@ -443,8 +441,7 @@ describe('SubgraphWidgetPromotion', () => {
       expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
       expect(subgraphNode.widgets).toHaveLength(1)
-      expect(repromotions).toHaveLength(1)
-      expect(repromotions[0]).toBe(secondWidget)
+      expect(repromotions).toStrictEqual([secondWidget])
       // Re-resolution deliberately keeps the store-backed value (see
       // widgetValueStore.registerWidget): rebinding must not clobber the
       // promoted value the user may have edited.

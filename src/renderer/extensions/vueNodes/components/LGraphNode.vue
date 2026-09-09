@@ -425,7 +425,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
   if (event.altKey && node && !agentNodeSelectionStore.isActive) {
     const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created?.length) {
+    if (result?.created.length) {
       const [newNode] = result.created
       const newNodeId =
         typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
@@ -677,7 +677,7 @@ const showAdvancedInputsButton = computed(() => {
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
     const renderState = widgetValueStore.getWidgetRenderState(id)
     const widgetState = widgetValueStore.getWidget(id)
-    return renderState?.advanced ?? widgetState?.options?.advanced
+    return renderState?.advanced ?? widgetState?.options.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'

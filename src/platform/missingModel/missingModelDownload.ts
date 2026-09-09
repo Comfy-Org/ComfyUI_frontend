@@ -125,7 +125,9 @@ export function downloadModel(
   if (!isModelDownloadable(model)) return
 
   const desktop2Bridge = window.__comfyDesktop2
-  if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
+  const isRemote =
+    desktop2Bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  if (desktop2Bridge?.downloadModel && !isRemote) {
     void startDesktop2ModelDownload(desktop2Bridge, model)
     return
   }
@@ -136,7 +138,7 @@ export function downloadModel(
   }
 
   const modelPaths = paths[model.directory]
-  if (modelPaths?.[0]) {
+  if (modelPaths[0]) {
     useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
     void useElectronDownloadStore().start({
       url: model.url,
@@ -198,7 +200,7 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     }
 
     const data: CivitaiModelVersionResponse = await res.json()
-    const matchingFile = data.files?.find((file) => {
+    const matchingFile = data.files.find((file) => {
       const downloadUrl = file.downloadUrl
       return (
         typeof downloadUrl === 'string' &&

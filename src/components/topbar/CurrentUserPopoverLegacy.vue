@@ -47,6 +47,7 @@
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
             :workspace-name="workspaceName"
+            :subscription-tier="tier"
           />
           <span class="truncate text-sm text-base-foreground">
             {{ workspaceName }}
@@ -242,7 +243,9 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  settingsDialog.show('credits')
+  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
+  // hidden from the settings menu and only reachable by key.
+  settingsDialog.show('workspace')
   emit('close')
 }
 

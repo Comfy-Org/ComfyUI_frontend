@@ -9,6 +9,7 @@ import type {
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
+import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
@@ -30,7 +31,7 @@ interface UserEntry {
 export type ConversationEntry = UserEntry | AssistantMessage
 
 interface BackgroundTurn {
-  turnId: TurnId
+  messageId: TurnId
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
@@ -122,7 +123,7 @@ export const useAgentConversationStore = defineStore(
       }
       if (eventThreadId === undefined) return
       const entry = backgroundTurns.get(eventThreadId)
-      if (!entry || entry.turnId !== event.data.message_id) return
+      if (!entry || entry.messageId !== event.data.message_id) return
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
         entry.settled = true
@@ -144,10 +145,10 @@ export const useAgentConversationStore = defineStore(
         return
       }
       backgroundTurns.set(threadId.value, {
-        turnId: activeTurnId.value,
+        messageId: activeTurnId.value,
         message: liveMessage,
         transport,
-        userText: userTexts.value.get(activeTurnId.value),
+        userText: userTexts.value.get(liveMessage.id),
         settled: false
       })
       clearActive()
@@ -162,7 +163,7 @@ export const useAgentConversationStore = defineStore(
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
-      const kept = messages.value.filter((m) => m.id !== entry.turnId)
+      const kept = messages.value.filter((m) => m.id !== entry.message.id)
       const last = kept.at(-1)
       let poppedHydratedCopy = false
       if (
@@ -179,23 +180,26 @@ export const useAgentConversationStore = defineStore(
       if (
         entry.settled &&
         !poppedHydratedCopy &&
-        hydratedMessageIds.has(entry.turnId)
+        hydratedMessageIds.has(entry.messageId)
       )
         return
-      if (entry.userText !== undefined && !userTexts.value.has(entry.turnId))
-        userTexts.value.set(entry.turnId, entry.userText)
+      if (
+        entry.userText !== undefined &&
+        !userTexts.value.has(entry.message.id)
+      )
+        userTexts.value.set(entry.message.id, entry.userText)
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
       activeIndex.value = index
-      activeTurnId.value = entry.turnId
+      activeTurnId.value = entry.messageId
       transport = entry.transport
       liveMessage = entry.message
     }
 
     function settleBackgroundTurn(turnId: string): void {
       for (const [key, entry] of backgroundTurns) {
-        if (entry.turnId !== turnId) continue
+        if (entry.messageId !== turnId) continue
         entry.transport.settle()
         backgroundTurns.delete(key)
         return
@@ -236,43 +240,22 @@ export const useAgentConversationStore = defineStore(
 
     function hydrate(history: AgentMessages): void {
       clearActive()
-      const texts = new Map<TurnId, string>()
-      const assistants = new Map<TurnId, AssistantMessage>()
-      const turnOrder: TurnId[] = []
-      const seenTurns = new Set<TurnId>()
-      const rowIds = new Set<string>()
-      for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
-        const turnId = row.turn_id as TurnId
-        rowIds.add(row.id)
-        if (!seenTurns.has(turnId)) {
-          seenTurns.add(turnId)
-          turnOrder.push(turnId)
-        }
-        const text =
-          typeof row.content?.text === 'string' ? row.content.text : ''
-        if (row.role === 'user') texts.set(turnId, text)
-        if (row.role === 'assistant') {
-          const message =
-            assistants.get(turnId) ?? createAssistantMessage(turnId)
-          message.streaming = false
-          if (text)
-            message.parts = [
-              ...message.parts,
-              { type: 'text', text, state: 'done' }
-            ]
-          assistants.set(turnId, message)
-        }
-      }
-      messages.value = turnOrder.map((turnId) => {
-        const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-        message.streaming = false
-        return message
-      })
-      userTexts.value = texts
+      const transcript = normalizeAgentTranscript(history)
+      messages.value = transcript.messages
+      userTexts.value = transcript.userTexts
       userTags.value = new Map()
-      hydratedMessageIds = rowIds
-      hydratedAssistantTurnIds = new Set(assistants.keys())
+      hydratedMessageIds = transcript.rowIds
+      hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
+      if (transcript.pending) {
+        liveMessage = transcript.pending.message
+        activeIndex.value = messages.value.indexOf(transcript.pending.message)
+        activeTurnId.value = transcript.pending.messageId
+        transport = createAgentEventTransport(
+          transcript.pending.message,
+          replaceActive
+        )
+      }
     }
 
     const entries = computed<ConversationEntry[]>(() =>

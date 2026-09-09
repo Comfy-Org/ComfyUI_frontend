@@ -238,7 +238,7 @@ describe('useLoad3dViewer', () => {
         value: ''
       })
       ;(
-        mockNode.properties!['Scene Config'] as Record<string, unknown>
+        mockNode.properties['Scene Config'] as Record<string, unknown>
       ).backgroundImage = 'test-image.jpg'
 
       const viewer = useLoad3dViewer(mockNode)
@@ -379,31 +379,31 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
       ;(
-        mockNode.properties!['Scene Config'] as Record<string, unknown>
+        mockNode.properties['Scene Config'] as Record<string, unknown>
       ).backgroundColor = '#ff0000'
       ;(
-        mockNode.properties!['Scene Config'] as Record<string, unknown>
+        mockNode.properties['Scene Config'] as Record<string, unknown>
       ).showGrid = false
 
       viewer.restoreInitialState()
 
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .backgroundColor
       ).toBe('#282828')
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .showGrid
       ).toBe(true)
       expect(
-        (mockNode.properties!['Camera Config'] as Record<string, unknown>)
+        (mockNode.properties['Camera Config'] as Record<string, unknown>)
           .cameraType
       ).toBe('perspective')
       expect(
-        (mockNode.properties!['Camera Config'] as Record<string, unknown>).fov
+        (mockNode.properties['Camera Config'] as Record<string, unknown>).fov
       ).toBe(75)
       expect(
-        (mockNode.properties!['Light Config'] as Record<string, unknown>)
+        (mockNode.properties['Light Config'] as Record<string, unknown>)
           .intensity
       ).toBe(1)
     })
@@ -414,13 +414,13 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
       ;(
-        mockNode.properties!['Model Config'] as Record<string, unknown>
+        mockNode.properties['Model Config'] as Record<string, unknown>
       ).futureField = 'preserve-me'
 
       viewer.restoreInitialState()
 
       expect(
-        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+        (mockNode.properties['Model Config'] as Record<string, unknown>)
           .futureField
       ).toBe('preserve-me')
     })
@@ -440,11 +440,11 @@ describe('useLoad3dViewer', () => {
 
       expect(result).toBe(true)
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .backgroundColor
       ).toBe('#ff0000')
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .showGrid
       ).toBe(false)
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
@@ -484,13 +484,13 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
       ;(
-        mockNode.properties!['Model Config'] as Record<string, unknown>
+        mockNode.properties['Model Config'] as Record<string, unknown>
       ).futureField = 'preserve-me'
 
       await viewer.applyChanges()
 
       expect(
-        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+        (mockNode.properties['Model Config'] as Record<string, unknown>)
           .futureField
       ).toBe('preserve-me')
     })
@@ -741,7 +741,7 @@ describe('useLoad3dViewer', () => {
       mockSourceLoad3d.cameraManager = {
         perspectiveCamera: { fov: 75 }
       } as Partial<Load3d['cameraManager']> as Load3d['cameraManager']
-      delete (mockNode.properties!['Camera Config'] as Record<string, unknown>)
+      delete (mockNode.properties['Camera Config'] as Record<string, unknown>)
         .cameraType
 
       const viewer = useLoad3dViewer(mockNode)
@@ -865,7 +865,7 @@ describe('useLoad3dViewer', () => {
 
   describe('gizmo controls', () => {
     it('should initialize gizmo state from node model config', async () => {
-      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+      ;(mockNode.properties['Model Config'] as Record<string, unknown>).gizmo =
         {
           enabled: true,
           mode: 'rotate'
@@ -901,7 +901,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.applyChanges()
 
-      const modelConfig = mockNode.properties!['Model Config'] as Record<
+      const modelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >
@@ -924,7 +924,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.applyChanges()
 
-      const modelConfig = mockNode.properties!['Model Config'] as Record<
+      const modelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >
@@ -949,7 +949,7 @@ describe('useLoad3dViewer', () => {
 
       viewer.restoreInitialState()
 
-      const modelConfig = mockNode.properties!['Model Config'] as Record<
+      const modelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >

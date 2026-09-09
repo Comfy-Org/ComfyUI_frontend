@@ -46,7 +46,7 @@ export class SubgraphHelper {
       async (params) => {
         const { slotType, action, targetSlotName } = params
         const app = window.app!
-        const currentGraph = app.canvas!.graph!
+        const currentGraph = app.canvas.graph!
 
         // Check if we're in a subgraph
         if (!('inputNode' in currentGraph)) {
@@ -55,18 +55,14 @@ export class SubgraphHelper {
           )
         }
 
-        const subgraph = currentGraph as Subgraph
+        const subgraph = currentGraph
 
         // Get the appropriate node and slots
         const node =
           slotType === 'input' ? subgraph.inputNode : subgraph.outputNode
         const slots = slotType === 'input' ? subgraph.inputs : subgraph.outputs
 
-        if (!node) {
-          throw new Error(`No ${slotType} node found in subgraph`)
-        }
-
-        if (!slots || slots.length === 0) {
+        if (slots.length === 0) {
           throw new Error(`No ${slotType} slots found in subgraph`)
         }
 
@@ -105,8 +101,6 @@ export class SubgraphHelper {
 
         const tryRightClick = (): SlotInteractionResult => {
           for (const slot of slotsToTry) {
-            if (!slot.pos || !node.onPointerDown) continue
-
             const event = createCanvasPointerEvent(
               slot.pos[0],
               slot.pos[1],
@@ -130,11 +124,6 @@ export class SubgraphHelper {
 
         const tryDoubleClick = (): SlotInteractionResult => {
           const slot = slotsToTry[0]
-          if (!slot.boundingRect) {
-            throw new Error(`${slotType} slot bounding rect not found`)
-          }
-          if (!node.onPointerDown) return { success: false }
-
           const rect = slot.boundingRect
           const testX = rect[0] + rect[2] / 2 // x + width/2
           const testY = rect[1] + rect[3] / 2 // y + height/2
@@ -475,7 +464,7 @@ export class SubgraphHelper {
   /** ID of the root graph of the active workflow. */
   async getRootGraphId(): Promise<string | null> {
     return this.page.evaluate(
-      () => window.app!.canvas.graph?.rootGraph?.id ?? null
+      () => window.app!.canvas.graph?.rootGraph.id ?? null
     )
   }
 
@@ -502,9 +491,9 @@ export class SubgraphHelper {
 
   async countGraphPseudoPreviewEntries(): Promise<number> {
     return this.page.evaluate(() => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       return graph.nodes.reduce((count, node) => {
-        const proxyWidgets = node.properties?.proxyWidgets
+        const proxyWidgets = node.properties.proxyWidgets
         if (!Array.isArray(proxyWidgets)) return count
 
         return (
@@ -530,7 +519,7 @@ export class SubgraphHelper {
   /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */
   async getNodeCount(): Promise<number> {
     return this.page.evaluate(() => {
-      return window.app!.canvas.graph!.nodes?.length || 0
+      return window.app!.canvas.graph!.nodes.length || 0
     })
   }
 
@@ -538,7 +527,7 @@ export class SubgraphHelper {
     return this.page.evaluate((slotType: 'input' | 'output') => {
       const graph = window.app!.canvas.graph
       if (!graph || !('inputNode' in graph)) return 0
-      return graph[`${slotType}s`]?.length ?? 0
+      return graph[`${slotType}s`].length
     }, type)
   }
 
@@ -550,8 +539,9 @@ export class SubgraphHelper {
       ([slotType, idx]) => {
         const graph = window.app!.canvas.graph
         if (!graph || !('inputNode' in graph)) return null
-        const slot = graph[`${slotType}s`]?.[idx]
-        return slot?.label ?? slot?.name ?? null
+        const slot = graph[`${slotType}s`].at(idx)
+        if (!slot) return null
+        return slot.label || slot.name
       },
       [type, index] as const
     )
@@ -589,7 +579,7 @@ export class SubgraphHelper {
 
   async getBoundaryLinkSnapshot() {
     return this.page.evaluate(() => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       const host = graph.nodes.find((node) => node.isSubgraphNode())
       if (!host) {
         return {
@@ -632,7 +622,7 @@ export class SubgraphHelper {
 
   async serializeAndReload(): Promise<void> {
     const serialized = await this.page.evaluate(() =>
-      window.app!.graph!.serialize()
+      window.app!.graph.serialize()
     )
     await this.comfyPage.workflow.loadGraphData(serialized as ComfyWorkflowJSON)
   }

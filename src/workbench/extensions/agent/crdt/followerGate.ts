@@ -1,11 +1,12 @@
 /**
  * Runtime gate for the CRDT follower (R1a).
  *
- * The follower used to be gated ONLY by the build-time env
- * `VITE_AGENT_CRDT_FOLLOWER === 'true'`. Hosted predeploy builds inject only
- * the Stripe key, so every hosted preview bundle shipped with the follower
- * permanently inert — the only way to exercise the follow path was a local
- * dev-server build (`pnpm dev:cloud:crdt`).
+ * The follower is gated: with no URL param and no persisted opt-in it falls
+ * back to the build-time env `VITE_AGENT_CRDT_FOLLOWER === 'true'`, and hosted
+ * predeploy builds inject only the Stripe key, so a hosted preview bundle
+ * would ship with the follower permanently inert. On this chain the gate
+ * arrived with the follower itself, so there was never an env-only era to
+ * recover from, and there is no `dev:cloud:crdt` script here.
  *
  * This gate adds a per-session runtime opt-in so ANY built bundle can enable
  * the follower without a rebuild:
@@ -19,6 +20,8 @@
  * is wrapped: in a context that denies storage (private mode, sandboxed
  * iframe) the gate degrades to param/flag behaviour instead of throwing.
  */
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 export const FOLLOWER_STORAGE_KEY = 'Comfy.Agent.CrdtFollower'
 export const FOLLOWER_QUERY_PARAM = 'agentCrdtFollower'
@@ -52,7 +55,10 @@ export function resolveFollowerEnabled(input: FollowerGateInput): boolean {
 function tryGet(storage: FollowerGateInput['storage']): string | null {
   try {
     return storage?.getItem(FOLLOWER_STORAGE_KEY) ?? null
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
     return null
   }
 }
@@ -60,7 +66,10 @@ function tryGet(storage: FollowerGateInput['storage']): string | null {
 function trySet(storage: FollowerGateInput['storage'], value: string): void {
   try {
     storage?.setItem(FOLLOWER_STORAGE_KEY, value)
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
     // Storage denied: the session still enables via the param; it just will
     // not persist across navigations.
   }
@@ -69,7 +78,10 @@ function trySet(storage: FollowerGateInput['storage'], value: string): void {
 function tryRemove(storage: FollowerGateInput['storage']): void {
   try {
     storage?.removeItem(FOLLOWER_STORAGE_KEY)
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'agent_crdt_follower_storage_access_failed'
+    })
     // Storage denied: nothing was persisted, so nothing to clear.
   }
 }

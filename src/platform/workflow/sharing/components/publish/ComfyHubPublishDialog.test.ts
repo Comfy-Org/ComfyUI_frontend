@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -35,7 +37,7 @@ const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
-  () => ({ value: null }) as { value: Record<string, unknown> | null }
+  (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
 
 vi.mock(
@@ -123,7 +125,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
       directory: 'workflows',
       isTemporary: false,
       isModified: false
-    } as Record<string, unknown> | null
+    }
   })
   return {
     useWorkflowStore: () => ({

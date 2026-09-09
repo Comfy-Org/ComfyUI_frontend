@@ -58,6 +58,7 @@
             <WorkspaceProfilePic
               class="size-6 shrink-0 text-xs"
               :workspace-name="workspaceName"
+              :subscription-tier="activeWorkspace?.subscriptionTier"
             />
             <span class="truncate text-sm text-base-foreground">
               {{ workspaceName }}
@@ -279,9 +280,11 @@ const workspaceStore = useTeamWorkspaceStore()
 const {
   initState,
   workspaceName,
-  isInPersonalWorkspace: isPersonalWorkspace
+  isInPersonalWorkspace: isPersonalWorkspace,
+  activeWorkspace
 } = storeToRefs(workspaceStore)
-const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { permissions, canReactivatePlan, canOpenPricingSurface } =
+  useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
@@ -345,9 +348,7 @@ const displayedCredits = computed(() => {
   })
 })
 
-const showPlansAndPricing = computed(
-  () => permissions.value.canManageSubscription
-)
+const showPlansAndPricing = canOpenPricingSurface
 // Subscribing is a Cloud-only concept: Local users manage plan/credits
 // through settings instead (see showLocalPlansAndCredits below), regardless
 // of subscription status.

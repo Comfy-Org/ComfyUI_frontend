@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport } from './docFrameClient'
 import {
@@ -9,6 +11,8 @@ import {
 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+
+vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -41,11 +45,15 @@ describe('doc frame client', () => {
         v: 1,
         workflow_id: 'wf-1',
         seq: 1,
-        update_b64: encodeBase64(encoded)
+        update_b64: encodeBase64(encoded),
+        actor: 'agent:thread-1:turn-1',
+        op_ids: ['op-1', 'op-2']
       }
     })
     expect(frame?.type).toBe('doc_update')
     if (frame?.type !== 'doc_update') throw new Error('Expected doc_update')
+    expect(frame.data.actor).toBe('agent:thread-1:turn-1')
+    expect(frame.data.opIds).toEqual(['op-1', 'op-2'])
 
     const follower = new FollowerDoc()
     follower.applyRemoteUpdate(frame.data.update)
@@ -152,8 +160,8 @@ describe('doc frame client', () => {
     expect(
       frames.filter((frame) => frame.type === 'doc_subscribe')
     ).toHaveLength(3)
-    // The bridge holds semantic state in its FollowerDoc; SemanticProjector
-    // (ADR-009) renders it to the canvas. It must never write into layoutStore.
+    // The bridge holds semantic state in its FollowerDoc; the ECS adapter
+    // applies observed effects to domain stores, never into layoutStore's doc.
     expect(bridge.follower.doc.getMap('nodes').toJSON()).toEqual({ one: 1 })
   })
 
@@ -217,6 +225,36 @@ describe('doc frame client', () => {
         state: { cursor: [10, 20] },
         expiresAt: 123
       }
+    })
+  })
+
+  it('reports the first malformed inbound frame per type', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const listener = vi.fn()
+    client.addEventListener('doc_update', listener)
+
+    const malformed = {
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      update_b64: 'not-base64'
+    }
+    transport.receive('doc_update', malformed)
+    transport.receive('doc_update', malformed)
+    transport.receive('awareness', {})
+
+    expect(listener).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'doc_update' },
+      level: 'warning'
+    })
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'awareness' },
+      level: 'warning'
     })
   })
 })

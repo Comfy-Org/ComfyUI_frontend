@@ -1,5 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/platform/assets/composables/media/assetMappers')
 
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
@@ -21,7 +23,7 @@ describe(flattenNodeOutput, () => {
     expect(result).toEqual([])
   })
 
-  it('flattens images into ResultItemImpl instances', () => {
+  it('flattens images into result items', () => {
     const output = makeOutput({
       images: [
         { filename: 'a.png', subfolder: '', type: 'output' },
@@ -141,7 +143,6 @@ describe(flattenNodeOutput, () => {
     expect(result).toHaveLength(2)
     expect(result[0].filename).toBe('valid.png')
     expect(result[1].filename).toBe('no-subfolder.png')
-    expect(result[1].subfolder).toBe('')
   })
 
   it('excludes items missing filename', () => {

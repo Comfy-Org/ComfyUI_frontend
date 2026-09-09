@@ -1,8 +1,8 @@
 import type {
   AddCreditsClickMetadata,
   AgentEntryButtonClickedMetadata,
-  AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
+  AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -11,6 +11,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -19,6 +20,8 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -52,6 +55,7 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
@@ -100,6 +104,24 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     this.dispatch((provider) => provider.trackUnifiedAuthRetry?.(metadata))
+  }
+
+  trackUnifiedAuthRefresh(metadata: UnifiedAuthRefreshMetadata): void {
+    this.dispatch((provider) => provider.trackUnifiedAuthRefresh?.(metadata))
+  }
+
+  trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
+    this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    this.dispatch((provider) => provider.trackBootstrapComplete?.(metadata))
+  }
+
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    this.dispatch((provider) =>
+      provider.trackFeatureFlagEvaluation?.(key, value)
+    )
   }
 
   trackUserLoggedIn(): void {
@@ -381,6 +403,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackNamedValuesShadowDiffSummary?.(metadata)
     )
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {

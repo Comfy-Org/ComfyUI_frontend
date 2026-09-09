@@ -255,6 +255,51 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('422 left of 21K')
   })
 
+  // 1991 cents is what the backend grants for STANDARD's 4,200-credit
+  // allowance; reconstructing it yields 4,201, one above the plan (FE-1451).
+  it('clamps monthly remaining to the allowance instead of exceeding it', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.tier = 'STANDARD'
+    state.subscription = {
+      tier: 'STANDARD',
+      duration: 'MONTHLY',
+      renewalDate: '2026-08-30T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 1991,
+      cloudCreditBalanceMicros: 1991,
+      prepaidBalanceMicros: 0
+    }
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('4,200 left of 4,200')
+    expect(container.textContent).not.toContain('4,201 left of')
+    expect(container.textContent).toContain('0 used')
+    expect(container.textContent).toContain('4.2K left of 4.2K')
+  })
+
+  it('uses the Founder allowance fallback when clamping reconstructed credits', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.tier = 'FOUNDERS_EDITION'
+    state.subscription = {
+      tier: 'FOUNDERS_EDITION',
+      duration: 'MONTHLY',
+      renewalDate: '2026-08-30T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 2589,
+      cloudCreditBalanceMicros: 2589,
+      prepaidBalanceMicros: 0
+    }
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('5,463')
+    expect(container.textContent).toContain('5,461 left of 5,461')
+    expect(container.textContent).toContain('0 used')
+  })
+
   it('uses the full annual Team grant for the credit pool total', () => {
     state.canAccessSubscriptionFeatures = true
     state.subscription = {
@@ -353,8 +398,11 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows disabled credit details for an inactive plan', () => {
+  it('shows disabled credit details for an inactive plan even while top-up reads open', () => {
     activeProSubscription()
+    // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
+    // self-serve plan must keep this state on tier alone.
+    state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -363,6 +411,52 @@ describe('CreditsTile', () => {
       'Reactivate your plan to use these credits'
     )
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('keeps Add credits and the real balance on an inactive sales-managed plan', () => {
+    activeProSubscription()
+    // A sales-managed plan has no self-serve reactivation to sell, so the
+    // reactivate-to-use-credits treatment must not apply.
+    state.canTopUp = true
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Reactivate your plan to use these credits'
+    )
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('does not borrow a catalog monthly pool for an Enterprise plan', () => {
+    activeProSubscription()
+    state.tier = 'ENTERPRISE'
+    state.subscription = {
+      tier: 'ENTERPRISE',
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
+  })
+
+  it('does not borrow a catalog monthly pool for an unrecognized tier', () => {
+    activeProSubscription()
+    const galactic = 'GALACTIC' as unknown as SubscriptionInfo['tier']
+    state.tier = galactic
+    state.subscription = {
+      tier: galactic,
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
   })
 
   it('keeps top-up available without an active subscription', () => {

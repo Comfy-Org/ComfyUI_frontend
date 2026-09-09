@@ -151,14 +151,14 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     expect(mockCloseDialog).toHaveBeenCalled()
   })
 
-  it('shows the credits settings panel when subscriptions are disabled', async () => {
+  it('shows Plan & Credits when no billing rail is active', async () => {
     mockIsSubscriptionEnabled.mockReturnValue(false)
     mockPurchaseCreditsDirect.mockResolvedValue(undefined)
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('credits')
+    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
 
   it('shows the workspace settings panel when workspace billing is active', async () => {

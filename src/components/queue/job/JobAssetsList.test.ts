@@ -151,10 +151,10 @@ vi.mock('vue-i18n', () => {
 })
 
 type TestPreviewOutput = {
+  filename: string
+  mediaType: string
   url: string
   previewUrl: string
-  isImage: boolean
-  isVideo: boolean
 }
 
 type TestTaskRef = {
@@ -176,10 +176,10 @@ const createPreviewOutput = (
 ): TestPreviewOutput => {
   const url = `/api/view/${filename}`
   return {
+    filename,
+    mediaType,
     url,
-    previewUrl: mediaType === 'images' ? `${url}?res=512` : url,
-    isImage: mediaType === 'images',
-    isVideo: mediaType === 'video'
+    previewUrl: mediaType === 'images' ? `${url}?res=512` : url
   }
 }
 

@@ -5,7 +5,6 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   zAgentCancelAccepted,
-  zAgentDraftSnapshot,
   zAgentError,
   zAgentMessage,
   zAgentMessages,
@@ -18,7 +17,7 @@ const fixtureText = import.meta.glob('./__fixtures__/agent/*.jsonl', {
   query: '?raw',
   import: 'default',
   eager: true
-}) as Record<string, string>
+})
 
 function jsonlLines(path: string): unknown[] {
   return fixtureText[path]
@@ -42,6 +41,10 @@ interface RestLine {
 
 describe('agentApiSchema fixture gate', () => {
   describe('ws frames: every line is a valid agent event or a recognized-foreign frame', () => {
+    it('the ws fixture glob finds at least one capture', () => {
+      expect(wsPaths.length).toBeGreaterThan(0)
+    })
+
     it.for(wsPaths)('%s', (path) => {
       const lines = jsonlLines(path) as WsLine[]
       lines.forEach((line, index) => {
@@ -85,7 +88,6 @@ function restSchemaFor(line: RestLine): ZodTypeAny {
   if (line.status >= 400) return zAgentError
   if (line.op.startsWith('postMessage')) return zAgentTurnAccepted
   if (line.op.startsWith('getMessages')) return zAgentMessages
-  if (line.op.startsWith('getDraft')) return zAgentDraftSnapshot
   if (line.op.startsWith('cancelMessage')) return zAgentCancelAccepted
   throw new Error(`no schema mapped for op=${line.op} status=${line.status}`)
 }
@@ -141,13 +143,9 @@ describe('agentApiSchema contract subtleties', () => {
     }
   })
 
-  it('rejects draft_patch missing base_version', () => {
-    expect(
-      zAgentWsEvent.safeParse({
-        type: 'draft_patch',
-        data: { version: 2, content: {}, workflow_id: 'w1' }
-      }).success
-    ).toBe(false)
+  it('keeps draft frames foreign to this union', () => {
+    expect(isAgentEvent('draft_patch')).toBe(false)
+    expect(isAgentEvent('draft_version')).toBe(false)
   })
 
   it('rejects an unknown event type in the union while isAgentEvent stays false', () => {
@@ -159,36 +157,154 @@ describe('agentApiSchema contract subtleties', () => {
 
   it('accepts extra additive keys in event data', () => {
     const parsed = parseAgentWsEvent({
-      type: 'draft_version',
-      data: { version: 5, workflow_id: 'w1', future_field: true }
+      type: 'agent_active_tab',
+      data: { workflow_id: 'w1', future_field: true }
     })
     expect(parsed.success).toBe(true)
   })
 
-  it('exposes exactly the seven agent event types', () => {
+  it('accepts the canonical tool lifecycle and rejects the legacy shape', () => {
+    const data = {
+      tool_call_id: 'call-1',
+      tool_name: 'add_node',
+      message_id: 'm1',
+      thread_id: 't1'
+    }
+
+    for (const status of ['running', 'success', 'error']) {
+      expect(
+        zAgentWsEvent.safeParse({
+          type: 'agent_tool_call',
+          data: { ...data, status }
+        }).success
+      ).toBe(true)
+    }
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_tool_call',
+        data: { ...data, tool_call_id: undefined, status: 'success' }
+      }).success
+    ).toBe(false)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_tool_call',
+        data: { ...data, status: 'success', args: [] }
+      }).success
+    ).toBe(false)
+  })
+
+  it('exposes the Agent event types, including the ask lifecycle', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
         'agent_active_tab',
+        'agent_ask',
+        'agent_ask_resolved',
         'agent_message_delta',
         'agent_message_done',
         'agent_thinking',
-        'agent_tool_call',
-        'draft_patch',
-        'draft_version'
+        'agent_tool_call'
       ].sort()
     )
   })
 
-  it('parses agent_active_tab with an optional name and rejects a missing workflow_id', () => {
+  it('parses the additive run-approval ask and resolution contract', () => {
+    const pending = zAgentWsEvent.parse({
+      type: 'agent_ask',
+      data: {
+        thread_id: 'th-1',
+        message_id: 'message-1',
+        ask_id: 'turn-1:call-1',
+        kind: 'run_approval',
+        context: {
+          workflow_id: 'workflow-1',
+          workflow_name: 'Portrait workflow'
+        },
+        prompt: 'Run workflow “Portrait workflow”?',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+    expect(pending.type).toBe('agent_ask')
+
+    const resolved = zAgentWsEvent.parse({
+      type: 'agent_ask_resolved',
+      data: {
+        thread_id: 'th-1',
+        message_id: 'message-1',
+        ask_id: 'turn-1:call-1',
+        status: 'answered',
+        selected: ['run']
+      }
+    })
+    expect(resolved.type).toBe('agent_ask_resolved')
+  })
+
+  it('keeps a run-approval pending_ask on a hydrated assistant message', () => {
+    const parsed = zAgentMessage.parse({
+      id: 'message-1',
+      thread_id: 'th-1',
+      seq: 2,
+      role: 'assistant',
+      status: 'streaming',
+      turn_id: 'turn-1',
+      pending_ask: {
+        message_id: 'message-1',
+        ask_id: 'turn-1:call-1',
+        kind: 'run_approval',
+        context: {
+          workflow_id: 'workflow-1',
+          workflow_name: 'Portrait workflow'
+        },
+        prompt: 'Run workflow “Portrait workflow”?',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+
+    expect(parsed.pending_ask).toMatchObject({
+      kind: 'run_approval',
+      ask_id: 'turn-1:call-1'
+    })
+  })
+
+  it('parses agent_active_tab with an optional stable locator and rejects a missing workflow_id', () => {
     const parsed = zAgentWsEvent.safeParse({
       type: 'agent_active_tab',
-      data: { workflow_id: 'wf-1', thread_id: 'th-1' }
+      data: {
+        workflow_id: 'wf-1',
+        node_locator_id: '42',
+        thread_id: 'th-1'
+      }
     })
     expect(parsed.success).toBe(true)
+    if (parsed.success)
+      expect(parsed.data.data).toMatchObject({ node_locator_id: '42' })
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', thread_id: 'th-1' }
+      }).success
+    ).toBe(true)
     expect(
       zAgentWsEvent.safeParse({
         type: 'agent_active_tab',
         data: { thread_id: 'th-1' }
+      }).success
+    ).toBe(false)
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', node_locator_id: 'invalid:42' }
       }).success
     ).toBe(false)
   })

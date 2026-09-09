@@ -198,8 +198,8 @@ test('API Nodes sign-in dialog', async ({ comfyPage }) => {
   await expect(dialog.root.getByText('FluxProGenerate')).toBeVisible()
   await expect(dialog.root.getByText('StableDiffusion3Generate')).toBeVisible()
 
-  await dialog.cancel.click()
-  await expect(dialog.root).toBeHidden()
+  await comfyPage.page.keyboard.press('Escape')
+  await dialog.waitForHidden()
   expect(await dialogResult).toBe(false)
 })
 

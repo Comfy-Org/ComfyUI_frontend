@@ -145,6 +145,30 @@ function processWidgets({
   })
 }
 
+describe('widget slot ownership', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('does not assign a non-widget input socket to a same-named custom widget', () => {
+    const { graph, node } = createGraphWithNode([])
+    node.addInput('model', 'MODEL')
+    node.addWidget('custom', 'model', null, () => {})
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: undefined,
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toBeUndefined()
+  })
+})
+
 describe('widget visibility', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -440,6 +464,23 @@ describe('computeProcessedWidgets', () => {
     const result = processWidgets({ widgetIds: [id], rootGraph: graph })
 
     expect(result).toEqual([])
+  })
+
+  it('uses the legacy renderer for a customized draw method', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'stack_data')
+    registerWidgetState(id, { type: 'text' })
+    const widget = createMockWidget({
+      widgetId: id,
+      name: 'stack_data',
+      type: 'text',
+      computeSize: () => [0, -4],
+      draw: () => undefined
+    })
+    const { graph } = createGraphWithNode([widget])
+
+    const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result.vueComponent).toBe(WidgetLegacy)
   })
 
   it('uses widget state nodeId for simplified widget locator', () => {

@@ -1,4 +1,5 @@
 import type { IColorWidget } from '../types/widgets'
+import { hexToInt, intToHex } from '@/utils/colorUtil'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 import { BaseWidget } from './BaseWidget'
 
@@ -28,6 +29,12 @@ export class ColorWidget
 {
   override type = 'color' as const
 
+  private get hexValue(): string {
+    return typeof this.value === 'number'
+      ? intToHex(this.value)
+      : this.value || '#000000'
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { fillStyle, strokeStyle, textAlign } = ctx
 
@@ -49,7 +56,7 @@ export class ColorWidget
     // Draw color swatch as rounded pill
     ctx.beginPath()
     ctx.roundRect(swatchX, swatchY, swatchWidth, swatchHeight, swatchRadius)
-    ctx.fillStyle = this.value || '#000000'
+    ctx.fillStyle = this.hexValue
     ctx.fill()
 
     // Draw label on the left
@@ -60,21 +67,23 @@ export class ColorWidget
     // Draw hex value to the left of swatch
     ctx.fillStyle = this.text_color
     ctx.textAlign = 'right'
-    ctx.fillText(this.value || '#000000', swatchX - 8, y + height * 0.7)
+    ctx.fillText(this.hexValue, swatchX - 8, y + height * 0.7)
 
     Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
   }
 
   onClick({ e, node, canvas }: WidgetEventOptions): void {
     const input = getColorInput()
-    input.value = this.value || '#000000'
+    input.value = this.hexValue
     input.style.left = `${e.clientX}px`
     input.style.top = `${e.clientY}px`
 
     input.addEventListener(
       'change',
       () => {
-        this.setValue(input.value, { e, node, canvas })
+        const value =
+          typeof this.value === 'number' ? hexToInt(input.value) : input.value
+        this.setValue(value, { e, node, canvas })
         canvas.setDirty(true)
       },
       { once: true }

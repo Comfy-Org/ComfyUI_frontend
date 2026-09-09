@@ -19,22 +19,17 @@ follower is read-only: it never writes the shared doc (host is the sole writer).
 
 ## Run
 
-    DEV_SERVER_COMFYUI_URL=https://pr-6711.testenvs.comfy.org/ pnpm dev:cloud:crdt
+    DEV_SERVER_COMFYUI_URL=https://pr-6711.testenvs.comfy.org/ pnpm dev
 
-`dev:cloud:crdt` sets `VITE_AGENT_CRDT_FOLLOWER=true` (build-time gate; the code checks
-for the exact string `true`, so `1` or `on` will NOT enable it). Any `*.comfy.org`
-`DEV_SERVER_COMFYUI_URL` auto-selects the cloud distribution and proxies `/api` + `/ws`
-to that host, so no other flag is needed to retarget a different ephemeral.
-
-Alternatively (R1a), any built bundle — including one built WITHOUT the env — can
-enable the follower at runtime: open the app with `?agentCrdtFollower=1`. The opt-in
-persists in `localStorage['Comfy.Agent.CrdtFollower']` until cleared with
-`?agentCrdtFollower=0`. See `followerGate.ts`.
+Any `*.comfy.org` `DEV_SERVER_COMFYUI_URL` auto-selects the cloud distribution and
+proxies `/api` + `/ws` to that host, so no other flag is needed to retarget a
+different ephemeral. The follower itself has no dedicated flag: it mounts with the
+agent panel, so the panel's product flag is the only gate.
 
 ## Verify
 
-- The status strip at the top of the agent panel (`data-testid="agent-crdt-status"`)
-  shows connected + the subscribed workflow id.
+- Open the CRDT debug instrument (`?crdtDebug=1`, rendered above the composer via
+  `CrdtDevPanel`); its status row shows connected + the subscribed workflow id.
 - Send a message in the agent chat; as the agent edits, `updatesApplied` increments and
   nodes move on the canvas.
 - Reload the tab mid-session: it resubscribes and reconverges from the seeded snapshot.
@@ -42,7 +37,5 @@ persists in `localStorage['Comfy.Agent.CrdtFollower']` until cleared with
 ## Also available: a hosted FE ephemeral
 
 FE PR 15457 carries the `preview-gpu` + `retain-preview` labels, so it builds its own
-preview environment. Note that the preview's FE bundle is built WITHOUT
-`VITE_AGENT_CRDT_FOLLOWER`, so the follower is inert there; that env is for exercising
-the rest of the agent panel, not the CRDT follow path. For the follow path use the
-`pnpm dev:cloud:crdt` command above against a CRDT-on backend.
+preview environment; with the agent panel's product flag on there, the follower runs
+too. For a local run use the `pnpm dev` command above against a CRDT-on backend.

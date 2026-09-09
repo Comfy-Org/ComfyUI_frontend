@@ -4,11 +4,15 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 const folderAsset = vi.hoisted(() => ({
   id: 'multi-output',
   name: 'multi-output.png',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
   tags: ['output'],
   user_metadata: {
     jobId: 'multi-output-job',
@@ -18,19 +22,30 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
+vi.mock('@/stores/assetsStore', async () => {
   const { ref } = await import('vue')
 
-  return {
-    useAssetsApi: () => ({
-      media: ref([folderAsset]),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn(async () => [folderAsset]),
-      loadMore: vi.fn(),
+  const store = {
+    outputAssets: {
+      items: ref([folderAsset]),
+      isLoading: ref(false),
       hasMore: ref(false),
-      isLoadingMore: ref(false)
-    })
+      loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    },
+    inputAssets: {
+      items: ref([]),
+      isLoading: ref(false),
+      hasMore: ref(false),
+      loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    }
+  }
+
+  return {
+    useAssetsStore: () => store
   }
 })
 
@@ -73,10 +88,7 @@ vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveOutputAssetItems: vi.fn(async () => [folderAsset])
-}))
+vi.mock('@/platform/assets/utils/outputAssetUtil')
 
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: vi.fn() })
@@ -150,6 +162,7 @@ function renderTab() {
 
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })

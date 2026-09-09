@@ -32,7 +32,10 @@ const sizeToggleLabel = computed(() =>
   <header
     class="border-agent-border flex h-12 shrink-0 items-center gap-2 border-b px-4"
   >
-    <h1 class="text-agent-fg my-0 text-sm font-normal whitespace-nowrap">
+    <h1
+      id="agent-panel-title"
+      class="text-agent-fg my-0 text-sm font-normal whitespace-nowrap"
+    >
       {{ t('agent.title') }}
     </h1>
     <span

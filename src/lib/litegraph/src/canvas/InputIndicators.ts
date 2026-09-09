@@ -63,8 +63,8 @@ export class InputIndicators implements Disposable {
       canvas.drawFrontCanvas = origDrawFrontCanvas
     })
 
-    canvas.drawFrontCanvas = () => {
-      origDrawFrontCanvas()
+    canvas.drawFrontCanvas = (...args) => {
+      origDrawFrontCanvas(...args)
       this.draw()
     }
   }

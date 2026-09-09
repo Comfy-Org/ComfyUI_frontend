@@ -1,3 +1,10 @@
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  ISerialisedNode,
+  SerialisableGraph
+} from './types/serialisation'
+
 type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
 type JsonObject = { [key: string]: JsonValue }
 
@@ -10,52 +17,65 @@ interface ExtensionState {
 
 const payloads = new WeakMap<object, ExtensionState>()
 
-export const NODE_CANONICAL_FIELDS = new Set([
-  'title',
-  'id',
-  'type',
-  'pos',
-  'size',
-  'flags',
-  'order',
-  'mode',
-  'outputs',
-  'inputs',
-  'properties',
-  'shape',
-  'boxcolor',
-  'color',
-  'bgcolor',
-  'showAdvanced',
-  'widgets_values',
-  'widgets_values_named'
-])
+const nodeCanonicalFields = {
+  title: true,
+  id: true,
+  type: true,
+  pos: true,
+  size: true,
+  flags: true,
+  order: true,
+  mode: true,
+  outputs: true,
+  inputs: true,
+  properties: true,
+  shape: true,
+  boxcolor: true,
+  color: true,
+  bgcolor: true,
+  showAdvanced: true,
+  widgets_values: true,
+  widgets_values_named: true
+} satisfies Record<Exclude<keyof ISerialisedNode, 'extensions'>, true>
 
-export const GRAPH_CANONICAL_FIELDS = new Set([
-  'id',
-  'revision',
-  'config',
-  'subgraphs',
-  'definitions',
-  'version',
-  'state',
-  'last_node_id',
-  'last_link_id',
-  'groups',
-  'nodes',
-  'links',
-  'floatingLinks',
-  'reroutes',
-  'extra',
-  'name',
-  'category',
-  'description',
-  'inputNode',
-  'outputNode',
-  'inputs',
-  'outputs',
-  'widgets'
-])
+export const NODE_CANONICAL_FIELDS: ReadonlySet<string> = new Set(
+  Object.keys(nodeCanonicalFields)
+)
+
+type GraphCanonicalField = Exclude<
+  keyof (SerialisableGraph & ExportedSubgraph & ISerialisedGraph),
+  'extensions'
+>
+
+const graphCanonicalFields = {
+  id: true,
+  revision: true,
+  config: true,
+  subgraphs: true,
+  definitions: true,
+  version: true,
+  state: true,
+  last_node_id: true,
+  last_link_id: true,
+  groups: true,
+  nodes: true,
+  links: true,
+  floatingLinks: true,
+  reroutes: true,
+  extra: true,
+  name: true,
+  category: true,
+  description: true,
+  inputNode: true,
+  outputNode: true,
+  inputs: true,
+  outputs: true,
+  widgets: true
+} satisfies Record<GraphCanonicalField, true>
+
+export const GRAPH_CANONICAL_FIELDS: ReadonlySet<string> = new Set(
+  Object.keys(graphCanonicalFields)
+)
 
 const isJsonValue = (
   value: unknown,

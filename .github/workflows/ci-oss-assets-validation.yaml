@@ -112,7 +112,7 @@ jobs:
           # exclusion is therefore load-bearing, not cosmetic — remove it once the
           # package declares a license and a version carrying it is published.
           # Run in if condition to capture exit code
-          if npx license-checker-rseidelsohn@4 \
+          if pnpx license-checker-rseidelsohn@4 \
             --production \
             --summary \
             --excludePackages '@comfyorg/comfyui-frontend;@comfyorg/design-system;@comfyorg/ingest-types;@comfyorg/registry-types;@comfyorg/shared-frontend-utils;@comfyorg/tailwind-utils;@comfyorg/comfyui-electron-types;@comfyorg/comfy-multi-player' \

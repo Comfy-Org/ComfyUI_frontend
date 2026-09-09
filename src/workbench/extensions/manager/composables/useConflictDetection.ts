@@ -93,7 +93,7 @@ export function useConflictDetection() {
         comfyui_version: systemStats?.system.comfyui_version ?? '',
         frontend_version: frontendVersion,
         os: systemStats?.system.os ?? '',
-        accelerator: systemStats?.devices?.[0]?.type ?? ''
+        accelerator: systemStats?.devices[0]?.type ?? ''
       }
 
       systemEnvironment.value = environment
@@ -129,11 +129,7 @@ export function useConflictDetection() {
       // Step 1: Use installed packs composable instead of direct API calls
       await startFetchInstalled() // Ensure data is loaded
 
-      if (
-        !installedPacksReady.value ||
-        !installedPacks.value ||
-        installedPacks.value.length === 0
-      ) {
+      if (!installedPacksReady.value || installedPacks.value.length === 0) {
         console.warn(
           '[ConflictDetection] No installed packages available from useInstalledPacks'
         )
@@ -162,10 +158,10 @@ export function useConflictDetection() {
         try {
           const bulkResponse = await registryService.getBulkNodeVersions(
             nodeVersions,
-            abortController.value?.signal
+            abortController.value.signal
           )
 
-          if (bulkResponse && bulkResponse.node_versions?.length > 0) {
+          if (bulkResponse && bulkResponse.node_versions.length > 0) {
             // Process bulk response
             bulkResponse.node_versions.forEach((result) => {
               if (result.status === 'success' && result.node_version) {
@@ -218,9 +214,7 @@ export function useConflictDetection() {
             supported_comfyui_version: versionData.supported_comfyui_version,
             supported_comfyui_frontend_version:
               versionData.supported_comfyui_frontend_version,
-            supported_os: normalizeOSList(
-              versionData.supported_os
-            ) as Node['supported_os'],
+            supported_os: normalizeOSList(versionData.supported_os),
             supported_accelerators: versionData.supported_accelerators,
 
             // Status information
@@ -307,10 +301,7 @@ export function useConflictDetection() {
 
       // Use installedPacksWithVersions to match what versions bulk API uses
       // This ensures both APIs check the same set of packages
-      if (
-        !installedPacksWithVersions.value ||
-        installedPacksWithVersions.value.length === 0
-      ) {
+      if (installedPacksWithVersions.value.length === 0) {
         console.warn(
           '[ConflictDetection] No installed packages available for import failure check'
         )
@@ -357,7 +348,7 @@ export function useConflictDetection() {
     importFailInfo: ImportFailureMap
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
-    if (!importFailInfo || typeof importFailInfo !== 'object') {
+    if (typeof importFailInfo !== 'object') {
       return results
     }
 

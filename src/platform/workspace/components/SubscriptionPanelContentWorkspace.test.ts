@@ -75,8 +75,18 @@ const mockBillingType = ref<BillingType>('workspace')
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockRenewalDate = ref<string | null>(RENEWAL_DATE_ISO)
 const mockEndDate = ref<string | null>(END_DATE_ISO)
-const mockScheduledPlanSlug = ref<string | null>(null)
-const mockChangeAt = ref<string | null>(null)
+const mockScheduledChange = ref<SubscriptionInfo['scheduledChange']>(null)
+
+function scheduledChange(
+  planSlug: string,
+  effectiveAt: string
+): NonNullable<SubscriptionInfo['scheduledChange']> {
+  return {
+    plan_slug: planSlug,
+    effective_at: effectiveAt,
+    team_credit_stop: null
+  }
+}
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
@@ -86,6 +96,7 @@ const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanCancel = ref(true)
 const mockCanReactivate = ref(true)
 const mockCanReactivatePlan = ref(true)
+const mockCanOpenPricingSurface = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanChangeSeats = ref(true)
 const mockCanSubscribeSelfServe = ref(true)
@@ -156,8 +167,7 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
         tier: mockSubscriptionTier.value,
         duration: mockSubscriptionDuration.value,
         planSlug: mockPlanSlug.value,
-        scheduledPlanSlug: mockScheduledPlanSlug.value,
-        changeAt: mockChangeAt.value,
+        scheduledChange: mockScheduledChange.value,
         renewalDate: mockRenewalDate.value,
         endDate: mockEndDate.value,
         isCancelled: mockSubscriptionStatus.value === 'canceled',
@@ -225,9 +235,12 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
     canReactivatePlan: mockCanReactivatePlan,
+    canOpenPricingSurface: mockCanOpenPricingSurface,
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
+    canAccessSubscriptionFeatures: computed(
+      () => mockIsActiveSubscription.value
+    ),
     isSubscriptionCancelled: mockIsSubscriptionCancelled,
     isTeamPlanCancelled: mockIsTeamPlanCancelled,
     isDeleteDisabled: mockIsDeleteDisabled,
@@ -304,6 +317,11 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
+const StatusBadgeStub = {
+  props: ['label', 'severity'],
+  template: '<span :data-severity="severity">{{ label }}</span>'
+}
+
 const DropdownMenuStub = {
   props: ['entries'],
   template:
@@ -321,7 +339,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: true,
+        StatusBadge: StatusBadgeStub,
         DropdownMenu: DropdownMenuStub
       }
     }
@@ -336,8 +354,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockBillingType.value = 'workspace'
     mockRenewalDate.value = RENEWAL_DATE_ISO
     mockEndDate.value = END_DATE_ISO
-    mockScheduledPlanSlug.value = null
-    mockChangeAt.value = null
+    mockScheduledChange.value = null
     mockHasSubscription.value = true
     mockIsActiveSubscription.value = true
     mockIsInPersonalWorkspace.value = false
@@ -346,9 +363,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanManageSubscriptionLifecycle.value = true
     mockCanCancel.value = true
     mockCanReactivate.value = true
+    mockCanReactivatePlan.value = true
     mockShouldUseWorkspaceBilling.value = true
     mockCanChangeSeats.value = true
     mockCanSubscribeSelfServe.value = true
+    mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
     mockSubscriptionTier.value = 'PRO'
@@ -420,9 +439,159 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
   })
 
+  describe('sales-managed tiers (FE-1662)', () => {
+    const runtimeTier = (tier: string) =>
+      tier as unknown as SubscriptionInfo['tier']
+
+    // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
+    // self-serve catalog close, credit top-up stays open.
+    function useSalesManagedCapabilities() {
+      mockCanCancel.value = false
+      mockCanReactivate.value = false
+      mockCanReactivatePlan.value = false
+      mockCanChangeSeats.value = false
+      mockCanSubscribeSelfServe.value = false
+      mockCanOpenPricingSurface.value = false
+    }
+
+    function useEnterprisePlan() {
+      mockHasTeamPlan.value = false
+      mockSubscriptionTier.value = 'ENTERPRISE'
+      mockPlanSlug.value = 'enterprise_monthly'
+      mockCurrentTeamCreditStop.value = null
+      useSalesManagedCapabilities()
+    }
+
+    it('renders Enterprise without price, benefits, or a plan-change action', () => {
+      useEnterprisePlan()
+      renderComponent()
+
+      expect(screen.getByText('Enterprise')).toBeInTheDocument()
+      expect(screen.queryByText('$665')).not.toBeInTheDocument()
+      expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+      expect(screen.queryByText('Your plan includes:')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('View more details about plans & pricing')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('keeps Billing & invoices open on an Enterprise plan', () => {
+      useEnterprisePlan()
+      renderComponent()
+
+      expect(
+        screen.getByRole('button', { name: 'Billing & invoices' })
+      ).toBeInTheDocument()
+    })
+
+    it('hides Reactivate for a cancelled Enterprise plan', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'canceled'
+      renderComponent()
+
+      expect(
+        screen.queryByRole('button', { name: /reactivate/i })
+      ).not.toBeInTheDocument()
+    })
+
+    it('offers no subscribe or reactivate path for an ended Enterprise plan', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'ended'
+      mockIsActiveSubscription.value = false
+      renderComponent()
+
+      expect(screen.getByText('Enterprise')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /subscribe|reactivate/i })
+      ).not.toBeInTheDocument()
+    })
+
+    it('marks an ended Enterprise plan inactive without the state card', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'ended'
+      mockIsActiveSubscription.value = false
+      renderComponent()
+
+      expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
+        'Inactive'
+      )
+      expect(screen.getByTestId('plan-status-badge')).toHaveAttribute(
+        'data-severity',
+        'secondary'
+      )
+      expect(
+        screen.queryByTestId('subscription-state-card')
+      ).not.toBeInTheDocument()
+    })
+
+    it('marks an ended Personal plan inactive when it cannot self-serve', () => {
+      mockIsInPersonalWorkspace.value = true
+      mockIsActiveSubscription.value = false
+      mockSubscriptionStatus.value = 'ended'
+      mockBillingStatus.value = 'inactive'
+      mockCanSubscribeSelfServe.value = false
+      renderComponent()
+
+      expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
+        'Inactive'
+      )
+      expect(
+        screen.queryByTestId('subscription-state-card')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps the cancelled badge while an Enterprise plan still runs', () => {
+      useEnterprisePlan()
+      mockSubscriptionStatus.value = 'canceled'
+      renderComponent()
+
+      expect(screen.getByText('Canceled')).toBeInTheDocument()
+      expect(screen.queryByText('Inactive')).not.toBeInTheDocument()
+      expect(screen.getByTestId('subscription-state-card')).toBeInTheDocument()
+    })
+
+    it('renders an unrecognized tier as Current plan without catalog content', () => {
+      mockHasTeamPlan.value = false
+      mockSubscriptionTier.value = runtimeTier('GALACTIC')
+      mockPlanSlug.value = 'galactic_monthly'
+      mockCurrentTeamCreditStop.value = null
+      useSalesManagedCapabilities()
+      renderComponent()
+
+      expect(screen.getByText('Current plan')).toBeInTheDocument()
+      expect(screen.queryByText('$665')).not.toBeInTheDocument()
+      expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('labels a scheduled change to Enterprise outside the self-serve catalog', () => {
+      mockScheduledChange.value = scheduledChange(
+        'enterprise_monthly',
+        END_DATE_ISO
+      )
+      renderComponent()
+
+      expect(
+        screen.getByText(
+          `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
+        )
+      ).toBeInTheDocument()
+    })
+  })
+
   it('shows a scheduled plan change instead of the renewal date', () => {
-    mockScheduledPlanSlug.value = 'pro-annual'
-    mockChangeAt.value = END_DATE_ISO
+    mockScheduledChange.value = scheduledChange('pro-annual', END_DATE_ISO)
     renderComponent()
 
     expect(
@@ -432,8 +601,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it('does not show an incomplete scheduled plan change', () => {
-    mockScheduledPlanSlug.value = 'missing-plan'
-    mockChangeAt.value = END_DATE_ISO
+    mockScheduledChange.value = scheduledChange('missing-plan', END_DATE_ISO)
     renderComponent()
 
     expect(screen.queryByText(/^Changes to/i)).not.toBeInTheDocument()
@@ -597,7 +765,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockBillingStatus.value = 'inactive'
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscription-state-card')
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
@@ -639,7 +809,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
       expect(
-        screen.queryByText('Your subscription has ended')
+        screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Subscribe' })
@@ -656,8 +826,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('shows dated cancellation copy while a cancelled plan remains active', async () => {
     const user = userEvent.setup()
     mockSubscriptionStatus.value = 'canceled'
-    mockScheduledPlanSlug.value = 'pro-annual'
-    mockChangeAt.value = RENEWAL_DATE_ISO
+    mockScheduledChange.value = scheduledChange('pro-annual', RENEWAL_DATE_ISO)
     mockCanLeaveWorkspace.value = false
     renderComponent()
 
@@ -685,19 +854,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
   })
 
-  it('shows ended copy for an inactive ended subscription without a date', () => {
+  it('drops the state card for an inactive ended subscription without a date', () => {
     mockSubscriptionStatus.value = 'ended'
     mockIsActiveSubscription.value = false
     mockIsInPersonalWorkspace.value = true
     mockEndDate.value = null
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
     expect(
-      screen.getByText('Your subscription is no longer active.')
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/features remain active/i)
+      screen.queryByTestId('subscription-state-card')
     ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Ends on/i)).not.toBeInTheDocument()
     expect(
@@ -729,7 +894,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscription-state-card')
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
@@ -775,11 +942,26 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockResubscribe).not.toHaveBeenCalled()
   })
 
+  it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockCanSubscribeSelfServe.value = false
+    renderComponent()
+
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-inactive-plan',
+      'true'
+    )
+  })
+
   it('does not show stale renewal copy for an explicitly ended active state', () => {
     mockSubscriptionStatus.value = 'ended'
     renderComponent()
 
-    expect(screen.getByText('Your subscription has ended')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscription-state-card')
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
 
