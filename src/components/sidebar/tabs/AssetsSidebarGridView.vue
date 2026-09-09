@@ -1,21 +1,21 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- Assets Grid -->
-    <VirtualGrid class="flex-1" :items="assetItems" :grid-style>
+    <VirtualGrid class="flex-1" :items="assets" :grid-style>
       <template #item="{ item }">
         <MediaAssetCard
-          :asset="item.asset"
-          :selected="isSelected(item.asset.id)"
-          :show-output-count="showOutputCount(item.asset)"
-          :output-count="getOutputCount(item.asset)"
+          :asset="item"
+          :selected="isSelected(item.id)"
+          :show-output-count="showOutputCount(item)"
+          :output-count="getOutputCount(item)"
           :show-native-video-controls="
             gridMode !== MEDIA_ASSET_GRID_MODE.gridSmall
           "
-          @select="emit('select-asset', item.asset)"
-          @toggle-selection="emit('toggle-asset-selection', item.asset)"
-          @context-menu="emit('context-menu', $event, item.asset)"
-          @zoom="emit('zoom', item.asset)"
-          @output-count-click="emit('output-count-click', item.asset)"
+          @select="emit('select-asset', item)"
+          @toggle-selection="emit('toggle-asset-selection', item)"
+          @context-menu="emit('context-menu', $event, item)"
+          @zoom="emit('zoom', item)"
+          @output-count-click="emit('output-count-click', item)"
         />
       </template>
     </VirtualGrid>
@@ -33,7 +33,6 @@ import {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
 const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
@@ -52,13 +51,6 @@ const emit = defineEmits<{
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
 }>()
-
-const assetItems = new WrappedList(assets, (items) =>
-  items.map((asset) => ({
-    key: `asset-${asset.id}`,
-    asset
-  }))
-)
 
 const gridStyle = computed(() => ({
   display: 'grid',
