@@ -1,8 +1,22 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
+
+import { useErrorGroups } from './useErrorGroups'
+vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useComfyRegistryService: () => ({
+      ...actual.useComfyRegistryService(),
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+    })
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -31,12 +45,6 @@ vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock<unknown>(import('@/stores/comfyRegistryStore'), () => ({
-  useComfyRegistryStore: () => ({
-    inferPackFromNodeName: vi.fn()
-  })
-}))
-
 vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
@@ -44,9 +52,6 @@ vi.mock(import('@/utils/nodeTitleUtil'), () => ({
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => false)
 }))
-
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
   type: string,
