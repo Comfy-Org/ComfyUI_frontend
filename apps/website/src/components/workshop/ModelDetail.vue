@@ -416,18 +416,25 @@ function useInCode() {
                explanation carries that meaning, the button carries the action.
                See DES-1015. -->
           <template v-else-if="gate === 'memberNoCredits'">
-            <p
-              class="mb-2 text-xs text-primary-warm-gray"
-              data-testid="gate-note"
-            >
-              {{
-                t('workshop.error.memberNoCredits', locale).replace(
-                  '{workspace}',
-                  workspace
-                )
-              }}
-            </p>
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t('workshop.error.memberNoCreditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">
+                {{
+                  t('workshop.error.memberNoCredits', locale).replace(
+                    '{workspace}',
+                    workspace
+                  )
+                }}
+              </p>
+            </div>
+            <!-- Outline, not the filled default: comfy yellow is the site's one
+                 accent, so a filled button here out-shouts the message it is
+                 meant to follow. Switching workspace is a fallback, not the
+                 headline. -->
             <Button
+              variant="outline"
               size="lg"
               class="w-full px-5"
               data-testid="run-button"

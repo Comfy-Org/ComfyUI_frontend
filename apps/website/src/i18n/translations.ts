@@ -8920,10 +8920,14 @@ Enterprise`
     'zh-CN':
       '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
   },
+  'workshop.error.memberNoCreditsTitle': {
+    en: 'Out of credits',
+    'zh-CN': '积分已用完'
+  },
   'workshop.error.memberNoCredits': {
-    en: '{workspace} has no credits left. Only the workspace owner can buy more; you can run this on your personal workspace instead.',
+    en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',
     'zh-CN':
-      '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
+      '{workspace} 的积分已全部用完。请联系工作区所有者添加积分，或改用个人工作区运行。'
   },
   'workshop.run.switchPersonal': {
     en: 'Switch to personal workspace',
