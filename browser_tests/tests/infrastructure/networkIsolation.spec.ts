@@ -105,6 +105,21 @@ test.describe('Network isolation', { tag: '@smoke' }, () => {
     )
   })
 
+  test('mocks registry release popups on context', async ({
+    page,
+    context
+  }) => {
+    for (const host of ['api.comfy.org', 'stagingapi.comfy.org']) {
+      const url = `https://${host}/releases`
+      const popupPromise = context.waitForEvent('page')
+      await page.evaluate((target) => window.open(target), url)
+      const popup = await popupPromise
+      await expect(popup.locator('body')).toHaveText('[]')
+      await expect(popup).toHaveURL(url)
+      await popup.close()
+    }
+  })
+
   test('fails the owning test for an unmocked popup', async ({
     page,
     context
