@@ -1,3 +1,4 @@
+import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,7 +8,9 @@ import { useAgentConsent } from './useAgentConsent'
 
 const authState = vi.hoisted(() => ({
   loggedIn: false,
-  identity: 'account-a' as string | null
+  identity: 'account-a' as string | null,
+  workspaceId: 'workspace-a' as string | null,
+  generation: 0
 }))
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -23,11 +26,26 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 const accountAuthState = vi.hoisted(() => ({
-  getUserAuthHeader: vi.fn()
+  getUserAuthHeader: vi.fn(),
+  initialize: vi.fn()
 }))
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    getUserAuthHeader: accountAuthState.getUserAuthHeader
+    getUserAuthHeader: accountAuthState.getUserAuthHeader,
+    getWorkspaceAuthHeader: accountAuthState.getUserAuthHeader
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    get activeWorkspaceId() {
+      return authState.workspaceId
+    },
+    get workspaceTransitionGeneration() {
+      return authState.generation
+    },
+    isSwitching: false,
+    initialize: accountAuthState.initialize
   })
 }))
 
@@ -67,17 +85,24 @@ async function waitForConsentDialog() {
   return dialogStore.dialogStack[0]
 }
 
-const settingResponse = (value: boolean) =>
-  new Response(JSON.stringify({ value }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  })
-
-const savedResponse = () =>
-  new Response(JSON.stringify({ value: true }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  })
+const stored: GlobalSetting = {
+  key: 'Comfy.AgentPanel.ConsentAccepted',
+  value: true,
+  updated_at: '2026-09-09T00:00:00Z'
+}
+const settingResponse = (accepted: boolean) =>
+  new Response(
+    JSON.stringify(
+      accepted
+        ? stored
+        : {
+            code: 'NOT_FOUND',
+            message: 'Setting is not set for this user and workspace'
+          }
+    ),
+    { status: accepted ? 200 : 404 }
+  )
+const savedResponse = () => settingResponse(true)
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
@@ -85,6 +110,9 @@ describe('useAgentConsent', () => {
     localStorage.clear()
     authState.loggedIn = true
     authState.identity = 'account-a'
+    authState.workspaceId = 'workspace-a'
+    authState.generation = 0
+    accountAuthState.initialize.mockResolvedValue(undefined)
     accountAuthState.getUserAuthHeader.mockReset()
     accountAuthState.getUserAuthHeader.mockResolvedValue({
       Authorization: 'Bearer account-a-token'
@@ -172,13 +200,13 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
-        'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
+        'https://api.comfy.test/api/global-settings',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
             Authorization: 'Bearer account-a-token'
           }),
-          body: 'true'
+          body: JSON.stringify({ key: stored.key, value: true })
         }),
         false
       )
@@ -229,6 +257,10 @@ describe('useAgentConsent', () => {
   it('authenticates signed-out Local users before saving to their account', async () => {
     authState.loggedIn = false
     authState.identity = null
+    authState.workspaceId = null
+    accountAuthState.initialize.mockImplementationOnce(async () => {
+      authState.workspaceId = 'workspace-a'
+    })
     showSignInDialog.mockImplementationOnce(async () => {
       authState.loggedIn = true
       authState.identity = 'account-a'
@@ -243,10 +275,14 @@ describe('useAgentConsent', () => {
     await request
 
     expect(showSignInDialog).toHaveBeenCalledOnce()
+    expect(accountAuthState.initialize).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/settings/Comfy.AgentPanel.ConsentAccepted',
-      expect.objectContaining({ method: 'POST', body: 'true' }),
+      'https://api.comfy.test/api/global-settings',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ key: stored.key, value: true })
+      }),
       false
     )
     expect(onOpen).toHaveBeenCalledOnce()
@@ -295,5 +331,17 @@ describe('useAgentConsent', () => {
     expect(secondDialog.key).toBe('agent-consent')
     ;(secondDialog.contentProps.onReject as () => void)()
     await Promise.resolve(secondRequest)
+  })
+  it('does not apply an open consent card to another workspace', async () => {
+    const onOpen = vi.fn()
+    const request = useAgentConsent().withConsent(onOpen)
+    const dialog = await waitForConsentDialog()
+    authState.workspaceId = 'workspace-b'
+    authState.generation += 1
+    fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+    expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    expect(onOpen).not.toHaveBeenCalled()
   })
 })

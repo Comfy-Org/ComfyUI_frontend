@@ -1,3 +1,4 @@
+import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -7,122 +8,128 @@ import {
 } from './accountSettingsApi'
 
 vi.mock('@/config/comfyApi', () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test',
-  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
+  getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
-
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock('@/platform/distribution/types', () => distribution)
-
 const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
-
+vi.mock('@/scripts/api', () => ({
+  api: { fetchApi, apiURL: (path: string) => `/api${path}` }
+}))
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/auth/unified/remintRetry', () => ({
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
+const key = 'Comfy.AgentPanel.ConsentAccepted'
+const stored: GlobalSetting = {
+  key,
+  value: true,
+  updated_at: '2026-09-09T00:00:00Z'
+}
+const authHeader = { Authorization: 'Bearer workspace-a-token' } as const
 
-const authHeader = { Authorization: 'Bearer account-token' } as const
-
-function respondWith(response: Response): void {
+function respondWith(body: unknown, status = 200): void {
+  const response = new Response(JSON.stringify(body), { status })
   fetchApi.mockResolvedValueOnce(response.clone())
   fetchWithUnifiedRemint.mockResolvedValueOnce(response)
 }
 
-describe('accountSettingsApi', () => {
+describe('Global Settings transport', () => {
   beforeEach(() => {
     distribution.isCloud = true
-    fetchApi.mockReset()
-    fetchWithUnifiedRemint.mockReset()
   })
 
-  it('reads a Cloud setting through the existing relative API path', async () => {
-    respondWith(new Response(JSON.stringify({ value: true }), { status: 200 }))
+  it.for([true, false])(
+    'reads with captured workspace credentials (Cloud=%s)',
+    async (cloud) => {
+      distribution.isCloud = cloud
+      respondWith(stored)
 
-    await expect(
-      getAccountSetting('Comfy.Agent Consent', authHeader)
-    ).resolves.toBe(true)
-    expect(fetchApi).toHaveBeenCalledWith('/settings/Comfy.Agent%20Consent')
-    expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
-  })
+      await expect(getAccountSetting(key, authHeader)).resolves.toEqual(stored)
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
+        `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings/${key}`,
+        expect.objectContaining({ headers: authHeader }),
+        false
+      )
+      expect(fetchApi).not.toHaveBeenCalled()
+    }
+  )
 
-  it('treats a missing account setting as unset', async () => {
-    respondWith(new Response(null, { status: 404 }))
+  it.for([true, false])(
+    'posts a typed value to the collection (Cloud=%s)',
+    async (cloud) => {
+      distribution.isCloud = cloud
+      respondWith(stored)
 
-    await expect(getAccountSetting('missing', authHeader)).resolves.toBe(
-      undefined
-    )
-  })
+      await expect(setAccountSetting(key, true, authHeader)).resolves.toEqual(
+        stored
+      )
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
+        `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings`,
+        expect.objectContaining({
+          method: 'POST',
+          headers: { ...authHeader, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value: true })
+        }),
+        false
+      )
+      expect(fetchApi).not.toHaveBeenCalled()
+    }
+  )
 
-  it('rejects malformed successful responses', async () => {
-    respondWith(new Response(JSON.stringify(true), { status: 200 }))
-
-    await expect(
-      getAccountSetting('invalid', authHeader)
-    ).rejects.toBeInstanceOf(AccountSettingsApiError)
-  })
-
-  it('wraps invalid JSON responses as account settings errors', async () => {
-    respondWith(new Response('{not-json', { status: 200 }))
-
-    await expect(
-      getAccountSetting('invalid-json', authHeader)
-    ).rejects.toBeInstanceOf(AccountSettingsApiError)
-  })
-
-  it('writes a Cloud setting through the existing relative API path', async () => {
-    respondWith(new Response(JSON.stringify({ value: true }), { status: 200 }))
-
-    await setAccountSetting('Comfy.Agent Consent', true, authHeader)
-
-    expect(fetchApi).toHaveBeenCalledWith('/settings/Comfy.Agent%20Consent', {
-      method: 'POST',
-      body: 'true'
-    })
-    expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
-  })
-
-  it('rejects unsuccessful writes', async () => {
-    respondWith(new Response(null, { status: 500 }))
-
-    await expect(
-      setAccountSetting('consent', true, authHeader)
-    ).rejects.toMatchObject({ status: 500 })
-  })
-
-  it('reads a Desktop or Local setting from the remote account API', async () => {
-    distribution.isCloud = false
-    fetchWithUnifiedRemint.mockResolvedValueOnce(
-      new Response(JSON.stringify({ value: true }), { status: 200 })
-    )
-
-    await expect(getAccountSetting('consent', authHeader)).resolves.toBe(true)
-    expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/settings/consent',
-      { headers: authHeader },
-      false
-    )
-    expect(fetchApi).not.toHaveBeenCalled()
-  })
-
-  it('writes a Desktop or Local setting to the remote account API', async () => {
-    distribution.isCloud = false
-    fetchWithUnifiedRemint.mockResolvedValueOnce(new Response(null))
-
-    await setAccountSetting('consent', true, authHeader)
-    expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/settings/consent',
+  it('treats the typed missing setting response as unset', async () => {
+    respondWith(
       {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer account-token',
-          'Content-Type': 'application/json'
-        },
-        body: 'true'
+        code: 'NOT_FOUND',
+        message: 'Setting is not set for this user and workspace'
       },
-      false
+      404
     )
-    expect(fetchApi).not.toHaveBeenCalled()
+    await expect(getAccountSetting(key, authHeader)).resolves.toBeUndefined()
+  })
+
+  it('does not treat a missing gateway route as an unset setting', async () => {
+    respondWith({ message: 'Not Found' }, 404)
+    await expect(getAccountSetting(key, authHeader)).rejects.toBeInstanceOf(
+      AccountSettingsApiError
+    )
+  })
+
+  it.for([
+    { value: true },
+    { ...stored, key: 'unknown' },
+    { ...stored, value: false },
+    { ...stored, updated_at: 'invalid' }
+  ])('rejects a malformed stored setting: %j', async (body) => {
+    respondWith(body)
+    await expect(getAccountSetting(key, authHeader)).rejects.toBeInstanceOf(
+      AccountSettingsApiError
+    )
+  })
+
+  it('rejects a successful save without a valid stored setting', async () => {
+    respondWith({ value: true })
+    await expect(
+      setAccountSetting(key, true, authHeader)
+    ).rejects.toBeInstanceOf(AccountSettingsApiError)
+  })
+
+  it('wraps invalid JSON responses', async () => {
+    fetchApi.mockResolvedValueOnce(new Response('{not-json'))
+    fetchWithUnifiedRemint.mockResolvedValueOnce(new Response('{not-json'))
+    await expect(getAccountSetting(key, authHeader)).rejects.toBeInstanceOf(
+      AccountSettingsApiError
+    )
+  })
+
+  it('surfaces rejected writes', async () => {
+    respondWith(
+      { code: 'INTERNAL_ERROR', message: 'Failed to store setting' },
+      500
+    )
+    await expect(
+      setAccountSetting(key, true, authHeader)
+    ).rejects.toMatchObject({ status: 500 })
   })
 })
