@@ -180,26 +180,22 @@
             {{ $t('subscription.preview.applyPromoCode') }}
           </Button>
         </div>
-        <div v-else class="flex flex-col gap-2">
-          <div
-            class="flex h-10 w-fit items-center gap-2 rounded-lg bg-tertiary-background px-3"
-          >
-            <span class="text-sm text-base-foreground">
-              {{ appliedPromotionCode }}
-            </span>
-            <Button
-              size="icon"
-              variant="muted-textonly"
-              :aria-label="$t('subscription.preview.removePromoCode')"
-              :disabled="interactionLocked"
-              @click="clearPromotionCode"
-            >
-              <i class="icon-[lucide--x] size-4" />
-            </Button>
-          </div>
-          <span class="text-xs text-muted-foreground">
-            {{ $t('subscription.preview.onePromoCodeNote') }}
+        <div
+          v-else
+          class="flex h-10 w-fit items-center gap-2 rounded-lg bg-tertiary-background px-3"
+        >
+          <span class="text-sm text-base-foreground">
+            {{ appliedPromotionCode }}
           </span>
+          <Button
+            size="icon"
+            variant="muted-textonly"
+            :aria-label="$t('subscription.preview.removePromoCode')"
+            :disabled="interactionLocked"
+            @click="clearPromotionCode"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
         </div>
       </div>
       <!-- Saved method: no capture column; a card row with a change

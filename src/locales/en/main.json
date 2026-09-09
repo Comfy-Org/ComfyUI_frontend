@@ -3079,7 +3079,6 @@
       "subtotal": "Subtotal",
       "promoLedgerLabel": "Promo {code} ({name})",
       "promoLedgerLabelBare": "Promo {code}",
-      "onePromoCodeNote": "One promo code at a time. Remove it to use another.",
       "discountComposition": "Discounts",
       "discount": {
         "plan": "Plan discount",
