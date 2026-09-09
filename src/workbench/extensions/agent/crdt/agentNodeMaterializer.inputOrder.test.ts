@@ -18,7 +18,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { minimaxNode, minimaxNodeDef } from './__fixtures__/minimaxReference'
+import { nodeDef, savedNode } from './__fixtures__/inputOrder'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -33,16 +33,16 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 const catalog = { types: {} }
 const connections = [
-  { id: 276, name: 'width', slot: 10, type: 'INT' },
-  { id: 277, name: 'height', slot: 11, type: 'INT' },
-  { id: 275, name: 'length', slot: 12, type: 'INT' },
-  { id: 279, name: 'prompt', slot: 9, type: 'STRING' },
-  { id: 278, name: 'ref_images.ref_image_0', slot: 3, type: 'IMAGE' },
-  { id: 282, name: 'ref_images.ref_image_1', slot: 4, type: 'IMAGE' }
+  { id: 276, name: 'width', slot: 4, type: 'INT' },
+  { id: 277, name: 'height', slot: 5, type: 'INT' },
+  { id: 275, name: 'length', slot: 6, type: 'INT' },
+  { id: 279, name: 'prompt', slot: 3, type: 'STRING' },
+  { id: 278, name: 'ref_images.ref_image_0', slot: 0, type: 'IMAGE' },
+  { id: 282, name: 'ref_images.ref_image_1', slot: 1, type: 'IMAGE' }
 ]
 
 const source = {
-  id: 115,
+  id: 1,
   type: 'ReferenceSources',
   pos: [0, 0],
   size: [200, 200],
@@ -68,22 +68,19 @@ let sequence: number
 beforeEach(async () => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('ReferenceSources', LGraphNode)
-  await useLitegraphService().registerNodeDef(
-    minimaxNodeDef.name,
-    minimaxNodeDef
-  )
+  await useLitegraphService().registerNodeDef(nodeDef.name, nodeDef)
   graph = new LGraph()
   Reflect.set(app, 'rootGraph', graph)
   minted = []
   sequence = 0
   host = mint(
     {
-      nodes: structuredClone([source, minimaxNode]),
+      nodes: structuredClone([source, savedNode]),
       links: connections.map(({ id, slot, type }, originSlot) => [
         id,
-        115,
+        1,
         originSlot,
-        136,
+        2,
         slot,
         type
       ])
@@ -97,7 +94,7 @@ beforeEach(async () => {
       layout: { createNode: () => {}, deleteNodes: () => {} }
     })
   )
-  adapter.bind('minimax', follower)
+  adapter.bind('input-order', follower)
   wiring = attachMintPortWiring({
     isEnabled: () => true,
     isDocBound: () => true,
@@ -119,7 +116,7 @@ function deliver() {
   const update = Y.encodeStateAsUpdate(host, follower.stateVector())
   follower.applyRemoteUpdate(update)
   expect(
-    adapter.applyFrame({ workflowId: 'minimax', seq: ++sequence, update })
+    adapter.applyFrame({ workflowId: 'input-order', seq: ++sequence, update })
   ).toBe(true)
   reconcileAgentAdapters(graph)
 }
@@ -151,16 +148,16 @@ function targets() {
   })
 }
 
-it('preserves MiniMax template targets and serialization without changing the shared document', () => {
-  const originalNode = nodesMap(host).get('136')?.toJSON()
+it('preserves named input targets and serialization without changing the shared document', () => {
+  const originalNode = nodesMap(host).get('2')?.toJSON()
   const originalLinks = linksMap(host).toJSON()
   deliver()
 
   expect(targets()).toEqual(connections.map(({ name }) => name))
-  expect(nodesMap(follower.doc).get('136')?.toJSON()).toEqual(originalNode)
+  expect(nodesMap(follower.doc).get('2')?.toJSON()).toEqual(originalNode)
   expect(linksMap(follower.doc).toJSON()).toEqual(originalLinks)
   const saved = structuredClone(graph.serialize())
-  const target = saved.nodes.find(({ id }) => String(id) === '136')!
+  const target = saved.nodes.find(({ id }) => String(id) === '2')!
   for (const { id, name } of connections) {
     expect(target.inputs?.find((input) => input.name === name)?.link).toBe(id)
   }
@@ -183,10 +180,10 @@ it('keeps every named target when a later agent connect replaces one resolution 
     {
       op: 'connect',
       link_id: 276,
-      from_node: 115,
+      from_node: 1,
       from_slot: 1,
-      to_node: 136,
-      to_slot: 10,
+      to_node: 2,
+      to_slot: 4,
       link_type: 'INT'
     }
   ])
@@ -199,22 +196,22 @@ it('keeps every named target when a later agent connect replaces one resolution 
 
 it('mints a local reconnect using the shared input index and keeps it after the agent echo', () => {
   deliver()
-  const from = graph.getNodeById(toNodeId(115))!
-  const to = graph.getNodeById(toNodeId(136))!
+  const from = graph.getNodeById(toNodeId(1))!
+  const to = graph.getNodeById(toNodeId(2))!
   const link = from.connect(1, to, to.findInputSlot('width'))
   expect(link).toBeTruthy()
   expect(minted).toEqual([
     expect.objectContaining({
       op: 'connect',
       from_slot: 1,
-      to_slot: 10
+      to_slot: 4
     })
   ])
 
   apply(minted)
   minted.length = 0
   deliver()
-  expect(graph.getNodeById(toNodeId(136))?.getInputLink(10)?.id).toBe(link?.id)
-  expect(graph.getNodeById(toNodeId(136))?.inputs[10]?.name).toBe('width')
+  expect(graph.getNodeById(toNodeId(2))?.getInputLink(4)?.id).toBe(link?.id)
+  expect(graph.getNodeById(toNodeId(2))?.inputs[4]?.name).toBe('width')
   expect(minted).toEqual([])
 })
