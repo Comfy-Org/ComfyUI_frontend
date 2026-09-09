@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 
 import { useRegionGate } from './regionGate'
 
@@ -23,6 +23,11 @@ const GateHost = defineComponent({
 })
 
 const currentStatus = () => screen.getByRole('status').textContent
+const flushPromises = async () => {
+  await Promise.resolve()
+  await Promise.resolve()
+  await nextTick()
+}
 
 beforeEach(() => {
   detection.outcome = Promise.resolve(false)
@@ -54,6 +59,33 @@ describe('useRegionGate', () => {
     render(GateHost)
 
     await waitFor(() => expect(currentStatus()).toBe('allowed'))
+  })
+
+  it('discards a probe result that lands after the gate was disabled, and probes again on re-enable', async () => {
+    let answer!: (inChina: boolean) => void
+    detection.outcome = new Promise((resolve) => (answer = resolve))
+    const enabled = ref(true)
+    const Host = defineComponent({
+      setup() {
+        const { status } = useRegionGate(enabled)
+        return () => h('output', status.value)
+      }
+    })
+    render(Host)
+    await waitFor(() => expect(detection.probes).toBe(1))
+
+    enabled.value = false
+    answer(true)
+    await flushPromises()
+    expect(
+      currentStatus(),
+      'a stale blocked answer must not publish for a gate that is off'
+    ).toBe('pending')
+
+    detection.outcome = Promise.resolve(false)
+    enabled.value = true
+    await waitFor(() => expect(currentStatus()).toBe('allowed'))
+    expect(detection.probes).toBe(2)
   })
 
   it('waits for a slow blocked answer rather than pre-empting it', async () => {
