@@ -8893,13 +8893,12 @@ Enterprise`
     'zh-CN': '积分不足'
   },
   'workshop.error.noCreditsPlatform': {
-    en: 'Add credits to {workspace} on your Comfy account. Your inputs stay here.',
-    'zh-CN':
-      '请在你的 Comfy 账户中为 {workspace} 添加积分。你的输入会保留在这里。'
+    en: 'Add credits to {workspace} on platform.comfy.org',
+    'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.error.noCredits': {
-    en: 'This run needs {n} credits. Your inputs stay here while you buy.',
-    'zh-CN': '本次运行需要 {n} 积分。购买时你的输入会保留在这里。'
+    en: 'This run needs {n} credits.',
+    'zh-CN': '本次运行需要 {n} 积分。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',
@@ -8915,9 +8914,8 @@ Enterprise`
     'zh-CN': '提供方响应超时。未扣费。'
   },
   'workshop.error.lowCredits': {
-    en: 'You have {credits} credits and this run needs {n}. Your inputs stay here while you buy.',
-    'zh-CN':
-      '你有 {credits} 积分，本次运行需要 {n}。购买时你的输入会保留在这里。'
+    en: 'You have {credits} credits and this run needs {n}.',
+    'zh-CN': '你有 {credits} 积分，本次运行需要 {n}。'
   },
   'workshop.error.memberNoCredits': {
     en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',
