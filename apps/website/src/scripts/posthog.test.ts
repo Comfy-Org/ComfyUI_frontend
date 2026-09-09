@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AUTH_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
+
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
@@ -217,5 +219,33 @@ describe('useWorkshopAuthFlag', () => {
       enabled.value,
       'an override-on build ignores PostHog turning the flag off'
     ).toBe(true)
+  })
+})
+
+describe('auth funnel events', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockCapture.mockClear()
+  })
+
+  it("reports sign-up opens and auth failures under the cloud app's event names", async () => {
+    const { initPostHog, captureSignupOpened, captureAuthFailed } =
+      await import('./posthog')
+    initPostHog()
+
+    captureSignupOpened()
+    captureAuthFailed({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'google_sign_in'
+    })
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.signUpOpened,
+      undefined
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.authFailed,
+      { error_code: 'auth/popup-closed-by-user', auth_action: 'google_sign_in' }
+    )
   })
 })

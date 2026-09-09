@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { isFirebaseAuthErrorLike } from '@comfyorg/account/firebaseAuthError'
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
   AuthSignInEvent,
@@ -14,7 +16,11 @@ import {
 } from '../../config/auth-sign-in-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { useWorkshopAuthFlag } from '../../scripts/posthog'
+import {
+  captureAuthFailed,
+  captureSignupOpened,
+  useWorkshopAuthFlag
+} from '../../scripts/posthog'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{
   /** Same flow either way for social providers; only the copy differs. */
@@ -26,6 +32,9 @@ const enabled = useWorkshopAuthFlag()
 const state = ref<AuthSignInState>({ step: 'idle' })
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
+// Decided after mount: the server has no user agent, and a mismatch here
+// would break hydration.
+const inAppBrowser = ref(false)
 
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
@@ -46,6 +55,10 @@ async function signInWith(provider: AuthSignInProvider) {
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
   } catch (error) {
+    captureAuthFailed({
+      error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
+      auth_action: `${provider}_${mode === 'signUp' ? 'sign_up' : 'sign_in'}`
+    })
     if (firebase?.isWorkshopProvisioningError(error)) {
       dispatch({
         type: 'provisioningFailed',
@@ -105,6 +118,11 @@ watch(
 onBeforeUnmount(() => {
   listenerGeneration += 1
   stopUserListener?.()
+})
+
+onMounted(() => {
+  inAppBrowser.value = isEmbeddedWebView()
+  if (mode === 'signUp') captureSignupOpened()
 })
 </script>
 
@@ -168,6 +186,13 @@ onBeforeUnmount(() => {
           @google="signInWith('google')"
           @github="signInWith('github')"
         />
+        <p
+          v-if="inAppBrowser"
+          class="my-0 text-xs/5 text-primary-comfy-canvas/60"
+          data-testid="google-sso-in-app-browser-notice"
+        >
+          {{ t('auth.signIn.googleSsoInAppBrowserNotice', locale) }}
+        </p>
       </div>
 
       <p

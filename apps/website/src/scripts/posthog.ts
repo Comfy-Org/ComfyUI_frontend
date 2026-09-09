@@ -2,6 +2,8 @@ import posthog from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { AUTH_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
+import type { AuthErrorMetadata } from '@comfyorg/account/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
@@ -21,7 +23,11 @@ const ANALYTICS_EVENT = {
   cliConnectionTabClicked: 'website:cli_connection_tab_clicked',
   cliClientTabClicked: 'website:cli_client_tab_clicked',
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
-  mcpClientTabClicked: 'website:mcp_client_tab_clicked'
+  mcpClientTabClicked: 'website:mcp_client_tab_clicked',
+  // Shared with the cloud app so one PostHog funnel covers auth outcomes
+  // across every surface.
+  signUpOpened: AUTH_TELEMETRY_EVENT.signUpOpened,
+  authFailed: AUTH_TELEMETRY_EVENT.authFailed
 } as const
 
 export type CliClientId =
@@ -53,6 +59,11 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.mcpClientTabClicked
       properties: { client: McpClientId }
+    }
+  | { name: typeof ANALYTICS_EVENT.signUpOpened; properties?: undefined }
+  | {
+      name: typeof ANALYTICS_EVENT.authFailed
+      properties: AuthErrorMetadata
     }
 
 let initialized = false
@@ -142,4 +153,12 @@ export function captureMcpClientTabClick(client: McpClientId): void {
     name: ANALYTICS_EVENT.mcpClientTabClicked,
     properties: { client }
   })
+}
+
+export function captureSignupOpened(): void {
+  captureEvent({ name: ANALYTICS_EVENT.signUpOpened })
+}
+
+export function captureAuthFailed(metadata: AuthErrorMetadata): void {
+  captureEvent({ name: ANALYTICS_EVENT.authFailed, properties: metadata })
 }

@@ -139,6 +139,19 @@ describe('useVideoCarousel', () => {
     expect(carousel.activeIndex.value).toBe(1)
   })
 
+  it('advances after a playing video reports it has stalled', async () => {
+    const { carousel } = await mountCarousel(3)
+    carousel.onPlaying(0)
+    await nextTick()
+    carousel.onProgress(0)
+
+    carousel.onStalled(0)
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(FALLBACK_MS)
+
+    expect(carousel.activeIndex.value).toBe(1)
+  })
+
   it('does not run a watchdog for a single slide', async () => {
     await mountCarousel(1)
 
