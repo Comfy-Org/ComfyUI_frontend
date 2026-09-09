@@ -2443,7 +2443,7 @@ export class LGraph
     const unavailableNode = skipMissingNodes
       ? undefined
       : subgraphNode.subgraph.nodes.find(
-          (node) => !LiteGraph.getNodeType(node.type)
+          (node) => !Object.hasOwn(LiteGraph.registered_node_types, node.type)
         )
     if (unavailableNode) {
       console.error(
@@ -2455,14 +2455,14 @@ export class LGraph
     }
     const nodesToMove: { node: LGraphNode; info: ISerialisedNode }[] = []
     for (const info of multiClone(subgraphNode.subgraph.nodes)) {
-      let node = LiteGraph.createNode(String(info.type), info.title)
+      let node = LiteGraph.createNode(info.type, info.title)
       if (!node && skipMissingNodes) {
         console.warn(
           `Cannot unpack node of type "${info.type}" - node type not found. Creating placeholder node.`
         )
         node = new LGraphNode(
           info.title || info.type || 'Missing Node',
-          String(info.type)
+          info.type
         )
         node.last_serialization = info
         node.has_errors = true

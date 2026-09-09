@@ -918,11 +918,12 @@ export const useLitegraphService = () => {
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
       if (!bp) return null
       const rootNode = bp.nodes.length === 1 ? bp.nodes[0] : undefined
-      const subgraph = rootNode
-        ? bp.definitions?.subgraphs?.find(
-            (definition) => definition.id === rootNode.type
-          )
-        : undefined
+      const subgraph =
+        rootNode && bp.definitions
+          ? bp.definitions.subgraphs.find(
+              (definition) => definition.id === rootNode.type
+            )
+          : undefined
       if (!rootNode || !subgraph) {
         console.error(new Error('Cannot add invalid subgraph blueprint'))
         return null
