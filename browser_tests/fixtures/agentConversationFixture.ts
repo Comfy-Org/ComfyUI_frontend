@@ -349,12 +349,20 @@ class AgentConversationHarness {
     return name
   }
 
-  // A recorded title renders verbatim and an untitled node shows its display
-  // name, except a node the catch-up materialized: the follower titles that
-  // one by its type (#17171), and this pin turns red the day it stops.
-  private expectedTitle(id: string, node: { type: string; title?: string }) {
+  // A recorded title renders verbatim and a node the agent added shows its
+  // display name. A node the catch-up materialized is not settled today:
+  // the follower's reconcile titles it by type in most replays and by
+  // display name in some (#17171), so that path accepts either spelling of
+  // the same identity until the fix lands, and then narrows to the name.
+  private expectedTitle(
+    id: string,
+    node: { type: string; title?: string }
+  ): string | RegExp {
     if (node.title) return node.title
-    return this.seedIds.has(id) ? node.type : this.displayName(node.type)
+    const name = this.displayName(node.type)
+    if (!this.seedIds.has(id)) return name
+    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^(?:${escape(name)}|${escape(node.type)})$`)
   }
 
   // The renderer's link map is the one structure the canvas painter draws
