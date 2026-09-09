@@ -33,7 +33,7 @@ const mockBilling = vi.hoisted(() => ({
   isBuilderMode: false
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     isBuilderMode: {
       get value() {
@@ -43,19 +43,22 @@ vi.mock('@/composables/useAppMode', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { computed } = await import('vue')
-  return {
-    useBillingContext: vi.fn(() => ({
-      isFreeTier: computed(() => mockBilling.isFreeTier),
-      canRunWorkflows: computed(() => mockBilling.canRunWorkflows)
-    }))
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingContext: vi.fn(() => ({
+        isFreeTier: computed(() => mockBilling.isFreeTier),
+        canRunWorkflows: computed(() => mockBilling.canRunWorkflows)
+      }))
+    }
   }
-})
+)
 
-vi.mock('pinia')
+vi.mock(import('pinia'))
 
-vi.mock('firebase/app', () => ({
+vi.mock<unknown>(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))

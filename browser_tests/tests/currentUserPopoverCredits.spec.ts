@@ -73,7 +73,7 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-  // Free tier: the popover swaps Add credits for the single Upgrade action.
+// Free tier: the popover swaps Add credits for the single Upgrade action.
 const mockFreeTierBillingStatus: BillingStatusResponse = {
   ...mockBillingStatus,
   subscription_status: 'active',
@@ -134,27 +134,27 @@ function extendWithBilling(billingStatus: BillingStatusResponse) {
         })
       )
 
-    // The popover sources its data from the workspace billing endpoints.
-    await page.route('**/api/billing/capabilities', (route) => {
-      if (route.request().method() !== 'GET') return route.fallback()
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          createWorkspaceBillingCapabilities(
-            mockListWorkspacesResponse.workspaces[0]
+      // The popover sources its data from the workspace billing endpoints.
+      await page.route('**/api/billing/capabilities', (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(
+            createWorkspaceBillingCapabilities(
+              mockListWorkspacesResponse.workspaces[0]
+            )
           )
-        )
+        })
       })
-    })
 
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBillingStatus)
-      })
-    )
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBillingStatus)
+        })
+      )
 
       await page.route('**/api/billing/plans', (route) =>
         route.fulfill({
@@ -252,7 +252,7 @@ freeTierTest.describe(
 
         const popover = page.getByTestId(TestIds.user.currentUserPopover)
         await expect(popover).toBeVisible()
-          // Both popovers share these test ids, so pin the workspace one first.
+        // Both popovers share these test ids, so pin the workspace one first.
         await expect(
           popover.getByTestId('workspace-switcher-trigger')
         ).toBeVisible()
