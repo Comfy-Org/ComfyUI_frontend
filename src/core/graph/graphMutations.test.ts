@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -44,7 +42,6 @@ describe('graphMutations', () => {
   const deleteLayouts = vi.fn()
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     createLayout.mockReset()
     deleteLayouts.mockReset()
   })
@@ -421,7 +418,7 @@ describe('graphMutations', () => {
       if (name === 'registerNode') nodeContexts.push(args[2])
     })
     useWidgetValueStore().$onAction(({ name, args }) => {
-      if (name === 'registerWidget') widgetContexts.push(args[3])
+      if (name === 'registerWidget') widgetContexts.push(args[4])
     })
 
     mutations().addNode(node(1, { seed: 1 }), context)

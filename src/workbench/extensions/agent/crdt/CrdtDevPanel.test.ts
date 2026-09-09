@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
     getLogs: () => Promise.reject(new Error('offline')),
@@ -14,15 +14,15 @@ vi.mock('@/scripts/api', () => ({
     api_base: ''
   }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
-vi.mock('@/stores/extensionStore', () => ({
+vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
   useExtensionStore: () => ({ extensions: [] })
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'

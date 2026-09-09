@@ -2,6 +2,7 @@ import type { TooltipOptions } from 'primevue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -32,7 +33,7 @@ import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     rootGraphId: GRAPH_ID
   })
@@ -167,6 +168,58 @@ describe('widget slot ownership', () => {
 
     expect(processedWidget.slotMetadata).toBeUndefined()
   })
+
+  it('uses the first same-named widget input slot', () => {
+    const nodeId = toNodeId(1)
+    const { graph, node } = createGraphWithNode([], nodeId)
+    const widget = node.addWidget('text', 'value', '', () => {})
+    node.inputs = [
+      {
+        name: 'value',
+        type: 'STRING',
+        widget: { name: 'value' },
+        boundingRect: [0, 0, 0, 0]
+      },
+      {
+        name: 'value',
+        type: 'STRING',
+        widget: { name: 'value' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    useLinkStore().registerLink(
+      {
+        rootGraphId: toRootGraphId(GRAPH_ID),
+        owningGraphId: toOwningGraphId(GRAPH_ID)
+      },
+      {
+        id: toLinkId(1),
+        graphId: toOwningGraphId(GRAPH_ID),
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: nodeId,
+        targetSlot: 1,
+        type: 'STRING'
+      }
+    )
+    const id = widget.widgetId
+    if (!id) throw new Error('Missing widget ID')
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: [id],
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toMatchObject({
+      index: 0,
+      linked: false
+    })
+  })
 })
 
 describe('widget visibility', () => {
@@ -244,6 +297,36 @@ describe('widget visibility', () => {
 
   it('keeps hidden widgets hidden even when linked', () => {
     expect(visibilityOf({ hidden: true }, { linked: true })).toBe(false)
+  })
+
+  it('hides canvas-only widgets', () => {
+    expect(visibilityOf({ canvasOnly: true })).toBe(false)
+  })
+
+  it('re-shows a canvas-only widget once its vueNode tier is restored', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text', options: { canvasOnly: true } })
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing visibility component')
+    const visible = computed(
+      () => processWidgets({ widgetIds: [id] })[0]?.visible
+    )
+
+    expect(visible.value).toBe(false)
+    visibility.surfaces.vueNode = 'shown'
+    expect(visible.value).toBe(true)
+  })
+
+  it('hides connection-suppressed widgets and flags them for socket-only rows', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text' })
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing visibility component')
+    visibility.suppression.byConnection = true
+
+    const [processed] = processWidgets({ widgetIds: [id] })
+    expect(processed.visible).toBe(false)
+    expect(processed.suppressedByConnection).toBe(true)
   })
 })
 
@@ -535,10 +618,9 @@ describe('computeProcessedWidgets', () => {
       {
         type: 'unknown',
         value: 'model.safetensors',
-        options: {}
+        options: { advanced: true }
       },
       {
-        advanced: true,
         hasLayoutSize: true,
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'

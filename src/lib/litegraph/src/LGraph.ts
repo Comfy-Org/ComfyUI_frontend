@@ -807,7 +807,7 @@ export class LGraph
     this._nodes_executable = null
     this._groups = []
 
-    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
+    if (this.isRootGraph) this.id = createUuidv4()
     this.revision = 0
 
     this.state = createLGraphState()
@@ -1854,8 +1854,10 @@ export class LGraph
    * Registers a link in the root-wide identity store.
    */
   _addLink(link: LLink): boolean {
-    if (!registerLinkTopology(this, link)) return false
+    if (this.links.get(link.id) !== link && !registerLinkTopology(this, link))
+      return false
     observeLinkId(this.state, link.id)
+    this.getNodeById(link.target_id)?.updateComputedDisabled()
     return true
   }
 
@@ -1867,6 +1869,7 @@ export class LGraph
     if (!link) return false
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
+    this.getNodeById(link.target_id)?.updateComputedDisabled()
     return true
   }
 
@@ -3254,6 +3257,8 @@ export class LGraph
         LGraph.autoExposePreviewNodes?.(node)
       }
 
+      for (const node of this._nodes) node.updateComputedDisabled()
+
       this.onConfigure?.(extensionConfigureView(this, data))
       this.incrementVersion()
 
@@ -3379,6 +3384,14 @@ export class Subgraph
     }
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
+  }
+
+  /** Clones and registers the subgraph under a new ID. */
+  // fallow-ignore-next-line unused-class-member
+  clone(): Subgraph {
+    const exported = this.asSerialisable()
+    exported.id = createUuidv4()
+    return this.rootGraph.createSubgraph(structuredClone(exported))
   }
 
   getIoNodeOnPos(
@@ -3598,19 +3611,6 @@ export class Subgraph
   ): void {
     this.inputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
     this.outputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
-  }
-
-  /**
-   * Clones the subgraph, creating an identical copy with a new ID.
-   * @returns A new subgraph with the same configuration, but a new ID.
-   */
-  clone(keepId: boolean = false): Subgraph {
-    const exported = this.asSerialisable()
-    if (!keepId) exported.id = createUuidv4()
-
-    const subgraph = new Subgraph(this.rootGraph, exported)
-    subgraph.configure(exported)
-    return subgraph
   }
 
   override asSerialisable(): ExportedSubgraph &

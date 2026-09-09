@@ -86,6 +86,7 @@ jobs:
         with:
           repository: ${{ steps.pr.outputs.head-repository }}
           ref: ${{ steps.pr.outputs.head-sha }}
+          fetch-depth: 0
           token: ${{ secrets.PR_GH_TOKEN }}
 
       - name: Apply repaired lockfile
