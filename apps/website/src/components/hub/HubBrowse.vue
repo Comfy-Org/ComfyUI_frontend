@@ -5,7 +5,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
-import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
@@ -46,7 +45,6 @@ const templates = (hubTemplates as HubTemplate[]).map((template) =>
   withFacetFields(template, workshopModels)
 )
 const store = useHubStore()
-const { groupVersions } = usePrototypeTweaks()
 
 // The use cases read as a rail beside the grid, the way the models listing
 // does. Embedded elsewhere the hub is a grid on its own, without them.
@@ -123,7 +121,7 @@ const inUseCase = (value: UseCase | 'all') => ({
 
 const totalIn = (value: UseCase | 'all') => {
   const { models, templates: scoped } = inUseCase(value)
-  return groupModels(models, groupVersions.value).length + scoped.length
+  return groupModels(models).length + scoped.length
 }
 
 // In the catalogue's reading order, and without printing the tally: the row
@@ -249,9 +247,7 @@ const filteredModels = computed(() => {
 // Models open the All tab, in the same grid as the workflows behind them.
 const LEAD_MODELS = 5
 
-const modelFamilies = computed(() =>
-  groupModels(filteredModels.value, groupVersions.value)
-)
+const modelFamilies = computed(() => groupModels(filteredModels.value))
 
 const filteredTemplates = computed(() => {
   const badges = store.filterBadges.value

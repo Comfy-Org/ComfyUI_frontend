@@ -7,26 +7,26 @@ import { LOW_CREDITS, useMockSession } from '../../composables/useMockSession'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import PrototypeTweaks from './PrototypeTweaks.vue'
 
-const { showStatuses, outcome, version } = usePrototypeTweaks()
+const { showFeatured, outcome, version } = usePrototypeTweaks()
 
 afterEach(() => {
-  showStatuses.value = false
+  showFeatured.value = true
   outcome.value = 'success'
   version.value = 'v1'
   window.history.replaceState(null, '', '/models/')
 })
 
 describe('PrototypeTweaks', () => {
-  it('drives the shared status switch', async () => {
+  it('drives the shared featured switch', async () => {
     const user = userEvent.setup()
     render(PrototypeTweaks, { props: { showRunControls: true } })
 
     await user.click(screen.getByTestId('prototype-tweaks'))
-    const statuses = await screen.findByTestId('tweak-statuses')
-    expect(statuses.getAttribute('aria-checked')).toBe('false')
-    await user.click(statuses)
-    expect(showStatuses.value).toBe(true)
-    expect(statuses.getAttribute('aria-checked')).toBe('true')
+    const featured = await screen.findByTestId('tweak-featured')
+    expect(featured.getAttribute('aria-checked')).toBe('true')
+    await user.click(featured)
+    expect(showFeatured.value).toBe(false)
+    expect(featured.getAttribute('aria-checked')).toBe('false')
   })
 
   it('applies a shared link on load and offers one back for the current setup', async () => {
@@ -67,7 +67,7 @@ describe('PrototypeTweaks', () => {
     const user = userEvent.setup()
     render(PrototypeTweaks)
     await user.click(screen.getByTestId('prototype-tweaks'))
-    await screen.findByTestId('tweak-statuses')
+    await screen.findByTestId('tweak-featured')
     expect(screen.queryByTestId('tweak-outputs')).toBeNull()
   })
 })

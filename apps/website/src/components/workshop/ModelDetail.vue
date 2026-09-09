@@ -111,11 +111,7 @@ const revealed = ref(false)
 const buyingCredits = ref(false)
 
 const { session, setCredits, switchWorkspace } = useMockSession()
-const {
-  outcome: simOutcome,
-  modelState: simGate,
-  showStatuses
-} = usePrototypeTweaks()
+const { outcome: simOutcome, modelState: simGate } = usePrototypeTweaks()
 const signInHref = useSignInHref(locale)
 
 const credits = computed(() =>
@@ -125,9 +121,7 @@ const creditsPerRun = model.creditsPerRun
 const modelStatus = computed(() =>
   simGate.value === 'deprecated' || simGate.value === 'degraded'
     ? simGate.value
-    : showStatuses.value
-      ? model.status
-      : undefined
+    : undefined
 )
 const gate = computed(() =>
   runGate({

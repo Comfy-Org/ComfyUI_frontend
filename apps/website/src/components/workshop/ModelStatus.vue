@@ -2,29 +2,24 @@
 import { computed } from 'vue'
 
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { ModelStatus } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {
-  status,
   variant,
   successor,
   locale = 'en'
 } = defineProps<{
-  status?: ModelStatus
   variant: 'pill' | 'banner'
   successor?: { name: string; href: string }
   locale?: Locale
 }>()
 
-const { showStatuses, modelState } = usePrototypeTweaks()
+const { modelState } = usePrototypeTweaks()
 const shown = computed(() =>
   modelState.value === 'deprecated' || modelState.value === 'degraded'
     ? modelState.value
-    : showStatuses.value
-      ? status
-      : undefined
+    : undefined
 )
 </script>
 

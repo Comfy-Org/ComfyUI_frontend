@@ -49,11 +49,11 @@ describe('share links for the prototype controls', () => {
   it('decodes a link and ignores values it does not know', () => {
     expect(
       decodeShareSearch(
-        '?version=v2&statuses=1&session=existing&balance=zero&member=1&state=nope&outcome=42'
+        '?version=v2&featured=0&session=existing&balance=zero&member=1&state=nope&outcome=42'
       )
     ).toEqual({
       version: 'v2',
-      showStatuses: true,
+      showFeatured: false,
       session: 'existing',
       balance: 'zero',
       member: true

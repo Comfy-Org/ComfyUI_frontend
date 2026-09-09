@@ -4,14 +4,10 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
-import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import HubBrowse from './HubBrowse.vue'
-
-const { groupVersions } = usePrototypeTweaks()
 
 afterEach(() => {
   useHubStore().reset()
-  groupVersions.value = false
 })
 
 describe('HubBrowse', () => {
@@ -87,19 +83,6 @@ describe('HubBrowse', () => {
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
-  })
-
-  it('collapses the releases of a family when the prototype asks for it', async () => {
-    const user = userEvent.setup()
-    groupVersions.value = true
-    render(HubBrowse)
-
-    await user.click(screen.getByTestId('hub-use-case-3d'))
-    await user.click(screen.getByTestId('hub-tab-models'))
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(3)
-    expect(
-      screen.getAllByTestId('model-card-versions')[0].textContent
-    ).toContain('2 versions')
   })
 
   it('counts the applied filters in the popover and clears them', async () => {

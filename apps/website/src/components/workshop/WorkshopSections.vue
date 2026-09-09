@@ -19,6 +19,7 @@ import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupByFamily } from '../../config/model-family'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -28,19 +29,27 @@ const {
   models,
   labelKey,
   sort = 'popular',
-  locale = 'en',
-  showStatuses = false
+  locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
   labelKey: Record<UseCase | 'all', TranslationKey>
   sort?: SortOrder
   locale?: Locale
-  showStatuses?: boolean
 }>()
 
 const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
+const { showFeatured } = usePrototypeTweaks()
+
 const GROUPED = OTHER_FORMAT_USE_CASES
+
+// Router reports no curated set yet, so the row that opens the listing is the
+// catalogue's own most-run models. It reads as an editor's shelf and costs
+// nothing to keep true as the catalogue grows.
+const FEATURED_LIMIT = 6
+const featured = computed(() =>
+  groupByFamily(sortWorkshopModels(models, 'popular')).slice(0, FEATURED_LIMIT)
+)
 
 const titleClass = 'flex items-baseline gap-2 text-primary-warm-white'
 
@@ -85,6 +94,36 @@ const unplaced = computed(() =>
 <template>
   <div class="flex flex-col gap-12" data-testid="workshop-sections">
     <section
+      v-if="showFeatured && featured.length"
+      aria-labelledby="section-featured"
+      class="bg-transparency-white-t4 rounded-4.5xl border border-transparency-white-t8 p-6 backdrop-blur-xl lg:p-8"
+      data-testid="section-featured"
+    >
+      <CardRow :locale>
+        <template #heading>
+          <h2
+            id="section-featured"
+            class="text-xl font-medium text-primary-warm-white"
+          >
+            {{ t('workshop.sections.featured', locale) }}
+          </h2>
+        </template>
+
+        <li
+          v-for="family in featured"
+          :key="family.key"
+          class="w-72 shrink-0 snap-start"
+        >
+          <WorkshopModelCard
+            :model="family.latest"
+            :version-count="family.versions.length"
+            :locale
+          />
+        </li>
+      </CardRow>
+    </section>
+
+    <section
       v-for="section in sections"
       :key="section.useCase"
       :aria-labelledby="`section-${section.useCase}`"
@@ -127,7 +166,6 @@ const unplaced = computed(() =>
             :model="family.latest"
             :version-count="family.versions.length"
             :locale
-            :show-status="showStatuses"
           />
         </li>
       </CardRow>
@@ -175,7 +213,6 @@ const unplaced = computed(() =>
             :model="family.latest"
             :version-count="family.versions.length"
             :locale
-            :show-status="showStatuses"
           />
         </li>
       </CardRow>
@@ -201,7 +238,6 @@ const unplaced = computed(() =>
             :model="family.latest"
             :version-count="family.versions.length"
             :locale
-            :show-status="showStatuses"
           />
         </li>
       </ul>

@@ -8597,6 +8597,7 @@ Enterprise`
     en: 'V2 · Workflows, apps and models',
     'zh-CN': 'V2 · 工作流、应用与模型'
   },
+  'workshop.sections.featured': { en: 'Featured', 'zh-CN': '精选' },
   'workshop.sections.otherFormats': {
     en: 'Other formats',
     'zh-CN': '其他格式'
@@ -9089,6 +9090,14 @@ Enterprise`
     en: 'Open in Playground',
     'zh-CN': '在 Playground 中打开'
   },
+  'workshop.examples.use': {
+    en: 'Use this example',
+    'zh-CN': '使用此示例'
+  },
+  'workshop.examples.using': {
+    en: 'In the form',
+    'zh-CN': '已填入表单'
+  },
   'workshop.examples.empty': {
     en: 'No examples yet for this model.',
     'zh-CN': '该模型暂无示例。'
@@ -9215,13 +9224,9 @@ Enterprise`
     en: 'Showing {shown} of {total} templates',
     'zh-CN': '显示 {shown} / {total} 个模板'
   },
-  'workshop.proto.families': {
-    en: 'Group releases behind the newest',
-    'zh-CN': '将旧版本折叠到最新版本下'
-  },
-  'workshop.proto.statuses': {
-    en: 'Show deprecated and degraded models',
-    'zh-CN': '显示已弃用和降级的模型'
+  'workshop.proto.featured': {
+    en: 'Show the featured row',
+    'zh-CN': '显示精选行'
   },
   'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },

@@ -39,11 +39,9 @@ const VERSION_KEY = 'comfy-workshop-version'
 const outcome = ref<RunOutcome>('success')
 const modelState = ref<ModelState>('none')
 const version = ref<Version>('v1.1')
-// Deprecated and degraded models are invented cases: hidden unless asked for.
-const showStatuses = ref(false)
-// The catalogue lists one card per model, as the TDD describes. Grouping the
-// releases of a family behind the newest is an unsettled variant.
-const groupVersions = ref(false)
+// Router reports no curated set, so the row stands on the catalogue's own
+// most-run models. A link can take it off the page while that is true.
+const showFeatured = ref(true)
 let hydrated = false
 
 function isVersion(value: unknown): value is Version {
@@ -96,7 +94,6 @@ export function usePrototypeTweaks() {
     outcome,
     modelState,
     version,
-    showStatuses,
-    groupVersions
+    showFeatured
   }
 }

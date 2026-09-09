@@ -38,13 +38,10 @@ useResizeObserver(row, measure)
 useMutationObserver(row, measure, { childList: true, subtree: true })
 
 // The arrows ride over the row rather than under it: a strip of their own
-// would put a band of empty page between every two sliders.
+// would put a band of empty page between every two sliders. They are opaque,
+// because a card showing through a control reads as a rendering fault.
 const arrowClass =
-  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow bg-page/80 pointer-events-auto absolute top-1/3 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors outline-none focus-visible:ring-3'
-
-// The cards run under the arrow instead of stopping dead behind it.
-const fadeClass =
-  'pointer-events-none absolute inset-y-0 z-0 w-16 from-page to-transparent sm:w-24'
+  'focus-visible:ring-primary-comfy-yellow/50 hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow bg-page pointer-events-auto absolute top-1/2 z-10 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white shadow-lg shadow-black/40 transition-colors outline-none focus-visible:ring-3'
 </script>
 
 <template>
@@ -59,7 +56,7 @@ const fadeClass =
     <div class="relative">
       <ul
         ref="row"
-        class="-mx-1 flex snap-x scrollbar-thin gap-5 overflow-x-auto px-1 pb-2"
+        class="-mx-1 flex snap-x snap-mandatory scrollbar-hide gap-5 overflow-x-auto px-1 pb-2"
         @scroll="measure"
       >
         <slot />
@@ -73,10 +70,6 @@ const fadeClass =
         data-testid="card-row-arrows"
       >
         <template v-if="!atStart">
-          <span
-            :class="cn(fadeClass, 'left-0 bg-linear-to-r')"
-            aria-hidden="true"
-          />
           <button
             type="button"
             :aria-label="t('workshop.sections.scrollBack', locale)"
@@ -88,10 +81,6 @@ const fadeClass =
           </button>
         </template>
         <template v-if="!atEnd">
-          <span
-            :class="cn(fadeClass, 'right-0 bg-linear-to-l')"
-            aria-hidden="true"
-          />
           <button
             type="button"
             :aria-label="t('workshop.sections.scrollForward', locale)"

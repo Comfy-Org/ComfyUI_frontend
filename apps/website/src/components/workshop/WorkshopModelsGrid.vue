@@ -58,7 +58,7 @@ const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const { showStatuses, version, groupVersions } = usePrototypeTweaks()
+const { version } = usePrototypeTweaks()
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
@@ -201,8 +201,7 @@ const visible = computed(() =>
         .filter(inModality)
         .filter(inSectionScope),
       sort.value
-    ),
-    groupVersions.value
+    )
   )
 )
 const isFiltered = computed(
@@ -407,7 +406,6 @@ const menuItemClass =
         :label-key="useCaseLabelKey"
         :sort
         :locale
-        :show-statuses="showStatuses"
         @open="openSection"
       />
 
@@ -446,7 +444,6 @@ const menuItemClass =
                 :model="family.latest"
                 :version-count="family.versions.length"
                 :locale
-                :show-status="showStatuses"
               />
             </li>
           </ul>

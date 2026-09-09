@@ -5,31 +5,30 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import ModelStatus from './ModelStatus.vue'
 
-const { showStatuses } = usePrototypeTweaks()
+const { modelState } = usePrototypeTweaks()
 
 afterEach(() => {
-  showStatuses.value = false
+  modelState.value = 'none'
 })
 
 describe('ModelStatus', () => {
-  it('stays hidden until the statuses tweak is on', () => {
-    render(ModelStatus, { props: { status: 'degraded', variant: 'pill' } })
+  it('stays hidden while nothing asks for a state', () => {
+    render(ModelStatus, { props: { variant: 'pill' } })
     expect(screen.queryByTestId('model-status')).toBeNull()
   })
 
-  it('shows a pill once the tweak is on', () => {
-    showStatuses.value = true
-    render(ModelStatus, { props: { status: 'deprecated', variant: 'pill' } })
+  it('shows a pill once the prototype stands a state up', () => {
+    modelState.value = 'deprecated'
+    render(ModelStatus, { props: { variant: 'pill' } })
     expect(screen.getByTestId('model-status').textContent).toContain(
       'Deprecated'
     )
   })
 
   it('links a deprecated model to its successor in the banner', () => {
-    showStatuses.value = true
+    modelState.value = 'deprecated'
     render(ModelStatus, {
       props: {
-        status: 'deprecated',
         variant: 'banner',
         successor: { name: 'Kling 2.6', href: '/models/kling-2-6/' }
       }
@@ -40,14 +39,13 @@ describe('ModelStatus', () => {
   })
 
   it('explains a degraded model without a link', () => {
-    showStatuses.value = true
-    render(ModelStatus, { props: { status: 'degraded', variant: 'banner' } })
+    modelState.value = 'degraded'
+    render(ModelStatus, { props: { variant: 'banner' } })
     expect(screen.getByTestId('model-status-banner')).toBeTruthy()
     expect(screen.queryByRole('link')).toBeNull()
   })
 
-  it('renders nothing for a model without a status', () => {
-    showStatuses.value = true
+  it('renders nothing while no state is asked for', () => {
     render(ModelStatus, { props: { variant: 'banner' } })
     expect(screen.queryByTestId('model-status-banner')).toBeNull()
   })

@@ -16,8 +16,7 @@ type BalanceChoice = 'normal' | 'zero' | 'low'
 // Everything the prototype controls can set, so one link reproduces a setup.
 export interface ShareState {
   readonly version: Version
-  readonly showStatuses: boolean
-  readonly groupVersions: boolean
+  readonly showFeatured: boolean
   readonly session: SessionChoice
   readonly subscribed: boolean
   readonly balance: BalanceChoice
@@ -28,8 +27,7 @@ export interface ShareState {
 
 export const SHARE_DEFAULTS: ShareState = {
   version: 'v1.2',
-  showStatuses: false,
-  groupVersions: false,
+  showFeatured: true,
   session: 'signedOut',
   subscribed: true,
   balance: 'normal',
@@ -47,8 +45,7 @@ const BALANCE_CHOICES: readonly BalanceChoice[] = ['normal', 'zero', 'low']
 
 const KEYS = {
   version: 'version',
-  showStatuses: 'statuses',
-  groupVersions: 'families',
+  showFeatured: 'featured',
   session: 'session',
   subscribed: 'subscribed',
   balance: 'balance',
@@ -101,8 +98,7 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
   const params = new URLSearchParams(search)
   const decoded: Partial<ShareState> = {
     version: pick(VERSIONS, params.get(KEYS.version)),
-    showStatuses: pickFlag(params.get(KEYS.showStatuses)),
-    groupVersions: pickFlag(params.get(KEYS.groupVersions)),
+    showFeatured: pickFlag(params.get(KEYS.showFeatured)),
     session: pick(SESSION_CHOICES, params.get(KEYS.session)),
     subscribed: pickFlag(params.get(KEYS.subscribed)),
     balance: pick(BALANCE_CHOICES, params.get(KEYS.balance)),
