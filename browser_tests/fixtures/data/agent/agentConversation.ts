@@ -1,14 +1,14 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { FROZEN_OPS, applyOps, mint } from '@comfyorg/comfy-multi-player'
+import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
-import type { Doc } from 'yjs'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
 // A recording keeps every production field except the two ids the replay
 // mints per run (agentConversationFixture stampTurn).
@@ -122,13 +122,33 @@ const zResponseEntry = z.discriminatedUnion('kind', [
   })
 ])
 
-const zTurn = z.object({
-  message_id: z.string().min(1).optional(),
-  request: zAgentConversationRequest,
-  // Response entry the recorded cancel followed; the replay stops there too.
-  cancel_after: z.number().int().nonnegative().optional(),
-  response: z.array(zResponseEntry).min(1)
-})
+const zTurn = z
+  .object({
+    message_id: z.string().min(1).optional(),
+    request: zAgentConversationRequest,
+    // Response entry the recorded cancel followed; the replay stops there too.
+    cancel_after: z.number().int().nonnegative().optional(),
+    response: z.array(zResponseEntry).min(1)
+  })
+  .superRefine((turn, ctx) => {
+    const last = turn.response.at(-1)
+    if (last?.kind !== 'event' || last.event.type !== 'agent_message_done')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['response'],
+        message: 'a turn ends with its agent_message_done event'
+      })
+    if (
+      turn.cancel_after !== undefined &&
+      turn.cancel_after >= turn.response.length - 1
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['cancel_after'],
+        message:
+          'cancel_after must precede the final agent_message_done entry; the replay stops a turn that is still running'
+      })
+  })
 export type AgentConversationTurn = z.infer<typeof zTurn>
 
 export const zAgentConversation = z
@@ -185,31 +205,26 @@ export function listRecordedConversations(): string[] {
     .sort()
 }
 
-// The production applier is the parser for the recorded operations: a
-// recording it would reject during replay is refused before one starts. The
-// applied document is what the recorded operations leave behind.
-export function assertOpsApply(conversation: AgentConversation): Doc {
-  const doc = mint(conversation.workflow.seed, conversation.workflow.catalog)
-  let version = 1
+// The replay's own host is the parser for the recorded operations: a
+// recording it would reject or fail to project during replay is refused
+// before one starts. The returned host holds the applied document.
+export function assertOpsApply(conversation: AgentConversation): HostDoc {
+  const { workflow } = conversation
+  const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
   for (const [turnIndex, turn] of conversation.turns.entries())
     for (const [entryIndex, entry] of turn.response.entries()) {
       if (entry.kind !== 'graph_ops') continue
-      const ops = mintWireOps(entry.ops, {
-        actor: 'agent:comfy:host',
-        baseVersion: version
-      })
-      version += 1
-      const rejected = applyOps(
-        doc,
-        ops,
-        conversation.workflow.catalog
-      ).outcomes.filter((outcome) => outcome.outcome !== 'applied')
-      if (rejected.length > 0)
+      try {
+        host.apply(entry.ops)
+        host.projection()
+      } catch (error) {
         throw new Error(
-          `turn ${turnIndex} entry ${entryIndex}: the applier rejected ${JSON.stringify(rejected)}`
+          `turn ${turnIndex} entry ${entryIndex}: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error }
         )
+      }
     }
-  return doc
+  return host
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {

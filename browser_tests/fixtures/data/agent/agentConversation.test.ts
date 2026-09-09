@@ -52,6 +52,34 @@ describe('zAgentConversation', () => {
     ).toThrow('recorded turns carry the message id')
   })
 
+  it('refuses a cancel placed at or after the done entry', () => {
+    expect(() =>
+      zAgentConversation.parse({
+        ...recorded,
+        turns: [{ ...recorded.turns[0], cancel_after: 0 }]
+      })
+    ).toThrow('cancel_after must precede the final agent_message_done entry')
+  })
+
+  it('refuses a turn that does not end with its done event', () => {
+    expect(() =>
+      zAgentConversation.parse({
+        ...recorded,
+        turns: [
+          {
+            ...recorded.turns[0],
+            response: [
+              {
+                kind: 'event',
+                event: { type: 'agent_thinking', data: { delta: 'x' } }
+              }
+            ]
+          }
+        ]
+      })
+    ).toThrow('a turn ends with its agent_message_done event')
+  })
+
   it('refuses a recorded label without backend provenance', () => {
     const { capture: _capture, ...source } = recorded.source
     expect(() => zAgentConversation.parse({ ...recorded, source })).toThrow(
