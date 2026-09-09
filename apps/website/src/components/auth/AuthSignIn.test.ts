@@ -27,7 +27,7 @@ const handles = vi.hoisted(() => ({
   embedded: false
 }))
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   const settled = ref(true)
@@ -42,11 +42,11 @@ vi.mock('../../scripts/posthog', async () => {
   }
 })
 
-vi.mock('@comfyorg/account/webviewDetection', () => ({
+vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
 }))
 
-vi.mock('../../config/workshop-firebase', () => {
+vi.mock<unknown>(import('../../config/workshop-firebase'), () => {
   if (handles.chunkFails) {
     throw new TypeError('Failed to fetch dynamically imported module')
   }
@@ -58,7 +58,7 @@ vi.mock('../../config/workshop-firebase', () => {
   }
 })
 
-vi.mock('../../config/workshop-session-state', async () => {
+vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   const user = ref(null)
   const session = ref(undefined)
@@ -444,6 +444,24 @@ describe('AuthSignIn', () => {
       render(AuthSignIn)
 
       await vi.advanceTimersByTimeAsync(16_000)
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('drops the timeout screen when a late answer says the flag is off', async () => {
+      handles.flag!.value = false
+      handles.settled!.value = false
+      render(AuthSignIn)
+      await vi.advanceTimersByTimeAsync(16_000)
+      await screen.findByRole('alert')
+
+      handles.settled!.value = true
+
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Connection Taking Too Long'),
+          'a flag that answered off renders nothing, not a troubleshooting screen'
+        ).toBeNull()
+      )
       expect(screen.queryByRole('alert')).toBeNull()
     })
 
