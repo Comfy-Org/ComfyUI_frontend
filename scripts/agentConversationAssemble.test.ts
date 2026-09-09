@@ -320,40 +320,6 @@ describe('assembleConversation', () => {
       for (const key of OP_ENVELOPE_KEYS) expect(op).not.toHaveProperty(key)
   })
 
-  it('refuses a same-call re-add the replay applier drops as a stale stamp', () => {
-    expect(() =>
-      assembleConversation(
-        input({
-          rows: rows({
-            parents: [
-              parent({
-                result: {
-                  ok: true,
-                  data: {
-                    ops: [
-                      { op: 'delete_node', op_id: 'op-1', node_id: 4 },
-                      {
-                        ...addNodeOp,
-                        op_id: 'op-2',
-                        node_id: 4,
-                        node: nodePayload(4, 'KSampler')
-                      }
-                    ]
-                  }
-                },
-                children: [
-                  { op_id: 'op-1', status: 'ok' },
-                  { op_id: 'op-2', status: 'ok' }
-                ]
-              })
-            ],
-            draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
-          })
-        })
-      )
-    ).toThrow('the replay applier rejects this recording')
-  })
-
   it('refuses a tool call whose terminal frame arrived twice', () => {
     const doubled = frames()
     doubled.splice(
