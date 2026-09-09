@@ -145,7 +145,7 @@ describe('useSubgraphStore', () => {
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
-  it.fails('should not access the canvas when a blueprint fails to open', async () => {
+  it('should not access the canvas when a blueprint fails to open', async () => {
     await mockFetch({ 'test.json': mockGraph })
     vi.mocked(comfyApp.loadGraphData).mockResolvedValueOnce(false)
     vi.mocked(useCanvasStore().getCanvas).mockClear()

@@ -174,6 +174,7 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    openWorkflowMock.mockResolvedValue(true)
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
@@ -347,7 +348,7 @@ describe('useWorkflowPersistenceV2', () => {
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
     })
 
-    it.fails('falls back to the latest draft when the saved workflow fails to open', async () => {
+    it('falls back to the latest draft when the saved workflow fails to open', async () => {
       const workflowStore = useWorkflowStore()
       vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
