@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
+  assertOpsApply,
   zAgentConversation,
   zRecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
@@ -106,6 +107,7 @@ describe('committed recordings', () => {
     for (const file of files) {
       const raw = JSON.parse(readFileSync(join(dir, file), 'utf8'))
       const conversation = zAgentConversation.parse(raw)
+      expect(() => assertOpsApply(conversation), file).not.toThrow()
       expect({ file, workflow: conversation.workflow }).toEqual({
         file,
         workflow: raw.workflow
