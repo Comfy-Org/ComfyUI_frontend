@@ -30,5 +30,6 @@ export {
   MISSING_CUSTOMER_MESSAGE,
   fetchWithCustomerRecovery,
   isCustomerEndpoint,
-  isMissingCustomerResponse
+  isMissingCustomerResponse,
+  retryAfterCustomerRecovery
 } from './customerRecovery.js'

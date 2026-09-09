@@ -4,7 +4,7 @@
  * stale token is allowed. Presentation (unit conversion, chips, focus
  * triggers) stays with the host.
  */
-import { fetchWithCustomerRecovery } from './customerRecovery.js'
+import { retryAfterCustomerRecovery } from './customerRecovery.js'
 import type {
   AccountCredential,
   AccountUser,
@@ -95,15 +95,16 @@ export function createBillingClient(
   ): Promise<CreditsState> {
     let response: Response
     try {
-      response = provisionCustomer
-        ? await fetchWithCustomerRecovery(balanceUrl, {
-            request: () => requestBalance(token),
-            recoverMissingCustomer: () => provisionCustomer(owner),
-            identityUnchanged: () => activeCredential()?.uid === owner.uid
-          })
-        : await requestBalance(token)
+      response = await requestBalance(token)
     } catch {
       return { status: 'error' }
+    }
+    if (provisionCustomer) {
+      response = await retryAfterCustomerRecovery(response, {
+        request: () => requestBalance(token),
+        recoverMissingCustomer: () => provisionCustomer(owner),
+        identityUnchanged: () => activeCredential()?.uid === owner.uid
+      })
     }
     if (!response.ok) {
       return { status: 'error', unauthorized: response.status === 401 }
