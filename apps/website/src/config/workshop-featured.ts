@@ -4,9 +4,9 @@ import type { WorkshopBrowseModel } from './workshop'
  * The models the homepage leads with, in display order.
  *
  * Hand-picked rather than derived: this is the first thing a visitor sees, so
- * the choice is editorial (recognisable names, one per output type) and not
- * something a ranking heuristic should be quietly changing on every catalog
- * regeneration.
+ * the choice is editorial (recognisable names across image generation, video,
+ * speech, music, and 3D) and not something a ranking heuristic should be
+ * quietly changing on every catalog regeneration.
  */
 export const FEATURED_WORKSHOP_MODEL_IDS: readonly string[] = [
   'bfl/flux-2-pro',

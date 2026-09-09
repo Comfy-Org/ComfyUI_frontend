@@ -15,15 +15,15 @@ const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
 }))
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     isAppMode: isAppModeRef
   })
 }))
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: () => ({
     get selectedOutputs() {
       return selectedOutputsRef.value
@@ -31,7 +31,7 @@ vi.mock('@/stores/appModeStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     get activeJobId() {
       return activeJobIdRef.value
@@ -42,15 +42,18 @@ vi.mock('@/stores/executionStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return { path: activeWorkflowPathRef.value }
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return { path: activeWorkflowPathRef.value }
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/jobPreviewStore', () => ({
+vi.mock<unknown>(import('@/stores/jobPreviewStore'), () => ({
   useJobPreviewStore: () => ({
     get nodePreviewsByPromptId() {
       return previewsRef.value
@@ -58,7 +61,7 @@ vi.mock('@/stores/jobPreviewStore', () => ({
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: Object.assign(apiTarget, {
     apiURL: (path: string) => path
   })
