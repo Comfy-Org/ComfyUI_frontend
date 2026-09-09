@@ -70,6 +70,30 @@ describe('createFirebaseIdentity', () => {
     expect(mocks.getAuth).not.toHaveBeenCalled()
   })
 
+  it('preserves persistence for borrowed auth by default', () => {
+    createFirebaseIdentity({ auth: mocks.auth })
+
+    expect(mocks.setPersistence).not.toHaveBeenCalled()
+  })
+
+  it('applies explicit persistence to borrowed auth', () => {
+    createFirebaseIdentity({ auth: mocks.auth, persistence: 'session' })
+
+    expect(mocks.setPersistence).toHaveBeenCalledWith(
+      mocks.auth,
+      expect.objectContaining({ type: 'SESSION' })
+    )
+  })
+
+  it('applies local persistence to package-created auth by default', () => {
+    createFirebaseIdentity({ options: { apiKey: 'test' } })
+
+    expect(mocks.setPersistence).toHaveBeenCalledWith(
+      mocks.auth,
+      expect.objectContaining({ type: 'LOCAL' })
+    )
+  })
+
   it.for([
     ['local', 'LOCAL'],
     ['session', 'SESSION'],

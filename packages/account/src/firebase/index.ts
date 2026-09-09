@@ -44,10 +44,10 @@ export function createFirebaseIdentity(
       config.app ??
         (getApps().length > 0 ? getApp() : initializeApp(config.options ?? {}))
     )
-  const persistenceReady = setPersistence(
-    auth,
-    persistenceByName[config.persistence ?? 'local']
-  )
+  const persistenceReady =
+    !config.auth || config.persistence
+      ? setPersistence(auth, persistenceByName[config.persistence ?? 'local'])
+      : Promise.resolve()
   const subscriptions = new Set<() => void>()
 
   async function snapshot(
