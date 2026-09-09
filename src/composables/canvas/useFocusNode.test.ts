@@ -1,38 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const viewport = [0, 0, 900, 700] as const
-const { canvasStore, createCanvas } = vi.hoisted(() => {
-  function createCanvas() {
-    const canvas = {
-      graph: undefined as unknown,
-      subgraph: undefined as unknown,
-      setGraph: vi.fn(),
-      animateToBounds: vi.fn()
-    }
-    canvas.setGraph.mockImplementation((graph) => {
-      canvas.graph = graph
-    })
-    return canvas
-  }
-
-  const canvasStore: {
-    canvas: ReturnType<typeof createCanvas> | undefined
-  } = { canvas: createCanvas() }
-  return {
-    canvasStore,
-    createCanvas
-  }
-})
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => canvasStore
-}))
-vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
+function createCanvas() {
+  const canvas = fromPartial<LGraphCanvas>({
+    graph: null,
+    subgraph: undefined,
+    setGraph: vi.fn(),
+    animateToBounds: vi.fn()
+  })
+  vi.mocked(canvas.setGraph).mockImplementation((graph) => {
+    canvas.graph = graph
+  })
+  return canvas
+}
+let canvasStore: ReturnType<typeof useCanvasStore>
+vi.mock(import('@/composables/canvas/visibleCanvasViewport'), () => ({
   visibleCanvasViewport: () => viewport
 }))
-vi.mock('@/scripts/app', () => ({ app: { rootGraph: {} } }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { rootGraph: {} } }))
 
 import { useFocusNode } from './useFocusNode'
 
@@ -40,6 +33,7 @@ describe('useFocusNode', () => {
   let animationFrames: FrameRequestCallback[]
 
   beforeEach(() => {
+    canvasStore = useCanvasStore()
     canvasStore.canvas = createCanvas()
     animationFrames = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -102,7 +96,7 @@ describe('useFocusNode', () => {
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
-    canvasStore.canvas = undefined
+    canvasStore.canvas = null
     finishNavigationFrames()
     await focusPromise
 

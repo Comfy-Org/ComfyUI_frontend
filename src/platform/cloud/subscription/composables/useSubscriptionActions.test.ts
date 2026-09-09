@@ -1,3 +1,5 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
@@ -6,7 +8,9 @@ const mockBillingFetchBalance = vi.fn()
 const mockAuthFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
-const mockExecute = vi.fn()
+const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
+  async () => undefined
+)
 const mockToastAdd = vi.fn()
 
 const { mockReportError } = vi.hoisted(() => ({
@@ -15,10 +19,6 @@ const { mockReportError } = vi.hoisted(() => ({
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
-}))
-
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: mockToastAdd })
 }))
 
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
@@ -37,12 +37,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({
-    execute: mockExecute
   })
 }))
 
@@ -74,10 +68,14 @@ Object.defineProperty(window, 'open', {
   value: mockOpen
 })
 
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+  vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
+})
+
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     mockIsCloud.value = true
-    mockReportError.mockReset()
   })
 
   describe('handleAddApiCredits', () => {

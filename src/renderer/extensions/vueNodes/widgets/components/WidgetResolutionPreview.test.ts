@@ -1,13 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 const resolveNodeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/utils/litegraphUtil', () => ({ resolveNode: resolveNodeMock }))
+vi.mock(import('@/utils/litegraphUtil'), () => ({
+  resolveNode: resolveNodeMock
+}))
 
 import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -33,8 +34,7 @@ const i18n = createI18n({
 let pinia: Pinia
 
 beforeEach(() => {
-  pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  pinia = getActivePinia()!
   resolveNodeMock.mockReturnValue({
     id: NODE_ID,
     graph: { rootGraph: { id: GRAPH_ID } }

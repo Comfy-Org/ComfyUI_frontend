@@ -1,40 +1,20 @@
 import { Form, FormField } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import Button from '@/components/ui/button/Button.vue'
+import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAuthStore } from '@/stores/authStore'
 
 import SignUpForm from './SignUpForm.vue'
-
-vi.mock(import('firebase/app'), () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
-
-const mockLoadingRef = ref(false)
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() => ({
-    get loading() {
-      return mockLoadingRef.value
-    }
-  }))
-}))
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockTurnstileEnabled = ref(false)
 const mockTurnstileToken = ref('')
@@ -101,7 +81,7 @@ function globalOptions() {
 describe('SignUpForm', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    mockLoadingRef.value = false
+    useAuthStore().loading = false
     mockTurnstileEnabled.value = false
     mockTurnstileToken.value = ''
     mockTurnstileUnavailable.value = false
@@ -224,7 +204,7 @@ describe('SignUpForm', () => {
       screen.getByRole('button', { name: signUpButton })
 
     it('keeps its accessible name and disables while loading', async () => {
-      mockLoadingRef.value = true
+      useAuthStore().loading = true
       renderComponent()
       await nextTick()
 
@@ -233,7 +213,7 @@ describe('SignUpForm', () => {
     })
 
     it('does not emit submit when clicked', async () => {
-      mockLoadingRef.value = true
+      useAuthStore().loading = true
       const { user, emitted } = renderComponent()
       await nextTick()
 

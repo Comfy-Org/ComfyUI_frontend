@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 interface IMockCanvas {
   width: number
   height: number
+  getContext: () => CanvasRenderingContext2D | null
 }
 
 interface IMockContext {
@@ -13,53 +16,8 @@ interface IMockContext {
   drawImage: ReturnType<typeof vi.fn>
 }
 
-interface IMockCanvasHistory {
-  saveState: ReturnType<typeof vi.fn>
-}
-
-interface IMockStore {
-  maskCanvas: IMockCanvas | null
-  rgbCanvas: IMockCanvas | null
-  imgCanvas: IMockCanvas | null
-  maskCtx: IMockContext | null
-  rgbCtx: IMockContext | null
-  imgCtx: IMockContext | null
-  tgpuRoot: unknown
-  canvasHistory: IMockCanvasHistory
-  gpuTexturesNeedRecreation: boolean
-  gpuTextureWidth: number
-  gpuTextureHeight: number
-  pendingGPUMaskData: Uint8ClampedArray | null
-  pendingGPURgbData: Uint8ClampedArray | null
-}
-
-const { mockStore, mockCanvasHistory } = vi.hoisted(() => {
-  const mockCanvasHistory: IMockCanvasHistory = {
-    saveState: vi.fn()
-  }
-
-  const mockStore: IMockStore = {
-    maskCanvas: null,
-    rgbCanvas: null,
-    imgCanvas: null,
-    maskCtx: null,
-    rgbCtx: null,
-    imgCtx: null,
-    tgpuRoot: null,
-    canvasHistory: mockCanvasHistory,
-    gpuTexturesNeedRecreation: false,
-    gpuTextureWidth: 0,
-    gpuTextureHeight: 0,
-    pendingGPUMaskData: null,
-    pendingGPURgbData: null
-  }
-
-  return { mockStore, mockCanvasHistory }
-})
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
+let mockCanvasHistory: ReturnType<typeof useMaskEditorStore>['canvasHistory']
 
 // Mock ImageData with improved type safety
 if (typeof globalThis.ImageData === 'undefined') {
@@ -120,6 +78,9 @@ describe('useCanvasTransform', () => {
   let mockImgCtx: IMockContext
 
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
+    mockCanvasHistory = mockStore.canvasHistory
+    vi.spyOn(mockCanvasHistory, 'saveState').mockImplementation(() => {})
     const createMockImageData = (width: number, height: number) => {
       const data = new Uint8ClampedArray(width * height * 4)
       for (let i = 0; i < data.length; i += 4) {
@@ -157,26 +118,29 @@ describe('useCanvasTransform', () => {
     }
 
     mockMaskCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStore.maskCtx),
       width: 100,
       height: 50
     }
 
     mockRgbCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStore.rgbCtx),
       width: 100,
       height: 50
     }
 
     mockImgCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockStore.imgCtx),
       width: 100,
       height: 50
     }
 
-    mockStore.maskCanvas = mockMaskCanvas
-    mockStore.rgbCanvas = mockRgbCanvas
-    mockStore.imgCanvas = mockImgCanvas
-    mockStore.maskCtx = mockMaskCtx
-    mockStore.rgbCtx = mockRgbCtx
-    mockStore.imgCtx = mockImgCtx
+    mockStore.maskCanvas = fromPartial<HTMLCanvasElement>(mockMaskCanvas)
+    mockStore.rgbCanvas = fromPartial<HTMLCanvasElement>(mockRgbCanvas)
+    mockStore.imgCanvas = fromPartial<HTMLCanvasElement>(mockImgCanvas)
+    mockStore.maskCtx = fromPartial<CanvasRenderingContext2D>(mockMaskCtx)
+    mockStore.rgbCtx = fromPartial<CanvasRenderingContext2D>(mockRgbCtx)
+    mockStore.imgCtx = fromPartial<CanvasRenderingContext2D>(mockImgCtx)
     mockStore.tgpuRoot = null
     mockStore.gpuTexturesNeedRecreation = false
     mockStore.gpuTextureWidth = 0
@@ -226,15 +190,15 @@ describe('useCanvasTransform', () => {
 
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
 
-      const savedArgs = mockCanvasHistory.saveState.mock.calls[0]
+      const savedArgs = vi.mocked(mockCanvasHistory.saveState).mock.calls[0]
       expect(savedArgs).toHaveLength(3)
 
-      expect(savedArgs[0].width).toBe(50)
-      expect(savedArgs[0].height).toBe(100)
-      expect(savedArgs[1].width).toBe(50)
-      expect(savedArgs[1].height).toBe(100)
-      expect(savedArgs[2].width).toBe(50)
-      expect(savedArgs[2].height).toBe(100)
+      expect(savedArgs[0]!.width).toBe(50)
+      expect(savedArgs[0]!.height).toBe(100)
+      expect(savedArgs[1]!.width).toBe(50)
+      expect(savedArgs[1]!.height).toBe(100)
+      expect(savedArgs[2]!.width).toBe(50)
+      expect(savedArgs[2]!.height).toBe(100)
     })
 
     it('should log error when canvas contexts not ready', async () => {
@@ -254,7 +218,9 @@ describe('useCanvasTransform', () => {
     })
 
     it('should handle GPU texture recreation when GPU is active', async () => {
-      mockStore.tgpuRoot = {}
+      mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>(
+        {}
+      )
 
       const transform = useCanvasTransform()
       await transform.rotateClockwise()
@@ -464,7 +430,9 @@ describe('useCanvasTransform', () => {
     })
 
     it('should handle GPU texture recreation when GPU is active', async () => {
-      mockStore.tgpuRoot = {}
+      mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>(
+        {}
+      )
 
       const transform = useCanvasTransform()
       await transform.mirrorHorizontal()
@@ -529,7 +497,9 @@ describe('useCanvasTransform', () => {
     })
 
     it('should handle GPU texture recreation when GPU is active', async () => {
-      mockStore.tgpuRoot = {}
+      mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>(
+        {}
+      )
 
       const transform = useCanvasTransform()
       await transform.mirrorVertical()
@@ -619,7 +589,9 @@ describe('useCanvasTransform', () => {
 
   describe('GPU integration', () => {
     it('should set GPU recreation flags for rotation', async () => {
-      mockStore.tgpuRoot = {}
+      mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>(
+        {}
+      )
       mockMaskCanvas.width = 100
       mockMaskCanvas.height = 50
 
@@ -634,7 +606,9 @@ describe('useCanvasTransform', () => {
     })
 
     it('should premultiply alpha when preparing GPU data', async () => {
-      mockStore.tgpuRoot = {}
+      mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>(
+        {}
+      )
       mockMaskCanvas.width = 1
       mockMaskCanvas.height = 1
 
