@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col">
-    <div>
+    <div :id="labelId">
       {{ getDownloadLabel(download.savePath ?? '') }}
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
@@ -22,7 +22,7 @@
     >
       <div
         role="progressbar"
-        :aria-label="getDownloadLabel(download.savePath ?? '')"
+        :aria-labelledby="labelId"
         :aria-valuenow="downloadProgressPercent"
         aria-valuemin="0"
         aria-valuemax="100"
@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -88,6 +88,7 @@ import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
 const { t } = useI18n()
+const labelId = useId()
 
 const electronDownloadStore = useElectronDownloadStore()
 
