@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { nextTick } from 'vue'
@@ -74,41 +75,84 @@ describe('WorkshopPlayground', () => {
     expect(screen.getByText(/"prompt": "Red fox"/)).toBeTruthy()
   })
 
+  const UUID_V4 =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+  const keyOf = (container: Element): string => {
+    const match = /Idempotency-Key: ([^']+)'/.exec(container.textContent)
+    expect(match).not.toBeNull()
+    return match?.[1] ?? ''
+  }
+
+  /**
+   * Only the active tab's panel is in the DOM, and the key lives in the raw
+   * HTTP request. Driven by the keyboard because `TabsRoot` activates on arrow
+   * navigation; a bare click does not move the selection here.
+   */
+  const showHttp = async (user: UserEvent): Promise<void> => {
+    screen.getByRole('tab', { name: 'TypeScript' }).focus()
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+    await nextTick()
+    expect(screen.getByRole('tab', { selected: true }).textContent).toContain(
+      'HTTP'
+    )
+  }
+
+  it('mints a new key when the request is edited, not one per mount', async () => {
+    // The Router permits reuse only for a retry of the unchanged request. A
+    // reader who copies prompt A, edits to prompt B and copies again would
+    // otherwise send two distinct paid requests under one consumed key, which
+    // conflicts or replays the first generation.
+    const user = userEvent.setup()
+    const { container } = render(WorkshopPlayground, { props: { model } })
+
+    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
+    await nextTick()
+    await showHttp(user)
+    const afterFirst = keyOf(container)
+    expect(afterFirst).toMatch(UUID_V4)
+
+    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), ' at dusk')
+    await nextTick()
+    const afterEdit = keyOf(container)
+
+    expect(afterEdit).toMatch(UUID_V4)
+    expect(afterEdit).not.toBe(afterFirst)
+  })
+
+  it('keeps the key while the request is unchanged', async () => {
+    // The other half of the contract: a retry of the same body has to carry the
+    // same key. Reading the snippet in another language is not a new request.
+    const user = userEvent.setup()
+    const { container } = render(WorkshopPlayground, { props: { model } })
+
+    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
+    await nextTick()
+    await showHttp(user)
+    const before = keyOf(container)
+
+    screen.getByRole('tab', { name: 'HTTP' }).focus()
+    await user.keyboard('{ArrowLeft}{ArrowRight}')
+    await nextTick()
+
+    expect(keyOf(container)).toBe(before)
+  })
+
   it('replaces the placeholder key with a real one, per mount', async () => {
     // The placeholder is what the prerendered island contains. If it survived
     // into the browser, every reader would send the same Idempotency-Key and
     // the Router would treat one reader's run as a repeat of another's.
-    const keyOf = (container: Element): string => {
-      const match = /Idempotency-Key: ([^']+)'/.exec(container.textContent)
-      expect(match).not.toBeNull()
-      return match?.[1] ?? ''
-    }
-
-    // Only the active tab's panel is in the DOM, and the key lives in the raw
-    // HTTP request. Driven by the keyboard because `TabsRoot` activates on
-    // arrow navigation; a bare click does not move the selection here.
     const user = userEvent.setup()
-    const showHttp = async (): Promise<void> => {
-      screen.getByRole('tab', { name: 'TypeScript' }).focus()
-      await user.keyboard('{ArrowRight}{ArrowRight}')
-      await nextTick()
-      expect(screen.getByRole('tab', { selected: true }).textContent).toContain(
-        'HTTP'
-      )
-    }
-
     const first = render(WorkshopPlayground, { props: { model } })
-    await showHttp()
+    await showHttp(user)
     const firstKey = keyOf(first.container)
 
     expect(firstKey).not.toBe('REPLACE-WITH-A-UUID')
-    expect(firstKey).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
-    )
+    expect(firstKey).toMatch(UUID_V4)
 
     first.unmount()
     const second = render(WorkshopPlayground, { props: { model } })
-    await showHttp()
+    await showHttp(user)
 
     expect(keyOf(second.container)).not.toBe(firstKey)
   })
