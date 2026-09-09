@@ -13,9 +13,13 @@ const toastService = vi.hoisted(() => ({
   removeAllGroups: vi.fn()
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => toastService
-}))
+vi.mock<unknown>(
+  // eslint-disable-next-line primevue-removal/no-imports
+  import('primevue/usetoast'),
+  () => ({
+    useToast: () => toastService
+  })
+)
 
 function renderToast() {
   return render(GlobalToast, {

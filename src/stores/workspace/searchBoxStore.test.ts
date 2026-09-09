@@ -18,7 +18,7 @@ const { mockAdjustMouseEvent } = vi.hoisted(() => ({
   })
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useMouse: vi.fn(() => ({
     x: { value: 100 },
     y: { value: 200 }
@@ -26,15 +26,19 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 const mockSettingStore = createMockSettingStore()
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => ({ adjustMouseEvent: mockAdjustMouseEvent })
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
+
+  () => ({
+    useCanvasStore: () => ({
+      getCanvas: () => ({ adjustMouseEvent: mockAdjustMouseEvent })
+    })
   })
-}))
+)
 
 function createMockPopover(): Pick<
   InstanceType<typeof NodeSearchBoxPopover>,
