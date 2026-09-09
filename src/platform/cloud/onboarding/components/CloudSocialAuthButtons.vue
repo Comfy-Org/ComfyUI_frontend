@@ -1,25 +1,17 @@
 <template>
-  <Button
-    type="button"
-    variant="brand-ghost"
-    size="brand"
-    class="w-full gap-3"
-    @click="emit('google')"
-  >
-    <i class="icon-[simple-icons--google] size-5" />
-    <span class="relative top-[0.15em] inline-block">{{ googleLabel }}</span>
-  </Button>
-
-  <Button
-    type="button"
-    variant="brand-ghost"
-    size="brand"
-    class="w-full gap-3"
-    @click="emit('github')"
-  >
-    <i class="icon-[simple-icons--github] size-5" />
-    <span class="relative top-[0.15em] inline-block">{{ githubLabel }}</span>
-  </Button>
+  <SocialAuthButtons
+    :google-label="googleLabel"
+    :github-label="githubLabel"
+    :button-class="
+      cn(
+        buttonVariants({ variant: 'brand-ghost', size: 'brand' }),
+        'w-full gap-3'
+      )
+    "
+    label-class="relative top-[0.15em] inline-block"
+    @google="emit('google')"
+    @github="emit('github')"
+  />
 
   <p
     v-if="showInAppBrowserNotice"
@@ -33,7 +25,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { buttonVariants } from '@/components/ui/button/button.variants'
 
 const {
   googleLabel,
