@@ -1,3 +1,6 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -454,6 +457,60 @@ describe('autoExposeKnownPreviewNodes', () => {
         .map((e) => e.sourceNodeId)
     ).not.toContain(String(glslNode.id))
   })
+})
+
+describe('e2e ambient-preview fixtures stay ambient-only', () => {
+  // These fixtures back subgraphNestedAmbientPreviewScope.spec.ts and
+  // subgraphAmbientCommittedOutputIsolation.spec.ts, both of which assert a
+  // live preview appears on a subgraph host with no promoted exposure for
+  // it. If a host's `previewExposures` property is left undefined, the
+  // one-shot `autoExposeKnownPreviewNodes` gate above runs on load and
+  // auto-promotes the interior KSampler, so the e2e assertion passes via the
+  // promotion path even with the ambient composable stubbed out — the exact
+  // gap this test guards against.
+  const hostFixtures = [
+    {
+      file: 'subgraph-nested-with-live-sampler.json',
+      hostTitles: ['Outer Subgraph', 'Middle Subgraph']
+    },
+    {
+      file: 'subgraph-with-live-sampler-and-committed-output.json',
+      hostTitles: ['Sampler And Preview Subgraph']
+    }
+  ]
+
+  function loadFixtureNodes(fileName: string) {
+    const fullPath = path.resolve(
+      __dirname,
+      `../../../../browser_tests/assets/subgraphs/${fileName}`
+    )
+    const workflow = JSON.parse(fs.readFileSync(fullPath, 'utf-8')) as {
+      nodes: Array<{ title?: string; properties?: Record<string, unknown> }>
+      definitions?: {
+        subgraphs?: Array<{
+          nodes: Array<{
+            title?: string
+            properties?: Record<string, unknown>
+          }>
+        }>
+      }
+    }
+    return [
+      ...workflow.nodes,
+      ...(workflow.definitions?.subgraphs?.flatMap((sg) => sg.nodes) ?? [])
+    ]
+  }
+
+  it.for(hostFixtures)(
+    'declares an empty previewExposures on every host in $file',
+    ({ file, hostTitles }) => {
+      const nodes = loadFixtureNodes(file)
+      for (const title of hostTitles) {
+        const host = nodes.find((n) => n.title === title)
+        expect(host?.properties?.previewExposures).toEqual([])
+      }
+    }
+  )
 })
 
 describe('hasUnpromotedWidgets', () => {
