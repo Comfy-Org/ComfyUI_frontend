@@ -25,15 +25,6 @@ const workshopMediaRoleSchema = z.strictObject({
   extras: z.array(z.record(z.string(), z.json())).optional()
 })
 
-/**
- * One Router model, one file. `strictObject` so a generator that starts
- * emitting an unexpected key fails the content build rather than shipping a
- * field nothing renders.
- *
- * This is the only description of the shape. The generator writes against it
- * and the site reads through it, so there is no second hand-written decoder
- * to drift.
- */
 export const workshopModelSchema = z.strictObject({
   /** Exact Router model ID, e.g. `bfl/flux-2-pro`. The run contract. */
   id: z.string().regex(/^[^/]+\/[^/]+$/, 'expected "provider/model"'),

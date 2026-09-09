@@ -8,6 +8,7 @@ import type { WorkshopBrowseModel } from './workshop'
 import {
   countWorkshopOutputs,
   filterWorkshopModels,
+  prepareWorkshopBrowseModels,
   toBrowseModel
 } from './workshop'
 
@@ -21,14 +22,17 @@ const CATALOG = join(
   'workshop-models.json'
 )
 
-const collection = (JSON.parse(readFileSync(CATALOG, 'utf8')) as unknown[]).map(
-  (entry) => workshopModelSchema.parse(entry)
-)
+const rawCatalog: unknown = JSON.parse(readFileSync(CATALOG, 'utf8'))
+
+if (!Array.isArray(rawCatalog)) {
+  throw new TypeError('Workshop catalog must be an array')
+}
+
+const collection = rawCatalog.map((entry) => workshopModelSchema.parse(entry))
 
 const models: WorkshopBrowseModel[] = [
   {
     id: 'bfl/flux',
-    slug: 'bfl--flux',
     href: '/workshop/models/bfl--flux/',
     name: 'Flux',
     provider: 'bfl',
@@ -38,7 +42,6 @@ const models: WorkshopBrowseModel[] = [
   },
   {
     id: 'kling/video',
-    slug: 'kling--video',
     href: '/workshop/models/kling--video/',
     name: 'Kling Video',
     provider: 'kling',
@@ -65,7 +68,36 @@ describe('Workshop catalog', () => {
     expect(Object.keys(card)).not.toContain('parameters')
   })
 
+  it.for([
+    { modality: 'music' as const, output: 'audio' as const },
+    { modality: 'svg' as const, output: 'image' as const }
+  ])(
+    'maps the $modality modality to the $output output',
+    ({ modality, output }) => {
+      const entry = collection.find(
+        (candidate) => candidate.modality === modality
+      )
+
+      expect(entry).toBeDefined()
+      if (!entry) throw new Error(`Missing ${modality} model`)
+      expect(toBrowseModel(entry).output).toBe(output)
+    }
+  )
+
+  it('projects and sorts catalog entries for the page', () => {
+    const entries = [collection[1], collection[0]]
+
+    expect(
+      prepareWorkshopBrowseModels(entries).map((model) => model.id)
+    ).toEqual(
+      entries
+        .map((entry) => entry.id)
+        .sort((left, right) => left.localeCompare(right))
+    )
+  })
+
   it('searches names, providers, descriptions, and tags', () => {
+    expect(filterWorkshopModels(models, { query: 'Flux' })).toEqual([models[0]])
     expect(filterWorkshopModels(models, { query: 'animate' })).toEqual([
       models[1]
     ])

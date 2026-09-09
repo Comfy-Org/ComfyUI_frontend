@@ -37,19 +37,19 @@ const mockDataStore: MockDataStore = {
   inputData: null
 }
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-vi.mock('@/stores/maskEditorDataStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorDataStore'), () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-vi.mock('@/composables/maskeditor/useCanvasManager', () => ({
+vi.mock(import('@/composables/maskeditor/useCanvasManager'), () => ({
   useCanvasManager: vi.fn(() => mockCanvasManager)
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))

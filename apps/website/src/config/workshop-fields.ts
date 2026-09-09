@@ -12,19 +12,30 @@ function isStringArray(value: unknown): value is string[] {
 
 type FieldOption = string | number | boolean
 
+interface WorkshopTextFieldBase {
+  readonly kind: 'text'
+  readonly name: string
+  readonly label: string
+  readonly hint?: string
+  readonly required: boolean
+  readonly multiline: boolean
+  readonly minLength?: number
+  readonly maxLength?: number
+  readonly defaultValue?: string
+  /** Values the schema names without restricting the field to them. */
+  readonly suggestions?: readonly FieldOption[]
+}
+
 export type WorkshopCatalogField =
-  | {
-      readonly kind: 'text'
-      readonly name: string
-      readonly label: string
-      readonly hint?: string
-      readonly required: boolean
-      readonly multiline: boolean
-      readonly valueType: 'string' | 'json'
-      readonly defaultValue?: string
-      /** Values the schema names without restricting the field to them. */
-      readonly suggestions?: readonly FieldOption[]
-    }
+  | (WorkshopTextFieldBase & {
+      readonly valueType: 'string'
+      readonly jsonSchema?: never
+    })
+  | (WorkshopTextFieldBase & {
+      readonly valueType: 'json'
+      /** Authoritative Router schema used to validate the parsed value. */
+      readonly jsonSchema: Readonly<Record<string, unknown>>
+    })
   | {
       readonly kind: 'select'
       readonly name: string
@@ -61,6 +72,7 @@ export type WorkshopCatalogField =
       readonly label: string
       readonly required: boolean
       readonly multiple: boolean
+      readonly maxItems?: number
       readonly accept: 'image' | 'video' | 'audio' | 'file'
     }
 
@@ -94,24 +106,38 @@ function primitiveOptions(schema: Record<string, unknown>): FieldOption[] {
 }
 
 /**
- * True when a schema lists some values but also accepts anything of that
- * type: `anyOf: [{enum: [...]}, {type: 'string'}]`.
+ * Finds the string variant when a schema lists some values but also accepts
+ * any string: `anyOf: [{enum: [...]}, {type: 'string'}]`.
  *
  * ElevenLabs and Fish Audio `voice`, and HeyGen `avatar_id`, are all this
  * shape - pick a stock one, or paste the id of one you cloned yourself.
  * Rendering it as a closed select makes your own voice unreachable, so the
  * listed values become suggestions on a text field instead.
  */
-function acceptsAnyValue(schema: Record<string, unknown>): boolean {
-  if (!Array.isArray(schema.anyOf)) return false
-  return schema.anyOf.some(
-    (variant) =>
+function openStringVariant(
+  schema: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!Array.isArray(schema.anyOf)) return undefined
+  return schema.anyOf.find(
+    (variant): variant is Record<string, unknown> =>
       isRecord(variant) &&
       variant.enum === undefined &&
-      (variant.type === 'string' ||
-        variant.type === 'number' ||
-        variant.type === 'integer')
+      variant.type === 'string'
   )
+}
+
+function textLengthLimits(schema: Record<string, unknown>): {
+  readonly minLength?: number
+  readonly maxLength?: number
+} {
+  return {
+    ...(typeof schema.minLength === 'number'
+      ? { minLength: schema.minLength }
+      : {}),
+    ...(typeof schema.maxLength === 'number'
+      ? { maxLength: schema.maxLength }
+      : {})
+  }
 }
 
 function fieldFor(
@@ -126,12 +152,15 @@ function fieldFor(
     required
   }
   const options = primitiveOptions(schema)
-  if (options.length > 0 && acceptsAnyValue(schema)) {
+  const openString = openStringVariant(schema)
+  if (options.length > 0 && openString) {
+    const textSchema = { ...schema, ...openString }
     return {
       kind: 'text',
       ...common,
       multiline: false,
       valueType: 'string',
+      ...textLengthLimits(textSchema),
       suggestions: options,
       ...(typeof schema.default === 'string'
         ? { defaultValue: schema.default }
@@ -186,10 +215,14 @@ function fieldFor(
     return {
       kind: 'text',
       ...common,
+      // A bound above 200 means long prose. So does no bound at all, which
+      // is the common case: every `negative_prompt` in the catalog is an
+      // unbounded string, and testing `maxLength > 200` alone put 135 of 332
+      // free-text fields into a single-line box.
       multiline:
-        name === 'prompt' ||
-        (typeof schema.maxLength === 'number' && schema.maxLength > 200),
+        typeof schema.maxLength === 'number' ? schema.maxLength > 200 : true,
       valueType: 'string',
+      ...textLengthLimits(schema),
       ...(typeof schema.default === 'string'
         ? { defaultValue: schema.default }
         : {})
@@ -200,13 +233,23 @@ function fieldFor(
     ...common,
     multiline: true,
     valueType: 'json',
+    jsonSchema: schema,
     ...(schema.default === undefined
       ? {}
       : { defaultValue: JSON.stringify(schema.default, null, 2) })
   }
 }
 
+/**
+ * Which file types a media input should accept.
+ *
+ * `view_*` roles are named for the camera angle rather than the medium, so a
+ * substring match alone drops them to a generic file picker. Four models
+ * carry them, and `kling/dual-character-effect` has nothing but `view_left`
+ * and `view_right`, so it would offer no image picker at all.
+ */
 function acceptFor(role: string): 'image' | 'video' | 'audio' | 'file' {
+  if (role.startsWith('view_')) return 'image'
   if (role.includes('image') || role === 'mask') return 'image'
   if (role.includes('video')) return 'video'
   if (role.includes('audio')) return 'audio'
@@ -244,6 +287,7 @@ export function deriveWorkshopFields(
         label: labelFor(role.role),
         required: role.required,
         multiple: role.cardinality === 'many',
+        ...(role.maxItems === undefined ? {} : { maxItems: role.maxItems }),
         accept: acceptFor(role.role)
       })
     )
