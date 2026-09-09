@@ -163,6 +163,36 @@ describe('custom-node detection proof', () => {
     )
   })
 
+  it('rejects a dirty source baseline before applying a non-source patch', () => {
+    withTempDir('proof-dirty-source-', (root) => {
+      mkdirSync(join(root, 'src'))
+      writeFileSync(join(root, 'src', 'node.ts'), 'export const value = 1\n')
+      writeFileSync(join(root, 'README.md'), 'before\n')
+      git(root, ['init', '-q'])
+      git(root, ['add', 'src/node.ts', 'README.md'])
+      git(root, [
+        '-c',
+        'user.name=Test',
+        '-c',
+        'user.email=test@example.com',
+        'commit',
+        '-qm',
+        'base'
+      ])
+      writeFileSync(join(root, 'README.md'), 'after\n')
+      const patchPath = join(root, 'proof.patch')
+      writeFileSync(patchPath, git(root, ['diff', '--full-index', '--binary']))
+      git(root, ['reset', '--hard', '-q', 'HEAD'])
+      writeFileSync(join(root, 'src', 'node.ts'), 'export const value = 2\n')
+      git(root, ['add', 'src/node.ts'])
+
+      expect(() => applySourcePatch(patchPath, root)).toThrow(
+        /src\/ must be clean/
+      )
+      expect(readFileSync(join(root, 'README.md'), 'utf8')).toBe('before\n')
+    })
+  })
+
   it('mutates only the calibrated S9 witness method', () => {
     const source = `class LoadAudioUpload:
     def load_audio(self, start_time=0, duration=0, **kwargs):

@@ -92,6 +92,8 @@ export function hasSourceChanges(cwd?: string): boolean {
 }
 
 export function applySourcePatch(path: string, cwd?: string): void {
+  if (hasSourceChanges(cwd))
+    throw new Error('src/ must be clean before applying detection proof patch')
   run('git', ['apply', '--3way', '--check', path], cwd)
   run('git', ['apply', '--3way', path], cwd)
   if (!hasSourceChanges(cwd)) throw new Error('patch did not change src/')
