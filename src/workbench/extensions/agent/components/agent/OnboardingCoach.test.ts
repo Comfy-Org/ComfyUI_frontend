@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -39,7 +38,6 @@ function mountWithTarget(rect: { left: number; top: number }) {
 
 describe('OnboardingCoach', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     target?.remove()
     localStorage.clear()
   })

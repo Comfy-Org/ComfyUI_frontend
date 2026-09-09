@@ -42,7 +42,7 @@ const EXECUTABLE_ASSET_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.html'])
 const GATE_BODIES = {
   nonCloud: /^return\s*(?:false|!1)\s*;?$/,
   cloud:
-    /^return\s*!!\s*[\w$.]+(?:\(\))?\.get\(\s*(['"`])Comfy\.Assets\.UseAssetAPI\1\s*\)\s*;?$/
+    /^return\s*(?:!!\s*)?[\w$.]+(?:\(\))?\.get\(\s*(['"`])Comfy\.Assets\.UseAssetAPI\1\s*\)\s*;?$/
 } as const
 
 function artifactFiles(directory: string): string[] {
@@ -82,7 +82,7 @@ function assetApiGates(chunks: ReadonlyArray<string>): string {
     const matches: string[] = []
     const declaration = /function isAssetAPIEnabled\(\)\s*\{/g
     for (const match of chunk.matchAll(declaration)) {
-      const start = (match.index ?? 0) + match[0].length
+      const start = match.index + match[0].length
       const end = findMatchingBraceEnd(chunk, start)
       if (end !== -1) matches.push(chunk.slice(match.index, end))
     }
@@ -220,9 +220,7 @@ export function checkAssetsFlagArtifact(directory = 'dist'): void {
   assertAssetApiGate(executableChunks, expectedDistribution)
 }
 
-if (
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+const entrypoint = process.argv.at(1)
+if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
   checkAssetsFlagArtifact()
 }

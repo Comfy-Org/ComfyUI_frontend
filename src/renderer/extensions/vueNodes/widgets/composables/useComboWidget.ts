@@ -33,7 +33,9 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 }
 
 // Map node types to expected media types
-const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
+const NODE_MEDIA_TYPE_MAP: Partial<
+  Record<string, 'image' | 'video' | 'audio'>
+> = {
   LoadImage: 'image',
   LoadVideo: 'video',
   LoadAudio: 'audio'

@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type {
@@ -63,7 +61,6 @@ class ThrowingNode extends LGraphNode {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.resetForTests()
   LiteGraph.registerNodeType('test/good', GoodNode)
   LiteGraph.registerNodeType('test/throwing', ThrowingNode)
@@ -129,7 +126,7 @@ function workflowThatFailsAfterGroups(): SerialisableGraph {
   const workflow = sameWorkflowThatLoads()
   return {
     ...workflow,
-    links: workflow.links?.map((link) => ({ ...link, parentId: 1 })),
+    links: workflow.links.map((link) => ({ ...link, parentId: 1 })),
     reroutes: [{ id: 1, pos: [50, 50], linkIds: [1] }]
   }
 }

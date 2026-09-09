@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   LGraph,
@@ -65,10 +63,6 @@ function buildGraph() {
 }
 
 describe('graphToPrompt API prompt stability', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('produces an identical payload when called twice on the same graph', async () => {
     const { graph } = buildGraph()
 

@@ -18,9 +18,12 @@ const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
 )
 
-vi.mock('@/platform/distribution/types', () => mockDistribution)
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistribution
+)
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
@@ -36,7 +39,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the assetService
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
@@ -45,24 +48,8 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-// Mock the settingStore
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn()
-}))
-
 function enableMocks(useAssetAPI = false) {
-  // Mock settingStore to return the useAssetAPI setting
-  const mockSettingStore = {
-    get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.Assets.UseAssetAPI') {
-        return useAssetAPI
-      }
-      return false
-    })
-  }
-  vi.mocked(useSettingStore, { partial: true }).mockReturnValue(
-    mockSettingStore
-  )
+  useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = useAssetAPI
 
   // Mock experimental API - returns objects with name and folders properties
   vi.mocked(api.getModels).mockResolvedValue([
@@ -118,6 +105,13 @@ describe('useModelStore', () => {
     const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).toBeDefined()
     expect(Object.keys(folderStore!.models)).toHaveLength(3)
+  })
+
+  it('returns null when a model folder is unavailable', async () => {
+    enableMocks()
+    store = useModelStore()
+
+    await expect(store.getLoadedModelFolder('unknown')).resolves.toBeNull()
   })
 
   it('should load model metadata', async () => {
