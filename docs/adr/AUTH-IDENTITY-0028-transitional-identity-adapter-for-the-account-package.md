@@ -38,7 +38,13 @@ is not a contract to build on.
    identity, the port callback fails closed on an identity change by
    itself, and every host mint waits for the port to have delivered the
    app's current user before it runs (`unifiedUser()`), so a mint can
-   neither run for a stale identity nor be lost to teardown.
+   neither run for a stale identity nor be lost to teardown. That wait
+   reads `authStore.currentUser` only to know which uid to wait for, a
+   convergence check between two projections of one `Auth` instance; the
+   port's user is what mints. The wait is bounded, so a silent port fails
+   the mint closed instead of hanging the auth gate. Mints stay
+   host-driven (`autoMint: false`), so telemetry and coalescing are
+   unchanged.
 4. `syncUnifiedIdentity` is gone; the flag rule stays: with
    `unified_cloud_auth` off the port is never attached and no state is
    held.
