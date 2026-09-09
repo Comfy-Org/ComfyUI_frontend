@@ -104,17 +104,7 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="canTopUp"
-        variant="secondary"
-        size="sm"
-        class="text-base-foreground"
-        data-testid="add-credits-button"
-        @click="handleTopUp"
-      >
-        {{ $t('subscription.addCredits') }}
-      </Button>
-      <Button
-        v-else-if="canSubscribeSelfServe"
+        v-if="canAccessSubscriptionFeatures && canSubscribeSelfServe"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -122,6 +112,16 @@
         @click="handleUpgradeToAddCredits"
       >
         {{ $t('subscription.subscribeForMore') }}
+      </Button>
+      <Button
+        v-else-if="canTopUp"
+        variant="secondary"
+        size="sm"
+        class="text-base-foreground"
+        data-testid="add-credits-button"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
