@@ -25,7 +25,8 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signOut
+  signOut,
+  updatePassword
 } from 'firebase/auth'
 
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
@@ -76,6 +77,8 @@ export interface FirebaseIdentity {
     password: string
   ) => Promise<UserCredential>
   sendPasswordReset: (email: string) => Promise<void>
+  /** For the signed-in user; rejects when nobody is signed in. */
+  updatePassword: (newPassword: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -169,6 +172,14 @@ export function createFirebaseIdentity(
       bounded(sendPasswordResetEmail(auth(), email)).catch(
         resolveUnknownEmailAsSent
       ),
+    updatePassword: (newPassword) => {
+      const user = auth().currentUser
+      return user
+        ? updatePassword(user, newPassword)
+        : Promise.reject(
+            new Error('No signed-in user to update the password for')
+          )
+    },
     signOut: () => signOut(auth())
   }
 }
