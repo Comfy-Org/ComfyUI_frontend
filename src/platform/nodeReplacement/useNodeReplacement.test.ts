@@ -7,7 +7,6 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
-import type * as LiteGraphModule from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -23,19 +22,16 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => {
-    const actual = await importOriginal<typeof LiteGraphModule>()
-    return {
-      ...actual,
-      LiteGraph: Object.assign({}, actual.LiteGraph, {
-        createNode: vi.fn(),
-        registered_node_types: {}
-      })
-    }
+vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    LiteGraph: Object.assign({}, actual.LiteGraph, {
+      createNode: vi.fn(),
+      registered_node_types: {}
+    })
   }
-)
+})
 
 vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
