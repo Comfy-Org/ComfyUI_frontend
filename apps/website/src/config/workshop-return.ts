@@ -80,6 +80,23 @@ export function stashWorkshopForm(
   }
 }
 
+const signInLeaveHooks = new Set<() => void>()
+
+/**
+ * An island holding unsaved work registers its stash here; the header's
+ * sign-in navigation runs every registered hook before leaving the page.
+ */
+export function onBeforeSignInLeave(stash: () => void): () => void {
+  signInLeaveHooks.add(stash)
+  return () => {
+    signInLeaveHooks.delete(stash)
+  }
+}
+
+export function runBeforeSignInLeave(): void {
+  signInLeaveHooks.forEach((stash) => stash())
+}
+
 /**
  * One-shot restore: reads, removes, and re-validates the stash. Everything
  * in sessionStorage is editable by the visitor, so each value is checked

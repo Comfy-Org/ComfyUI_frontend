@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { onBeforeSignInLeave } from '../../config/workshop-return'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -15,14 +16,14 @@ const h = vi.hoisted(() => ({
   signOut: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   h.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('../../config/workshop-session-state', async () => {
+vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   const user = ref<unknown>(null)
   const session = ref<unknown>(undefined)
@@ -41,7 +42,7 @@ vi.mock('../../config/workshop-session-state', async () => {
   }
 })
 
-vi.mock('../../config/workshop-credits', async () => {
+vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   const balance = ref<unknown>({ status: 'unknown' })
   h.balance = balance
@@ -173,6 +174,23 @@ describe('HeaderAccount', () => {
 })
 
 describe('HeaderAccount sign-in link', () => {
+  it('runs the registered stashes before leaving for sign-in', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+    const stash = vi.fn()
+    const stop = onBeforeSignInLeave(stash)
+    render(HeaderAccount)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: /sign in/i }))
+
+    expect(stash.mock.invocationCallOrder[0]).toBeLessThan(
+      assign.mock.invocationCallOrder[0]
+    )
+    stop()
+  })
+
   it('sends the visitor to sign in with the current page as the return destination', async () => {
     const assign = vi.fn()
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
