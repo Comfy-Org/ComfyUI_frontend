@@ -2,7 +2,7 @@ import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { i18n } from '@/i18n'
@@ -2199,5 +2199,123 @@ describe('useAuthStore', () => {
 
       expect(mockResetSocket).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('useAuthStore in local/desktop distribution', () => {
+  // Every prior describe block above runs with isCloud: true (see the
+  // top-level mockDistributionTypes). Sign-in itself has no isCloud branch:
+  // login/loginWithGoogle/loginWithGithub call the package's identity
+  // object unconditionally. This block proves that directly instead of
+  // inferring it from the cloud-mode suite, and pins the one thing that
+  // *should* differ: the cloud-only side effects (socket reset, workspace
+  // JWT mint) must not fire when isCloud is false.
+  let store: ReturnType<typeof useAuthStore>
+  let authStateCallback: (user: User | null) => void
+
+  const mockAuth: MockAuth = {/* mock Auth object */}
+  const mockUser: MockUser = {
+    uid: 'local-user-id',
+    email: 'local@example.com',
+    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
+    delete: vi.fn().mockResolvedValue(undefined)
+  } as Partial<User> as MockUser
+
+  beforeEach(() => {
+    mockDistributionTypes.isCloud = false
+    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.DISTRIBUTION = 'localhost'
+
+    vi.stubGlobal('fetch', mockFetch)
+    mockFeatureFlags.unifiedCloudAuthEnabled = false
+
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showErrorDialog: vi.fn()
+    })
+
+    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+      mockAuth as Partial<
+        ReturnType<typeof vuefire.useFirebaseAuth>
+      > as ReturnType<typeof vuefire.useFirebaseAuth>
+    )
+
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => {
+        authStateCallback = callback as (user: User | null) => void
+        ;(callback as (user: User | null) => void)(mockUser)
+        return vi.fn()
+      }
+    )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
+
+    mockFetch.mockImplementation((url: string) => {
+      if (url.endsWith('/customers')) {
+        return Promise.resolve(mockCreateCustomerResponse)
+      }
+      return Promise.reject(new Error('Unexpected API call'))
+    })
+
+    store = useAuthStore()
+    mockUser.getIdToken.mockResolvedValue('mock-id-token')
+    mockResetSocket.mockClear()
+  })
+
+  afterEach(() => {
+    mockDistributionTypes.isCloud = true
+    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.DISTRIBUTION = 'cloud'
+  })
+
+  it('signs in with email through the same package identity path as cloud', async () => {
+    vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+      user: mockUser
+    } as Partial<UserCredential> as UserCredential)
+
+    const result = await store.login('local@example.com', 'password')
+
+    expect(result.user).toEqual(mockUser)
+    expect(store.loading).toBe(false)
+  })
+
+  it('signs in with Google through the same package identity path as cloud', async () => {
+    vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+      user: mockUser
+    } as Partial<UserCredential> as UserCredential)
+
+    const result = await store.loginWithGoogle()
+
+    expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(
+      mockAuth,
+      expect.any(firebaseAuth.GoogleAuthProvider)
+    )
+    expect(result.user).toEqual(mockUser)
+  })
+
+  it('does not reset the realtime socket on identity change, unlike cloud', () => {
+    const accountB: MockUser = {
+      uid: 'local-user-b',
+      email: 'local-b@example.com',
+      getIdToken: vi.fn().mockResolvedValue('mock-id-token-b'),
+      delete: vi.fn().mockResolvedValue(undefined)
+    } as Partial<User> as MockUser
+
+    authStateCallback(accountB)
+
+    expect(
+      mockResetSocket,
+      'socket re-handshake is a cloud-only side effect (isCloud && identityChanged); local/desktop has no realtime socket to reset'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('does not attempt to mint a workspace JWT on sign-in, unlike cloud', () => {
+    const workspaceAuth = useWorkspaceAuthStore()
+    const mintSpy = vi.spyOn(workspaceAuth, 'mintAtLogin')
+
+    authStateCallback(mockUser)
+
+    expect(
+      mintSpy,
+      'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
+    ).not.toHaveBeenCalled()
   })
 })
