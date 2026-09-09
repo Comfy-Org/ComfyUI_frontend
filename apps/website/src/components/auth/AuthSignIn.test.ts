@@ -11,6 +11,7 @@ import AuthToast from './AuthToast.vue'
 
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
+  settled: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
   chunkFails: false,
@@ -18,6 +19,8 @@ const handles = vi.hoisted(() => ({
   google: vi.fn(),
   github: vi.fn(),
   isProvisioningError: vi.fn(),
+  isNewUser: vi.fn(),
+  captureAuthCompleted: vi.fn(),
   captureAuthFailed: vi.fn(),
   captureSignupOpened: vi.fn(),
   embedded: false
@@ -26,9 +29,13 @@ const handles = vi.hoisted(() => ({
 vi.mock('../../scripts/posthog', async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
+  const settled = ref(true)
   handles.flag = flag
+  handles.settled = settled
   return {
     useWorkshopAuthFlag: () => flag,
+    useWorkshopAuthFlagSettled: () => settled,
+    captureAuthCompleted: handles.captureAuthCompleted,
     captureAuthFailed: handles.captureAuthFailed,
     captureSignupOpened: handles.captureSignupOpened
   }
@@ -45,7 +52,8 @@ vi.mock('../../config/workshop-firebase', () => {
   return {
     signInWorkshopWithGoogle: handles.google,
     signInWorkshopWithGitHub: handles.github,
-    isWorkshopProvisioningError: handles.isProvisioningError
+    isWorkshopProvisioningError: handles.isProvisioningError,
+    isNewWorkshopUser: handles.isNewUser
   }
 })
 
@@ -69,6 +77,7 @@ const replace = vi.fn<(url: string | URL) => void>()
 
 beforeEach(() => {
   handles.flag!.value = true
+  handles.settled!.value = true
   handles.user!.value = null
   handles.session!.value = undefined
   handles.chunkFails = false
@@ -79,6 +88,8 @@ beforeEach(() => {
   handles.google.mockReset()
   handles.github.mockReset()
   handles.isProvisioningError.mockReset().mockReturnValue(false)
+  handles.isNewUser.mockReset().mockReturnValue(false)
+  handles.captureAuthCompleted.mockClear()
   handles.captureAuthFailed.mockClear()
   handles.captureSignupOpened.mockClear()
   handles.embedded = false
@@ -228,6 +239,133 @@ describe('AuthSignIn', () => {
         auth_action: 'google_sign_up'
       })
     )
+  })
+
+  it('reports the sign-up open only once the flag lets the page show', async () => {
+    handles.flag!.value = false
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.captureSignupOpened,
+      'the cloud app reports the open when its page renders, not for a blank one'
+    ).not.toHaveBeenCalled()
+
+    handles.flag!.value = true
+    await waitFor(() =>
+      expect(handles.captureSignupOpened).toHaveBeenCalledOnce()
+    )
+  })
+
+  it("reports a completed sign-in with the cloud app's metadata", async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    handles.isNewUser.mockReturnValue(true)
+    render(AuthSignIn)
+
+    await clickGoogle()
+
+    await waitFor(() =>
+      expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-1',
+        email: 'user@example.com'
+      })
+    )
+  })
+
+  it('reports a sign-up page completion as a new user regardless of the provider answer', async () => {
+    handles.github.mockResolvedValue({
+      user: { uid: 'user-2', email: null, displayName: 'Octo' }
+    })
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with github/i }))
+
+    await waitFor(() =>
+      expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
+        method: 'github',
+        is_new_user: true,
+        user_id: 'user-2',
+        email: undefined
+      })
+    )
+  })
+
+  it('does not report a completion when provisioning fails after the popup', async () => {
+    const failure = {
+      user: { uid: 'user-1', email: 'a@b.co', displayName: null }
+    }
+    handles.isProvisioningError.mockImplementation((error) => error === failure)
+    handles.google.mockRejectedValue(failure)
+    render(AuthSignIn)
+
+    await clickGoogle()
+
+    await screen.findByRole('alert')
+    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+  })
+
+  it('toasts the signup-blocked copy when the popup reports the blocked token', async () => {
+    handles.google.mockRejectedValue({
+      code: 'auth/internal-error',
+      message: 'Firebase: SIGNUP_BLOCKED (auth/internal-error).'
+    })
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+    render(AuthToast)
+
+    await clickGoogle()
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      "couldn't create your account"
+    )
+  })
+
+  describe('when the auth flag never answers', () => {
+    it("shows the cloud app's timeout copy after its 16 s bound", async () => {
+      handles.flag!.value = false
+      handles.settled!.value = false
+      render(AuthSignIn)
+
+      await vi.advanceTimersByTimeAsync(15_999)
+      expect(screen.queryByRole('alert')).toBeNull()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect((await screen.findByRole('alert')).textContent).toContain(
+        'Connection Taking Too Long'
+      )
+      expect(
+        screen.getByRole('link', { name: 'support' }).getAttribute('href')
+      ).toBe('https://support.comfy.org')
+    })
+
+    it('shows nothing when PostHog answered that the flag is off', async () => {
+      handles.flag!.value = false
+      render(AuthSignIn)
+
+      await vi.advanceTimersByTimeAsync(16_000)
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('gives way to the page once a late answer turns the flag on', async () => {
+      handles.flag!.value = false
+      handles.settled!.value = false
+      render(AuthSignIn)
+      await vi.advanceTimersByTimeAsync(16_000)
+      await screen.findByRole('alert')
+
+      handles.settled!.value = true
+      handles.flag!.value = true
+
+      expect(
+        await screen.findByRole('button', { name: /continue with google/i })
+      ).toBeTruthy()
+      expect(screen.queryByText('Connection Taking Too Long')).toBeNull()
+    })
   })
 
   it('does not report a sign-up open from the login page', async () => {

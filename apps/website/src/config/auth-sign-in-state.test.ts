@@ -157,6 +157,11 @@ describe('signInErrorMessage', () => {
       'a non-Firebase failure',
       new Error('customers 500'),
       AUTH_ERROR_MESSAGES.generic
+    ],
+    [
+      'a non-auth Firebase failure, which the cloud app also reads as generic',
+      { code: 'app/no-app', message: 'x' },
+      AUTH_ERROR_MESSAGES.generic
     ]
   ] as const)("speaks the cloud app's line for %s", ([, error, copy]) => {
     expect(signInErrorMessage(failed(error), 'en', 'comfy.org')).toBe(copy)
