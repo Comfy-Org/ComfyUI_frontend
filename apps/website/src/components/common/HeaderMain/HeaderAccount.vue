@@ -207,7 +207,7 @@ const avatarClass =
             <span class="flex flex-1 items-center gap-1.5">
               {{ t('nav.creditsLabel', locale) }}
               <ExternalLink
-                class="size-3.5 text-primary-warm-gray"
+                class="size-5 text-primary-warm-gray"
                 aria-hidden="true"
               />
             </span>
@@ -263,7 +263,7 @@ const avatarClass =
             <span class="flex flex-1 items-center gap-1.5">
               {{ t('nav.workspaceSettings', locale) }}
               <ExternalLink
-                class="size-3.5 text-primary-warm-gray"
+                class="size-5 text-primary-warm-gray"
                 aria-hidden="true"
               />
             </span>

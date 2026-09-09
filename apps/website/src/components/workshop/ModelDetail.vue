@@ -421,11 +421,13 @@ function useInCode() {
               rel="noopener"
               size="lg"
               class="w-full px-5"
-              :append-icon="ExternalLink"
               data-testid="run-button"
               data-gate="noCredits"
             >
               {{ t('workshop.run.buyCredits', locale) }}
+              <template #append>
+                <ExternalLink class="size-5" aria-hidden="true" />
+              </template>
             </Button>
             <Button
               v-else
