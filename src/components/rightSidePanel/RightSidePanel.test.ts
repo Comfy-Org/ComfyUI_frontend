@@ -13,7 +13,6 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -206,7 +205,7 @@ describe('RightSidePanel global parameters tab', () => {
     mockApp.rootGraph = null
   })
 
-  function renderWithNoSelection(
+  async function renderWithNoSelection(
     activeWorkflowPath: string | null,
     pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
   ) {
@@ -225,7 +224,7 @@ describe('RightSidePanel global parameters tab', () => {
 
     const workflowStore = useWorkflowStore()
     workflowStore.activeWorkflow = activeWorkflowPath
-      ? ({ path: activeWorkflowPath } as LoadedComfyWorkflow)
+      ? await workflowStore.createTemporary(activeWorkflowPath).load()
       : null
 
     const rendered = render(RightSidePanel, {
@@ -245,16 +244,15 @@ describe('RightSidePanel global parameters tab', () => {
   }
 
   it('remounts TabGlobalParameters when the active workflow changes', async () => {
-    const { onTabGlobalParametersSetup } =
-      renderWithNoSelection('workflows/a.json')
+    const { onTabGlobalParametersSetup } = await renderWithNoSelection('a.json')
 
     const first = screen.getByTestId('tab-global-parameters')
     expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(1)
 
     const workflowStore = useWorkflowStore()
-    workflowStore.activeWorkflow = {
-      path: 'workflows/b.json'
-    } as LoadedComfyWorkflow
+    workflowStore.activeWorkflow = await workflowStore
+      .createTemporary('b.json')
+      .load()
     await nextTick()
 
     expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(2)
