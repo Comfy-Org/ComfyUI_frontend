@@ -88,3 +88,19 @@ export function isSystemicFailure({
   if (total === 0) return false
   return dropped >= SYSTEMIC_DROP_FLOOR && dropped / total > SYSTEMIC_DROP_SHARE
 }
+
+/**
+ * Whether the English content-of-record is fit to enforce against.
+ *
+ * Every check in the pipeline is a comparison against English, so an English
+ * source that reads back empty does not fail a run — it passes everything.
+ * `collectViolations` finds no key to disagree with, nothing is dropped, and a
+ * whole locale publishes unchecked. The layer readers return `{}` for a missing
+ * file by design, which is right for an optional translation layer and wrong
+ * for the one file the run is measured against.
+ */
+export function isUsableEnglishSource(
+  english: Readonly<Record<string, string>>
+): boolean {
+  return Object.keys(english).length > 0
+}

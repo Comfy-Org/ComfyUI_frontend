@@ -27,7 +27,8 @@ import { isLocale } from '../../src/config/locales'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import {
   enforceTranslations,
-  isSystemicFailure
+  isSystemicFailure,
+  isUsableEnglishSource
 } from '../../src/i18n/pipeline/enforce'
 import {
   glossaryFingerprint,
@@ -74,9 +75,15 @@ function main(): void {
   const incoming = readTranslationLayer(incomingFile)
   const contentFile = path.join(I18N_DIR, 'content', `${locale}.json`)
   const existing = readTranslationLayer(contentFile)
-  const english: EnglishSource = readTranslationLayer(
-    path.join(I18N_DIR, 'content', 'en.json')
-  )
+  const englishFile = path.join(I18N_DIR, 'content', 'en.json')
+  const english: EnglishSource = readTranslationLayer(englishFile)
+  // An absent English layer is `{}`, which would pass every translation rather
+  // than fail the run: there is no key left to disagree with.
+  if (!isUsableEnglishSource(english)) {
+    throw new Error(
+      `${englishFile} is empty; every translation would enforce against nothing.`
+    )
+  }
   const terms = preserveTerms()
 
   const violations = collectViolations(english, incoming, locale, terms)

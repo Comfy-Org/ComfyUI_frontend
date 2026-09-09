@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { enforceTranslations, isSystemicFailure } from './enforce'
+import {
+  enforceTranslations,
+  isSystemicFailure,
+  isUsableEnglishSource
+} from './enforce'
 import type { Violation } from './validate'
 
 const violation = (key: string): Violation => ({
@@ -103,5 +107,22 @@ describe('isSystemicFailure', () => {
 
   it('treats an empty run as nothing to refuse', () => {
     expect(isSystemicFailure({ dropped: 0, total: 0 })).toBe(false)
+  })
+})
+
+describe('isUsableEnglishSource', () => {
+  it('accepts a source with keys in it', () => {
+    expect(isUsableEnglishSource({ 'nav.home': 'Home' })).toBe(true)
+  })
+
+  /**
+   * Every check in the pipeline is a comparison against English, so an English
+   * source that read back empty did not fail the run — it passed everything.
+   * `collectViolations` found no key to disagree with, `enforce` dropped
+   * nothing, and a whole locale published unchecked. Absent input has to stop
+   * the run, not silently widen what counts as acceptable.
+   */
+  it('refuses an empty source, which would approve every translation', () => {
+    expect(isUsableEnglishSource({})).toBe(false)
   })
 })

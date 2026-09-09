@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 
 import { LOCALES, isLocale } from '../../config/locales'
 import type { Locale } from '../../config/locales'
@@ -47,19 +48,28 @@ function pathOf(href: string): string | undefined {
   }
 }
 
-const languages = alternates
-  .filter((alternate) => isLocale(alternate.hreflang))
-  .map((alternate) => ({
-    code: alternate.hreflang as Locale,
+// `flatMap` rather than filter-then-map so `isLocale` does the narrowing it was
+// written for. Filtering leaves the element type unchanged, which is why this
+// used to assert `as Locale` twice to read a list it had already checked.
+const languages = computed(() =>
+  alternates.flatMap((alternate) => {
+    if (!isLocale(alternate.hreflang)) return []
     // Relative, so the link works on any origin — preview deploys included.
-    href: pathOf(alternate.href),
-    label: LOCALES[alternate.hreflang as Locale].nativeName
-  }))
-  .filter((language) => language.href !== undefined)
+    const href = pathOf(alternate.href)
+    if (href === undefined) return []
+    return [
+      {
+        code: alternate.hreflang,
+        href,
+        label: LOCALES[alternate.hreflang].nativeName
+      }
+    ]
+  })
+)
 
 // One entry means the page exists in one language, so there is nothing to
 // switch to and a control would be a dead end.
-const hasChoice = languages.length > 1
+const hasChoice = computed(() => languages.value.length > 1)
 </script>
 
 <template>
