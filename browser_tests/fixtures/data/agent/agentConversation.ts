@@ -1,7 +1,12 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { FROZEN_OPS, applyOps, mint } from '@comfyorg/comfy-multi-player'
+import {
+  FROZEN_OPS,
+  applyOps,
+  mint,
+  project
+} from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
@@ -48,9 +53,9 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
 }
 const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
-// The vocabulary and the absence of the envelope are checked here; the
-// production applier proves the rest of GraphOperation before a recording
-// reaches a replay (assertOpsApply), so the cast below is backed, not asserted.
+// Only the vocabulary and the absence of the envelope are checked here, so
+// the parsed op stays structural; assertOpsApply is where the production
+// applier proves the payload and the op becomes a GraphOperation.
 const zGraphOperation = z
   .object({ op: z.enum(FROZEN_OPS) })
   .passthrough()
@@ -58,7 +63,7 @@ const zGraphOperation = z
     (op) => OP_ENVELOPE_KEYS.every((key) => !(key in op)),
     'a recorded op carries the semantic operation only; the wire envelope is minted at replay'
   )
-  .transform((op): GraphOperation => op as GraphOperation)
+export type RecordedGraphOperation = z.infer<typeof zGraphOperation>
 
 // WorkflowJSON and WorkflowNode declare an index signature, so the schema
 // validates the guaranteed fields and keeps the rest.
@@ -121,14 +126,39 @@ const zResponseEntry = z.discriminatedUnion('kind', [
   })
 ])
 
-const zTurn = z.object({
-  message_id: z.string().min(1).optional(),
-  request: zAgentConversationRequest,
-  // Response entry the recorded cancel followed; the replay stops there too.
-  cancel_after: z.number().int().nonnegative().optional(),
-  response: z.array(zResponseEntry).min(1)
-})
-export type AgentConversationTurn = z.infer<typeof zTurn>
+const zTurn = z
+  .object({
+    message_id: z.string().min(1).optional(),
+    request: zAgentConversationRequest,
+    // Response entry the recorded cancel followed; the replay stops there too.
+    cancel_after: z.number().int().nonnegative().optional(),
+    response: z.array(zResponseEntry).min(1)
+  })
+  .superRefine((turn, ctx) => {
+    const dones = turn.response.flatMap((entry, index) =>
+      entry.kind === 'event' && entry.event.type === 'agent_message_done'
+        ? [index]
+        : []
+    )
+    if (dones.length !== 1 || dones[0] !== turn.response.length - 1)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['response'],
+        message:
+          'a turn carries exactly one agent_message_done event, as its last entry'
+      })
+    if (
+      turn.cancel_after !== undefined &&
+      turn.cancel_after >= turn.response.length - 1
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['cancel_after'],
+        message:
+          'cancel_after must precede the final agent_message_done entry; the replay stops a turn that is still running'
+      })
+  })
+export type RecordedTurn = z.infer<typeof zTurn>
 
 export const zAgentConversation = z
   .object({
@@ -167,7 +197,19 @@ export const zAgentConversation = z
           message: 'recorded turns carry the message id they were captured from'
         })
   })
-export type AgentConversation = z.infer<typeof zAgentConversation>
+export type RecordedConversation = z.infer<typeof zAgentConversation>
+
+// The applier-proven form of a recording: the same bytes, with every op typed
+// by the library's own union. Only assertOpsApply produces it.
+export type AgentConversationEntry =
+  | Extract<z.infer<typeof zResponseEntry>, { kind: 'event' }>
+  | { kind: 'graph_ops'; ops: GraphOperation[]; at_ms?: number }
+export type AgentConversationTurn = Omit<RecordedTurn, 'response'> & {
+  response: AgentConversationEntry[]
+}
+export type AgentConversation = Omit<RecordedConversation, 'turns'> & {
+  turns: AgentConversationTurn[]
+}
 
 export function listRecordedConversations(): string[] {
   const dir = fileURLToPath(new URL('./conversations/', import.meta.url))
@@ -184,38 +226,64 @@ export function listRecordedConversations(): string[] {
     .sort()
 }
 
+// The first place the projection holds no value, if any. The persisted draft
+// is this projection as JSON, so a value JSON cannot carry never reached the
+// document, whatever the applier said about the op that wrote it.
+function missingValue(value: unknown, path: string): string | null {
+  if (value === undefined) return path
+  if (Array.isArray(value)) {
+    for (const [index, item] of value.entries()) {
+      const hit = missingValue(item, `${path}[${index}]`)
+      if (hit !== null) return hit
+    }
+    return null
+  }
+  if (value !== null && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      const hit = missingValue(item, `${path}.${key}`)
+      if (hit !== null) return hit
+    }
+  }
+  return null
+}
+
 // The production applier is the parser for the recorded operations: a
-// recording it would reject during replay is refused before one starts.
-export function assertOpsApply(conversation: AgentConversation): void {
-  const doc = mint(conversation.workflow.seed, conversation.workflow.catalog)
+// recording it would reject during replay is refused before one starts, and
+// the ops carry the library's type only once it has accepted every one.
+export function assertOpsApply(
+  recorded: RecordedConversation
+): AgentConversation {
+  const { seed, catalog } = recorded.workflow
+  const doc = mint(seed, catalog)
   let version = 1
-  for (const [turnIndex, turn] of conversation.turns.entries())
+  for (const [turnIndex, turn] of recorded.turns.entries())
     for (const [entryIndex, entry] of turn.response.entries()) {
       if (entry.kind !== 'graph_ops') continue
-      const ops = mintWireOps(entry.ops, {
+      const label = `turn ${turnIndex} entry ${entryIndex}`
+      const ops = mintWireOps(entry.ops as GraphOperation[], {
         actor: 'agent:comfy:host',
         baseVersion: version
       })
       version += 1
-      const rejected = applyOps(
-        doc,
-        ops,
-        conversation.workflow.catalog
-      ).outcomes.filter((outcome) => outcome.outcome !== 'applied')
+      const rejected = applyOps(doc, ops, catalog).outcomes.filter(
+        (outcome) => outcome.outcome !== 'applied'
+      )
       if (rejected.length > 0)
         throw new Error(
-          `turn ${turnIndex} entry ${entryIndex}: the applier rejected ${JSON.stringify(rejected)}`
+          `${label}: the applier rejected ${JSON.stringify(rejected)}`
         )
+      const hole = missingValue(project(doc, catalog), 'projection')
+      if (hole !== null)
+        throw new Error(`${label}: the projection carries no value at ${hole}`)
     }
+  return recorded as AgentConversation
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {
   const file = fileURLToPath(
     new URL(`./conversations/${caseId}.json`, import.meta.url)
   )
-  const conversation = zAgentConversation.parse(
-    JSON.parse(readFileSync(file, 'utf-8'))
+  return assertOpsApply(
+    zAgentConversation.parse(JSON.parse(readFileSync(file, 'utf-8')))
   )
-  assertOpsApply(conversation)
-  return conversation
 }
