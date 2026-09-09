@@ -118,6 +118,17 @@ jobs:
           # surviving to here means the two disagree and the run must not ship.
           pnpm i18n:validate
 
+      # `content/` is what the pipeline writes; `resolved/` is what the browser
+      # reads. Translating without rebuilding left the run's own PR carrying new
+      # Japanese that no page would serve, and red: `resolved.test.ts` compares
+      # the dictionaries against the resolver and fails on exactly this drift.
+      #
+      # After `i18n:validate`, so a run that failed validation never rewrites
+      # the dictionaries the site loads.
+      - name: Rebuild the resolved dictionaries
+        working-directory: apps/website
+        run: pnpm i18n:build-resolved
+
       - name: Report coverage
         working-directory: apps/website
         run: pnpm i18n:report
@@ -135,6 +146,7 @@ jobs:
           commit-message: 'chore(i18n): update marketing site translations'
           add-paths: |
             apps/website/src/i18n/content
+            apps/website/src/i18n/resolved
             apps/website/src/i18n/review
             apps/website/src/i18n/manifest.json
           body: |

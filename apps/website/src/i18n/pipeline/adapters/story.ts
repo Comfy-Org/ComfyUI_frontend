@@ -439,3 +439,27 @@ export const storyAdapter: SourceAdapter = {
     return entriesFromStories(readStories())
   }
 }
+
+/**
+ * The section ids a Japanese story must supply before it can be published.
+ *
+ * Read from the body, not from the frontmatter list. A section declared in
+ * frontmatter but never opened in the body has no text for the adapter to
+ * extract, so no translation for it can ever arrive — and the writer, which
+ * required one per declared section, left that story in `untranslated`
+ * permanently, waiting on a section that renders nothing.
+ *
+ * The two lists agree across every story today, which is exactly what makes the
+ * trap invisible: it costs nothing until the first story where they differ.
+ */
+export function sectionsRequiringTranslation(story: Story): string[] {
+  const declared = new Set(story.sections.map((section) => section.id))
+  // `flatMap` rather than filter-then-map, so the `id !== undefined` check
+  // narrows. Filtering would leave the element type `string | undefined`, which
+  // only an assertion could paper over.
+  return splitStoryBody(story.body).flatMap((piece) =>
+    piece.kind === 'section' && piece.id !== undefined && declared.has(piece.id)
+      ? [piece.id]
+      : []
+  )
+}

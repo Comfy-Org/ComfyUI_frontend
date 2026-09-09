@@ -14,7 +14,11 @@
  * into a Japanese field.
  *
  * All-or-nothing. Every file is planned and verified before any is written, so
- * a single failure leaves all 18 untouched rather than half a run on disk.
+ * a rejected plan leaves all 18 untouched; and if a write fails partway, the
+ * files already written are restored from the originals the planner is holding.
+ * What that does not survive is the process being killed mid-loop — a real
+ * guarantee there needs an on-disk journal, which is more machinery than a
+ * re-runnable script warrants.
  *
  * The decisions live in `src/i18n/pipeline/adapters/data.ts` as pure, tested
  * functions; this file only does IO, like the rest of the pipeline.
@@ -29,6 +33,7 @@ import {
   verifyWrite
 } from '../../src/i18n/pipeline/adapters/data'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
+import { commitAll } from '../../src/i18n/pipeline/commit'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
 const DATA_DIR = path.join(process.cwd(), 'src', 'data')
@@ -132,9 +137,15 @@ function main(): void {
     return
   }
 
-  for (const entry of planned) {
-    fs.writeFileSync(path.join(DATA_DIR, entry.file), entry.written, 'utf8')
-  }
+  commitAll(planned, {
+    write: (file, contents) =>
+      fs.writeFileSync(path.join(DATA_DIR, file), contents, 'utf8'),
+    // Unreachable here — these files are edited in place, so every entry
+    // carries an `original` and rollback rewrites rather than removes. Supplied
+    // because a rollback that silently skipped a file would be worse than one
+    // that never had to run.
+    remove: (file) => fs.rmSync(path.join(DATA_DIR, file), { force: true })
+  })
 
   process.stdout.write(
     `[i18n] ${inserted} added, ${replaced} refreshed, across ${planned.length} file(s).\n`

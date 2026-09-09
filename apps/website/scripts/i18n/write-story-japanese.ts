@@ -12,6 +12,12 @@
  * Japanese ones. Writing nine of eleven would not leave two in English, it
  * would remove them from the page.
  *
+ * So a rejected plan writes nothing, and a write that fails partway is rolled
+ * back — files this run created are removed, files it changed are restored.
+ * What that does not survive is the process being killed mid-loop; a guarantee
+ * there needs an on-disk journal, which is more than a re-runnable script
+ * warrants.
+ *
  * A Japanese file without a `translatedBy: machine` marker was written by a
  * person and is never touched.
  */
@@ -22,10 +28,12 @@ import { DEFAULT_LOCALE } from '../../src/config/locales'
 import {
   buildStory,
   readStories,
+  sectionsRequiringTranslation,
   verifyStory
 } from '../../src/i18n/pipeline/adapters/story'
 import type { Story } from '../../src/i18n/pipeline/adapters/story'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
+import { commitAll } from '../../src/i18n/pipeline/commit'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
 const TARGET = 'ja'
@@ -114,10 +122,14 @@ function main(): void {
 
     // A section without a translation would leave English inside an otherwise
     // Japanese story, which reads worse than the page falling back whole.
-    const missing = story.sections.filter(
-      (section) => !Object.hasOwn(sectionBodies, section.id)
+    //
+    // Asked of the body rather than the frontmatter list: a section declared in
+    // frontmatter but never opened in the body has no text to translate, so
+    // requiring one held the story back forever.
+    const missing = sectionsRequiringTranslation(story).filter(
+      (id) => !Object.hasOwn(sectionBodies, id)
     )
-    if (missing.length > 0 && story.sections.length > 0) {
+    if (missing.length > 0) {
       untranslated.push(story.slug)
       continue
     }
@@ -184,10 +196,24 @@ function main(): void {
     return
   }
 
-  for (const entry of planned) {
-    fs.mkdirSync(path.dirname(entry.file), { recursive: true })
-    fs.writeFileSync(entry.file, entry.contents, 'utf8')
-  }
+  // `original` absent means the file is new, so rolling back removes it rather
+  // than leaving an empty `.mdx` the site would render as a story with no text.
+  commitAll(
+    planned.map((entry) => ({
+      file: entry.file,
+      original: fs.existsSync(entry.file)
+        ? fs.readFileSync(entry.file, 'utf8')
+        : undefined,
+      written: entry.contents
+    })),
+    {
+      write: (file, contents) => {
+        fs.mkdirSync(path.dirname(file), { recursive: true })
+        fs.writeFileSync(file, contents, 'utf8')
+      },
+      remove: (file) => fs.rmSync(file, { force: true })
+    }
+  )
 
   process.stdout.write(
     `[i18n] wrote ${planned.length} Japanese story/stories.\n`

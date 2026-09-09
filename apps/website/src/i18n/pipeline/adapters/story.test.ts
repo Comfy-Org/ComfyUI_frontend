@@ -4,6 +4,7 @@ import {
   entriesFromStories,
   identifierValues,
   parseStory,
+  sectionsRequiringTranslation,
   storyAdapter
 } from './story'
 
@@ -173,5 +174,42 @@ describe('identifierValues', () => {
       '/a.mp4'
     )
     expect(identifierValues('<Video alt=\'x\' href="/b" />')).toContain('/b')
+  })
+})
+
+describe('sectionsRequiringTranslation', () => {
+  const story = (frontmatterSections: string, body: string) =>
+    parseStory(
+      'en/x',
+      `---\ntitle: "T"\ncategory: "C"\ndescription: "D"\ncover: https://x/y.jpg\norder: 1\nsections:\n${frontmatterSections}---\n${body}`
+    )
+
+  it('asks for a translation of every section the body opens', () => {
+    const parsed = story(
+      '  - id: one\n    label: ONE\n  - id: two\n    label: TWO\n',
+      '<Section id="one">a</Section>\n<Section id="two">b</Section>\n'
+    )
+
+    expect(sectionsRequiringTranslation(parsed)).toEqual(['one', 'two'])
+  })
+
+  /**
+   * The writer used to derive this from the frontmatter list. A section
+   * declared there but never opened in the body has no text to translate, so a
+   * translation for it can never arrive — and the story stayed in
+   * `untranslated` forever, waiting on a section that renders nothing. No story
+   * does this today; the two lists agreeing is what makes it invisible.
+   */
+  it('ignores a section declared in frontmatter but absent from the body', () => {
+    const parsed = story(
+      '  - id: one\n    label: ONE\n  - id: ghost\n    label: GHOST\n',
+      '<Section id="one">a</Section>\n'
+    )
+
+    expect(sectionsRequiringTranslation(parsed)).toEqual(['one'])
+  })
+
+  it('has nothing to ask of a story with no sections', () => {
+    expect(sectionsRequiringTranslation(story('', 'Just prose.\n'))).toEqual([])
   })
 })

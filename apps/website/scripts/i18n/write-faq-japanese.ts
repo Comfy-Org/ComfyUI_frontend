@@ -11,7 +11,11 @@
  * A Japanese file without a `translatedBy: machine` marker was written by a
  * person and is never touched.
  *
- * All-or-nothing: every answer is built and verified before any is written.
+ * All-or-nothing: every answer is built and verified before any is written, and
+ * a write that fails partway is rolled back — answers this run created are
+ * removed, answers it changed are restored. What that does not survive is the
+ * process being killed mid-loop; a guarantee there needs an on-disk journal,
+ * which is more than a re-runnable script warrants.
  *
  * The decisions live in `src/i18n/pipeline/adapters/faq.ts` as pure, tested
  * functions; this file only does IO.
@@ -27,6 +31,7 @@ import {
 } from '../../src/i18n/pipeline/adapters/faq'
 import type { FaqDocument } from '../../src/i18n/pipeline/adapters/faq'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
+import { commitAll } from '../../src/i18n/pipeline/commit'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
 const TARGET = 'ja'
@@ -131,10 +136,24 @@ function main(): void {
     return
   }
 
-  for (const entry of planned) {
-    fs.mkdirSync(path.dirname(entry.file), { recursive: true })
-    fs.writeFileSync(entry.file, entry.contents, 'utf8')
-  }
+  // `original` absent means the file is new, so rolling back removes it rather
+  // than leaving an empty `.mdx` the site would render as an answer with no text.
+  commitAll(
+    planned.map((entry) => ({
+      file: entry.file,
+      original: fs.existsSync(entry.file)
+        ? fs.readFileSync(entry.file, 'utf8')
+        : undefined,
+      written: entry.contents
+    })),
+    {
+      write: (file, contents) => {
+        fs.mkdirSync(path.dirname(file), { recursive: true })
+        fs.writeFileSync(file, contents, 'utf8')
+      },
+      remove: (file) => fs.rmSync(file, { force: true })
+    }
+  )
 
   process.stdout.write(
     `[i18n] wrote ${planned.length} Japanese FAQ answer(s).\n`
