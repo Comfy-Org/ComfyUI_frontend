@@ -3,10 +3,8 @@ import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import {
-  AUTH_ERROR_COPY,
   authErrorMessage,
   classifyAuthError,
-  isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account/firebaseAuthError'
@@ -16,6 +14,7 @@ import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRe
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
@@ -32,10 +31,14 @@ import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
-/** The shipped auth.errors table, read through vue-i18n at resolution time. */
+/**
+ * The app's own auth.errors table, read through vue-i18n at resolution time.
+ * The key set is the app's, so a code added to main.json renders without the
+ * package having to know it.
+ */
 const localizedAuthErrorCopy = (): AuthErrorCopy => ({
   ...Object.fromEntries(
-    Object.keys(AUTH_ERROR_COPY.en).map((key) => [
+    Object.keys(enMessages.auth.errors).map((key) => [
       key,
       st(`auth.errors.${key}`, t('auth.errors.generic'))
     ])
@@ -59,7 +62,7 @@ export const useAuthActions = () => {
   const reportAuthFlowError =
     (authAction: AuthFlowAction) => (error: unknown) => {
       useTelemetry()?.trackAuthFailed({
-        error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
+        error_code: error instanceof FirebaseError ? error.code : 'unknown',
         auth_action: authAction
       })
       reportError(error)

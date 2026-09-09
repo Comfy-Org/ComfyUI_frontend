@@ -1410,7 +1410,7 @@ describe('useAuthStore', () => {
         mockUser.getIdToken.mockResolvedValue('')
 
         await expect(store[method]()).rejects.toThrow(
-          'Cannot create customer: User not authenticated'
+          i18n.global.t('toastMessages.userNotAuthenticated')
         )
         expect(
           customerRequestBody(),
