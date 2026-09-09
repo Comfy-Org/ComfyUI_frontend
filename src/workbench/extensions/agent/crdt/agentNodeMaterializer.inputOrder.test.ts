@@ -4,9 +4,7 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -24,7 +22,6 @@ import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 import { attachMintPortWiring } from './mintPortWiring'
-import type { MintPortWiring } from './mintPortWiring'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined, isGraphReady: false, configuringGraph: false },
@@ -57,23 +54,14 @@ const source = {
   }))
 } satisfies ISerialisedNode
 
-let graph: LGraph
-let host: Y.Doc
-let follower: FollowerDoc
-let adapter: EcsFollowerAdapter
-let wiring: MintPortWiring
-let minted: GraphOperation[]
-let sequence: number
-
-beforeEach(async () => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
+async function setup() {
   LiteGraph.registerNodeType('ReferenceSources', LGraphNode)
   await useLitegraphService().registerNodeDef(nodeDef.name, nodeDef)
-  graph = new LGraph()
+  const graph = new LGraph()
   Reflect.set(app, 'rootGraph', graph)
-  minted = []
-  sequence = 0
-  host = mint(
+  const minted: GraphOperation[] = []
+  let sequence = 0
+  const host = mint(
     {
       nodes: structuredClone([source, savedNode]),
       links: connections.map(({ id, slot, type }, originSlot) => [
@@ -87,15 +75,15 @@ beforeEach(async () => {
     },
     catalog
   )
-  follower = new FollowerDoc()
-  adapter = new EcsFollowerAdapter(
+  const follower = new FollowerDoc()
+  const adapter = new EcsFollowerAdapter(
     createGraphMutations({
       getScope: () => graphScopeOf(graph),
       layout: { createNode: () => {}, deleteNodes: () => {} }
     })
   )
   adapter.bind('input-order', follower)
-  wiring = attachMintPortWiring({
+  const wiring = attachMintPortWiring({
     isEnabled: () => true,
     isDocBound: () => true,
     enqueue: (operations) => minted.push(...operations),
@@ -103,52 +91,56 @@ beforeEach(async () => {
     localActorPrefix: 'user-',
     getGraph: () => graph
   })
-})
 
-afterEach(() => {
-  wiring.detach()
-  adapter.destroy()
-  follower.destroy()
-  host.destroy()
-})
-
-function deliver() {
-  const update = Y.encodeStateAsUpdate(host, follower.stateVector())
-  follower.applyRemoteUpdate(update)
-  expect(
-    adapter.applyFrame({ workflowId: 'input-order', seq: ++sequence, update })
-  ).toBe(true)
-  reconcileAgentAdapters(graph)
-}
-
-function apply(operations: GraphOperation[]) {
-  const result = applyOps(
-    host,
-    operations.map((operation, index) => {
-      const opId = `op-${sequence}-${index}`
-      return {
-        ...operation,
-        op_id: opId,
-        actor: 'agent:test',
-        base_version: sequence,
-        stamp: [sequence, 'agent:test']
-      }
-    }),
-    catalog
-  )
-  expect(result.outcomes.every(({ outcome }) => outcome === 'applied')).toBe(
-    true
-  )
-}
-
-function targets() {
-  return connections.map(({ id }) => {
-    const link = graph.getLink(toLinkId(id))!
-    return graph.getNodeById(link.target_id)?.inputs[link.target_slot]?.name
+  onTestFinished(() => {
+    wiring.detach()
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
   })
+
+  function deliver() {
+    const update = Y.encodeStateAsUpdate(host, follower.stateVector())
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({ workflowId: 'input-order', seq: ++sequence, update })
+    ).toBe(true)
+    reconcileAgentAdapters(graph)
+  }
+
+  function apply(operations: GraphOperation[]) {
+    const result = applyOps(
+      host,
+      operations.map((operation, index) => {
+        const opId = `op-${sequence}-${index}`
+        return {
+          ...operation,
+          op_id: opId,
+          actor: 'agent:test',
+          base_version: sequence,
+          stamp: [sequence, 'agent:test']
+        }
+      }),
+      catalog
+    )
+    expect(result.outcomes.every(({ outcome }) => outcome === 'applied')).toBe(
+      true
+    )
+  }
+
+  function targets() {
+    return connections.map(({ id }) => {
+      const link = graph.getLink(toLinkId(id))!
+      return graph.getNodeById(link.target_id)?.inputs[link.target_slot]?.name
+    })
+  }
+
+  return { graph, host, follower, wiring, minted, deliver, apply, targets }
 }
 
-it('preserves named input targets and serialization without changing the shared document', () => {
+it('preserves named input targets and serialization without changing the shared document', async () => {
+  const { graph, host, follower, wiring, minted, deliver, targets } =
+    await setup()
   const originalNode = nodesMap(host).get('2')?.toJSON()
   const originalLinks = linksMap(host).toJSON()
   deliver()
@@ -174,7 +166,8 @@ it('preserves named input targets and serialization without changing the shared 
   expect(targets()).toEqual(connections.map(({ name }) => name))
 })
 
-it('keeps every named target when a later agent connect replaces one resolution wire', () => {
+it('keeps every named target when a later agent connect replaces one resolution wire', async () => {
+  const { graph, minted, deliver, apply, targets } = await setup()
   deliver()
   apply([
     {
@@ -194,7 +187,8 @@ it('keeps every named target when a later agent connect replaces one resolution 
   expect(minted).toEqual([])
 })
 
-it('mints a local reconnect using the shared input index and keeps it after the agent echo', () => {
+it('mints a local reconnect using the shared input index and keeps it after the agent echo', async () => {
+  const { graph, minted, deliver, apply } = await setup()
   deliver()
   const from = graph.getNodeById(toNodeId(1))!
   const to = graph.getNodeById(toNodeId(2))!
