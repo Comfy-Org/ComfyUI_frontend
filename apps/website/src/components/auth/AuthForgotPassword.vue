@@ -6,7 +6,7 @@ import {
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 import { cn } from '@comfyorg/tailwind-utils'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { signInErrorMessage } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
@@ -125,6 +125,11 @@ onMounted(() => {
   flagTimer = setTimeout(() => {
     flagTimedOut.value = !flagSettled.value
   }, AUTH_FLAG_TIMEOUT_MS)
+})
+
+// A late answer, whichever way it goes, ends the timeout screen.
+watch(flagSettled, (settled) => {
+  if (settled) flagTimedOut.value = false
 })
 
 onBeforeUnmount(() => {

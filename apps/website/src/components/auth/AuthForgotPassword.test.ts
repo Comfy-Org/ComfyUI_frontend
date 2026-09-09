@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
   captureAuthFailed: vi.fn()
 }))
 
-vi.mock(import('../../scripts/posthog'), async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   const settled = ref(true)
@@ -26,7 +26,7 @@ vi.mock(import('../../scripts/posthog'), async () => {
   }
 })
 
-vi.mock(import('../../config/workshop-firebase'), () => ({
+vi.mock<unknown>(import('../../config/workshop-firebase'), () => ({
   sendWorkshopPasswordReset: h.sendReset
 }))
 
@@ -164,6 +164,23 @@ describe('AuthForgotPassword', () => {
 
     expect((await screen.findByRole('alert')).textContent).toContain(
       'Connection Taking Too Long'
+    )
+  })
+
+  it('drops the timeout screen when a late answer says the flag is off', async () => {
+    h.flag!.value = false
+    h.settled!.value = false
+    render(AuthForgotPassword)
+    await vi.advanceTimersByTimeAsync(16_000)
+    await screen.findByRole('alert')
+
+    h.settled!.value = true
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Connection Taking Too Long'),
+        'a flag that answered off renders nothing, not a troubleshooting screen'
+      ).toBeNull()
     )
   })
 
