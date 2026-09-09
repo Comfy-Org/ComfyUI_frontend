@@ -37,9 +37,27 @@ export interface TabLinkPart {
   name?: string
 }
 
+export interface RunApprovalPart {
+  type: 'runApproval'
+  askId: string
+  workflowId?: string
+  workflowName?: string
+}
+
+export interface PaywallPart {
+  type: 'paywall'
+}
+
 export type ActivityPart = ThinkingPart | ToolPart
 
-type MessagePart = TextPart | ThinkingPart | ToolPart | NoticePart | TabLinkPart
+type MessagePart =
+  | TextPart
+  | ThinkingPart
+  | ToolPart
+  | NoticePart
+  | TabLinkPart
+  | RunApprovalPart
+  | PaywallPart
 
 export interface AssistantMessage {
   id: TurnId

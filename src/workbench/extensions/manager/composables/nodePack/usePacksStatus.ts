@@ -33,7 +33,7 @@ export function usePacksStatus(nodePacks: Ref<NodePack[]>) {
         pack.id
       )
       return (
-        conflicts?.conflicts?.some((c) => c.type === 'import_failed') || false
+        conflicts?.conflicts.some((c) => c.type === 'import_failed') || false
       )
     })
   })

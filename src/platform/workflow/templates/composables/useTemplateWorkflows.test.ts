@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { i18n } from '@/i18n'
+import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 async function flushPromises() {
@@ -8,15 +11,15 @@ async function flushPromises() {
 }
 
 // Mock the store
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: vi.fn()
   })
 )
 
 // Mock the API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((path) => `mock-file-url${path}`),
     apiURL: vi.fn((path) => `mock-api-url${path}`)
@@ -33,26 +36,35 @@ const { mockLoadedWorkflow } = vi.hoisted(
   })
 )
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn(() => Promise.resolve(mockLoadedWorkflow.value))
   }
 }))
 
-// Mock Vue I18n
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key, fallback) => fallback || key)
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  })
-}))
+const apps: App<Element>[] = []
+
+function useTemplateWorkflows() {
+  let result: ReturnType<typeof createTemplateWorkflows> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createTemplateWorkflows()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Template workflows were not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 // Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: vi.fn(() => ({
     closeDialog: vi.fn()
   }))
@@ -64,7 +76,7 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
@@ -76,14 +88,14 @@ const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
     mockDismissCard: vi.fn()
   }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionIsCloud.value
   }
 }))
 
-vi.mock(
-  '@/platform/workflow/templates/stores/partnerNodesEducationStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/stores/partnerNodesEducationStore'),
   () => ({
     usePartnerNodesEducationStore: () => ({
       requestCard: mockRequestCard,

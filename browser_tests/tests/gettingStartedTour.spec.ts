@@ -52,6 +52,7 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-01-01',
@@ -63,6 +64,7 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE',
   subscription_duration: 'MONTHLY',
   has_funds: false

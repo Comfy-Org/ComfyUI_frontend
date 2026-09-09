@@ -81,8 +81,6 @@
         :force-reactivation="reactivationRequired"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
@@ -91,7 +89,6 @@
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -103,8 +100,6 @@
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
@@ -119,7 +114,6 @@
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -131,8 +125,6 @@
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
@@ -147,7 +139,6 @@
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionTransitionPreviewWorkspace
@@ -158,8 +149,6 @@
         :force-reactivation="reactivationRequired"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
@@ -168,7 +157,6 @@
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
     </template>
 
@@ -245,8 +233,6 @@ const {
   activeCheckoutActionUrl,
   authenticationState,
   authenticationError,
-  canRetryAuthentication,
-  isAuthenticating,
   reconciliationOperationId,
   isPolling,
   isTeamCheckout,
@@ -260,7 +246,6 @@ const {
   handleTeamSubscribe,
   handleSubscriptionPayment,
   handleTeamSubscriptionPayment,
-  retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
