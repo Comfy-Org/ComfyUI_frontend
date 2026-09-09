@@ -1,4 +1,6 @@
+import { mint } from '@comfyorg/comfy-multi-player'
 import type { Page, Route } from '@playwright/test'
+import * as Y from 'yjs'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
@@ -16,6 +18,24 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+
+const GRAPH_UPDATE = Y.encodeStateAsUpdate(
+  mint(
+    {
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNode',
+          title: 'Agent-created node',
+          pos: [100, 100],
+          size: [240, 100]
+        }
+      ],
+      links: []
+    },
+    { types: {} }
+  )
+)
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
@@ -70,6 +90,22 @@ export const VIDEO_GRAPH_DONE_EVENT: AgentWsEvent = {
     delta: VIDEO_GRAPH_DONE_TEXT,
     message_id: TURN_ID,
     thread_id: THREAD_ID
+  }
+}
+
+export const GRAPH_SUBSCRIBED_EVENT = {
+  type: 'doc_subscribed',
+  data: { v: 1, workflow_id: WORKFLOW_ID, ok: true, seq: 0 }
+}
+
+export const GRAPH_UPDATE_EVENT = {
+  type: 'doc_update',
+  data: {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    seq: 1,
+    update_b64: Buffer.from(GRAPH_UPDATE).toString('base64'),
+    actor: 'agent:test:build'
   }
 }
 
