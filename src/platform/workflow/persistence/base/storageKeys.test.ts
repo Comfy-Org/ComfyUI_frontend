@@ -85,6 +85,25 @@ describe('storageKeys', () => {
     })
   })
 
+  describe('resolveStorageScope', () => {
+    it('combines user and workspace in cloud', async () => {
+      const { resolveStorageScope } = await import('./storageKeys')
+      expect(resolveStorageScope('user-a', 'ws-1')).toBe('user-a:ws-1')
+    })
+
+    it('returns null in cloud until the user is resolved', async () => {
+      const { resolveStorageScope } = await import('./storageKeys')
+      expect(resolveStorageScope(null, 'ws-1')).toBeNull()
+    })
+
+    it('ignores identity outside cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      const { resolveStorageScope } = await import('./storageKeys')
+      expect(resolveStorageScope(null, 'ws-1')).toBe('personal')
+      expect(resolveStorageScope('user-a', 'ws-1')).toBe('personal')
+    })
+  })
+
   describe('StorageKeys', () => {
     it('generates draftIndex key with workspace scope', async () => {
       const { StorageKeys } = await import('./storageKeys')
