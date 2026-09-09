@@ -38,8 +38,11 @@ function fakeSession(initial?: AccountCredential) {
   }
 }
 
-function balanceResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+/** The ingest balance shape; `amount_micros` and `currency` are required there. */
+function balanceResponse(body: Record<string, unknown> | null, status = 200) {
+  const shaped =
+    body === null ? null : { amount_micros: 0, currency: 'usd', ...body }
+  return new Response(JSON.stringify(shaped), {
     status,
     headers: { 'Content-Type': 'application/json' }
   })

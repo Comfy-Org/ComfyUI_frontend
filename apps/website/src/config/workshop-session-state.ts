@@ -86,7 +86,7 @@ function start(): void {
           sessionFailure.value = undefined
           // The flag starts false on every cold load until PostHog answers;
           // only a real on->off transition means the credential must go.
-          if (wasOn) workshopSessionClient.clearCache()
+          if (wasOn) workshopSessionClient.clearStoredCredential()
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {
