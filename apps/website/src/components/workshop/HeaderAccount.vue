@@ -3,6 +3,7 @@ import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
+import { runBeforeSignInLeave } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -40,6 +41,7 @@ function goToSignIn(event: MouseEvent): void {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
     return
   event.preventDefault()
+  runBeforeSignInLeave()
   window.location.assign(signInDestination())
 }
 
