@@ -3930,6 +3930,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   processKey(e: KeyboardEvent): void {
     this._shiftDown = e.shiftKey
 
+    if (e.type == 'keyup' && e.key === ' ') {
+      const held = this._spaceKeyHeld
+      this._spaceKeyHeld = null
+      if (held) {
+        this.read_only = held.readOnly
+        this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
+        if (
+          this.pointer.isDown &&
+          (this.isDragging || this.linkConnector.isConnecting)
+        ) {
+          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+          this._autoPan?.start()
+        }
+      }
+    }
+
     const { graph } = this
     if (!graph) return
 
@@ -3967,23 +3983,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         node.onKeyDown?.(e)
       }
     } else if (e.type == 'keyup') {
-      if (e.key === ' ') {
-        // space
-        const held = this._spaceKeyHeld
-        this._spaceKeyHeld = null
-        if (held) {
-          this.read_only = held.readOnly
-          this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
-          if (
-            this.pointer.isDown &&
-            (this.isDragging || this.linkConnector.isConnecting)
-          ) {
-            this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
-            this._autoPan?.start()
-          }
-        }
-      }
-
       for (const node of Object.values(this.selected_nodes)) {
         node.onKeyUp?.(e)
       }

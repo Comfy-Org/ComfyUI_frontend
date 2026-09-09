@@ -366,5 +366,20 @@ describe('LGraphCanvas selection', () => {
 
       expect(canvas.read_only).toBe(true)
     })
+
+    it('clears held state when the graph is detached before release', () => {
+      canvas.processKey(keyEvent('keydown', ' '))
+      graph.detachCanvas(canvas)
+
+      canvas.processKey(keyEvent('keyup', ' '))
+      expect(canvas.read_only).toBe(false)
+
+      new LGraph().attachCanvas(canvas)
+      canvas.read_only = true
+      canvas.processKey(keyEvent('keydown', ' '))
+      canvas.processKey(keyEvent('keyup', ' '))
+
+      expect(canvas.read_only).toBe(true)
+    })
   })
 })
