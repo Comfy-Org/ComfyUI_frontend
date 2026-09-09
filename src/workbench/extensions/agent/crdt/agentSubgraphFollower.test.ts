@@ -696,6 +696,37 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(state.instance.widgets[0]?.value).toBe(48)
   })
 
+  it('S1m applies in-place Y.Array edits to opaque host widgets', () => {
+    // cmp writes `__widgets_opaque` as a plain array, but the reader accepts a
+    // shared Y.Array too. A foreign writer mutating that array in place emits
+    // a Y.YArrayEvent rather than a key replace on the node map; the follower
+    // must still re-read the host's promoted values.
+    const state = startFollower()
+    forwardRaw(
+      state,
+      (nodes) => {
+        const arr = new Y.Array<unknown>()
+        nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, arr)
+        arr.push([45])
+      },
+      1
+    )
+    expect(state.instance.widgets[0]?.value).toBe(45)
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        const arr = nodes.get('1')!.get(OPAQUE_WIDGETS_KEY) as Y.Array<unknown>
+        arr.delete(0, 1)
+        arr.insert(0, [46])
+      },
+      2
+    )
+
+    expect(state.instance.widgets[0]?.value).toBe(46)
+    expect(storedHostWidgets(state)).toEqual([['value', 46]])
+  })
+
   it('S1i keeps promoted names when the host flips back to named storage', () => {
     // Deleting `__widgets_opaque` and writing a named `widgets` map lands in
     // the replaced-widget-storage loop, which used to run `reconcileNode` on
