@@ -1,14 +1,10 @@
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createGhostTestHarness() {
   const canvasElement = document.createElement('canvas')
