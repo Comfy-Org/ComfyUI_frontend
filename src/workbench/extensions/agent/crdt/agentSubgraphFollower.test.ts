@@ -94,6 +94,11 @@ interface FixtureOptions {
   /** Add a root-level (non-host) `promoted-widget` node with id 3. */
   rootWidgetNode?: boolean
   /**
+   * Register a second, unused subgraph definition (same `value` input and a
+   * promoted-widget interior) so a host can be retyped between definitions.
+   */
+  secondDefinition?: boolean
+  /**
    * Mutable gate for the adapter's `getScope`. While `blocked` is true the
    * scope resolves to `null`, so `graphMutations.batch` rejects the frame
    * (the "no active graph scope" failure the adapter must survive).
@@ -122,6 +127,21 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   subgraph.add(interior)
   const valueSlot = subgraph.inputNode.slots[options.extraInput ? 1 : 0]
   valueSlot.connect(interior.inputs[0], interior)
+
+  if (options.secondDefinition) {
+    const second = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'value', type: 'NUMBER' }]
+    })
+    graph.subgraphs.set(second.id, second)
+    const secondInterior = LiteGraph.createNode('promoted-widget')!
+    secondInterior.id = toNodeId(8)
+    second.add(secondInterior)
+    second.inputNode.slots[0].connect(secondInterior.inputs[0], secondInterior)
+    // cmp's mint keeps only definitions some node instantiates, so the second
+    // definition needs its own host (id 4) to survive into the doc.
+    graph.add(createTestSubgraphNode(second, { id: 4 }))
+  }
 
   const host = createTestSubgraphNode(subgraph, { id: 1 })
   graph.add(host)
@@ -383,12 +403,24 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       state.instance.inputs.find((i) => i.name === 'extra')
     expect(extraInput()?.link).toBe(8)
 
+    // Replace the whole host map (an `update` action the follower processes)
+    // rather than splicing the nested inputs array, whose Y.Array event the
+    // node observer ignores and which would leave this phase a no-op.
     forwardRaw(
       state,
       (nodes) => {
-        const inputs = nodes.get('1')?.get('inputs') as Y.Array<Y.Map<unknown>>
-        expect(inputs.get(0).get('name')).toBe('extra')
-        inputs.delete(0, 1)
+        const host = nodes.get('1')!.toJSON() as Record<string, unknown>
+        const inputs = host.inputs as { name: string }[]
+        expect(inputs.map((i) => i.name)).toContain('extra')
+        const replacement = new Y.Map<unknown>()
+        for (const [key, value] of Object.entries(host)) {
+          replacement.set(key, value)
+        }
+        replacement.set(
+          'inputs',
+          inputs.filter((i) => i.name !== 'extra')
+        )
+        nodes.set('1', replacement)
       },
       2
     )
@@ -955,6 +987,38 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(rebuilt).toBeDefined()
     expect(rebuilt).not.toBeInstanceOf(SubgraphNode)
     expect(rebuilt?.type).toBe('source')
+  })
+
+  it('S1t rebuilds a host retyped to a different registered definition', () => {
+    // Both types are registered definitions, so the live-host check must
+    // compare the live node's type against the payload, not just definition
+    // membership; otherwise the stale instance is kept and its widget
+    // reconciled as if the type had not changed.
+    const state = startFollower({ secondDefinition: true })
+    const secondId = readSubgraphDefinitions(state.follower.doc)
+      .map((d) => d.id)
+      .find((id) => id !== state.instance.type)
+    expect(secondId).toBeDefined()
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        const host = nodes.get('1')!.toJSON() as Record<string, unknown>
+        const replacement = new Y.Map<unknown>()
+        for (const [key, value] of Object.entries(host)) {
+          replacement.set(key, value)
+        }
+        replacement.set('type', secondId)
+        nodes.set('1', replacement)
+      },
+      1
+    )
+
+    const rebuilt = state.graph.getNodeById(toNodeId(1))
+    expect(rebuilt).toBeInstanceOf(SubgraphNode)
+    expect(rebuilt).not.toBe(state.instance)
+    expect(rebuilt?.type).toBe(secondId)
+    expect(rebuilt?.widgets?.[0]?.value).toBe(HOST_INITIAL_VALUE)
   })
 })
 
