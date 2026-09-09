@@ -25,3 +25,10 @@ export type {
   CreditsState
 } from './credits.js'
 export { createBillingClient } from './credits.js'
+export type { CustomerRecoveryDeps } from './customerRecovery.js'
+export {
+  MISSING_CUSTOMER_MESSAGE,
+  fetchWithCustomerRecovery,
+  isCustomerEndpoint,
+  isMissingCustomerResponse
+} from './customerRecovery.js'
