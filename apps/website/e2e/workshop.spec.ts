@@ -113,18 +113,15 @@ test.describe('Workshop catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(sections).toHaveCount(0)
     await expect(cards).toHaveCount(promisedCount)
-    await expect(page.getByTestId('workshop-use-cases')).toBeVisible()
-    await expect(page.getByTestId('use-case-generate-videos')).toHaveAttribute(
-      'aria-pressed',
-      'true'
+    await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
     )
 
-    await page.getByTestId('use-case-edit-videos').click()
-    await expect(sections).toHaveCount(0)
-    await expect(cards.first()).toBeVisible()
-
-    await page.getByTestId('use-case-all').click()
+    await page.getByTestId('section-back').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
   test('model cards open the model detail page', async ({ page }) => {

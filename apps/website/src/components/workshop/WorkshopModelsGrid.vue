@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpDown, ChevronDown } from '@lucide/vue'
+import { ArrowUpDown, ChevronDown, ChevronLeft } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -203,10 +203,22 @@ const isFiltered = computed(
 // down, then the flat grid takes over.
 const browsing = computed(() => version.value === 'v1.1' && !isFiltered.value)
 // The browsing rows are the use cases, each with its name and its count, so a
-// row of chips saying the same six words above them is the same list twice.
-// The chips are the way back and the way across, and that is only needed once
-// the rows are gone.
-const showRail = computed(() => !browsing.value)
+// row of chips saying the same six words would be the same list twice. V1.1
+// leaves a category the way it entered one, through its own header.
+const showRail = computed(() => version.value !== 'v1.1')
+const inSection = computed(
+  () => version.value === 'v1.1' && useCase.value !== 'all'
+)
+const sectionTitleKey = computed<TranslationKey>(() =>
+  useCase.value === 'other'
+    ? 'workshop.sections.otherFormats'
+    : useCaseLabelKey[useCase.value]
+)
+
+// A category names the screen it opens, so the page heading above it would say
+// the catalogue's name twice.
+const emit = defineEmits<{ section: [boolean] }>()
+watch(inSection, (value) => emit('section', value), { immediate: true })
 // Wherever the use cases have no row of their own on screen, the filter menu
 // carries them.
 const useCasesInFilter = computed(
@@ -321,6 +333,26 @@ const menuItemClass =
     </aside>
 
     <div class="min-w-0">
+      <div v-if="inSection" class="mb-8 flex items-center gap-4">
+        <button
+          type="button"
+          class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 grid size-9 shrink-0 cursor-pointer place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
+          :aria-label="t('workshop.sections.back', locale)"
+          data-testid="section-back"
+          @click="selectRail('all')"
+        >
+          <ChevronLeft class="size-4" aria-hidden="true" />
+        </button>
+        <h1 class="text-2xl font-bold text-primary-warm-white sm:text-3xl">
+          {{ t(sectionTitleKey, locale) }}
+          <span
+            class="text-base font-normal text-primary-warm-gray tabular-nums"
+          >
+            {{ visible.length }}
+          </span>
+        </h1>
+      </div>
+
       <div
         class="bg-page sticky top-20 z-30 mb-8 flex items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       >

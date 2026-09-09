@@ -8602,6 +8602,10 @@ Enterprise`
     en: 'Other formats',
     'zh-CN': '其他格式'
   },
+  'workshop.sections.back': {
+    en: 'Back to all categories',
+    'zh-CN': '返回所有类别'
+  },
   'workshop.sections.scrollBack': {
     en: 'Scroll back',
     'zh-CN': '向前滚动'
