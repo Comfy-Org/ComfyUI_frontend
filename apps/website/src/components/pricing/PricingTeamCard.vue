@@ -53,6 +53,20 @@ const teamCreditsLabel = computed(() =>
     locale
   )
 )
+const teamSliderLabel = computed(() =>
+  t(
+    billingPeriod === 'yearly'
+      ? 'pricing.team.sliderLabelYearly'
+      : 'pricing.team.sliderLabel',
+    locale
+  )
+)
+
+const tickCreditLabels = computed(() =>
+  teamCreditTiers.map((tier) =>
+    formatTeamCreditsShort(amountForBillingPeriod(tier.credits))
+  )
+)
 
 function fmtPrice(n: number): string {
   return `$${n.toLocaleString('en-US')}`
@@ -131,7 +145,7 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
-            :thumb-label="t('pricing.team.sliderLabel', locale)"
+            :thumb-label="teamSliderLabel"
             :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
@@ -150,7 +164,7 @@ const ctaHref = computed(() =>
                   active ? 'text-primary-warm-white' : 'text-primary-warm-gray'
                 "
               >
-                {{ formatTeamCreditsShort(teamCreditTiers[index].credits) }}
+                {{ tickCreditLabels[index] }}
               </span>
             </template>
           </Slider>

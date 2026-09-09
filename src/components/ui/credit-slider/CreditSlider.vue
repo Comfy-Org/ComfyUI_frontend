@@ -16,6 +16,7 @@ import {
   TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { amountForBillingCycle } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
 const {
@@ -135,6 +136,14 @@ const formatCreditsCompact = (value: number) =>
     maximumFractionDigits: 1
   }).format(value)
 
+const stopCreditLabels = computed(() =>
+  stops.map((stop) =>
+    formatCreditsCompact(
+      amountForBillingCycle(stop.credits, cycle === 'yearly')
+    )
+  )
+)
+
 const { t } = useI18n()
 </script>
 
@@ -229,7 +238,7 @@ const { t } = useI18n()
           "
           aria-hidden="true"
         />
-        {{ formatCreditsCompact(stop.credits) }}
+        {{ stopCreditLabels[i] }}
       </li>
     </ol>
   </div>

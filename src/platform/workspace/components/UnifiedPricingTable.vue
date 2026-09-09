@@ -226,7 +226,7 @@
                   {{ t('subscription.teamPlan.name') }}
                 </span>
                 <span class="text-sm text-muted-foreground">
-                  {{ t('subscription.teamPlan.tagline') }}
+                  {{ t(teamTaglineKey) }}
                 </span>
               </div>
 
@@ -691,6 +691,12 @@ const amountForCurrentCycle = (monthlyAmount: number) =>
 
 const creditsLabelKey = computed(() =>
   isYearly.value ? 'subscription.yearlyCredits' : 'subscription.monthlyCredits'
+)
+
+const teamTaglineKey = computed(() =>
+  isYearly.value
+    ? 'subscription.teamPlan.taglineYearly'
+    : 'subscription.teamPlan.tagline'
 )
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the

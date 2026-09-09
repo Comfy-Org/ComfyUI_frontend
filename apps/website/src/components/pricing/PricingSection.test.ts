@@ -54,6 +54,23 @@ describe('PricingSection credit allotment copy', () => {
     expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
   })
 
+  it('scales the team slider tick labels with the billing cycle', async () => {
+    const user = userEvent.setup()
+    render(PricingSection, { props: { defaultBillingCycle: 'monthly' } })
+
+    for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
+      expect(screen.getByText(label)).toBeTruthy()
+    }
+
+    await user.click(screen.getByRole('button', { name: /^Yearly/ }))
+    await nextTick()
+
+    for (const label of ['506.4K', '1M', '1.8M', '3.5M', '6.3M']) {
+      expect(screen.getByText(label)).toBeTruthy()
+    }
+    expect(screen.queryByText('147.7K')).toBeNull()
+  })
+
   it('keeps every yearly figure at twelve times its monthly counterpart', () => {
     const annualPlans = pricingPlans.flatMap((plan) => {
       const { creditsKey, yearlyCreditsKey, estimateKey, yearlyEstimateKey } =

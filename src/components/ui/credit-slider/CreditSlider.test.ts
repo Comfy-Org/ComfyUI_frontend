@@ -160,8 +160,19 @@ describe('CreditSlider', () => {
     expect(screen.queryByTestId('credit-slider-save')).not.toBeInTheDocument()
   })
 
-  it('renders all five fixed credit stop labels', async () => {
+  it('labels the five fixed stops with the year they grant on the yearly cycle', async () => {
     renderSlider({ modelValue: 700 })
+    await flush()
+
+    const stops = within(screen.getByTestId('credit-slider-stops'))
+    for (const label of ['506.4K', '1M', '1.8M', '3.5M', '6.3M']) {
+      expect(stops.getByText(label)).toBeInTheDocument()
+    }
+    expect(stops.queryByText('147.7K')).not.toBeInTheDocument()
+  })
+
+  it('labels the five fixed stops with the monthly grant when cycle=monthly', async () => {
+    renderSlider({ modelValue: 700, cycle: 'monthly' })
     await flush()
 
     const stops = within(screen.getByTestId('credit-slider-stops'))
@@ -195,9 +206,9 @@ describe('CreditSlider', () => {
 
     // Only the prop's labels render — none of the DES-197 defaults.
     const labels = within(screen.getByTestId('credit-slider-stops'))
-    expect(labels.getByText('10.6K')).toBeInTheDocument()
-    expect(labels.getByText('21.1K')).toBeInTheDocument()
-    expect(labels.queryByText('147.7K')).not.toBeInTheDocument()
+    expect(labels.getByText('126.6K')).toBeInTheDocument()
+    expect(labels.getByText('253.2K')).toBeInTheDocument()
+    expect(labels.queryByText('1.8M')).not.toBeInTheDocument()
   })
 
   it('keeps every credit amount equal to usdToCredits(usd) (guards rate drift)', () => {

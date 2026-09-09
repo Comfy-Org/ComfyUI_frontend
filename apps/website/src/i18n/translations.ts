@@ -1733,6 +1733,10 @@ Enterprise`
     en: 'Team monthly credit commitment',
     'zh-CN': '团队每月积分承诺'
   },
+  'pricing.team.sliderLabelYearly': {
+    en: 'Team annual credit commitment',
+    'zh-CN': '团队年度积分承诺'
+  },
   'pricing.team.description': {
     en: 'Built for teams collaborating on workflows together.',
     'zh-CN': '为协作开发工作流的团队打造。'
