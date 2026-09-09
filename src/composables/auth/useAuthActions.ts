@@ -44,7 +44,7 @@ const localizedAuthErrorCopy = (): AuthErrorCopy => ({
     ])
   ),
   generic: t('auth.errors.generic'),
-  signupBlocked: t('auth.errors.signupBlocked')
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
 })
 
 /**
