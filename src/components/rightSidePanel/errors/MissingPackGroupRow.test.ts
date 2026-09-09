@@ -12,7 +12,6 @@ import MissingPackGroupRow from './MissingPackGroupRow.vue'
 
 const mockInstallAllPacks = vi.fn()
 const mockIsInstalling = ref(false)
-
 const mockShouldShowManagerButtons = { value: false }
 const mockOpenManager = vi.fn()
 const mockMissingNodePacks = ref<Array<{ id: string; name: string }>>([])
