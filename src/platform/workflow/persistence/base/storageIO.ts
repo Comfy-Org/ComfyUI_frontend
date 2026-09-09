@@ -579,17 +579,3 @@ export function clearWorkflowStorageForScope(scope: string): void {
   removeStorageKeys(localStorage, localKeys, localPrefixes)
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
-
-export function clearAllWorkflowStorage(): void {
-  const localPrefixes = [
-    StorageKeys.prefixes.draftIndex,
-    StorageKeys.prefixes.draftPayload,
-    StorageKeys.prefixes.lastActivePath,
-    StorageKeys.prefixes.lastOpenPaths,
-    'Comfy.Workflow.Drafts:',
-    'Comfy.Workflow.DraftOrder:'
-  ]
-
-  removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
-  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
-}
