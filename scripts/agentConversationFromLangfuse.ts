@@ -12,9 +12,9 @@ import {
   assembleConversation,
   parseOrRefuse,
   refuse,
-  zAck,
   zSeedFixture
 } from './agentConversationAssemble'
+import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   RawCapture,
   RecordedFrame,
@@ -365,7 +365,7 @@ const writeJson = (path: string, value: unknown): void =>
 
 function parseArgs(argv: string[]) {
   const positional: string[] = []
-  const flags: Record<string, string> = {}
+  const flags: Partial<Record<string, string>> = {}
   const prompts: string[] = []
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -440,7 +440,7 @@ export async function main(argv: string[]): Promise<void> {
         sidecar(`rows.${index + 1}.json`),
         {
           threadId,
-          messageId: zAck.parse(turn.accepted?.body).message_id,
+          messageId: zAgentTurnAccepted.parse(turn.accepted?.body).message_id,
           workflowId
         }
       )
@@ -476,10 +476,8 @@ export async function main(argv: string[]): Promise<void> {
   }
 }
 
-if (
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+const entry = process.argv.at(1)
+if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
   main(process.argv.slice(2)).catch((error: unknown) => {
     const refused = error instanceof RecordRefusal
     process.stderr.write(
