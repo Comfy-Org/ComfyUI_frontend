@@ -6878,6 +6878,68 @@ Enterprise`
   },
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  // ChatGPT Image 2.5 announcement page (/chatgpt-image-2-5). The model has
+  // not shipped yet, so this is the announcement variant: overlay hero,
+  // placeholder still, no gallery/pricing/faq. zh-CN mirrors the English copy
+  // as a placeholder pending a real translation pass.
+  'chatgptImage25.meta.title': {
+    en: 'ChatGPT Image 2.5 on Comfy Cloud: coming soon',
+    'zh-CN': 'ChatGPT Image 2.5 on Comfy Cloud: coming soon'
+  },
+  'chatgptImage25.meta.description': {
+    en: 'ChatGPT Image 2.5 is coming to Comfy Cloud. Get notified when it lands, with full node access from day one.',
+    'zh-CN':
+      'ChatGPT Image 2.5 is coming to Comfy Cloud. Get notified when it lands, with full node access from day one.'
+  },
+  'chatgptImage25.breadcrumb.model': {
+    en: 'ChatGPT Image 2.5',
+    'zh-CN': 'ChatGPT Image 2.5'
+  },
+  'chatgptImage25.breadcrumb.updated': {
+    en: 'Announced September 2026',
+    'zh-CN': 'Announced September 2026'
+  },
+  'chatgptImage25.hero.eyebrow': { en: 'Coming soon', 'zh-CN': 'Coming soon' },
+  'chatgptImage25.hero.title': {
+    en: 'ChatGPT Image 2.5',
+    'zh-CN': 'ChatGPT Image 2.5'
+  },
+  'chatgptImage25.hero.description': {
+    en: "OpenAI's next image model is coming to Comfy Cloud. Every parameter exposed, every output inspectable, the same day it ships.",
+    'zh-CN':
+      "OpenAI's next image model is coming to Comfy Cloud. Every parameter exposed, every output inspectable, the same day it ships."
+  },
+  'chatgptImage25.hero.primaryCta': {
+    en: 'GET NOTIFIED',
+    'zh-CN': 'GET NOTIFIED'
+  },
+  'chatgptImage25.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': 'One engine, every way to run it'
+  },
+  'chatgptImage25.runOptions.subtitle': {
+    en: 'Run ChatGPT Image 2.5 in the browser the day it lands. Batch campaigns with the API, or bring it in-house.',
+    'zh-CN':
+      'Run ChatGPT Image 2.5 in the browser the day it lands. Batch campaigns with the API, or bring it in-house.'
+  },
+  'chatgptImage25.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': 'LEARN MORE' },
+  'chatgptImage25.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '4+ million Comfy creators say'
+  },
+  'chatgptImage25.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP: now turn your agent into a creative technologist.'
+  },
+  'chatgptImage25.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.'
+  },
+  'chatgptImage25.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': 'GET STARTED'
+  },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'

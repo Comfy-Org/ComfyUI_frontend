@@ -36,6 +36,7 @@ const EXCLUDED_PAGES = new Set([
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
+  '/chatgpt-image-2-5', // unshipped model announcement, "coming soon" CTA only
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation', // noindex temporary motion study, not a real page

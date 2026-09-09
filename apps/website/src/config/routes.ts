@@ -44,6 +44,7 @@ const baseRoutes = {
   wanAnimate2: '/wan-animate-2',
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
+  chatgptImage25: '/chatgpt-image-2-5',
   brand: '/brand'
 } as const
 
