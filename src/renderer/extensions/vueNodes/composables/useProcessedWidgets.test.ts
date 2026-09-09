@@ -1,4 +1,3 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -138,10 +137,6 @@ function processWidgets({
     ui: noopUi
   })
 }
-
-beforeEach(() => {
-  Object.assign(useCanvasStore(), { rootGraphId: GRAPH_ID })
-})
 
 describe('widget slot ownership', () => {
   beforeEach(() => {})

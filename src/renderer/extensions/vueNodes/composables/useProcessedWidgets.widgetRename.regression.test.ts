@@ -1,4 +1,3 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -45,10 +44,6 @@ function renderedWidgetNames(graph: LGraph, node: LGraphNode): string[] {
     ui: noopUi
   }).map((w) => w.simplified.name)
 }
-
-beforeEach(() => {
-  Object.assign(useCanvasStore(), { rootGraphId: GRAPH_ID })
-})
 
 describe('widget rename after registration (#15600)', () => {
   beforeEach(() => {})
