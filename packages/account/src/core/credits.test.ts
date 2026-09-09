@@ -7,7 +7,7 @@ import type {
   SessionResult
 } from './session.js'
 
-const BALANCE_URL = 'https://cloud.test/customers/balance'
+const BALANCE_URL = 'https://cloud.test/api/billing/balance'
 
 function credentialFor(uid: string, token: string): AccountCredential {
   return {
@@ -63,7 +63,7 @@ function makeClient(
 }
 
 describe('createBillingClient', () => {
-  it('provisions the customer once and re-reads when the balance answers a missing-customer 409', async () => {
+  it('provisions the customer once and re-reads when the balance answers a missing-customer 409, whatever its path', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     const fetchImpl = vi
       .fn<typeof fetch>()

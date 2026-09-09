@@ -54,18 +54,15 @@ export interface CustomerRecoveryDeps {
    * request: recovery and retry are then skipped and the 409 returned.
    */
   readonly identityUnchanged?: () => boolean
-  /** Resolves a relative `input`; a browser host passes its page href. */
-  readonly base?: string
 }
 
 /**
- * On a missing-customer 409 from a /customers/* endpoint this provisions the
- * customer record and retries the original request a single time. If
- * recovery fails, the original 409 response is returned so callers surface
- * their normal error handling.
+ * On a missing-customer 409 this provisions the customer record and retries
+ * the original request a single time. If recovery fails, the original 409
+ * response is returned so callers surface their normal error handling.
  */
-export async function fetchWithCustomerRecovery(
-  input: string,
+export async function retryAfterCustomerRecovery(
+  response: Response,
   deps: CustomerRecoveryDeps
 ): Promise<Response> {
   const {
@@ -73,12 +70,7 @@ export async function fetchWithCustomerRecovery(
     recoverMissingCustomer,
     identityUnchanged = () => true
   } = deps
-  const response = await request()
-  if (
-    !isCustomerEndpoint(input, deps.base) ||
-    !(await isMissingCustomerResponse(response)) ||
-    !identityUnchanged()
-  ) {
+  if (!(await isMissingCustomerResponse(response)) || !identityUnchanged()) {
     return response
   }
 
@@ -105,4 +97,20 @@ export async function fetchWithCustomerRecovery(
     )
     return response
   }
+}
+
+/**
+ * The recovery above, applied only to /customers/* endpoints: a 409 from
+ * anywhere else is never a missing customer.
+ */
+export async function fetchWithCustomerRecovery(
+  input: string,
+  deps: CustomerRecoveryDeps & {
+    /** Resolves a relative `input`; a browser host passes its page href. */
+    readonly base?: string
+  }
+): Promise<Response> {
+  const response = await deps.request()
+  if (!isCustomerEndpoint(input, deps.base)) return response
+  return retryAfterCustomerRecovery(response, deps)
 }
