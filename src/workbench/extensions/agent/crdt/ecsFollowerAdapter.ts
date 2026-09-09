@@ -544,6 +544,14 @@ export class EcsFollowerAdapter {
     events: Y.YEvent<Y.AbstractType<unknown>>[]
   ): void {
     for (const event of events) {
+      if (event instanceof Y.YArrayEvent) {
+        // cmp writes `__widgets_opaque` as a plain array, but `plain()` also
+        // accepts a shared Y.Array. In-place edits to that array arrive as
+        // array events, not as a key replace on the node map.
+        if (event.path.length === 2 && event.path[1] === OPAQUE_WIDGETS_KEY)
+          session.replacedOpaqueWidgets.add(String(event.path[0]))
+        continue
+      }
       if (!(event instanceof Y.YMapEvent)) continue
       if (event.target === session.nodes) {
         for (const [id, change] of event.changes.keys)
