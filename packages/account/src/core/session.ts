@@ -254,6 +254,11 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
    * cache cannot promise that. Resolves undefined when nobody is signed in
    * or when the identity changed while the mint was in flight.
    *
+   * Concurrent callers for one user share one in-flight mint, which runs
+   * with the first caller's `timeoutMs`; a later caller's own `signal`
+   * still releases that caller (with a transient failure) without
+   * cancelling the shared mint.
+   *
    * An explicit-user call made before the identity port has ever fired
    * (the popup path) resolves with the result, and the credential is
    * cached — but the snapshot and getToken() stay signed-out until the
@@ -275,7 +280,11 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
    * follow at once. Identity changes fail closed through the port itself.
    */
   invalidate: () => void
-  clearCache: () => void
+  /**
+   * Drops only the persisted copy of the credential. The published session
+   * stays live; a host that must end it detaches or invalidates as well.
+   */
+  clearStoredCredential: () => void
 }
 
 const DEFAULT_FRESH_MARGIN_MS = 5 * 60 * 1000
@@ -604,7 +613,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
     const target = options.workspaceId ?? clientOptions.workspaceId
-    const cached = readCached(user.uid)
+    // Storage first (it survives a reload), then the published credential:
+    // a host whose storage is blocked or full must not pay a full exchange
+    // on every read.
+    const cached =
+      readCached(user.uid) ??
+      (credential?.uid === user.uid ? credential : undefined)
     if (
       cached &&
       isCredentialFresh(cached, now, freshMarginMs) &&
@@ -842,7 +856,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const startEpoch = identityEpoch
     const startInvalidation = invalidationEpoch
     const { mintId, response } = core(user, options)
-    const result = await response
+    // A caller that joined an in-flight mint still gets its own signal
+    // honored: the shared mint runs on, this caller stops waiting for it.
+    let result: SessionResult
+    try {
+      result = options.signal
+        ? await abortable(response, options.signal)
+        : await response
+    } catch {
+      return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    }
     if (invalidationEpoch !== startInvalidation) {
       return undefined
     }
@@ -952,7 +975,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       safeClear()
       publish()
     },
-    clearCache() {
+    clearStoredCredential() {
       safeClear()
     }
   }
