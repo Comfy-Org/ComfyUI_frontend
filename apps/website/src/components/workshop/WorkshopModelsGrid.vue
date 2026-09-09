@@ -140,21 +140,27 @@ function selectRail(value: UseCase | 'all' | 'other') {
   useCase.value = value
 }
 
+// A facet answers "what else is in here", so it counts what the category
+// holds rather than what the whole catalogue holds.
+const withinSection = computed(() =>
+  filterWorkshopModels(models, { useCase: useCase.value })
+)
+
 const capabilityOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(models, 'capabilities').map((option) => ({
+  countByFacet(withinSection.value, 'capabilities').map((option) => ({
     ...option,
     label: option.value
   }))
 )
 const providerOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(models, 'provider').map((option) => ({
+  countByFacet(withinSection.value, 'provider').map((option) => ({
     ...option,
     label: option.value
   }))
 )
 // What a model puts out stays reachable, one level below the tabs.
 const modalityOptions = computed<FacetMenuOption[]>(() => {
-  const counts = countByModality(models)
+  const counts = countByModality(withinSection.value)
   return MODALITIES.filter((value) => counts[value] > 0).map((value) => ({
     value,
     label: t(modalityLabelKey[value], locale),
@@ -219,10 +225,11 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 // the catalogue's name twice.
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
-// Wherever the use cases have no row of their own on screen, the filter menu
-// carries them.
+// V1.1 enters a category from its row and leaves it from its header, so the
+// use case is a place rather than a checkbox and the menu does not repeat it.
+// The other versions carry it wherever their rail is not on screen.
 const useCasesInFilter = computed(
-  () => !showRail.value || (onPhone.value && railBeside.value)
+  () => showRail.value && onPhone.value && railBeside.value
 )
 
 // Router reports no curated set yet, so the banner that opens the listing
@@ -333,17 +340,24 @@ const menuItemClass =
     </aside>
 
     <div class="min-w-0">
-      <div v-if="inSection" class="mb-8">
-        <button
-          type="button"
-          class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mb-2 -ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3"
-          data-testid="section-back"
-          @click="selectRail('all')"
+      <button
+        v-if="inSection"
+        type="button"
+        class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3"
+        data-testid="section-back"
+        @click="selectRail('all')"
+      >
+        <ChevronLeft class="size-4" aria-hidden="true" />
+        {{ t('workshop.sections.back', locale) }}
+      </button>
+
+      <div
+        class="bg-page sticky top-20 z-30 mb-8 flex flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+      >
+        <h1
+          v-if="inSection"
+          class="mr-auto text-3xl font-bold text-primary-warm-white max-sm:w-full sm:text-4xl"
         >
-          <ChevronLeft class="size-4" aria-hidden="true" />
-          {{ t('workshop.sections.back', locale) }}
-        </button>
-        <h1 class="text-2xl font-bold text-primary-warm-white sm:text-3xl">
           {{ t(sectionTitleKey, locale) }}
           <span
             class="text-base font-normal text-primary-warm-gray tabular-nums"
@@ -351,11 +365,7 @@ const menuItemClass =
             {{ visible.length }}
           </span>
         </h1>
-      </div>
 
-      <div
-        class="bg-page sticky top-20 z-30 mb-8 flex items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
-      >
         <WorkshopSearchField
           v-model="query"
           v-model:providers="providers"
@@ -363,7 +373,12 @@ const menuItemClass =
           :models
           :locale
           compact
-          class="max-sm:min-w-0 max-sm:flex-1 sm:mr-auto sm:w-full sm:max-w-xl"
+          :class="
+            cn(
+              'max-sm:min-w-0 max-sm:flex-1 sm:w-full sm:max-w-xl',
+              !inSection && 'sm:mr-auto'
+            )
+          "
         />
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">

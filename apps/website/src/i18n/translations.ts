@@ -8669,8 +8669,8 @@ Enterprise`
   },
   'workshop.filter.outputGroup': { en: 'Output', 'zh-CN': '输出' },
   'workshop.filter.capabilityGroup': {
-    en: 'Categories',
-    'zh-CN': '分类'
+    en: 'Capabilities',
+    'zh-CN': '功能'
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },

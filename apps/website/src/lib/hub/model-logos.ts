@@ -39,6 +39,7 @@ const MODEL_TO_LOGO: Record<string, string> = {
   HeyGen: 'heygen',
   PixVerse: 'pixverse',
   Krea: 'krea',
+  Magnific: 'magnific',
   Sonilo: 'sonilo'
 }
 
