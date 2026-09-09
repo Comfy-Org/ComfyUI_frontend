@@ -59,7 +59,9 @@ function begin(): void {
           workshopBillingClient.reset()
           return
         }
-        void refreshWorkshopCredits()
+        // A rotated token means any read in flight is about to be discarded
+        // by the publish guard; joining it would skip this refresh cycle.
+        void refreshWorkshopCredits({ force: true })
       },
       { immediate: true }
     )

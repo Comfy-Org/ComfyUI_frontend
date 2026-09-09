@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { AUTH_FIELD_CLASS } from './authFieldClass'
@@ -53,13 +53,22 @@ function isUnknownEmailError(error: unknown): boolean {
   )
 }
 
-const signInHref = computed(() => {
-  if (typeof window === 'undefined') return '/login/'
+/**
+ * The return destination is only known in the browser, and hydration never
+ * repairs a server-rendered href, so the link stays plain in markup and the
+ * destination is carried over when the visitor actually clicks.
+ */
+function goToSignIn(event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
+    return
+  event.preventDefault()
   const destination = requestedReturnPath(window.location.search)
-  return destination
-    ? `/login/?returnTo=${encodeURIComponent(destination)}`
-    : '/login/'
-})
+  window.location.assign(
+    destination
+      ? `/login/?returnTo=${encodeURIComponent(destination)}`
+      : '/login/'
+  )
+}
 </script>
 
 <template>
@@ -116,7 +125,11 @@ const signInHref = computed(() => {
     </form>
 
     <p class="mt-6 text-center text-sm">
-      <a :href="signInHref" class="text-primary-comfy-yellow hover:underline">
+      <a
+        href="/login/"
+        class="text-primary-comfy-yellow hover:underline"
+        @click="goToSignIn"
+      >
         {{ t('auth.forgot.backToSignIn', locale) }}
       </a>
     </p>

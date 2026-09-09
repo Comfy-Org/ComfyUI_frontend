@@ -18,16 +18,15 @@ import { useWorkshopTurnstileMode } from '../../scripts/posthog'
 const {
   mode,
   locale = 'en',
-  disabled = false,
-  forgotPasswordHref = '/forgot-password/'
+  disabled = false
 } = defineProps<{
   mode: 'signIn' | 'signUp'
   locale?: Locale
   disabled?: boolean
-  forgotPasswordHref?: string
 }>()
 
 const emit = defineEmits<{
+  forgotPassword: [event: MouseEvent]
   submit: [
     credentials: {
       email: string
@@ -135,8 +134,9 @@ defineExpose({ resetTurnstile })
     </label>
     <a
       v-if="mode === 'signIn'"
-      :href="forgotPasswordHref"
+      href="/forgot-password/"
       class="hover:text-primary-comfy-yellow -mt-2 self-start text-xs text-primary-comfy-canvas/55 underline"
+      @click="emit('forgotPassword', $event)"
     >
       {{ t('auth.signIn.forgotPassword', locale) }}
     </a>

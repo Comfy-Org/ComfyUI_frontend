@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/core'
+
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
@@ -253,5 +255,35 @@ describe('useWorkshopTurnstileMode', () => {
     initPostHog()
     emitFeatureFlags()
     expect(mode.value).toBe('enforce')
+  })
+})
+
+describe('captureAuthRefresh*', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockCapture.mockClear()
+  })
+
+  it("reports refresh outcomes under the package's shared event names", async () => {
+    const {
+      initPostHog,
+      captureAuthRefreshSucceeded,
+      captureAuthRefreshFailed
+    } = await import('./posthog')
+    initPostHog()
+
+    captureAuthRefreshSucceeded()
+    captureAuthRefreshFailed('retry_scheduled')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      SESSION_TELEMETRY_EVENT.refreshSucceeded,
+      { outcome: 'succeeded' }
+    )
+    expect(
+      hoisted.mockCapture,
+      'the names are inlined here to keep the session client out of the analytics bundle; they must still match the package'
+    ).toHaveBeenCalledWith(SESSION_TELEMETRY_EVENT.refreshFailed, {
+      outcome: 'retry_scheduled'
+    })
   })
 })

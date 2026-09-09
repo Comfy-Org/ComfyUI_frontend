@@ -106,7 +106,9 @@ describe('AuthForgotPassword', () => {
     await waitFor(() => expect(h.sendReset).toHaveBeenCalledOnce())
   })
 
-  it('keeps a safe return destination on the back-to-sign-in link', async () => {
+  it('carries a safe return destination back to sign-in on click', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
     window.history.replaceState(
       {},
       '',
@@ -114,16 +116,18 @@ describe('AuthForgotPassword', () => {
     )
     render(AuthForgotPassword)
 
-    await waitFor(() => {
-      expect(
-        screen
-          .getByRole('link', { name: /back to sign in/i })
-          .getAttribute('href')
-      ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F')
-    })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: /back to sign in/i }))
+
+    expect(assign).toHaveBeenCalledWith(
+      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
   })
 
-  it('drops an unsafe cross-origin return destination', () => {
+  it('drops an unsafe cross-origin return destination', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
     window.history.replaceState(
       {},
       '',
@@ -131,12 +135,14 @@ describe('AuthForgotPassword', () => {
     )
     render(AuthForgotPassword)
 
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: /back to sign in/i }))
+
     expect(
-      screen
-        .getByRole('link', { name: /back to sign in/i })
-        .getAttribute('href'),
+      assign,
       'a cross-origin destination maps to the safe Workshop-home fallback, never the raw value'
-    ).toBe('/login/?returnTo=%2Fworkshop%2F')
+    ).toHaveBeenCalledWith('/login/?returnTo=%2Fworkshop%2F')
   })
 })
 
@@ -154,26 +160,5 @@ describe('AuthForgotPassword lazy-load boundary', () => {
       'a static import ships firebase/app+auth to every flag-off visitor of /forgot-password'
     ).toBe(false)
     expect(source).toContain("import('../../config/workshop-firebase')")
-  })
-})
-
-describe('AuthForgotPassword back-to-sign-in href', () => {
-  it('carries the return destination from the very first render, before any mount hook', async () => {
-    const { renderToString } = await import('vue/server-renderer')
-    const { createSSRApp, h: hyper } = await import('vue')
-    window.history.replaceState(
-      {},
-      '',
-      '/forgot-password/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
-    )
-
-    const html = await renderToString(
-      createSSRApp({ render: () => hyper(AuthForgotPassword) })
-    )
-
-    expect(
-      html,
-      'a click during hydration must not lose the returnTo carried into forgot-password'
-    ).toContain('/login/?returnTo=')
   })
 })

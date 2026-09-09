@@ -90,6 +90,29 @@ describe('authSignInTransition', () => {
     })
   })
 
+  it('clears the session-failure banner when a later refresh mints successfully', () => {
+    const failed = authSignInTransition(
+      { step: 'minting', email: 'a@b.co' },
+      { type: 'mintFailed' }
+    )
+    expect(authSignInTransition(failed, { type: 'mintSucceeded' })).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co'
+    })
+  })
+
+  it('leaves a provisioning failure alone when a session mints', () => {
+    const provisioningFailed: AuthSignInState = {
+      step: 'signedIn',
+      email: 'a@b.co',
+      messageKey: 'auth.signIn.error.provisioning'
+    }
+    expect(
+      authSignInTransition(provisioningFailed, { type: 'mintSucceeded' }),
+      'a session mint says nothing about customer setup'
+    ).toBe(provisioningFailed)
+  })
+
   it('returns to idle on sign-out from signedIn, but never abandons a pending attempt', () => {
     const signedIn: AuthSignInState = { step: 'signedIn', email: 'a@b.co' }
     expect(authSignInTransition(signedIn, { type: 'signedOut' })).toEqual(idle)
@@ -129,6 +152,21 @@ describe('signInErrorMessage', () => {
       'a throttled visitor',
       { code: 'auth/too-many-requests', message: 'x' },
       AUTH_ERROR_MESSAGES['auth/too-many-requests']
+    ],
+    [
+      'an unknown address, collapsed so the page cannot confirm accounts',
+      { code: 'auth/user-not-found', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+    ],
+    [
+      'a wrong password, collapsed for the same reason',
+      { code: 'auth/wrong-password', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+    ],
+    [
+      'a malformed address, collapsed for the same reason',
+      { code: 'auth/invalid-email', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/invalid-credential']
     ],
     [
       'a network failure, which the cloud app names',

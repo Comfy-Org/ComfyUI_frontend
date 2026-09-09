@@ -8,6 +8,8 @@ import AuthSignIn from './AuthSignIn.vue'
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
+  session: undefined as { value: unknown } | undefined,
+  chunkFails: false,
   ensureFresh: vi.fn(),
   signOut: vi.fn(),
   google: vi.fn(),
@@ -42,22 +44,30 @@ vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
   }
 })
 
-vi.mock('../../config/workshop-firebase', () => ({
-  signInWorkshopWithGoogle: handles.google,
-  signInWorkshopWithGitHub: handles.github,
-  signInWorkshopWithEmail: handles.emailSignIn,
-  signUpWorkshopWithEmail: handles.emailSignUp,
-  signOutWorkshop: handles.signOut,
-  isWorkshopProvisioningError: handles.isProvisioningError
-}))
+vi.mock('../../config/workshop-firebase', () => {
+  if (handles.chunkFails) {
+    throw new TypeError('Failed to fetch dynamically imported module')
+  }
+  return {
+    signInWorkshopWithGoogle: handles.google,
+    signInWorkshopWithGitHub: handles.github,
+    signInWorkshopWithEmail: handles.emailSignIn,
+    signUpWorkshopWithEmail: handles.emailSignUp,
+    signOutWorkshop: handles.signOut,
+    isWorkshopProvisioningError: handles.isProvisioningError
+  }
+})
 
 vi.mock('../../config/workshop-session-state', async () => {
   const { ref } = await import('vue')
   const user = ref(null)
+  const session = ref(undefined)
   handles.user = user
+  handles.session = session
   return {
     useWorkshopSession: () => ({
       user,
+      session,
       ensureFresh: handles.ensureFresh,
       signOut: handles.signOut
     })
@@ -67,6 +77,8 @@ vi.mock('../../config/workshop-session-state', async () => {
 beforeEach(() => {
   handles.flag!.value = true
   handles.user!.value = null
+  handles.session!.value = undefined
+  handles.chunkFails = false
   handles.ensureFresh.mockReset().mockResolvedValue({
     status: 'ok',
     session: { token: 'workspace-jwt' }
@@ -194,7 +206,9 @@ describe('AuthSignIn', () => {
     expect(screen.getByText(/signing you in/i)).toBeTruthy()
   })
 
-  it('keeps a safe return destination through the forgot-password flow', async () => {
+  it('carries a safe return destination into the forgot-password flow on click', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
     window.history.replaceState(
       {},
       '',
@@ -202,10 +216,29 @@ describe('AuthSignIn', () => {
     )
     render(AuthSignIn)
 
-    const link = await screen.findByRole('link', { name: /forgot password/i })
-    expect(link.getAttribute('href')).toBe(
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('link', { name: /forgot password/i }))
+
+    expect(assign).toHaveBeenCalledWith(
       '/forgot-password/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
     )
+  })
+
+  it('keeps the plain href in markup so a pre-hydration click still reaches the page', () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
+    render(AuthSignIn)
+
+    expect(
+      screen
+        .getByRole('link', { name: /forgot password/i })
+        .getAttribute('href'),
+      'hydration never repairs a server-rendered href, so the destination is added at click time instead'
+    ).toBe('/forgot-password/')
   })
 
   it('keeps the signed-in identity visible when provisioning fails', async () => {
@@ -243,5 +276,72 @@ describe('AuthSignIn', () => {
     expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Retry session' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
+  })
+
+  it('mints a restored visitor without handing over the readonly user proxy', async () => {
+    render(AuthSignIn)
+    handles.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    }
+
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    expect(
+      handles.ensureFresh,
+      'the session client already holds the raw current user; a readonly proxy would drop Firebase token writes'
+    ).toHaveBeenCalledWith()
+  })
+
+  it('clears the session-failure banner once a later refresh recovers', async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    handles.ensureFresh.mockResolvedValueOnce({
+      status: 'error',
+      reason: 'network'
+    })
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await screen.findByRole('button', { name: 'Retry session' })
+
+    handles.session!.value = { token: 'workspace-jwt' }
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Retry session' })).toBeNull()
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('leaves the buttons usable when the Firebase chunk fails to load on a click', async () => {
+    const staticFlag = handles.flag
+    handles.chunkFails = true
+    vi.resetModules()
+    const { default: FreshAuthSignIn } = await import('./AuthSignIn.vue')
+    handles.flag!.value = true
+    try {
+      render(FreshAuthSignIn)
+      const button = screen.getByRole('button', {
+        name: /continue with google/i
+      }) as HTMLButtonElement
+      await userEvent.setup().click(button)
+
+      await waitFor(() =>
+        expect(screen.getByRole('alert').textContent).toMatch(
+          /something went wrong/i
+        )
+      )
+      expect(
+        button.disabled,
+        'a failed chunk load must not strand the page in pending'
+      ).toBe(false)
+    } finally {
+      handles.chunkFails = false
+      vi.resetModules()
+      handles.flag = staticFlag
+    }
   })
 })

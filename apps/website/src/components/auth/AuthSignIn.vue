@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
 
@@ -29,6 +29,7 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 const enabled = useWorkshopAuthFlag()
 const {
   user,
+  session,
   ensureFresh,
   signOut: signOutWorkshopSession
 } = useWorkshopSession()
@@ -42,9 +43,6 @@ type AuthenticatedUser = WorkshopSessionUser & {
 }
 const emailForm =
   useTemplateRef<InstanceType<typeof AuthEmailForm>>('emailForm')
-const forgotPasswordHref = ref('/forgot-password/')
-const signInHref = ref('/login/')
-const signUpHref = ref('/signup/')
 
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
@@ -57,7 +55,9 @@ function navigateBackIfRequested(): void {
 }
 
 async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
-  const result = await ensureFresh(currentUser)
+  const result = currentUser
+    ? await ensureFresh(currentUser)
+    : await ensureFresh()
   if (state.value.step !== 'minting') return
   if (result?.status === 'ok') {
     dispatch({ type: 'mintSucceeded' })
@@ -157,21 +157,37 @@ const stopUserWatch = watch(
       email: restored.email ?? restored.displayName ?? ''
     })
     if (before !== state.value.step && state.value.step === 'minting') {
-      void runMint(restored)
+      // No argument: `restored` is a readonly proxy, and the client already
+      // holds the raw current user.
+      void runMint()
     }
   },
   { immediate: true }
 )
 onBeforeUnmount(stopUserWatch)
 
-onMounted(() => {
-  const destination = requestedReturnPath(window.location.search)
-  if (!destination) return
-  const query = `?returnTo=${encodeURIComponent(destination)}`
-  forgotPasswordHref.value = `/forgot-password/${query}`
-  signInHref.value = `/login/${query}`
-  signUpHref.value = `/signup/${query}`
+// A focus refresh can mint successfully after a failed attempt; the banner
+// and its Retry must not outlive the recovery.
+const stopSessionWatch = watch(session, (active) => {
+  if (active) dispatch({ type: 'mintSucceeded' })
 })
+onBeforeUnmount(stopSessionWatch)
+
+/**
+ * The return destination is only known in the browser, and hydration never
+ * repairs a server-rendered href, so the links stay plain in markup and the
+ * destination is carried over when the visitor actually clicks. Modified
+ * clicks keep their native open-in-new-tab behaviour.
+ */
+function goTo(path: string, event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
+    return
+  event.preventDefault()
+  const destination = requestedReturnPath(window.location.search)
+  window.location.assign(
+    destination ? `${path}?returnTo=${encodeURIComponent(destination)}` : path
+  )
+}
 </script>
 
 <template>
@@ -258,7 +274,7 @@ onMounted(() => {
         :mode="mode"
         :locale="locale"
         :disabled="state.step === 'pending' || state.step === 'minting'"
-        :forgot-password-href="forgotPasswordHref"
+        @forgot-password="goTo('/forgot-password/', $event)"
         @submit="submitEmail"
       />
 
@@ -291,8 +307,9 @@ onMounted(() => {
         <template v-if="mode === 'signUp'">
           {{ t('auth.signUp.haveAccount', locale) }}
           <a
-            :href="signInHref"
+            href="/login/"
             class="text-primary-comfy-yellow hover:underline"
+            @click="goTo('/login/', $event)"
           >
             {{ t('auth.signUp.signInLink', locale) }}
           </a>
@@ -300,8 +317,9 @@ onMounted(() => {
         <template v-else>
           {{ t('auth.signIn.newHere', locale) }}
           <a
-            :href="signUpHref"
+            href="/signup/"
             class="text-primary-comfy-yellow hover:underline"
+            @click="goTo('/signup/', $event)"
           >
             {{ t('auth.signIn.signUpLink', locale) }}
           </a>

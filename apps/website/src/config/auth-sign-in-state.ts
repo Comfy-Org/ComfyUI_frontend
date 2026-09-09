@@ -46,6 +46,28 @@ export type AuthSignInEvent =
 const SUPPORT_EMAIL = 'support@comfy.org'
 
 /**
+ * Codes whose distinct copy would tell a visitor whether an address has an
+ * account. Firebase collapses them itself only when Email Enumeration
+ * Protection is on, so the collapse is enforced here regardless. Sign-up's
+ * email-already-in-use stays distinct on purpose: the visitor is told to
+ * sign in instead.
+ */
+const ACCOUNT_ORACLE_CODES: ReadonlySet<string> = new Set([
+  'auth/user-not-found',
+  'auth/wrong-password',
+  'auth/invalid-email'
+])
+
+function withoutAccountOracle(
+  classification: AuthErrorClassification
+): AuthErrorClassification {
+  return classification.kind === 'auth' &&
+    ACCOUNT_ORACLE_CODES.has(classification.code)
+    ? { kind: 'auth', code: 'auth/invalid-credential' }
+    : classification
+}
+
+/**
  * The copy for a failed attempt, from the package tables the cloud app's
  * own strings are pinned to. Only the unauthorized-domain line needs this
  * host's values.
@@ -76,7 +98,10 @@ export function authSignInTransition(
     case 'credentialSucceeded':
       return { step: 'minting', email: event.email }
     case 'signInFailed':
-      return { step: 'error', classification: classifyAuthError(event.error) }
+      return {
+        step: 'error',
+        classification: withoutAccountOracle(classifyAuthError(event.error))
+      }
     case 'provisioningFailed':
       return {
         step: 'signedIn',
@@ -90,7 +115,11 @@ export function authSignInTransition(
         ? { step: 'minting', email: event.email }
         : state
     case 'mintSucceeded':
-      return state.step === 'minting'
+      if (state.step === 'minting')
+        return { step: 'signedIn', email: state.email }
+      // A later refresh recovered the session: drop the stale failure banner.
+      return state.step === 'signedIn' &&
+        state.messageKey === 'auth.signIn.error.session'
         ? { step: 'signedIn', email: state.email }
         : state
     case 'mintFailed':

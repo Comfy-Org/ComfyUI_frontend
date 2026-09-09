@@ -2,7 +2,6 @@ import posthog from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/core'
 import type { SessionRefreshOutcome } from '@comfyorg/account/core'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
@@ -27,9 +26,12 @@ const ANALYTICS_EVENT = {
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
   // Shared with the cloud app (no website: prefix) so one PostHog funnel
-  // covers auth-refresh outcomes across every surface.
-  authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
-  authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed,
+  // covers auth-refresh outcomes across every surface. Spelled out rather
+  // than imported: this module ships in every page's analytics script, and
+  // the package's core entry would drag the session client along. The test
+  // pins them to SESSION_TELEMETRY_EVENT.
+  authRefreshSucceeded: 'auth.unified.refresh.succeeded',
+  authRefreshFailed: 'auth.unified.refresh.failed',
   workshopSignupRollbackFailed: 'website:workshop_signup_rollback_failed'
 } as const
 

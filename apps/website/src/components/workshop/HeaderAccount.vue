@@ -17,13 +17,22 @@ const { user, session, sessionFailure, ensureFresh, signOut } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
 
-const signInHref = computed(() =>
-  typeof window === 'undefined'
-    ? '/login/'
-    : `/login/?returnTo=${encodeURIComponent(
-        window.location.pathname + window.location.search
-      )}`
-)
+/**
+ * The return destination is only known in the browser, and hydration does
+ * not repair a server-rendered href, so the plain link stays `/login/` and
+ * the destination is added when the visitor actually clicks. Modified clicks
+ * keep their native open-in-new-tab behaviour.
+ */
+function goToSignIn(event: MouseEvent): void {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
+    return
+  event.preventDefault()
+  window.location.assign(
+    `/login/?returnTo=${encodeURIComponent(
+      window.location.pathname + window.location.search
+    )}`
+  )
+}
 
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
@@ -73,8 +82,9 @@ async function signOutFromMenu() {
   <div v-if="enabled" class="shrink-0">
     <a
       v-if="!user"
-      :href="signInHref"
+      href="/login/"
       class="hover:border-primary-comfy-yellow/60 flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors"
+      @click="goToSignIn"
     >
       {{ t('auth.header.signIn', locale) }}
     </a>

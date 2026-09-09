@@ -36,10 +36,10 @@ function restoreValue(
   switch (field.kind) {
     case 'text':
       return typeof value === 'string' ? { value } : undefined
-    case 'select':
-      return field.options.some((option) => Object.is(option, value))
-        ? { value: value as string | number | boolean }
-        : undefined
+    case 'select': {
+      const match = field.options.find((option) => Object.is(option, value))
+      return match === undefined ? undefined : { value: match }
+    }
     case 'number':
       return typeof value === 'number' &&
         Number.isFinite(value) &&

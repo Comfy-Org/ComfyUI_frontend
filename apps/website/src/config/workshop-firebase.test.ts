@@ -1,14 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   isCustomerProvisioned,
+  isWorkshopProvisioningError,
   provisionCustomer,
+  signInWorkshopWithGoogle,
   signUpWorkshopWithEmail
 } from './workshop-firebase'
 
 const h = vi.hoisted(() => ({
   captureRollback: vi.fn(),
-  createUserWithEmail: vi.fn()
+  createUserWithEmail: vi.fn(),
+  signInWithGoogle: vi.fn()
 }))
 
 vi.mock('../scripts/posthog', () => ({
@@ -18,7 +21,7 @@ vi.mock('../scripts/posthog', () => ({
 vi.mock('@comfyorg/account/firebase', () => ({
   createFirebaseIdentity: () => ({
     onUserChanged: vi.fn(() => () => undefined),
-    signInWithGoogle: vi.fn(),
+    signInWithGoogle: h.signInWithGoogle,
     signInWithGitHub: vi.fn(),
     signInWithEmail: vi.fn(),
     createUserWithEmail: h.createUserWithEmail,
@@ -112,5 +115,37 @@ describe('signUpWorkshopWithEmail rollback reporting', () => {
     ).rejects.toThrow('Customer provisioning failed')
 
     expect(h.captureRollback).not.toHaveBeenCalled()
+  })
+})
+
+describe('social sign-in provisioning boundary', () => {
+  const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
+
+  beforeEach(() => {
+    h.signInWithGoogle.mockReset()
+  })
+
+  it('rethrows a popup failure untouched, so the caller sees the Firebase code', async () => {
+    const popupFailure = { code: 'auth/popup-closed-by-user', message: 'x' }
+    h.signInWithGoogle.mockRejectedValue(popupFailure)
+
+    await expect(signInWorkshopWithGoogle()).rejects.toBe(popupFailure)
+  })
+
+  it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
+    h.signInWithGoogle.mockResolvedValue({ user })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 500 }))
+    )
+
+    const failure = await signInWorkshopWithGoogle().catch((error) => error)
+
+    expect(
+      isWorkshopProvisioningError(failure),
+      'the popup succeeded, so the page must keep the identity and say setup did not finish'
+    ).toBe(true)
+    expect(failure.user).toBe(user)
+    expect(String(failure.cause)).toContain('500')
   })
 })
