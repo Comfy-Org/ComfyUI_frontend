@@ -87,6 +87,8 @@ export const ConfirmNewSubscription: Story = {
   })
 }
 
+const tallShell = shell.replace('h-[680px]', 'h-[860px]')
+
 /** Receipt ledger with a promo applied — subtotal, promo row, chip (#15159). */
 export const ConfirmPromoApplied: Story = {
   render: () => ({
@@ -122,7 +124,7 @@ export const ConfirmPromoApplied: Story = {
         new_plan: creatorAnnual
       } satisfies PreviewSubscribeResponse
     }),
-    template: `${shell}<SubscriptionAddPaymentPreviewWorkspace tier-key="creator" billing-cycle="yearly" :preview-data="previewData" /></div>`
+    template: `${tallShell}<SubscriptionAddPaymentPreviewWorkspace tier-key="creator" billing-cycle="yearly" :preview-data="previewData" /></div>`
   })
 }
 

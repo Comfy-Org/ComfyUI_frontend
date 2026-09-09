@@ -182,7 +182,7 @@
         </div>
         <div v-else class="flex flex-col gap-2">
           <div
-            class="flex h-10 w-fit items-center gap-2 rounded-lg bg-secondary-background px-3"
+            class="flex h-10 w-fit items-center gap-2 rounded-lg border border-interface-stroke bg-secondary-background px-3"
           >
             <span class="text-sm text-base-foreground">
               {{ appliedPromotionCode }}
