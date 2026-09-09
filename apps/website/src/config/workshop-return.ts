@@ -110,21 +110,24 @@ export function stashWorkshopForm(
   }
 }
 
-const signInLeaveHooks = new Set<() => void>()
+const SIGN_IN_LEAVE_EVENT = 'comfy:workshop-sign-in-leave'
 
 /**
  * An island holding unsaved work registers its stash here; the header's
- * sign-in navigation runs every registered hook before leaving the page.
+ * sign-in navigation runs every registered stash before leaving the page.
+ * A window event, not a module registry: the header and the model page are
+ * separate Astro islands and must not depend on sharing one module instance.
  */
 export function onBeforeSignInLeave(stash: () => void): () => void {
-  signInLeaveHooks.add(stash)
+  if (typeof window === 'undefined') return () => {}
+  window.addEventListener(SIGN_IN_LEAVE_EVENT, stash)
   return () => {
-    signInLeaveHooks.delete(stash)
+    window.removeEventListener(SIGN_IN_LEAVE_EVENT, stash)
   }
 }
 
 export function runBeforeSignInLeave(): void {
-  signInLeaveHooks.forEach((stash) => stash())
+  window.dispatchEvent(new Event(SIGN_IN_LEAVE_EVENT))
 }
 
 /**
