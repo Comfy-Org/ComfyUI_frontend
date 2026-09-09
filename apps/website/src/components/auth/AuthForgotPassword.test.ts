@@ -111,48 +111,60 @@ describe('AuthForgotPassword', () => {
     )
   })
 
-  it('toasts a failed send, then still confirms and returns to login', async () => {
-    h.sendReset.mockRejectedValue({
-      code: 'auth/too-many-requests',
-      message: 'x'
-    })
+  it.for([
+    ['auth/too-many-requests', 'Too many login attempts'],
+    ['auth/network-request-failed', 'Network error']
+  ] as const)(
+    'keeps %s an error: no confirmation, no redirect, and the send can be retried',
+    async ([code, detail]) => {
+      h.sendReset.mockRejectedValue({ code, message: 'x' })
+      render(AuthForgotPassword)
+      await typeEmail('user@example.com')
+      await clickSend()
+
+      await waitFor(() =>
+        expect(toasts.value[0]).toMatchObject({
+          severity: 'error',
+          detail: expect.stringContaining(detail)
+        })
+      )
+      expect(
+        screen.queryByText('Password reset sent'),
+        'nothing was sent, so nothing may claim it was'
+      ).toBeNull()
+      expect(h.captureAuthFailed).toHaveBeenCalledWith({
+        error_code: code,
+        auth_action: 'password_reset'
+      })
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(assign).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', { name: /send/i }).hasAttribute('disabled')
+      ).toBe(false)
+    }
+  )
+
+  it('rejects a malformed address before asking Firebase', async () => {
     render(AuthForgotPassword)
-    await typeEmail('user@example.com')
+    await typeEmail('not-an-email')
     await clickSend()
 
-    expect(
-      (await screen.findByRole('alert')).textContent,
-      'the cloud page shows its inline confirmation even after a failed send'
-    ).toContain('Password reset sent')
-    expect(toasts.value.map((toast) => toast.severity)).toEqual([
-      'error',
-      'success'
-    ])
-    expect(toasts.value[0].detail).toContain('Too many login attempts')
-    expect(h.captureAuthFailed).toHaveBeenCalledWith({
-      error_code: 'auth/too-many-requests',
-      auth_action: 'password_reset'
-    })
-    await vi.advanceTimersByTimeAsync(3000)
-    expect(assign).toHaveBeenCalledWith('/login/')
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'valid email'
+    )
+    expect(h.sendReset).not.toHaveBeenCalled()
   })
 
-  it('toasts a transport failure the same way and still returns to login', async () => {
-    h.sendReset.mockRejectedValue({
-      code: 'auth/network-request-failed',
-      message: 'x'
-    })
+  it('sends once: the button stays disabled after a confirmed send', async () => {
     render(AuthForgotPassword)
     await typeEmail('user@example.com')
     await clickSend()
-
     await screen.findByRole('alert')
-    expect(toasts.value[0]).toMatchObject({
-      severity: 'error',
-      detail: expect.stringContaining('Network error')
-    })
-    await vi.advanceTimersByTimeAsync(3000)
-    expect(assign).toHaveBeenCalledWith('/login/')
+
+    const send = screen.getByRole('button', { name: /send/i })
+    expect(send.hasAttribute('disabled')).toBe(true)
+    await clickSend()
+    expect(h.sendReset).toHaveBeenCalledOnce()
   })
 
   it("shows the cloud app's timeout copy when the flag never answers", async () => {

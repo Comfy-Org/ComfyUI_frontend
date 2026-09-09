@@ -8,6 +8,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { authSchemasFor } from '../../config/auth-schemas'
 import { signInErrorMessage } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
 import { requestedReturnPath } from '../../config/workshop-return'
@@ -70,9 +71,12 @@ function goToSignIn(event: MouseEvent): void {
 }
 
 async function submit() {
-  if (state.value === 'sending') return
-  if (!email.value) {
-    errorMessage.value = t('auth.forgot.emailRequired', locale)
+  if (state.value === 'sending' || state.value === 'sent') return
+  const parsed = authSchemasFor(locale).signInSchema.shape.email.safeParse(
+    email.value
+  )
+  if (!parsed.success) {
+    errorMessage.value = parsed.error.issues[0]?.message ?? ''
     return
   }
   errorMessage.value = ''
@@ -83,17 +87,20 @@ async function submit() {
     errorMessage.value = t('auth.forgot.error', locale)
     return
   }
-  // As on cloud: a failed send toasts the code's own line, and the page still
-  // confirms and returns to login.
+  // An unknown email already resolves as sent (the package keeps that
+  // neutral); anything that rejects here is a delivery failure the visitor
+  // can retry, so it stays an error.
   try {
     await firebase.sendWorkshopPasswordReset(email.value)
   } catch (error) {
     reportSendFailure(error)
+    return
   }
   reportSent()
 }
 
 function reportSendFailure(error: unknown) {
+  state.value = 'error'
   captureAuthFailed({
     error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
     auth_action: 'password_reset'
@@ -177,7 +184,7 @@ onBeforeUnmount(() => {
           required
           :placeholder="t('auth.email.placeholder', locale)"
           :class="AUTH_FIELD_CLASS"
-          :aria-invalid="Boolean(errorMessage) && !email"
+          :aria-invalid="Boolean(errorMessage) || undefined"
         />
         <small v-if="errorMessage" role="alert" class="text-red-500">
           {{ errorMessage }}
@@ -194,7 +201,7 @@ onBeforeUnmount(() => {
 
       <button
         type="submit"
-        :disabled="!email || state === 'sending'"
+        :disabled="!email || state === 'sending' || state === 'sent'"
         :aria-busy="state === 'sending' || undefined"
         :class="cn(AUTH_BRAND_SOLID_BUTTON_CLASS, 'mt-2 w-full')"
       >

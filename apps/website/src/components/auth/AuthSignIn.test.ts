@@ -854,7 +854,9 @@ describe('AuthSignIn', () => {
     ).toBeNull()
 
     await user.click(
-      screen.getByRole('button', { name: /google or github instead/i })
+      screen.getByRole('button', {
+        name: 'Sign in with Google or Github instead'
+      })
     )
     expect(screen.queryByLabelText('Email')).toBeNull()
     expect(
@@ -862,13 +864,21 @@ describe('AuthSignIn', () => {
     ).toBeTruthy()
   })
 
-  it('uses sign-up copy for the providers on the sign-up page', () => {
+  it('uses sign-up copy for the providers on the sign-up page', async () => {
     render(AuthSignIn, { props: { mode: 'signUp' } })
 
     expect(
       screen.getByRole('button', { name: 'Sign up with Google' })
     ).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy()
+
+    await openEmailForm(userEvent.setup())
+    expect(
+      screen.getByRole('button', {
+        name: 'Sign up with Google or Github instead'
+      }),
+      'the way back from the email form names the action the buttons perform'
+    ).toBeTruthy()
   })
 
   it('stays on the page with an inline message when provisioning fails', async () => {
