@@ -1706,6 +1706,20 @@ describe('useWorkflowService', () => {
   })
 
   describe('duplicateWorkflow', () => {
+    it('does not duplicate a workflow that fails to load', async () => {
+      const workflowStore = useWorkflowStore()
+      const source = createModeTestWorkflow({
+        path: 'workflows/source.json',
+        loaded: false
+      })
+      vi.spyOn(source, 'load').mockResolvedValue(undefined)
+
+      await useWorkflowService().duplicateWorkflow(source)
+
+      expect(workflowStore.createNewTemporary).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+
     it('opens a distinct temporary workflow when duplicating repeatedly', async () => {
       const workflowStore = useWorkflowStore()
       const source = createModeTestWorkflow({
