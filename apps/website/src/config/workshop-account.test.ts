@@ -7,12 +7,17 @@ import type { AccountUser, SessionClient } from '@comfyorg/account/core'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
-  captureFailed: vi.fn()
+  captureFailed: vi.fn(),
+  provisionCustomer: vi.fn<(user: AccountUser) => Promise<void>>()
 }))
 
 vi.mock('../scripts/posthog', () => ({
   captureAuthRefreshSucceeded: h.captureSucceeded,
   captureAuthRefreshFailed: h.captureFailed
+}))
+
+vi.mock('./workshop-firebase', () => ({
+  provisionCustomer: h.provisionCustomer
 }))
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
@@ -49,6 +54,11 @@ async function importFresh() {
   vi.resetModules()
   const mod = await import('./workshop-account')
   return mod.workshopSessionClient
+}
+
+async function importFreshBilling() {
+  vi.resetModules()
+  return import('./workshop-account')
 }
 
 beforeEach(() => {
@@ -170,5 +180,58 @@ describe('auth refresh telemetry', () => {
       'valid-on-read has no retry machinery, so transient outcomes are cloud-only vocabulary'
     ).not.toHaveBeenCalled()
     expect(h.captureSucceeded).not.toHaveBeenCalled()
+  })
+})
+
+describe('workshop billing client', () => {
+  it('provisions the customer once and re-reads when the balance answers a missing-customer 409', async () => {
+    let balanceReads = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) => {
+        if (String(input).endsWith('/api/auth/token')) {
+          return new Response(JSON.stringify(mintBody('jwt-1')), {
+            status: 200
+          })
+        }
+        balanceReads += 1
+        return balanceReads === 1
+          ? new Response(
+              JSON.stringify({ message: 'Failed to find customer' }),
+              {
+                status: 409
+              }
+            )
+          : new Response(JSON.stringify({ effective_balance_micros: 500 }), {
+              status: 200
+            })
+      })
+    )
+    h.provisionCustomer.mockResolvedValue(undefined)
+    const { workshopSessionClient, workshopBillingClient } =
+      await importFreshBilling()
+    let deliver: ((user: User | null) => void) | undefined
+    workshopSessionClient.attachIdentity({
+      onUserChanged: (callback) => {
+        deliver = callback
+        return () => undefined
+      }
+    })
+    deliver?.(testFirebaseUser())
+    await vi.waitFor(() =>
+      expect(workshopSessionClient.getSnapshot().phase).toBe('authenticated')
+    )
+
+    await workshopBillingClient.refresh()
+
+    expect(workshopBillingClient.getState()).toEqual({
+      status: 'ok',
+      cents: 500
+    })
+    expect(h.provisionCustomer).toHaveBeenCalledOnce()
+    expect(
+      h.provisionCustomer.mock.calls[0]?.[0].uid,
+      'the record is created for the account whose read failed'
+    ).toBe('uid-1')
   })
 })

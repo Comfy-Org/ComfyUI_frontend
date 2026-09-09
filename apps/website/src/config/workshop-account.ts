@@ -25,7 +25,7 @@ const STORAGE_KEY = 'comfy.workshop.session.v1'
 const storage = {
   read(): string | null {
     try {
-      return globalThis.sessionStorage?.getItem(STORAGE_KEY) ?? null
+      return globalThis.sessionStorage.getItem(STORAGE_KEY) ?? null
     } catch {
       // Storage that throws outright (cookies disabled) behaves as no cache.
       return null
@@ -33,14 +33,14 @@ const storage = {
   },
   write(value: string): void {
     try {
-      globalThis.sessionStorage?.setItem(STORAGE_KEY, value)
+      globalThis.sessionStorage.setItem(STORAGE_KEY, value)
     } catch {
       // A session that only lives in memory still works for this page.
     }
   },
   clear(): void {
     try {
-      globalThis.sessionStorage?.removeItem(STORAGE_KEY)
+      globalThis.sessionStorage.removeItem(STORAGE_KEY)
     } catch {
       // Nothing to clear if storage is unavailable.
     }
@@ -55,7 +55,13 @@ export const workshopSessionClient: SessionClient<User> =
 
 export const workshopBillingClient: BillingClient = createBillingClient({
   session: workshopSessionClient,
-  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
+  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`,
+  // A session restored from a cached credential never re-ran sign-in, so its
+  // account may still lack the customer record; the cloud app heals the same way.
+  provisionCustomer: async (user) => {
+    const { provisionCustomer } = await import('./workshop-firebase')
+    await provisionCustomer(user)
+  }
 })
 
 /**
