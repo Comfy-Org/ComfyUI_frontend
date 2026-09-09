@@ -6201,7 +6201,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               ? getSlotPosition(start_node, outputId, false)
               : start_node.getOutputPos(outputId)
 
-        const output = start_node.outputs.at(outputId)
+        const output =
+          outputId === -1 ? undefined : start_node.outputs[outputId]
         if (!output) continue
 
         renderConnection(link, startPos, endPos, output.dir, input.dir)
