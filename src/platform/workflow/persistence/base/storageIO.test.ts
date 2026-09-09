@@ -432,9 +432,7 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.getStorageScope()).toBe('user-a:ws-1')
       expect(isolatedStorageIO.getStorageWriteGate()).toBe('open')
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
-      expect(isolatedStorageIO.writeIndex('user-a:ws-1', emptyIndex)).toBe(
-        true
-      )
+      expect(isolatedStorageIO.writeIndex('user-a:ws-1', emptyIndex)).toBe(true)
     })
 
     it('defers writes again once the identity is dropped', async () => {

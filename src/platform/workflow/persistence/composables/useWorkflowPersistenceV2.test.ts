@@ -1006,9 +1006,7 @@ describe('useWorkflowPersistenceV2', () => {
       JSON.stringify({ id: 'workspace-a', type: 'team' })
     )
     const workflowStore = useWorkflowStore()
-    const workflow = await workflowStore
-      .createTemporary('Deferred.json')
-      .load()
+    const workflow = await workflowStore.createTemporary('Deferred.json').load()
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
