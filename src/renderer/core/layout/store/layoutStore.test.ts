@@ -21,7 +21,7 @@ import type {
 } from '@/renderer/core/layout/types'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

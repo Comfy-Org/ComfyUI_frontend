@@ -1,10 +1,37 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
+import {
+  getExecutionIdByNode,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+
+import { useErrorGroups } from './useErrorGroups'
+
+vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useComfyRegistryService: () => ({
+      ...actual.useComfyRegistryService(),
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+    })
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -109,12 +136,6 @@ vi.mock<unknown>(import('@/i18n'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/stores/comfyRegistryStore'), () => ({
-  useComfyRegistryStore: () => ({
-    inferPackFromNodeName: vi.fn()
-  })
-}))
-
 vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
@@ -129,21 +150,6 @@ vi.mock<unknown>(
     clearMissingModelState: vi.fn()
   })
 )
-
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import {
-  getExecutionIdByNode,
-  getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useErrorGroups } from './useErrorGroups'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
   type: string,

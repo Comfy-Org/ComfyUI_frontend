@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +11,7 @@ const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
 const mockInvalidateQuote = vi.fn()
-const mockIsInPersonalWorkspace = ref(false)
+
 const mockCheckoutStep = ref('pricing')
 const mockPreviewVariant = ref<string | null>(null)
 const mockPreviewData = ref<Record<string, unknown> | null>(null)
@@ -18,49 +19,44 @@ const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
 const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: () => ({
-    checkoutStep: mockCheckoutStep,
-    isLoadingPreview: ref(false),
-    loadingTier: ref(null),
-    isSubscribing: ref(false),
-    isResubscribing: ref(false),
-    previewData: mockPreviewData,
-    quoteIsCurrent: ref(false),
-    savedPaymentMethods: mockSavedPaymentMethods,
-    selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
-    selectedTierKey: ref(null),
-    selectedTeamStop: mockSelectedTeamStop,
-    selectedBillingCycle: ref('yearly'),
-    activeCheckoutActionUrl: ref(null),
-    authenticationState: ref(null),
-    authenticationError: ref(null),
-    reconciliationOperationId: ref(null),
-    isPolling: ref(false),
-    isTeamCheckout: computed(() => false),
-    previewVariant: computed(() => mockPreviewVariant.value),
-    handleSubscribeClick: mockHandleSubscribeClick,
-    handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-    handleBackToPricing: mockHandleBackToPricing,
-    handleSuccessClose: vi.fn(),
-    handleAddCreditCard: vi.fn(),
-    handleConfirmTransition: vi.fn(),
-    handleTeamSubscribe: vi.fn(),
-    handleSubscriptionPayment: vi.fn(),
-    handleTeamSubscriptionPayment: vi.fn(),
-    applyPromotionCode: vi.fn(),
-    invalidateQuote: mockInvalidateQuote,
-    handleResubscribe: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: () => ({
+      checkoutStep: mockCheckoutStep,
+      isLoadingPreview: ref(false),
+      loadingTier: ref(null),
+      isSubscribing: ref(false),
+      isResubscribing: ref(false),
+      previewData: mockPreviewData,
+      quoteIsCurrent: ref(false),
+      savedPaymentMethods: mockSavedPaymentMethods,
+      selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
+      selectedTierKey: ref(null),
+      selectedTeamStop: mockSelectedTeamStop,
+      selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
+      authenticationState: ref(null),
+      authenticationError: ref(null),
+      reconciliationOperationId: ref(null),
+      isPolling: ref(false),
+      isTeamCheckout: computed(() => false),
+      previewVariant: computed(() => mockPreviewVariant.value),
+      handleSubscribeClick: mockHandleSubscribeClick,
+      handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
+      handleBackToPricing: mockHandleBackToPricing,
+      handleSuccessClose: vi.fn(),
+      handleAddCreditCard: vi.fn(),
+      handleConfirmTransition: vi.fn(),
+      handleTeamSubscribe: vi.fn(),
+      handleSubscriptionPayment: vi.fn(),
+      handleTeamSubscriptionPayment: vi.fn(),
+      applyPromotionCode: vi.fn(),
+      invalidateQuote: mockInvalidateQuote,
+      handleResubscribe: vi.fn()
+    })
   })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockIsInPersonalWorkspace.value
-    }
-  })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -124,7 +120,7 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
-    mockIsInPersonalWorkspace.value = false
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     mockCheckoutStep.value = 'pricing'
     mockPreviewVariant.value = null
     mockPreviewData.value = null
@@ -191,7 +187,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
   it('advances to team checkout from a team workspace', async () => {
     const user = userEvent.setup()
-    mockIsInPersonalWorkspace.value = false
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
@@ -203,7 +199,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
   it('advances to team checkout from a personal workspace (no reroute)', async () => {
     const user = userEvent.setup()
-    mockIsInPersonalWorkspace.value = true
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))

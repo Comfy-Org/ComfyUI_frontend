@@ -1,21 +1,14 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuthStore } from '@/stores/authStore'
+import { storeToRefs } from 'pinia'
+import type { Mock } from 'vitest'
+import type { Ref } from 'vue'
 
 import { watchForTopupBalanceUpdate } from './topupBalanceRefresh'
 
-const mockFetchBalance = vi.fn()
-const mockBalance = {
-  value: { amount_micros: 1_000 } as { amount_micros: number } | null
-}
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    get balance() {
-      return mockBalance.value
-    },
-    fetchBalance: mockFetchBalance
-  })
-}))
+vi.mock(import('firebase/auth'))
+let mockFetchBalance: Mock<ReturnType<typeof useAuthStore>['fetchBalance']>
+let mockBalance: Ref<ReturnType<typeof useAuthStore>['balance']>
 
 function returnToApp() {
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
@@ -24,11 +17,15 @@ function returnToApp() {
 
 describe('watchForTopupBalanceUpdate', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    const store = useAuthStore()
+    mockFetchBalance = vi.mocked(store.fetchBalance)
+    mockBalance = storeToRefs(store).balance
     vi.useFakeTimers()
-    mockFetchBalance.mockReset()
-    mockFetchBalance.mockResolvedValue({ amount_micros: 1_000 })
-    mockBalance.value = { amount_micros: 1_000 }
+    mockFetchBalance.mockResolvedValue({
+      currency: 'usd',
+      amount_micros: 1_000
+    })
+    mockBalance.value = { currency: 'usd', amount_micros: 1_000 }
   })
 
   it('does not refresh until the app tab is visible again', async () => {
@@ -58,7 +55,10 @@ describe('watchForTopupBalanceUpdate', () => {
   })
 
   it('stops retrying once the balance increases', async () => {
-    mockFetchBalance.mockResolvedValue({ amount_micros: 6_000 })
+    mockFetchBalance.mockResolvedValue({
+      currency: 'usd',
+      amount_micros: 6_000
+    })
 
     watchForTopupBalanceUpdate()
     returnToApp()
@@ -78,7 +78,10 @@ describe('watchForTopupBalanceUpdate', () => {
     expect(spentOnBounce).toBeGreaterThan(1)
 
     // The real return, after paying, must still refresh.
-    mockFetchBalance.mockResolvedValue({ amount_micros: 6_000 })
+    mockFetchBalance.mockResolvedValue({
+      currency: 'usd',
+      amount_micros: 6_000
+    })
     returnToApp()
     await vi.advanceTimersByTimeAsync(0)
 
@@ -116,7 +119,10 @@ describe('watchForTopupBalanceUpdate', () => {
       await vi.advanceTimersByTimeAsync(60_000)
     }
     mockFetchBalance.mockClear()
-    mockFetchBalance.mockResolvedValue({ amount_micros: 6_000 })
+    mockFetchBalance.mockResolvedValue({
+      currency: 'usd',
+      amount_micros: 6_000
+    })
 
     returnToApp()
     await vi.advanceTimersByTimeAsync(0)

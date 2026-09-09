@@ -1,3 +1,4 @@
+import { useCommandStore } from '@/stores/commandStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,7 +12,7 @@ import PricingTableWorkspace from '@/platform/workspace/components/PricingTableW
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     plans: computed(() => state.plans),
     currentPlanSlug: computed(() => null),
@@ -42,10 +43,6 @@ function apiPlan(
   }
 }
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -75,6 +72,10 @@ function renderComponent() {
     }
   })
 }
+
+beforeEach(() => {
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+})
 
 describe('PricingTableWorkspace credit allotment copy', () => {
   beforeEach(() => {

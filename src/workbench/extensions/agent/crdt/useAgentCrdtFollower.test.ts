@@ -6,7 +6,6 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -87,7 +86,7 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock('./layoutFollowerBridge', () => ({
+vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
       const bridge = new bridgeState.FakeBridge()
@@ -97,14 +96,14 @@ vi.mock('./layoutFollowerBridge', () => ({
   }
 }))
 
-vi.mock('./docFrameClient', () => ({
+vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
     sendOps = clientState.sendOps
   }
 }))
 
-vi.mock('./ecsFollowerAdapter', () => ({
+vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind
@@ -115,23 +114,22 @@ vi.mock('./ecsFollowerAdapter', () => ({
   }
 }))
 
-vi.mock('./agentNodeMaterializer', () => ({
+vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters
 }))
 
-vi.mock('./agentSubgraphDefinitions', () => ({
+vi.mock(import('./agentSubgraphDefinitions'), () => ({
   readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
-vi.mock('./devPanelLog', () => ({
+vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({ userId: 'user-1' })
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { graph: null, canvas: null }
 }))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
@@ -207,7 +205,6 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
