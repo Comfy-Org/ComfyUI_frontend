@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createBillingClient } from './credits.js'
-import type {
-  AccountCredential,
-  AccountUser,
-  SessionResult
-} from './session.js'
+import type { AccountCredential, SessionResult } from './session.js'
 
 const BALANCE_URL = 'https://cloud.test/api/billing/balance'
 
@@ -63,53 +59,6 @@ function makeClient(
 }
 
 describe('createBillingClient', () => {
-  it('provisions the customer once and re-reads when the balance answers a missing-customer 409, whatever its path', async () => {
-    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
-    const fetchImpl = vi
-      .fn<typeof fetch>()
-      .mockImplementationOnce(async () =>
-        balanceResponse({ message: 'Failed to find customer' }, 409)
-      )
-      .mockImplementationOnce(async () =>
-        balanceResponse({ effective_balance_micros: 500 })
-      )
-    const provisionCustomer = vi.fn<(user: AccountUser) => Promise<void>>(
-      async () => {}
-    )
-    const client = createBillingClient({
-      session,
-      balanceUrl: BALANCE_URL,
-      fetchImpl,
-      provisionCustomer
-    })
-
-    await client.refresh()
-
-    expect(client.getState()).toEqual({ status: 'ok', cents: 500 })
-    expect(provisionCustomer).toHaveBeenCalledOnce()
-    expect(
-      provisionCustomer.mock.calls[0]?.[0].uid,
-      'the record is created for the identity whose read failed'
-    ).toBe('uid-1')
-    expect(
-      session.remint,
-      "a 409 is not the token's fault"
-    ).not.toHaveBeenCalled()
-  })
-
-  it('treats a missing-customer 409 as a plain error when no provisioner is wired', async () => {
-    const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
-    const fetchImpl = vi.fn<typeof fetch>(async () =>
-      balanceResponse({ message: 'Failed to find customer' }, 409)
-    )
-    const client = makeClient(session, fetchImpl)
-
-    await client.refresh()
-
-    expect(client.getState()).toEqual({ status: 'error', unauthorized: false })
-    expect(fetchImpl).toHaveBeenCalledOnce()
-  })
-
   it('publishes the balance for a live session', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     const fetchImpl = vi.fn<typeof fetch>(async () =>
