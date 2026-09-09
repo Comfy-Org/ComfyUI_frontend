@@ -14,6 +14,9 @@
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
+    "./regionGate": "./src/regionGate.ts",
+    "./telemetry": "./src/telemetry.ts",
+    "./webviewDetection": "./src/webviewDetection.ts",
     "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
