@@ -1,13 +1,8 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { useWorkflowTabActivityStore } from './workflowTabActivityStore'
 
 describe('useWorkflowTabActivityStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('tracks and clears the tab being edited', () => {
     const store = useWorkflowTabActivityStore()
 

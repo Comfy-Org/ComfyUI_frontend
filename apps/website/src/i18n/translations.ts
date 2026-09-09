@@ -1,6 +1,19 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
   'workshop.meta.title': {
     en: 'Comfy Workshop',
     'zh-CN': 'Comfy Workshop'
@@ -57,6 +70,33 @@ const translations = {
   'workshop.showMore': {
     en: 'Show more models',
     'zh-CN': '显示更多模型'
+  },
+  'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
+  'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
+  'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
+  'workshop.model.maxFiles': {
+    en: 'Select no more than {count} files.',
+    'zh-CN': '最多选择 {count} 个文件。'
+  },
+  'workshop.model.invalidJson': {
+    en: "Enter JSON that matches this model input's schema.",
+    'zh-CN': '请输入符合此模型输入架构的 JSON。'
+  },
+  'workshop.model.runNext': {
+    en: 'Run model — sign-in coming next',
+    'zh-CN': '运行模型 — 登录功能即将推出'
+  },
+  'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
+  'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.model.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
+  'workshop.model.related': { en: 'Related models', 'zh-CN': '相关模型' },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
   },
 
   // Tags (global, reusable across sections)

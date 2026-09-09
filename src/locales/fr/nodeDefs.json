@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Ajoute des images clés de détail à un latent vidéo. Chaque image clé correspond à une image latent de jetons dont la position RoPE couvre une seule image en pixels ; elles sont débruitées avec la vidéo et ne font pas partie de la sortie décodée. Le placement s'effectue à un emplacement tous les interval_frames pixels, en ignorant les images I2V, les guides existants et les images clés de détail déjà présentes sur le cond. Les images clés connectées ne fournissent que le contenu et sont replacées sur ce canevas, sauf si frame_indices est défini. Récupérez-les avec LTXV Separate Generated Keyframes. Nécessite un checkpoint entraîné pour les images clés générées (contenant keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Ajouter des images clés générées",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Indices facultatifs d'images en pixels. Laissez vide pour placer selon interval_frames sur le canevas actuel. Lorsqu'elle est définie, cette liste indique le placement (les images clés connectées sont associées dans l'ordre). La dernière image est autorisée ; l'image 0 ne l'est pas (c'est déjà un jeton autonome)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Pas d'images en pixels pour le placement automatique. La valeur par défaut de 24 correspond à environ une image clé par seconde à 24 fps. Les pixels occupés sont ignorés. Ignoré lorsque frame_indices est défini."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Contenu facultatif pour initialiser les nouvelles images clés. Connectez des images clés provenant d'un Separate antérieur (de même taille spatiale), ou un latent vidéo simple pour copier l'image la plus proche à chaque nouvel emplacement (par ex. après un upscale temporel). Elles sont toujours débruitées, et non fixées comme guides. Les indices enregistrés sur un latent d'images clés sont ignorés sauf si frame_indices est défini. N'a d'effet que si l'échantillonnage commence en dessous de sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent vidéo 5D simple avec lequel générer des images clés. Ajoutez-les avant Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif auquel les images clés sont attachées."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif auquel les images clés sont attachées."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Utilisé uniquement pour lire les facteurs d'échelle du latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif avec l'attention des images clés générées attachée."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif avec l'attention des images clés générées attachée."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent vidéo avec des images clés générées ajoutées sur T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9748,6 +9796,55 @@
       },
       "1": {
         "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "Fixe un latent déjà encodé comme guide, lorsque le guide provient d'une étape antérieure plutôt que d'une image. Même effet que LTXV Add Guide sans aller-retour de décodage/encodage vae. Un guide spatialement plus petit que la cible (une référence IC-LoRA ou de détail) est dilaté sur une grille clairsemée, et ses positions finales RoPE sont étendues selon le même rapport afin qu'il couvre le canevas cible au lieu de n'adresser que son coin supérieur gauche.",
+    "display_name": "LTXV Ajouter un guide latent",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "masque spatial facultatif dans l'espace pixel. Contrôle l'influence du conditionnement par région via l'auto-attention, multipliée par strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "latent du guide. Sa taille spatiale doit diviser celle de la cible par le même nombre entier sur les deux axes ; une taille égale le fixe tel quel, une demi-taille est traitée comme une référence IC-LoRA x2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent vidéo cible sur lequel le guide est fixé."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Indice d'image latent où commencer le guide, compté en images latentes plutôt qu'en images en pixels. Les valeurs négatives placent le guide sur des images antérieures au début du latent, et ne sont pas comptées à rebours depuis sa fin."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Limité à 1.0. Un guide dilaté marque ses positions de remplissage avec un masque de débruitage négatif afin que le modèle les abandonne ; au-dessus de 1.0, les positions conservées deviendraient elles aussi négatives et l'intégralité du guide serait abandonnée. Amplifiez au-delà de 1.0 avec attention_mask à la place."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       },
       "2": {
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Définit noise_mask sur 0 afin que ce latent reste intact durant l’échantillonnage. Fonctionne sur les vidéos ou l’audio. Utilisations typiques : figer l’audio avant Concat AV afin qu’il fournisse uniquement l’attention croisée, ou figer tout latent qui ne doit pas être débruité.",
+    "display_name": "LTXV Figer le latent",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent vidéo ou audio à figer. L’audio est en 4D ; la vidéo est en 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Épingle les images clés générées lors d’une étape antérieure comme guides d’image figés sur un canevas ultérieur. Elles sont décodées en tant qu’images autonomes, redimensionnées si nécessaire et écrites avec noise_mask=0 afin de ne pas être débruitées à nouveau. Après une mise à l’échelle temporelle, les indices enregistrés sont mis à l’échelle du canevas sur lequel ils ont été générés vers celui-ci (mêmes instants). Utilisez override_frame_indices pour définir explicitement les positions. Pour continuer à générer (et débruiter) des images clés à de nouvelles positions, utilisez plutôt Add Generated Keyframes.",
+    "display_name": "LTXV Images clés générées vers guides",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "La sortie keyframes de LTXV Separate Generated Keyframes, qui contient l’index d’image en pixels auquel chaque image clé a été générée."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Le latent vidéo cible auquel ajouter les guides, par exemple celui mis à l’échelle temporellement."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Facultatif — épingle à ces images en pixels au lieu des positions enregistrées (ou mises à l’échelle automatiquement). Indiquez un indice par image clé. Laissez vide pour réutiliser les positions enregistrées ou les mettre à l’échelle lorsque le canevas cible a une longueur différente (par ex. après un x2 temporel)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Force du guide. 1.0 correspond à un épinglage strict ; des valeurs inférieures le relâchent."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif avec les images clés épinglées comme guides d’image."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif avec les images clés épinglées comme guides d’image."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent vidéo cible avec les images clés ajoutées comme guides figés."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "latent_audio",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Sépare les images clés générées ajoutées par LTXV Add Generated Keyframes d’un latent échantillonné, puis les retire du conditionnement. Séparez-les avant de mettre à l’échelle spatialement le latent vidéo. N’exécutez pas d’abord LTXV Crop Guides — il traite les images clés générées comme des guides jetables et les supprime.",
+    "display_name": "LTXV Séparer les images clés générées",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Renvoie les images clés sous forme de lot de latents à image unique. Désactivez cette option pour les obtenir sous forme d’un latent unique à plusieurs images, attendu par l’upscaler de latent et un Add Generated Keyframes ultérieur."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Conditionnement positif dont les métadonnées des images clés générées ont été supprimées."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Conditionnement négatif dont les métadonnées des images clés générées ont été supprimées."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "latent vidéo dont les images clés générées ont été retirées."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Les images clés extraites, étiquetées avec generated_keyframe_indices et generated_keyframe_num_frames. Envoyez-les vers un Add Generated Keyframes ultérieur pour initialiser de nouveaux emplacements, ou vers Generated Keyframes To Guides pour les épingler comme guides d’image figés (les indices sont remappés si la longueur du canevas a changé)."
       }
     }
   },
@@ -16705,6 +16900,45 @@
       },
       "1": {
         "name": "négatif",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Conditionnement multi-vues",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "Vue carrée de l’arrière de l’objet, avec alpha ou sur fond noir, cadrée comme le rig : l’objet occupe environ 1/1.1 du cadre à son point le plus large, à la même échelle dans chaque vue. La première vue connectée (dans l’ordre front, left, back, right) définit la face avant vers laquelle le maillage est orienté."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision DINOv3 ViT-L/16 avec les poids NAF fournis."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FOV horizontal en degrés des vues telles qu’elles sont cadrées : 20 pour les rendus de rig et la plupart des générateurs multi-vues, ou MoGeGeometryToFOV sur l’une des vues pour les photos."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "Vue carrée de la face avant de l’objet, avec alpha ou sur fond noir, cadrée comme le rig : l’objet occupe environ 1/1.1 du cadre à son point le plus large, à la même échelle dans chaque vue. La première vue connectée (dans l’ordre front, left, back, right) définit la face avant vers laquelle le maillage est orienté."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Vue carrée du côté gauche de l’objet, avec alpha ou sur fond noir, cadrée comme le rig : l’objet occupe environ 1/1.1 du cadre à son point le plus large, à la même échelle dans chaque vue. La première vue connectée (dans l’ordre front, left, back, right) définit la face avant vers laquelle le maillage est orienté."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Vue carrée du côté droit de l’objet, avec alpha ou sur fond noir, cadrée comme le rig : l’objet occupe environ 1/1.1 du cadre à son point le plus large, à la même échelle dans chaque vue. La première vue connectée (dans l’ordre front, left, back, right) définit la face avant vers laquelle le maillage est orienté."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

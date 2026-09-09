@@ -1,11 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
 
-const showDialog = vi.hoisted(() => vi.fn())
-const closeDialog = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog, closeDialog })
-}))
+let showDialog: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
+>
+let closeDialog: ReturnType<typeof useDialogStore>['closeDialog']
+beforeEach(() => {
+  showDialog = vi.mocked(useDialogStore().showDialog)
+  closeDialog = useDialogStore().closeDialog
+})
 
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 
@@ -14,13 +17,17 @@ describe('useManagerSurveyDialog', () => {
     useManagerSurveyDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-manager-survey')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
   })
 
   it('show() wires onClose to close the survey dialog', () => {
     useManagerSurveyDialog().show()
     const [args] = showDialog.mock.calls[0]
-    args.props.onClose()
+    const onClose =
+      args.props && 'onClose' in args.props ? args.props.onClose : undefined
+    expect(onClose).toBeTypeOf('function')
+    if (typeof onClose !== 'function') throw new Error('Missing survey onClose')
+    onClose()
     expect(closeDialog).toHaveBeenCalledWith({ key: 'global-manager-survey' })
   })
 

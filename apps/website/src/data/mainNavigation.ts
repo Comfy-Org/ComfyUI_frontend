@@ -74,7 +74,8 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             {
               label: t('nav.managedBuilds', locale),
-              href: routes.managedBuilds
+              href: routes.managedBuilds,
+              badge: 'beta'
             }
           ]
         },
