@@ -1,4 +1,5 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import {
@@ -125,9 +126,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
             )
           }
 
-          const uploaded: UploadImageResponse = await (
-            await uploadResponse
-          ).json()
+          const uploaded = zUploadImageResponse
+            .required()
+            .parse(await (await uploadResponse).json())
           if (!uploaded.name) throw new Error('Upload must return a filename')
           comfyFiles.deleteAfterTest({
             filename: uploaded.name,
@@ -157,12 +158,16 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
                 }
 
                 const response = await route.fetch()
-                expect(response.ok()).toBe(true)
-                const options = z.array(z.string()).parse(await response.json())
-                expect(options).toContain(expectedPath)
+                const options = z
+                  .array(z.string())
+                  .safeParse(await response.json().catch(() => undefined))
+                if (!response.ok() || !options.success) {
+                  await route.fulfill({ response })
+                  return
+                }
                 await route.fulfill({
                   response,
-                  json: options.toSorted(
+                  json: options.data.toSorted(
                     (a, b) =>
                       Number(b === expectedPath) - Number(a === expectedPath)
                   )
@@ -170,7 +175,23 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
               }
             )
           }
+          const outputResponse =
+            folder === 'output'
+              ? comfyPage.page.waitForResponse(
+                  (response) =>
+                    new URL(response.url()).pathname.endsWith(
+                      '/internal/files/output'
+                    ) && response.request().method() === 'GET'
+                )
+              : undefined
           await comfyPage.workflow.reloadAndWaitForApp()
+          if (outputResponse) {
+            const response = await outputResponse
+            expect(response.ok()).toBe(true)
+            expect(await response.finished()).toBeNull()
+            const options = z.array(z.string()).parse(await response.json())
+            expect(options).toContain(expectedPath)
+          }
           await comfyPage.vueNodes.waitForNodes()
 
           await expect
