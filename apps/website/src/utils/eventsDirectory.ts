@@ -119,7 +119,7 @@ export type DirectoryRow = {
   location: string
   media?: { src: string; alt: string; poster?: string; isVideo: boolean }
   /** Past rows link out; upcoming rows offer the calendar menu instead. */
-  watch?: { href: string; newTab: boolean }
+  watch?: { href: string; newTab: boolean; label: string }
   calendar?: CalendarEvent
 }
 
@@ -140,14 +140,27 @@ function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
 /** Mirrors the past-gallery cards: a recording opens its own /events/[slug]
  * page, anything else links out to the event's own page. An event with
  * neither gets no CTA rather than a link to a page that does not exist. */
+export function pastCtaLabel(event: ComfyEvent, locale: Locale): string {
+  return t(
+    eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore',
+    locale
+  )
+}
+
 function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
+  const label = pastCtaLabel(event, locale)
   if (eventVideoId(event)) {
-    return { href: localizeHref(eventPath(event), locale), newTab: false }
+    return {
+      href: localizeHref(eventPath(event), locale),
+      newTab: false,
+      label
+    }
   }
   if (!event.link) return undefined
   return {
     href: event.link.href[locale] || event.link.href.en,
-    newTab: event.link.newTab ?? false
+    newTab: event.link.newTab ?? false,
+    label
   }
 }
 

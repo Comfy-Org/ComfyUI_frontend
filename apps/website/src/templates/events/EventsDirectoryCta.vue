@@ -33,6 +33,6 @@ const chipClass =
     :rel="row.watch.newTab ? resolveRel({ target: '_blank' }) : undefined"
     :class="chipClass"
   >
-    {{ t('events.past.watchNow', locale) }}
+    {{ row.watch.label }}
   </a>
 </template>

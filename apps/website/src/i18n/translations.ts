@@ -6577,6 +6577,7 @@ Enterprise`
   },
   'events.past.filterAll': { en: 'ALL', 'zh-CN': '全部' },
   'events.past.watchNow': { en: 'WATCH NOW', 'zh-CN': '立即观看' },
+  'events.past.learnMore': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
   'events.past.loadMore': { en: 'LOAD MORE', 'zh-CN': '加载更多' },
   'events.videoDialog.close': { en: 'Close', 'zh-CN': '关闭' },
   'events.category.livestream': { en: 'Livestream', 'zh-CN': '直播' },

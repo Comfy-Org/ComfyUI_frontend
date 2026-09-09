@@ -8,6 +8,7 @@ import type { CardArticleGalleryItem } from '../../components/blocks/CardArticle
 import { localizeHref } from '../../config/routes'
 import { eventPath, eventVideoId, pastEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { pastCtaLabel } from '../../utils/eventsDirectory'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -44,7 +45,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
           poster: media.type === 'video' ? media.poster : undefined
         },
         cta: {
-          label: t('events.past.watchNow', locale),
+          label: pastCtaLabel(event, locale),
           href: external
             ? event.link?.href[locale] || event.link?.href.en || pageHref
             : pageHref,

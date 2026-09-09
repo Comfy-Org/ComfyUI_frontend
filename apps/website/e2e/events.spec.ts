@@ -17,7 +17,8 @@ import {
   directoryRows,
   filterDirectoryEvents,
   groupRowsByMonth,
-  monthLabel
+  monthLabel,
+  pastCtaLabel
 } from '../src/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -476,7 +477,7 @@ test.describe('Events page — desktop @smoke', () => {
     // An upcoming card offers the calendar menu, not a watch link — and unlike
     // CardArticle01 there is no full-card link overlay to swallow the click.
     await expect(
-      card.getByRole('link', { name: t('events.past.watchNow', 'en') })
+      card.getByRole('link', { name: pastCtaLabel(upcoming, 'en') })
     ).toHaveCount(0)
 
     const saveTheDate = card.getByRole('button', {
@@ -498,7 +499,7 @@ test.describe('Events page — desktop @smoke', () => {
       await page.keyboard.press('Escape')
       const pastCard = cards.filter({ hasText: past.title.en }).first()
       await expect(
-        pastCard.getByRole('link', { name: t('events.past.watchNow', 'en') })
+        pastCard.getByRole('link', { name: pastCtaLabel(past, 'en') })
       ).toBeVisible()
       await expect(
         pastCard.getByRole('button', {
@@ -757,7 +758,7 @@ test.describe('Events page — desktop @smoke', () => {
         const card = cards.nth(i)
         await expect(card).toContainText(event.title[locale] || event.title.en)
         const watch = card.getByRole('link', {
-          name: new RegExp(t('events.past.watchNow', locale))
+          name: new RegExp(pastCtaLabel(event, locale))
         })
         // Recorded events open their own detail page; the rest link out to the
         // event's external page.
