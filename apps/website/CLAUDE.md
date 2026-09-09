@@ -1,3 +1,0 @@
-# Website guidance
-
-@AGENTS.md
