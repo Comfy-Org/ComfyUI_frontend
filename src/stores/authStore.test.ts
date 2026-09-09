@@ -339,6 +339,29 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('password update', () => {
+    it('updates the signed-in user through the package identity', async () => {
+      mockAuth.currentUser = mockUser
+
+      await store.updatePassword('hunter22!!')
+
+      expect(firebaseAuth.updatePassword).toHaveBeenCalledWith(
+        mockUser,
+        'hunter22!!'
+      )
+    })
+
+    it('refuses with the translated error when nobody is signed in', async () => {
+      authStateCallback(null)
+
+      await expect(store.updatePassword('hunter22!!')).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+      expect(firebaseAuth.updatePassword).not.toHaveBeenCalled()
+    })
+  })
+
   describe('password reset', () => {
     it('reports an unknown email as sent, so the reset form cannot be used to enumerate accounts', async () => {
       vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
