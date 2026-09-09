@@ -60,12 +60,6 @@ interface SemanticLayoutMutationPort {
 
 interface GraphMutationBatch {
   /**
-   * Whether the scoped graph already holds `nodeId` when the batch is
-   * defined. Lets a caller choose `setWidget` on a live node over a
-   * `reconcileNode` that would rebuild its slots.
-   */
-  hasNode(nodeId: NodeId): boolean
-  /**
    * Registered type of the live node `nodeId` in the scoped graph, or
    * `undefined` when absent. Lets a caller detect a doc entry whose type
    * changed under the same id, which needs a rebuild rather than a resync.
@@ -871,12 +865,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       if (!scope) return false
       const queued: QueuedMutation[] = []
       define({
-        hasNode(nodeId) {
-          return (
-            nodeStore.getNode(scope.rootGraphId, nodeId)?.graphId ===
-            scope.owningGraphId
-          )
-        },
         getNodeType(nodeId) {
           const node = nodeStore.getNode(scope.rootGraphId, nodeId)
           return node?.graphId === scope.owningGraphId ? node.type : undefined
