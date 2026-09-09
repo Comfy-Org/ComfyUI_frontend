@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
+import { stashWorkshopForm } from '../../config/workshop-return'
 import WorkshopPlayground from './WorkshopPlayground.vue'
 
 const model: WorkshopDetailModel = {
@@ -39,10 +40,7 @@ describe('WorkshopPlayground', () => {
   beforeEach(() => sessionStorage.clear())
 
   it('restores a stash once and keeps defaults for omitted fields', async () => {
-    sessionStorage.setItem(
-      `comfy.workshop.form.${model.slug}`,
-      JSON.stringify({ prompt: 'Stashed red fox' })
-    )
+    stashWorkshopForm(model.slug, model.fields, { prompt: 'Stashed red fox' })
 
     render(WorkshopPlayground, { props: { model } })
 
@@ -62,10 +60,10 @@ describe('WorkshopPlayground', () => {
   })
 
   it('keeps a deliberately cleared number field empty', async () => {
-    sessionStorage.setItem(
-      `comfy.workshop.form.${model.slug}`,
-      JSON.stringify({ steps: null })
-    )
+    stashWorkshopForm(model.slug, model.fields, {
+      prompt: 'a fox',
+      steps: undefined
+    })
 
     render(WorkshopPlayground, { props: { model } })
 

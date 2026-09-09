@@ -116,7 +116,10 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
   it('preserves a deliberately cleared optional field', () => {
     stashWorkshopForm('flux', fields, { prompt: 'a cat', steps: undefined })
 
-    expect(popWorkshopForm('flux', fields)).toEqual({
+    expect(
+      popWorkshopForm('flux', fields),
+      'present-as-undefined beats the seeded default in the restore merge; absent would lose the clear'
+    ).toStrictEqual({
       prompt: 'a cat',
       steps: undefined
     })

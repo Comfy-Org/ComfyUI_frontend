@@ -66,10 +66,10 @@ function restoreValue(
   switch (field.kind) {
     case 'text':
       return typeof value === 'string' ? { value } : undefined
-    case 'select':
-      return field.options.some((option) => Object.is(option, value))
-        ? { value: value as string | number | boolean }
-        : undefined
+    case 'select': {
+      const match = field.options.find((option) => Object.is(option, value))
+      return match === undefined ? undefined : { value: match }
+    }
     case 'number':
       return typeof value === 'number' &&
         Number.isFinite(value) &&
@@ -101,7 +101,7 @@ export function stashWorkshopForm(
       .map(([name, value]) => [name, value === undefined ? null : value])
   )
   try {
-    globalThis.sessionStorage?.setItem(
+    globalThis.sessionStorage.setItem(
       `${FORM_KEY_PREFIX}${slug}`,
       JSON.stringify(kept)
     )
@@ -122,8 +122,8 @@ export function popWorkshopForm(
   const key = `${FORM_KEY_PREFIX}${slug}`
   let raw: string | null
   try {
-    raw = globalThis.sessionStorage?.getItem(key) ?? null
-    globalThis.sessionStorage?.removeItem(key)
+    raw = globalThis.sessionStorage.getItem(key) ?? null
+    globalThis.sessionStorage.removeItem(key)
   } catch {
     return undefined
   }
