@@ -61,7 +61,7 @@ export interface CustomerRecoveryDeps {
  * the original request a single time. If recovery fails, the original 409
  * response is returned so callers surface their normal error handling.
  */
-export async function retryAfterCustomerRecovery(
+async function retryAfterCustomerRecovery(
   response: Response,
   deps: CustomerRecoveryDeps
 ): Promise<Response> {
