@@ -26,9 +26,10 @@ runs:
         REQUIRE_CONFLICT: ${{ inputs.require-conflict }}
       run: |
         if [ "$(git rev-parse --is-shallow-repository)" = 'true' ]; then
-          git fetch --unshallow origin
+          git fetch --filter=blob:none --unshallow origin
         fi
-        git fetch --no-tags "https://github.com/$GITHUB_REPOSITORY.git" "$BASE_SHA"
+        git fetch --filter=blob:none --no-tags \
+          "https://github.com/$GITHUB_REPOSITORY.git" "$BASE_SHA"
 
         set +e
         git merge --no-commit --no-ff "$BASE_SHA"
@@ -44,5 +45,8 @@ runs:
           git merge --abort || true
           git reset --hard HEAD
           echo 'mode=repair' >> "$GITHUB_OUTPUT"
-          test "$REQUIRE_CONFLICT" != 'true'
+          if [ "$REQUIRE_CONFLICT" = 'true' ]; then
+            echo "::error::Expected only pnpm-lock.yaml to conflict with $BASE_SHA" >&2
+            exit 1
+          fi
         fi
