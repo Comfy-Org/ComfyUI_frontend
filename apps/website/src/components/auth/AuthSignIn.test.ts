@@ -30,7 +30,7 @@ const handles = vi.hoisted(() => ({
   embedded: false
 }))
 
-vi.mock(import('../../scripts/posthog'), async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   const settled = ref(true)
@@ -60,7 +60,7 @@ vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
   }
 })
 
-vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
+vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
 }))
 
@@ -82,7 +82,7 @@ const inChina = vi.hoisted(() => ({
   }
 }))
 const isInChina = vi.hoisted(() => vi.fn())
-vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock<unknown>(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
   isInChina
 }))
 
@@ -574,6 +574,24 @@ describe('AuthSignIn', () => {
       render(AuthSignIn)
 
       await vi.advanceTimersByTimeAsync(16_000)
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('drops the timeout screen when a late answer says the flag is off', async () => {
+      handles.flag!.value = false
+      handles.settled!.value = false
+      render(AuthSignIn)
+      await vi.advanceTimersByTimeAsync(16_000)
+      await screen.findByRole('alert')
+
+      handles.settled!.value = true
+
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Connection Taking Too Long'),
+          'a flag that answered off renders nothing, not a troubleshooting screen'
+        ).toBeNull()
+      )
       expect(screen.queryByRole('alert')).toBeNull()
     })
 
