@@ -428,6 +428,22 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(
       state.graph.getNodeById(toNodeId(2))?.outputs[0]?.links ?? []
     ).toEqual([])
+    // The doc keeps link 9 while the live graph dropped it, so the drift must
+    // be surfaced rather than silently ignored.
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("'bogus'")
+      }),
+      expect.objectContaining({
+        errorType: 'agent_subgraph_host_slot_undeclared',
+        context: expect.objectContaining({
+          nodeId: '1',
+          slot: 0,
+          name: 'bogus'
+        })
+      })
+    )
   })
 
   it('S2d removes a live promoted link when the same link id is retargeted onto an undeclared slot', () => {
