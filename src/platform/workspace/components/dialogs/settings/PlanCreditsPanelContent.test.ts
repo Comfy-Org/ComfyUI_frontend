@@ -19,16 +19,19 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 const billingMocks = vi.hoisted(() => ({
   usageLogsRefreshSignal: { value: 0 }
 }))
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await import('vue')
-  const usageLogsRefreshSignal = ref(0)
-  Object.defineProperty(billingMocks, 'usageLogsRefreshSignal', {
-    get: () => usageLogsRefreshSignal
-  })
-  return {
-    useBillingContext: () => ({ usageLogsRefreshSignal })
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { ref } = await import('vue')
+    const usageLogsRefreshSignal = ref(0)
+    Object.defineProperty(billingMocks, 'usageLogsRefreshSignal', {
+      get: () => usageLogsRefreshSignal
+    })
+    return {
+      useBillingContext: () => ({ usageLogsRefreshSignal })
+    }
   }
-})
+)
 
 const refreshUsageLogs = vi.hoisted(() => vi.fn())
 
