@@ -301,11 +301,12 @@ describe('Composer', () => {
 
         expect(fetchApi).toHaveBeenCalledWith(
           '/agent/run-mode',
-          expect.objectContaining({
-            method: 'PUT',
-            body: JSON.stringify({ mode, credit_limit: null })
-          })
+          expect.objectContaining({ method: 'PUT' })
         )
+        expect(JSON.parse(String(fetchApi.mock.calls[0][1]?.body))).toEqual({
+          mode,
+          credit_limit: null
+        })
         expect(useAgentRunModeStore().mode).toBe(mode)
         expect(useAgentRunModeStore().creditLimit).toBeNull()
       }

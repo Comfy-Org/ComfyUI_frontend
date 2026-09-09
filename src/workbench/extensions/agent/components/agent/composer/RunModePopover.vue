@@ -15,11 +15,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
-import {
-  DEFAULT_CREDIT_LIMIT,
-  useAgentRunModeStore
-} from '../../../stores/agent/agentRunModeStore'
+import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
+
+type SelectableRunMode = Exclude<AgentRunModeValue, 'auto_limited'>
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
@@ -27,24 +26,23 @@ const toast = useToastStore()
 
 const open = ref(false)
 const saving = ref(false)
-const draftMode = ref<AgentRunModeValue>(store.mode)
-const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
+
+const effectiveMode = computed(() =>
+  store.mode === 'auto_limited' ? 'ask_approval' : store.mode
+)
+const draftMode = ref<SelectableRunMode>(effectiveMode.value)
 
 function onOpenChange(next: boolean): void {
   open.value = next
   if (next) {
-    draftMode.value = store.mode
-    draftLimit.value = store.creditLimit ?? DEFAULT_CREDIT_LIMIT
+    draftMode.value = effectiveMode.value
   }
 }
 
 async function saveChanges(): Promise<void> {
   saving.value = true
   try {
-    await store.save(
-      draftMode.value,
-      draftMode.value === 'auto_limited' ? draftLimit.value : null
-    )
+    await store.save(draftMode.value, null)
     open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
@@ -59,41 +57,26 @@ function onDraftMode(value: string | undefined): void {
   if (match) draftMode.value = match.mode
 }
 
-const dirty = computed(
-  () =>
-    draftMode.value !== store.mode ||
-    (draftMode.value === 'auto_limited' &&
-      draftLimit.value !== store.creditLimit)
-)
+const saveable = computed(() => draftMode.value !== store.mode && !saving.value)
 
-const limitValid = computed(() => {
-  if (draftMode.value !== 'auto_limited') return true
-  const limit = draftLimit.value
-  return limit !== null && Number.isInteger(limit) && limit > 0
-})
-
-const saveable = computed(
-  () => dirty.value && limitValid.value && !saving.value
-)
-
-const TRIGGER_LABEL_KEYS: Record<AgentRunModeValue, string> = {
+const TRIGGER_LABEL_KEYS: Record<SelectableRunMode, string> = {
   ask_approval: 'agent.runModeTriggerAsk',
-  auto: 'agent.runModeTriggerAuto',
-  auto_limited: 'agent.runModeTriggerAutoLimit'
+  auto: 'agent.runModeTriggerAuto'
 }
 
-const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
+const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[effectiveMode.value]))
 
-const TRIGGER_TOOLTIP_KEYS: Record<AgentRunModeValue, string> = {
+const TRIGGER_TOOLTIP_KEYS: Record<SelectableRunMode, string> = {
   ask_approval: 'agent.runModeTriggerAskTooltip',
-  auto: 'agent.runModeTriggerAutoTooltip',
-  auto_limited: 'agent.runModeTriggerAutoLimitTooltip'
+  auto: 'agent.runModeTriggerAutoTooltip'
 }
 
-const triggerTooltip = computed(() => t(TRIGGER_TOOLTIP_KEYS[store.mode]))
+const triggerTooltip = computed(() =>
+  t(TRIGGER_TOOLTIP_KEYS[effectiveMode.value])
+)
 
 const options: {
-  mode: AgentRunModeValue
+  mode: SelectableRunMode
   icon: string
   title: string
   description: string
@@ -109,12 +92,6 @@ const options: {
     icon: 'icon-[lucide--zap]',
     title: 'agent.runModeAuto',
     description: 'agent.runModeAutoDescription'
-  },
-  {
-    mode: 'auto_limited',
-    icon: 'icon-[lucide--gauge]',
-    title: 'agent.runModeLimit',
-    description: 'agent.runModeLimitDescription'
   }
 ]
 </script>
@@ -192,23 +169,6 @@ const options: {
                 "
               />
             </RadioGroupItem>
-            <div
-              v-if="
-                option.mode === 'auto_limited' && draftMode === 'auto_limited'
-              "
-              class="flex items-center gap-3 px-9.5 pb-2.5"
-            >
-              <input
-                v-model.number="draftLimit"
-                type="number"
-                min="1"
-                :aria-label="t('agent.credits')"
-                class="border-agent-border text-agent-fg focus:border-agent-fg-muted h-8 min-w-0 flex-1 rounded-[10px] border bg-transparent px-2.5 text-sm/5 outline-none"
-              />
-              <span class="text-agent-fg-muted text-xs/4">
-                {{ t('agent.credits') }}
-              </span>
-            </div>
           </div>
         </RadioGroupRoot>
 
