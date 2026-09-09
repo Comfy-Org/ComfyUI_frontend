@@ -2,10 +2,10 @@ import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  AccountSettingsApiError,
-  getAccountSetting,
-  setAccountSetting
-} from './accountSettingsApi'
+  GlobalSettingsApiError,
+  getGlobalSetting,
+  setGlobalSetting
+} from './globalSettingsApi'
 
 vi.mock('@/config/comfyApi', () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
@@ -46,7 +46,7 @@ describe('Global Settings transport', () => {
       distribution.isCloud = cloud
       respondWith(stored)
 
-      await expect(getAccountSetting(key, authHeader)).resolves.toEqual(stored)
+      await expect(getGlobalSetting(key, authHeader)).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
         `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings/${key}`,
         expect.objectContaining({ headers: authHeader }),
@@ -62,9 +62,9 @@ describe('Global Settings transport', () => {
       distribution.isCloud = cloud
       respondWith(stored)
 
-      await expect(setAccountSetting(key, true, authHeader)).resolves.toEqual(
-        stored
-      )
+      await expect(
+        setGlobalSetting({ key, value: true }, authHeader)
+      ).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
         `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings`,
         expect.objectContaining({
@@ -86,13 +86,13 @@ describe('Global Settings transport', () => {
       },
       404
     )
-    await expect(getAccountSetting(key, authHeader)).resolves.toBeUndefined()
+    await expect(getGlobalSetting(key, authHeader)).resolves.toBeUndefined()
   })
 
   it('does not treat a missing gateway route as an unset setting', async () => {
     respondWith({ message: 'Not Found' }, 404)
-    await expect(getAccountSetting(key, authHeader)).rejects.toBeInstanceOf(
-      AccountSettingsApiError
+    await expect(getGlobalSetting(key, authHeader)).rejects.toBeInstanceOf(
+      GlobalSettingsApiError
     )
   })
 
@@ -103,23 +103,23 @@ describe('Global Settings transport', () => {
     { ...stored, updated_at: 'invalid' }
   ])('rejects a malformed stored setting: %j', async (body) => {
     respondWith(body)
-    await expect(getAccountSetting(key, authHeader)).rejects.toBeInstanceOf(
-      AccountSettingsApiError
+    await expect(getGlobalSetting(key, authHeader)).rejects.toBeInstanceOf(
+      GlobalSettingsApiError
     )
   })
 
   it('rejects a successful save without a valid stored setting', async () => {
     respondWith({ value: true })
     await expect(
-      setAccountSetting(key, true, authHeader)
-    ).rejects.toBeInstanceOf(AccountSettingsApiError)
+      setGlobalSetting({ key, value: true }, authHeader)
+    ).rejects.toBeInstanceOf(GlobalSettingsApiError)
   })
 
   it('wraps invalid JSON responses', async () => {
     fetchApi.mockResolvedValueOnce(new Response('{not-json'))
     fetchWithUnifiedRemint.mockResolvedValueOnce(new Response('{not-json'))
-    await expect(getAccountSetting(key, authHeader)).rejects.toBeInstanceOf(
-      AccountSettingsApiError
+    await expect(getGlobalSetting(key, authHeader)).rejects.toBeInstanceOf(
+      GlobalSettingsApiError
     )
   })
 
@@ -129,7 +129,7 @@ describe('Global Settings transport', () => {
       500
     )
     await expect(
-      setAccountSetting(key, true, authHeader)
+      setGlobalSetting({ key, value: true }, authHeader)
     ).rejects.toMatchObject({ status: 500 })
   })
 })

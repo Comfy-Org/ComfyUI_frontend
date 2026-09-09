@@ -8,9 +8,9 @@ const accountApi = vi.hoisted(() => ({
   get: vi.fn(),
   set: vi.fn()
 }))
-vi.mock('@/platform/settings/accountSettingsApi', () => ({
-  getAccountSetting: accountApi.get,
-  setAccountSetting: accountApi.set
+vi.mock('@/platform/settings/globalSettingsApi', () => ({
+  getGlobalSetting: accountApi.get,
+  setGlobalSetting: accountApi.set
 }))
 
 const authState = await vi.hoisted(async () => {
@@ -114,8 +114,7 @@ describe('agentConsentStore', () => {
 
     expect(store.accepted).toBe(true)
     expect(accountApi.set).toHaveBeenCalledWith(
-      'Comfy.AgentPanel.ConsentAccepted',
-      true,
+      { key: 'Comfy.AgentPanel.ConsentAccepted', value: true },
       { Authorization: 'Bearer account-a-token' }
     )
   })

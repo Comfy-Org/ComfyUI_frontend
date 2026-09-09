@@ -1,3 +1,5 @@
+import type { GlobalSetting } from '@comfyorg/ingest-types'
+import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -176,32 +178,42 @@ async function mockAgentBoot(
       })
     )
   )
-  await page.route('**/api/settings/*', async (route) => {
-    const request = route.request()
-    const settingId = decodeURIComponent(new URL(request.url()).pathname)
-      .split('/')
-      .at(-1)
-    if (request.method() !== 'POST') {
-      return route.fulfill(
-        jsonRoute({
-          value:
-            settingId === AGENT_CONSENT_SETTING_ID ? consentAccepted : undefined
-        })
+  await page.route('**/api/settings/*', (route) =>
+    route.fulfill(
+      route.request().method() === 'POST' ? { status: 204 } : jsonRoute({})
+    )
+  )
+  const storedConsent: GlobalSetting = {
+    key: AGENT_CONSENT_SETTING_ID,
+    value: true,
+    updated_at: '2026-09-09T00:00:00Z'
+  }
+  await page.route(
+    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+    (route) =>
+      route.fulfill(
+        consentAccepted
+          ? jsonRoute(storedConsent)
+          : {
+              ...jsonRoute({
+                code: 'NOT_FOUND',
+                message: 'Setting is not set for this user and workspace'
+              }),
+              status: 404
+            }
       )
-    }
-
-    const value: unknown = request.postDataJSON()
-    if (settingId === AGENT_CONSENT_SETTING_ID && typeof value === 'boolean') {
-      consentWrites.push(value)
-    }
-    if (settingId === AGENT_CONSENT_SETTING_ID && consentSaveStatus >= 400) {
+  )
+  await page.route('**/api/global-settings', async (route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.fulfill({ status: 405 })
+    const setting = zGlobalSettingValue.parse(request.postDataJSON())
+    consentWrites.push(setting.value)
+    if (consentSaveStatus >= 400)
       return route.fulfill({ status: consentSaveStatus })
-    }
-    if (settingId === AGENT_CONSENT_SETTING_ID && typeof value === 'boolean') {
-      consentAccepted = value
-    }
+    consentAccepted = setting.value
     return route.fulfill({
-      status: settingId === AGENT_CONSENT_SETTING_ID ? consentSaveStatus : 204
+      ...jsonRoute(storedConsent),
+      status: consentSaveStatus
     })
   })
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
@@ -277,7 +289,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentPanelInitiallyOpen: [false, { option: true }],
-  agentConsentSaveStatus: [204, { option: true }],
+  agentConsentSaveStatus: [200, { option: true }],
   agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },

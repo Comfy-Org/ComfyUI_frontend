@@ -118,7 +118,10 @@ export function useAgentConsent() {
       if (!(await dialogService.showSignInDialog())) return
 
       try {
-        if (!(await consentStore.accept())) return
+        const decisionIdentity = await consentStore.ensureScope()
+        if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
+          return
+        if (identity.value !== decisionIdentity) return
       } catch (error) {
         reportError(error, {
           errorType: 'agent_consent_setting_write_failure'
@@ -134,10 +137,10 @@ export function useAgentConsent() {
       return
     }
 
-    const decisionIdentity = identity.value
-    if (!decisionIdentity) return
-
+    let decisionIdentity: string | null
     try {
+      decisionIdentity = await consentStore.ensureScope()
+      if (!decisionIdentity) return
       await consentStore.load()
     } catch (error) {
       reportError(error, {
@@ -154,6 +157,7 @@ export function useAgentConsent() {
     if (identity.value !== decisionIdentity) return
     if (!accepted.value && !(await showConsentDialog(true, decisionIdentity)))
       return
+    if (identity.value !== decisionIdentity || !accepted.value) return
     onAccept()
   }
 
