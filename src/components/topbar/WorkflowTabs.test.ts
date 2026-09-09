@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -274,12 +274,16 @@ describe('WorkflowTabs selection and overflow', () => {
 
   beforeEach(async () => {
     const workflowStore = useWorkflowStore()
-    firstWorkflow = await workflowStore
+    const loadedFirstWorkflow = await workflowStore
       .createTemporary('First workflow.json')
       .load()
-    secondWorkflow = await workflowStore
+    const loadedSecondWorkflow = await workflowStore
       .createTemporary('Second workflow.json')
       .load()
+    assert(loadedFirstWorkflow)
+    assert(loadedSecondWorkflow)
+    firstWorkflow = loadedFirstWorkflow
+    secondWorkflow = loadedSecondWorkflow
     workflowStore.attachWorkflow(firstWorkflow, 0)
     workflowStore.attachWorkflow(secondWorkflow, 1)
     workflowStore.activeWorkflow = firstWorkflow
@@ -397,6 +401,7 @@ describe('WorkflowTabs scrolling', () => {
   it('reveals the active tab when the tab list overflows', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
+    assert(workflow)
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
@@ -419,6 +424,7 @@ describe('WorkflowTabs scrolling', () => {
   it('does not reveal the active tab again when overflow remains true', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
+    assert(workflow)
     const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
     const { unmount } = renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
