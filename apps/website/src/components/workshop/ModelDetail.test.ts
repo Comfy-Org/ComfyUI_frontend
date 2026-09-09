@@ -271,4 +271,25 @@ describe('ModelDetail', () => {
       'a capybara'
     )
   })
+
+  it('renders a declared audio example with audio transport', async () => {
+    mountDetail({
+      model: {
+        ...model,
+        modality: 'audio',
+        examples: [
+          {
+            ...model.examples[0],
+            thumbnailUrl: 'https://cdn.example/asset-without-extension',
+            mediaKind: 'audio'
+          }
+        ]
+      }
+    }).signIn('existing')
+    await nextTick()
+
+    expect(document.querySelector('audio')?.getAttribute('src')).toBe(
+      'https://cdn.example/asset-without-extension'
+    )
+  })
 })

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { models } from './models'
 import generatedModels from './workshop-models.generated.json'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
 import {
@@ -11,7 +10,6 @@ import {
   catalogSearch,
   filterWorkshopModels,
   formatRuns,
-  getWorkshopModel,
   getWorkshopModelDetail,
   mockRuns,
   parseCatalogSearch,
@@ -22,6 +20,7 @@ import {
   capabilitiesFor,
   taskFor,
   useCaseFor,
+  useCasesFor,
   workshopModels
 } from './models-catalogue'
 
@@ -257,35 +256,46 @@ describe('countByUseCase', () => {
       text: 0
     })
   })
+
+  it('counts a model in every explicit editorial use case', () => {
+    const multiUseCase: WorkshopModel = {
+      ...fixture[0],
+      useCases: ['generate-videos', 'animate-images']
+    }
+    expect(useCasesFor(multiUseCase)).toEqual([
+      'generate-videos',
+      'animate-images'
+    ])
+    expect(countByUseCase([multiUseCase])).toMatchObject({
+      all: 1,
+      'generate-videos': 1,
+      'animate-images': 1
+    })
+  })
 })
 
 describe('workshopModels', () => {
-  it('drops provider and API suffixes the registry put in the name', () => {
-    const seedance = workshopModels.find((m) => m.provider === 'ByteDance')
-    expect(seedance?.name).toBe('Seedance')
-    expect(getWorkshopModel('flux-api')?.name).toBe('Flux')
-    for (const model of workshopModels) {
-      expect(model.name).not.toMatch(/\((API|Provider)\)$/)
-      if (model.provider)
-        expect(model.name).not.toContain(`(${model.provider})`)
-    }
+  it('uses the complete Router catalog with canonical model-page links', () => {
+    expect(workshopModels).toHaveLength(268)
+    expect(new Set(workshopModels.map((model) => model.slug))).toHaveLength(268)
+    expect(
+      workshopModels.every((model) => model.href === `/models/${model.slug}/`)
+    ).toBe(true)
   })
 
-  it('holds the runnable partner nodes plus the releases the templates name', () => {
-    const routerSlugs = models.filter(isRouterModel).map((m) => m.slug)
-    const slugs = workshopModels.map((m) => m.slug)
-    expect(slugs.length).toBeGreaterThan(routerSlugs.length)
-    expect(new Set(slugs).size).toBe(slugs.length)
-    // A model the generator could not resolve has nothing to run or show, so
-    // it is left out rather than listed as an empty page.
-    for (const slug of slugs) {
-      const detail = getWorkshopModelDetail(slug)
+  it('joins every model to its fields, use cases, media and examples', () => {
+    let exampleCount = 0
+    for (const model of workshopModels) {
+      const detail = getWorkshopModelDetail(model.slug)
       expect(detail?.fields.length).toBeGreaterThan(0)
-      expect(detail?.examples.length).toBeGreaterThan(0)
+      expect(useCasesFor(model).length).toBeGreaterThan(0)
+      exampleCount += detail?.examples.length ?? 0
     }
-    expect(workshopModels.filter((m) => m.thumbnailUrl).length).toBeGreaterThan(
-      40
-    )
+    expect(workshopModels.filter((model) => model.thumbnail).length).toBe(261)
+    expect(exampleCount).toBe(113)
+  })
+
+  it('retains the legacy registry predicate for its remaining callers', () => {
     expect(
       isRouterModel({
         slug: 'x',

@@ -264,6 +264,7 @@ export interface PlaygroundExample {
   readonly specs: readonly string[]
   readonly values: Readonly<Record<string, string | number | boolean>>
   readonly outputUrl: string
+  readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly nodeDisplayName?: string
   readonly fields?: readonly GeneratedField[]
 }
@@ -318,6 +319,7 @@ export function examplesForModel(
       specs: specsOf(example.values),
       values: example.values,
       outputUrl: example.thumbnailUrl,
+      ...(example.mediaKind ? { mediaKind: example.mediaKind } : {}),
       ...(example.node ? { nodeDisplayName: example.node.displayName } : {}),
       ...(example.fields ? { fields: example.fields } : {})
     }

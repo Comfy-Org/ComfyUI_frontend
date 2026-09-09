@@ -41,4 +41,24 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByText('N')).toBeTruthy()
     expect(screen.getByTestId('model-card-task').textContent).toBe('Image')
   })
+
+  it('renders moving thumbnails as video instead of an image', () => {
+    const { container } = render(WorkshopModelCard, {
+      props: {
+        model: {
+          ...base,
+          thumbnailUrl: 'https://assets.example/preview.mp4',
+          thumbnail: {
+            url: 'https://assets.example/preview.mp4',
+            kind: 'video'
+          }
+        }
+      }
+    })
+
+    expect(container.querySelector('video')?.getAttribute('src')).toBe(
+      'https://assets.example/preview.mp4'
+    )
+    expect(container.querySelector('img')).toBeNull()
+  })
 })

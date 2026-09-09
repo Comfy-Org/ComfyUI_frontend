@@ -88,10 +88,17 @@ const schema = computed(() =>
 )
 
 function exampleOutput(example: PlaygroundExample): RunOutput {
+  const kind = example.mediaKind ?? model.modality ?? 'other'
+  const extension =
+    kind === 'audio'
+      ? 'mp3'
+      : kind === 'video' || isVideoUrl(example.outputUrl)
+        ? 'mp4'
+        : 'webp'
   return {
-    kind: model.modality ?? 'other',
+    kind,
     url: example.outputUrl,
-    fileName: `${model.slug}-${example.id}.${isVideoUrl(example.outputUrl) ? 'mp4' : 'webp'}`
+    fileName: `${model.slug}-${example.id}.${extension}`
   }
 }
 

@@ -11,7 +11,7 @@ import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
-  useCaseFor
+  useCasesFor
 } from '../../config/models-catalogue'
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -71,7 +71,7 @@ const otherFormats = computed(() =>
 const unplaced = computed(() =>
   groupModels(
     sortWorkshopModels(
-      models.filter((model) => useCaseFor(model) === undefined),
+      models.filter((model) => useCasesFor(model).length === 0),
       sort
     )
   )
