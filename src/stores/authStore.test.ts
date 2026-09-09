@@ -330,6 +330,30 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('password reset', () => {
+    it('reports an unknown email as sent, so the reset form cannot be used to enumerate accounts', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
+        code: 'auth/user-not-found',
+        message: 'Firebase: Error (auth/user-not-found).'
+      })
+
+      await expect(
+        store.sendPasswordReset('ghost@example.com')
+      ).resolves.toBeUndefined()
+    })
+
+    it('still surfaces every other reset failure', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
+        code: 'auth/network-request-failed',
+        message: 'Firebase: Error (auth/network-request-failed).'
+      })
+
+      await expect(
+        store.sendPasswordReset('user@example.com')
+      ).rejects.toMatchObject({ code: 'auth/network-request-failed' })
+    })
+  })
+
   describe('user-scoped billing endpoints with API-key sessions', () => {
     beforeEach(() => {
       authStateCallback(null)
