@@ -49,8 +49,8 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
 const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
 // The vocabulary and the absence of the envelope are checked here; the
-// production applier proves the rest of GraphOperation when the conversation
-// is parsed (zAgentConversation), so the cast below is backed, not asserted.
+// production applier proves the rest of GraphOperation before a recording
+// reaches a replay (assertOpsApply), so the cast below is backed, not asserted.
 const zGraphOperation = z
   .object({ op: z.enum(FROZEN_OPS) })
   .passthrough()
@@ -152,30 +152,6 @@ export const zAgentConversation = z
     turns: z.array(zTurn).min(1)
   })
   .superRefine((conversation, ctx) => {
-    // The production applier is the parser for every recorded operation: a
-    // recording it would reject at replay is refused here, at the boundary.
-    const doc = mint(conversation.workflow.seed, conversation.workflow.catalog)
-    let version = 1
-    for (const [turnIndex, turn] of conversation.turns.entries())
-      for (const [entryIndex, entry] of turn.response.entries()) {
-        if (entry.kind !== 'graph_ops') continue
-        const ops = mintWireOps(entry.ops, {
-          actor: 'agent:comfy:host',
-          baseVersion: version
-        })
-        version += 1
-        const rejected = applyOps(
-          doc,
-          ops,
-          conversation.workflow.catalog
-        ).outcomes.filter((outcome) => outcome.outcome !== 'applied')
-        if (rejected.length > 0)
-          ctx.addIssue({
-            code: 'custom',
-            path: ['turns', turnIndex, 'response', entryIndex, 'ops'],
-            message: `the applier rejected ${JSON.stringify(rejected)}`
-          })
-      }
     if (conversation.source.response_side !== 'recorded') return
     if (conversation.source.capture === undefined)
       ctx.addIssue({
@@ -208,9 +184,38 @@ export function listRecordedConversations(): string[] {
     .sort()
 }
 
+// The production applier is the parser for the recorded operations: a
+// recording it would reject during replay is refused before one starts.
+export function assertOpsApply(conversation: AgentConversation): void {
+  const doc = mint(conversation.workflow.seed, conversation.workflow.catalog)
+  let version = 1
+  for (const [turnIndex, turn] of conversation.turns.entries())
+    for (const [entryIndex, entry] of turn.response.entries()) {
+      if (entry.kind !== 'graph_ops') continue
+      const ops = mintWireOps(entry.ops, {
+        actor: 'agent:comfy:host',
+        baseVersion: version
+      })
+      version += 1
+      const rejected = applyOps(
+        doc,
+        ops,
+        conversation.workflow.catalog
+      ).outcomes.filter((outcome) => outcome.outcome !== 'applied')
+      if (rejected.length > 0)
+        throw new Error(
+          `turn ${turnIndex} entry ${entryIndex}: the applier rejected ${JSON.stringify(rejected)}`
+        )
+    }
+}
+
 export function loadAgentConversation(caseId: string): AgentConversation {
   const file = fileURLToPath(
     new URL(`./conversations/${caseId}.json`, import.meta.url)
   )
-  return zAgentConversation.parse(JSON.parse(readFileSync(file, 'utf-8')))
+  const conversation = zAgentConversation.parse(
+    JSON.parse(readFileSync(file, 'utf-8'))
+  )
+  assertOpsApply(conversation)
+  return conversation
 }
