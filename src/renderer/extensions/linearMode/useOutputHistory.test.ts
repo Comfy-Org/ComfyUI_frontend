@@ -1,29 +1,18 @@
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useQueueStore } from '@/stores/queueStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, toValue, ref } from 'vue'
+import { nextTick, toValue } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { toNodeId } from '@/types/nodeId'
-
-const mediaRef = ref<AssetItem[]>([])
-const pendingResolveRef = ref(new Set<string>())
-const inProgressItemsRef = ref<InProgressItem[]>([])
-const activeWorkflowInProgressItemsRef = ref<InProgressItem[]>([])
-const selectedIdRef = ref<string | null>(null)
-const activeWorkflowPathRef = ref<string>('workflows/test.json')
-const jobIdToPathRef = ref(new Map<string, string>())
-const isActiveWorkflowRunningRef = ref(false)
-const runningTasksRef = ref<Array<{ jobId: string }>>([])
-const pendingTasksRef = ref<Array<{ jobId: string }>>([])
-
-const selectAsLatestFn = vi.fn()
-const resolveIfReadyFn = vi.fn()
-const resolvedOutputsCacheRef = new Map<string, AugmentedResultItem[]>()
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
@@ -31,75 +20,6 @@ vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   mapInputFileToAssetItem: vi.fn(),
   mapTaskOutputToAssetItem: vi.fn(),
   unflattenOutputAssets: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    outputAssets: {
-      hasMore: ref(false),
-      invalidate: vi.fn(),
-      isLoading: ref(false),
-      items: mediaRef,
-      loadMore: vi.fn(),
-      loadNew: vi.fn()
-    }
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/linearMode/linearOutputStore'),
-  () => ({
-    useLinearOutputStore: () => ({
-      get pendingResolve() {
-        return pendingResolveRef.value
-      },
-      get inProgressItems() {
-        return inProgressItemsRef.value
-      },
-      get activeWorkflowInProgressItems() {
-        return activeWorkflowInProgressItemsRef.value
-      },
-      get selectedId() {
-        return selectedIdRef.value
-      },
-      resolvedOutputsCache: resolvedOutputsCacheRef,
-      selectAsLatest: selectAsLatestFn,
-      resolveIfReady: resolveIfReadyFn
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return { path: activeWorkflowPathRef.value }
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: () => ({
-    get jobIdToSessionWorkflowPath() {
-      return jobIdToPathRef.value
-    },
-    get isActiveWorkflowRunning() {
-      return isActiveWorkflowRunningRef.value
-    }
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/queueStore'), () => ({
-  useQueueStore: () => ({
-    get runningTasks() {
-      return runningTasksRef.value
-    },
-    get pendingTasks() {
-      return pendingTasksRef.value
-    }
-  })
 }))
 
 const { jobDetailResults } = vi.hoisted(() => ({
@@ -146,29 +66,47 @@ function makeResult(
   }
 }
 
+beforeEach(() => {
+  useAssetsStore().outputAssets.hasMore = false
+  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(
+    undefined
+  )
+  vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useLinearOutputStore().resolveIfReady).mockImplementation(
+    () => undefined
+  )
+})
+
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    mediaRef.value = []
-    pendingResolveRef.value = new Set()
-    inProgressItemsRef.value = []
-    activeWorkflowInProgressItemsRef.value = []
-    selectedIdRef.value = null
-    activeWorkflowPathRef.value = 'workflows/test.json'
-    jobIdToPathRef.value = new Map()
-    isActiveWorkflowRunningRef.value = false
-    runningTasksRef.value = []
-    pendingTasksRef.value = []
-    resolvedOutputsCacheRef.clear()
+    useAssetsStore().outputAssets.items = []
+    useLinearOutputStore().pendingResolve = new Set()
+    useLinearOutputStore().inProgressItems = []
+    Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
+    useLinearOutputStore().selectedId = null
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/test.json'
+    })
+    useExecutionStore().jobIdToSessionWorkflowPath = new Map()
+    Object.assign(useExecutionStore(), { isActiveWorkflowRunning: false })
+    useQueueStore().runningTasks = []
+    useQueueStore().pendingTasks = []
+    useLinearOutputStore().resolvedOutputsCache.clear()
     jobDetailResults.clear()
   })
 
   describe('sessionMedia filtering', () => {
     it('filters assets to match active workflow path', () => {
-      jobIdToPathRef.value = new Map([
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      mediaRef.value = [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
+      useAssetsStore().outputAssets.items = [
+        makeAsset('a1', 'job-1'),
+        makeAsset('a2', 'job-2')
+      ]
 
       const { outputs } = useOutputHistory()
 
@@ -177,9 +115,11 @@ describe(useOutputHistory, () => {
     })
 
     it('returns empty when no workflow is active', () => {
-      activeWorkflowPathRef.value = ''
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
-      mediaRef.value = [makeAsset('a1', 'job-1')]
+      useWorkflowStore().activeWorkflow = fromPartial({ path: '' })
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
+      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
 
       const { outputs } = useOutputHistory()
 
@@ -187,19 +127,26 @@ describe(useOutputHistory, () => {
     })
 
     it('updates when active workflow changes', async () => {
-      jobIdToPathRef.value = new Map([
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      mediaRef.value = [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
+      useAssetsStore().outputAssets.items = [
+        makeAsset('a1', 'job-1'),
+        makeAsset('a2', 'job-2')
+      ]
 
-      activeWorkflowPathRef.value = 'workflows/a.json'
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/a.json'
+      })
       const { outputs } = useOutputHistory()
 
       expect(toValue(outputs.items)).toHaveLength(1)
       expect(toValue(outputs.items)[0].id).toBe('a1')
 
-      activeWorkflowPathRef.value = 'workflows/b.json'
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/b.json'
+      })
       await nextTick()
 
       expect(toValue(outputs.items)).toHaveLength(1)
@@ -287,8 +234,8 @@ describe(useOutputHistory, () => {
 
     it('returns in-progress outputs for pending resolve jobs', () => {
       useAppModeStore().selectedOutputs.push(toNodeId('1'))
-      pendingResolveRef.value = new Set(['job-1'])
-      inProgressItemsRef.value = [
+      useLinearOutputStore().pendingResolve = new Set(['job-1'])
+      useLinearOutputStore().inProgressItems = [
         {
           id: 'item-1',
           jobId: 'job-1',
@@ -348,16 +295,22 @@ describe(useOutputHistory, () => {
         allOutputs: results,
         outputCount: 1
       })
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
-      pendingResolveRef.value = new Set(['job-1'])
-      mediaRef.value = [asset]
-      selectedIdRef.value = null
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
+      useLinearOutputStore().pendingResolve = new Set(['job-1'])
+      useAssetsStore().outputAssets.items = [asset]
+      useLinearOutputStore().selectedId = null
 
       useOutputHistory()
       await nextTick()
 
-      expect(resolveIfReadyFn).toHaveBeenCalledWith('job-1', true)
-      expect(selectAsLatestFn).toHaveBeenCalledWith('history:a1:0')
+      expect(
+        vi.mocked(useLinearOutputStore().resolveIfReady)
+      ).toHaveBeenCalledWith('job-1', true)
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).toHaveBeenCalledWith('history:a1:0')
     })
 
     it('does not select first history when a selection exists', async () => {
@@ -367,45 +320,59 @@ describe(useOutputHistory, () => {
         allOutputs: results,
         outputCount: 1
       })
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
-      pendingResolveRef.value = new Set(['job-1'])
-      mediaRef.value = [asset]
-      selectedIdRef.value = 'history:existing:0'
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
+      useLinearOutputStore().pendingResolve = new Set(['job-1'])
+      useAssetsStore().outputAssets.items = [asset]
+      useLinearOutputStore().selectedId = 'history:existing:0'
 
       useOutputHistory()
       await nextTick()
 
-      expect(resolveIfReadyFn).toHaveBeenCalledWith('job-1', true)
-      expect(selectAsLatestFn).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useLinearOutputStore().resolveIfReady)
+      ).toHaveBeenCalledWith('job-1', true)
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).not.toHaveBeenCalled()
     })
 
     it('skips jobs with no matching asset in media', async () => {
-      pendingResolveRef.value = new Set(['job-missing'])
-      mediaRef.value = []
+      useLinearOutputStore().pendingResolve = new Set(['job-missing'])
+      useAssetsStore().outputAssets.items = []
 
       useOutputHistory()
       await nextTick()
 
-      expect(resolveIfReadyFn).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useLinearOutputStore().resolveIfReady)
+      ).not.toHaveBeenCalled()
     })
   })
 
   describe('selectFirstHistory', () => {
     it('selects first media item', () => {
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
-      mediaRef.value = [makeAsset('a1', 'job-1')]
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
+      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
 
-      expect(selectAsLatestFn).toHaveBeenCalledWith('history:a1:0')
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).toHaveBeenCalledWith('history:a1:0')
     })
 
     it('selects null when no media', () => {
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
 
-      expect(selectAsLatestFn).toHaveBeenCalledWith(null)
+      expect(
+        vi.mocked(useLinearOutputStore().selectAsLatest)
+      ).toHaveBeenCalledWith(null)
     })
   })
 
@@ -416,43 +383,53 @@ describe(useOutputHistory, () => {
     })
 
     it('returns false when there are active in-progress items', () => {
-      activeWorkflowInProgressItemsRef.value = [
-        { id: 'item-1', jobId: 'job-1', state: 'skeleton' }
-      ]
-      runningTasksRef.value = [{ jobId: 'job-1' }]
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+      Object.assign(useLinearOutputStore(), {
+        activeWorkflowInProgressItems: [
+          { id: 'item-1', jobId: 'job-1', state: 'skeleton' }
+        ]
+      })
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'job-1' }])
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
 
       const { mayBeActiveWorkflowPending } = useOutputHistory()
       expect(mayBeActiveWorkflowPending.value).toBe(false)
     })
 
     it('returns true when a running task matches the active workflow', () => {
-      runningTasksRef.value = [{ jobId: 'job-1' }]
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'job-1' }])
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
 
       const { mayBeActiveWorkflowPending } = useOutputHistory()
       expect(mayBeActiveWorkflowPending.value).toBe(true)
     })
 
     it('returns false when only pending tasks exist', () => {
-      pendingTasksRef.value = [{ jobId: 'job-1' }]
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/test.json']])
+      useQueueStore().pendingTasks = fromPartial([{ jobId: 'job-1' }])
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/test.json']
+      ])
 
       const { mayBeActiveWorkflowPending } = useOutputHistory()
       expect(mayBeActiveWorkflowPending.value).toBe(false)
     })
 
     it('returns false when tasks belong to another workflow', () => {
-      runningTasksRef.value = [{ jobId: 'job-1' }]
-      jobIdToPathRef.value = new Map([['job-1', 'workflows/other.json']])
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'job-1' }])
+      useExecutionStore().jobIdToSessionWorkflowPath = new Map([
+        ['job-1', 'workflows/other.json']
+      ])
 
       const { mayBeActiveWorkflowPending } = useOutputHistory()
       expect(mayBeActiveWorkflowPending.value).toBe(false)
     })
 
     it('returns false when no workflow path is set', () => {
-      activeWorkflowPathRef.value = ''
-      runningTasksRef.value = [{ jobId: 'job-1' }]
+      useWorkflowStore().activeWorkflow = fromPartial({ path: '' })
+      useQueueStore().runningTasks = fromPartial([{ jobId: 'job-1' }])
 
       const { mayBeActiveWorkflowPending } = useOutputHistory()
       expect(mayBeActiveWorkflowPending.value).toBe(false)
