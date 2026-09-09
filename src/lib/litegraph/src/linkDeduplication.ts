@@ -1,8 +1,10 @@
+import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
@@ -52,6 +54,18 @@ export function remapLinkReferences(
   for (const extension of data.extra?.linkExtensions ?? []) {
     extension.id = toLinkId(remap(extension.id))
   }
+
+  const presentation = data.extra?.linkPresentation
+  if (!presentation) return
+
+  for (const [key, value] of Object.entries(presentation)) {
+    const linkId = parseLinkId(key)
+    if (linkId === undefined) continue
+    const remappedKey = String(remap(linkId))
+    if (remappedKey === key) continue
+    presentation[remappedKey] ??= value
+    delete presentation[key]
+  }
 }
 
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
@@ -82,18 +96,8 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
     const isExactDuplicate =
       toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
       survivor.origin_slot === fields.origin_slot
-    if (!isExactDuplicate) {
-      console.warn(
-        `Dropping competing link to occupied input ${fields.target_id}:${fields.target_slot}`,
-        {
-          droppedLinkId: fields.id,
-          survivorLinkId: survivor.id,
-          targetNodeId: fields.target_id,
-          targetSlot: fields.target_slot
-        }
-      )
-    }
-
+    let droppedLinkId = fields.id
+    let survivorLinkId = survivor.id
     if (
       !isExactDuplicate &&
       referencedInputLinks.has(fields.id) &&
@@ -104,14 +108,51 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
         if (survivorId === survivor.id) survivorByDuplicateId.set(id, fields.id)
       }
       survivorByDuplicateId.set(survivor.id, fields.id)
+      droppedLinkId = survivor.id
+      survivorLinkId = fields.id
     } else {
       survivorByDuplicateId.set(fields.id, survivor.id)
+    }
+    if (!isExactDuplicate) {
+      const targetNodeId = toNodeId(fields.target_id)
+      console.warn('Dropping competing link to an occupied input', {
+        droppedLinkId,
+        survivorLinkId,
+        targetNodeId,
+        targetSlot: fields.target_slot
+      })
+      useTelemetry()?.trackLinkDedupDrop({
+        droppedLinkId,
+        survivorLinkId,
+        target: `${targetNodeId}:${fields.target_slot}`
+      })
     }
   }
   if (links.length === data.links.length) return data
 
   const normalized = Object.assign({}, data, { links })
   const cloned = cloneDeep(normalized)
+  const presentation = cloned.extra?.linkPresentation
+  if (presentation) {
+    const survivorById = new Map(
+      links.map((link) => {
+        const fields = linkFields(link)
+        return [fields.id, fields]
+      })
+    )
+    for (const link of data.links) {
+      const fields = linkFields(link)
+      const survivorId = survivorByDuplicateId.get(fields.id)
+      if (survivorId === undefined || survivorId === fields.id) continue
+      const survivor = survivorById.get(survivorId)
+      if (
+        survivor &&
+        (toNodeId(fields.origin_id) !== toNodeId(survivor.origin_id) ||
+          fields.origin_slot !== survivor.origin_slot)
+      )
+        delete presentation[fields.id]
+    }
+  }
   remapLinkReferences(cloned, survivorByDuplicateId)
   return cloned
 }
@@ -141,30 +182,33 @@ export function detachSerialisedLinks(
  * because dynamic inputs may grow additional named slots in response.
  *
  * @param graph The graph whose links to realign
- * @param nodesData The serialized node data the graph's nodes were configured
- * from
+ * @param nodesData The final node id paired with the serialized data that
+ * configured it
  */
 export function realignInputLinkSlots(
   graph: LGraph,
-  nodesData: Iterable<ISerialisedNode>
+  nodesData: Iterable<readonly [NodeId, Pick<ISerialisedNode, 'id' | 'inputs'>]>
 ): void {
-  for (const nodeData of nodesData) {
-    const node = graph.getNodeById(toNodeId(nodeData.id))
+  for (const [nodeId, nodeData] of nodesData) {
+    const node = graph.getNodeById(nodeId)
     if (!node) continue
 
     const referencedNames = new Map<LLink, string[]>()
     for (const input of nodeData.inputs ?? []) {
       if (input.link == null) continue
       const link = graph.links.get(toLinkId(input.link))
-      if (!link || link.target_id !== toNodeId(nodeData.id)) continue
+      if (!link || link.target_id !== nodeId) continue
       const names = referencedNames.get(link) ?? []
       names.push(input.name)
       referencedNames.set(link, names)
     }
 
-    for (let pass = 0; pass < Math.max(1, referencedNames.size); pass++) {
+    const skipped = new Set<LLink>()
+    let successfulPasses = 0
+    while (successfulPasses < referencedNames.size) {
       const moved: { link: LLink; slot: number }[] = []
       for (const [link, names] of referencedNames) {
+        if (skipped.has(link)) continue
         const slots = node.inputs.flatMap((input, slot) =>
           names.includes(input.name) ? [slot] : []
         )
@@ -200,8 +244,24 @@ export function realignInputLinkSlots(
       )
       if (!result.ok) {
         console.error('Failed to realign input link slots', result.error)
-        break
+        const participantIds = new Set([
+          ...moved.map(({ link }) => link.id),
+          ...removals.map((link) => link.id)
+        ])
+        const blocked = moved.filter(({ link, slot }) => {
+          const occupant = useLinkStore().getInputSlotLink(
+            graphScopeOf(graph),
+            link.target_id,
+            slot
+          )
+          return occupant && !participantIds.has(occupant.id)
+        })
+        for (const { link } of blocked.length ? blocked : moved) {
+          skipped.add(link)
+        }
+        continue
       }
+      successfulPasses++
 
       for (const { connection, link } of removedConnections) {
         link.disconnect(graph)

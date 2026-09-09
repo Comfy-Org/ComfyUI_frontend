@@ -6,7 +6,10 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
-import { savePendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import {
+  getPendingSubscriptionCheckout,
+  savePendingSubscriptionCheckout
+} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
@@ -45,28 +48,20 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
 
-vi.mock('vue', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    defineAsyncComponent: vi.fn((loader) => loader)
-  }
-})
-
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showLayoutDialog: mockShowLayoutDialog,
     showTeamWorkspacesDialog: mockShowTeamWorkspacesDialog
   })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     get shouldUseWorkspaceBilling() {
       return mockShouldUseWorkspaceBilling
@@ -81,7 +76,7 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get embeddedCheckoutEnabled() {
@@ -91,28 +86,34 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
-    get isInPersonalWorkspace() {
-      return mockIsInPersonalWorkspace.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return mockActiveWorkspaceId.value
+      },
+      get isInPersonalWorkspace() {
+        return mockIsInPersonalWorkspace.value
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({ startOperation: mockStartOperation })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  () => ({
+    useBillingOperationStore: () => ({ startOperation: mockStartOperation })
+  })
+)
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     get userId() {
       return mockUserId.value
@@ -120,7 +121,7 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     isFreeTier: mockIsFreeTier,
     isLegacyTeamPlan: mockIsLegacyTeamPlan,
@@ -136,19 +137,22 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackSubscription: mockTrackSubscription })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return { canManageSubscription: mockCanManageSubscription.value }
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return { canManageSubscription: mockCanManageSubscription.value }
+        }
       }
-    }
+    })
   })
-}))
+)
 
 function expectRekaPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
@@ -757,9 +761,34 @@ describe('useSubscriptionDialog', () => {
       await resumePendingPricingFlow()
 
       expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-      expect(
-        sessionStorage.getItem('comfy:pending-subscription-checkout')
-      ).toBeNull()
+      // A poll giving up says nothing about the server-side operation, which
+      // can stay pending for hours awaiting bank authentication.
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-timeout')
+    })
+
+    it('keeps the pointer for an unfinished operation across repeated resumes', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockStartOperation.mockResolvedValue({ status: 'timeout' })
+      savePendingSubscriptionCheckout({
+        operationId: 'op-parked',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'creator',
+          billingCycle: 'monthly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      await useSubscriptionDialog().resumePendingPricingFlow()
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-parked')
+
+      await useSubscriptionDialog().resumePendingPricingFlow()
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-parked')
+
+      expect(mockStartOperation).toHaveBeenCalledTimes(2)
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 
     it('clears a checkout owned by another user without reconciling it', async () => {

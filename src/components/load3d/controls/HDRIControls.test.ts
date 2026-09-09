@@ -9,7 +9,7 @@ import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
 import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
 
 const addAlert = vi.fn()
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ addAlert })
 }))
 

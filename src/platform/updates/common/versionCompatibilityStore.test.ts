@@ -4,25 +4,25 @@ import { ref } from 'vue'
 
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 
-vi.mock('@/config', () => ({
+vi.mock<unknown>(import('@/config'), () => ({
   default: {
     app_version: '1.24.0'
   }
 }))
 
 const mockUseSystemStatsStore = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/systemStatsStore', () => ({
+vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
   useSystemStatsStore: mockUseSystemStatsStore
 }))
 
 const mockUseSettingStore = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: mockUseSettingStore
 }))
 
 // Mock useStorage and until from VueUse
 const mockDismissalStorage = ref({} as Record<string, number>)
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useStorage: vi.fn(() => mockDismissalStorage),
   until: vi.fn(() => Promise.resolve())
 }))
@@ -212,9 +212,7 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should not show warning when disabled via setting', async () => {
       // Enable the disable setting
-      ;(
-        mockSettingStore as { get: ReturnType<typeof vi.fn> }
-      ).get.mockReturnValue(true)
+      mockSettingStore.get.mockReturnValue(true)
 
       // Set up version mismatch that would normally show warning
       mockSystemStatsStore.systemStats = {
@@ -228,9 +226,9 @@ describe('useVersionCompatibilityStore', () => {
       await store.checkVersionCompatibility()
 
       expect(store.shouldShowWarning).toBe(false)
-      expect(
-        (mockSettingStore as { get: ReturnType<typeof vi.fn> }).get
-      ).toHaveBeenCalledWith('Comfy.VersionCompatibility.DisableWarnings')
+      expect(mockSettingStore.get).toHaveBeenCalledWith(
+        'Comfy.VersionCompatibility.DisableWarnings'
+      )
     })
   })
 

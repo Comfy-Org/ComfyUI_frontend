@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -22,6 +23,7 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -41,6 +43,7 @@ import { app } from '@/scripts/app'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -65,6 +68,7 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
@@ -73,8 +77,26 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
-  const { canAccessSubscriptionFeatures, showSubscriptionDialog } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    showSubscriptionDialog,
+    subscription
+  } = useBillingContext()
+
+  function blockRunWithoutSubscription(): boolean {
+    if (!isCloud || canAccessSubscriptionFeatures.value) return false
+    if (isSalesManagedTier(subscription.value?.tier)) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('subscription.salesManagedRunBlockedTitle'),
+        detail: t('subscription.salesManagedRunBlockedDetail'),
+        life: 5000
+      })
+    } else {
+      showSubscriptionDialog({ reason: 'subscribe_to_run' })
+    }
+    return true
+  }
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const settingsDialog = useSettingsDialog()
@@ -169,8 +191,6 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
-        if (!workflow) return
-
         await workflowService.saveWorkflow(workflow)
       }
     },
@@ -192,8 +212,6 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
-        if (!workflow) return
-
         await workflowService.saveWorkflowAs(workflow)
       }
     },
@@ -248,7 +266,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.undo()
         } else {
-          await getTracker()?.undo?.()
+          await getTracker()?.undo()
         }
       }
     },
@@ -261,7 +279,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.redo()
         } else {
-          await getTracker()?.redo?.()
+          await getTracker()?.redo()
         }
       }
     },
@@ -276,7 +294,6 @@ export function useCoreCommands(): ComfyCommand[] {
           !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
-          app.clean()
           if (app.canvas.subgraph) {
             // `clear` is not implemented on subgraphs and the parent class's
             // (`LGraph`) `clear` breaks the subgraph structure. For subgraphs,
@@ -284,6 +301,8 @@ export function useCoreCommands(): ComfyCommand[] {
             const subgraph = app.canvas.subgraph
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
+          } else {
+            runMintPortsIntentionalClear(() => app.clean())
           }
           api.dispatchCustomEvent('graphCleared')
         }
@@ -312,6 +331,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        await useAssetsStore().invalidateAll()
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
         }
@@ -362,10 +382,10 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(
-          ds.scale * 1.1,
-          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
-        )
+        ds.changeScale(ds.scale * 1.1, [
+          ds.element.width / 2,
+          ds.element.height / 2
+        ])
         app.canvas.setDirty(true, true)
       }
     },
@@ -376,10 +396,10 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(
-          ds.scale / 1.1,
-          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
-        )
+        ds.changeScale(ds.scale / 1.1, [
+          ds.element.width / 2,
+          ds.element.height / 2
+        ])
         app.canvas.setDirty(true, true)
       }
     },
@@ -391,7 +411,7 @@ export function useCoreCommands(): ComfyCommand[] {
         } Nodes 2.0`,
       function: async () => {
         const settingStore = useSettingStore()
-        const current = settingStore.get('Comfy.VueNodes.Enabled') ?? false
+        const current = settingStore.get('Comfy.VueNodes.Enabled')
         await settingStore.set('Comfy.VueNodes.Enabled', !current)
       }
     },
@@ -409,7 +429,9 @@ export function useCoreCommands(): ComfyCommand[] {
           })
           return
         }
-        app.canvas.fitViewToSelectionAnimated()
+        app.canvas.fitViewToSelectionAnimated({
+          viewport: visibleCanvasViewport(app.canvas)
+        })
       }
     },
     {
@@ -506,10 +528,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -529,10 +548,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -551,10 +567,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
-          showSubscriptionDialog({ reason: 'subscribe_to_run' })
-          return
-        }
+        if (blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()
@@ -606,7 +619,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: () => {
         const { canvas } = app
-        if (!canvas.selectedItems?.size) {
+        if (!canvas.selectedItems.size) {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.nothingToGroup'),
@@ -899,7 +912,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--copy]',
       label: 'Copy',
       function: () => {
-        if (app.canvas.selectedItems?.size) {
+        if (app.canvas.selectedItems.size) {
           app.canvas.copyToClipboard()
         }
       }
@@ -934,6 +947,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
       function: () => {
+        if (app.canvas.selectOnly) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
@@ -1050,15 +1064,6 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
         const res = graph.convertToSubgraph(canvas.selectedItems)
-        if (!res) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('toastMessages.cannotCreateSubgraph'),
-            detail: t('toastMessages.failedToConvertToSubgraph')
-          })
-          return
-        }
-
         const { node } = res
         canvas.select(node)
         canvasStore.updateSelectedItems()
@@ -1156,8 +1161,8 @@ export function useCoreCommands(): ComfyCommand[] {
         const subgraph = canvas.subgraph
         if (!subgraph) return
 
-        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
-        const currentDescription = (extra.BlueprintDescription as string) ?? ''
+        const extra = subgraph.extra as Record<string, unknown>
+        const currentDescription = extra.BlueprintDescription as string
 
         let description: string | null | undefined
         const rawDescription = metadata?.description
@@ -1175,7 +1180,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (description === null) return
 
         extra.BlueprintDescription = description.trim() || undefined
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
     },
     {
@@ -1193,7 +1198,7 @@ export function useCoreCommands(): ComfyCommand[] {
             .map((s) => s.trim())
             .filter(Boolean)
 
-        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
+        const extra = subgraph.extra as Record<string, unknown>
 
         let aliases: string[]
         const rawAliases = metadata?.aliases
@@ -1212,7 +1217,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
 
         extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
     },
     {
@@ -1338,7 +1343,7 @@ export function useCoreCommands(): ComfyCommand[] {
         } AssetAPI`,
       function: async () => {
         const settingStore = useSettingStore()
-        const current = settingStore.get('Comfy.Assets.UseAssetAPI') ?? false
+        const current = settingStore.get('Comfy.Assets.UseAssetAPI')
         await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }

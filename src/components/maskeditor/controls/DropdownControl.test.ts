@@ -36,7 +36,7 @@ describe('DropdownControl', () => {
 
     const select = screen.getByRole('combobox') as HTMLSelectElement
     const values = Array.from(select.options).map((o) => o.value)
-    const labels = Array.from(select.options).map((o) => o.textContent?.trim())
+    const labels = Array.from(select.options).map((o) => o.textContent.trim())
 
     expect(values).toEqual(['Alpha', 'Beta'])
     expect(labels).toEqual(['Alpha', 'Beta'])
@@ -53,16 +53,14 @@ describe('DropdownControl', () => {
 
     const select = screen.getByRole('combobox') as HTMLSelectElement
     expect(Array.from(select.options).map((o) => o.value)).toEqual(['1', '2'])
-    expect(
-      Array.from(select.options).map((o) => o.textContent?.trim())
-    ).toEqual(['High', 'Low'])
+    expect(Array.from(select.options).map((o) => o.textContent.trim())).toEqual(
+      ['High', 'Low']
+    )
   })
 
   it('should reflect modelValue as the selected option', () => {
     renderComponent({ options: ['One', 'Two'], modelValue: 'Two' })
-    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe(
-      'Two'
-    )
+    expect(screen.getByRole<HTMLSelectElement>('combobox').value).toBe('Two')
   })
 
   it('should emit update:modelValue with the chosen string value', async () => {

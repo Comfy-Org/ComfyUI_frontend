@@ -1,6 +1,7 @@
 import { useMutationObserver, useResizeObserver } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
-import { readonly, ref } from 'vue'
+import { readonly, ref, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 /**
  * Observes an element for overflow changes and optionally debounces the check
@@ -12,7 +13,7 @@ import { readonly, ref } from 'vue'
  * @returns An object containing the isOverflowing state and the checkOverflow function to manually trigger
  */
 export const useOverflowObserver = (
-  element: HTMLElement,
+  element: MaybeRefOrGetter<HTMLElement | null | undefined>,
   options?: {
     debounceTime?: number
     useMutationObserver?: boolean
@@ -32,7 +33,10 @@ export const useOverflowObserver = (
   const disposed = ref(false)
 
   const checkOverflowFn = () => {
-    isOverflowing.value = element.scrollWidth > element.clientWidth
+    const resolvedElement = toValue(element)
+    isOverflowing.value = resolvedElement
+      ? resolvedElement.scrollWidth > resolvedElement.clientWidth
+      : false
     options.onCheck?.(isOverflowing.value)
   }
 

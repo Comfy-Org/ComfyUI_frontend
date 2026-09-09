@@ -4,13 +4,16 @@ const mockActiveWorkflow = vi.hoisted(() => ({
   value: { filename: 'my-workflow.json' } as { filename: string } | null
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return mockActiveWorkflow.value
+      }
+    })
   })
-}))
+)
 
 const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
   await import('./useComfyHubPublishWizard')

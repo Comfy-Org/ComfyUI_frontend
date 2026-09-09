@@ -19,6 +19,7 @@ import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
@@ -37,7 +38,7 @@ const isFileProtocol = window.location.protocol === 'file:'
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
-  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  if (isCloud) return import.meta.env.BASE_URL || '/'
   return window.location.pathname
 }
 
@@ -84,10 +85,7 @@ const router = createRouter({
         }
       ]
     },
-    // Catch-all: unknown paths redirect to root rather than hanging on the
-    // splash screen with no route match. The global auth guard then routes
-    // unauthenticated users to /cloud/login as normal.
-    { path: '/:pathMatch(.*)*', redirect: '/' }
+    { path: '/:pathMatch(.*)*', redirect: unmatchedRouteRedirect }
   ],
 
   scrollBehavior(_to, _from, savedPosition) {
@@ -243,7 +241,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === '/') {
+    if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }

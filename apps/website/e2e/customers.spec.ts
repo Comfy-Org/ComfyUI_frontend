@@ -1,10 +1,67 @@
 import { expect } from '@playwright/test'
 
+import { customerVideoStories } from '../src/data/customerVideos'
+import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Customers @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/customers')
+  })
+
+  test('shows a visible Home > Customers breadcrumb, never linking the current page', async ({
+    page
+  }) => {
+    const breadcrumb = page.getByRole('navigation', {
+      name: t('ui.breadcrumb', 'en')
+    })
+    await expect(
+      breadcrumb.getByRole('link', { name: t('breadcrumb.home', 'en') })
+    ).toHaveAttribute('href', '/')
+    await expect(
+      breadcrumb.getByText(t('nav.customerStories', 'en'))
+    ).toBeVisible()
+    await expect(
+      breadcrumb.locator('a', { hasText: t('nav.customerStories', 'en') })
+    ).toHaveCount(0)
+  })
+
+  test('the directory has no <video> elements and makes no WebM requests', async ({
+    page
+  }) => {
+    const webmRequests: string[] = []
+    page.on('request', (request) => {
+      if (/\.webm(\?|$)/i.test(request.url())) webmRequests.push(request.url())
+    })
+
+    await page.goto('/customers')
+
+    await expect(page.locator('video')).toHaveCount(0)
+    expect(webmRequests).toEqual([])
+  })
+
+  test('the WATCH group links each video story to its dedicated watch page', async ({
+    page
+  }) => {
+    const watchHeading = page.getByText(t('customers.group.watch', 'en'), {
+      exact: true
+    })
+    await expect(watchHeading).toBeVisible()
+
+    for (const story of customerVideoStories) {
+      const card = page.locator(`a[href="/customers/videos/${story.slug}"]`)
+      await expect(card).toBeVisible()
+      await expect(card).toContainText(story.company)
+      await expect(card).toContainText(t('customers.video.watchStory', 'en'))
+    }
+  })
+
+  test('shows a READ group heading above the written stories', async ({
+    page
+  }) => {
+    await expect(
+      page.getByText(t('customers.group.read', 'en'), { exact: true })
+    ).toBeVisible()
   })
 
   test('hero image declares intrinsic dimensions so layout reserves space before load', async ({

@@ -2,6 +2,9 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { useMaskEditorLoader } from './useMaskEditorLoader'
 
@@ -13,11 +16,11 @@ const mockDataStore: Record<string, unknown> = {
   setLoading: vi.fn()
 }
 
-vi.mock('@/stores/maskEditorDataStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorDataStore'), () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: vi.fn(() => ({
     getNodeOutputs: vi.fn(() => undefined)
   }))
@@ -25,20 +28,20 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => ''),
     getRandParam: vi.fn(() => '')
@@ -69,13 +72,21 @@ class MockImage {
   }
 }
 
+const GRAPH_ID = 'maskeditor-loader-test'
+
 function createLoadImageNode(widgetValue: string): LGraphNode {
+  const nodeId = toNodeId(7)
+  useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
+    type: 'string',
+    value: widgetValue,
+    options: {}
+  })
   return fromAny<LGraphNode, unknown>({
-    id: 7,
+    id: nodeId,
     type: 'LoadImage',
     imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
     images: undefined,
-    widgets: [{ name: 'image', value: widgetValue }]
+    graph: { rootGraph: { id: GRAPH_ID } }
   })
 }
 
@@ -114,7 +125,7 @@ describe('useMaskEditorLoader', () => {
     }
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-mask-123.png', type: 'input' },
-      nodeId: 7
+      nodeId: toNodeId(7)
     })
   })
 
@@ -171,7 +182,7 @@ describe('useMaskEditorLoader', () => {
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'clipspace-painted-masked-123.png' },
       paintLayer: undefined,
-      nodeId: 7
+      nodeId: toNodeId(7)
     })
   })
 

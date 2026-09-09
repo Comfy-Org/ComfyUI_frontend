@@ -22,9 +22,12 @@ const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: mockUseSubscriptionCheckout
-}))
+vi.mock(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: mockUseSubscriptionCheckout
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -63,6 +66,7 @@ const AddPaymentPreviewStub = {
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
     <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
     <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
+    <button @click="$emit('back')">Back</button>
   </div>`
 }
 
@@ -209,11 +213,11 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('shows back button on preview step', () => {
+  it('leaves the back action to the preview step that renders its own', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
-    expect(screen.getByLabelText('Back')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
   })
 
   it('shows insufficient credits message when reason is out_of_credits', () => {
@@ -283,7 +287,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     mockPreviewData.value = { transition_type: 'new_subscription' }
     renderComponent()
 
-    await user.click(screen.getByLabelText('Back'))
+    await user.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(mockHandleBackToPricing).toHaveBeenCalled()
   })

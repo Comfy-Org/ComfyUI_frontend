@@ -12,7 +12,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import { createAssetWidget } from './createAssetWidget'
 
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
+vi.mock(import('@/platform/assets/composables/useAssetBrowserDialog'), () => {
   const show = vi.fn()
   const browse = vi.fn()
   return {
@@ -62,9 +62,7 @@ function assertAssetOptions(
 
 function firstShowOptions() {
   const showOptions = vi.mocked(useAssetBrowserDialog().show).mock.calls[0]?.[0]
-  if (!showOptions) {
-    throw new Error('Expected the asset browser dialog to open')
-  }
+
   return showOptions
 }
 
