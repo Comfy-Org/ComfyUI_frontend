@@ -24,7 +24,7 @@ export type CardArticleItem = {
   category: string
   title: string
   description?: string
-  media: CardArticleMedia
+  media?: CardArticleMedia
   author?: { name: string; avatarSrc: string }
   cta: { label: string; href: string; newTab?: boolean }
 }
@@ -33,6 +33,25 @@ const { item, titleClamp = false } = defineProps<{
   item: CardArticleItem
   titleClamp?: boolean
 }>()
+
+// Stand-in art for items with no media, in the brand plum family the site's
+// banners and hero glows already use. Picked by a hash of the item id so the
+// choice is stable across build and hydration, and neighbouring artless cards
+// don't repeat.
+const FALLBACK_GRADIENTS = [
+  'radial-gradient(ellipse 70% 80% at 25% 20%, color-mix(in srgb, var(--color-primary-comfy-yellow) 30%, transparent), transparent 60%), linear-gradient(135deg, var(--color-primary-comfy-plum), var(--color-secondary-deep-plum) 60%, var(--color-primary-comfy-ink-light))',
+  'radial-gradient(ellipse 80% 100% at 85% 10%, color-mix(in srgb, var(--color-primary-comfy-plum) 65%, transparent), transparent 65%), linear-gradient(200deg, var(--color-secondary-mauve), var(--color-secondary-deep-plum) 70%)',
+  'radial-gradient(ellipse 90% 80% at 80% 90%, color-mix(in srgb, var(--color-primary-comfy-orange) 22%, transparent), transparent 60%), linear-gradient(160deg, var(--color-secondary-deep-plum), var(--color-primary-comfy-ink-light) 75%)',
+  'radial-gradient(ellipse 100% 90% at 20% 85%, color-mix(in srgb, var(--color-illustration-forest) 75%, transparent), transparent 70%), linear-gradient(120deg, var(--color-secondary-deep-plum), var(--color-secondary-mauve))'
+]
+
+function fallbackGradient(id: string): string {
+  const hash = [...id].reduce(
+    (acc, char) => (acc * 31 + char.charCodeAt(0)) | 0,
+    7
+  )
+  return FALLBACK_GRADIENTS[Math.abs(hash) % FALLBACK_GRADIENTS.length]
+}
 </script>
 
 <template>
@@ -64,7 +83,7 @@ const { item, titleClamp = false } = defineProps<{
       <CardContent class="relative p-2">
         <div class="aspect-video w-full overflow-hidden rounded-4xl">
           <img
-            v-if="item.media.type === 'image'"
+            v-if="item.media?.type === 'image'"
             :src="item.media.src"
             :alt="item.media.alt"
             loading="lazy"
@@ -72,7 +91,7 @@ const { item, titleClamp = false } = defineProps<{
             class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
           />
           <video
-            v-else
+            v-else-if="item.media"
             :src="item.media.src"
             :poster="item.media.poster"
             :aria-label="item.media.alt"
@@ -82,6 +101,12 @@ const { item, titleClamp = false } = defineProps<{
             playsinline
             preload="metadata"
             class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
+          />
+          <div
+            v-else
+            aria-hidden="true"
+            class="size-full transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
+            :style="{ background: fallbackGradient(item.id) }"
           />
         </div>
         <Badge

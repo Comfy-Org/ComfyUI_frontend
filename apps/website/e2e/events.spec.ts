@@ -30,9 +30,8 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_ZH, 'zh-CN']
 ]
 
-const pastCardEvents = pastEvents.filter(
-  (event) => event.media ?? event.featured?.media
-)
+// Every past event gets a card; the ones with no art get a gradient stand-in.
+const pastCardEvents = pastEvents
 
 // Mirrors PAGE_SIZE in PastEventsSection.vue.
 const PAST_PAGE_SIZE = 4
