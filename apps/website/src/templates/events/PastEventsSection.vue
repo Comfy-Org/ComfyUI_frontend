@@ -24,10 +24,10 @@ const PAGE_SIZE = 4
 
 const items = computed<CardArticleGalleryItem[]>(() =>
   pastEvents.map((event) => {
-    // Card art falls back to the carousel art for events that became past
-    // before dedicated card art was added. An event with no art at all still
+    // Carousel art is sized and hosted for the hero slider only, so no
+    // featured.media fallback here. An event without dedicated card art still
     // gets a card; CardArticle01 fills the media slot with a brand gradient.
-    const media = event.media ?? event.featured?.media
+    const media = event.media
     // Events with a recording open their own page (dialog over the directory);
     // the rest link out to the event's external page in a new tab.
     const pageHref = localizeHref(eventPath(event), locale)

@@ -262,7 +262,7 @@ describe('directoryRows', () => {
     expect(row.watch).toBeUndefined()
   })
 
-  it('falls back to the carousel art when an event has no card media', () => {
+  it('gives a hero-carousel-only event no card media of its own', () => {
     const featuredOnly = makeEvent({
       id: 'featured-only',
       featured: {
@@ -275,12 +275,7 @@ describe('directoryRows', () => {
       }
     })
     const [row] = directoryRows([featuredOnly], 'en', past)
-    expect(row.media).toEqual({
-      src: 'carousel.avif',
-      alt: 'Carousel art',
-      poster: undefined,
-      isVideo: false
-    })
+    expect(row.media).toBeUndefined()
   })
 
   it('marks video media and carries its poster', () => {

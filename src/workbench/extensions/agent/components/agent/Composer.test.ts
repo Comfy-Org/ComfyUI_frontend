@@ -47,6 +47,7 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
 
 describe('Composer', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     setActivePinia(createPinia())
   })
 
@@ -55,7 +56,7 @@ describe('Composer', () => {
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
     const addNodes = screen.getByRole('button', {
-      name: 'add nodes from graph,'
+      name: 'mention nodes from graph,'
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
@@ -72,7 +73,7 @@ describe('Composer', () => {
 
     expect((box as HTMLTextAreaElement).value).toBe('hello')
     expect(
-      screen.queryByRole('button', { name: 'add nodes from graph,' })
+      screen.queryByRole('button', { name: 'mention nodes from graph,' })
     ).toBeNull()
   })
 
@@ -80,7 +81,7 @@ describe('Composer', () => {
     const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
     const hintButton = screen.getByRole('button', {
-      name: 'add nodes from graph,'
+      name: 'mention nodes from graph,'
     })
 
     await userEvent.tab()
@@ -118,7 +119,7 @@ describe('Composer', () => {
 
     // The menu strings only compile once reka mounts the lazy menu content.
     await openAddMenu()
-    await screen.findByRole('menuitem', { name: 'Attach images or files' })
+    await screen.findByRole('menuitem', { name: 'Upload images or files' })
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
@@ -555,7 +556,7 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     // Anchor on the entry that is always present, so the absence assertions
     // below cannot pass against a menu that never opened.
-    return screen.findByRole('menuitem', { name: 'Add nodes from graph' })
+    return screen.findByRole('menuitem', { name: 'Mention nodes from graph' })
   }
 
   it('hides the conditional entries from the add menu by default', async () => {
@@ -564,10 +565,10 @@ describe('Composer', () => {
     await openAddMenu()
 
     expect(
-      screen.queryByRole('menuitem', { name: 'Attach images or files' })
+      screen.queryByRole('menuitem', { name: 'Upload images or files' })
     ).toBeNull()
     expect(
-      screen.queryByRole('menuitem', { name: 'Add from assets panel' })
+      screen.queryByRole('menuitem', { name: 'Drag in asset from asset panel' })
     ).toBeNull()
   })
 
@@ -576,7 +577,7 @@ describe('Composer', () => {
 
     await openAddMenu()
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'Attach images or files' })
+      await screen.findByRole('menuitem', { name: 'Upload images or files' })
     )
 
     expect(emitted().attach).toHaveLength(1)
@@ -587,7 +588,9 @@ describe('Composer', () => {
 
     await openAddMenu()
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'Add from assets panel' })
+      await screen.findByRole('menuitem', {
+        name: 'Drag in asset from asset panel'
+      })
     )
 
     expect(emitted().openAssets).toHaveLength(1)

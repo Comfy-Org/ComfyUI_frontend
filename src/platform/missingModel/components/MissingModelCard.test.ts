@@ -16,7 +16,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockDownloadModel = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+vi.mock(import('@/platform/missingModel/missingModelDownload'), async () => {
   const actual = await vi.importActual<typeof MissingModelDownload>(
     '@/platform/missingModel/missingModelDownload'
   )
@@ -26,7 +26,7 @@ vi.mock('@/platform/missingModel/missingModelDownload', async () => {
   }
 })
 
-vi.mock('./MissingModelRow.vue', () => ({
+vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
   default: {
     name: 'MissingModelRow',
     template: `
@@ -52,7 +52,7 @@ vi.mock('./MissingModelRow.vue', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
