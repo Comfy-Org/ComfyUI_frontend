@@ -16,7 +16,7 @@ import { toNodeId } from '@/types/nodeId'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
