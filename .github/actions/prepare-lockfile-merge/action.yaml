@@ -2,25 +2,15 @@ name: Prepare pnpm lockfile merge
 description: Reproduce a base merge and stage its lockfile side when it is the only conflict
 
 inputs:
-  base-repository:
-    description: Base repository in owner/name form
-    required: true
   base-sha:
     description: Exact base commit to merge
     required: true
-  working-directory:
-    description: Checked-out pull request directory
-    required: false
-    default: '.'
   require-conflict:
     description: Fail unless the merge has only a pnpm-lock.yaml conflict
     required: false
     default: 'false'
 
 outputs:
-  eligible:
-    description: Whether pnpm-lock.yaml is the only merge conflict
-    value: ${{ steps.merge.outputs.eligible }}
   mode:
     description: Whether the caller should merge or repair the lockfile
     value: ${{ steps.merge.outputs.mode }}
@@ -30,16 +20,15 @@ runs:
   steps:
     - id: merge
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: pull-request
       env:
-        BASE_REPOSITORY: ${{ inputs.base-repository }}
         BASE_SHA: ${{ inputs.base-sha }}
         REQUIRE_CONFLICT: ${{ inputs.require-conflict }}
       run: |
         if [ "$(git rev-parse --is-shallow-repository)" = 'true' ]; then
           git fetch --unshallow origin
         fi
-        git fetch --no-tags "https://github.com/$BASE_REPOSITORY.git" "$BASE_SHA"
+        git fetch --no-tags "https://github.com/$GITHUB_REPOSITORY.git" "$BASE_SHA"
 
         set +e
         git merge --no-commit --no-ff "$BASE_SHA"
@@ -50,12 +39,10 @@ runs:
            [ "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml' ]; then
           git checkout --theirs pnpm-lock.yaml
           git add pnpm-lock.yaml
-          echo 'eligible=true' >> "$GITHUB_OUTPUT"
           echo 'mode=merge' >> "$GITHUB_OUTPUT"
         else
           git merge --abort || true
           git reset --hard HEAD
-          echo 'eligible=false' >> "$GITHUB_OUTPUT"
           echo 'mode=repair' >> "$GITHUB_OUTPUT"
           test "$REQUIRE_CONFLICT" != 'true'
         fi

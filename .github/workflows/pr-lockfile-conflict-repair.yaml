@@ -92,31 +92,29 @@ jobs:
         id: conflict
         uses: ./.github/actions/prepare-lockfile-merge
         with:
-          base-repository: ${{ github.repository }}
           base-sha: ${{ matrix.pull.baseSha }}
-          working-directory: pull-request
 
       - name: Install pnpm
-        if: steps.conflict.outputs.eligible == 'true'
+        if: steps.conflict.outputs.mode == 'merge'
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           package_json_file: pull-request/package.json
 
       - name: Setup Node.js
-        if: steps.conflict.outputs.eligible == 'true'
+        if: steps.conflict.outputs.mode == 'merge'
         uses: actions/setup-node@v6
         with:
           node-version-file: pull-request/.nvmrc
 
       - name: Repair lockfile
-        if: steps.conflict.outputs.eligible == 'true'
+        if: steps.conflict.outputs.mode == 'merge'
         run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
         working-directory: pull-request
 
       - name: Prepare repair artifact
         env:
           ARTIFACT_DIR: ${{ runner.temp }}/lockfile-repair
-          ELIGIBLE: ${{ steps.conflict.outputs.eligible }}
+          ELIGIBLE: ${{ steps.conflict.outputs.mode == 'merge' }}
         run: |
           mkdir "$ARTIFACT_DIR"
           printf '%s\n' "$ELIGIBLE" > "$ARTIFACT_DIR/eligible"
@@ -214,9 +212,7 @@ jobs:
           steps.artifact.outputs.eligible == 'true'
         uses: ./.github/actions/prepare-lockfile-merge
         with:
-          base-repository: ${{ github.repository }}
           base-sha: ${{ matrix.pull.baseSha }}
-          working-directory: pull-request
           require-conflict: 'true'
 
       - name: Apply repaired lockfile

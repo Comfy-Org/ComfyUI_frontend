@@ -95,9 +95,7 @@ jobs:
           steps.artifact.outputs.mode == 'merge'
         uses: ./.github/actions/prepare-lockfile-merge
         with:
-          base-repository: ${{ github.repository }}
           base-sha: ${{ steps.pr.outputs.base-sha }}
-          working-directory: pull-request
           require-conflict: 'true'
 
       - name: Apply repaired lockfile
