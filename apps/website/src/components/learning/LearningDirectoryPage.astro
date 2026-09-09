@@ -56,7 +56,6 @@ const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
   name: crumb.name,
   url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
 }))
-
 ---
 
 <BaseLayout

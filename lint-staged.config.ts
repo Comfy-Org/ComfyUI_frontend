@@ -31,6 +31,7 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...commandsWithFiles(astroFiles, 'pnpm exec prettier --write'),
     ...typecheckCommands(typecheckFiles)
   ]
 }

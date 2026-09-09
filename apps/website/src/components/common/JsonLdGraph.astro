@@ -9,4 +9,8 @@ interface Props {
 const { graph } = Astro.props
 ---
 
-<script is:inline type="application/ld+json" set:html={escapeJsonLd(graph)} />
+<script
+  is:inline
+  type="application/ld+json"
+  set:html={escapeJsonLd(graph)}
+></script>

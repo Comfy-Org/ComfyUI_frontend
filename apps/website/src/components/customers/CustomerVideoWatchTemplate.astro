@@ -98,15 +98,13 @@ const collectionLabel = t('nav.customerStories', locale)
     locale={locale}
     client:load
   />
-  {
-    nextStory && (
-      <WhatsNextSection
-        title={nextStory.title}
-        image={nextStory.poster}
-        href={customerVideoPath(nextStory.slug)}
-        locale={locale}
-        ctaLabel={t('customers.video.watchStory', locale)}
-      />
-    )
-  }
+  {nextStory && (
+    <WhatsNextSection
+      title={nextStory.title}
+      image={nextStory.poster}
+      href={customerVideoPath(nextStory.slug)}
+      locale={locale}
+      ctaLabel={t('customers.video.watchStory', locale)}
+    />
+  )}
 </BaseLayout>

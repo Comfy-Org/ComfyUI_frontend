@@ -12,7 +12,7 @@ import {
   absoluteUrl,
   itemListNode,
   jsonLdId,
-  pageContext,
+  pageContext
 } from '../../utils/jsonLd'
 
 const outcome = await fetchRolesForBuild()
@@ -30,14 +30,14 @@ const departments = outcome.snapshot.departments
 const { locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const roles = itemListNode(
   url,
   t('breadcrumb.careers', locale),
   departments.flatMap((department) =>
-    department.roles.map((role) => ({ name: role.title, url: role.jobUrl })),
-  ),
+    department.roles.map((role) => ({ name: role.title, url: role.jobUrl }))
+  )
 )
 ---
 
@@ -49,9 +49,9 @@ const roles = itemListNode(
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.careers', locale) },
+    { name: t('breadcrumb.careers', locale) }
   ]}
   extraJsonLd={[roles]}
 >

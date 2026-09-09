@@ -72,10 +72,7 @@ const videoNodes = customerVideoStories.map((story) =>
   extraJsonLd={[storyList, ...videoNodes]}
 >
   <BreadcrumbBar
-    crumbs={[
-      { label: homeLabel, href: '/zh-CN' },
-      { label: collectionLabel }
-    ]}
+    crumbs={[{ label: homeLabel, href: '/zh-CN' }, { label: collectionLabel }]}
     label={t('ui.breadcrumb', locale)}
   />
   <HeroSection locale="zh-CN" client:load />

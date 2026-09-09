@@ -11,7 +11,7 @@ import {
   absoluteUrl,
   jsonLdId,
   pageContext,
-  softwareApplicationNode,
+  softwareApplicationNode
 } from '../../../../utils/jsonLd'
 
 export const getStaticPaths: GetStaticPaths = async () => {
@@ -37,7 +37,7 @@ const metaDescription = t('cloudNodes.detail.metaDescription', 'zh-CN')
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const softwareId = jsonLdId(url, 'software')
 const software = softwareApplicationNode({
@@ -54,7 +54,7 @@ const software = softwareApplicationNode({
   license: pack.license,
   codeRepository: pack.repoUrl,
   authorName: pack.publisher?.name,
-  isFree: true,
+  isFree: true
 })
 ---
 
@@ -66,14 +66,14 @@ const software = softwareApplicationNode({
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
     {
       name: t('breadcrumb.supportedNodes', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN/cloud/supported-nodes'),
+      url: absoluteUrl(Astro.site, '/zh-CN/cloud/supported-nodes')
     },
-    { name: pack.displayName },
+    { name: pack.displayName }
   ]}
   extraJsonLd={[software]}
 >
