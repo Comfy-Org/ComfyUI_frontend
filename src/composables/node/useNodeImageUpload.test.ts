@@ -1,11 +1,13 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
+import type { api } from '@/scripts/api'
 
 const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
-  mockFetchApi: vi.fn(),
+  mockFetchApi: vi.fn<typeof api.fetchApi>(),
   mockAddAlert: vi.fn(),
   mockInvalidateInputs: vi.fn()
 }))
@@ -23,10 +25,6 @@ vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
 
 vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
   useNodeFileInput: () => ({ openFileSelection: vi.fn() })
-}))
-
-vi.mock(import('@/composables/node/useNodePaste'), () => ({
-  useNodePaste: vi.fn()
 }))
 
 vi.mock(import('@/i18n'), () => ({
@@ -61,17 +59,14 @@ function createFile(name = 'test.png', type = 'image/png'): File {
 }
 
 function successResponse(name: string, subfolder?: string) {
-  return {
-    status: 200,
-    json: () => Promise.resolve({ name, subfolder })
-  }
+  return Response.json({ name, subfolder })
 }
 
 function failResponse(status = 500) {
-  return {
+  return new Response(null, {
     status,
     statusText: 'Server Error'
-  }
+  })
 }
 
 describe('useNodeImageUpload', () => {
@@ -80,14 +75,12 @@ describe('useNodeImageUpload', () => {
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
-  beforeEach(async () => {
-    vi.resetModules()
+  beforeEach(() => {
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()
     onUploadError = vi.fn()
 
-    const { useNodeImageUpload } = await import('./useNodeImageUpload')
     useNodeImageUpload(node, {
       onUploadComplete,
       onUploadStart,
@@ -95,6 +88,36 @@ describe('useNodeImageUpload', () => {
       folder: 'input'
     })
   })
+
+  it.for([
+    { source: 'paste', folder: 'input' },
+    { source: 'paste', folder: 'output' },
+    { source: 'drop', folder: 'input' }
+  ] as const)(
+    'uploads image.png via $source to the $folder root and keeps the server filename',
+    async ({ source, folder }) => {
+      useNodeImageUpload(node, { folder, onUploadComplete })
+      mockFetchApi.mockResolvedValueOnce(successResponse('image (1).png', ''))
+      const file = createFile('image.png')
+
+      if (source === 'paste') {
+        expect(node.pasteFiles?.([file])).toBe(true)
+      } else {
+        await capturedDragOnDrop([file])
+      }
+
+      await vi.waitFor(() =>
+        expect(onUploadComplete).toHaveBeenCalledWith(['image (1).png'])
+      )
+      const body = mockFetchApi.mock.calls[0][1]?.body
+      if (!(body instanceof FormData)) {
+        throw new Error('Image upload must send multipart form data')
+      }
+      expect(body.get('image')).toBe(file)
+      expect(body.get('type')).toBe(folder)
+      expect(body.get('subfolder')).toBeNull()
+    }
+  )
 
   it.for([
     { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
