@@ -674,6 +674,28 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(state.instance.inputs[0]).toBe(inputBefore)
   })
 
+  it('S1l resyncs live host resizable and showAdvanced flags', () => {
+    // `reconcileNodeFields` already copies both booleans onto NodeState; the
+    // by-key filter must let the edits through, or a doc toggle is dropped.
+    const state = startFollower()
+    deliver(state, hostSetWidget(48), 1)
+    expect(state.instance.resizable).not.toBe(false)
+    expect(state.instance.showAdvanced).not.toBe(true)
+    forwardRaw(
+      state,
+      (nodes) => {
+        const node = nodes.get('1')!
+        node.set('resizable', false)
+        node.set('showAdvanced', true)
+      },
+      2
+    )
+
+    expect(state.instance.resizable).toBe(false)
+    expect(state.instance.showAdvanced).toBe(true)
+    expect(state.instance.widgets[0]?.value).toBe(48)
+  })
+
   it('S1i keeps promoted names when the host flips back to named storage', () => {
     // Deleting `__widgets_opaque` and writing a named `widgets` map lands in
     // the replaced-widget-storage loop, which used to run `reconcileNode` on
