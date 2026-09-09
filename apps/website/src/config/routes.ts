@@ -13,6 +13,8 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
+  customerVideoBlackMath: '/customers/videos/black-math',
+  customerVideoSilversideAi: '/customers/videos/silverside-ai',
   demos: '/demos',
   learning: '/learning',
   termsOfService: '/terms-of-service',
@@ -70,6 +72,11 @@ type Routes = Readonly<Record<RouteKey, string>>
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
+//
+// customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
+// built from a single English-language caption track — a "translated" watch
+// page would either duplicate the English video under a Chinese path or lie
+// about having Chinese captions, so these are intentionally English-only.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -78,7 +85,9 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterprise',
   'managedBuilds',
   'models',
-  'minimaxLicenseProfessionalRequest'
+  'minimaxLicenseProfessionalRequest',
+  'customerVideoBlackMath',
+  'customerVideoSilversideAi'
 ])
 
 // pixal3d-trellis2: a bespoke English launch page with no Chinese version,
@@ -88,9 +97,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // platform/serverless-animation: English-only. Its three siblings under
 // /platform/ each have a zh-CN twin and it does not, so without this the
 // emitter advertises a Chinese page that 404s.
+//
+// workshop: the catalog is English-only. It is also build-gated until launch,
+// but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/pixal3d-trellis2',
-  '/platform/serverless-animation'
+  '/platform/serverless-animation',
+  '/workshop'
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([

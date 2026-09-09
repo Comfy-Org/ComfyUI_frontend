@@ -12,17 +12,17 @@ no longer a store; ADR-SUBGRAPH-PROMOTION-0009 represents it as ordinary linked 
 state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 `WidgetId`.
 
-| Store                   | Extracts From                 | Scoping                   | Key Format                                                     | Data Shape                    |
-| ----------------------- | ----------------------------- | ------------------------- | -------------------------------------------------------------- | ----------------------------- |
-| WidgetValueStore        | `BaseWidget`                  | `graphId`                 | `WidgetId` (`graphId:nodeId:name`)                             | Plain `WidgetState` object    |
-| DomWidgetStore          | `BaseDOMWidget`               | Global                    | `widgetId` (UUID)                                              | Position, visibility, z-index |
-| LayoutStore             | Node, Group, Reroute geometry | Root workflow             | `makeScopedLayoutKey(rootGraphId, localId)`                    | Y.js CRDT maps (pos, size)    |
-| NodeOutputStore         | Execution results             | `nodeLocatorId`           | `"${subgraphUUID}:${nodeId}"`                                  | Output data, preview URLs     |
-| SubgraphNavigationStore | Canvas viewport               | `subgraphId`              | `subgraphId` or `'root'`                                       | LRU viewport cache            |
-| PreviewExposureStore    | Subgraph host node            | host node locator         | host locator + exposure name                                   | Display-only preview state    |
-| LinkStore               | `LLink`                       | Root and owning graph     | `LinkId` primary; owner-qualified target/origin indexes        | Plain `LinkTopology` object   |
-| RerouteStore            | `Reroute`                     | Root graph                | `RerouteId`                                                    | Plain `RerouteChain` object   |
-| NodeDataStore           | `LGraphNode` shell state      | Root bucket + owner index | Root-unique `NodeId`; `NodeState.graphId` associates the owner | Plain `NodeState` object      |
+| Store                   | Extracts From                 | Scoping                   | Key Format                                                     | Data Shape                                              |
+| ----------------------- | ----------------------------- | ------------------------- | -------------------------------------------------------------- | ------------------------------------------------------- |
+| WidgetValueStore        | `BaseWidget`                  | `graphId`                 | `WidgetId` (`graphId:nodeId:name`)                             | `WidgetEntity` (state + render + visibility components) |
+| DomWidgetStore          | `BaseDOMWidget`               | Global                    | `widgetId` (UUID)                                              | Position, visibility, z-index                           |
+| LayoutStore             | Node, Group, Reroute geometry | Root workflow             | `makeScopedLayoutKey(rootGraphId, localId)`                    | Y.js CRDT maps (pos, size)                              |
+| NodeOutputStore         | Execution results             | `nodeLocatorId`           | `"${subgraphUUID}:${nodeId}"`                                  | Output data, preview URLs                               |
+| SubgraphNavigationStore | Canvas viewport               | `subgraphId`              | `subgraphId` or `'root'`                                       | LRU viewport cache                                      |
+| PreviewExposureStore    | Subgraph host node            | host node locator         | host locator + exposure name                                   | Display-only preview state                              |
+| LinkStore               | `LLink`                       | Root and owning graph     | `LinkId` primary; owner-qualified target/origin indexes        | Plain `LinkTopology` object                             |
+| RerouteStore            | `Reroute`                     | Root graph                | `RerouteId`                                                    | Plain `RerouteChain` object                             |
+| NodeDataStore           | `LGraphNode` shell state      | Root bucket + owner index | Root-unique `NodeId`; `NodeState.graphId` associates the owner | Plain `NodeState` object                                |
 
 **Update (2026-07-05):** `LinkStore` (`src/stores/linkStore.ts`, PR #13436) and
 `RerouteStore` (`src/stores/rerouteStore.ts`, PR #13449) hold plain-data records
@@ -61,12 +61,20 @@ The closest thing to a true ECS component store in the codebase today.
 ### State Shape
 
 ```
-Map<UUID, Map<WidgetId, WidgetState>>
+Map<UUID, Map<WidgetId, WidgetEntity>>
      │              │           │
-     graphId   "graphId:nodeId:name"  pure data object
+     graphId   "graphId:nodeId:name"  { state, render, visibility }
 ```
 
-`WidgetState` is a plain data object with no methods:
+Each `WidgetEntity` groups three plain-data components:
+
+| Component    | Type                        | Purpose                                          |
+| ------------ | --------------------------- | ------------------------------------------------ |
+| `state`      | `WidgetState`               | Identity, value, and configuration               |
+| `render`     | `WidgetRenderState`         | Canvas layout state                              |
+| `visibility` | `WidgetVisibilityComponent` | Per-surface visibility tiers + suppression flags |
+
+`WidgetState` (the `state` component) is a plain data object with no methods:
 
 | Field       | Type             | Purpose                                    |
 | ----------- | ---------------- | ------------------------------------------ |

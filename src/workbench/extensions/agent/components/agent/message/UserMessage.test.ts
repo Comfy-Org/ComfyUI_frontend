@@ -19,7 +19,7 @@ import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
   useClipboard: () => ({
     copy: clipboard.copy,
