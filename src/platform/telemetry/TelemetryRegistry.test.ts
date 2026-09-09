@@ -10,6 +10,7 @@ import type {
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent,
   TelemetryProvider
 } from './types'
 
@@ -221,6 +222,52 @@ describe('TelemetryRegistry', () => {
 
     expect(a.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
     expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('gives every provider the same event identity for one journey emission', () => {
+    const a: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const b: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event: CheckoutJourneyTelemetryEvent = {
+      phase: 'entered',
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-09-09T00:00:00.000Z',
+      assignment_status: 'resolved',
+      assigned_arm: 'treatment',
+      entry_flow: 'initial_subscription',
+      entry_source: 'pricing'
+    }
+    registry.trackCheckoutJourneyEvent(event)
+
+    const aCall = vi.mocked(a.trackCheckoutJourneyEvent!).mock.calls[0]
+    const bCall = vi.mocked(b.trackCheckoutJourneyEvent!).mock.calls[0]
+    expect(aCall[0]).toBe(event)
+    expect(bCall[0]).toBe(event)
+    expect(aCall[1]).toBe(bCall[1])
+    expect(aCall[1]).toEqual(expect.any(String))
+  })
+
+  it('mints a distinct event identity per journey emission', () => {
+    const provider: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(provider)
+
+    const event: CheckoutJourneyTelemetryEvent = {
+      phase: 'submitted',
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-09-09T00:00:00.000Z',
+      assignment_status: 'unavailable',
+      entry_flow: 'topup',
+      entry_source: 'pricing'
+    }
+    registry.trackCheckoutJourneyEvent(event)
+    registry.trackCheckoutJourneyEvent(event)
+
+    const calls = vi.mocked(provider.trackCheckoutJourneyEvent!).mock.calls
+    expect(calls[0][1]).not.toBe(calls[1][1])
   })
 
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {
