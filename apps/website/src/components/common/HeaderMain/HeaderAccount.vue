@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
   ArrowLeftRight,
-  ArrowUpRight,
   Check,
   Coins,
+  ExternalLink,
   LogOut,
   Settings
 } from '@lucide/vue'
@@ -206,7 +206,7 @@ const avatarClass =
             <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
             <span class="flex flex-1 items-center gap-1.5">
               {{ t('nav.creditsLabel', locale) }}
-              <ArrowUpRight
+              <ExternalLink
                 class="size-3.5 text-primary-warm-gray"
                 aria-hidden="true"
               />
@@ -260,7 +260,13 @@ const avatarClass =
               class="size-5 text-primary-warm-gray"
               aria-hidden="true"
             />
-            {{ t('nav.workspaceSettings', locale) }}
+            <span class="flex flex-1 items-center gap-1.5">
+              {{ t('nav.workspaceSettings', locale) }}
+              <ExternalLink
+                class="size-3.5 text-primary-warm-gray"
+                aria-hidden="true"
+              />
+            </span>
           </a>
         </DropdownMenuItem>
 

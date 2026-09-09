@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Coins, Copy, Play } from '@lucide/vue'
+import { Coins, Copy, ExternalLink, Play } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
@@ -421,7 +421,7 @@ function useInCode() {
               rel="noopener"
               size="lg"
               class="w-full px-5"
-              :append-icon="ArrowUpRight"
+              :append-icon="ExternalLink"
               data-testid="run-button"
               data-gate="noCredits"
             >
