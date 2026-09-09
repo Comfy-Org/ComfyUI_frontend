@@ -40,7 +40,9 @@ const RESYNCED_NODE_FIELDS: ReadonlySet<string> = new Set([
   'color',
   'bgcolor',
   'boxcolor',
-  'shape'
+  'shape',
+  'resizable',
+  'showAdvanced'
 ])
 export type MutationsForTarget =
   | GraphMutations
