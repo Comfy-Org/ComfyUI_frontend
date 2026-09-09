@@ -7,6 +7,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
@@ -55,6 +56,7 @@ const mockBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -133,13 +135,27 @@ function extendWithBilling(billingStatus: BillingStatusResponse) {
         })
       )
 
-      await page.route('**/api/billing/balance', (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(mockBalance)
-        })
-      )
+    // The popover sources its data from the workspace billing endpoints.
+    await page.route('**/api/billing/capabilities', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          createWorkspaceBillingCapabilities(
+            mockListWorkspacesResponse.workspaces[0]
+          )
+        )
+      })
+    })
+
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockBillingStatus)
+      })
+    )
 
       await page.route('**/api/billing/plans', (route) =>
         route.fulfill({

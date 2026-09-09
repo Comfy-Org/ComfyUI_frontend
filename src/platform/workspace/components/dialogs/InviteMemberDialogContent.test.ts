@@ -9,6 +9,7 @@ import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWor
 
 const {
   mockCreateInvite,
+  mockFetchPendingInvites,
   mockCloseDialog,
   mockToastAdd,
   mockTrackInviteSent,
@@ -16,18 +17,22 @@ const {
   mockFetchStatus,
   mockMaxSeats,
   mockOccupiedSeats
-} = vi.hoisted(() => ({
-  mockCreateInvite: vi.fn(),
-  mockCloseDialog: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockTrackInviteSent: vi.fn(),
-  mockTrackInviteFailed: vi.fn(),
-  mockFetchStatus: vi.fn(),
-  mockMaxSeats: { value: 73 as number | null },
-  mockOccupiedSeats: { value: 0 as number | null }
-}))
+} = vi.hoisted(() => {
+  const nullableNumber = (value: number | null) => ({ value })
+  return {
+    mockCreateInvite: vi.fn(),
+    mockFetchPendingInvites: vi.fn(),
+    mockCloseDialog: vi.fn(),
+    mockToastAdd: vi.fn(),
+    mockTrackInviteSent: vi.fn(),
+    mockTrackInviteFailed: vi.fn(),
+    mockFetchStatus: vi.fn(),
+    mockMaxSeats: nullableNumber(73),
+    mockOccupiedSeats: nullableNumber(0)
+  }
+})
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     fetchStatus: mockFetchStatus,
     maxSeats: mockMaxSeats,
@@ -35,30 +40,38 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    createInvite: mockCreateInvite
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      createInvite: mockCreateInvite,
+      fetchPendingInvites: mockFetchPendingInvites,
+      pendingInvites: []
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackWorkspaceInviteSent: mockTrackInviteSent,
     trackWorkspaceInviteFailed: mockTrackInviteFailed
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -95,6 +108,8 @@ function inviteButton() {
 
 describe('InviteMemberDialogContent', () => {
   beforeEach(() => {
+    vi.useRealTimers()
+    mockFetchPendingInvites.mockResolvedValue([])
     mockFetchStatus.mockResolvedValue(undefined)
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
@@ -169,7 +184,11 @@ describe('InviteMemberDialogContent', () => {
     await user.type(emailInput(), 'a@b.com b@c.com ')
 
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
-    expect(screen.queryByText('b@c.com')).not.toBeInTheDocument()
+    expect(screen.getByText('b@c.com')).toBeInTheDocument()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).toBeInTheDocument()
+    expect(inviteButton()).toBeDisabled()
   })
 
   it('flags invalid emails and keeps Invite disabled', async () => {
@@ -209,7 +228,7 @@ describe('InviteMemberDialogContent', () => {
 
     const closeButton = screen
       .getAllByRole('button', { name: 'g.close' })
-      .find((button) => button.textContent?.includes('g.close'))
+      .find((button) => button.textContent.includes('g.close'))
     await user.click(closeButton!)
 
     expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'invite-member' })

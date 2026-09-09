@@ -34,8 +34,8 @@ const tooltipDirectiveStub = {
 }
 
 const defaultProps = {
-  totalProgressStyle: { width: '65%' },
-  currentNodeProgressStyle: { width: '40%' },
+  totalProgressStyle: { transform: 'scaleX(0.65)' },
+  currentNodeProgressStyle: { transform: 'scaleX(0.4)' },
   totalPercentFormatted: '65%',
   currentNodePercentFormatted: '40%',
   currentNodeName: 'Sampler',
@@ -72,8 +72,9 @@ describe('QueueOverlayActive', () => {
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const progressBars = container.querySelectorAll('.absolute.inset-0')
-    expect(progressBars[0]).toHaveStyle({ width: '65%' })
-    expect(progressBars[1]).toHaveStyle({ width: '40%' })
+    expect(progressBars).toHaveLength(2)
+    expect(progressBars[0]).toHaveStyle({ transform: 'scaleX(0.65)' })
+    expect(progressBars[1]).toHaveStyle({ transform: 'scaleX(0.4)' })
 
     expect(screen.getByText('65%')).toBeInTheDocument()
 

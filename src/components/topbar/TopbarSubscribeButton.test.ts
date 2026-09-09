@@ -1,3 +1,4 @@
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -9,7 +10,7 @@ import TopbarSubscribeButton from './TopbarSubscribeButton.vue'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -17,8 +18,8 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const mockShowPricingTable = vi.fn()
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: vi.fn(() => ({
       showPricingTable: mockShowPricingTable
@@ -59,7 +60,7 @@ vi.mock('firebase/app', () => ({
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -76,7 +77,7 @@ function renderComponent() {
 
   return render(TopbarSubscribeButton, {
     global: {
-      plugins: [i18n]
+      plugins: [i18n, createPinia()]
     }
   })
 }

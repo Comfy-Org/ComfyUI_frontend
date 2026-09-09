@@ -13,7 +13,7 @@ type ToolManager = ReturnType<typeof useToolManager>
 
 const initialMock = () =>
   reactive({
-    currentTool: Tools.MaskPen as Tools,
+    currentTool: Tools.MaskPen,
     displayZoomRatio: 1,
     image: null as { width: number; height: number } | null,
     resetZoom: vi.fn()
@@ -21,7 +21,7 @@ const initialMock = () =>
 
 let mockStore: ReturnType<typeof initialMock>
 
-vi.mock('@/stores/maskEditorStore', () => ({
+vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
   useMaskEditorStore: () => mockStore
 }))
 

@@ -1,7 +1,7 @@
 import type { DetachedWindowAPI } from 'happy-dom'
 import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
 
@@ -19,7 +19,7 @@ import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
 const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       settings.store.get(key) ?? (key === TOUR_SEEN_SETTING ? [] : undefined),
@@ -31,23 +31,22 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
 
 const appModeMock = vi.hoisted(
-  () =>
-    ({ mode: null, hasOutputs: null }) as {
-      mode: Ref<AppMode> | null
-      hasOutputs: Ref<boolean> | null
-    }
+  (): { mode: Ref<AppMode> | null; hasOutputs: Ref<boolean> | null } => ({
+    mode: null,
+    hasOutputs: null
+  })
 )
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { ref: r } = await import('vue')
   appModeMock.mode = r<AppMode>('graph')
   return { useAppMode: () => ({ mode: appModeMock.mode }) }
 })
-vi.mock('@/stores/appModeStore', async () => {
+vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
   const { ref: r } = await import('vue')
   appModeMock.hasOutputs = r(false)
   const hasOutputs = appModeMock.hasOutputs
@@ -147,6 +146,8 @@ describe('onboardingTourStore', () => {
     modeRef.value = mode
     outputsRef.value = hasOutputs
   }
+
+  beforeEach(() => enterApp('app', false))
 
   it('auto-opens when entering a populated app it has not seen', async () => {
     mountStore()
@@ -873,8 +874,6 @@ describe('onboardingTourStore', () => {
       store.next()
       await nextTick()
       const superseded = attempts[0]
-      if (!superseded) throw new Error('no attempt to supersede')
-
       superseded.fail(new Error('the superseded attempt blew up'))
       await nextTick()
       await nextTick()

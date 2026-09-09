@@ -1,6 +1,6 @@
 # ECS Target Architecture
 
-This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how the [structural problems](entity-problems.md) are resolved. For the full design rationale, see [ADR 0008](../adr/0008-entity-component-system.md).
+This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how the [structural problems](entity-problems.md) are resolved. For the full design rationale, see [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md).
 
 ## 1. Store Overview
 
@@ -68,7 +68,7 @@ graph LR
 graphId:nodeId:name
 (branded string, src/types/widgetId.ts)"]
         NLID["nodeLocatorId
-subgraphId:nodeId"]
+subgraphUUID:nodeId"]
         NID["rootGraphId:localId
 (ScopedLayoutKey)"]
         LID["linkId (raw;
@@ -89,8 +89,10 @@ rootGraphId:rerouteId in layout"]
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
-`src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
-outputs. `layoutStore` keys persistent node, group, and reroute geometry with
+`src/types/widgetId.ts`). `nodeLocatorId = subgraphDefinitionUUID:nodeId`
+addresses node outputs, where the first segment is the subgraph definition's
+UUID and the second is the node's sequential integer ID (not a UUID).
+`layoutStore` keys persistent node, group, and reroute geometry with
 `makeScopedLayoutKey(rootGraphId, localId)`. Link topology does not live in
 LayoutStore; transient segment geometry uses a separate cache key.
 `linkStore` keys `LinkTopology` identity by `linkId` inside

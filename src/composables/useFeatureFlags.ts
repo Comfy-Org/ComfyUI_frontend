@@ -1,4 +1,4 @@
-import { computed, reactive, readonly } from 'vue'
+import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
@@ -9,6 +9,7 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -21,11 +22,13 @@ export enum ServerFeatureFlag {
   MAX_UPLOAD_SIZE = 'max_upload_size',
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
+  ASSET_DELETION_ENABLED = 'asset_deletion_enabled',
   ASSET_RENAME_ENABLED = 'asset_rename_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
+  PARTNER_RUN_GATE_ENABLED = 'partner_run_gate_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -36,12 +39,18 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
+  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+}
+
+function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
+  useTelemetry()?.trackFeatureFlagEvaluation(flagKey, value)
+  return value
 }
 
 /**
@@ -84,6 +93,15 @@ function resolveAuthGatedFlag(
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
 }
 
+function resolveFailClosedBooleanFlag(flagKey: string): boolean {
+  try {
+    const value: unknown = api.getServerFeature(flagKey, false)
+    return value === true
+  } catch {
+    return false
+  }
+}
+
 /**
  * Composable for reactive access to server-side feature flags
  */
@@ -102,6 +120,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
         remoteConfig.value.model_upload_button_enabled,
+        false
+      )
+    },
+    get assetDeletionEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_DELETION_ENABLED,
+        undefined,
         false
       )
     },
@@ -138,6 +163,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         remoteConfig.value.partner_node_governance_enabled,
         false
+      )
+    },
+    get partnerRunGateEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
+        remoteConfig.value.partner_run_gate_enabled,
+        true
       )
     },
     get userSecretsEnabled() {
@@ -209,6 +241,11 @@ export function useFeatureFlags() {
         cachedLegacyBillingMigrationEnabled
       )
     },
+    get embeddedCheckoutEnabled() {
+      return resolveFailClosedBooleanFlag(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED
+      )
+    },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
@@ -254,6 +291,9 @@ export function useFeatureFlags() {
         remoteConfig.value.onboarding_tour_enabled,
         false
       )
+    },
+    get assetsEnabled() {
+      return isCloud || resolveFlag('assets', undefined, false)
     }
   })
 
@@ -264,4 +304,54 @@ export function useFeatureFlags() {
     flags: readonly(flags),
     featureFlag
   }
+}
+
+export function startFeatureFlagTelemetry() {
+  const { flags } = useFeatureFlags()
+
+  return watchEffect(() => {
+    const evaluations = {
+      [ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA]:
+        flags.supportsPreviewMetadata,
+      [ServerFeatureFlag.MAX_UPLOAD_SIZE]: flags.maxUploadSize,
+      [ServerFeatureFlag.MANAGER_SUPPORTS_V4]: flags.supportsManagerV4,
+      [ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED]:
+        flags.modelUploadButtonEnabled,
+      [ServerFeatureFlag.ASSET_DELETION_ENABLED]: flags.assetDeletionEnabled,
+      [ServerFeatureFlag.ASSET_RENAME_ENABLED]: flags.assetRenameEnabled,
+      [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
+      [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
+        flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.LINEAR_TOGGLE_ENABLED]: flags.linearToggleEnabled,
+      [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
+        flags.partnerNodeGovernanceEnabled,
+      [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
+      [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
+      [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
+        flags.nodeLibraryEssentialsEnabled,
+      [ServerFeatureFlag.WORKFLOW_SHARING_ENABLED]:
+        flags.workflowSharingEnabled,
+      [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
+      [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
+        flags.comfyHubProfileGateEnabled,
+      [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
+      [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
+      [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
+      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
+        flags.legacyBillingMigrationEnabled,
+      [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
+        flags.embeddedCheckoutEnabled,
+      [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
+      [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
+        flags.freeTierJobAllowanceEnabled,
+      [ServerFeatureFlag.CHURNKEY_APP_ID]: flags.churnkeyAppId,
+      [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
+      [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
+      [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      assets: flags.assetsEnabled
+    }
+
+    for (const [key, value] of Object.entries(evaluations))
+      reportFeatureFlagEvaluation(key, value)
+  })
 }

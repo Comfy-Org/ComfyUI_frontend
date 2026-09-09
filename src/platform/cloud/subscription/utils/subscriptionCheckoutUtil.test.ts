@@ -19,7 +19,7 @@ const {
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
   ),
-  mockUserId: { value: 'user-123' as string | undefined },
+  mockUserId: { value: 'user-123' },
   mockIsCloud: { value: true },
   mockGetCheckoutAttribution: vi.fn(() => ({
     ga_client_id: 'ga-client-id',
@@ -64,11 +64,11 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() =>
     reactive({
       getFirebaseAuthHeader: mockGetAuthHeader,
@@ -86,15 +86,18 @@ vi.mock('@/stores/authStore', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
-  getCheckoutAttribution: mockGetCheckoutAttribution
-}))
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/checkoutAttribution'),
+  () => ({
+    getCheckoutAttribution: mockGetCheckoutAttribution
+  })
+)
 
 global.fetch = vi.fn()
 
@@ -130,9 +133,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('tracks begin_checkout with user id and tier metadata', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -225,9 +226,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -256,9 +255,7 @@ describe('performSubscriptionCheckout', () => {
 
   it('uses the latest userId when it changes after checkout starts', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
-    const openSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => window as unknown as Window)
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
     const authHeader = createDeferred<{ Authorization: string }>()
 
     mockUserId.value = 'user-early'

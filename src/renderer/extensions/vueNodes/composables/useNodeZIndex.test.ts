@@ -8,24 +8,24 @@ import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 
 // Mock the layout mutations module
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
+vi.mock(import('@/renderer/core/layout/operations/layoutMutations'), () => ({
   useLayoutMutations: vi.fn()
 }))
 
-const ROOT_GRAPH_ID = createUuidv4()
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ rootGraphId: ROOT_GRAPH_ID })
+const CURRENT_GRAPH = fromPartial({ id: createUuidv4() })
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: () => ({ currentGraph: CURRENT_GRAPH })
 }))
 
 const mockedUseLayoutMutations = vi.mocked(useLayoutMutations)
 
 describe('useNodeZIndex', () => {
   it('scopes the mutation to the viewed root graph, attributed to Vue', () => {
-    const mockBringNodeToFront = vi.fn()
+    const mockSetNodeOrder = vi.fn()
 
     mockedUseLayoutMutations.mockReturnValue(
       fromPartial({
-        bringNodeToFront: mockBringNodeToFront
+        setNodeOrder: mockSetNodeOrder
       })
     )
 
@@ -34,6 +34,10 @@ describe('useNodeZIndex', () => {
     bringNodeToFront(toNodeId('node1'))
 
     expect(mockedUseLayoutMutations).toHaveBeenCalledWith(LayoutSource.Vue)
-    expect(mockBringNodeToFront).toHaveBeenCalledWith(ROOT_GRAPH_ID, 'node1')
+    expect(mockSetNodeOrder).toHaveBeenCalledWith(
+      CURRENT_GRAPH,
+      'node1',
+      'front'
+    )
   })
 })

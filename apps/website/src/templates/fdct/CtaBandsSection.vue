@@ -17,6 +17,15 @@ const bands = [
       label: t('fdct.bands.enterprise.cta', locale),
       href: localizeHref(fdctPage.ctas.enterpriseBand, locale)
     }
+  },
+  {
+    id: 'minimax-license',
+    label: t('fdct.bands.minimax.label', locale),
+    text: t('fdct.bands.minimax.text', locale),
+    cta: {
+      label: t('fdct.bands.minimax.cta', locale),
+      href: localizeHref(fdctPage.ctas.minimaxBand, locale)
+    }
   }
 ]
 </script>

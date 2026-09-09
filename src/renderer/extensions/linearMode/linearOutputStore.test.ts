@@ -3,7 +3,6 @@ import { ref } from 'vue'
 
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import { ResultItemImpl } from '@/stores/queueStore'
 
 const activeJobIdRef = ref<string | null>(null)
 const previewsRef = ref<Record<string, { url: string; nodeId?: string }>>({})
@@ -16,13 +15,15 @@ const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     isAppMode: isAppModeRef
   })
 }))
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: () => ({
     get selectedOutputs() {
       return selectedOutputsRef.value
@@ -30,7 +31,7 @@ vi.mock('@/stores/appModeStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     get activeJobId() {
       return activeJobIdRef.value
@@ -41,15 +42,18 @@ vi.mock('@/stores/executionStore', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return { path: activeWorkflowPathRef.value }
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return { path: activeWorkflowPathRef.value }
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/jobPreviewStore', () => ({
+vi.mock<unknown>(import('@/stores/jobPreviewStore'), () => ({
   useJobPreviewStore: () => ({
     get nodePreviewsByPromptId() {
       return previewsRef.value
@@ -57,27 +61,10 @@ vi.mock('@/stores/jobPreviewStore', () => ({
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: Object.assign(apiTarget, {
     apiURL: (path: string) => path
   })
-}))
-
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
 }))
 
 function setJobWorkflowPath(jobId: string, path: string) {
@@ -98,7 +85,7 @@ function makeExecutedDetail(
     node: nodeId,
     display_node: nodeId,
     output: { images }
-  } as ExecutedWsMessage
+  }
 }
 
 describe('linearOutputStore', () => {

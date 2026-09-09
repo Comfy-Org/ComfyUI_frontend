@@ -141,7 +141,7 @@ async function installGlobals() {
   const utilsMod = await import('@/scripts/utils')
   const domWidgetMod = await import('@/scripts/domWidget')
   lg.LiteGraph.alwaysRepeatWarnings = true
-  if (process.env.MATRIX_VUE) lg.LiteGraph.vueNodesMode = true
+  lg.LiteGraph.vueNodesMode = process.env.MATRIX_VUE === '1'
   lg.LiteGraph.onDeprecationWarning = [
     (m: string) => {
       const st = new Error().stack ?? ''
@@ -559,6 +559,45 @@ export async function runPack(
     },
     false
   )
+  await op('wPushForeignClass', () => {
+    class ForeignWidget {
+      [symbol: symbol]: boolean
+      name = 'XFOREIGN'
+      type = 'X.FOREIGN'
+      value = 1
+      options = {}
+      y = 0
+
+      draw() {
+        return 'draw'
+      }
+
+      mouse() {
+        return true
+      }
+
+      computeSize() {
+        return [101, 21] as [number, number]
+      }
+    }
+
+    const k = byType('KSampler')
+    if (!k) return
+    const foreignWidget = new ForeignWidget()
+    const expectedWidget = new ForeignWidget()
+    const widgetMethods = ['draw', 'mouse', 'computeSize'] as const
+    k.addCustomWidget(foreignWidget)
+    mangled.add(`${k.id}:XFOREIGN`)
+
+    const widget = k.widgets?.find((item) => item.name === 'XFOREIGN')
+    const prototypeMethods = widgetMethods.filter(
+      (method) => widget?.[method] !== expectedWidget[method]
+    )
+    if (prototypeMethods.length)
+      throw new Error(
+        `foreign widget prototype methods lost: ${prototypeMethods.join(',')}`
+      )
+  })
   await op('addNode', () => {
     const n = LiteGraph.createNode('EmptyLatentImage')
     if (n) {
@@ -637,6 +676,7 @@ export async function runPack(
   row.ops = ops
   row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
+  row.vueNodesMode = LiteGraph.vueNodesMode
 
   fs.writeFileSync(rowPath, JSON.stringify(row))
 }

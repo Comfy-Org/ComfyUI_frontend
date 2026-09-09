@@ -7,11 +7,11 @@ const mockAuthState = vi.hoisted(() => ({
 }))
 const originalFetch = globalThis.fetch
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
     getAuthHeader: mockGetAuthHeader,
@@ -21,10 +21,15 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`
   }
+}))
+
+const mockReportError = vi.fn()
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 describe('useSessionCookie', () => {
@@ -120,6 +125,27 @@ describe('useSessionCookie', () => {
     await expect(useSessionCookie().ensureSessionCookie()).rejects.toThrow(
       'session denied'
     )
+  })
+
+  it('reports a swallowed createSession failure as session_cookie_creation_failure', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockGetIdToken.mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'session denied' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+
+    await useSessionCookie().createSession()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'session_cookie_creation_failure',
+      level: 'warning'
+    })
+    expect(consoleWarn).not.toHaveBeenCalled()
   })
 
   it('serializes strict session creation after the previous user response', async () => {

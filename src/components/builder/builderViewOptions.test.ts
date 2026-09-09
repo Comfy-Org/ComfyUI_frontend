@@ -6,15 +6,16 @@ import type { setWorkflowDefaultView as SetWorkflowDefaultViewFn } from './build
 
 const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
 
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackDefaultViewSet: mockTrackDefaultViewSet })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { extra: {} } }
-}))
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const rootGraph = { extra: {} }
+  return { app: { rootGraph, rootGraphOrUndefined: rootGraph } }
+})
 
 describe('setWorkflowDefaultView', () => {
   let setWorkflowDefaultView: typeof SetWorkflowDefaultViewFn
@@ -23,7 +24,7 @@ describe('setWorkflowDefaultView', () => {
   beforeEach(async () => {
     const mod = await import('./builderViewOptions')
     setWorkflowDefaultView = mod.setWorkflowDefaultView
-    app = (await import('@/scripts/app')).app as typeof app
+    app = (await import('@/scripts/app')).app
     app.rootGraph.extra = {}
   })
 

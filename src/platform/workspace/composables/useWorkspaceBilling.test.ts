@@ -50,17 +50,20 @@ const mockWorkspaceApiError = vi.hoisted(
     }
 )
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi,
   WorkspaceApiError: mockWorkspaceApiError
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
-  useBillingPlans: () => mockBillingPlans
-}))
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  () => ({
+    useBillingPlans: () => mockBillingPlans
+  })
+)
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({
       show: mockShow
@@ -68,29 +71,35 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    getOperation: mockGetOperation,
-    startOperation: mockStartOperation
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  () => ({
+    useBillingOperationStore: () => ({
+      getOperation: mockGetOperation,
+      startOperation: mockStartOperation
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspace() {
-      return { id: mockActiveWorkspaceId.value }
-    },
-    setWorkspaceBillingRail: mockSetWorkspaceBillingRail
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspace() {
+        return { id: mockActiveWorkspaceId.value }
+      },
+      setWorkspaceBillingRail: mockSetWorkspaceBillingRail
+    })
   })
-}))
+)
 
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent
   })
@@ -124,6 +133,7 @@ const activeStatus = {
   occupied_seats: 72,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
   subscription_duration: 'MONTHLY' as const,
@@ -137,6 +147,7 @@ const freeStatus = {
   occupied_seats: 100,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
 }
@@ -279,6 +290,29 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
+    it('maps a scheduled plan change into subscription info', async () => {
+      const scheduledChange = {
+        plan_slug: 'team-annual',
+        effective_at: '2026-06-01T00:00:00Z',
+        team_credit_stop: {
+          id: 'team_2500',
+          credits_monthly: 527_500,
+          stop_usd: 2500
+        }
+      }
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        scheduled_change: scheduledChange
+      } satisfies BillingStatusResponse)
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.scheduledChange).toEqual(
+        scheduledChange
+      )
+    })
+
     it('recovers a pending subscription operation from billing status', async () => {
       const actionUrl = 'https://invoice.stripe.com/sensitive-token'
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
@@ -352,7 +386,7 @@ describe('useWorkspaceBilling', () => {
         // A server ahead of this bundle. Unrepresentable in the current union,
         // which is why the branch cannot be left to the type system alone.
         pending_billing_op_type: 'seat_change'
-      } as unknown as BillingStatusResponse)
+      })
 
       const billing = setupBilling()
       await billing.fetchStatus()

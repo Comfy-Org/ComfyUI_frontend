@@ -36,6 +36,20 @@ function setup() {
 type TestContext = ReturnType<typeof setup>
 
 describe('notifyLayoutChanges', () => {
+  it('does not change graph membership order after a z-index change', async () => {
+    using context = setup()
+    const second = context.graph.add(new LGraphNode('second'))!
+
+    useLayoutMutations(LayoutSource.Vue).setNodeZIndex(
+      context.graph.id,
+      context.node.id,
+      100
+    )
+
+    await vi.waitFor(() => expect(context.setDirty).toHaveBeenCalled())
+    expect(context.graph._nodes).toEqual([context.node, second])
+  })
+
   it('does not repeat onResize for a canvas resize', async () => {
     using context = setup()
     const { node, setDirty } = context
@@ -46,6 +60,7 @@ describe('notifyLayoutChanges', () => {
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalled())
 
     expect(onResize).toHaveBeenCalledTimes(1)
+    expect([...onResize.mock.calls[0][0]]).toEqual([300, 200])
   })
 
   it.for([
@@ -172,6 +187,49 @@ describe('notifyLayoutChanges', () => {
       source: LayoutSource.Vue
     })
 
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+  })
+
+  it('invalidates rendering only when slot offsets change', async () => {
+    using context = setup()
+    const { graph, node, setDirty } = context
+    const offsets = [
+      { index: 0, type: 'input' as const, position: { x: 0, y: 10 } }
+    ]
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      offsets,
+      'expanded'
+    )
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+    setDirty.mockClear()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      offsets,
+      'expanded'
+    )
+    await Promise.resolve()
+    expect(setDirty).not.toHaveBeenCalled()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      [],
+      'collapsed'
+    )
+    await Promise.resolve()
+    expect(setDirty).not.toHaveBeenCalled()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      [{ ...offsets[0], position: { x: 0, y: 20 } }],
+      'expanded'
+    )
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
   })
 
