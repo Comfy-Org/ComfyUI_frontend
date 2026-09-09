@@ -2933,7 +2933,7 @@ describe('useWorkspaceAuthStore', () => {
       })
     })
 
-    it('bounds refresh retries and keeps the slot for reactive recovery', async () => {
+    it('bounds refresh retries, keeps the slot until expiry, then ends the session', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       const expiresInMs = 3600 * 1000
@@ -2966,15 +2966,28 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(20000)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'retries_exhausted',
+        retry_count: 3
+      })
+      expect(
+        unifiedToken.value,
+        'a still-valid token keeps serving while there is time on it'
+      ).toBe('unified-token-1')
+
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
 
       expect(mockFetch).toHaveBeenCalledTimes(5)
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
-        outcome: 'retries_exhausted',
+        outcome: 'expired',
         retry_count: 3
       })
-      expect(unifiedToken.value).toBe('unified-token-1')
+      expect(
+        unifiedToken.value,
+        'the legacy rail ends the session at expiry; an expired JWT must not stay in circulation'
+      ).toBeNull()
+      expect(mockReload).toHaveBeenCalled()
     })
 
     it('gives up on a login mint when the port never delivers the current user', async () => {
@@ -3032,8 +3045,23 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
       expect(
         unifiedToken.value,
-        'a token read failure is not a revocation; the server decides that on the next 401'
+        'a token read failure is not a revocation; the token serves until it expires'
       ).toBe('unified-token-1')
+
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000)
+
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'expired',
+        retry_count: 3
+      })
+      expect(
+        unifiedToken.value,
+        'an expired token with a dead refresh chain must not stay in circulation'
+      ).toBeNull()
+      expect(
+        mockReload,
+        'the session ends at expiry, as the legacy rail does'
+      ).toHaveBeenCalled()
     })
 
     it('re-arms the retry when the identity token read fails transiently mid-refresh', async () => {

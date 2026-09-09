@@ -84,6 +84,8 @@ export type UnifiedAuthRefreshOutcome =
   | 'retry_scheduled'
   | 'retries_exhausted'
   | 'permanent_failure'
+  /** Retries ran out and the token reached its expiry; the session ended. */
+  | 'expired'
 
 /**
  * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle

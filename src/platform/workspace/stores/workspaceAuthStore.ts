@@ -780,8 +780,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (outcome === 'retries_exhausted') {
       trackUnifiedRefresh('retries_exhausted')
       console.warn(
-        'Unified token refresh failed; retries exhausted, awaiting a reactive re-mint'
+        'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
       )
+      return
+    }
+    if (outcome === 'expired') {
+      // The legacy rail's clear-at-expiry: nothing refreshed the token in
+      // time, so the workspace session ends rather than serving a dead JWT.
+      trackUnifiedRefresh('expired')
+      endWorkspaceSession()
       return
     }
     trackUnifiedRefresh('permanent_failure')
