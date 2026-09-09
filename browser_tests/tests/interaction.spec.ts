@@ -12,8 +12,9 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
   // Wait for the legacy menu to appear and canvas to settle after layout shift.
   await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
   await comfyPage.nextFrame()
@@ -167,10 +168,13 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Duplication', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // Pin this suite to the legacy canvas path so Alt+drag exercises
-      // LGraphCanvas, not the Vue node drag handler.
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        // Pin this suite to the legacy canvas path so Alt+drag exercises
+        // LGraphCanvas, not the Vue node drag handler.
+        'Comfy.VueNodes.Enabled': false
+      }
     })
 
     test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
@@ -208,15 +212,12 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'no action'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.ActionShift',
-        'no action'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.LinkRelease.Action': 'no action',
+        'Comfy.LinkRelease.ActionShift': 'no action'
+      }
     })
 
     // Test both directions of edge connection.
@@ -1064,12 +1065,15 @@ test.describe('Load duplicate workflow', () => {
 })
 
 test.describe('Viewport settings', () => {
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
 
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
@@ -1140,11 +1144,11 @@ test.describe('Viewport settings', () => {
 
 test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   test.describe('Legacy Mode', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'legacy'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.NavigationMode': 'legacy'
+      }
     })
 
     test('Left-click drag in empty area should pan canvas', async ({
@@ -1200,11 +1204,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Standard Mode', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.NavigationMode': 'standard'
+      }
     })
 
     test('Left-click drag in empty area should select nodes', async ({

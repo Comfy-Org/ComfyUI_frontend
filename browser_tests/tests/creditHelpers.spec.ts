@@ -72,19 +72,14 @@ testWithMockedObjectInfo.describe(
   'Credit helper pricing badges',
   { tag: '@node' },
   () => {
-    testWithMockedObjectInfo.use({ locale: 'en-US' })
-
-    testWithMockedObjectInfo.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'search box'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.ActionShift',
-        'search box'
-      )
+    testWithMockedObjectInfo.use({
+      locale: 'en-US',
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.LinkRelease.Action': 'search box',
+        'Comfy.LinkRelease.ActionShift': 'search box'
+      }
     })
 
     testWithMockedObjectInfo(

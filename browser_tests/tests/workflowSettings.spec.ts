@@ -62,9 +62,10 @@ async function setupAutoSaveAfterDelay(
 
 test.describe('Workflow settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Workflow.AutoSave', () => {
+    test.use({ initialSettings: { 'Comfy.Workflow.AutoSave': 'off' } })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.settings.setSetting('Comfy.Workflow.AutoSave', 'off')
     })
 
     test("'off' does not save modified workflow after delay", async ({
@@ -103,9 +104,10 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
   })
 
   test.describe('Comfy.Workflow.AutoSaveDelay', () => {
+    test.use({ initialSettings: { 'Comfy.Workflow.AutoSave': 'off' } })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.settings.setSetting('Comfy.Workflow.AutoSave', 'off')
     })
 
     test('long delay defers save until at least the configured duration has elapsed', async ({

@@ -56,12 +56,11 @@ async function expectReferenceBadge(group: Locator, count: number) {
 }
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Top',
+      'Comfy.RightSidePanel.ShowErrorsTab': true
+    }
   })
 
   test.describe('Missing nodes', () => {
@@ -885,11 +884,15 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   })
 
   test.describe('Workflow switching', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Workflow.WorkflowTabsPosition',
-        'Sidebar'
-      )
       await comfyPage.menu.workflowsTab.open()
     })
 

@@ -103,8 +103,9 @@ test.describe(
   'Vue Node Link Interaction',
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.NodeSearchBoxImpl': 'default' } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       await fitToViewInstant(comfyPage)
     })
@@ -1190,8 +1191,9 @@ test(
 )
 
 test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
+  test.use({ initialSettings: { 'Comfy.NodeSearchBoxImpl': 'default' } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     await fitToViewInstant(comfyPage)
   })

@@ -324,8 +324,9 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   })
 
   test.describe('vue renderer large graph', () => {
+    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
       await comfyPage.vueNodes.waitForNodes()
     })

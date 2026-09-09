@@ -4,8 +4,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Bottom Panel', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  test.use({
+    initialSettings: { 'Comfy.UseNewMenu': 'Top' }
   })
 
   test('should close panel via close button inside the panel', async ({

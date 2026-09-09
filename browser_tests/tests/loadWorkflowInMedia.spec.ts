@@ -3,13 +3,14 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test.beforeEach(async ({ page, comfyPage }) => {
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+test.beforeEach(async ({ page }) => {
   await page.route(
     'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
     (route) =>
       route.fulfill({ path: assetPath('workflowInMedia/workflow_itxt.png') })
   )
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe(

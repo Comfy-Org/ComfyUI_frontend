@@ -31,8 +31,9 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
 }
 
 test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
   })
 

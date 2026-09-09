@@ -12,11 +12,9 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const webSocketTest = mergeTests(test, webSocketFixture)
 
 test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })

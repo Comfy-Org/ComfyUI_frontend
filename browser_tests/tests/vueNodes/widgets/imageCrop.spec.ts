@@ -118,9 +118,7 @@ async function dragOnLocator(
 }
 
 test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
+  test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
 
   test.describe('without source image', () => {
     test.beforeEach(async ({ comfyPage }) => {

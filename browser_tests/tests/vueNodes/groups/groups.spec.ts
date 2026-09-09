@@ -115,9 +115,7 @@ async function getNodeGroupCenteringErrors(
 }
 
 test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
-  })
+  test.use({ initialSettings: { 'Comfy.Minimap.ShowGroups': true } })
 
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {
     await comfyPage.page.getByText('Load Checkpoint').click()

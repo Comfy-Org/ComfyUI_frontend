@@ -3,8 +3,9 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Curve Widget', { tag: ['@widget', '@vue-nodes'] }, () => {
+  test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('widgets/curve_widget')
     await comfyPage.vueNodes.waitForNodes()
   })

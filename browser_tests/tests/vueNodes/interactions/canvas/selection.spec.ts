@@ -175,11 +175,14 @@ test.describe(
     })
 
     test.describe('group child cascade', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting(
-          'LiteGraph.Group.SelectChildrenOnClick',
-          true
-        )
+      test.use({
+        initialSettings: {
+          'Comfy.Canvas.SelectionToolbox': true,
+          'Comfy.Canvas.NavigationMode': 'standard',
+          'Comfy.Pointer.ClickDrift': 6,
+          'LiteGraph.Group.SelectChildrenOnClick': true,
+          'Comfy.Graph.LiveSelection': false
+        }
       })
 
       test('shift-toggling a group off also deselects its cascaded children', async ({

@@ -18,8 +18,9 @@ const test = mergeTests(comfyPageFixture, templateApiFixture)
  * covers the user-visible behaviour those unit tests cannot see.
  */
 test.describe('Template filter dropdown stacking', () => {
+  test.use({ initialSettings: { 'Comfy.Templates.SelectedModels': [] } })
+
   test.beforeEach(async ({ comfyPage, templateApi }) => {
-    await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
     templateApi.configure(
       withTemplates([
         makeTemplate({ name: 'wan-1', title: 'Wan One', models: ['Wan 2.2'] }),

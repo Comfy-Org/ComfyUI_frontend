@@ -17,9 +17,7 @@ test.describe(
   'Custom Combo widget promotion',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    })
+    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
 
     test('serializes INDEX from the promoted choice widget into the queued prompt', async ({
       comfyPage

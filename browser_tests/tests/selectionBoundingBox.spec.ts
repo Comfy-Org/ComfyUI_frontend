@@ -66,8 +66,9 @@ test.describe(
   'Selection bounding box (Vue mode)',
   { tag: ['@canvas', '@node'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.vueNodes.waitForNodes()
     })
@@ -126,8 +127,9 @@ test.describe(
   'Selection bounding box (Vue mode) — collapsed node bypass toggle',
   { tag: ['@canvas', '@node'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.vueNodes.waitForNodes()
     })
@@ -192,8 +194,9 @@ test.describe(
   'Selection bounding box (legacy mode)',
   { tag: ['@canvas', '@node'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': false } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.nextFrame()
     })

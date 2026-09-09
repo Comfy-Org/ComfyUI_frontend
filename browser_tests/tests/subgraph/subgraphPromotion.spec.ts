@@ -32,9 +32,7 @@ test.describe(
   'Subgraph Widget Promotion',
   { tag: ['@subgraph', '@widget'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
     test.describe('Auto-promotion on Convert to Subgraph', () => {
       test('Recommended widgets are auto-promoted when creating a subgraph', async ({
@@ -308,9 +306,11 @@ test.describe(
     })
 
     test.describe('Textarea Widget Context Menu in Subgraph (Vue Mode)', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      test.use({
+        initialSettings: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.VueNodes.Enabled': true
+        }
       })
 
       test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
@@ -384,8 +384,14 @@ test.describe(
     })
 
     test.describe('Vue Mode - Promoted Preview Content', () => {
+      test.use({
+        initialSettings: {
+          'Comfy.UseNewMenu': 'Disabled',
+          'Comfy.VueNodes.Enabled': true
+        }
+      })
+
       test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-preview-node'
         )

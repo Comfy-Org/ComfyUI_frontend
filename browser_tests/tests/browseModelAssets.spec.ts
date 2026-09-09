@@ -23,8 +23,9 @@ const test = createCloudAssetsFixture(CLOUD_ASSETS)
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
+  test.use({ initialSettings: { 'Comfy.Assets.UseAssetAPI': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
     await comfyPage.nodeOps.clearGraph()
   })
 

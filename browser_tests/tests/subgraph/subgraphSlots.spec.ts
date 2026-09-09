@@ -22,12 +22,11 @@ const SELECTORS = {
 } as const
 
 test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test.describe('I/O Slot Management', () => {
@@ -401,8 +400,12 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
   })
 
   test.describe('Subgraph input slot rename propagation', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeSearchBoxImpl': 'v1 (legacy)',
+        'Comfy.VueNodes.Enabled': true
+      }
     })
 
     test('Renaming a subgraph input slot updates the widget label on the parent node', async ({

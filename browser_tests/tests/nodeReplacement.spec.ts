@@ -23,11 +23,11 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
   for (const mode of renderModes) {
     test.describe(`(${mode.name})`, () => {
       test.describe('Single replacement', () => {
+        test.use({
+          initialSettings: { 'Comfy.VueNodes.Enabled': mode.vueNodesEnabled }
+        })
+
         test.beforeEach(async ({ comfyPage }) => {
-          await comfyPage.settings.setSetting(
-            'Comfy.VueNodes.Enabled',
-            mode.vueNodesEnabled
-          )
           await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
           await loadWorkflowAndOpenErrorsTab(
             comfyPage,
@@ -156,11 +156,11 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       })
 
       test.describe('Same-type replacement group', () => {
+        test.use({
+          initialSettings: { 'Comfy.VueNodes.Enabled': mode.vueNodesEnabled }
+        })
+
         test.beforeEach(async ({ comfyPage }) => {
-          await comfyPage.settings.setSetting(
-            'Comfy.VueNodes.Enabled',
-            mode.vueNodesEnabled
-          )
           await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
           await loadWorkflowAndOpenErrorsTab(
             comfyPage,
@@ -205,11 +205,11 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       })
 
       test.describe('Multi-type replacement', () => {
+        test.use({
+          initialSettings: { 'Comfy.VueNodes.Enabled': mode.vueNodesEnabled }
+        })
+
         test.beforeEach(async ({ comfyPage }) => {
-          await comfyPage.settings.setSetting(
-            'Comfy.VueNodes.Enabled',
-            mode.vueNodesEnabled
-          )
           await setupNodeReplacement(comfyPage, mockNodeReplacements)
           await loadWorkflowAndOpenErrorsTab(
             comfyPage,
