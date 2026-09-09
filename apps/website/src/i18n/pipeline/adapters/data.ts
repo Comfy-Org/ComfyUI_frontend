@@ -426,8 +426,18 @@ export function verifyWrite(
     if (now.approved['zh-CN'] !== entry.approved['zh-CN']) {
       problems.push(`Chinese changed: ${entry.key}`)
     }
-    if (now.approved.ja !== undefined) {
-      problems.push(`Japanese reads back as approved: ${entry.key}`)
+    // Unchanged, not absent. Two different faults hide behind one comparison:
+    // a value the writer produced must carry the marker, or it reads as human
+    // work and is never refreshed again; a value a person already wrote must
+    // survive untouched. Demanding absence conflated them and turned the second
+    // into a reported fault, refusing the run over a translation it preserved
+    // correctly.
+    if (now.approved.ja !== entry.approved.ja) {
+      problems.push(
+        entry.approved.ja === undefined
+          ? `Japanese reads back as approved: ${entry.key}`
+          : `Japanese changed: ${entry.key}`
+      )
     }
   }
 

@@ -23,6 +23,7 @@ import path from 'node:path'
 
 import { LOCALE_CODES } from '../../src/config/locales'
 import { translationsAdapter } from '../../src/i18n/pipeline/adapters/translations'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { buildResolvedDictionary } from '../../src/i18n/pipeline/resolved'
 import type {
   SourceAdapter,
@@ -42,15 +43,7 @@ const RESOLVED_DIR = path.join(I18N_DIR, 'resolved')
  * locale, with the build green.
  */
 function readMachineLayer(locale: string): TranslationLayer {
-  const file = path.join(CONTENT_DIR, `${locale}.json`)
-  let text: string
-  try {
-    text = fs.readFileSync(file, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
-    throw error
-  }
-  return JSON.parse(text) as TranslationLayer
+  return readTranslationLayer(path.join(CONTENT_DIR, `${locale}.json`))
 }
 
 function main(): void {

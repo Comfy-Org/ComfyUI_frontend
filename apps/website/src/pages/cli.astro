@@ -16,14 +16,14 @@ import { t } from '../i18n/translations'
 import { absoluteUrl, pageContext } from '../utils/jsonLd'
 import { localizeHref } from '../config/routes'
 
-const { siteUrl, locale, url, canonicalLocale } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale,
 )
 
 
-const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
+const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, canonicalUrl, locale)
 ---
 
 <BaseLayout

@@ -1,9 +1,9 @@
 ---
 import { getCollection, render } from 'astro:content'
 
-import { DEFAULT_LOCALE } from '../../config/locales'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { withEnglishFallback } from '../../utils/englishFallback'
 import FaqLink from './FaqLink.astro'
 
 interface Props {
@@ -13,18 +13,12 @@ interface Props {
 
 const { locale = 'en', category = 'pricing' } = Astro.props
 
-// A locale with no FAQ entries falls back to English rather than to nothing.
-// The collection has `en` and `zh-CN` only, so once one page file served every
-// language `/ja/pricing` rendered the FAQ heading with all 21 questions gone.
-// Missing copy is worse than English copy: the reader cannot tell it existed.
-const forLocale = async (code: string) =>
-  await getCollection('faq', (entry) => entry.id.startsWith(`${category}/${code}/`))
-
-const localized = await forLocale(locale)
-const entries =
-  localized.length > 0 || locale === DEFAULT_LOCALE
-    ? localized
-    : await forLocale(DEFAULT_LOCALE)
+// The fallback decision lives in `utils/englishFallback.ts` so it is covered:
+// `.astro` frontmatter is excluded from coverage, and this branch is the reason
+// `/ja/pricing` no longer renders a heading with every question missing.
+const entries = await withEnglishFallback(locale, (code) =>
+  getCollection('faq', (entry) => entry.id.startsWith(`${category}/${code}/`)),
+)
 entries.sort((a, b) => a.data.order - b.data.order)
 
 const items = await Promise.all(

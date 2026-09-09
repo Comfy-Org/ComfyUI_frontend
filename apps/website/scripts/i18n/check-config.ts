@@ -52,12 +52,14 @@ function main(): void {
     }
   }
 
-  // 4. A short preserve term matches inside ordinary words. `Wan` is a video
-  //    model and also the first three letters of `Want`, which made 51 real
-  //    strings impossible to validate. Matching is word-boundary aware now, so
-  //    a two-character term is safe — `AI`, `H3`, `T5` and `TB` are all real
-  //    terms and none of them can match inside a word. A single character
-  //    cannot carry meaning as a term and is rejected.
+  // 4. A short preserve term used to match inside ordinary words. `Wan` is a
+  //    video model and also the first three letters of `Want`, which made 51
+  //    real strings impossible to validate. A term now has to equal a whole
+  //    visible text node to count (`isTranslatable` in `utils/pageCoverage.ts`
+  //    asks `preserved.has(text)`), so it cannot reach inside a word at all and
+  //    a two-character term is safe: `AI`, `CI`, `H3`, `T5` and `TB` are all
+  //    real terms here. A single character cannot carry meaning as a term and
+  //    is still rejected.
   const terms = preserveTerms()
   const tooShort = terms.filter((term) => term.trim().length < 2)
   if (tooShort.length > 0) {

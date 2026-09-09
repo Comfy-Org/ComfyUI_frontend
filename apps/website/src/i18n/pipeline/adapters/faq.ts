@@ -208,6 +208,12 @@ export function verifyFaqDocument(
       problems.push(`link target invented: ${target}`)
   }
 
+  // Emptiness is checked before sameness, because empty differs from the
+  // English too: without this, a model that returned nothing would satisfy
+  // every check below and publish a blank FAQ.
+  if (generated.question.trim() === '') problems.push('question is empty')
+  if (generated.body.trim() === '') problems.push('body is empty')
+
   if (generated.question.trim() === english.question.trim()) {
     problems.push('question is still the English one')
   }

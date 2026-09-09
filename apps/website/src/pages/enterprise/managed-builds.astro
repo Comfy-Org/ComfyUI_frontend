@@ -18,7 +18,7 @@ import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 
-const { url, locale, canonicalLocale } = pageContext(
+const { canonicalUrl, locale, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale,
@@ -135,7 +135,7 @@ const requestDemo = {
   href: localizeHref('/contact/', locale),
 }
 
-const faqPage = buildFaqPageNode(url, faqs)
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)
 ---
 
 <BaseLayout

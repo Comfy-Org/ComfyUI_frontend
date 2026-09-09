@@ -16,7 +16,7 @@
  */
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---/
-const VUE_SCRIPT = /<script[^>]*>([\s\S]*?)<\/script>/
+const VUE_SCRIPT = /<script[^>]*>([\s\S]*?)<\/script>/g
 
 /**
  * A quoted string of four or more words that starts like a sentence.
@@ -46,7 +46,16 @@ export function hardcodedProse(source: string): string[] {
   // Astro keeps its logic in frontmatter, Vue in a script block. Both are the
   // same problem: data above a template, holding copy with no key. The guard
   // shipped reading only the first and missed eight alt texts in a component.
-  const logic = FRONTMATTER.exec(source)?.[1] ?? VUE_SCRIPT.exec(source)?.[1]
+  //
+  // Every Vue script block, not just the first: an SFC may pair a `<script
+  // setup>` with a plain `<script>`, and reading one of them reports a clean
+  // file while copy sits in the other.
+  const vueScripts = [...source.matchAll(VUE_SCRIPT)]
+    .map(([, body]) => body)
+    .join('\n')
+  const logic =
+    FRONTMATTER.exec(source)?.[1] ??
+    (vueScripts === '' ? undefined : vueScripts)
   if (logic === undefined) return []
 
   const found = new Set<string>()

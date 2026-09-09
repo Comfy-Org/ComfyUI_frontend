@@ -23,6 +23,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { dataAdapter } from '../../src/i18n/pipeline/adapters/data'
 import { faqAdapter } from '../../src/i18n/pipeline/adapters/faq'
 import { storyAdapter } from '../../src/i18n/pipeline/adapters/story'
@@ -64,23 +65,6 @@ function writeJson(file: string, value: Record<string, string>): void {
   fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
-/**
- * An absent file is fine — the first run has no machine layer yet. A file that
- * exists but does not parse is not: the caller transforms what it reads and
- * writes the result back, so treating a malformed file as empty overwrites it
- * with nothing and discards every translation it held.
- */
-function readJson(file: string): Record<string, string> {
-  let text: string
-  try {
-    text = fs.readFileSync(file, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
-    throw error
-  }
-  return JSON.parse(text) as Record<string, string>
-}
-
 function main(): void {
   const entries = ADAPTERS.flatMap((adapter) => adapter.read())
 
@@ -102,7 +86,7 @@ function main(): void {
 
   const english = buildEnglishSource(entriesToTranslate)
   const nextManifest = buildManifest(entriesToTranslate)
-  const previousManifest = readJson(MANIFEST_FILE)
+  const previousManifest = readTranslationLayer(MANIFEST_FILE)
   const stale = staleKeys(previousManifest, nextManifest)
 
   writeJson(path.join(CONTENT_DIR, 'en.json'), english)
@@ -112,7 +96,7 @@ function main(): void {
 
   for (const locale of LOCALIZED_CODES) {
     const machineFile = path.join(CONTENT_DIR, `${locale}.json`)
-    const before = readJson(machineFile)
+    const before = readTranslationLayer(machineFile)
     const machine = pruneApprovedKeys(
       pruneStaleKeys(pruneOrphanKeys(before, currentKeys), stale),
       entriesToTranslate,

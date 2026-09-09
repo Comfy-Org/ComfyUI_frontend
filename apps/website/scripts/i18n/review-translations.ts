@@ -26,6 +26,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { isLocale } from '../../src/config/locales'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { enforceTranslations } from '../../src/i18n/pipeline/enforce'
 import {
   DEFAULT_BATCH_LIMITS,
@@ -78,11 +79,19 @@ const CONCURRENCY = parsePositiveInt(
 
 const MODEL = resolveReviewModel(process.env.WEBSITE_I18N_REVIEW_MODEL)
 
-function readJson<T>(file: string, fallback: T): T {
+/**
+ * The stored verdicts, which `loadReviewState` validates in full.
+ *
+ * Absence is normal on the first run for a locale. A malformed file is not
+ * silently discarded here either: `loadReviewState` drops entries it cannot
+ * read, so a damaged file costs the cache rather than corrupting a verdict.
+ */
+function readReviewState(file: string): unknown {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
-  } catch {
-    return fallback
+    return JSON.parse(fs.readFileSync(file, 'utf8'))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw error
   }
 }
 
@@ -105,9 +114,8 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  const english = readJson<EnglishSource>(
-    path.join(I18N_DIR, 'content', 'en.json'),
-    {}
+  const english: EnglishSource = readTranslationLayer(
+    path.join(I18N_DIR, 'content', 'en.json')
   )
   if (Object.keys(english).length === 0) {
     console.error(
@@ -128,19 +136,15 @@ async function main(): Promise<void> {
   // is going to be dropped whatever the reviewer says, so paying to judge it
   // wastes a call, and storing a verdict for text that never publishes would
   // shadow the published translation it never replaced.
-  const incoming = readJson<TranslationLayer>(
-    path.join(I18N_DIR, 'incoming', `${locale}.json`),
-    {}
+  const incoming = readTranslationLayer(
+    path.join(I18N_DIR, 'incoming', `${locale}.json`)
   )
   const { kept } = enforceTranslations(
     incoming,
     collectViolations(english, incoming, locale, terms)
   )
   const translated: TranslationLayer = {
-    ...readJson<TranslationLayer>(
-      path.join(I18N_DIR, 'content', `${locale}.json`),
-      {}
-    ),
+    ...readTranslationLayer(path.join(I18N_DIR, 'content', `${locale}.json`)),
     ...kept
   }
   if (Object.keys(translated).length === 0) {
@@ -150,7 +154,7 @@ async function main(): Promise<void> {
 
   const rubric = glossaryFingerprint(terms, voice.guidance)
   const statePath = path.join(REVIEW_DIR, `${locale}.json`)
-  const priorState = loadReviewState(readJson<unknown>(statePath, null), rubric)
+  const priorState = loadReviewState(readReviewState(statePath), rubric)
 
   const pending = selectKeysForReview(
     english,

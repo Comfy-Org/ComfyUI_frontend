@@ -101,4 +101,30 @@ describe('LanguageSwitcher', () => {
       ).toBe(true)
     }
   })
+
+  /**
+   * `new URL()` throws on a malformed href, and this component renders inside
+   * the footer of every page — so one bad alternate would take the whole site
+   * down rather than cost one language its link.
+   *
+   * The hreflang builder produces absolute URLs today, so nothing reaches this
+   * path. It is guarded anyway because the blast radius is every page, and
+   * because a switcher missing one option is visibly wrong in a way a reviewer
+   * can see, where a crash on every page is a production incident.
+   */
+  it('skips an alternate whose URL cannot be parsed', () => {
+    const damaged = [
+      { hreflang: 'en', href: 'https://comfy.org/pricing' },
+      { hreflang: 'zh-CN', href: 'not a url' },
+      { hreflang: 'ja', href: 'https://comfy.org/ja/pricing' }
+    ]
+
+    expect(() =>
+      render(LanguageSwitcher, { props: { locale: 'en', alternates: damaged } })
+    ).not.toThrow()
+
+    expect(screen.getByRole('link', { name: 'English' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: '日本語' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: '简体中文' })).toBeNull()
+  })
 })

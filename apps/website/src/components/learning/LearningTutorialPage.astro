@@ -27,7 +27,7 @@ interface Props {
 
 const { tutorial } = Astro.props
 
-const { siteUrl, locale, canonicalUrl } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale
@@ -55,7 +55,7 @@ const video: JsonLdNode = videoObjectNode({
 const breadcrumbs = [
   ...learningCrumbs(locale, tutorial.category).map((crumb) => ({
     name: crumb.name,
-    url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
+    url: absoluteUrl(Astro.site, localizeHref(crumb.path, canonicalLocale))
   })),
   { name: title }
 ]

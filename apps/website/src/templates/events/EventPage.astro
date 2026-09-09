@@ -32,7 +32,7 @@ interface Props {
 
 const { event } = Astro.props
 
-const { siteUrl, locale, canonicalUrl } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale
@@ -71,11 +71,11 @@ const mainEntityId = videoJsonLd?.['@id'] ?? eventJsonLd?.['@id']
 const breadcrumbs = [
   {
     name: t('breadcrumb.home', locale),
-    url: absoluteUrl(Astro.site, localizeHref('/', locale))
+    url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale))
   },
   {
     name: t('breadcrumb.events', locale),
-    url: absoluteUrl(Astro.site, localizeHref('/events', locale))
+    url: absoluteUrl(Astro.site, localizeHref('/events', canonicalLocale))
   },
   { name: title }
 ]

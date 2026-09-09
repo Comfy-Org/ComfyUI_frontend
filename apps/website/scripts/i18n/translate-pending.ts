@@ -29,6 +29,7 @@ import {
 } from '../../../../scripts/i18n/translate'
 import type { TranslationItem } from '../../../../scripts/i18n/translate'
 import { isLocale } from '../../src/config/locales'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { identifierValues } from '../../src/i18n/pipeline/adapters/story'
 import { containsTerm, linkTargets } from '../../src/i18n/pipeline/validate'
 import {
@@ -38,14 +39,6 @@ import {
 } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
-
-function readJson<T>(file: string, fallback: T): T {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
-  } catch {
-    return fallback
-  }
-}
 
 function writeJson(file: string, value: Record<string, string>): void {
   const sorted: Record<string, string> = {}
@@ -72,9 +65,11 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  const pending = readJson<Record<string, string>>(
-    path.join(I18N_DIR, 'pending', `${locale}.json`),
-    {}
+  // Absent means the source build found nothing to translate, which is normal.
+  // Malformed must not read as absent: it would print "nothing pending", exit 0,
+  // and let the nightly job report success having translated nothing.
+  const pending = readTranslationLayer(
+    path.join(I18N_DIR, 'pending', `${locale}.json`)
   )
   const keys = Object.keys(pending)
   if (keys.length === 0) {

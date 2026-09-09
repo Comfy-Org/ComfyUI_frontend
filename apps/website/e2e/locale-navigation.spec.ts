@@ -50,9 +50,12 @@ async function errorsWhile(
   // a `client:visible` island below the fold may never hydrate at all.
   //
   // A failing hydration leaves the attribute in place, so this times out in
-  // exactly the case the test exists to catch. That is deliberate: the thrown
-  // exception is already in `errors`, and reporting it reads far better than a
-  // wait timeout would.
+  // exactly the case the test exists to catch. The timeout is turned into an
+  // entry in `errors` rather than swallowed: reporting it as a console error
+  // still reads better than a raw wait timeout, but swallowing it outright let
+  // the case pass silently. Hydration can stall without throwing — a chunk that
+  // never loads reports "Failed to load resource", which the filter above
+  // discards as environmental — so `errors` would have been empty and green.
   await page
     .waitForFunction(
       () =>
@@ -61,7 +64,9 @@ async function errorsWhile(
       undefined,
       { timeout: 5000 }
     )
-    .catch(() => {})
+    .catch(() => {
+      errors.push('a client:load island never finished hydrating')
+    })
 
   return errors
 }
@@ -120,6 +125,15 @@ test('navigating within one locale still uses the client router', async ({
 }) => {
   await page.goto('/zh-CN/cli/', { waitUntil: 'domcontentloaded' })
 
+  // A value on `window` survives a DOM swap and dies in a full page load, so it
+  // is what separates the two. Without it this test asserted a URL pattern and a
+  // `lang` that the page it started on already satisfied, so it passed whether
+  // the click routed, reloaded, or did nothing at all.
+  await page.evaluate(() => {
+    ;(window as unknown as { clientRouted?: boolean }).clientRouted = true
+  })
+  const before = page.url()
+
   const errors = await errorsWhile(page, async () => {
     await page
       .locator(
@@ -130,8 +144,15 @@ test('navigating within one locale still uses the client router', async ({
       .click()
   })
 
+  await expect(page).not.toHaveURL(before)
   await expect(page).toHaveURL(/\/zh-CN\//)
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { clientRouted?: boolean }).clientRouted
+    ),
+    'a full page load, so the client router did not handle this navigation'
+  ).toBe(true)
   expect(
     errors,
     `console errors within one locale: ${errors.join(' | ')}`

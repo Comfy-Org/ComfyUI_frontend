@@ -19,7 +19,7 @@ const { locale } = pageContext(
   description={t('tos.meta.description', locale)}
   noindex
 >
-  <HeroSection title="Terms of Service" />
+  <HeroSection title={t('tos.hero.title', locale)} />
   <p class="text-primary-warm-gray mt-2 text-center text-sm">
     {t('tos.effectiveDateLabel', locale)}: {t('tos.effectiveDate', locale)}
   </p>

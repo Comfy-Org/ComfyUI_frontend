@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import resolved from './resolved/en.json'
 import { segments } from './segments'
 
 describe('segments', () => {
@@ -48,5 +49,27 @@ describe('segments', () => {
 
   it('returns nothing for an empty string', () => {
     expect(segments('')).toEqual([])
+  })
+})
+
+/**
+ * A slot the page has no label for renders as nothing at all: the sentence
+ * loses a word and the build stays green. The translation side is already safe,
+ * because `collectViolations` rejects a translation whose placeholder set
+ * differs from the English. What nothing guarded is the English itself drifting
+ * from the map the page fills those slots from.
+ */
+describe('every slot the copy uses has a label to fill it', () => {
+  // Mirrors PLAN_LABELS in individual-submission.astro.
+  const PLAN_LABELS = ['standard', 'creator', 'pro', 'teams']
+
+  it('individualSubmission.plans names only known plans', () => {
+    const english: string = resolved['individualSubmission.plans']
+    const used = segments(english)
+      .filter((segment) => segment.type === 'slot')
+      .map((segment) => segment.name)
+
+    expect(used.length).toBeGreaterThan(0)
+    expect(used.filter((name) => !PLAN_LABELS.includes(name))).toEqual([])
   })
 })

@@ -100,4 +100,27 @@ const b = 'Get early access to the Comfy Agent'`)
 
     expect(found).toEqual(['Get early access to the Comfy Agent'])
   })
+
+  /**
+   * An SFC may carry a `<script setup>` and a plain `<script>`. Reading only the
+   * first made the guard report a clean file while copy sat in the second — the
+   * worst way for a check like this to fail, because green means "nothing to
+   * translate here" and nobody looks again.
+   */
+  it('scans every script block, not only the first', () => {
+    const component = [
+      '<script lang="ts">',
+      "export const order = 'Kept as a plain export'",
+      '</script>',
+      '<script setup lang="ts">',
+      "const alt = 'Team sailing at golden hour'",
+      '</script>',
+      '<template><img :alt="alt" /></template>'
+    ].join('\n')
+
+    expect(hardcodedProse(component)).toEqual([
+      'Kept as a plain export',
+      'Team sailing at golden hour'
+    ])
+  })
 })

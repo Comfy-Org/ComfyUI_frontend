@@ -101,4 +101,21 @@ describe('verifyFaqDocument', () => {
 
     expect(verifyFaqDocument(ENGLISH, built).join(' ')).toContain('English')
   })
+
+  /**
+   * The English checks above only ask whether the output DIFFERS from the
+   * source, and empty differs from everything. Without this, a model that
+   * returned nothing would publish a blank FAQ and the verifier would pass it.
+   */
+  it('catches an empty question or body', () => {
+    const noQuestion = good('   ', 'ある本文です。')
+    expect(verifyFaqDocument(ENGLISH, noQuestion).join(' ')).toContain(
+      'question is empty'
+    )
+
+    const noBody = good('始めるには？', '   ')
+    expect(verifyFaqDocument(ENGLISH, noBody).join(' ')).toContain(
+      'body is empty'
+    )
+  })
 })

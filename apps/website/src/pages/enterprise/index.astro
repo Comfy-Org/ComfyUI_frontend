@@ -17,7 +17,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
 
-const { url, locale, canonicalLocale } = pageContext(
+const { canonicalUrl, locale, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale,
@@ -160,7 +160,7 @@ const trustCenter = {
   target: '_blank' as const,
 }
 
-const faqPage = buildFaqPageNode(url, faqs)
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)
 ---
 
 <BaseLayout

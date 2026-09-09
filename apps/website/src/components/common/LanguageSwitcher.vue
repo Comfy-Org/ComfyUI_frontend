@@ -30,14 +30,32 @@ const { locale, alternates } = defineProps<{
   alternates: readonly Alternate[]
 }>()
 
+/**
+ * The path an alternate points at, or nothing if its URL will not parse.
+ *
+ * This component renders in the footer of every page, so an unparseable
+ * alternate that threw would take the whole site down rather than cost one
+ * language its link. The hreflang builder emits absolute URLs, so nothing
+ * reaches the failure today; it is guarded because the blast radius is every
+ * page, and a switcher missing an option is visible where a crash is an outage.
+ */
+function pathOf(href: string): string | undefined {
+  try {
+    return new URL(href).pathname
+  } catch {
+    return undefined
+  }
+}
+
 const languages = alternates
   .filter((alternate) => isLocale(alternate.hreflang))
   .map((alternate) => ({
     code: alternate.hreflang as Locale,
     // Relative, so the link works on any origin — preview deploys included.
-    href: new URL(alternate.href).pathname,
+    href: pathOf(alternate.href),
     label: LOCALES[alternate.hreflang as Locale].nativeName
   }))
+  .filter((language) => language.href !== undefined)
 
 // One entry means the page exists in one language, so there is nothing to
 // switch to and a control would be a dead end.

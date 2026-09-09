@@ -14,27 +14,20 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { LOCALIZED_CODES } from '../../src/config/locales'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
+import { parsePreserveTerms } from './config'
 import type { Violation } from '../../src/i18n/pipeline/validate'
-import type {
-  EnglishSource,
-  TranslationLayer
-} from '../../src/i18n/pipeline/types'
+import type { EnglishSource } from '../../src/i18n/pipeline/types'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 const CONTENT_DIR = path.join(I18N_DIR, 'content')
 const TERMS_FILE = path.join(I18N_DIR, 'glossary', 'preserve-terms.json')
 
-function readJson<T>(file: string, fallback: T): T {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
-  } catch {
-    return fallback
-  }
-}
-
 function main(): void {
-  const english = readJson<EnglishSource>(path.join(CONTENT_DIR, 'en.json'), {})
+  const english: EnglishSource = readTranslationLayer(
+    path.join(CONTENT_DIR, 'en.json')
+  )
   if (Object.keys(english).length === 0) {
     // An empty content-of-record means the source build never ran, so passing
     // here would be a green tick over nothing at all.
@@ -44,7 +37,10 @@ function main(): void {
     process.exit(1)
   }
 
-  const preserveTerms = readJson<string[]>(TERMS_FILE, [])
+  const preserveTerms = parsePreserveTerms(
+    fs.readFileSync(TERMS_FILE, 'utf8'),
+    TERMS_FILE
+  )
   if (preserveTerms.length === 0) {
     console.error(`[i18n] no preserve terms found at ${TERMS_FILE}`)
     process.exit(1)
@@ -52,9 +48,11 @@ function main(): void {
 
   const all: Violation[] = []
   for (const locale of LOCALIZED_CODES) {
-    const translated = readJson<TranslationLayer>(
-      path.join(CONTENT_DIR, `${locale}.json`),
-      {}
+    // Absent is normal for a locale with nothing translated yet. Malformed
+    // is not, and reading it as empty would pass the gate over a locale whose
+    // artifact could not be read at all.
+    const translated = readTranslationLayer(
+      path.join(CONTENT_DIR, `${locale}.json`)
     )
     all.push(...collectViolations(english, translated, locale, preserveTerms))
   }

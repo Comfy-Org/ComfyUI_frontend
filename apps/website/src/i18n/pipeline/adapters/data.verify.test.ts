@@ -39,6 +39,26 @@ describe('verifyWrite', () => {
     expect(verifyWrite(FILE, SOURCE, written, edits)).toEqual([])
   })
 
+  /**
+   * A file may already hold Japanese a person wrote, unmarked. `planJapanese`
+   * correctly leaves it alone, so it reads back as approved — and the verifier
+   * demanded `approved.ja` be ABSENT rather than unchanged, which turned a
+   * preserved human translation into a reported write fault and refused the run.
+   *
+   * No data file has one today, which is why the fixture never had one either.
+   */
+  it('passes a file whose Japanese a person wrote', () => {
+    const withHuman = SOURCE.replace(
+      `      'zh-CN': 'ComfyUI 直播'`,
+      `      'zh-CN': 'ComfyUI 直播',
+      ja: 'ComfyUI ライブ配信'`
+    )
+    const edits = planJapanese(FILE, withHuman, JAPANESE)
+    const written = applyEdits(withHuman, edits)
+
+    expect(verifyWrite(FILE, withHuman, written, edits)).toEqual([])
+  })
+
   it('catches a byte changed outside the edits', () => {
     const { edits, written } = good()
     const tampered = written.replace('A weekly stream', 'A monthly stream')

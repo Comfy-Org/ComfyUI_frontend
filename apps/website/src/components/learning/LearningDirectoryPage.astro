@@ -30,7 +30,7 @@ interface Props {
 
 const { category } = Astro.props
 
-const { locale, canonicalUrl } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
   Astro.originPathname,
   Astro.currentLocale
@@ -47,14 +47,17 @@ const tutorialList = itemListNode(
   label ?? learningTitle,
   filterByCategory(category).map((tutorial) => ({
     name: tutorial.title[locale] || tutorial.title.en,
-    url: absoluteUrl(Astro.site, localizeHref(tutorialPath(tutorial), locale))
+    url: absoluteUrl(
+      Astro.site,
+      localizeHref(tutorialPath(tutorial), canonicalLocale)
+    )
   }))
 )
 
 // BaseLayout's BreadcrumbList drops the url from the last crumb itself.
 const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
   name: crumb.name,
-  url: absoluteUrl(Astro.site, localizeHref(crumb.path, locale))
+  url: absoluteUrl(Astro.site, localizeHref(crumb.path, canonicalLocale))
 }))
 
 ---

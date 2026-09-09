@@ -8916,6 +8916,15 @@ Enterprise`
   'tos.meta.description': {
     en: 'Terms of Service governing use of the Comfy Products, including Comfy Cloud, Comfy API, and Comfy Enterprise.'
   },
+  // English on every locale today, and deliberately so: contracts are excluded
+  // from machine translation and no one has translated the Terms, so all 14
+  // section headings below it are English too. Keyed anyway, because the rest
+  // of the page already is and `privacy.hero.title` next to it carries a real
+  // Chinese value — leaving this one hardcoded is what would strand it in
+  // English on the day the Terms are translated.
+  'tos.hero.title': {
+    en: 'Terms of Service'
+  },
 
   // Copy rescued from inside zh-CN page files by P3-4. Each of these was
   // Chinese a person wrote straight into the page, where no pipeline could

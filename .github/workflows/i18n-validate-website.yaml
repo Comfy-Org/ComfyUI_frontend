@@ -55,8 +55,15 @@ jobs:
       - name: Check the content source is current
         run: |
           pnpm --filter @comfyorg/website i18n:build-source
-          if ! git diff --quiet -- apps/website/src/i18n/content apps/website/src/i18n/manifest.json; then
+          # `status --porcelain`, not `diff --quiet`: adding a locale makes the
+          # build write a content file that does not exist at HEAD, and an
+          # untracked file is invisible to `git diff`. The check would pass over
+          # exactly the change most likely to need it.
+          drift=$(git status --porcelain -- \
+            apps/website/src/i18n/content \
+            apps/website/src/i18n/manifest.json)
+          if [ -n "$drift" ]; then
             echo "::error::The content source is stale. Run 'pnpm --filter @comfyorg/website i18n:build-source' and commit the result."
-            git --no-pager diff --stat -- apps/website/src/i18n/content apps/website/src/i18n/manifest.json
+            echo "$drift"
             exit 1
           fi

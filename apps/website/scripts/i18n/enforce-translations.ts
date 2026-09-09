@@ -24,6 +24,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { isLocale } from '../../src/config/locales'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import {
   enforceTranslations,
   isSystemicFailure
@@ -33,33 +34,23 @@ import {
   loadReviewState,
   reviewViolations
 } from '../../src/i18n/pipeline/review'
-import type {
-  EnglishSource,
-  TranslationLayer
-} from '../../src/i18n/pipeline/types'
+import type { EnglishSource } from '../../src/i18n/pipeline/types'
 import { collectViolations } from '../../src/i18n/pipeline/validate'
 import { localeRubric, OUTPUT_LOCALES, preserveTerms } from './config'
 
 const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
 
 /**
- * An absent file is fine. An unreadable one is not.
- *
- * `enforce` merges what it reads here with what it just kept and writes the
- * result back. Treating a malformed `content/{locale}.json` as empty would
- * therefore rewrite the published layer with only this run's keys and discard
- * every translation already in it — silently, with a success message. The first
- * run legitimately has no file yet, so only that case takes the fallback.
+ * The stored verdicts, which `loadReviewState` validates in full. Absence is
+ * normal before the reviewer has run for a locale.
  */
-function readJson<T>(file: string, fallback: T): T {
-  let text: string
+function readReviewState(file: string): unknown {
   try {
-    text = fs.readFileSync(file, 'utf8')
+    return JSON.parse(fs.readFileSync(file, 'utf8'))
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
     throw error
   }
-  return JSON.parse(text) as T
 }
 
 function writeJson(file: string, value: Record<string, string>): void {
@@ -80,12 +71,11 @@ function main(): void {
   }
 
   const incomingFile = path.join(I18N_DIR, 'incoming', `${locale}.json`)
-  const incoming = readJson<TranslationLayer>(incomingFile, {})
+  const incoming = readTranslationLayer(incomingFile)
   const contentFile = path.join(I18N_DIR, 'content', `${locale}.json`)
-  const existing = readJson<TranslationLayer>(contentFile, {})
-  const english = readJson<EnglishSource>(
-    path.join(I18N_DIR, 'content', 'en.json'),
-    {}
+  const existing = readTranslationLayer(contentFile)
+  const english: EnglishSource = readTranslationLayer(
+    path.join(I18N_DIR, 'content', 'en.json')
   )
   const terms = preserveTerms()
 
@@ -128,7 +118,7 @@ function main(): void {
   // real copy on them would be worse than not pruning at all.
   const merged = { ...existing, ...kept }
   const reviewState = loadReviewState(
-    readJson<unknown>(path.join(I18N_DIR, 'review', `${locale}.json`), null),
+    readReviewState(path.join(I18N_DIR, 'review', `${locale}.json`)),
     glossaryFingerprint(terms, localeRubric(locale).guidance)
   )
   const findings = reviewViolations(locale, reviewState, english, merged)
