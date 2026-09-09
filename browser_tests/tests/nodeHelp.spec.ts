@@ -177,7 +177,9 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
       // Verify loading spinner is shown
       const helpPage = await openSelectionToolboxHelp(comfyPage)
-      await expect(helpPage.getByRole('status')).toBeVisible()
+      await expect(
+        helpPage.getByRole('progressbar', { name: 'Loading' })
+      ).toBeVisible()
 
       // Wait for content to load
       await expect(helpPage).toContainText('Test Help Content')
@@ -396,8 +398,13 @@ This is English documentation.
     })
 
     test('Should handle network errors gracefully', async ({ comfyPage }) => {
+      let releaseResponse = () => {}
+      const responseGate = new Promise<void>((resolve) => {
+        releaseResponse = resolve
+      })
       // Mock network error
       await comfyPage.page.route('**/docs/**/*.md', async (route) => {
+        await responseGate
         await route.abort('failed')
       })
 
@@ -407,10 +414,16 @@ This is English documentation.
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpPage = await openSelectionToolboxHelp(comfyPage)
+      const spinner = helpPage.getByRole('progressbar', { name: 'Loading' })
+      try {
+        await expect(spinner).toBeVisible()
+      } finally {
+        releaseResponse()
+      }
 
       // Should show fallback content (node description)
       await expect(helpPage).toBeVisible()
-      await expect(helpPage.locator('.p-progressspinner')).toBeHidden()
+      await expect(spinner).toBeHidden()
 
       // Should show some content even on error
       await expect(helpPage).not.toHaveText('')

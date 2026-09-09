@@ -232,7 +232,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
       expect(screen.queryByRole('table')).not.toBeInTheDocument()
     })
 

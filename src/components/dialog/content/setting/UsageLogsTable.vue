@@ -4,7 +4,7 @@
       <ProgressSpinner />
     </div>
     <div v-else-if="error" class="p-4">
-      <Message severity="error" :closable="false">{{ error }}</Message>
+      <Message severity="error">{{ error }}</Message>
     </div>
     <DataTable
       v-else

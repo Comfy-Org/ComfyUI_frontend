@@ -45,8 +45,7 @@ describe('SettingItem', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormItem: FormItemUpdateStub,
-          Tag: true
+          FormItem: FormItemUpdateStub
         }
       },
       props: {

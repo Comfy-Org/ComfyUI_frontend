@@ -183,7 +183,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <ProgressSpinner v-if="planLabel" class="size-8" stroke-width="4" />
+      <ProgressSpinner v-if="planLabel" class="size-8" />
       <Button
         v-if="planLabel"
         as="a"

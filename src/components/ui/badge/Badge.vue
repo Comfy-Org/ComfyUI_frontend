@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '@/components/ui/button/Button.vue'
+
 import type { BadgeVariants } from './badge.variants'
 import { badgeVariants } from './badge.variants'
 
@@ -29,14 +31,16 @@ const { t } = useI18n()
   <span :class="cn(badgeVariants({ variant, severity }), customClass)">
     <slot name="icon" />
     <slot>{{ value }}</slot>
-    <button
+    <Button
       v-if="removable"
       type="button"
-      class="-mr-1 flex size-5 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-current hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+      variant="textonly"
+      size="icon-sm"
+      class="-mr-1 rounded-full text-current"
       :aria-label="t('g.remove')"
       @click="emit('remove', $event)"
     >
       <i class="icon-[lucide--x] size-3" aria-hidden="true" />
-    </button>
+    </Button>
   </span>
 </template>
