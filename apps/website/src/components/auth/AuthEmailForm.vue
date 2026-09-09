@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
@@ -146,6 +147,7 @@ defineExpose({ resetTurnstile })
         :id="fieldId('email')"
         v-model="values.email"
         :type="mode === 'signUp' ? 'email' : 'text'"
+        name="email"
         autocomplete="email"
         :placeholder="t('auth.email.placeholder', locale)"
         :class="AUTH_FIELD_CLASS"
@@ -175,6 +177,7 @@ defineExpose({ resetTurnstile })
       <AuthPasswordField
         :id="fieldId('password')"
         v-model="values.password"
+        name="password"
         :autocomplete="mode === 'signUp' ? 'new-password' : 'current-password'"
         :placeholder="
           t(
@@ -195,24 +198,43 @@ defineExpose({ resetTurnstile })
       >
         {{ t('validation.password.requirements', locale) }}:
         <ul class="mt-1 space-y-1">
-          <li :class="{ 'text-red-500': !passwordChecks.length }">
+          <li
+            :data-satisfied="passwordChecks.length"
+            :class="cn(!passwordChecks.length && 'text-red-500')"
+          >
             {{ t('validation.password.lengthRange', locale) }}
           </li>
-          <li :class="{ 'text-red-500': !passwordChecks.uppercase }">
+          <li
+            :data-satisfied="passwordChecks.uppercase"
+            :class="cn(!passwordChecks.uppercase && 'text-red-500')"
+          >
             {{ t('validation.password.uppercase', locale) }}
           </li>
-          <li :class="{ 'text-red-500': !passwordChecks.lowercase }">
+          <li
+            :data-satisfied="passwordChecks.lowercase"
+            :class="cn(!passwordChecks.lowercase && 'text-red-500')"
+          >
             {{ t('validation.password.lowercase', locale) }}
           </li>
-          <li :class="{ 'text-red-500': !passwordChecks.number }">
+          <li
+            :data-satisfied="passwordChecks.number"
+            :class="cn(!passwordChecks.number && 'text-red-500')"
+          >
             {{ t('validation.password.number', locale) }}
           </li>
-          <li :class="{ 'text-red-500': !passwordChecks.special }">
+          <li
+            :data-satisfied="passwordChecks.special"
+            :class="cn(!passwordChecks.special && 'text-red-500')"
+          >
             {{ t('validation.password.special', locale) }}
           </li>
         </ul>
       </small>
-      <small v-else-if="fieldErrors.password" role="alert" class="text-red-500">
+      <small
+        v-else-if="mode === 'signIn' && fieldErrors.password"
+        role="alert"
+        class="text-red-500"
+      >
         {{ fieldErrors.password }}
       </small>
 
@@ -236,6 +258,7 @@ defineExpose({ resetTurnstile })
       <AuthPasswordField
         :id="fieldId('confirmPassword')"
         v-model="values.confirmPassword"
+        name="confirmPassword"
         autocomplete="new-password"
         :placeholder="t('auth.confirmPassword.placeholder', locale)"
         :invalid="Boolean(fieldErrors.confirmPassword)"
@@ -279,10 +302,10 @@ defineExpose({ resetTurnstile })
       :aria-describedby="
         waiting ? fieldId('email') + '-turnstile-hint' : undefined
       "
-      :class="[AUTH_BRAND_SOLID_BUTTON_CLASS, 'mt-2 w-full']"
+      :class="cn(AUTH_BRAND_SOLID_BUTTON_CLASS, 'mt-2 w-full')"
     >
       <AuthSpinnerIcon v-if="loading" />
-      <span :class="{ 'sr-only': loading }">
+      <span :class="cn(loading && 'sr-only')">
         {{
           mode === 'signUp'
             ? t('auth.signUp.submit', locale)

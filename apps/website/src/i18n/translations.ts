@@ -160,6 +160,11 @@ const translations = {
     en: 'Sign out',
     'zh-CN': '退出登录'
   },
+  'auth.signUp.regionRestrictionChina': {
+    en: 'In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.',
+    'zh-CN': '根据当地法规要求，我们暂时无法为中国地区的用户提供服务。',
+    ja: '現地の規制要件に従い、当社のサービスは現在中国本土のユーザーにはご利用いただけません。'
+  },
   'auth.signUp.google': {
     en: 'Sign up with Google',
     'zh-CN': '使用Google注册',

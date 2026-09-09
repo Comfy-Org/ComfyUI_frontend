@@ -107,6 +107,29 @@ describe('AuthEmailForm sign-in', () => {
     expect(password.type).toBe('password')
   })
 
+  it('submits on Enter from the password field', async () => {
+    const { emitted } = render(AuthEmailForm, { props: { mode: 'signIn' } })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'hunter2{Enter}')
+
+    expect(emitted('submit')).toEqual([
+      [{ email: 'user@example.com', password: 'hunter2' }]
+    ])
+  })
+
+  it('names the fields for the browser the way the cloud form does', () => {
+    render(AuthEmailForm, { props: { mode: 'signIn' } })
+
+    const email = screen.getByLabelText('Email')
+    expect(email.getAttribute('name')).toBe('email')
+    expect(email.getAttribute('autocomplete')).toBe('email')
+    const password = screen.getByLabelText('Password')
+    expect(password.getAttribute('name')).toBe('password')
+    expect(password.getAttribute('autocomplete')).toBe('current-password')
+  })
+
   it('shows a spinner and blocks submit while loading', () => {
     render(AuthEmailForm, { props: { mode: 'signIn', loading: true } })
 
@@ -124,6 +147,42 @@ describe('AuthEmailForm sign-up', () => {
       submitButton(/^Sign up$/).disabled,
       'shadow-waiting: the async challenge must not be raced'
     ).toBe(true)
+  })
+
+  it('tells assistive tech why submit is held and ties the hint to the button', () => {
+    render(AuthEmailForm, { props: { mode: 'signUp' } })
+
+    const hint = screen.getByRole('status')
+    expect(hint.textContent).toContain(
+      'Complete the verification challenge above to enable sign up.'
+    )
+    expect(submitButton(/^Sign up$/).getAttribute('aria-describedby')).toBe(
+      hint.id
+    )
+  })
+
+  it('asks the browser for a new password on both sign-up fields', () => {
+    render(AuthEmailForm, { props: { mode: 'signUp' } })
+
+    expect(screen.getByLabelText('Password').getAttribute('autocomplete')).toBe(
+      'new-password'
+    )
+    const confirm = screen.getByLabelText('Confirm Password')
+    expect(confirm.getAttribute('name')).toBe('confirmPassword')
+    expect(confirm.getAttribute('autocomplete')).toBe('new-password')
+  })
+
+  it('keeps the sign-up password free of an inline error; the rule list is the feedback', async () => {
+    widgetBehavior.mode = 'token'
+    render(AuthEmailForm, { props: { mode: 'signUp' } })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Password'), 'short')
+    await user.tab()
+    await user.tab()
+
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(submitButton(/^Sign up$/).disabled).toBe(true)
   })
 
   it('releases submission when the challenge reports unavailable', async () => {
@@ -145,11 +204,15 @@ describe('AuthEmailForm sign-up', () => {
 
     expect(screen.getByText('Password requirements:')).toBeTruthy()
     expect(
-      screen.getByText('Must be between 8 and 32 characters').className
-    ).toContain('text-red-500')
+      screen
+        .getByText('Must be between 8 and 32 characters')
+        .getAttribute('data-satisfied')
+    ).toBe('false')
     expect(
-      screen.getByText('Must contain at least one lowercase letter').className
-    ).not.toContain('text-red-500')
+      screen
+        .getByText('Must contain at least one lowercase letter')
+        .getAttribute('data-satisfied')
+    ).toBe('true')
 
     await user.tab()
     expect(

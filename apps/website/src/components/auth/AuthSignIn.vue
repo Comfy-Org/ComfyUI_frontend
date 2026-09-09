@@ -7,6 +7,7 @@ import {
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
 import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 
+import { useRegionGate } from '@comfyorg/account/regionGate'
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
@@ -55,6 +56,9 @@ const { user, session, ensureFresh } = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
 const showEmailForm = ref(false)
 const isSecureContext = ref(true)
+// Sign-up only: the cloud app gates email registration on the region and
+// never decides before detection answers.
+const { status: regionStatus } = useRegionGate()
 // Decided after mount: the server has no user agent, and a mismatch here
 // would break hydration.
 const inAppBrowser = ref(false)
@@ -318,7 +322,29 @@ onMounted(() => {
       </template>
 
       <template v-else>
+        <div
+          v-if="mode === 'signUp' && regionStatus === 'pending'"
+          data-testid="region-check-pending"
+          aria-busy="true"
+          class="flex flex-col gap-6"
+        >
+          <div
+            v-for="n in 3"
+            :key="n"
+            class="h-10 w-full animate-pulse rounded-md bg-primary-comfy-canvas/10"
+          />
+        </div>
+        <div
+          v-else-if="mode === 'signUp' && regionStatus === 'blocked'"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+          :class="cn('w-full', AUTH_MESSAGE_WARN_CLASS)"
+        >
+          {{ t('auth.signUp.regionRestrictionChina', locale) }}
+        </div>
         <AuthEmailForm
+          v-else
           ref="emailForm"
           :mode="mode"
           :locale="locale"

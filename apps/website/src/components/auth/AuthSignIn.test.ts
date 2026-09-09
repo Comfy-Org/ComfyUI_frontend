@@ -56,6 +56,27 @@ vi.mock('@comfyorg/account/webviewDetection', () => ({
   isEmbeddedWebView: () => handles.embedded
 }))
 
+const inChina = vi.hoisted(() => ({
+  value: false,
+  pending: undefined as Promise<boolean> | undefined,
+  defer() {
+    let settle!: (inChina: boolean) => void
+    this.pending = new Promise<boolean>((resolve) => {
+      settle = resolve
+    })
+    return settle
+  },
+  hang() {
+    this.pending = new Promise<boolean>(() => {})
+  },
+  reject(error: Error) {
+    this.pending = Promise.reject(error)
+  }
+}))
+vi.mock('@comfyorg/shared-frontend-utils/networkUtil', () => ({
+  isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
+}))
+
 vi.mock('../../config/workshop-firebase', () => {
   if (handles.chunkFails) {
     throw new TypeError('Failed to fetch dynamically imported module')
@@ -106,6 +127,8 @@ beforeEach(() => {
   handles.captureAuthFailed.mockClear()
   handles.captureSignupOpened.mockClear()
   handles.embedded = false
+  inChina.value = false
+  inChina.pending = undefined
   removeAllToasts()
   window.history.replaceState({}, '', '/')
   replace.mockReset()
@@ -520,6 +543,117 @@ describe('AuthSignIn', () => {
       handles.chunkFails = false
       vi.resetModules()
       handles.flag = staticFlag
+    }
+  })
+})
+
+describe('AuthSignIn region gate', () => {
+  const REGION_NOTICE = /temporarily unavailable to users located in China/
+
+  it('replaces the sign-up form with the region notice inside China', async () => {
+    inChina.value = true
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await openEmailForm(userEvent.setup())
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      REGION_NOTICE
+    )
+    expect(screen.queryByLabelText('Email')).toBeNull()
+  })
+
+  it('renders the sign-up form outside China', async () => {
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await openEmailForm(userEvent.setup())
+
+    expect(await screen.findByLabelText('Email')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('withholds the sign-up form while region detection is still pending', async () => {
+    const settle = inChina.defer()
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await openEmailForm(userEvent.setup())
+
+    expect(screen.getByTestId('region-check-pending')).toBeTruthy()
+    expect(screen.queryByLabelText('Email')).toBeNull()
+
+    settle(false)
+
+    expect(await screen.findByLabelText('Email')).toBeTruthy()
+  })
+
+  it('releases the sign-up form when region detection fails', async () => {
+    inChina.reject(new Error('probe failed'))
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await openEmailForm(userEvent.setup())
+
+    expect(await screen.findByLabelText('Email')).toBeTruthy()
+  })
+
+  it('keeps the form withheld however long detection takes', async () => {
+    inChina.hang()
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await openEmailForm(userEvent.setup())
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(
+      screen.queryByLabelText('Email'),
+      'a fallback deciding "not in China" on detection\'s behalf would reopen the submit race the gate exists to close'
+    ).toBeNull()
+    expect(screen.getByTestId('region-check-pending')).toBeTruthy()
+  })
+
+  it('never renders the sign-up form inside China, pending or settled', async () => {
+    const settle = inChina.defer()
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+
+    await openEmailForm(userEvent.setup())
+    expect(screen.queryByLabelText('Email')).toBeNull()
+
+    settle(true)
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(
+      REGION_NOTICE
+    )
+    expect(screen.queryByLabelText('Email')).toBeNull()
+  })
+
+  it('does not gate the login form on the region', async () => {
+    inChina.hang()
+    render(AuthSignIn)
+
+    await openEmailForm(userEvent.setup())
+
+    expect(screen.getByLabelText('Email')).toBeTruthy()
+    expect(screen.queryByTestId('region-check-pending')).toBeNull()
+  })
+})
+
+describe('AuthSignIn insecure context', () => {
+  it('warns when the page is served without a secure context', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window,
+      'isSecureContext'
+    )
+    Object.defineProperty(window, 'isSecureContext', {
+      value: false,
+      configurable: true
+    })
+    try {
+      render(AuthSignIn)
+
+      expect((await screen.findByRole('alert')).textContent).toMatch(
+        /connection is insecure/i
+      )
+    } finally {
+      if (descriptor)
+        Object.defineProperty(window, 'isSecureContext', descriptor)
+      else delete (window as { isSecureContext?: boolean }).isSecureContext
     }
   })
 })

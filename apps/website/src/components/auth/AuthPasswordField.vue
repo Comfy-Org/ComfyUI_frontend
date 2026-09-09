@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import { AUTH_FIELD_CLASS } from './authClasses'
 
 const {
   id,
+  name,
   autocomplete,
   placeholder,
   invalid = false,
@@ -12,6 +14,7 @@ const {
   hideLabel
 } = defineProps<{
   id: string
+  name: string
   autocomplete: 'current-password' | 'new-password'
   placeholder: string
   invalid?: boolean
@@ -37,10 +40,11 @@ const EYE_SLASH_PATH =
     <input
       :id="id"
       v-model="value"
+      :name="name"
       :type="masked ? 'password' : 'text'"
       :autocomplete="autocomplete"
       :placeholder="placeholder"
-      :class="[AUTH_FIELD_CLASS, 'pr-10']"
+      :class="cn(AUTH_FIELD_CLASS, 'pr-10')"
       :aria-invalid="invalid"
       @input="emit('input')"
     />
