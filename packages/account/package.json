@@ -18,7 +18,6 @@
     "./regionGate": "./src/regionGate.ts",
     "./telemetry": "./src/telemetry.ts",
     "./webviewDetection": "./src/webviewDetection.ts",
-    "./authClasses": "./src/authClasses.ts",
     "./PasswordRules.vue": "./src/PasswordRules.vue",
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },

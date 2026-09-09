@@ -27,7 +27,13 @@
       fluid
     />
     <div v-if="$field.dirty && isPasswordFocused" class="flex flex-col gap-1">
-      <PasswordRules :password="password" :copy="passwordRulesCopy" />
+      <PasswordRules
+        :password="password"
+        :copy="passwordRulesCopy"
+        root-class="text-sm"
+        list-class="mt-1 space-y-1"
+        unmet-class="text-red-500"
+      />
     </div>
   </FormField>
 
