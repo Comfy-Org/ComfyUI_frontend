@@ -137,7 +137,8 @@ function readSemanticNode(
  * Returns `null` when the doc slot names an input the definition does not
  * declare (cmp's `claimPromotedInput` does not validate the grown name). The
  * live host has no such slot, so wiring the link positionally would land it
- * on an unrelated input; the caller skips the link instead.
+ * on an unrelated input; the caller skips the link instead and the drop is
+ * reported so the doc/live divergence is visible.
  */
 function hostTarget(
   doc: Y.Doc,
@@ -153,7 +154,22 @@ function hostTarget(
 
   const name = docInputs?.[docSlot]?.name
   const slot = name == null ? -1 : hostSlotIndex(definition, name)
-  if (slot < 0) return null
+  if (slot < 0) {
+    // The doc keeps the link while the live graph drops it, so surface the
+    // drift instead of leaving the two silently diverged.
+    reportError(
+      new Error(
+        `Subgraph host ${targetId} (${type}) link targets doc slot ${docSlot} (${
+          name == null ? 'unnamed' : `'${name}'`
+        }), which its definition does not declare unambiguously`
+      ),
+      {
+        errorType: 'agent_subgraph_host_slot_undeclared',
+        context: { nodeId: targetId, type, slot: docSlot, name: name ?? null }
+      }
+    )
+    return null
+  }
   return {
     targetSlot: slot,
     targetInputs: hostInputs(definition, docInputs ?? [])
