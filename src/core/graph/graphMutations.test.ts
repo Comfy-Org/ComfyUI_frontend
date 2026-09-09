@@ -385,6 +385,73 @@ describe('graphMutations', () => {
     expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([control, text])
   })
 
+  it('rebuilds widget state when reconciliation changes the node type', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+    const seed = store.registerWidget(
+      seedId,
+      {
+        name: 'seed',
+        type: 'combo',
+        value: '1K',
+        options: { values: ['1K', '2K'] }
+      },
+      { isDOMWidget: true }
+    )
+    const controlId = widgetId('root', toNodeId(1), 'upload')
+    store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {}
+    })
+    const hiddenId = widgetId('root', toNodeId(1), 'edit')
+    store.registerWidget(hiddenId, {
+      type: 'text',
+      value: 'stale',
+      options: {},
+      serialize: false
+    })
+
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode({ ...node(1, { seed: 7 }), type: 'Type2' })
+      )
+    ).toBe(true)
+
+    expect(useNodeDataStore().getNode('root', toNodeId(1))?.type).toBe('Type2')
+    const replacement = store.getWidget(seedId)
+    expect(replacement).not.toBe(seed)
+    expect(replacement).toMatchObject({
+      name: 'seed',
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+    expect(store.getWidgetRenderState(seedId)?.isDOMWidget).toBeFalsy()
+    expect(store.getWidget(controlId)).toBeUndefined()
+    expect(store.getWidget(hiddenId)).toBeUndefined()
+    expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([replacement])
+  })
+
+  it('does not map positional values onto the old widgets when the type changes', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 1 }), context)
+    const store = useWidgetValueStore()
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({ ...node(1), type: 'Type2', widgets_values: [7] })
+    )
+
+    expect(
+      store.getWidget(widgetId('root', toNodeId(1), 'seed'))
+    ).toBeUndefined()
+    expect(store.getWidget(widgetId('root', toNodeId(1), '0'))).toMatchObject({
+      value: 7
+    })
+  })
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {

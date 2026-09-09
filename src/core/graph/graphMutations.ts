@@ -382,7 +382,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           if (mutation.kind === 'reconcileNode' && incumbent) {
             const { title, widgets_values } = mutation.payload
-            if (Array.isArray(widgets_values)) {
+            if (
+              Array.isArray(widgets_values) &&
+              incumbent.type === node.state.type
+            ) {
               const serializable = widgetStore
                 .getNodeWidgets(scope.rootGraphId, node.state.id)
                 .filter((widget) => widget.serialize !== false)
@@ -669,9 +672,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const { state, widgets } = mutation.node
           const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
-            if (existing.type === state.type)
-              state.inputs = reconcileInputSlots(existing, state)
+            const sameType = existing.type === state.type
+            if (sameType) state.inputs = reconcileInputSlots(existing, state)
             nodeStore.updateNode(scope, state.id, state, context)
+            if (!sameType) {
+              widgetStore.clearNode(scope.rootGraphId, state.id, context)
+            }
             const names = new Set([
               ...widgets.map(({ name }) => name),
               ...state.inputs
