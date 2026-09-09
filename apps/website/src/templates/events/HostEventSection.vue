@@ -54,7 +54,8 @@ const applyLabel = computed(() => t('events.host.applyToHost', locale))
 
 <template>
   <StepsAccordion01
-    class="lg:px-20"
+    id="host-an-event"
+    class="scroll-mt-24 lg:px-20"
     :title="t('events.host.title', locale)"
     title-class="font-bold"
     :lead="t('events.host.lead', locale)"

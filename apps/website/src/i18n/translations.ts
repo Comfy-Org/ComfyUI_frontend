@@ -6398,6 +6398,7 @@ Enterprise`
   },
   'events.hero.browseEvents': { en: 'Browse events', 'zh-CN': '浏览活动' },
   'events.hero.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
+  'events.hero.hostAnEvent': { en: 'Host an event', 'zh-CN': '主办活动' },
   'events.directory.title': {
     en: 'Events around the world',
     'zh-CN': '世界各地的活动'

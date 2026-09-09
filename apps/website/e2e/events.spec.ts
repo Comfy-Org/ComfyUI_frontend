@@ -107,9 +107,9 @@ test.describe('Events page — desktop @smoke', () => {
       ).toHaveAttribute('href', '#events-directory')
       await expect(
         hero.getByRole('link', {
-          name: t('events.hero.applyToHost', locale)
+          name: t('events.hero.hostAnEvent', locale)
         })
-      ).toBeVisible()
+      ).toHaveAttribute('href', '#host-an-event')
     }
   })
 
