@@ -16,7 +16,7 @@
       <InputText
         :id="emailInputId"
         autocomplete="email"
-        :class="AUTH_FIELD_CLASS"
+        :class="CLOUD_AUTH_FIELD_CLASS"
         name="email"
         type="text"
         :placeholder="t('auth.login.emailPlaceholder')"
@@ -38,7 +38,7 @@
       <Password
         input-id="cloud-sign-in-password"
         pt:pc-input-text:root:autocomplete="current-password"
-        :pt:pc-input-text:root:class="AUTH_FIELD_CLASS"
+        :pt:pc-input-text:root:class="CLOUD_AUTH_FIELD_CLASS"
         name="password"
         :feedback="false"
         toggle-mask
@@ -87,7 +87,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { AUTH_FIELD_CLASS } from '@comfyorg/account/authClasses'
+import { CLOUD_AUTH_FIELD_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'

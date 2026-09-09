@@ -42,10 +42,9 @@ import {
 } from '../../scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'
 import AuthFlagTimeout from './AuthFlagTimeout.vue'
-import { AUTH_LINK_BUTTON_CLASS } from '@comfyorg/account/authClasses'
-
 import {
   AUTH_BRAND_GHOST_BUTTON_CLASS,
+  AUTH_LINK_BUTTON_CLASS,
   AUTH_MESSAGE_ERROR_CLASS,
   AUTH_MESSAGE_WARN_CLASS
 } from './authClasses'

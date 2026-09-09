@@ -34,7 +34,7 @@
 
         <button
           type="button"
-          :class="AUTH_LINK_BUTTON_CLASS"
+          :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
           @click="switchToEmailForm"
         >
           {{ t('auth.login.useEmailInstead') }}
@@ -66,7 +66,7 @@
           v-else
           ref="signUpForm"
           :auth-error="authError"
-          :field-class="AUTH_FIELD_CLASS"
+          :field-class="CLOUD_AUTH_FIELD_CLASS"
           submit-variant="brand-solid"
           submit-size="brand"
           submit-class="mt-2 w-full"
@@ -75,7 +75,7 @@
 
         <button
           type="button"
-          :class="AUTH_LINK_BUTTON_CLASS"
+          :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
           @click="switchToSocialLogin"
         >
           {{ t('auth.login.backToSocialLogin') }}
@@ -100,9 +100,9 @@ import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/Cloud
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import {
-  AUTH_FIELD_CLASS,
-  AUTH_LINK_BUTTON_CLASS
-} from '@comfyorg/account/authClasses'
+  CLOUD_AUTH_FIELD_CLASS,
+  CLOUD_AUTH_LINK_BUTTON_CLASS
+} from '@/platform/cloud/onboarding/constants/authClasses'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 

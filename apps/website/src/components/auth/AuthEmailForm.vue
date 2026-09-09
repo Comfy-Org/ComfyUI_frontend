@@ -201,6 +201,9 @@ defineExpose({ resetTurnstile })
         v-if="mode === 'signUp' && passwordDirty && passwordFocused"
         :password="values.password"
         :copy="passwordRulesCopy"
+        root-class="text-sm"
+        list-class="mt-1 space-y-1"
+        unmet-class="text-red-500"
       />
       <small
         v-else-if="mode === 'signIn' && fieldErrors.password"
