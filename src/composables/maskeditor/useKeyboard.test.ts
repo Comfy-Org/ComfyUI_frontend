@@ -1,32 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeyboard } from '@/composables/maskeditor/useKeyboard'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-type MockCanvasHistory = {
-  undo: ReturnType<typeof vi.fn>
-  redo: ReturnType<typeof vi.fn>
-}
-
-type MockStore = {
-  canvasHistory: MockCanvasHistory
-}
-
-const { mockStore, mockCanvasHistory } = vi.hoisted(() => {
-  const mockCanvasHistory: MockCanvasHistory = {
-    undo: vi.fn(),
-    redo: vi.fn()
-  }
-
-  const mockStore: MockStore = {
-    canvasHistory: mockCanvasHistory
-  }
-
-  return { mockStore, mockCanvasHistory }
-})
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockCanvasHistory: ReturnType<typeof useMaskEditorStore>['canvasHistory']
 
 const dispatchKeyDown = (
   init: KeyboardEventInit & { key: string }
@@ -44,6 +21,9 @@ describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
 
   beforeEach(() => {
+    mockCanvasHistory = useMaskEditorStore().canvasHistory
+    vi.spyOn(mockCanvasHistory, 'undo').mockImplementation(() => {})
+    vi.spyOn(mockCanvasHistory, 'redo').mockImplementation(() => {})
     keyboard = useKeyboard()
     keyboard.addListeners()
   })

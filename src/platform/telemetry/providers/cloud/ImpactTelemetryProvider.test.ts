@@ -1,45 +1,25 @@
 import { createHash } from 'node:crypto'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
+import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-type MockApiKeyUser = {
-  id: string
-  email?: string
-} | null
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
-type MockAuthUser = {
-  uid: string
-  email?: string | null
-} | null
-
-const {
-  mockCaptureCheckoutAttributionFromSearch,
-  mockUseApiKeyAuthStore,
-  mockUseAuthStore,
-  mockApiKeyAuthStore,
-  mockAuthStore
-} = vi.hoisted(() => ({
-  mockCaptureCheckoutAttributionFromSearch: vi.fn(),
-  mockUseApiKeyAuthStore: vi.fn(),
-  mockUseAuthStore: vi.fn(),
-  mockApiKeyAuthStore: {
-    isAuthenticated: false,
-    currentUser: null as MockApiKeyUser
-  },
-  mockAuthStore: {
-    currentUser: null as MockAuthUser
-  }
+const { mockCaptureCheckoutAttributionFromSearch } = vi.hoisted(() => ({
+  mockCaptureCheckoutAttributionFromSearch: vi.fn()
 }))
 
 vi.mock(import('@/platform/telemetry/utils/checkoutAttribution'), () => ({
   captureCheckoutAttributionFromSearch: mockCaptureCheckoutAttributionFromSearch
 }))
 
-vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
-  useApiKeyAuthStore: mockUseApiKeyAuthStore
-}))
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: mockUseAuthStore
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn(),
+  setPersistence: vi.fn()
 }))
 
 import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
@@ -61,12 +41,12 @@ function toUint8Array(data: BufferSource): Uint8Array {
 }
 
 describe('ImpactTelemetryProvider', () => {
+  let apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
+  let authStore: ReturnType<typeof useAuthStore>
+
   beforeEach(() => {
-    mockApiKeyAuthStore.isAuthenticated = false
-    mockApiKeyAuthStore.currentUser = null
-    mockAuthStore.currentUser = null
-    mockUseApiKeyAuthStore.mockReturnValue(mockApiKeyAuthStore)
-    mockUseAuthStore.mockReturnValue(mockAuthStore)
+    apiKeyAuthStore = useApiKeyAuthStore()
+    authStore = useAuthStore()
 
     const queueFn: NonNullable<Window['ire']> = (...args: unknown[]) => {
       ;(queueFn.a ??= []).push(args)
@@ -84,10 +64,10 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('captures attribution and invokes identify with hashed email', async () => {
-    mockAuthStore.currentUser = {
+    authStore.currentUser = fromPartial<User>({
       uid: 'user-123',
       email: ' User@Example.com '
-    }
+    })
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(
@@ -119,16 +99,18 @@ describe('ImpactTelemetryProvider', () => {
     })
   })
 
-  it('falls back to current URL search and empty identify values when user is unresolved', async () => {
-    mockUseApiKeyAuthStore.mockImplementation(() => {
-      throw new Error('No active pinia')
-    })
+  it('falls back to current URL search and empty identify values when Pinia is unavailable', async () => {
     window.history.pushState({}, '', '/?im_ref=fallback-123')
 
     const provider = new ImpactTelemetryProvider()
-    provider.trackPageView('home')
-
-    await flushAsyncWork()
+    const pinia = getActivePinia()
+    setActivePinia(undefined)
+    try {
+      provider.trackPageView('home')
+      await flushAsyncWork()
+    } finally {
+      setActivePinia(pinia)
+    }
 
     expect(mockCaptureCheckoutAttributionFromSearch).toHaveBeenCalledWith(
       '?im_ref=fallback-123'
@@ -144,10 +126,10 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('invokes identify on each page view even with identical identity payloads', async () => {
-    mockAuthStore.currentUser = {
+    authStore.currentUser = fromPartial<User>({
       uid: 'user-123',
       email: 'user@example.com'
-    }
+    })
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(async () => new Uint8Array([16, 32, 48]).buffer)
@@ -175,15 +157,14 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('prefers firebase identity when both firebase and API key identity are available', async () => {
-    mockApiKeyAuthStore.isAuthenticated = true
-    mockApiKeyAuthStore.currentUser = {
+    apiKeyAuthStore.currentUser = fromPartial({
       id: 'api-key-user-123',
       email: 'apikey@example.com'
-    }
-    mockAuthStore.currentUser = {
+    })
+    authStore.currentUser = fromPartial<User>({
       uid: 'firebase-user-123',
       email: 'firebase@example.com'
-    }
+    })
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(
@@ -214,12 +195,10 @@ describe('ImpactTelemetryProvider', () => {
   })
 
   it('falls back to API key identity when firebase user is unavailable', async () => {
-    mockApiKeyAuthStore.isAuthenticated = true
-    mockApiKeyAuthStore.currentUser = {
+    apiKeyAuthStore.currentUser = fromPartial({
       id: 'api-key-user-123',
       email: 'apikey@example.com'
-    }
-    mockAuthStore.currentUser = null
+    })
     vi.stubGlobal('crypto', {
       subtle: {
         digest: vi.fn(

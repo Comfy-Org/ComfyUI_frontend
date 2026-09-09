@@ -5,7 +5,11 @@ import { nextTick, ref } from 'vue'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-import type { BillingTelemetryEvent, OnboardingTourStage } from '../../types'
+import type {
+  BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
+  OnboardingTourStage
+} from '../../types'
 import { TelemetryEvents } from '../../types'
 
 const hoisted = vi.hoisted(() => {
@@ -480,6 +484,26 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.IMAGE_LOAD_FAILED,
         { source: 'node_image_preview' }
+      )
+    })
+
+    it('captures the startup breakdown so it is explorable alongside Datadog', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        total_ms: 5200,
+        outcome: 'timed_out',
+        phase_count: 1,
+        phases: { 'auth-gate/user-store': 2500 },
+        pending: ['bootstrap/object-info']
+      } satisfies BootstrapCompleteMetadata
+
+      provider.trackBootstrapComplete(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BOOTSTRAP_COMPLETE,
+        metadata
       )
     })
 
