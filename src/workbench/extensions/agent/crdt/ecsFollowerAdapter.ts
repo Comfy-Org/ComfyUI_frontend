@@ -463,6 +463,9 @@ export class EcsFollowerAdapter {
       // The live node must already carry the host type: a plain node whose doc
       // entry is replaced by a host-typed map (or a host retyped to another
       // definition) has no promoted widgets to preserve and must be rebuilt.
+      // On the reconcile path that rebuild has to be explicit: `reconcileNode`
+      // only updates the existing node's fields and never swaps its class, so
+      // a live node whose doc type changed is deleted and re-added instead.
       const isLiveHost = (payload: SemanticNodePayload) =>
         definitions().has(payload.type) &&
         batch.getNodeType(toNodeId(payload.id)) === payload.type
@@ -471,8 +474,17 @@ export class EcsFollowerAdapter {
         mode: 'add' | 'reconcile'
       ) => {
         if (!isLiveHost(payload)) {
-          if (mode === 'add') batch.addNode(payload)
-          else batch.reconcileNode(payload)
+          if (mode === 'add') {
+            batch.addNode(payload)
+            return
+          }
+          const liveType = batch.getNodeType(toNodeId(payload.id))
+          if (liveType !== undefined && liveType !== payload.type) {
+            batch.deleteNode(toNodeId(payload.id))
+            batch.addNode(payload)
+          } else {
+            batch.reconcileNode(payload)
+          }
           return
         }
         batch.reconcileNodeFields(payload)
