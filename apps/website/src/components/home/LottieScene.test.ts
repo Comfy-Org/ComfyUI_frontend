@@ -26,10 +26,24 @@ const lottie = vi.hoisted(() => {
   return { animation, loadAnimation: vi.fn(() => animation) }
 })
 
+// lottie-web types loadAnimation as returning a full AnimationItem, so the
+// partial stub is checked against the surface LottieScene actually calls.
+interface MockAnimation {
+  play: () => void
+  pause: () => void
+  goToAndStop: (value: number, isFrame?: boolean) => void
+  destroy: () => void
+}
+interface MockLottie {
+  loadAnimation: (...args: never[]) => MockAnimation
+}
+
+const lottieMock = {
+  loadAnimation: lottie.loadAnimation
+} satisfies MockLottie
+
 vi.mock(import('lottie-web'), () => ({
-  default: {
-    loadAnimation: lottie.loadAnimation
-  } as unknown as typeof LottieModule.default
+  default: lottieMock as unknown as typeof LottieModule.default
 }))
 
 async function renderScene(props: { src: string; active?: boolean }) {

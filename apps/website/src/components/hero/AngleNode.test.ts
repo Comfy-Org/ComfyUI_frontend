@@ -20,16 +20,26 @@ const widgets = vi.hoisted(() => ({
   }[]
 }))
 
+// The concrete class has private fields, so a structural fake cannot implement
+// it. Pin the fake to the public surface these tests drive instead.
+type CameraWidgetContract = Pick<
+  CameraWidgetModule.CameraWidget,
+  'setState' | 'pause' | 'resume' | 'dispose'
+>
+
+class FakeCameraWidget implements CameraWidgetContract {
+  setState = vi.fn()
+  pause = vi.fn()
+  resume = vi.fn()
+  dispose = vi.fn()
+  constructor(readonly options: CameraWidgetOptions) {
+    widgets.instances.push(this)
+  }
+}
+
 vi.mock(import('./camera/CameraWidget'), () => ({
-  CameraWidget: class {
-    setState = vi.fn()
-    pause = vi.fn()
-    resume = vi.fn()
-    dispose = vi.fn()
-    constructor(readonly options: CameraWidgetOptions) {
-      widgets.instances.push(this)
-    }
-  } as unknown as typeof CameraWidgetModule.CameraWidget
+  CameraWidget:
+    FakeCameraWidget as unknown as typeof CameraWidgetModule.CameraWidget
 }))
 
 async function renderAngleNode() {

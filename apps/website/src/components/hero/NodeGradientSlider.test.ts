@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { lastNumberEmitted } from '../../test/emitted'
 import NodeGradientSlider from './NodeGradientSlider.vue'
 
 const defaultProps = {
@@ -30,12 +31,8 @@ function renderSlider(props: Partial<typeof defaultProps> = {}) {
     y: 0,
     toJSON: () => ({})
   })
-  // `emitted(name)` is typed as always returning an array, but returns
-  // undefined for an event the component never emitted.
-  const emissionsOf = (name: string): unknown[] | undefined =>
-    utils.emitted(name)
   const lastEmitted = () =>
-    (emissionsOf('update:modelValue')?.at(-1) as [number] | undefined)?.[0]
+    lastNumberEmitted(utils.emitted('update:modelValue'))
   return { ...utils, slider, lastEmitted }
 }
 

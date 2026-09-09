@@ -21,12 +21,20 @@ vi.mock(import('../../../scripts/customerio'), () => ({
   requestDownloadLink: hoisted.mockSubmit
 }))
 
+type DownloadUrlMock = Pick<
+  ReturnType<typeof DownloadUrlModule.useDownloadUrl>,
+  'isMobileUa'
+>
+
 vi.mock(import('../../../composables/useDownloadUrl'), async () => {
   const { computed } = await import('vue')
+  const useDownloadUrl = (): DownloadUrlMock => ({
+    isMobileUa: computed(() => hoisted.isMobileUa)
+  })
+  // The component reads only isMobileUa; the rest of the real return is unused.
   return {
-    useDownloadUrl: (() => ({
-      isMobileUa: computed(() => hoisted.isMobileUa)
-    })) as unknown as typeof DownloadUrlModule.useDownloadUrl
+    useDownloadUrl:
+      useDownloadUrl as unknown as typeof DownloadUrlModule.useDownloadUrl
   }
 })
 

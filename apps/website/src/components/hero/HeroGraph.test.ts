@@ -10,13 +10,23 @@ import type * as CameraWidgetModule from './camera/CameraWidget'
 import { DRAG_MARGIN, FLOW } from './graphLayout'
 import HeroGraph from './HeroGraph.vue'
 
+// The concrete class has private fields, so a structural fake cannot implement
+// it. Pin the fake to the public surface these tests drive instead.
+type CameraWidgetContract = Pick<
+  CameraWidgetModule.CameraWidget,
+  'setState' | 'pause' | 'resume' | 'dispose'
+>
+
+class FakeCameraWidget implements CameraWidgetContract {
+  setState = vi.fn()
+  pause = vi.fn()
+  resume = vi.fn()
+  dispose = vi.fn()
+}
+
 vi.mock(import('./camera/CameraWidget'), () => ({
-  CameraWidget: class {
-    setState = vi.fn()
-    pause = vi.fn()
-    resume = vi.fn()
-    dispose = vi.fn()
-  } as unknown as typeof CameraWidgetModule.CameraWidget
+  CameraWidget:
+    FakeCameraWidget as unknown as typeof CameraWidgetModule.CameraWidget
 }))
 
 const EM_PX = 10

@@ -8,11 +8,17 @@ const hoisted = vi.hoisted(() => ({
   mockCapture: vi.fn()
 }))
 
+type PostHogMock = Pick<typeof PostHogModule.default, 'init' | 'capture'>
+
+const postHogMock = {
+  init: hoisted.mockInit,
+  capture: hoisted.mockCapture
+} satisfies PostHogMock
+
+// The real default export carries 130+ members, so only the boundary handoff
+// is asserted; the shape itself is checked against PostHogMock above.
 vi.mock(import('posthog-js'), () => ({
-  default: {
-    init: hoisted.mockInit,
-    capture: hoisted.mockCapture
-  } as unknown as typeof PostHogModule.default
+  default: postHogMock as unknown as typeof PostHogModule.default
 }))
 
 describe('initPostHog', () => {

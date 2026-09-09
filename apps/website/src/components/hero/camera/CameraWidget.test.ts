@@ -13,9 +13,13 @@ import type { CameraState } from './types'
 // object positions.
 vi.mock(import('three'), async (importOriginal) => {
   const three = await importOriginal<typeof ThreeModule>()
-  class FakeWebGLRenderer {
+  type WebGLRendererContract = Pick<
+    ThreeModule.WebGLRenderer,
+    'domElement' | 'outputColorSpace' | 'setSize' | 'setPixelRatio' | 'dispose'
+  >
+  class FakeWebGLRenderer implements WebGLRendererContract {
     domElement = document.createElement('canvas')
-    outputColorSpace = ''
+    outputColorSpace: ThreeModule.ColorSpace = ''
     setSize() {}
     setPixelRatio() {}
     dispose() {}
