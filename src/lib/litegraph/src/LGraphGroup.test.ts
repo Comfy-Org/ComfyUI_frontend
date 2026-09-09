@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
@@ -43,8 +41,6 @@ function createMockContext() {
 }
 
 const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {

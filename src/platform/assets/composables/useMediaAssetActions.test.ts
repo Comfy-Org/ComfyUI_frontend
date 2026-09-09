@@ -580,7 +580,7 @@ describe('useMediaAssetActions', () => {
       unmount()
     })
 
-    it('keeps single explicit assets on the direct download path in cloud', () => {
+    it('downloads a single explicit asset by asset id in cloud', () => {
       mockIsCloud.value = true
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
@@ -600,7 +600,7 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDownloadFile).toHaveBeenCalledOnce()
       expect(mockDownloadFile).toHaveBeenCalledWith(
-        'https://example.com/single-output.png',
+        'http://localhost:8188/api/assets/single-output/content',
         'single-output.png'
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()

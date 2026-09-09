@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
@@ -17,10 +15,6 @@ import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { createNodeShellState, unregisterNodeState } from './nodeShellState'
 
 describe('node shell state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addNodeToSubgraph() {
     const subgraph = createTestSubgraph()
     const node = new LGraphNode('Node')
@@ -110,7 +104,6 @@ describe('node shell state', () => {
 
 describe('node registration invariants', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.stubEnv('DEV', true)
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
