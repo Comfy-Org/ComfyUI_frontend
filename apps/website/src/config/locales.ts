@@ -110,12 +110,26 @@ export function isLocale(value: string | undefined): value is Locale {
  * question is which of them we publish. It is the only lever, gating indexing,
  * the sitemap, and whether any link on the site points there.
  *
+ * Japanese is 99% translated as of P4, and publishes tier 1: the home page plus
+ * `/download`, `/cloud`, `/platform` and `/about`. The long tail follows in its
+ * own change rather than all at once, which is the pattern Google's
+ * scaled-content-abuse policy targets.
+ *
+ * `/pricing` was named in tier 1 and is deliberately NOT here. Its 21 FAQ items
+ * come from an MDX content collection that has no Japanese, so they fall back to
+ * English: the page measures 48% translated where 85% is achievable, and the FAQ
+ * is most of a pricing page's substance. Add it once the MDX adapter exists.
+ *
+ * The other 66 pages below their ceiling are the same two gaps — the MDX
+ * collections and `src/data/*.ts` — plus the legal pages, which are English on
+ * purpose. `pnpm build && pnpm i18n:report` lists them.
+ *
  * Paths carry no trailing slash, matching `baseRoutes` and `englishPath`.
  */
 export const PARTIAL_LOCALE_ROUTES: Partial<
   Record<Locale, ReadonlySet<string>>
 > = {
-  ja: new Set(['/'])
+  ja: new Set(['/', '/download', '/cloud', '/platform', '/about'])
 }
 
 /**
