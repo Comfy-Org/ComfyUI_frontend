@@ -42,7 +42,7 @@ function select(item: MenuItem, event: Event) {
 <template>
   <template
     v-for="(item, index) in items"
-    :key="item.key ?? item.label ?? index"
+    :key="item.key ?? toValue(item.label) ?? index"
   >
     <DropdownMenuSeparator
       v-if="item.separator"
