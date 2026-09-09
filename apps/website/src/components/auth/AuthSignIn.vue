@@ -70,7 +70,17 @@ const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 const inAppBrowser = ref(false)
 
 function dispatch(event: AuthSignInEvent) {
-  state.value = authSignInTransition(state.value, event)
+  const before = state.value
+  state.value = authSignInTransition(before, event)
+  // The session client publishes the credential before the mint promise
+  // resolves, so the transition, not the caller, is what leaves the page.
+  if (
+    before.step === 'minting' &&
+    state.value.step === 'signedIn' &&
+    !state.value.messageKey
+  ) {
+    leaveSignInPage()
+  }
 }
 
 /**
@@ -98,7 +108,6 @@ async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
   if (state.value.step !== 'minting') return
   if (result?.status === 'ok') {
     dispatch({ type: 'mintSucceeded' })
-    leaveSignInPage()
   } else {
     leaving.value = false
     dispatch({ type: 'mintFailed' })
