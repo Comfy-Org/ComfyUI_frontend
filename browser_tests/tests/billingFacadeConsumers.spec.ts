@@ -60,6 +60,7 @@ async function mockCloudBoot(
     max_seats: 0,
     occupied_seats: 0,
     team_credit_stop: null,
+    scheduled_change: null,
     ...subscriptionStatus,
     ...(billingRail === undefined ? {} : { billing_rail: billingRail })
   }

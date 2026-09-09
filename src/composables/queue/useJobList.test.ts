@@ -39,7 +39,7 @@ const createTestI18n = () =>
     }
   })
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((key: string, fallback?: string) => `i18n(${key})-${fallback}`),
   resolveNodeDefText: vi.fn(
     (field: string, nodeName: string) => `i18n(${nodeName}.${field})`
@@ -53,13 +53,13 @@ const ensureProgressRefs = () => {
   if (!currentNodePercent) currentNodePercent = ref(0)
   return { totalPercent, currentNodePercent }
 }
-vi.mock('@/composables/queue/useQueueProgress', () => ({
+vi.mock<unknown>(import('@/composables/queue/useQueueProgress'), () => ({
   useQueueProgress: () => {
     return ensureProgressRefs()
   }
 }))
 
-vi.mock('@/utils/queueDisplay', () => ({
+vi.mock(import('@/utils/queueDisplay'), () => ({
   buildJobDisplay: vi.fn(
     (task: TaskItemImpl, state: JobState, options: BuildJobDisplayCtx) => ({
       primary: `Job ${task.jobId}`,
@@ -72,7 +72,7 @@ vi.mock('@/utils/queueDisplay', () => ({
   )
 }))
 
-vi.mock('@/utils/queueUtil', () => ({
+vi.mock<unknown>(import('@/utils/queueUtil'), () => ({
   jobStateFromTask: vi.fn((task: TestTask): JobState => task.mockState)
 }))
 
@@ -93,7 +93,7 @@ const ensureQueueStore = () => {
   }
   return queueStoreMock
 }
-vi.mock('@/stores/queueStore', () => ({
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
   useQueueStore: () => {
     return ensureQueueStore()
   }
@@ -121,7 +121,7 @@ const ensureExecutionStore = () => {
   }
   return executionStoreMock
 }
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => {
     return ensureExecutionStore()
   }
@@ -142,7 +142,7 @@ const ensureJobPreviewStore = () => {
   }
   return jobPreviewStoreMock
 }
-vi.mock('@/stores/jobPreviewStore', () => ({
+vi.mock<unknown>(import('@/stores/jobPreviewStore'), () => ({
   useJobPreviewStore: () => {
     return ensureJobPreviewStore()
   }
@@ -161,11 +161,14 @@ const ensureWorkflowStore = () => {
   }
   return workflowStoreMock
 }
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => {
-    return ensureWorkflowStore()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => {
+      return ensureWorkflowStore()
+    }
+  })
+)
 
 const createTask = (
   overrides: Partial<TestTask> & { mockState?: JobState } = {}
