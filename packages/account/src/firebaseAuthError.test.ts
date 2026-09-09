@@ -158,6 +158,28 @@ describe('authErrorMessage', () => {
     )
   })
 
+  it('resolves against a table the host brings instead of a shipped locale', () => {
+    const hostCopy = {
+      'auth/wrong-password': 'host wrong password',
+      generic: 'host generic',
+      signupBlocked: 'host blocked'
+    }
+
+    expect(
+      authErrorMessage(
+        classifyAuthError(firebaseError('auth/wrong-password')),
+        hostCopy
+      )
+    ).toBe('host wrong password')
+    expect(
+      authErrorMessage(
+        classifyAuthError(firebaseError('auth/some-new-code')),
+        hostCopy
+      ),
+      'the host table falls back to its own generic line'
+    ).toBe('host generic')
+  })
+
   it('does not pretend to know the unauthorized-domain copy without the host values', () => {
     expect(
       authErrorMessage(

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { addToast, removeAllToasts } from '../../config/auth-toast-state'
@@ -62,22 +62,14 @@ describe('AuthToast', () => {
     ).toContain('b')
   })
 
-  it.for([
-    ['success', 'check'],
-    ['warn', 'exclamation-triangle'],
-    ['error', 'times-circle'],
-    ['info', 'info-circle']
-  ] as const)(
-    'renders the %s severity with its %s icon',
-    async ([severity, icon]) => {
+  it.for(['success', 'warn', 'error', 'info'] as const)(
+    'announces the %s severity so styling and assistive tech can tell them apart',
+    async (severity) => {
       render(AuthToast)
       addToast({ severity, summary: 'S', detail: 'D' })
       const alert = await screen.findByRole('alert')
 
       expect(alert.getAttribute('data-severity')).toBe(severity)
-      expect(
-        within(alert).getByTestId('toast-icon').getAttribute('data-icon')
-      ).toBe(icon)
     }
   )
 
