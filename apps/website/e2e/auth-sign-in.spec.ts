@@ -3,8 +3,14 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-/** Answer PostHog's flag request with the Workshop auth flag on, nothing else leaves. */
+/**
+ * Answer PostHog's flag request with the Workshop auth flag on and the geo
+ * edge with a non-China country; nothing else leaves the page.
+ */
 async function forceWorkshopAuthFlag(page: Page) {
+  await page.route('**/cdn-cgi/trace', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/plain', body: 'loc=US\n' })
+  )
   await page.route('**/t.comfy.org/**', (route) => {
     if (!/\/(flags|decide)\//.test(route.request().url())) {
       return route.abort('blockedbyclient')
@@ -40,16 +46,16 @@ test.describe('Sign-in page with the auth flag on', () => {
     await page.goto('/login/')
 
     await expect(
-      page.getByRole('heading', { name: 'Sign in to Comfy' })
+      page.getByRole('heading', { name: 'Log in to your account' })
     ).toBeVisible()
     await expect(
-      page.getByRole('button', { name: 'Continue with Google' })
+      page.getByRole('button', { name: /with Google/ })
     ).toBeEnabled()
     await expect(
-      page.getByRole('button', { name: 'Continue with GitHub' })
+      page.getByRole('button', { name: /with Github/ })
     ).toBeEnabled()
     await expect(
-      page.getByRole('link', { name: 'Create an account' })
+      page.getByRole('link', { name: 'Sign up here' })
     ).toHaveAttribute('href', '/signup/')
   })
 
@@ -59,14 +65,35 @@ test.describe('Sign-in page with the auth flag on', () => {
     await page.goto('/signup/')
 
     await expect(
-      page.getByRole('heading', { name: 'Create your Comfy account' })
+      page.getByRole('heading', { name: 'Create an account' })
     ).toBeVisible()
     await expect(
-      page.getByRole('button', { name: 'Continue with Google' })
+      page.getByRole('button', { name: /with Google/ })
     ).toBeEnabled()
     await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
       'href',
       '/login/'
     )
+  })
+
+  test('carries the return destination through the sign-up and forgot-password detours', async ({
+    page
+  }) => {
+    await page.goto('/login/?returnTo=%2Fworkshop%2F')
+
+    await page.getByRole('link', { name: 'Sign up here' }).click()
+    await expect(page).toHaveURL(/\/signup\/\?returnTo=%2Fworkshop%2F$/)
+
+    await page.getByRole('link', { name: 'Sign in' }).click()
+    await expect(page).toHaveURL(/\/login\/\?returnTo=%2Fworkshop%2F$/)
+
+    await page.getByRole('button', { name: 'Use email instead' }).click()
+    await page.getByRole('link', { name: 'Forgot password?' }).click()
+    await expect(page).toHaveURL(
+      /\/forgot-password\/\?returnTo=%2Fworkshop%2F$/
+    )
+
+    await page.getByRole('link', { name: 'Back to login' }).click()
+    await expect(page).toHaveURL(/\/login\/\?returnTo=%2Fworkshop%2F$/)
   })
 })

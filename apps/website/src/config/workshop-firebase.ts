@@ -14,9 +14,11 @@ import {
   CUSTOMER_PROVISIONING_PATH,
   customerProvisioningRequest,
   isCustomerProvisioned,
+  signUpWithProvisioning,
   socialSignInWithProvisioning
 } from '@comfyorg/account/provisioning'
 
+import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {
   WORKSHOP_FIREBASE_OPTIONS,
   WORKSHOP_ROUTER_BASE_URL
@@ -53,16 +55,23 @@ export function isWorkshopProvisioningError(
   return error instanceof WorkshopProvisioningError
 }
 
+interface ProvisionCustomerOptions {
+  readonly turnstileToken?: string
+  readonly fetchImpl?: typeof fetch
+}
+
 export async function provisionCustomer(
   user: ProvisionableUser,
-  fetchImpl: typeof fetch = globalThis.fetch
+  options: ProvisionCustomerOptions = {}
 ): Promise<void> {
+  const { turnstileToken, fetchImpl = globalThis.fetch } = options
   const token = await user.getIdToken()
   const response = await fetchImpl(
     `${WORKSHOP_ROUTER_BASE_URL}${CUSTOMER_PROVISIONING_PATH}`,
     customerProvisioningRequest({
       authHeaders: { Authorization: `Bearer ${token}` },
       signupSource: 'comfy-workshop',
+      turnstileToken,
       signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
     })
   )
@@ -99,9 +108,49 @@ export function signInWorkshopWithGitHub(): Promise<UserCredential> {
   return socialSignIn(identity.signInWithGitHub)
 }
 
-/** Whether the popup created the account, the way the cloud app reports it. */
+/** Whether the credential created the account, the way the cloud app reports it. */
 export function isNewWorkshopUser(credential: UserCredential): boolean {
   return getAdditionalUserInfo(credential)?.isNewUser ?? false
+}
+
+export function signInWorkshopWithEmail(
+  email: string,
+  password: string
+): Promise<UserCredential> {
+  // Sign-in provisions too, mirroring the platform app: an account created
+  // elsewhere may reach billing surfaces here first; a provisioning failure
+  // keeps the user signed in, as after a social popup.
+  return socialSignIn(() => identity.signInWithEmail(email, password))
+}
+
+/**
+ * Creation and provisioning as one sequence: a provisioning failure (e.g. a
+ * rejected Turnstile token) deletes the just-created Firebase user, with one
+ * retried delete, so a single blip cannot orphan an account that then bricks
+ * every retry with email-already-in-use. A double delete failure still
+ * orphans; the rollback hook is the signal for that case.
+ */
+export function signUpWorkshopWithEmail(
+  email: string,
+  password: string,
+  turnstileToken?: string
+): Promise<UserCredential> {
+  return signUpWithProvisioning({
+    createUser: () => identity.createUserWithEmail(email, password),
+    provisionCustomer: (credential) =>
+      provisionCustomer(credential.user, { turnstileToken }),
+    onRollbackFailure: (error) => {
+      captureSignupRollbackFailure()
+      console.warn(
+        'Failed to roll back orphaned Firebase user after customer creation failed',
+        error
+      )
+    }
+  })
+}
+
+export function sendWorkshopPasswordReset(email: string): Promise<void> {
+  return identity.sendPasswordReset(email)
 }
 
 export function signOutWorkshop(): Promise<void> {

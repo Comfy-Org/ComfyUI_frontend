@@ -28,9 +28,9 @@ describe('authSignInTransition', () => {
     ).toBe(started)
   })
 
-  it('mints a workspace session after the popup succeeds', () => {
+  it('mints a workspace session after authentication succeeds', () => {
     const minting = authSignInTransition(pending, {
-      type: 'popupSucceeded',
+      type: 'credentialSucceeded',
       email: 'a@b.co'
     })
     expect(minting).toEqual({ step: 'minting', email: 'a@b.co' })
@@ -134,14 +134,39 @@ describe('signInErrorMessage', () => {
       AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
     ],
     [
-      'a browser-blocked popup',
-      { code: 'auth/popup-blocked', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/popup-blocked']
-    ],
-    [
       'a blocked signup',
       { code: 'auth/internal-error', message: 'SIGNUP_BLOCKED' },
       AUTH_ERROR_MESSAGES.signupBlocked
+    ],
+    [
+      'wrong email credentials',
+      { code: 'auth/invalid-credential', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+    ],
+    [
+      'an address already registered',
+      { code: 'auth/email-already-in-use', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/email-already-in-use']
+    ],
+    [
+      'a throttled visitor',
+      { code: 'auth/too-many-requests', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/too-many-requests']
+    ],
+    [
+      'an unknown address, worded as the cloud app words it',
+      { code: 'auth/user-not-found', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/user-not-found']
+    ],
+    [
+      'a wrong password',
+      { code: 'auth/wrong-password', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/wrong-password']
+    ],
+    [
+      'a malformed address',
+      { code: 'auth/invalid-email', message: 'x' },
+      AUTH_ERROR_MESSAGES['auth/invalid-email']
     ],
     [
       'a network failure, which the cloud app names',

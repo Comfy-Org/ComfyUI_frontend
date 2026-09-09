@@ -115,44 +115,49 @@ const translations = {
     'zh-CN': '创建你的 Comfy 账户。'
   },
   'auth.signIn.heading': {
-    en: 'Sign in to Comfy',
-    'zh-CN': '登录 Comfy'
-  },
-  'auth.signIn.body': {
-    en: 'Use your Comfy account across the Workshop, Cloud, and Platform.',
-    'zh-CN': '一个 Comfy 账户，通用于 Workshop、Cloud 和 Platform。'
+    en: 'Log in to your account',
+    'zh-CN': '登录您的账户',
+    ja: 'アカウントにログインする'
   },
   'auth.signUp.heading': {
-    en: 'Create your Comfy account',
-    'zh-CN': '创建 Comfy 账户'
-  },
-  'auth.signUp.body': {
-    en: 'One account for the Workshop, Cloud, and Platform.',
-    'zh-CN': '一个账户，通用于 Workshop、Cloud 和 Platform。'
+    en: 'Create an account',
+    'zh-CN': '创建一个账户',
+    ja: 'アカウントを作成する'
   },
   'auth.signIn.newHere': {
     en: 'New to Comfy?',
-    'zh-CN': '第一次使用 Comfy？'
+    'zh-CN': '初次使用 Comfy？',
+    ja: 'Comfyを初めてご利用ですか？'
   },
   'auth.signIn.signUpLink': {
-    en: 'Create an account',
-    'zh-CN': '创建账户'
+    en: 'Sign up here',
+    'zh-CN': '在这里注册',
+    ja: 'こちらからサインアップ'
+  },
+  'auth.signIn.freeRunsSuffix': {
+    en: 'to get 5 free runs.',
+    'zh-CN': '可获得 5 次免费运行。',
+    ja: '5回の無料実行を獲得しましょう。'
   },
   'auth.signUp.haveAccount': {
     en: 'Already have an account?',
-    'zh-CN': '已经有账户？'
+    'zh-CN': '已经有账户了？',
+    ja: 'すでにアカウントをお持ちですか？'
   },
   'auth.signUp.signInLink': {
     en: 'Sign in',
-    'zh-CN': '登录'
+    'zh-CN': '登录',
+    ja: 'サインイン'
   },
   'auth.signIn.google': {
-    en: 'Continue with Google',
-    'zh-CN': '使用 Google 继续'
+    en: 'Log in with Google',
+    'zh-CN': '使用Google登录',
+    ja: 'Googleでログイン'
   },
   'auth.signIn.github': {
-    en: 'Continue with GitHub',
-    'zh-CN': '使用 GitHub 继续'
+    en: 'Log in with Github',
+    'zh-CN': '使用Github登录',
+    ja: 'Githubでログイン'
   },
   'auth.signIn.googleSsoInAppBrowserNotice': {
     en: "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
@@ -164,9 +169,94 @@ const translations = {
     en: 'Finish signing in from the pop-up window.',
     'zh-CN': '请在弹出窗口中完成登录。'
   },
+  'auth.signIn.signingIn': {
+    en: 'Signing you in…',
+    'zh-CN': '正在为你登录…',
+    ja: 'サインインしています…'
+  },
+  'auth.signUp.creating': {
+    en: 'Creating your account…',
+    'zh-CN': '正在创建你的账户…',
+    ja: 'アカウントを作成しています…'
+  },
   'auth.signIn.signOut': {
     en: 'Sign out',
     'zh-CN': '退出登录'
+  },
+  'auth.signUp.regionRestrictionChina': {
+    en: 'In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.',
+    'zh-CN': '根据当地法规要求，我们暂时无法为中国地区的用户提供服务。',
+    ja: '現地の規制要件に従い、当社のサービスは現在中国本土のユーザーにはご利用いただけません。'
+  },
+  'auth.signUp.google': {
+    en: 'Sign up with Google',
+    'zh-CN': '使用Google注册',
+    ja: 'Googleでサインアップ'
+  },
+  'auth.signUp.github': {
+    en: 'Sign up with Github',
+    'zh-CN': '使用Github注册',
+    ja: 'Githubでサインアップ'
+  },
+  'auth.signIn.useEmailInstead': {
+    en: 'Use email instead',
+    'zh-CN': '改用邮箱',
+    ja: 'メールアドレスを使用する'
+  },
+  'auth.signIn.backToSocialLogin': {
+    en: 'Sign up with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github 注册',
+    ja: 'GoogleまたはGithubでサインアップする'
+  },
+  'auth.signIn.backToSocialSignIn': {
+    en: 'Sign in with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github 登录',
+    ja: 'GoogleまたはGithubでサインインする'
+  },
+  'auth.signIn.insecureContextWarning': {
+    en: 'This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.',
+    'zh-CN': '此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。',
+    ja: 'この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。'
+  },
+  'auth.email.placeholder': {
+    en: 'Enter your email',
+    'zh-CN': '输入您的电子邮件',
+    ja: 'メールアドレスを入力してください'
+  },
+  'auth.password.placeholder': {
+    en: 'Enter your password',
+    'zh-CN': '输入您的密码',
+    ja: 'パスワードを入力してください'
+  },
+  'auth.password.newPlaceholder': {
+    en: 'Enter new password',
+    'zh-CN': '输入新密码',
+    ja: '新しいパスワードを入力してください'
+  },
+  'auth.password.show': {
+    en: 'Show password',
+    'zh-CN': '显示密码',
+    ja: 'パスワードを表示'
+  },
+  'auth.password.hide': {
+    en: 'Hide password',
+    'zh-CN': '隐藏密码',
+    ja: 'パスワードを非表示'
+  },
+  'auth.confirmPassword.placeholder': {
+    en: 'Enter the same password again',
+    'zh-CN': '再次输入相同的密码',
+    ja: 'もう一度同じパスワードを入力してください'
+  },
+  'validation.password.requirements': {
+    en: 'Password requirements',
+    'zh-CN': '密码要求',
+    ja: 'パスワードの要件'
+  },
+  'validation.password.lengthRange': {
+    en: 'Must be between 8 and 32 characters',
+    'zh-CN': '必须在8到32个字符之间',
+    ja: '8文字から32文字の間でなければなりません'
   },
   'auth.shell.logoAlt': {
     en: 'ComfyOrg Logo',
@@ -255,9 +345,136 @@ const translations = {
     en: 'Retry session',
     'zh-CN': '重试会话'
   },
-  'auth.signIn.starting': {
-    en: 'Starting your workspace session…',
-    'zh-CN': '正在启动工作区会话…'
+  // Auth validation copy, matching the platform app's messages. The {length}
+  // and {prefix} tokens are interpolated by config/auth-schemas.ts.
+  'validation.invalidEmail': {
+    en: 'Invalid email address',
+    'zh-CN': '无效的电子邮件地址'
+  },
+  'validation.required': {
+    en: 'Required',
+    'zh-CN': '必填'
+  },
+  'validation.minLength': {
+    en: 'Must be at least {length} characters',
+    'zh-CN': '必须至少有{length}个字符'
+  },
+  'validation.maxLength': {
+    en: 'Must be no more than {length} characters',
+    'zh-CN': '不能超过{length}个字符'
+  },
+  'validation.length': {
+    en: 'Must be {length} characters',
+    'zh-CN': '必须为{length}个字符'
+  },
+  'validation.prefix': {
+    en: 'Must start with {prefix}',
+    'zh-CN': '必须以 {prefix} 开头'
+  },
+  'validation.password.uppercase': {
+    en: 'Must contain at least one uppercase letter',
+    'zh-CN': '必须包含至少一个大写字母'
+  },
+  'validation.password.lowercase': {
+    en: 'Must contain at least one lowercase letter',
+    'zh-CN': '必须包含至少一个小写字母'
+  },
+  'validation.password.number': {
+    en: 'Must contain at least one number',
+    'zh-CN': '必须包含至少一个数字'
+  },
+  'validation.password.special': {
+    en: 'Must contain at least one special character',
+    'zh-CN': '必须包含至少一个特殊字符'
+  },
+  'validation.password.match': {
+    en: 'Passwords must match',
+    'zh-CN': '密码必须匹配'
+  },
+  'auth.email.label': {
+    en: 'Email',
+    'zh-CN': '电子邮件'
+  },
+  'auth.password.label': {
+    en: 'Password',
+    'zh-CN': '密码'
+  },
+  'auth.confirmPassword.label': {
+    en: 'Confirm Password',
+    'zh-CN': '确认密码',
+    ja: 'パスワードの確認'
+  },
+  'auth.signIn.submit': {
+    en: 'Sign in',
+    'zh-CN': '登录',
+    ja: 'ログイン'
+  },
+  'auth.signUp.submit': {
+    en: 'Sign up',
+    'zh-CN': '注册',
+    ja: 'サインアップ'
+  },
+  'auth.signIn.forgotPassword': {
+    en: 'Forgot password?',
+    'zh-CN': '忘记密码？'
+  },
+  'auth.forgot.meta.title': {
+    en: 'Reset password - Comfy',
+    'zh-CN': '重置密码 - Comfy'
+  },
+  'auth.forgot.meta.description': {
+    en: 'Reset your Comfy account password.',
+    'zh-CN': '重置你的 Comfy 账户密码。'
+  },
+  'auth.forgot.heading': {
+    en: 'Forgot Password',
+    'zh-CN': '忘记密码',
+    ja: 'パスワードを忘れた場合'
+  },
+  'auth.forgot.body': {
+    en: "Enter your email address and we'll send you a link to reset your password.",
+    'zh-CN': '请输入您的电子邮件地址，我们将向您发送重置密码的链接。',
+    ja: 'メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。'
+  },
+  'auth.forgot.submit': {
+    en: 'Send reset link',
+    'zh-CN': '发送重置链接',
+    ja: 'リセットリンクを送信'
+  },
+  'auth.forgot.sent': {
+    en: 'Password reset sent',
+    'zh-CN': '密码重置邮件已发送',
+    ja: 'パスワードリセットを送信しました'
+  },
+  'auth.forgot.error': {
+    en: 'Failed to send password reset email',
+    'zh-CN': '发送密码重置邮件失败',
+    ja: 'パスワードリセットメールの送信に失敗しました'
+  },
+  'auth.forgot.emailRequired': {
+    en: 'Email is required',
+    'zh-CN': '邮箱是必填项',
+    ja: 'メールアドレスは必須です'
+  },
+  'auth.forgot.didntReceive': {
+    en: "Didn't receive an email?",
+    'zh-CN': '没有收到邮件？',
+    ja: 'メールが届きませんでしたか？'
+  },
+  'auth.forgot.toastSummary': {
+    en: 'Password reset email sent',
+    'zh-CN': '重置密码邮件已发送',
+    ja: 'パスワードリセット用メールを送信しました'
+  },
+  'auth.forgot.toastDetail': {
+    en: 'Please check your email for a link to reset your password.',
+    'zh-CN': '请查收您的电子邮件，点击链接重置密码。',
+    ja: 'パスワードをリセットするためのリンクが記載されたメールをご確認ください。'
+  },
+  'auth.forgot.backToSignIn': {
+    en: 'Back to login',
+    'zh-CN': '返回登录',
+    ja: 'ログインに戻る'
   },
   'auth.header.signIn': {
     en: 'Sign in',

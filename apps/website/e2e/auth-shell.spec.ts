@@ -3,20 +3,23 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-const AUTH_PAGES = ['/login/', '/signup/'] as const
+const AUTH_PAGES = [
+  { path: '/login/', termsNotice: true },
+  { path: '/signup/', termsNotice: true },
+  { path: '/forgot-password/', termsNotice: false }
+] as const
 
 /** The site's header nav and footer landmarks; the shell must carry neither. */
 const siteChrome = (page: Page) =>
   page.getByRole('navigation').or(page.getByRole('contentinfo'))
 
 test.describe('Auth shell', () => {
-  for (const path of AUTH_PAGES) {
+  for (const { path, termsNotice } of AUTH_PAGES) {
     test(`${path} renders the bare onboarding shell`, async ({ page }) => {
       await page.setViewportSize({ width: 1536, height: 864 })
       await page.goto(path)
 
       await expect(siteChrome(page)).toHaveCount(0)
-      await expect(page.locator('footer')).toHaveCount(0)
       await expect(
         page.getByRole('img', { name: 'ComfyOrg Logo' })
       ).toBeVisible()
@@ -26,6 +29,10 @@ test.describe('Auth shell', () => {
       await expect(
         page.getByRole('group', { name: 'Featured models' })
       ).toBeVisible()
+      await expect(page.locator('footer')).toHaveCount(termsNotice ? 0 : 1)
+      await expect(page.getByText(/Questions\? Contact us/)).toHaveCount(
+        termsNotice ? 1 : 0
+      )
     })
 
     test(`${path} links out to the legal pages like the cloud shell`, async ({
@@ -41,7 +48,7 @@ test.describe('Auth shell', () => {
       for (const [name, href] of [
         ['Terms of Use', 'https://comfy.org/terms-of-service/'],
         ['Privacy Policy', 'https://comfy.org/privacy-policy/'],
-        ['here', 'https://support.comfy.org']
+        [termsNotice ? 'here' : 'Need Help?', 'https://support.comfy.org']
       ] as const) {
         const link = page.getByRole('link', { name })
         await expect(link).toHaveAttribute('href', href)

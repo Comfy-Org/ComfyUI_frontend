@@ -16,7 +16,7 @@ import type {
 
 import type { TranslationKey } from '../i18n/translations'
 
-export type AuthSignInProvider = 'google' | 'github'
+export type AuthSignInProvider = 'google' | 'github' | 'email'
 
 export type AuthSignInState =
   | { readonly step: 'idle' }
@@ -34,7 +34,7 @@ export type AuthSignInState =
 
 export type AuthSignInEvent =
   | { readonly type: 'signInStarted'; readonly provider: AuthSignInProvider }
-  | { readonly type: 'popupSucceeded'; readonly email: string }
+  | { readonly type: 'credentialSucceeded'; readonly email: string }
   | { readonly type: 'signInFailed'; readonly error: unknown }
   | { readonly type: 'provisioningFailed'; readonly email: string }
   | { readonly type: 'userRestored'; readonly email: string }
@@ -73,7 +73,7 @@ export function authSignInTransition(
       return state.step === 'pending' || state.step === 'minting'
         ? state
         : { step: 'pending', provider: event.provider }
-    case 'popupSucceeded':
+    case 'credentialSucceeded':
       return { step: 'minting', email: event.email }
     case 'signInFailed':
       return { step: 'error', classification: classifyAuthError(event.error) }
