@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -20,8 +20,9 @@ const mockSystemStats = vi.hoisted(() => ({
   value: null as { system?: { comfyui_version?: string } } | null
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useMissingNodes',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
+
   () => ({
     useMissingNodes: () => ({
       missingCoreNodes: mockMissingCoreNodes,
@@ -33,7 +34,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/stores/systemStatsStore', () => ({
+vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
   useSystemStatsStore: () => ({
     get systemStats() {
       return mockSystemStats.value
@@ -43,30 +44,42 @@ vi.mock('@/stores/systemStatsStore', () => ({
 
 const mockApplyChanges = vi.hoisted(() => vi.fn())
 const mockIsRestarting = vi.hoisted(() => ({ value: false }))
-vi.mock('@/workbench/extensions/manager/composables/useApplyChanges', () => ({
-  useApplyChanges: () => ({
-    get isRestarting() {
-      return mockIsRestarting.value
-    },
-    applyChanges: mockApplyChanges
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useApplyChanges'),
+
+  () => ({
+    useApplyChanges: () => ({
+      get isRestarting() {
+        return mockIsRestarting.value
+      },
+      applyChanges: mockApplyChanges
+    })
   })
-}))
+)
 
 const mockIsPackInstalled = vi.hoisted(() => vi.fn(() => false))
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+
+  () => ({
+    useComfyManagerStore: () => ({
+      isPackInstalled: mockIsPackInstalled
+    })
   })
-}))
+)
 
 const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: mockShouldShowManagerButtons
-  })
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
 
-vi.mock('./MissingPackGroupRow.vue', () => ({
+  () => ({
+    useManagerState: () => ({
+      shouldShowManagerButtons: mockShouldShowManagerButtons
+    })
+  })
+)
+
+vi.mock<unknown>(import('./MissingPackGroupRow.vue'), () => ({
   default: {
     name: 'MissingPackGroupRow',
     template: `<div class="pack-row" data-testid="pack-row"
@@ -95,10 +108,10 @@ const i18n = createI18n({
         }
       },
       loadWorkflowWarning: {
-        outdatedVersion:
-          'Some nodes require a newer version of ComfyUI (current: {version}).',
-        outdatedVersionGeneric:
-          'Some nodes require a newer version of ComfyUI.',
+        newerVersionRequired:
+          'Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.',
+        newerVersionRequiredGeneric:
+          'Some nodes require a newer version of ComfyUI. Please update to use all nodes.',
         coreNodesFromVersion: 'Requires ComfyUI {version}:',
         unknownVersion: 'unknown'
       }
@@ -311,7 +324,9 @@ describe('MissingNodeCard', () => {
       }
       renderCard()
       expect(
-        screen.getByText('Some nodes require a newer version of ComfyUI.')
+        screen.getByText(
+          'Some nodes require a newer version of ComfyUI. Please update to use all nodes.'
+        )
       ).toBeInTheDocument()
     })
 
@@ -335,7 +350,7 @@ describe('MissingNodeCard', () => {
       const { container } = renderCard()
       expect(container.textContent).toContain('AlphaNode, ZebraNode')
       // eslint-disable-next-line testing-library/no-container
-      expect(container.textContent?.match(/ZebraNode/g)).toHaveLength(1)
+      expect(container.textContent.match(/ZebraNode/g)).toHaveLength(1)
     })
 
     it('sorts versions in descending order', () => {
@@ -345,7 +360,7 @@ describe('MissingNodeCard', () => {
         '1.2.0': [{ type: 'Node2' }]
       }
       const { container } = renderCard()
-      const text = container.textContent ?? ''
+      const text = container.textContent
       const v13 = text.indexOf('1.3.0')
       const v12 = text.indexOf('1.2.0')
       const v11 = text.indexOf('1.1.0')

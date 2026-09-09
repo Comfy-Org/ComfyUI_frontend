@@ -1,12 +1,19 @@
 import '@testing-library/jest-dom/vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import 'vue'
 import DOMPurify from 'dompurify'
 
+import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
+
 beforeEach(() => {
+  vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
   setActivePinia(createTestingPinia({ stubActions: false }))
+})
+
+afterEach(() => {
+  clearRegisteredLiteGraphTypes()
 })
 
 /**

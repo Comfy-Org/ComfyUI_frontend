@@ -17,13 +17,14 @@
       class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
       :data-testid="`node-body-${nodeData.id}`"
     >
-      <NodeSlots :node-data="nodeData" />
+      <NodeSlots :node-data="nodeData" :sync-layout="false" />
 
       <WidgetGrid
         v-if="previewWidgets.length"
         :processed-widgets="previewWidgets"
         :node-type="nodeData.type"
         :node-id="nodeData.id"
+        :sync-layout="false"
         class="pointer-events-none"
       />
     </div>

@@ -132,6 +132,16 @@ function useBillingCapabilitiesInternal() {
     )
   })
 
+  const snapshotAuthoritative = computed(() => {
+    if (!isCloud) return true
+    const state = readState.value
+    if (state.status !== 'resolved' && state.status !== 'denied') return false
+    return (
+      state.authUid === authStore.currentUser?.uid &&
+      state.workspaceId === workspaceStore.activeWorkspaceId
+    )
+  })
+
   function clearRefreshTimer(): void {
     if (refreshTimer === null) return
     clearTimeout(refreshTimer)
@@ -416,6 +426,7 @@ function useBillingCapabilitiesInternal() {
     canInviteMembers,
     canDowngradeToPersonal,
     isReady,
+    snapshotAuthoritative,
     initialize,
     refresh
   }

@@ -6,7 +6,7 @@ import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 // Mock workspaceAuthStore
 const mockWorkspaceAuthStore = vi.hoisted(() => ({
@@ -29,21 +29,24 @@ const mockWorkspaceAuthStore = vi.hoisted(() => ({
   clearWorkspaceContext: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => mockWorkspaceAuthStore
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/workspaceAuthStore'),
+  () => ({
+    useWorkspaceAuthStore: () => mockWorkspaceAuthStore
+  })
+)
 
 const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearWorkflowRestoreState: mockClearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
 }))
 
 const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/auth/session/useSessionCookie', () => ({
+vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   useSessionCookie: () => ({
     ensureSessionCookie: mockEnsureSessionCookie
   })
@@ -56,7 +59,7 @@ const mockCurrentUser = vi.hoisted(() => ({
   isApiKeyLogin: { value: false }
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userEmail: mockCurrentUser.userEmail,
     isApiKeyLogin: mockCurrentUser.isApiKeyLogin
@@ -96,7 +99,7 @@ const mockWorkspaceApiError = vi.hoisted(
     }
 )
 
-vi.mock('../api/workspaceApi', () => ({
+vi.mock<unknown>(import('../api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi,
   WorkspaceApiError: mockWorkspaceApiError
 }))
@@ -603,7 +606,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceBillingRail).toBe('metronome')
     })
 
-    it('rejects an overlapping local switch', async () => {
+    it('ignores an overlapping local switch', async () => {
       mockDistributionTypes.isCloud = false
       const store = useTeamWorkspaceStore()
       await store.initialize()
@@ -620,12 +623,16 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      await expect(
-        store.switchWorkspace(mockMemberWorkspace.id)
-      ).rejects.toThrow('Workspace switch already in progress')
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      await store.switchWorkspace(mockMemberWorkspace.id)
       finishSwitch()
       await firstSwitch
 
+      expect(consoleError).toHaveBeenCalledWith(
+        'Workspace switch already in progress'
+      )
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
@@ -1894,7 +1901,7 @@ describe('useTeamWorkspaceStore', () => {
       )
     })
 
-    it('resendInvite rejects a concurrent resend for the same invite', async () => {
+    it('resendInvite ignores a concurrent resend for the same invite', async () => {
       const inviteOne = {
         id: 'inv-1',
         email: 'one@test.com',
@@ -1916,11 +1923,16 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchPendingInvites()
 
       const first = store.resendInvite('inv-1')
-      await expect(store.resendInvite('inv-1')).rejects.toThrow(
-        'already in progress'
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const duplicateResult = await store.resendInvite('inv-1')
+      expect(consoleError).toHaveBeenCalledWith(
+        'Invite resend already in progress'
       )
       await first
 
+      expect(duplicateResult.id).toBe('inv-1')
       expect(mockWorkspaceApi.resendInvite).toHaveBeenCalledTimes(1)
     })
 

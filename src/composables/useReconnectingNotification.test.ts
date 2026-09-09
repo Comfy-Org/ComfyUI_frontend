@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
@@ -8,12 +8,16 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 const mockToastAdd = vi.fn()
 const mockToastRemove = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd,
-    remove: mockToastRemove
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd,
+      remove: mockToastRemove
+    })
   })
-}))
+)
 
 function setupComposable(): ReturnType<typeof useReconnectingNotification> {
   const i18n = createI18n({
@@ -43,7 +47,7 @@ const settingMocks = vi.hoisted(() => ({
   disableToast: false
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.Toast.DisableReconnectingToast')
@@ -70,7 +74,7 @@ describe('useReconnectingNotification', () => {
     const { onReconnecting } = setupComposable()
 
     onReconnecting()
-    vi.advanceTimersByTime(1500)
+    vi.advanceTimersByTime(2000)
 
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -86,7 +90,7 @@ describe('useReconnectingNotification', () => {
     onReconnecting()
     vi.advanceTimersByTime(500)
     onReconnected()
-    vi.advanceTimersByTime(1500)
+    vi.advanceTimersByTime(2000)
 
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(mockToastRemove).not.toHaveBeenCalled()
@@ -96,7 +100,7 @@ describe('useReconnectingNotification', () => {
     const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()
-    vi.advanceTimersByTime(1500)
+    vi.advanceTimersByTime(2000)
     mockToastAdd.mockClear()
 
     onReconnected()
@@ -141,10 +145,76 @@ describe('useReconnectingNotification', () => {
     const { onReconnecting } = setupComposable()
 
     onReconnecting()
-    vi.advanceTimersByTime(1500) // first toast fires
+    vi.advanceTimersByTime(2000) // first toast fires
     onReconnecting() // second reconnecting event
-    vi.advanceTimersByTime(1500) // second toast fires
+    vi.advanceTimersByTime(2000) // second toast fires
 
     expect(mockToastAdd).toHaveBeenCalledTimes(2)
+  })
+
+  describe('tab visibility regained', () => {
+    async function setVisibility(state: 'visible' | 'hidden') {
+      Object.defineProperty(document, 'visibilityState', {
+        value: state,
+        configurable: true
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+      await nextTick()
+    }
+
+    afterEach(async () => {
+      await setVisibility('visible')
+    })
+
+    it('extends a pending reconnecting toast when the tab regains visibility', async () => {
+      const { onReconnecting } = setupComposable()
+
+      onReconnecting()
+      vi.advanceTimersByTime(1000) // 1000ms into the base 2000ms delay
+
+      await setVisibility('hidden')
+      await setVisibility('visible')
+
+      // Would have fired under the original (unextended) delay by now.
+      vi.advanceTimersByTime(1900)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+
+      // Extended delay (5000ms) elapses from the point visibility was regained.
+      vi.advanceTimersByTime(3100)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', summary: 'Reconnecting' })
+      )
+    })
+
+    it('avoids the reconnecting toast when reconnection completes shortly after refocus', async () => {
+      const { onReconnecting, onReconnected } = setupComposable()
+
+      onReconnecting()
+      vi.advanceTimersByTime(1900) // just under the base delay
+
+      await setVisibility('hidden')
+      await setVisibility('visible')
+      vi.advanceTimersByTime(200)
+      onReconnected()
+      vi.advanceTimersByTime(5000)
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockToastRemove).not.toHaveBeenCalled()
+    })
+
+    it('reverts to the base delay once the post-visibility grace period elapses', async () => {
+      const { onReconnecting } = setupComposable()
+
+      await setVisibility('hidden')
+      await setVisibility('visible')
+      vi.advanceTimersByTime(10000) // grace period elapses, no reconnect happened
+
+      onReconnecting()
+      vi.advanceTimersByTime(2000) // base delay again, not the extended one
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', summary: 'Reconnecting' })
+      )
+    })
   })
 })

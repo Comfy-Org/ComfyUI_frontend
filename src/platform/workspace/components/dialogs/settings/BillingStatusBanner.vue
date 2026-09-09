@@ -76,6 +76,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -87,12 +88,14 @@ const { permissions, canReactivatePlan } = useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+const {
+  planName: scheduledPlanName,
+  formattedDate: scheduledChangeDate,
+  isDisplayable: canShowScheduledChange
+} = useScheduledPlanChange()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-// The legacy rail keeps lifecycle authorization on the client, and
-// handleResubscribe() skips its capability guard there, so the affordance has
-// to follow the same three-way condition or it hides a working action.
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -154,6 +157,18 @@ const banner = computed<BannerView | null>(() => {
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
         action: canReactivatePlan.value ? 'reactivate' : null,
+        dismissible: false
+      }
+    case 'planChange':
+      if (!canShowScheduledChange.value) return null
+      return {
+        muted: true,
+        title: t(`${bs}.planChange.title`, {
+          plan: scheduledPlanName.value,
+          date: scheduledChangeDate.value
+        }),
+        body: t(`${bs}.planChange.body`),
+        action: null,
         dismissible: false
       }
     default:

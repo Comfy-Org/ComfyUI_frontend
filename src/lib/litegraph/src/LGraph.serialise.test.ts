@@ -11,10 +11,19 @@ import {
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  mockReportError.mockClear()
+})
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {
@@ -76,6 +85,94 @@ describe('LGraph Serialisation', () => {
     expect(copiedLink).toMatchObject(expectedLink)
   })
 
+  test('falls back to live adapters when a node is missing from the store', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Registered',
+      'Adapter only'
+    ])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          mismatch: `live node ${adapterOnly.id} has no stored state`
+        }
+      }
+    )
+  })
+
+  test('serialises a node held twice in the live array only once', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Doubled')
+    graph.add(node)
+    graph._nodes.push(node)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual(['Doubled'])
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  test('serialises a duplicated live node once through the fallback', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Doubled')
+    graph.add(node)
+    graph._nodes.push(node)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Doubled',
+      'Adapter only'
+    ])
+    expect(mockReportError).toHaveBeenCalledOnce()
+  })
+
+  test('serialises one entry per id when distinct live nodes share an id', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const impostor = new LGraphNode('Impostor')
+    impostor.id = registered.id
+    graph._nodes.push(impostor)
+    const adapterOnly = new LGraphNode('Adapter only')
+    adapterOnly.id = toNodeId(99)
+    graph._nodes.push(adapterOnly)
+
+    const serialized = graph.serialize()
+
+    const ids = serialized.nodes.map(({ id }) => id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids)).toEqual(
+      new Set([registered.id, adapterOnly.id].map(Number))
+    )
+    expect(mockReportError).toHaveBeenCalledOnce()
+  })
+
   test('round trips namespaced node and graph extension payloads', ({
     expect,
     minimalGraph
@@ -104,6 +201,61 @@ describe('LGraph Serialisation', () => {
     })
   })
 
+  test('binds serialization hooks to live instances with plain data arguments', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Before serialize')
+    graph.add(node)
+
+    node.onSerialize = function (data) {
+      expect(this).toBe(node)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.title = 'After serialize'
+    }
+    graph.onSerialize = function (data) {
+      expect(this).toBe(graph)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.extra.serialized = true
+    }
+
+    node.serialize()
+    graph.asSerialisable()
+
+    expect(node.title).toBe('After serialize')
+    expect(graph.extra.serialized).toBe(true)
+  })
+
+  test('binds configure hooks to live instances with plain data arguments', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Before configure')
+    const nodeData = node.serialize()
+    const graphData = graph.asSerialisable()
+
+    node.onConfigure = function (data) {
+      expect(this).toBe(node)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.title = 'After configure'
+    }
+    graph.onConfigure = function (data) {
+      expect(this).toBe(graph)
+      expect(data).not.toBe(this)
+      expect(Object.getPrototypeOf(data)).toBe(Object.prototype)
+      this.extra.configured = true
+    }
+
+    node.configure(nodeData)
+    graph.configure(graphData)
+
+    expect(node.title).toBe('After configure')
+    expect(graph.extra.configured).toBe(true)
+  })
+
   test('preserves canonical hook mutations while isolating legacy payloads', ({
     expect,
     minimalGraph
@@ -130,7 +282,7 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
-  test('passes the original serialized object to configure hooks', ({
+  test('passes a shallow copy, not the caller live serialized object, to configure hooks', ({
     expect
   }) => {
     const node = new LGraphNode('Extended')
@@ -140,12 +292,14 @@ describe('LGraph Serialisation', () => {
     let configuredData: object | undefined
     node.onConfigure = (data) => {
       configuredData = data
+      Object.assign(data, { mutated: true })
     }
 
     node.configure(saved)
 
-    expect(configuredData).toBe(saved)
+    expect(configuredData).not.toBe(saved)
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
+    expect(saved).not.toHaveProperty('mutated')
   })
 
   test('does not apply unsafe extension keys to the configure view', ({

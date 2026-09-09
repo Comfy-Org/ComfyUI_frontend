@@ -16,7 +16,7 @@ const i18n = createI18n({
   locale: 'en'
 })
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   normalizeI18nKey: vi.fn()
 }))
 
@@ -52,7 +52,7 @@ describe('SettingItem', () => {
   function getFormItemData(container: Element) {
     // eslint-disable-next-line testing-library/no-node-access
     const el = container.querySelector('[data-testid="form-item-data"]')
-    return JSON.parse(el!.textContent!)
+    return JSON.parse(el!.textContent)
   }
 
   it('translates options that use legacy type', () => {

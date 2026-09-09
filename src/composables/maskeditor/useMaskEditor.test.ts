@@ -6,17 +6,23 @@ const mockDialogStore = vi.hoisted(() => ({
   showDialog: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => mockDialogStore
 }))
 
-vi.mock('@/components/maskeditor/dialog/TopBarHeader.vue', () => ({
-  default: { name: 'TopBarHeaderStub' }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/dialog/TopBarHeader.vue'),
+  () => ({
+    default: { name: 'TopBarHeaderStub' }
+  })
+)
 
-vi.mock('@/components/maskeditor/MaskEditorContent.vue', () => ({
-  default: { name: 'MaskEditorContentStub' }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/MaskEditorContent.vue'),
+  () => ({
+    default: { name: 'MaskEditorContentStub' }
+  })
+)
 
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
@@ -91,7 +97,7 @@ describe('useMaskEditor', () => {
     })
 
     it('should log and bail when node is null', () => {
-      useMaskEditor().openMaskEditor(null as unknown as LGraphNode)
+      useMaskEditor().openMaskEditor(null)
 
       expect(errorSpy).toHaveBeenCalledWith('[MaskEditor] No node provided')
       expect(mockDialogStore.showDialog).not.toHaveBeenCalled()

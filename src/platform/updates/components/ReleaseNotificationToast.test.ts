@@ -5,9 +5,21 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
@@ -19,7 +31,7 @@ const { toastErrorHandlerMock } = vi.hoisted(() => ({
   toastErrorHandlerMock: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false,
   get isDesktop() {
@@ -27,50 +39,33 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-// Mock dependencies
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    locale: { value: 'en' },
-    t: vi.fn((key: string) => {
-      const translations: Record<string, string> = {
-        'releaseToast.newVersionAvailable': 'New update is out!',
-        'releaseToast.whatsNew': "See what's new",
-        'releaseToast.skip': 'Skip',
-        'releaseToast.update': 'Update',
-        'releaseToast.description':
-          'Check out the latest improvements and features in this update.'
-      }
-      return translations[key] || key
-    })
-  })),
-  createI18n: vi.fn(() => ({
-    global: {
-      locale: { value: 'en' }
-    }
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
 }))
 
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: vi.fn(() => ({
     toastErrorHandler: toastErrorHandlerMock
   }))
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: vi.fn(() => ({
     execute: commandExecuteMock
   }))
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path: string) => `https://docs.comfy.org${path}`),
     staticUrls: {},
@@ -88,7 +83,7 @@ const mockReleaseStore = {
   fetchReleases: vi.fn()
 }
 
-vi.mock('../common/releaseStore', () => ({
+vi.mock<unknown>(import('../common/releaseStore'), () => ({
   useReleaseStore: vi.fn(() => mockReleaseStore)
 }))
 
@@ -96,19 +91,7 @@ describe('ReleaseNotificationToast', () => {
   const renderComponent = (props = {}) => {
     return render(ReleaseNotificationToast, {
       global: {
-        mocks: {
-          $t: (key: string) => {
-            const translations: Record<string, string> = {
-              'releaseToast.newVersionAvailable': 'New update is out!',
-              'releaseToast.whatsNew': "See what's new",
-              'releaseToast.skip': 'Skip',
-              'releaseToast.update': 'Update',
-              'releaseToast.description':
-                'Check out the latest improvements and features in this update.'
-            }
-            return translations[key] || key
-          }
-        },
+        plugins: [i18n],
         stubs: {
           'i-lucide-rocket': true,
           'i-lucide-external-link': true
@@ -132,6 +115,17 @@ describe('ReleaseNotificationToast', () => {
 
     renderComponent()
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
+  })
+
+  it('stays hidden while node selection mode is active', () => {
+    mockReleaseStore.recentRelease = {
+      version: '1.2.3',
+      content: '# Test Release\n\nSome content'
+    } as ReleaseNote
+    useAgentNodeSelectionStore().isActive = true
+
+    renderComponent()
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
   })
 
   it('displays rocket icon', () => {

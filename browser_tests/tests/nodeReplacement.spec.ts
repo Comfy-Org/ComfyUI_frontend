@@ -247,7 +247,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
 
           const replacedNodeOutputLinkCount = await comfyPage.page.evaluate(
             (nodeId) =>
-              window.app!.graph!.getNodeById(nodeId)?.outputs[0]?.links
+              window.app!.graph.getNodeById(nodeId)?.outputs[0]?.links
                 ?.length ?? 0,
             toNodeId(2)
           )

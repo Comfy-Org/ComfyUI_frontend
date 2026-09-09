@@ -1,14 +1,18 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 const folderAsset = vi.hoisted(() => ({
   id: 'multi-output',
   name: 'multi-output.png',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
   tags: ['output'],
   user_metadata: {
     jobId: 'multi-output-job',
@@ -18,69 +22,98 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
+const outputAssetState = vi.hoisted(() => ({
+  items: [] as (typeof folderAsset)[],
+  hasMore: false
+}))
+
+vi.mock<unknown>(import('@/stores/assetsStore'), async () => {
   const { ref } = await import('vue')
 
-  return {
-    useAssetsApi: () => ({
-      media: ref([folderAsset]),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn(async () => [folderAsset]),
+  const store = {
+    outputAssets: {
+      get items() {
+        return outputAssetState.items
+      },
+      isLoading: ref(false),
+      get hasMore() {
+        return outputAssetState.hasMore
+      },
       loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    },
+    inputAssets: {
+      items: ref([]),
+      isLoading: ref(false),
       hasMore: ref(false),
-      isLoadingMore: ref(false)
-    })
+      loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    }
   }
-})
-
-vi.mock('@/platform/assets/composables/useAssetGridSelection', async () => {
-  const { ref } = await import('vue')
-  return {
-    useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
-  }
-})
-
-vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
-  const { ref } = await import('vue')
 
   return {
-    useAssetSelection: () => ({
-      isSelected: vi.fn(() => false),
-      selectedIds: ref(new Set<string>()),
-      handleAssetClick: vi.fn(),
-      selectAll: vi.fn(),
-      setSelectedIds: vi.fn(),
-      hasSelection: ref(false),
-      clearSelection: vi.fn(),
-      getSelectedAssets: vi.fn(() => []),
-      reconcileSelection: vi.fn(),
-      getOutputCount: vi.fn(() => 2),
-      getTotalOutputCount: vi.fn(() => 0),
-      activate: vi.fn(),
-      deactivate: vi.fn()
-    })
+    useAssetsStore: () => store
   }
 })
 
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({
-    downloadAssets: vi.fn(),
-    deleteAssets: vi.fn(),
-    addMultipleToWorkflow: vi.fn(),
-    openMultipleWorkflows: vi.fn(),
-    exportMultipleWorkflows: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetGridSelection'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useAssetGridSelection: () => ({ marqueeStyle: ref(null) })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetSelection'),
+  async () => {
+    const { ref } = await import('vue')
+
+    return {
+      useAssetSelection: () => ({
+        isSelected: vi.fn(() => false),
+        selectedIds: ref(new Set<string>()),
+        handleAssetClick: vi.fn(),
+        selectAll: vi.fn(),
+        setSelectedIds: vi.fn(),
+        hasSelection: ref(false),
+        clearSelection: vi.fn(),
+        getSelectedAssets: vi.fn(() => []),
+        reconcileSelection: vi.fn(),
+        getOutputCount: vi.fn(() => 2),
+        getTotalOutputCount: vi.fn(() => 0),
+        activate: vi.fn(),
+        deactivate: vi.fn()
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => ({
+      downloadAssets: vi.fn(),
+      deleteAssets: vi.fn(),
+      addMultipleToWorkflow: vi.fn(),
+      openMultipleWorkflows: vi.fn(),
+      exportMultipleWorkflows: vi.fn()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveOutputAssetItems: vi.fn(async () => [folderAsset])
-}))
+vi.mock<unknown>(import('@/platform/assets/utils/outputAssetUtil'))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: vi.fn() })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -114,10 +147,12 @@ const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click'],
   template: `
-    <button
-      aria-label="Enter output folder"
-      @click="$emit('output-count-click', assets[0])"
-    />
+    <div data-testid="assets-grid">
+      <button
+        aria-label="Enter output folder"
+        @click="$emit('output-count-click', assets[0])"
+      />
+    </div>
   `
 }
 
@@ -148,8 +183,23 @@ function renderTab() {
   })
 }
 
+beforeEach(() => {
+  outputAssetState.items = [folderAsset]
+  outputAssetState.hasMore = false
+})
+
+it('keeps pagination mounted when more assets can be loaded', () => {
+  outputAssetState.items = []
+  outputAssetState.hasMore = true
+
+  renderTab()
+
+  expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
+
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()
     await userEvent.click(
       screen.getByRole('button', { name: 'Enter output folder' })

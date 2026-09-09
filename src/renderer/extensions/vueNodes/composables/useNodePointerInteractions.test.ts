@@ -9,20 +9,24 @@ import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables
 import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 const forwardEventToCanvasMock = vi.fn()
 
 // Mock the dependencies
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => ({
-    forwardEventToCanvas: forwardEventToCanvasMock,
-    shouldHandleNodePointerEvents: ref(true)
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: () => ({
+      forwardEventToCanvas: forwardEventToCanvasMock,
+      shouldHandleNodePointerEvents: ref(true)
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
+vi.mock(import('@/renderer/extensions/vueNodes/layout/useNodeDrag'), () => {
   const startDrag = vi.fn()
   const handleDrag = vi.fn()
   const endDrag = vi.fn()
@@ -35,8 +39,8 @@ vi.mock('@/renderer/extensions/vueNodes/layout/useNodeDrag', () => {
   }
 })
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => {
     const handleNodeSelect = vi.fn()
     const deselectNode = vi.fn()
@@ -73,7 +77,7 @@ const mockData = vi.hoisted(() => {
   return { fakeNodeLayout }
 })
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => {
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => {
   const isDraggingVueNodes = ref(false)
   const isResizingVueNodes = ref(false)
   const fakeNodeLayoutRef = ref(mockData.fakeNodeLayout)
@@ -297,6 +301,38 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onPointerup(upEvent)
 
     // On pointer up: toggle handler IS called with correct params
+    expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
+      testNodeId,
+      true
+    )
+  })
+
+  it('toggles without dragging or clearing selection in node selection mode', () => {
+    const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
+      useNodeEventHandlers()
+    const { startDrag } = useNodeDrag()
+    useAgentNodeSelectionStore().isActive = true
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 150,
+        clientY: 150,
+        buttons: 1
+      })
+    )
+
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { clientX: 150, clientY: 150 })
+    )
+
     expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
       testNodeId,
       true

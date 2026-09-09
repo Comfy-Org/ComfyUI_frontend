@@ -3,9 +3,12 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LLink } from '@/lib/litegraph/src/LLink'
 import type { LinkId } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 /** `isConnected` is on the class, not the INodeInputSlot interface. */
 function inputSlot(node: LGraphNode, index: number): NodeInputSlot | null {
   const slot = node.inputs[index]
@@ -82,8 +85,8 @@ describe('NodeInputSlot', () => {
     expect(input?.isConnected).toBe(true)
   })
 
-  it('routes null assignment through disconnectInput', () => {
-    const { target } = createConnectedPair()
+  it('disconnects from null assignment for legacy compatibility', () => {
+    const { graph, target, link } = createConnectedPair()
     const input: { link?: LinkId | null } = target.inputs[0]
 
     expect(() => {
@@ -94,6 +97,25 @@ describe('NodeInputSlot', () => {
       undefined
     )
     expect(target.inputs[0].link).toBeNull()
+    expect(graph.links.has(link.id)).toBe(false)
+  })
+
+  it('removes input-only floating links from null assignment', () => {
+    const { graph, target } = createConnectedPair()
+    target.disconnectInput(0)
+    const floating = new LLink(
+      toLinkId(-1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      target.id,
+      0
+    )
+    graph.addFloatingLink(floating)
+
+    target.inputs[0].link = null
+
+    expect(graph.floatingLinks.has(floating.id)).toBe(false)
   })
 
   it('does not move a link from an id-only assignment', () => {

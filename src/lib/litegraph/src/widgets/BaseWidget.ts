@@ -14,14 +14,27 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
-  NodeBindable,
-  TWidgetType
+  NodeBindable
 } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
+import {
+  applyLegacyAdvancedWrite,
+  applyLegacyCanvasOnlyWrite,
+  applyLegacyHiddenWrite,
+  deriveWidgetVisibility,
+  isLegacyHiddenWidgetType,
+  isLegacyWidgetHidingType,
+  isWidgetAdvanced,
+  isWidgetHidden,
+  isWidgetHiddenInPanel,
+  setWidgetAdvanced,
+  setWidgetHiddenInPanel
+} from '@/types/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -41,10 +54,43 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   rightPadding?: number
 }
 
+const rawOptionsByShim = new WeakMap<object, object>()
+
+/**
+ * Extensions sometimes assign a widget's own options facade back to itself
+ * (e.g. `widget.options = widget.options || {}`). Unwrap any shim proxy to its
+ * plain target so `_rawOptions` never aliases a proxy, which would make the
+ * hidden-mirror write in the `hidden` setter recurse through the set trap.
+ */
+function unwrapOptionsShim<TOptions extends object>(
+  options: TOptions | undefined
+): TOptions | undefined {
+  if (!options) return options
+  return (rawOptionsByShim.get(options) ?? options) as TOptions
+}
+
+type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced' | 'canvasOnly'
+const LEGACY_VISIBILITY_KEYS: readonly LegacyVisibilityKey[] = [
+  'hidden',
+  'hideInPanel',
+  'advanced',
+  'canvasOnly'
+]
+
+type BaseWidgetState<TWidget extends IBaseWidget> = WidgetState<
+  TWidget['value'],
+  TWidget['type'],
+  TWidget['options']
+>
+
 export interface WidgetEventOptions {
   e: CanvasPointerEvent
   node: LGraphNode
   canvas: LGraphCanvas
+}
+
+export function extensionValue<T>(value: T): T | null | undefined {
+  return value
 }
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
@@ -83,8 +129,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   set name(value: string) {
-    const previous = this._name
-    if (previous === undefined || previous === value) {
+    const previous = extensionValue(this._name)
+    if (previous == null || previous === value) {
       this._name = value
       return
     }
@@ -106,16 +152,145 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state = moved
   }
 
-  options: TWidget['options']
-  type: TWidget['type']
+  private _rawOptions!: TWidget['options']
+  private _options!: TWidget['options']
+
+  get options(): TWidget['options'] {
+    return this._options
+  }
+
+  set options(rawOptions: TWidget['options']) {
+    const previousHidden = this._rawOptions.hidden
+    this.installOptionsShim(rawOptions)
+    if (previousHidden !== undefined) this._rawOptions.hidden = previousHidden
+    this._state.options = this._rawOptions
+    this.syncVisibilityFromOptions()
+  }
+
+  /**
+   * Re-applies visibility metadata carried on the raw options object after a
+   * wholesale `widget.options = {...}` replacement, matching the legacy read
+   * paths that consulted `options.hidden` / `options.hideInPanel` /
+   * `options.advanced` / `options.canvasOnly` live.
+   */
+  private syncVisibilityFromOptions(): void {
+    const raw = this._rawOptions
+    this.applyLegacyVisibilityKey('hidden', raw.hidden)
+    this.applyLegacyVisibilityKey('hideInPanel', raw.hideInPanel)
+    this.applyLegacyVisibilityKey('advanced', raw.advanced)
+    this.applyLegacyVisibilityKey('canvasOnly', raw.canvasOnly)
+  }
+
+  syncLiveVisibilityOptions(): void {
+    for (const key of LEGACY_VISIBILITY_KEYS) {
+      if (!Object.getOwnPropertyDescriptor(this._rawOptions, key)?.get) continue
+      this.applyLegacyVisibilityKey(key, Reflect.get(this._rawOptions, key))
+    }
+  }
+
+  private applyLegacyVisibilityKey(
+    key: LegacyVisibilityKey,
+    value: unknown
+  ): void {
+    const enabled = value === true
+    if (key === 'hidden') {
+      applyLegacyHiddenWrite(this._visibility, enabled)
+    } else if (key === 'hideInPanel') {
+      setWidgetHiddenInPanel(this._visibility, enabled)
+    } else if (key === 'canvasOnly') {
+      applyLegacyCanvasOnlyWrite(this._visibility, {
+        type: this.type,
+        options: { ...this._rawOptions, canvasOnly: enabled }
+      })
+    } else {
+      setWidgetAdvanced(this._visibility, enabled, ['vueNode', 'panel'])
+    }
+  }
+
+  /**
+   * Binds the legacy visibility options compatibility shim to this object.
+   * Widget adoption copies property descriptors onto the original widget
+   * object, so the adopting object must rebind the shim to itself; otherwise
+   * visibility writes land on the discarded donor instance.
+   */
+  installOptionsShim(rawOptions: TWidget['options'] = this._rawOptions): void {
+    this._rawOptions = unwrapOptionsShim(rawOptions) ?? {}
+    this._options = new Proxy(this._rawOptions, {
+      get: (target, property, receiver) => {
+        if (property === 'hidden')
+          return this._visibility.suppression.byExtension
+        if (property === 'hideInPanel') {
+          return isWidgetHiddenInPanel(this._visibility)
+        }
+        if (property === 'advanced') return isWidgetAdvanced(this._visibility)
+        return Reflect.get(target, property, receiver)
+      },
+      defineProperty: (target, property, descriptor) => {
+        const defined = Reflect.defineProperty(target, property, descriptor)
+        if (defined && this.isLegacyVisibilityKey(property)) {
+          this.applyLegacyVisibilityKey(property, Reflect.get(target, property))
+        }
+        return defined
+      },
+      deleteProperty: (target, property) => {
+        if (this.isLegacyVisibilityKey(property)) {
+          this.applyLegacyVisibilityKey(property, undefined)
+        }
+        return Reflect.deleteProperty(target, property)
+      }
+    })
+    rawOptionsByShim.set(this._options, this._rawOptions)
+  }
+
+  private isLegacyVisibilityKey(
+    property: PropertyKey
+  ): property is LegacyVisibilityKey {
+    return (
+      property === 'hidden' ||
+      property === 'hideInPanel' ||
+      property === 'advanced' ||
+      property === 'canvasOnly'
+    )
+  }
+
+  private _type!: TWidget['type']
+  get type(): TWidget['type'] {
+    return this._type
+  }
+  set type(value: TWidget['type']) {
+    this.setWidgetType(value)
+  }
+
+  private setWidgetType(value: TWidget['type']): void {
+    const wasLegacyHiding = isLegacyWidgetHidingType(this._type)
+    this._type = value
+    if (isLegacyHiddenWidgetType(value)) {
+      applyLegacyHiddenWrite(this._visibility, true)
+    } else if (wasLegacyHiding) {
+      applyLegacyHiddenWrite(this._visibility, this._rawOptions.hidden === true)
+    }
+  }
+
+  private installTypeVisibilityShim(): void {
+    const descriptor = Object.getOwnPropertyDescriptor(this, 'type')
+    if (!descriptor || descriptor.get || descriptor.set) return
+
+    this._type = this.type
+    Object.defineProperty(this, 'type', {
+      configurable: true,
+      enumerable: true,
+      get: () => this._type,
+      set: (value: TWidget['type']) => this.setWidgetType(value)
+    })
+  }
   y: number = 0
   last_y?: number
   width?: number
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: Omit<WidgetState, 'nodeId'> &
-    Partial<Pick<WidgetState, 'nodeId'>>
+  private _state: Omit<BaseWidgetState<TWidget>, 'nodeId'> &
+    Partial<Pick<BaseWidgetState<TWidget>, 'nodeId'>>
 
   get label(): string | undefined {
     return this._state.label
@@ -124,8 +299,46 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
-  advanced?: boolean
+  private _visibility: WidgetVisibilityComponent = {
+    surfaces: { canvas: 'shown', vueNode: 'shown', panel: 'shown' },
+    suppression: { byExtension: false, byConnection: false }
+  }
+
+  get visibility(): WidgetVisibilityComponent {
+    return this._visibility
+  }
+
+  get hidden(): boolean {
+    return isWidgetHidden(this._visibility)
+  }
+  set hidden(value: boolean | undefined) {
+    applyLegacyHiddenWrite(this._visibility, value ?? false)
+    // Hidden writes made while the widget type itself forces hiding (e.g.
+    // 'converted-widget') are conversion bookkeeping, not registration
+    // intent; keep them out of rawOptions so restoring the type recovers
+    // the registration-time hidden state.
+    if (!isLegacyWidgetHidingType(this._type)) {
+      this._rawOptions.hidden = value
+    }
+  }
+
+  get advanced(): boolean {
+    return isWidgetAdvanced(this._visibility)
+  }
+  set advanced(value: boolean | undefined) {
+    applyLegacyAdvancedWrite(
+      this._visibility,
+      value,
+      this._rawOptions.advanced !== undefined
+    )
+  }
+
+  get connectionSuppressed(): boolean {
+    return this._visibility.suppression.byConnection
+  }
+  set connectionSuppressed(value: boolean | undefined) {
+    this._visibility.suppression.byConnection = value === true
+  }
 
   get disabled(): boolean | undefined {
     return this._state.disabled
@@ -134,6 +347,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.disabled = value ?? false
   }
 
+  // fallow-ignore-next-line unused-class-member
   element?: HTMLElement
   callback?(
     value: TWidget['value'],
@@ -155,7 +369,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   ): boolean
 
   get value(): TWidget['value'] {
-    return this._state.value as TWidget['value']
+    return this._state.value
   }
   set value(value: TWidget['value']) {
     this._state.value = value
@@ -174,6 +388,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
+    this.installTypeVisibilityShim()
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
     if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
@@ -184,15 +399,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         disabled: this.disabled,
         label: this.label,
         name: this.name,
-        options: this.options,
+        options: this._state.options,
         serialize: this.serialize,
         type: this.type,
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this)
+      deriveWidgetRenderState(this),
+      this._visibility
     )
-    if (registered) this._state = registered
+    if (!registered) return
+    this._state = registered
+    const visibility = useWidgetValueStore().getWidgetVisibility(
+      widgetId(graphId, nodeId, this.name)
+    )
+    if (visibility) this._visibility = visibility
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -201,11 +422,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
+    this._visibility = deriveWidgetVisibility(widget)
+
     // The set and get functions for DOM widget values are hacked on to the options object;
     // attempting to set value before options will throw.
     // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
-    this.options = widget.options
+    this.installOptionsShim(widget.options)
     this.type = widget.type
 
     // `node` has no setter - Object.assign will throw.
@@ -231,9 +454,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       label,
+      hidden,
       disabled,
       value,
       linkedWidgets,
+      name: _name,
+      options: _options,
+      type: _type,
       ...safeValues
     } = widget
 
@@ -241,18 +468,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     this._state = {
       name: this.name,
-      type: this.type as TWidgetType,
+      type: this.type,
       value,
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options,
+      options: this._rawOptions,
       y: this.y
     }
+    if (hidden !== undefined) this.hidden = hidden
   }
 
   getOutlineColor() {
-    return this.advanced
+    return this._visibility.surfaces.canvas === 'advanced'
       ? litegraph().WIDGET_ADVANCED_OUTLINE_COLOR
       : litegraph().WIDGET_OUTLINE_COLOR
   }
@@ -370,6 +598,21 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   /**
+   * Draws only the widget's name for a row whose control is suppressed by an
+   * upstream connection. The connected input slot dot is drawn separately by
+   * slot rendering. Called from LGraphNode via toConcreteWidget, which fallow
+   * cannot resolve.
+   */
+  // fallow-ignore-next-line unused-class-member
+  drawSuppressedRowLabel(
+    ctx: CanvasRenderingContext2D,
+    { width }: DrawWidgetOptions
+  ): void {
+    ctx.textAlign = 'left'
+    this.drawTruncatingText({ ctx, width })
+  }
+
+  /**
    * A shared routine for drawing a label and value as text, truncated
    * if they exceed the available width.
    */
@@ -461,16 +704,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
     const v = this.type === 'number' ? Number(value) : value
     this.value = v
-    if (
-      this.options?.property &&
-      node.properties[this.options.property] !== undefined
-    ) {
-      node.setProperty(this.options.property, v)
+    const property = extensionValue(this.options)?.property
+    if (property && node.properties[property] !== undefined) {
+      node.setProperty(property, v)
     }
     const pos = canvas.graph_mouse
     this.callback?.(this.value, canvas, node, pos, e)
 
-    node.onWidgetChanged?.(this.name ?? '', v, oldValue, this)
+    node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()
   }
 
