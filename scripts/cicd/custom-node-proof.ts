@@ -82,6 +82,15 @@ export function assertNoCommittedSourceTierSwitch(cwd?: string): void {
   throw new Error(`could not inspect src/ for detection proof switches`)
 }
 
+export function hasSourceChanges(cwd?: string): boolean {
+  const result = spawnSync('git', ['diff', '--quiet', 'HEAD', '--', 'src/'], {
+    cwd
+  })
+  if (result.status === 0) return false
+  if (result.status === 1) return true
+  throw new Error('could not inspect src/ for detection proof changes')
+}
+
 function actionOutputs(values: Record<string, string>): void {
   const path = process.env.GITHUB_OUTPUT
   if (!path) throw new Error('GITHUB_OUTPUT is not set')
@@ -148,8 +157,7 @@ function mutateSource(row: ProofRow): void {
   const path = join(directory, matches[0])
   run('git', ['apply', '--3way', '--check', path])
   run('git', ['apply', '--3way', path])
-  if (spawnSync('git', ['diff', '--quiet', '--', 'src/']).status === 0)
-    throw new Error(`S${row} patch did not change src/`)
+  if (!hasSourceChanges()) throw new Error(`S${row} patch did not change src/`)
   actionOutputs({ path, digest: digest(path) })
 }
 
@@ -185,9 +193,10 @@ export function main(): void {
   else throw new Error(`invalid proof command ${command} for S${row}`)
 }
 
+const invokedPath = process.argv.at(1)
 const invokedDirectly =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
+  invokedPath !== undefined &&
+  import.meta.url === pathToFileURL(invokedPath).href
 
 if (invokedDirectly) {
   try {

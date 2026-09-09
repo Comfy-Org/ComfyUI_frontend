@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   assertNoCommittedSourceTierSwitch,
+  hasSourceChanges,
   mutateExecutionSource,
   proofIdentity
 } from './custom-node-proof'
@@ -69,6 +70,32 @@ describe('custom-node detection proof', () => {
       expect(() => assertNoCommittedSourceTierSwitch(root)).toThrow(
         /could not inspect src\//
       )
+    })
+  })
+
+  it('detects a source mutation staged by a 3-way patch', () => {
+    withTempDir('proof-staged-change-', (root) => {
+      mkdirSync(join(root, 'src'))
+      writeFileSync(join(root, 'src', 'node.ts'), 'export const value = 1\n')
+      spawnSync('git', ['init', '-q'], { cwd: root })
+      spawnSync('git', ['add', 'src/node.ts'], { cwd: root })
+      spawnSync(
+        'git',
+        [
+          '-c',
+          'user.name=Test',
+          '-c',
+          'user.email=test@example.com',
+          'commit',
+          '-qm',
+          'base'
+        ],
+        { cwd: root }
+      )
+      writeFileSync(join(root, 'src', 'node.ts'), 'export const value = 2\n')
+      spawnSync('git', ['add', 'src/node.ts'], { cwd: root })
+
+      expect(hasSourceChanges(root)).toBe(true)
     })
   })
 
