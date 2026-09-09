@@ -45,7 +45,9 @@ describe('release input validation', () => {
   it('passes inputs as data instead of interpolating shell source', () => {
     for (const step of steps.items) {
       if (!isMap(step)) throw new Error('Invalid release step')
-      expect(String(step.get('run') ?? '')).not.toMatch(/\$\{\{[^}]*\binputs\./)
+      expect(String(step.get('run') ?? '')).not.toMatch(
+        /\$\{\{[^}]*\binputs\s*(?:\.|\[)/
+      )
     }
   })
 })
@@ -66,7 +68,7 @@ describe('workflow shell input boundaries', () => {
       for (const step of jobSteps.items) {
         if (!isMap(step)) throw new Error('Invalid step')
         expect(String(step.get('run') ?? '')).not.toMatch(
-          /\$\{\{[^}]*\binputs\./
+          /\$\{\{[^}]*\binputs\s*(?:\.|\[)/
         )
       }
     }
