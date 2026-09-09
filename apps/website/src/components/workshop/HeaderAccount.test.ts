@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,14 +15,14 @@ const h = vi.hoisted(() => ({
   signOut: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   h.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('../../config/workshop-session-state', async () => {
+vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   const user = ref<unknown>(null)
   const session = ref<unknown>(undefined)
@@ -41,7 +41,7 @@ vi.mock('../../config/workshop-session-state', async () => {
   }
 })
 
-vi.mock('../../config/workshop-credits', async () => {
+vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   const balance = ref<unknown>({ status: 'unknown' })
   h.balance = balance
@@ -188,12 +188,19 @@ describe('HeaderAccount sign-in link', () => {
     )
   })
 
-  it('leaves a modified click to the browser so open-in-new-tab still works', async () => {
+  it('leaves a modified click to the browser with the return destination already on the link', async () => {
     const assign = vi.fn()
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
+    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
     render(HeaderAccount)
 
     const link = screen.getByRole('link', { name: /sign in/i })
+    expect(
+      link.getAttribute('href'),
+      'the first render must match the server output'
+    ).toBe('/login/')
+
+    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
     link.dispatchEvent(
       new MouseEvent('click', {
         bubbles: true,
@@ -203,6 +210,21 @@ describe('HeaderAccount sign-in link', () => {
     )
 
     expect(assign).not.toHaveBeenCalled()
-    expect(link.getAttribute('href')).toBe('/login/')
+    expect(
+      link.getAttribute('href'),
+      'open-in-new-tab must land on the model page after sign-in, not the Workshop home'
+    ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi')
+  })
+
+  it('prepares the destination on focus, so a keyboard open-in-new-tab keeps it too', async () => {
+    window.history.replaceState({}, '', '/workshop/models/example/')
+    render(HeaderAccount)
+    const link = screen.getByRole('link', { name: /sign in/i })
+
+    await fireEvent.focus(link)
+
+    expect(link.getAttribute('href')).toBe(
+      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+    )
   })
 })
