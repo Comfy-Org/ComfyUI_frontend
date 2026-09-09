@@ -997,6 +997,152 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   }
 }
 
+/**
+ * Checkout-journey lifecycle events for the embedded-checkout rollout.
+ *
+ * These intermediate stages are kept deliberately separate from the terminal
+ * billing taxonomy above (`billing.<operation>.<stage>`): entry, preview, and
+ * Payment Element observations are client observations of progress, never
+ * business success/failure/timeout. They share one frozen journey context so
+ * the two rollout arms can be compared on the same denominator.
+ */
+export const CHECKOUT_JOURNEY_SCHEMA_VERSION = 1
+
+export type CheckoutJourneyArm = 'control' | 'treatment'
+export type CheckoutAssignmentStatus = 'resolved' | 'unavailable'
+export type CheckoutUiMode = 'embedded' | 'hosted' | 'unknown'
+export type CheckoutEntryFlow =
+  | 'initial_subscription'
+  | 'paid_upgrade'
+  | 'topup'
+  | 'other'
+  | 'unknown'
+export type CheckoutEntrySource =
+  | 'pricing'
+  | 'deep_link'
+  | 'recovery'
+  | 'settings_billing'
+  | 'other'
+  | 'unknown'
+export type CheckoutElementPhase = 'init' | 'mount' | 'update'
+export type CheckoutSubmitPhase = 'validation' | 'token_creation'
+
+/**
+ * Non-sensitive entry context frozen at journey creation and replayed on every
+ * journey event. `assigned_arm` is omitted whenever `assignment_status` is
+ * `unavailable`, so an unknown assignment never masquerades as a resolved
+ * `control`.
+ */
+export interface CheckoutJourneyContext {
+  checkout_journey_id: string
+  checkout_attempt_id?: string
+  /** UTC ISO-8601 timestamp captured at common intent, preserved across reload. */
+  checkout_entered_at: string
+  assignment_status: CheckoutAssignmentStatus
+  assigned_arm?: CheckoutJourneyArm
+  ui_mode?: CheckoutUiMode
+  entry_flow: CheckoutEntryFlow
+  entry_source: CheckoutEntrySource
+  billing_op_id?: string
+}
+
+type CheckoutJourneyEntered = { phase: 'entered' }
+type CheckoutJourneyPreviewReady = {
+  phase: 'preview_ready'
+  preview_revision?: string
+}
+type CheckoutJourneyPreviewFailed = {
+  phase: 'preview_failed'
+  failure_category: BillingFailureCategory
+  error_code?: BillingErrorCode
+  preview_revision?: string
+}
+type CheckoutJourneyPaymentElementReady = { phase: 'payment_element_ready' }
+type CheckoutJourneyPaymentElementFailed = {
+  phase: 'payment_element_failed'
+  element_phase: CheckoutElementPhase
+  error_code?: string
+}
+type CheckoutJourneyPaymentSubmitAttempted = {
+  phase: 'payment_submit_attempted'
+}
+type CheckoutJourneyPaymentSubmitFailed = {
+  phase: 'payment_submit_failed'
+  submit_phase: CheckoutSubmitPhase
+  error_code?: string
+}
+type CheckoutJourneySubmitted = { phase: 'submitted' }
+type CheckoutJourneyOperationLinked = {
+  phase: 'operation_linked'
+  billing_op_id: string
+}
+
+export type CheckoutJourneyPhaseEvent =
+  | CheckoutJourneyEntered
+  | CheckoutJourneyPreviewReady
+  | CheckoutJourneyPreviewFailed
+  | CheckoutJourneyPaymentElementReady
+  | CheckoutJourneyPaymentElementFailed
+  | CheckoutJourneyPaymentSubmitAttempted
+  | CheckoutJourneyPaymentSubmitFailed
+  | CheckoutJourneySubmitted
+  | CheckoutJourneyOperationLinked
+
+export type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
+
+export type CheckoutJourneyTelemetryEvent = CheckoutJourneyContext &
+  CheckoutJourneyPhaseEvent
+
+export type CheckoutJourneyTelemetryEventName =
+  `billing.checkout.${CheckoutJourneyPhase}`
+
+export function getCheckoutJourneyTelemetryEventName(
+  event: CheckoutJourneyTelemetryEvent
+): CheckoutJourneyTelemetryEventName {
+  return `billing.checkout.${event.phase}`
+}
+
+export function getCheckoutJourneyTelemetryEventPayload(
+  event: CheckoutJourneyTelemetryEvent,
+  eventId: string
+) {
+  return {
+    schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
+    event_id: eventId,
+    phase: event.phase,
+    checkout_journey_id: event.checkout_journey_id,
+    checkout_entered_at: event.checkout_entered_at,
+    assignment_status: event.assignment_status,
+    entry_flow: event.entry_flow,
+    entry_source: event.entry_source,
+    ...(event.checkout_attempt_id !== undefined && {
+      checkout_attempt_id: event.checkout_attempt_id
+    }),
+    ...(event.assigned_arm !== undefined && {
+      assigned_arm: event.assigned_arm
+    }),
+    ...(event.ui_mode !== undefined && { ui_mode: event.ui_mode }),
+    ...(event.billing_op_id !== undefined && {
+      billing_op_id: event.billing_op_id
+    }),
+    ...('preview_revision' in event &&
+      event.preview_revision !== undefined && {
+        preview_revision: event.preview_revision
+      }),
+    ...('failure_category' in event && {
+      failure_category: event.failure_category
+    }),
+    ...('error_code' in event &&
+      event.error_code !== undefined && { error_code: event.error_code }),
+    ...('element_phase' in event && { element_phase: event.element_phase }),
+    ...('submit_phase' in event && { submit_phase: event.submit_phase })
+  }
+}
+
+export type CheckoutJourneyTelemetryEventPayload = ReturnType<
+  typeof getCheckoutJourneyTelemetryEventPayload
+>
+
 export interface FetchTimeoutMetadata {
   route: string
   method: string
@@ -1043,6 +1189,16 @@ export interface TelemetryProvider {
   trackRunButton?(properties: RunButtonProperties): void
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
+
+  /**
+   * Emit a checkout-journey lifecycle event. `eventId` is generated once by the
+   * dispatcher before fan-out so the same logical emission carries one identity
+   * across every provider.
+   */
+  trackCheckoutJourneyEvent?(
+    event: CheckoutJourneyTelemetryEvent,
+    eventId: string
+  ): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1216,6 +1372,21 @@ export const TelemetryEvents = {
   BILLING_DOWNGRADE_TO_PERSONAL_SUCCEEDED:
     'billing.downgrade_to_personal.succeeded',
   BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
+
+  // Checkout journey lifecycle (embedded-checkout rollout)
+  BILLING_CHECKOUT_ENTERED: 'billing.checkout.entered',
+  BILLING_CHECKOUT_PREVIEW_READY: 'billing.checkout.preview_ready',
+  BILLING_CHECKOUT_PREVIEW_FAILED: 'billing.checkout.preview_failed',
+  BILLING_CHECKOUT_PAYMENT_ELEMENT_READY:
+    'billing.checkout.payment_element_ready',
+  BILLING_CHECKOUT_PAYMENT_ELEMENT_FAILED:
+    'billing.checkout.payment_element_failed',
+  BILLING_CHECKOUT_PAYMENT_SUBMIT_ATTEMPTED:
+    'billing.checkout.payment_submit_attempted',
+  BILLING_CHECKOUT_PAYMENT_SUBMIT_FAILED:
+    'billing.checkout.payment_submit_failed',
+  BILLING_CHECKOUT_SUBMITTED: 'billing.checkout.submitted',
+  BILLING_CHECKOUT_OPERATION_LINKED: 'billing.checkout.operation_linked',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
@@ -1407,4 +1578,5 @@ export type TelemetryEventProperties =
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
+  | CheckoutJourneyTelemetryEventPayload
   | FetchTimeoutMetadata

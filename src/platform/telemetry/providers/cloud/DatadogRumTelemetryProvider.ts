@@ -3,6 +3,7 @@ import { datadogRum } from '@datadog/browser-rum'
 
 import type {
   BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
@@ -13,6 +14,8 @@ import type {
 import {
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
   TelemetryEvents
 } from '../../types'
 
@@ -54,6 +57,16 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),
       getBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackCheckoutJourneyEvent(
+    event: CheckoutJourneyTelemetryEvent,
+    eventId: string
+  ): void {
+    datadogRum.addAction(
+      getCheckoutJourneyTelemetryEventName(event),
+      getCheckoutJourneyTelemetryEventPayload(event, eventId)
     )
   }
 
