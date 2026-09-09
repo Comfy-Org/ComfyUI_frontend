@@ -12,14 +12,19 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useAgentPanelStore } from './agentPanelStore'
 
 const host = vi.hoisted(() => ({ tabs: [] as ComfyWorkflow[] }))
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get openWorkflows() {
-      return host.tabs
-    }
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get openWorkflows() {
+        return host.tabs
+      }
+    })
   })
+)
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => null
 }))
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => null }))
 
 describe('Agent target tab lifetime', () => {
   beforeEach(() => {
