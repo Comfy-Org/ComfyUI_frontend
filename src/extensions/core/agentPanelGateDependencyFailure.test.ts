@@ -74,6 +74,7 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
   })
 
   it('settles fail-closed, reports, and resolves the setup promise', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.resetModules()
     const { registerAgentPanelExtension } = await import('./agentPanel')
@@ -90,5 +91,6 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_flag_gate_load_failure'
     })
+    expect(consoleError).not.toHaveBeenCalled()
   })
 })

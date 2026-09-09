@@ -100,10 +100,14 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 //
 // engineering-blog: English-only for now (see src/content/README.md), same
 // as the engineeringBlog content collection it renders.
+//
+// workshop: the catalog is English-only. It is also build-gated until launch,
+// but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
-  '/engineering-blog'
+  '/engineering-blog',
+  '/workshop'
 ]
 
 const LOCALE_INVARIANT_PATHS = new Set<string>([
