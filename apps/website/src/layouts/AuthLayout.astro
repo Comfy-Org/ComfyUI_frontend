@@ -2,6 +2,7 @@
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import AuthHeroCarousel from '../components/auth/AuthHeroCarousel.vue'
+import GoogleTagManager from '../components/common/GoogleTagManager.astro'
 import { t } from '../i18n/translations'
 import type { Locale } from '../i18n/translations'
 
@@ -20,9 +21,6 @@ interface Props {
 }
 
 const { title, description, locale, showTermsNotice = false } = Astro.props
-
-const gtmId = 'GTM-NP9JM6K7'
-const gtmEnabled = import.meta.env.PROD
 ---
 
 <!doctype html>
@@ -41,32 +39,10 @@ const gtmEnabled = import.meta.env.PROD
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
 
-    {gtmEnabled && (
-      <script is:inline define:vars={{ gtmId }}>
-        ;(function (w, d, s, l, i) {
-          w[l] = w[l] || []
-          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-          var f = d.getElementsByTagName(s)[0],
-            j = d.createElement(s),
-            dl = l != 'dataLayer' ? '&l=' + l : ''
-          j.async = true
-          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-          f.parentNode.insertBefore(j, f)
-        })(window, document, 'script', 'dataLayer', gtmId)
-      </script>
-    )}
+    <GoogleTagManager part="head" />
   </head>
   <body class="bg-primary-comfy-ink antialiased">
-    {gtmEnabled && (
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-          height="0"
-          width="0"
-          style="display:none;visibility:hidden"
-        ></iframe>
-      </noscript>
-    )}
+    <GoogleTagManager part="noscript" />
 
     <div
       class="dark-theme flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"

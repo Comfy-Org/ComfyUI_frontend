@@ -149,6 +149,11 @@ onMounted(() => {
     }, AUTH_FLAG_TIMEOUT_MS)
   }
 })
+
+// A late answer, whichever way it goes, ends the timeout screen.
+watch(flagSettled, (settled) => {
+  if (settled) flagTimedOut.value = false
+})
 </script>
 
 <template>
