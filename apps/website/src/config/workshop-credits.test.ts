@@ -1,8 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
-
 import type { WorkshopSession } from './workshop-session-state'
 
 const h = vi.hoisted(() => {
@@ -85,8 +83,11 @@ beforeEach(() => {
 describe('balanceToCredits', () => {
   it('treats the backend values as cents despite their _micros names', async () => {
     const mod = await importFresh()
-    expect(mod.balanceToCredits(1_000_000)).toBe(centsToCredits(1_000_000))
-    expect(mod.balanceToCredits(4_750_000)).toBe(centsToCredits(4_750_000))
+    expect(
+      mod.balanceToCredits(3_000_000),
+      'the platform fixtures annotate effective_balance_micros: 3_000_000 as ~6.3M credits'
+    ).toBe(6_330_000)
+    expect(mod.balanceToCredits(100)).toBe(211)
     expect(mod.balanceToCredits(0)).toBe(0)
   })
 })
@@ -175,6 +176,26 @@ describe('useWorkshopCredits start()', () => {
       ).toBe(true)
     )
     addSpy.mockRestore()
+  })
+
+  it('force-refreshes when the session token rotates, never joining a doomed in-flight read', async () => {
+    const mod = await importFresh()
+    mod.useWorkshopCredits()
+    h.setSession?.(liveSession('token-a'))
+    await vi.waitFor(() => expect(h.refresh).toHaveBeenCalled())
+    const forcedBefore = h.refresh.mock.calls.filter(
+      ([options]) => options?.force === true
+    ).length
+
+    h.setSession?.(liveSession('token-b'))
+
+    await vi.waitFor(() =>
+      expect(
+        h.refresh.mock.calls.filter(([options]) => options?.force === true)
+          .length,
+        'a read started under the old token is discarded by the publish guard; the rotation must issue its own'
+      ).toBeGreaterThan(forcedBefore)
+    )
   })
 
   it('force-refreshes on focus while a session is live', async () => {

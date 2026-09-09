@@ -172,19 +172,37 @@ describe('HeaderAccount', () => {
   })
 })
 
-describe('HeaderAccount sign-in href', () => {
-  it('carries the return destination from the very first render, before any mount hook', async () => {
-    const { renderToString } = await import('vue/server-renderer')
-    const { createSSRApp, h: hyper } = await import('vue')
+describe('HeaderAccount sign-in link', () => {
+  it('sends the visitor to sign in with the current page as the return destination', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
     window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
+    render(HeaderAccount)
 
-    const html = await renderToString(
-      createSSRApp({ render: () => hyper(HeaderAccount) })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: /sign in/i }))
+
+    expect(assign).toHaveBeenCalledWith(
+      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi'
+    )
+  })
+
+  it('leaves a modified click to the browser so open-in-new-tab still works', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+    render(HeaderAccount)
+
+    const link = screen.getByRole('link', { name: /sign in/i })
+    link.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true
+      })
     )
 
-    expect(
-      html,
-      'a click during hydration must not lose the returnTo and strand sign-in on /login/'
-    ).toContain(encodeURIComponent('/workshop/models/example/'))
+    expect(assign).not.toHaveBeenCalled()
+    expect(link.getAttribute('href')).toBe('/login/')
   })
 })
