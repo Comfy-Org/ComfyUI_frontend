@@ -16,7 +16,7 @@ const canvasState = vi.hoisted(() => ({ linearMode: true }))
 
 const helpCenterSpies = vi.hoisted(() => ({ toggleHelpCenter: vi.fn() }))
 
-vi.mock('@/platform/surveys/useTypeformEmbed', async () => {
+vi.mock<unknown>(import('@/platform/surveys/useTypeformEmbed'), async () => {
   const { computed } = await import('vue')
   return {
     useTypeformEmbed: (containerRef: unknown, formId: string) => {
@@ -31,7 +31,7 @@ vi.mock('@/platform/surveys/useTypeformEmbed', async () => {
   }
 })
 
-vi.mock('@/composables/useHelpCenter', async () => {
+vi.mock<unknown>(import('@/composables/useHelpCenter'), async () => {
   const { ref } = await import('vue')
   return {
     useHelpCenter: () => ({
@@ -41,17 +41,21 @@ vi.mock('@/composables/useHelpCenter', async () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: () => 'left' })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { computed, reactive } = await import('vue')
-  return {
-    useCanvasStore: () =>
-      reactive({ linearMode: computed(() => canvasState.linearMode) })
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
+
+  async () => {
+    const { computed, reactive } = await import('vue')
+    return {
+      useCanvasStore: () =>
+        reactive({ linearMode: computed(() => canvasState.linearMode) })
+    }
   }
-})
+)
 
 const FEEDBACK_LOAD_ERROR =
   'Failed to load feedback form. Please try again later.'
