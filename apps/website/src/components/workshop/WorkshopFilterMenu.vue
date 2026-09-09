@@ -136,7 +136,7 @@ const sheetLabels = computed(() => ({
       :aria-label="t('workshop.filter.label', locale)"
       :class="
         cn(
-          'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
+          'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
           selectedCount
             ? 'text-primary-warm-white'
             : 'text-primary-comfy-canvas'
@@ -150,7 +150,7 @@ const sheetLabels = computed(() => ({
       </span>
       <span
         v-if="selectedCount"
-        class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-primary-comfy-ink tabular-nums"
+        class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
         data-testid="workshop-filter-count"
       >
         {{ selectedCount }}

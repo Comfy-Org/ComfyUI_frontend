@@ -333,15 +333,15 @@ const menuItemClass =
     </aside>
 
     <div class="min-w-0">
-      <div v-if="inSection" class="mb-8 flex items-center gap-4">
+      <div v-if="inSection" class="mb-8">
         <button
           type="button"
-          class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 grid size-9 shrink-0 cursor-pointer place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
-          :aria-label="t('workshop.sections.back', locale)"
+          class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mb-2 -ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3"
           data-testid="section-back"
           @click="selectRail('all')"
         >
           <ChevronLeft class="size-4" aria-hidden="true" />
+          {{ t('workshop.sections.back', locale) }}
         </button>
         <h1 class="text-2xl font-bold text-primary-warm-white sm:text-3xl">
           {{ t(sectionTitleKey, locale) }}

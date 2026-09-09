@@ -28,7 +28,18 @@ const MODEL_TO_LOGO: Record<string, string> = {
   MiniMax: 'minimax',
   Ideogram: 'ideogram',
   Qwen: 'qwen',
-  ElevenLabs: 'elevenlabs'
+  ElevenLabs: 'elevenlabs',
+  Vidu: 'vidu',
+  WaveSpeed: 'wavespeed',
+  Tripo: 'tripo',
+  Meshy: 'meshy',
+  'Sync Labs': 'sync',
+  Bria: 'bria',
+  Recraft: 'recraft',
+  HeyGen: 'heygen',
+  PixVerse: 'pixverse',
+  Krea: 'krea',
+  Sonilo: 'sonilo'
 }
 
 function escapeRegex(value: string): string {

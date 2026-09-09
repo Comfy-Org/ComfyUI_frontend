@@ -25,19 +25,20 @@ describe('WorkshopModelCard', () => {
     expect(link.getAttribute('href')).toBe('/models/flux/')
     expect(screen.getByText('Flux')).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Black Forest Labs' })).toBeTruthy()
+    expect(screen.getByTestId('model-card-name').textContent).toBe('Flux')
     expect(screen.getByTestId('model-card-task').textContent).toBe(
       'Image to Image'
     )
     expect(screen.queryByText(/credits|\$/)).toBeNull()
   })
 
-  it('falls back to a provider badge and the modality when nothing matches', () => {
+  it('falls back to the provider initial and the modality when nothing matches', () => {
     render(WorkshopModelCard, {
       props: {
         model: { ...base, name: 'Mystery', provider: 'Nobody', task: undefined }
       }
     })
-    expect(screen.getByTestId('model-card-provider').textContent).toBe('Nobody')
+    expect(screen.getByText('N')).toBeTruthy()
     expect(screen.getByTestId('model-card-task').textContent).toBe('Image')
   })
 })

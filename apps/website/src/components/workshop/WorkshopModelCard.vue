@@ -54,13 +54,15 @@ const pillClass =
 <template>
   <a
     :href="model.href"
-    class="group bg-hub-surface hover:bg-hub-surface-hover flex cursor-pointer flex-col gap-3 overflow-hidden rounded-4xl px-2 pt-2 pb-4 transition-colors duration-200"
+    class="group bg-hub-surface hover:bg-hub-surface-hover flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl px-2 pt-2 pb-4 transition-colors duration-200"
     data-testid="workshop-model-card"
   >
     <div
-      class="bg-hub-surface relative aspect-video overflow-hidden rounded-[1.75rem]"
+      class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
     >
-      <HubTypeBadge kind="model" :locale />
+      <!-- Only the hub mixes graphs, apps and models in one grid, so only
+        there does a card have to say which it is. -->
+      <HubTypeBadge v-if="providerBadge" kind="model" :locale />
 
       <img
         v-if="model.thumbnailUrl"
@@ -88,15 +90,17 @@ const pillClass =
         </span>
       </div>
 
-      <div
-        class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/70 via-black/30 to-transparent"
-        aria-hidden="true"
-      />
-      <h3
-        class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md lg:text-base"
-      >
-        {{ model.name }}
-      </h3>
+      <template v-if="providerBadge">
+        <div
+          class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-linear-to-t from-black/70 via-black/30 to-transparent"
+          aria-hidden="true"
+        />
+        <h3
+          class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md lg:text-base"
+        >
+          {{ model.name }}
+        </h3>
+      </template>
 
       <!-- The mark names its provider on hover, as a tooltip: spelled out on
         the card it crossed the title. -->
@@ -142,11 +146,21 @@ const pillClass =
             {{ providerName.charAt(0).toUpperCase() }}
           </span>
           <span
+            v-if="providerBadge"
             class="ppformula-text-center-sm truncate text-sm"
             data-testid="model-card-provider"
           >
             {{ providerName }}
           </span>
+          <!-- The name reads better beside the mark than over the artwork, and
+            the mark says the provider without spending a line on it. -->
+          <h3
+            v-else
+            class="text-content-bright truncate text-sm font-medium"
+            data-testid="model-card-name"
+          >
+            {{ model.name }}
+          </h3>
         </span>
         <span
           class="text-content group-hover:bg-primary-comfy-yellow group-focus-visible:bg-primary-comfy-yellow relative isolate inline-flex h-10 w-fit shrink-0 items-center overflow-hidden rounded-2xl bg-transparent ps-9 pe-0 text-sm font-bold tracking-wider text-nowrap uppercase transition-all duration-500 group-hover:pe-5 group-hover:text-primary-comfy-ink group-focus-visible:pe-5 group-focus-visible:text-primary-comfy-ink"
