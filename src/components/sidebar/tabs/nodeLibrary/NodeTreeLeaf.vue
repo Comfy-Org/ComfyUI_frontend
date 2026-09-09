@@ -4,6 +4,7 @@
     class="node-lib-node-container size-full"
     data-testid="node-tree-leaf"
     :data-node-name="nodeDef.display_name"
+    :data-node-type="nodeDef.name"
   >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>

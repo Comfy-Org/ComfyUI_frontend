@@ -1,7 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -110,19 +108,5 @@ describe('the graph-side agent panel mount', () => {
     // eslint-disable-next-line testing-library/no-node-access
     const column = dock.previousElementSibling
     expect(column?.contains(workspace)).toBe(true)
-  })
-
-  it('guards the docked panel against linear mode (GraphCanvas stays mounted there)', () => {
-    // Source pin: GraphCanvas cannot mount in the unit environment (it
-    // bootstraps the litegraph canvas), and the flag-off agent E2E owns the
-    // rendered single-instance property. LinearView mounts its own dock; two
-    // at once breaks strict-mode locators.
-    const graphCanvasSource = readFileSync(
-      join(__dirname, 'GraphCanvas.vue'),
-      'utf-8'
-    )
-    expect(graphCanvasSource).toMatch(
-      /<component\s+:is="DockedAgentPanel"\s+v-if="agentDocked && !linearMode"\s*\/>/
-    )
   })
 })

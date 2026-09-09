@@ -2,6 +2,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
+  AgentAdmissionError,
+  AgentAnswerAccepted,
   AgentThreadListResponse,
   AgentThreadSummary,
   SubscriptionTier
@@ -397,6 +399,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
@@ -710,6 +713,139 @@ describe('AgentPanelRoot session notices', () => {
   })
 })
 
+describe('AgentPanelRoot compact submission bridge', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  it('forwards a queued compact prompt through the existing Agent transport', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, ack('workflow-1'))
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a compact image workflow'
+    expect(composer.requestSubmission()).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(messageBodies).toHaveLength(1))
+    expect(messageBodies[0]).toMatchObject({
+      content: 'Build a compact image workflow'
+    })
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('')
+    expect(composer.compactSessionPhase).toBe('running')
+    expect(useAgentPanelStore().isOpen).toBe(false)
+
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+  })
+
+  it('returns the compact composer to idle when the Agent rejects the request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        return json(503, { error: { message: 'Agent unavailable' } })
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a workflow even if the request fails'
+    expect(composer.requestSubmission()).toBe(true)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+    expect(composer.pendingSubmission).toBeNull()
+    expect(composer.draft).toBe('Build a workflow even if the request fails')
+    expect(useAgentPanelStore().isOpen).toBe(true)
+    expect(screen.getByText(/Agent unavailable/)).toBeVisible()
+  })
+
+  it('reveals the run approval without answering on behalf of the user', async () => {
+    const answerBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        if (url.endsWith('/asks/ask-1/answer')) {
+          answerBodies.push(JSON.parse(String(init?.body)))
+          return json(202, { status: 'answered' } satisfies AgentAnswerAccepted)
+        }
+        return json(202, ack('workflow-1'))
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a workflow and ask before running it'
+    composer.requestSubmission()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('running'))
+
+    ws.emit('agent_ask', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'ask-1',
+      kind: 'run_approval',
+      context: { workflow_id: 'workflow-1', workflow_name: 'Canvas workflow' },
+      prompt: 'Run it?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    })
+
+    await vi.waitFor(() => expect(useAgentPanelStore().isOpen).toBe(true))
+    const run = screen.getByRole('button', { name: 'Run' })
+    expect(run).toBeVisible()
+    expect(answerBodies).toEqual([])
+    await userEvent.click(run)
+    await vi.waitFor(() =>
+      expect(answerBodies).toEqual([{ selected: ['run'] }])
+    )
+    expect(run).toBeDisabled()
+    expect(composer.compactSessionPhase).toBe('running')
+  })
+
+  it('reveals the paywall and preserves a compact prompt denied for insufficient credits', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/api/agent/threads'))
+          return json(200, { threads: [] })
+        return json(402, {
+          error: {
+            message: 'Out of credits',
+            type: 'PAYMENT_REQUIRED',
+            reason: 'no_funds'
+          }
+        } satisfies AgentAdmissionError)
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.draft = 'Build a workflow with my references'
+    composer.requestSubmission()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(composer.compactSessionPhase).toBe('idle'))
+    expect(useAgentPanelStore().isOpen).toBe(true)
+    expect(composer.draft).toBe('Build a workflow with my references')
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeVisible()
+  })
+})
+
 // happy-dom aliases DragEvent to Event, dropping any dataTransfer init, and its
 // DataTransfer.types reports item MIME types rather than the browser's 'Files'
 // marker the panel tests for, so the payload is hand-built.
@@ -976,6 +1112,53 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
+  })
+
+  it('drains compact reference files through the same Agent upload path', async () => {
+    const uploaded: string[] = []
+    const messages: Array<Record<string, unknown>> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (init?.method === 'POST' && url.includes('/messages')) {
+          messages.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-42'))
+        }
+        if (!url.includes('/upload/')) return json(200, { threads: [] })
+        const file =
+          init?.body instanceof FormData ? init.body.get('image') : undefined
+        const name = file instanceof File ? file.name : 'unknown'
+        uploaded.push(name)
+        return json(200, {
+          name: `uploaded_${name}`,
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    )
+    const composer = useAgentComposerStore()
+    composer.requestAttachments([
+      new File(['dog'], 'dog.png', { type: 'image/png' }),
+      new File(['sheep'], 'sheep.png', { type: 'image/png' })
+    ])
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['dog.png', 'sheep.png']))
+    expect(composer.pendingAttachmentRequests).toEqual([])
+    expect(composer.attachments).toMatchObject([
+      { name: 'dog.png', ref: 'uploaded_dog.png', uploading: false },
+      { name: 'sheep.png', ref: 'uploaded_sheep.png', uploading: false }
+    ])
+
+    composer.draft = 'Animate the dog and sheep in one consistent story'
+    expect(composer.requestSubmission()).toBe(true)
+    await vi.waitFor(() => expect(messages).toHaveLength(1))
+    expect(messages[0]).toMatchObject({
+      content: 'Animate the dog and sheep in one consistent story',
+      attachments: ['uploaded_dog.png', 'uploaded_sheep.png']
+    })
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {

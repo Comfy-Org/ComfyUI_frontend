@@ -1,6 +1,9 @@
 <template>
+  <!-- Compact canvas requests still need AgentPanelRoot's transport and CRDT
+       effects. v-show keeps that runtime mounted without docking visible UI. -->
   <div
-    v-if="docked"
+    v-if="mounted"
+    v-show="isOpen"
     data-testid="docked-agent-panel"
     role="complementary"
     aria-labelledby="agent-panel-title"
@@ -34,13 +37,16 @@ import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+
+const { t } = useI18n()
 
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',
   setup() {
-    const { t } = useI18n()
     return () =>
       h('div', { class: 'size-full bg-base-background p-3' }, [
         h(
@@ -60,14 +66,33 @@ const AgentPanelRoot = defineAsyncComponent({
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
     reportError(error, { errorType: 'agent_panel_load_failure' })
+    if (!useAgentPanelStore().isOpen) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('agent.loadFailed')
+      })
+    }
+    const composerStore = useAgentComposerStore()
+    composerStore.releaseSubmission()
+    while (composerStore.takeAttachmentRequest() !== undefined) {
+      // The upload runtime never loaded, so no request can be consumed later.
+    }
     fail()
   }
 })
 
 const agentPanelStore = useAgentPanelStore()
+const agentComposerStore = useAgentComposerStore()
 const agentRunModeStore = useAgentRunModeStore()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
-const docked = computed(() => enabled.value && isOpen.value)
+const mounted = computed(
+  () =>
+    enabled.value &&
+    (isOpen.value ||
+      agentComposerStore.compactSessionPhase !== 'idle' ||
+      agentComposerStore.hasPendingAttachmentWork)
+)
 
 void agentRunModeStore.load().catch((error: unknown) => {
   reportError(error, { errorType: 'agent_run_mode_load_failure' })

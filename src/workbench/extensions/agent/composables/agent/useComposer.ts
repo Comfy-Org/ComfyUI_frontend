@@ -18,12 +18,14 @@ export interface UseComposerOptions {
 }
 
 export function useComposer(options: UseComposerOptions) {
-  const { draft, attachments } = storeToRefs(useAgentComposerStore())
+  const store = useAgentComposerStore()
+  const { draft, attachments } = storeToRefs(store)
 
   const canSend = computed(
     () =>
       (draft.value.trim().length > 0 || attachments.value.length > 0) &&
-      !attachments.value.some((item) => item.uploading)
+      !store.hasPendingAttachmentWork &&
+      attachments.value.every((attachment) => attachment.ref.length > 0)
   )
 
   function submit(): void {
@@ -42,24 +44,18 @@ export function useComposer(options: UseComposerOptions) {
   }
 
   function addAttachment(attachment: ComposerAttachment): void {
-    if (attachments.value.some((item) => item.id === attachment.id)) return
-    attachments.value = [...attachments.value, attachment]
+    store.addAttachment(attachment)
   }
 
   function updateAttachment(
     id: string,
     patch: Partial<ComposerAttachment>
   ): void {
-    attachments.value = attachments.value.map((item) =>
-      item.id === id ? { ...item, ...patch } : item
-    )
+    store.updateAttachment(id, patch)
   }
 
   function removeAttachment(id: string): void {
-    const removed = attachments.value.find((item) => item.id === id)
-    if (removed?.previewUrl?.startsWith('blob:'))
-      URL.revokeObjectURL(removed.previewUrl)
-    attachments.value = attachments.value.filter((item) => item.id !== id)
+    store.removeAttachment(id)
   }
 
   return {

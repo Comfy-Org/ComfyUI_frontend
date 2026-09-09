@@ -13,14 +13,14 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
+export const AGENT_TEST_THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+export const AGENT_TEST_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
-  thread_id: THREAD_ID,
-  workflow_id: WORKFLOW_ID
+  thread_id: AGENT_TEST_THREAD_ID,
+  workflow_id: AGENT_TEST_WORKFLOW_ID
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
@@ -33,7 +33,7 @@ export const THINKING_EVENT: AgentWsEvent = {
   data: {
     delta: THINKING_TEXT,
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -45,7 +45,7 @@ export const TOOL_CALL_EVENT: AgentWsEvent = {
     status: 'success',
     duration_ms: 1300,
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -54,7 +54,7 @@ export const INTERMEDIATE_MESSAGE_EVENT: AgentWsEvent = {
   data: {
     delta: 'The first graph edit is complete. I will check the remaining work.',
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -63,7 +63,7 @@ export const RESUMED_THINKING_EVENT: AgentWsEvent = {
   data: {
     delta: 'Checking the remaining edits.',
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -75,7 +75,7 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
     status: 'success',
     duration_ms: 500,
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -87,7 +87,7 @@ export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
     status: 'success',
     duration_ms: 200,
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -99,7 +99,7 @@ export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
   data: {
     delta: MESSAGE_DELTA_TEXT,
     message_id: TURN_ID,
-    thread_id: THREAD_ID
+    thread_id: AGENT_TEST_THREAD_ID
   }
 }
 
@@ -107,7 +107,7 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   type: 'agent_message_done',
   data: {
     message_id: TURN_ID,
-    thread_id: THREAD_ID,
+    thread_id: AGENT_TEST_THREAD_ID,
     usage: {
       input_tokens: 4493,
       output_tokens: 425,
@@ -236,8 +236,7 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
-  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
-  postedMessages: async ({}, use) => {
+  postedMessages: async ({ context: _context }, use) => {
     await use([])
   },
   page: async ({ page, agentFlagEnabled, postedMessages }, use) => {

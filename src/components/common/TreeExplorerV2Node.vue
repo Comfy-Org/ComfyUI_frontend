@@ -10,6 +10,8 @@
       v-if="item.value.type === 'node'"
       v-bind="$attrs"
       :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
+      :data-node-name="item.value.data?.display_name"
+      :data-node-type="item.value.data?.name"
       :style="rowStyle"
       draggable="true"
       @click.stop="handleClick($event, handleToggle, handleSelect)"

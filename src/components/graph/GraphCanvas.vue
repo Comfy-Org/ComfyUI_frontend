@@ -41,7 +41,7 @@
       <NodePropertiesPanel v-else />
     </template>
     <template v-if="showUI" #agent-panel>
-      <component :is="DockedAgentPanel" v-if="agentDocked && !linearMode" />
+      <component :is="DockedAgentPanel" v-if="agentMounted && !linearMode" />
     </template>
     <template #graph-canvas-panel>
       <div
@@ -240,7 +240,7 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
 )
 const { linearMode } = storeToRefs(canvasStore)
-const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { mounted: agentMounted, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()

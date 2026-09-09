@@ -8,6 +8,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
@@ -128,6 +129,39 @@ describe('DockedAgentPanel', () => {
     renderPanel()
 
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
+  })
+
+  it('keeps the Agent runtime mounted but visually hidden for a compact canvas session', async () => {
+    const store = openPanel()
+    store.isOpen = false
+    const composer = useAgentComposerStore()
+    composer.draft = 'Teach me while building a graph'
+    composer.requestSubmission()
+    renderPanel()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(container).not.toBeVisible()
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
+  })
+
+  it('mounts the hidden runtime to upload a compact reference file', async () => {
+    const store = openPanel()
+    store.isOpen = false
+    useAgentComposerStore().requestAttachments([
+      new File(['reference'], 'reference.png', { type: 'image/png' })
+    ])
+    renderPanel()
+
+    expect(screen.getByTestId('docked-agent-panel')).not.toBeVisible()
+    expect(
+      await screen.findByTestId('agent-panel-root-stub', undefined, {
+        timeout: 5000
+      })
+    ).toBeTruthy()
   })
 
   it('renders nothing while the feature is disabled', () => {
