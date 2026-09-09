@@ -65,6 +65,12 @@ interface GraphMutationBatch {
    * `reconcileNode` that would rebuild its slots.
    */
   hasNode(nodeId: NodeId): boolean
+  /**
+   * Registered type of the live node `nodeId` in the scoped graph, or
+   * `undefined` when absent. Lets a caller detect a doc entry whose type
+   * changed under the same id, which needs a rebuild rather than a resync.
+   */
+  getNodeType(nodeId: NodeId): string | undefined
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
   /**
@@ -870,6 +876,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeStore.getNode(scope.rootGraphId, nodeId)?.graphId ===
             scope.owningGraphId
           )
+        },
+        getNodeType(nodeId) {
+          const node = nodeStore.getNode(scope.rootGraphId, nodeId)
+          return node?.graphId === scope.owningGraphId ? node.type : undefined
         },
         addNode(payload) {
           queued.push({ kind: 'addNode', payload })
