@@ -54,9 +54,7 @@ describe('useSubgraphOperations', () => {
     expect(unpackSubgraphNode).toHaveBeenCalledWith(subgraphNode, {
       skipMissingNodes: true
     })
-    expect(
-      useNodeOutputStore().revokeSubgraphPreviews
-    ).not.toHaveBeenCalled()
+    expect(useNodeOutputStore().revokeSubgraphPreviews).not.toHaveBeenCalled()
     expect(captureCanvasState).not.toHaveBeenCalled()
   })
 
