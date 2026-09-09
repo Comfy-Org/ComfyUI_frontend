@@ -456,12 +456,14 @@ const stepperClass =
       >
         <!-- Not yellow: "Payment received" is a reassuring headline on the
              outcome that is not fine, and the mark is what says so before the
-             body does. Not secondary-mauve either, which /payment/failed uses —
-             it is #4d3762 on a #211927 surface, about 1.6:1, so it barely
-             renders. Orange is the palette's "needs attention" that is legible
-             on ink, the same problem --color-destructive-light exists to solve. -->
+             body does. Not orange either — at this size it reads as a near-miss
+             of the success yellow rather than a different outcome. Not
+             secondary-mauve, which /payment/failed uses: it is #4d3762 on a
+             #211927 surface, about 1.6:1, so it barely renders. Canvas at 70% is
+             the palette's neutral, clears 3:1 here, and reads as "no verdict
+             yet" — which is exactly the state. -->
         <span
-          class="border-primary-comfy-orange text-primary-comfy-orange -mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2"
+          class="-mb-2 grid size-16 shrink-0 place-items-center self-center rounded-full border-2 border-primary-comfy-canvas/70 text-primary-comfy-canvas/70"
           aria-hidden="true"
         >
           <Clock class="size-7" />
