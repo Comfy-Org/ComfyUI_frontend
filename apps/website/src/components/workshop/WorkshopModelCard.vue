@@ -54,11 +54,11 @@ const pillClass =
 <template>
   <a
     :href="model.href"
-    class="group bg-hub-surface hover:bg-hub-surface-hover flex cursor-pointer flex-col gap-4 overflow-hidden rounded-4xl px-2 pt-2 pb-6 transition-colors duration-200"
+    class="group bg-hub-surface hover:bg-hub-surface-hover flex cursor-pointer flex-col gap-3 overflow-hidden rounded-4xl px-2 pt-2 pb-4 transition-colors duration-200"
     data-testid="workshop-model-card"
   >
     <div
-      class="bg-hub-surface relative aspect-4/3 overflow-hidden rounded-[1.75rem]"
+      class="bg-hub-surface relative aspect-video overflow-hidden rounded-[1.75rem]"
     >
       <HubTypeBadge kind="model" :locale />
 
@@ -117,7 +117,7 @@ const pillClass =
       </span>
     </div>
 
-    <div class="flex flex-col gap-4 px-4">
+    <div class="flex flex-col gap-2 px-3">
       <div class="flex items-center justify-between gap-2">
         <span class="text-content-secondary flex min-w-0 items-center gap-2">
           <!-- With the mark over the thumbnail, repeating it here would say the

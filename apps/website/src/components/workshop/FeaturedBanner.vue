@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { useElementHover, useFocusWithin } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { useElementHover, useEventListener, useRafFn } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
-import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -40,18 +37,42 @@ function goTo(index: number) {
 
 const banner = useTemplateRef<HTMLElement>('banner')
 const hovered = useElementHover(banner)
-const { focused } = useFocusWithin(banner)
 
-useCarouselAutoplay({
-  delayMs: AUTOPLAY_MS,
-  active: () =>
+// Clicking a bar leaves it focused, so pausing on any focus would stop the
+// rotation for good. Only a keyboard visitor, who needs the time, stops it.
+const readingByKeyboard = ref(false)
+const trackKeyboardFocus = () => {
+  readingByKeyboard.value =
+    banner.value?.querySelector(':focus-visible') != null
+}
+useEventListener(banner, 'focusin', trackKeyboardFocus)
+useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
+
+const rotating = computed(
+  () =>
     slides.value.length > 1 &&
     !hovered.value &&
-    !focused.value &&
-    !prefersReducedMotion(),
-  resetKey: activeIndex,
-  advance: () => goTo(activeIndex.value + 1)
-})
+    !readingByKeyboard.value &&
+    !prefersReducedMotion()
+)
+
+// The bar is the timer: it fills over the slide's turn and freezes where it
+// stands while the visitor reads, rather than animating on its own clock.
+const elapsed = ref(0)
+const { pause, resume } = useRafFn(
+  ({ delta }) => {
+    elapsed.value += delta
+    if (elapsed.value >= AUTOPLAY_MS) goTo(activeIndex.value + 1)
+  },
+  { immediate: false }
+)
+
+watch(rotating, (on) => (on ? resume() : pause()), { immediate: true })
+watch(activeIndex, () => (elapsed.value = 0))
+
+const fill = computed(() =>
+  prefersReducedMotion() ? 1 : Math.min(elapsed.value / AUTOPLAY_MS, 1)
+)
 </script>
 
 <template>
@@ -117,7 +138,7 @@ useCarouselAutoplay({
 
     <div
       v-if="slides.length > 1"
-      class="absolute bottom-8 left-8 flex gap-2 lg:left-12"
+      class="absolute bottom-5 left-8 flex gap-2 lg:left-12"
       data-testid="featured-pagination"
     >
       <button
@@ -126,16 +147,20 @@ useCarouselAutoplay({
         type="button"
         :aria-label="slide.model.name"
         :aria-current="index === activeIndex ? 'true' : undefined"
-        :class="
-          cn(
-            'focus-visible:ring-primary-comfy-yellow/50 h-1 w-12 cursor-pointer rounded-full transition-colors outline-none focus-visible:ring-3',
-            index === activeIndex
-              ? 'bg-primary-warm-white'
-              : 'bg-transparency-white-t20 hover:bg-primary-warm-gray'
-          )
-        "
+        class="focus-visible:ring-primary-comfy-yellow/50 group w-12 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3"
         @click="goTo(index)"
-      />
+      >
+        <span
+          class="block h-1 overflow-hidden rounded-full bg-transparency-white-t20 group-hover:bg-primary-warm-gray"
+        >
+          <span
+            class="block h-full rounded-full bg-primary-warm-white"
+            :style="{
+              width: index === activeIndex ? `${fill * 100}%` : '0%'
+            }"
+          />
+        </span>
+      </button>
     </div>
   </section>
 </template>

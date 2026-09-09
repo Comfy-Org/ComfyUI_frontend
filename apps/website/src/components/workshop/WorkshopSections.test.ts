@@ -73,7 +73,7 @@ describe('WorkshopSections', () => {
       props: { models, labelKey }
     })
 
-    await userEvent.click(screen.getByTestId('section-generate-videos-see-all'))
+    await userEvent.click(screen.getByTestId('section-generate-videos-open'))
 
     expect(emitted().open).toEqual([['generate-videos']])
   })
@@ -88,7 +88,7 @@ describe('WorkshopSections', () => {
       props: { models: sparse, labelKey }
     })
 
-    await userEvent.click(screen.getByTestId('section-other-formats-see-all'))
+    await userEvent.click(screen.getByTestId('section-other-formats-open'))
 
     expect(emitted().open).toEqual([['other']])
   })

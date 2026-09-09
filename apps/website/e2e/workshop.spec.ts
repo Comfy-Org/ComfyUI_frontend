@@ -97,7 +97,7 @@ test.describe('Workshop catalog', () => {
     await page.goto('/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
-    await expect(page.getByTestId('workshop-use-cases')).toBeVisible()
+    await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
 
     const videos = page.getByTestId('section-generate-videos')
     const rowHeading = await videos
@@ -106,13 +106,14 @@ test.describe('Workshop catalog', () => {
     const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
     expect(promisedCount).toBeGreaterThan(0)
 
-    await videos.getByTestId('section-generate-videos-see-all').click()
+    await videos.getByTestId('section-generate-videos-open').click()
 
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(sections).toHaveCount(0)
     await expect(cards).toHaveCount(promisedCount)
+    await expect(page.getByTestId('workshop-use-cases')).toBeVisible()
     await expect(page.getByTestId('use-case-generate-videos')).toHaveAttribute(
       'aria-pressed',
       'true'

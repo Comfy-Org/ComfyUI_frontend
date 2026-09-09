@@ -42,6 +42,7 @@ import { t } from '../../i18n/translations'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+import FeaturedBanner from './FeaturedBanner.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 
@@ -57,7 +58,7 @@ const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const { version } = usePrototypeTweaks()
+const { version, showFeatured } = usePrototypeTweaks()
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
@@ -201,9 +202,24 @@ const isFiltered = computed(
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
 const browsing = computed(() => version.value === 'v1.1' && !isFiltered.value)
+// The browsing rows are the use cases, each with its name and its count, so a
+// row of chips saying the same six words above them is the same list twice.
+// The chips are the way back and the way across, and that is only needed once
+// the rows are gone.
+const showRail = computed(() => !browsing.value)
 // Wherever the use cases have no row of their own on screen, the filter menu
 // carries them.
-const useCasesInFilter = computed(() => onPhone.value && railBeside.value)
+const useCasesInFilter = computed(
+  () => !showRail.value || (onPhone.value && railBeside.value)
+)
+
+// Router reports no curated set yet, so the banner that opens the listing
+// carries the catalogue's own most-run models and costs nothing to keep true
+// as the catalogue grows.
+const FEATURED_LIMIT = 6
+const featured = computed(() =>
+  sortWorkshopModels(models, 'popular').slice(0, FEATURED_LIMIT)
+)
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
@@ -250,7 +266,15 @@ const menuItemClass =
       )
     "
   >
+    <FeaturedBanner
+      v-if="browsing && showFeatured && featured.length"
+      :models="featured"
+      :locale
+      class="mb-10"
+    />
+
     <aside
+      v-if="showRail"
       :class="
         railBeside &&
         'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4'

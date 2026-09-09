@@ -2,8 +2,6 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type {
   SortOrder,
   UseCase,
@@ -19,9 +17,7 @@ import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupModels } from '../../config/model-family'
-import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import CardRow from './CardRow.vue'
-import FeaturedBanner from './FeaturedBanner.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const ROW_LIMIT = 8
@@ -40,24 +36,12 @@ const {
 
 const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
-const { showFeatured } = usePrototypeTweaks()
-
 const GROUPED = OTHER_FORMAT_USE_CASES
 
-// Router reports no curated set yet, so the banner that opens the listing
-// carries the catalogue's own most-run models and costs nothing to keep true
-// as the catalogue grows.
-const FEATURED_LIMIT = 6
-const featured = computed(() =>
-  groupModels(sortWorkshopModels(models, 'popular'))
-    .slice(0, FEATURED_LIMIT)
-    .map((family) => family.latest)
-)
-
-const titleClass = 'flex items-baseline gap-2 text-primary-warm-white'
-
-const seeAllClass =
-  'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
+// The row title is the way into its category, so it carries the chevron and
+// the count rather than handing them to a second control beside it.
+const titleClass =
+  'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-baseline gap-2 rounded-lg text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
 
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
@@ -96,12 +80,6 @@ const unplaced = computed(() =>
 
 <template>
   <div class="flex flex-col gap-12" data-testid="workshop-sections">
-    <FeaturedBanner
-      v-if="showFeatured && featured.length"
-      :models="featured"
-      :locale
-    />
-
     <section
       v-for="section in sections"
       :key="section.useCase"
@@ -110,30 +88,23 @@ const unplaced = computed(() =>
     >
       <CardRow :locale>
         <template #heading>
-          <h2
-            :id="`section-${section.useCase}`"
-            :class="cn(titleClass, 'text-xl font-medium')"
-          >
-            {{ t(labelKey[section.useCase], locale) }}
-            <span class="text-sm text-primary-warm-gray tabular-nums">
-              {{ section.total }}
-            </span>
+          <h2 :id="`section-${section.useCase}`">
+            <button
+              type="button"
+              :class="titleClass"
+              :data-testid="`section-${section.useCase}-open`"
+              @click="emit('open', section.useCase)"
+            >
+              {{ t(labelKey[section.useCase], locale) }}
+              <span class="text-sm text-primary-warm-gray tabular-nums">
+                {{ section.total }}
+              </span>
+              <ChevronRight
+                class="size-5 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
           </h2>
-        </template>
-
-        <template #actions>
-          <button
-            type="button"
-            :class="seeAllClass"
-            :data-testid="`section-${section.useCase}-see-all`"
-            @click="emit('open', section.useCase)"
-          >
-            {{ t('workshop.sections.seeAll', locale) }}
-            <ChevronRight
-              class="size-4 transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </button>
         </template>
 
         <li
@@ -153,30 +124,23 @@ const unplaced = computed(() =>
     >
       <CardRow :locale>
         <template #heading>
-          <h2
-            id="section-other-formats"
-            :class="cn(titleClass, 'text-xl font-medium')"
-          >
-            {{ t('workshop.sections.otherFormats', locale) }}
-            <span class="text-sm text-primary-warm-gray tabular-nums">
-              {{ otherFormats.length }}
-            </span>
+          <h2 id="section-other-formats">
+            <button
+              type="button"
+              :class="titleClass"
+              data-testid="section-other-formats-open"
+              @click="emit('open', 'other')"
+            >
+              {{ t('workshop.sections.otherFormats', locale) }}
+              <span class="text-sm text-primary-warm-gray tabular-nums">
+                {{ otherFormats.length }}
+              </span>
+              <ChevronRight
+                class="size-5 transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </button>
           </h2>
-        </template>
-
-        <template #actions>
-          <button
-            type="button"
-            :class="seeAllClass"
-            data-testid="section-other-formats-see-all"
-            @click="emit('open', 'other')"
-          >
-            {{ t('workshop.sections.seeAll', locale) }}
-            <ChevronRight
-              class="size-4 transition-transform group-hover:translate-x-0.5"
-              aria-hidden="true"
-            />
-          </button>
         </template>
 
         <li
