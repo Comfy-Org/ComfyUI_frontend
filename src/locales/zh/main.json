@@ -372,9 +372,9 @@
       "auth/popup-closed-by-user": "登录完成前登录窗口已关闭。请重试。",
       "auth/too-many-requests": "登录尝试次数过多。请稍等片刻再试。",
       "auth/user-disabled": "此账户已被禁用。请联系客服。",
-      "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
+      "auth/user-not-found": "登录凭据无效。请检查您的邮箱和密码。",
       "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
-      "auth/wrong-password": "您输入的密码不正确，请重试。",
+      "auth/wrong-password": "登录凭据无效。请检查您的邮箱和密码。",
       "generic": "登录时出现问题，请重试。",
       "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
     },
