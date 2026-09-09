@@ -225,13 +225,26 @@ describe('sign-in and sign-out delegation', () => {
 
   it('propagates a password-reset failure as the SDK error', async () => {
     sdk.sendPasswordResetEmail.mockRejectedValueOnce(
-      new Error('auth/user-not-found')
+      new Error('auth/network-request-failed')
     )
     const identity = await makeIdentity()
 
     await expect(identity.sendPasswordReset('a@b.example')).rejects.toThrow(
-      'auth/user-not-found'
+      'auth/network-request-failed'
     )
+  })
+
+  it('resolves a password reset for an unknown email as if it were sent', async () => {
+    sdk.sendPasswordResetEmail.mockRejectedValueOnce({
+      code: 'auth/user-not-found',
+      message: 'Firebase: Error (auth/user-not-found).'
+    })
+    const identity = await makeIdentity()
+
+    await expect(
+      identity.sendPasswordReset('ghost@b.example'),
+      'a reset that fails only for unknown emails tells the caller which emails have accounts'
+    ).resolves.toBeUndefined()
   })
 
   it('propagates a sign-out failure to the caller', async () => {
