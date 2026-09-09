@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('./reportError', () => ({
+vi.mock(import('./reportError'), () => ({
   reportError: mockReportError
 }))
 

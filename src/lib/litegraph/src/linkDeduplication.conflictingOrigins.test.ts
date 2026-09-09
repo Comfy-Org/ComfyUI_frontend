@@ -24,7 +24,7 @@ import { normalizeConfiguredTopology } from './linkDeduplication'
 
 const trackLinkDedupDrop = vi.fn()
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackLinkDedupDrop
   })

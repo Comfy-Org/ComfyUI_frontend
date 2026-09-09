@@ -29,6 +29,8 @@ which is always loaded. In addition:
 ## Mocking
 
 - Use Vitest's mocking utilities (`vi.mock`, `vi.spyOn`)
+- `vi.mock<unknown>(import('…'), …)` is only for legacy partial factories that
+  cannot satisfy the module type. For new mocks, type the factory instead.
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` for per-test mock manipulation
 - Vitest automatically resets mocks, restores spies, and unstubs globals and

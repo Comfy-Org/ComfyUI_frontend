@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import { i18n } from '@/i18n'
+import { useTemplateUrlLoader as createTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 
 /**
  * Unit tests for useTemplateUrlLoader composable
@@ -61,19 +64,26 @@ vi.mock<unknown>(
   })
 )
 
-// Mock i18n
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: vi.fn((key: string, params?: unknown) => {
-      if (key === 'g.error') return 'Error'
-      if (key === 'templateWorkflows.error.templateNotFound') {
-        return `Template "${(params as { templateName?: string }).templateName}" not found`
+const apps: App<Element>[] = []
+
+function useTemplateUrlLoader() {
+  let result: ReturnType<typeof createTemplateUrlLoader> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createTemplateUrlLoader()
+        return () => null
       }
-      if (key === 'g.errorLoadingTemplate') return 'Failed to load template'
-      return key
     })
-  })
-}))
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Template URL loader was not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 // Mock canvas store
 const mockCanvasStore = {
@@ -245,7 +255,7 @@ describe('useTemplateUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to load template'
+      detail: i18n.global.t('g.errorLoadingTemplate')
     })
   })
 

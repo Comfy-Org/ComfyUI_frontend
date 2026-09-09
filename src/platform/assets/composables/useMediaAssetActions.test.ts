@@ -1,10 +1,11 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from 'primevue/usetoast'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -12,7 +13,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
-import { useMediaAssetActions } from './useMediaAssetActions'
+import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
@@ -38,16 +39,6 @@ vi.mock<unknown>(
     }
   }
 )
-
-vi.mock<unknown>(import('vue-i18n'), () => {
-  const t = vi.fn((key: string) => key)
-  return {
-    useI18n: () => ({ t }),
-    createI18n: () => ({
-      global: { t }
-    })
-  }
-})
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
@@ -274,12 +265,14 @@ function getAddedImageWidgetValues() {
   )
 }
 
+const apps: App<Element>[] = []
+
 function mountMediaActions(asset?: AssetMeta) {
-  let actions: ReturnType<typeof useMediaAssetActions> | undefined
+  let actions: ReturnType<typeof createMediaAssetActions> | undefined
 
   const ChildComponent = defineComponent({
     setup() {
-      actions = useMediaAssetActions()
+      actions = createMediaAssetActions()
       return () => null
     }
   })
@@ -296,15 +289,26 @@ function mountMediaActions(asset?: AssetMeta) {
 
   const host = document.createElement('div')
   const app = createApp(HostComponent)
+  app.use(i18n)
   app.mount(host)
+  apps.push(app)
 
   if (!actions) throw new Error('media asset actions not initialized')
 
   return {
     actions,
-    unmount: () => app.unmount()
+    unmount: () => {
+      apps.splice(apps.indexOf(app), 1)
+      app.unmount()
+    }
   }
 }
+
+function useMediaAssetActions() {
+  return mountMediaActions().actions
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
@@ -1094,17 +1098,14 @@ describe('useMediaAssetActions', () => {
       await vi.waitFor(() => {
         expect(add).toHaveBeenCalledWith(
           expect.objectContaining({
-            detail: 'mediaAsset.selection.exportStarted'
+            detail: i18n.global.t(
+              'mediaAsset.selection.exportStarted',
+              { count },
+              count
+            )
           })
         )
       })
-
-      const { t } = useI18n()
-      expect(t).toHaveBeenCalledWith(
-        'mediaAsset.selection.exportStarted',
-        { count },
-        count
-      )
     }
 
     it('should report total file count, not job count, for multi-output jobs', async () => {
@@ -1304,8 +1305,8 @@ describe('useMediaAssetActions', () => {
       )
       expect(useToast().add).toHaveBeenCalledWith({
         severity: 'success',
-        summary: 'mediaAsset.assetDelete.success',
-        detail: 'mediaAsset.assetsDeleted',
+        summary: i18n.global.t('mediaAsset.assetDelete.success'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
         life: 2000
       })
 

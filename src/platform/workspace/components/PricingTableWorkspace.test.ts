@@ -11,7 +11,7 @@ import PricingTableWorkspace from '@/platform/workspace/components/PricingTableW
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     plans: computed(() => state.plans),
     currentPlanSlug: computed(() => null),
@@ -42,7 +42,7 @@ function apiPlan(
   }
 }
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({ execute: vi.fn() })
 }))
 

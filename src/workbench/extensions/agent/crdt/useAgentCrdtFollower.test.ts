@@ -87,7 +87,7 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock('./layoutFollowerBridge', () => ({
+vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
       const bridge = new bridgeState.FakeBridge()
@@ -97,14 +97,14 @@ vi.mock('./layoutFollowerBridge', () => ({
   }
 }))
 
-vi.mock('./docFrameClient', () => ({
+vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
     sendOps = clientState.sendOps
   }
 }))
 
-vi.mock('./ecsFollowerAdapter', () => ({
+vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind
@@ -115,22 +115,24 @@ vi.mock('./ecsFollowerAdapter', () => ({
   }
 }))
 
-vi.mock('./agentNodeMaterializer', () => ({
+vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters
 }))
 
-vi.mock('./agentSubgraphDefinitions', () => ({
+vi.mock(import('./agentSubgraphDefinitions'), () => ({
   readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
-vi.mock('./devPanelLog', () => ({
+vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { graph: null, canvas: null }
+}))
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
