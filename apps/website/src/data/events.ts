@@ -333,28 +333,28 @@ const events: readonly ComfyEvent[] = [
     },
     location: { en: 'Online', 'zh-CN': '线上' },
     dateLabel: {
-      en: 'September 16, 2026 · 10AM PT',
-      'zh-CN': '2026年9月16日 · 上午10点（PT）'
+      en: 'September 17, 2026 · 10AM PT',
+      'zh-CN': '2026年9月17日 · 上午10点（PT）'
     },
-    startDateTime: '2026-09-16T10:00:00-07:00',
+    startDateTime: '2026-09-17T10:00:00-07:00',
     liveVideoId: '69slO15ovL8',
     media: eventVideo(
-      '09.16-dev-platform.mp4',
+      '09.17-dev-platform.mp4',
       {
         en: 'Developer Platform 101: Building with the New Comfy API livestream',
         'zh-CN': '开发者平台 101 直播'
       },
-      '09.16-dev-platform-still.png'
+      '09.17-dev-platform-still.png'
     ),
     featured: {
       order: 7,
       media: eventVideo(
-        '09.16-dev-platform.mp4',
+        '09.17-dev-platform.mp4',
         {
           en: 'Developer Platform 101: Building with the New Comfy API livestream',
           'zh-CN': '开发者平台 101 直播'
         },
-        '09.16-dev-platform-still.png'
+        '09.17-dev-platform-still.png'
       ),
       showTitle: false
     }
