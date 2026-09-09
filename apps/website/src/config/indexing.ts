@@ -1,14 +1,11 @@
+import { LOCALE_CODES, localePrefix } from './locales'
 import { models } from './models'
 import { isWorkshopInBuild, isWorkshopRoute } from './workshop-release'
 
-const LOCALES = ['en', 'zh-CN'] as const
-const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
 
-const LOCALE_PREFIXES = LOCALES.map((locale) =>
-  locale === DEFAULT_LOCALE ? '' : `/${locale}`
-)
+const LOCALE_PREFIXES = LOCALE_CODES.map(localePrefix)
 
 const NOINDEX_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.flatMap((prefix) =>
