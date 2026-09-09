@@ -15,7 +15,7 @@ const apiMock = vi.hoisted(
     })()
 )
 
-vi.mock('@/scripts/api', () => ({ api: apiMock }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 
 const terminalMock = vi.hoisted(() => ({
   open: vi.fn(),
@@ -30,28 +30,31 @@ const terminalMock = vi.hoisted(() => ({
   clearSelection: vi.fn()
 }))
 
-vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
+vi.mock<unknown>(import('@/composables/bottomPanelTabs/useTerminal'), () => ({
   useTerminal: vi.fn(() => ({
     terminal: terminalMock,
     useAutoSize: vi.fn(() => ({ resize: vi.fn() }))
   }))
 }))
 
-vi.mock('@/components/bottomPanel/tabs/terminal/BaseTerminal.vue', async () => {
-  const { defineComponent, ref } = await import('vue')
-  const { useTerminal } =
-    await import('@/composables/bottomPanelTabs/useTerminal')
-  return {
-    default: defineComponent({
-      emits: ['created'],
-      setup(_, { emit }) {
-        const root = ref<HTMLElement | undefined>(undefined)
-        emit('created', useTerminal(root), root)
-        return () => null
-      }
-    })
+vi.mock(
+  import('@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'),
+  async () => {
+    const { defineComponent, ref } = await import('vue')
+    const { useTerminal } =
+      await import('@/composables/bottomPanelTabs/useTerminal')
+    return {
+      default: defineComponent({
+        emits: ['created'],
+        setup(_, { emit }) {
+          const root = ref<HTMLElement | undefined>(undefined)
+          emit('created', useTerminal(root), root)
+          return () => null
+        }
+      })
+    }
   }
-})
+)
 
 const i18n = createI18n({
   legacy: false,

@@ -8,10 +8,10 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: () => undefined })
 }))
-vi.mock('@/stores/extensionStore', () => ({
+vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
   useExtensionStore: () => ({
     isExtensionInstalled: () => false,
     isExtensionEnabled: () => false
