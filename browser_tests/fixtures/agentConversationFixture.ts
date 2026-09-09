@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import { resolveMarkdownUrl } from '@/utils/markdownRendererUtil'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -98,12 +99,17 @@ function collapse(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-// The recorded markdown as the panel's own renderer (marked) lays it out,
-// reduced to the words a user reads.
-function visibleText(markdown: string): string {
+// The recorded markdown as the panel's own renderer lays it out (marked, with
+// the panel's URL rebasing applied first), reduced to the words a user reads.
+function visibleText(markdown: string, apiBase: string): string {
   return collapse(
     marked
-      .parse(markdown, { async: false })
+      .parse(
+        markdown.replace(/https?:\/\/[^\s)\]]+/g, (url) =>
+          resolveMarkdownUrl(url, apiBase)
+        ),
+        { async: false }
+      )
       .replace(/<[^>]+>/g, ' ')
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
@@ -387,7 +393,8 @@ class AgentConversationHarness {
     turn: number,
     before: PanelCounts
   ): Promise<void> {
-    const text = visibleText(this.recordedAssistantText(turn))
+    const apiBase = new URL('/api', this.page.url()).href.replace(/\/+$/, '')
+    const text = visibleText(this.recordedAssistantText(turn), apiBase)
     if (text !== '')
       await expect
         .poll(async () =>
