@@ -40,11 +40,14 @@ debugger
     ])
   })
 
-  it('runs ESLint and the website typecheck for an Astro-only commit', () => {
+  it('formats after ESLint fixes and typechecks an Astro-only commit', () => {
     const commands = lintStaged([`${process.cwd()}/${filePath}`])
+    const lintCommand = `pnpm exec eslint --cache --fix --no-warn-ignored "${filePath}"`
+    const formatCommand = `pnpm exec prettier --write "${filePath}"`
 
-    expect(commands).toContain(
-      `pnpm exec eslint --cache --fix --no-warn-ignored "${filePath}"`
+    expect(commands).toContain(lintCommand)
+    expect(commands.indexOf(formatCommand)).toBeGreaterThan(
+      commands.indexOf(lintCommand)
     )
     expect(commands).toContain('pnpm typecheck:website')
   })

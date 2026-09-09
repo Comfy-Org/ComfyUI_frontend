@@ -16,13 +16,13 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
-  pageContext,
+  pageContext
 } from '../../utils/jsonLd'
 
 const { siteUrl } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 ---
 
@@ -30,8 +30,22 @@ const { siteUrl } = pageContext(
   title="Comfy - 视觉 AI 的最强可控性"
   description={t('hero.subtitle', 'zh-CN')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
-  keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl)
+  ]}
+  keywords={[
+    'comfyui app',
+    'comfyui web app',
+    'comfyui application',
+    'ComfyUI 应用',
+    'ComfyUI 网页版',
+    'ComfyUI 桌面应用',
+    'ComfyUI 下载',
+    '可视化 AI',
+    '节点式 AI',
+    '生成式 AI 工作流'
+  ]}
 >
   <HeroGraphSection locale="zh-CN" client:load />
   <SocialProofBarSection />

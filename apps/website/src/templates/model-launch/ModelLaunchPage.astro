@@ -26,20 +26,20 @@ const { page } = Astro.props
 const { locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const routes = getRoutes(locale)
 
 const crumbs = [
   { label: t('breadcrumb.home', locale), href: routes.home },
   { label: t('models.breadcrumb.models', locale), href: routes.models },
-  { label: t(page.breadcrumbLabelKey, locale) },
+  { label: t(page.breadcrumbLabelKey, locale) }
 ]
 
 const breadcrumbs = crumbs.map((crumb) =>
   crumb.href
     ? { name: crumb.label, url: absoluteUrl(Astro.site, crumb.href) }
-    : { name: crumb.label },
+    : { name: crumb.label }
 )
 
 // Launch models are third party, so these pages intentionally emit no Product /
@@ -50,8 +50,8 @@ const faqPage = page.faq
       url,
       page.faq.items.map((item) => ({
         question: item.question[locale] || item.question.en,
-        answer: faqAnswerPlainText(item.answer[locale] || item.answer.en),
-      })),
+        answer: faqAnswerPlainText(item.answer[locale] || item.answer.en)
+      }))
     )
   : undefined
 
@@ -70,73 +70,71 @@ const sectionOrder = page.sectionOrder ?? DEFAULT_SECTION_ORDER
     label={t('ui.breadcrumb', locale)}
   />
   <ModelLaunchHeroSection client:load hero={page.hero} locale={locale} />
-  {
-    sectionOrder.map((section) => {
-      switch (section) {
-        case 'gallery':
-          return (
-            page.gallery && (
-              <ModelLaunchGallerySection
-                client:visible
-                gallery={page.gallery}
-                locale={locale}
-              />
-            )
+  {sectionOrder.map((section) => {
+    switch (section) {
+      case 'gallery':
+        return (
+          page.gallery && (
+            <ModelLaunchGallerySection
+              client:visible
+              gallery={page.gallery}
+              locale={locale}
+            />
           )
-        case 'audioGallery':
-          return (
-            page.audioGallery && (
-              <ModelLaunchAudioGallerySection
-                client:visible
-                audioGallery={page.audioGallery}
-                locale={locale}
-              />
-            )
+        )
+      case 'audioGallery':
+        return (
+          page.audioGallery && (
+            <ModelLaunchAudioGallerySection
+              client:visible
+              audioGallery={page.audioGallery}
+              locale={locale}
+            />
           )
-        case 'steps':
-          return (
-            page.steps && (
-              <ModelLaunchStepsSection steps={page.steps} locale={locale} />
-            )
+        )
+      case 'steps':
+        return (
+          page.steps && (
+            <ModelLaunchStepsSection steps={page.steps} locale={locale} />
           )
-        case 'comparison':
-          return (
-            page.comparison && (
-              <ModelLaunchComparisonSection
-                comparison={page.comparison}
-                locale={locale}
-              />
-            )
+        )
+      case 'comparison':
+        return (
+          page.comparison && (
+            <ModelLaunchComparisonSection
+              comparison={page.comparison}
+              locale={locale}
+            />
           )
-        case 'pricing':
-          return (
-            page.pricing && (
-              <ModelLaunchPricingSection
-                client:load
-                pricing={page.pricing}
-                locale={locale}
-              />
-            )
+        )
+      case 'pricing':
+        return (
+          page.pricing && (
+            <ModelLaunchPricingSection
+              client:load
+              pricing={page.pricing}
+              locale={locale}
+            />
           )
-        case 'faq':
-          return (
-            page.faq && (
-              <ModelLaunchFaqSection
-                client:visible
-                faq={page.faq}
-                locale={locale}
-              />
-            )
+        )
+      case 'faq':
+        return (
+          page.faq && (
+            <ModelLaunchFaqSection
+              client:visible
+              faq={page.faq}
+              locale={locale}
+            />
           )
-        case 'closingCta':
-          return (
-            page.closingCta && (
-              <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
-            )
+        )
+      case 'closingCta':
+        return (
+          page.closingCta && (
+            <ModelLaunchCtaSection cta={page.closingCta} locale={locale} />
           )
-      }
-    })
-  }
+        )
+    }
+  })}
   <ModelLaunchRunOptionsSection runOptions={page.runOptions} locale={locale} />
   <ModelLaunchReviewsSection
     client:visible

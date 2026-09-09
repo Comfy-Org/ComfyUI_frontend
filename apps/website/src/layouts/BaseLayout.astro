@@ -46,15 +46,16 @@ const {
   pageType,
   breadcrumbs,
   mainEntityId,
-  extraJsonLd,
+  extraJsonLd
 } = Astro.props
 
-const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
+const keywordsContent =
+  keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
@@ -75,7 +76,7 @@ const bannerVisible =
   evaluateBannerVisibility(bannerConfig, {
     currentLocale: locale,
     currentSection: 'sitewide',
-    now: new Date(),
+    now: new Date()
   }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
@@ -93,18 +94,16 @@ const structuredData = shouldNoindex
         imageUrl: ogImageURL.href,
         type: pageType,
         crumbs: breadcrumbs,
-        mainEntityId,
+        mainEntityId
       },
-      ...(extraJsonLd ?? []),
+      ...(extraJsonLd ?? [])
     )
 ---
 
 <!doctype html>
-{
-  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+{/* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
      dialog scroll lock) only propagates to the viewport when the root is
-     visible. The horizontal clip lives on <body>. */
-}
+     visible. The horizontal clip lives on <body>. */}
 <html lang={locale}>
   <head>
     <meta charset="utf-8" />
@@ -121,24 +120,20 @@ const structuredData = shouldNoindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
-    {
-      !shouldNoindex && (
-        <link
-          rel="alternate"
-          type="text/markdown"
-          href={markdownTwinPath(canonicalURL.pathname)}
-        />
-      )
-    }
-    {
-      alternates.map((alternate) => (
-        <link
-          rel="alternate"
-          hreflang={alternate.hreflang}
-          href={alternate.href}
-        />
-      ))
-    }
+    {!shouldNoindex && (
+      <link
+        rel="alternate"
+        type="text/markdown"
+        href={markdownTwinPath(canonicalURL.pathname)}
+      />
+    )}
+    {alternates.map((alternate) => (
+      <link
+        rel="alternate"
+        hreflang={alternate.hreflang}
+        href={alternate.href}
+      />
+    ))}
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 
@@ -151,11 +146,9 @@ const structuredData = shouldNoindex
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
-    {
-      openGraphLocaleAlternate && (
-        <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
-      )
-    }
+    {openGraphLocaleAlternate && (
+      <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
+    )}
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
@@ -170,20 +163,18 @@ const structuredData = shouldNoindex
     <slot name="head" />
 
     <!-- Google Tag Manager -->
-    {gtmEnabled && (
-      <script is:inline define:vars={{ gtmId }}>
-        ;(function (w, d, s, l, i) {
-          w[l] = w[l] || []
-          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-          const f = d.getElementsByTagName(s)[0]
-          const j = d.createElement(s)
-          const dl = l != 'dataLayer' ? '&l=' + l : ''
-          j.async = true
-          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-          f.parentNode.insertBefore(j, f)
-        })(window, document, 'script', 'dataLayer', gtmId)
-      </script>
-    )}
+    {gtmEnabled && <script is:inline define:vars={{ gtmId }}>
+      ;(function (w, d, s, l, i) {
+        w[l] = w[l] || []
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+        const f = d.getElementsByTagName(s)[0]
+        const j = d.createElement(s)
+        const dl = l != 'dataLayer' ? '&l=' + l : ''
+        j.async = true
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+        f.parentNode.insertBefore(j, f)
+      })(window, document, 'script', 'dataLayer', gtmId)
+    </script>}
 
     <ClientRouter />
 
@@ -198,42 +189,39 @@ const structuredData = shouldNoindex
         })
       })
     </script>
-
     <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
-    {bannerVisible && (
-      <script
-        is:inline
-        define:vars={{
-          bannerVersion,
-          storageKey: BANNER_STORAGE_KEY,
-          dismissAttr: BANNER_DISMISS_ATTR
-        }}
-      >
-        function restoreBannerDismissal() {
-          try {
-            const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-            if (dismissed && dismissed[bannerVersion] === true) {
-              document.documentElement.setAttribute(dismissAttr, '')
-            }
-          } catch {
-            return
+    {bannerVisible && <script
+      is:inline
+      define:vars={{
+        bannerVersion,
+        storageKey: BANNER_STORAGE_KEY,
+        dismissAttr: BANNER_DISMISS_ATTR
+      }}
+    >
+      function restoreBannerDismissal() {
+        try {
+          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+          if (dismissed && dismissed[bannerVersion] === true) {
+            document.documentElement.setAttribute(dismissAttr, '')
           }
+        } catch {
+          return
         }
-        restoreBannerDismissal()
-      </script>
-    )}
+      }
+      restoreBannerDismissal()
+    </script>}
   </head>
-  <body class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased">
-    {gtmEnabled && (
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-          height="0"
-          width="0"
-          style="display:none;visibility:hidden"
-        ></iframe>
-      </noscript>
-    )}
+  <body
+    class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased"
+  >
+    {gtmEnabled && <noscript>
+      <iframe
+        src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe>
+    </noscript>}
 
     {bannerVisible && (
       <AnnouncementBanner
