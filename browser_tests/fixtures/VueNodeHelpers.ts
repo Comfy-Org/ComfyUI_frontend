@@ -4,9 +4,11 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position } from '@e2e/fixtures/types'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
@@ -209,6 +211,28 @@ export class VueNodeHelpers {
    * Return a DOM-focused VueNodeFixture for the first node matching the title.
    * Resolves the node id up front so subsequent interactions survive title changes.
    */
+  /**
+   * Drags a Vue node by its DOM header by a client-pixel delta — the only
+   * reliable way to move a node while the Vue renderer is active
+   * (NodeReference.dragBy grabs the canvas title, which Vue DOM covers).
+   */
+  async dragNodeHeaderBy(nodeId: string, delta: Position): Promise<void> {
+    const fixture = new VueNodeFixture(this.getNodeLocator(nodeId))
+    const headerBox = await fixture.header.boundingBox()
+    if (!headerBox) throw new Error(`Header of node ${nodeId} not found`)
+    const start = {
+      x: headerBox.x + headerBox.width / 2,
+      y: headerBox.y + headerBox.height / 2
+    }
+    await this.page.mouse.move(start.x, start.y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(start.x + delta.x, start.y + delta.y, {
+      steps: 20
+    })
+    await this.page.mouse.up()
+    await nextFrame(this.page)
+  }
+
   async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
     const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))

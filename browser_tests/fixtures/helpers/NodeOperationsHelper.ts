@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type {
@@ -272,6 +273,22 @@ export class NodeOperationsHelper {
     await dialogInput.fill(value)
     await dialogInput.press('Enter')
     await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Opens the classic-canvas widget prompt (.graphdialog). The dialog has a
+   * 256ms dismiss guard, so the opening click itself retries — and an
+   * already-open dialog is never clicked again, which on the same pixels
+   * would register as a double-click.
+   */
+  async openLegacyWidgetDialog(widget: {
+    click: () => Promise<void>
+  }): Promise<void> {
+    const dialog = this.page.locator('.graphdialog')
+    await expect(async () => {
+      if (!(await dialog.isVisible())) await widget.click()
+      await expect(dialog).toBeVisible({ timeout: 1000 })
+    }).toPass({ timeout: 5000 })
   }
 
   async panToNode(nodeRef: NodeReference): Promise<void> {

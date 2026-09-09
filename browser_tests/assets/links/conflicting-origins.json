@@ -1,0 +1,75 @@
+{
+  "id": "s4-conflicting-origins",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "PrimitiveStringMultiline",
+      "pos": [300, 200],
+      "size": [225, 142],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [4]
+        }
+      ],
+      "title": "Origin A",
+      "properties": {},
+      "widgets_values": ["from A"]
+    },
+    {
+      "id": 3,
+      "type": "PrimitiveStringMultiline",
+      "pos": [300, 420],
+      "size": [225, 142],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [5]
+        }
+      ],
+      "title": "Origin B",
+      "properties": {},
+      "widgets_values": ["from B"]
+    },
+    {
+      "id": 2,
+      "type": "PreviewAny",
+      "pos": [650, 300],
+      "size": [250, 178],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source",
+          "type": "*",
+          "link": 5
+        }
+      ],
+      "outputs": [],
+      "title": "Target",
+      "properties": {}
+    }
+  ],
+  "links": [
+    [4, 1, 0, 2, 0, "STRING"],
+    [5, 3, 0, 2, 0, "STRING"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}
