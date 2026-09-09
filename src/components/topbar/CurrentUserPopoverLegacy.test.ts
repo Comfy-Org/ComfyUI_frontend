@@ -1,3 +1,4 @@
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,13 +8,14 @@ import { createI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const mockShowSettingsDialog = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
     show: mockShowSettingsDialog,
     hide: vi.fn(),
@@ -31,7 +33,7 @@ afterAll(() => {
 })
 
 const mockHandleSignOut = vi.fn()
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: vi.fn(() => ({
     userPhotoUrl: 'https://example.com/avatar.jpg',
     userDisplayName: 'Test User',
@@ -40,7 +42,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }))
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   }))
@@ -54,6 +56,7 @@ function makeSubscription(
     tier: 'CREATOR',
     duration: 'MONTHLY',
     planSlug: null,
+    scheduledChange: null,
     renewalDate: null,
     endDate: null,
     isCancelled: false,
@@ -68,19 +71,33 @@ const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
+const mockIsTeamPlan = ref(false)
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     tier: mockTier,
     subscription: mockSubscription,
     balance: mockBalance,
     isLoading: mockIsLoading,
+    isTeamPlan: mockIsTeamPlan,
     fetchBalance: mockFetchBalance
   }))
 }))
 
-vi.mock('@/components/common/UserAvatar.vue', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: mockCanTopUp,
+      canSubscribeSelfServe: mockCanSubscribeSelfServe
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
     name: 'UserAvatarMock',
     render() {
@@ -89,11 +106,11 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-vi.mock('@/base/credits/comfyCredits', () => ({
+vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
     docsPaths: {
@@ -102,7 +119,7 @@ vi.mock('@/composables/useExternalLink', () => ({
   }))
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackAddApiCreditButtonClicked: vi.fn()
   }))
@@ -119,9 +136,11 @@ describe('CurrentUserPopoverLegacy', () => {
       currency: 'usd'
     }
     mockIsLoading.value = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
   })
 
-  function renderComponent() {
+  function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -130,9 +149,13 @@ describe('CurrentUserPopoverLegacy', () => {
     const onClose = vi.fn()
     const user = userEvent.setup()
 
+    if (teamWorkspaceState) {
+      useTeamWorkspaceStore().$patch(teamWorkspaceState)
+    }
+
     render(CurrentUserPopoverLegacy, {
       global: {
-        plugins: [i18n],
+        plugins: [i18n, getActivePinia()!],
         stubs: {
           Divider: true
         }
@@ -274,7 +297,7 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('opens credits settings from the legacy account menu', async () => {
+  it('opens Plan & Credits from the legacy account menu', async () => {
     const { user, onClose } = renderComponent()
 
     const menuItem = screen.getByTestId('manage-plan-menu-item')
@@ -282,7 +305,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(menuItem)
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('workspace')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -380,6 +403,104 @@ describe('CurrentUserPopoverLegacy', () => {
         }
       })
       expect(screen.getByText('0')).toBeInTheDocument()
+    })
+  })
+  describe('workspace selector (non-cloud)', () => {
+    const workspace = (overrides: Record<string, unknown>) => ({
+      isSubscribed: false,
+      subscriptionPlan: null,
+      subscriptionTier: null,
+      members: [],
+      pendingInvites: [],
+      ...overrides
+    })
+
+    const readyWorkspaceState = {
+      initState: 'ready',
+      activeWorkspaceId: 'ws-personal',
+      isFetchingWorkspaces: false,
+      workspaces: [
+        workspace({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner'
+        }),
+        workspace({
+          id: 'ws-team',
+          name: 'Team Comfy',
+          type: 'team',
+          role: 'member'
+        })
+      ]
+    }
+
+    it('stays hidden while the workspace store is not hydrated', () => {
+      renderComponent()
+
+      expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
+    })
+
+    it.for(['ready', 'error'])(
+      'stays hidden when workspace initialization is %s without workspaces',
+      (initState) => {
+        renderComponent({
+          initState,
+          activeWorkspaceId: null,
+          isFetchingWorkspaces: false,
+          workspaces: []
+        })
+
+        expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
+      }
+    )
+
+    it('shows the trigger and opens the switcher once the store is ready', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+      expect(trigger).toHaveAttribute(
+        'aria-controls',
+        'workspace-switcher-panel'
+      )
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+
+      const panel = screen.getByTestId('workspace-switcher-panel')
+      expect(panel).toBeInTheDocument()
+      expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
+      expect(panel).toHaveAttribute('role', 'menu')
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('closes the switcher on Escape or a click elsewhere', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+
+      await user.click(trigger)
+      await user.keyboard('{Escape}')
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+      await user.click(screen.getByText('Test User'))
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+    })
+
+    it('keeps credits visible but hides top-up for workspace members', () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      mockCanTopUp.value = false
+      renderComponent({
+        ...readyWorkspaceState,
+        activeWorkspaceId: 'ws-team'
+      })
+
+      expect(screen.getByTestId('manage-plan-menu-item')).toHaveTextContent(
+        enMessages.credits.credits
+      )
+      expect(screen.queryByTestId('add-credits-button')).toBeNull()
     })
   })
 })

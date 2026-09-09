@@ -4,23 +4,23 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
-  test('should be disabled and not allow changing value when link connected to slot', async ({
+  test('should be suppressed while linked and editable after unlinking', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
-    const seedWidget = comfyPage.vueNodes
-      .getWidgetByName('KSampler', 'seed')
-      .first()
-    const controls = comfyPage.vueNodes.getInputNumberControls(seedWidget)
-    const initialValue = Number(await controls.input.inputValue())
+    const seedWidget = comfyPage.vueNodes.getWidgetByName('KSampler', 'seed')
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const seedSlot = ksampler.getSlot('seed')
 
-    // Verify widget is disabled when linked
-    await expect(controls.incrementButton).toBeDisabled()
-    await expect(controls.decrementButton).toBeDisabled()
-    await expect(controls.input).toHaveValue(initialValue.toString())
-
-    await expect(seedWidget).toBeVisible()
+    // While linked, only the standalone socket row carries the accessible
+    // name: the input control is suppressed entirely.
+    await expect(seedWidget).toHaveCount(1)
+    await expect(seedWidget.getByTestId('slot-dot')).toBeVisible()
+    await expect(seedWidget.locator('input')).toHaveCount(0)
+    await expect
+      .poll(() => comfyPage.vueNodes.isSlotConnected(seedSlot))
+      .toBe(true)
 
     // Delete the node that is linked to the slot (freeing up the widget)
     // Click on the header to select the node (clicking center may land on
@@ -31,7 +31,10 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
       .click()
     await comfyPage.vueNodes.deleteSelected()
 
-    // Test widget works when unlinked
+    await expect(seedWidget).toBeVisible()
+    const controls = comfyPage.vueNodes.getInputNumberControls(seedWidget)
+    await expect(controls.input).toBeEnabled()
+    const initialValue = Number(await controls.input.inputValue())
     await controls.incrementButton.click()
     await expect(controls.input).toHaveValue((initialValue + 1).toString())
 

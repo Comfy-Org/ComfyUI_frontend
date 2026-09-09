@@ -2,7 +2,9 @@
  * Utilities for constructing asset URLs
  */
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
+import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
 
@@ -23,12 +25,54 @@ export function getAssetUrl(
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const assetType = getAssetType(asset, defaultType)
-  const subfolder = asset.user_metadata?.subfolder
+  const subfolder = getAssetSubfolder(asset)
   const params = new URLSearchParams()
   params.set('filename', asset.name)
   params.set('type', assetType)
-  if (typeof subfolder === 'string' && subfolder) {
+  if (subfolder) {
     params.set('subfolder', subfolder)
   }
   return api.apiURL(`/view?${params}`)
+}
+
+/**
+ * Get the subfolder an asset lives in, relative to its type root
+ *
+ * Reads `preview_url` first and falls back to `user_metadata`, mirroring how
+ * {@link getAssetType} resolves the type.
+ *
+ * @param asset The asset to get the subfolder for
+ * @returns The subfolder, or an empty string when the asset is at the root
+ */
+export function getAssetSubfolder(asset: AssetItem): string {
+  const previewSubfolder = new URLSearchParams(
+    (asset.preview_url ?? '').split('?')[1] ?? ''
+  ).get('subfolder')
+  if (previewSubfolder) return previewSubfolder
+
+  const { subfolder } = asset.user_metadata ?? {}
+  return typeof subfolder === 'string' ? subfolder : ''
+}
+
+/**
+ * Id of the assets-API asset holding this item's own file. A card grouped per
+ * job carries the job id as its `id` and keeps its own asset id in metadata.
+ */
+function getAssetContentId(asset: AssetItem): string {
+  return getOutputAssetMetadata(asset.user_metadata)?.assetId || asset.id
+}
+
+/**
+ * URL of the asset's own file, for downloading or loading it whole.
+ *
+ * With the assets API enabled the file is served by id, so no path inference
+ * is needed and a preview that is only a thumbnail is never mistaken for the
+ * file. Otherwise the item came from the history API, whose `preview_url`
+ * already points at the file, with a `/view` URL as fallback.
+ */
+export function getAssetFileUrl(asset: AssetItem): string {
+  if (useFeatureFlags().flags.assetsEnabled) {
+    return api.apiURL(`/assets/${getAssetContentId(asset)}/content`)
+  }
+  return asset.preview_url || getAssetUrl(asset)
 }

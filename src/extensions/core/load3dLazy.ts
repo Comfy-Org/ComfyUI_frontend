@@ -15,7 +15,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ComfyExtension } from '@/types/comfy'
 
-import { isLoad3dNode } from './load3d/nodeTypes'
+import { isLoad3dNode, isThreeJsNode } from './load3d/nodeTypes'
 
 let load3dExtensionsLoaded = false
 let load3dExtensionsLoading: Promise<ComfyExtension[]> | null = null
@@ -39,7 +39,8 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
       import('./load3d'),
       import('./load3dAdvanced'),
       import('./load3dPreviewExtensions'),
-      import('./saveMesh')
+      import('./saveMesh'),
+      import('./cameraInfo')
     ])
     load3dExtensionsLoaded = true
     return useExtensionStore().enabledExtensions.filter(
@@ -58,6 +59,8 @@ useExtensionService().registerExtension({
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
+    if (!isThreeJsNode(nodeData.name)) return
+
     if (isLoad3dNode(nodeData.name)) {
       // Inject mesh_upload spec flags so WidgetSelect.vue can detect
       // Load3D's model_file as a mesh upload widget without hardcoding.
@@ -68,14 +71,14 @@ useExtensionService().registerExtension({
           modelFile[1].upload_subfolder = '3d'
         }
       }
+    }
 
-      // Load the 3D extensions and replay their beforeRegisterNodeDef hooks,
-      // since invokeExtensionsAsync already captured the extensions snapshot
-      // before these new extensions were registered.
-      const newExtensions = await loadLoad3dExtensions()
-      for (const ext of newExtensions) {
-        await ext.beforeRegisterNodeDef?.(nodeType, nodeData, app)
-      }
+    // Load the 3D extensions and replay their beforeRegisterNodeDef hooks,
+    // since invokeExtensionsAsync already captured the extensions snapshot
+    // before these new extensions were registered.
+    const newExtensions = await loadLoad3dExtensions()
+    for (const ext of newExtensions) {
+      await ext.beforeRegisterNodeDef?.(nodeType, nodeData, app)
     }
   }
 })

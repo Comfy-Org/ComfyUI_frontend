@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,7 +16,7 @@ const i18n = createI18n({
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     shouldUseAssetBrowser: vi.fn(() => true),
     isAssetAPIEnabled: vi.fn(() => true)
@@ -59,7 +59,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [PrimeVue, getActivePinia()!, i18n],
         stubs
       }
     })
@@ -98,7 +98,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'ImageLoader'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [PrimeVue, getActivePinia()!, i18n],
         stubs: {
           WidgetSelectDefault: stubs.WidgetSelectDefault,
           WidgetWithControl: stubs.WidgetWithControl

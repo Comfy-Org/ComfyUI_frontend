@@ -2,17 +2,18 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
-import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 
 type OutputAssetMapOptions = {
   jobId: string
-  outputs: readonly ResultItemImpl[]
+  outputs: readonly AugmentedResultItem[]
   createdAt?: string
   executionTimeInSeconds?: number
   workflow?: OutputAssetMetadata['workflow']
@@ -22,12 +23,6 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
-}
-
-type OutputKeyParts = {
-  nodeId?: SerializedNodeId | null
-  subfolder?: string | null
-  filename?: string | null
 }
 
 function shouldLoadFullOutputs(
@@ -41,34 +36,9 @@ function shouldLoadFullOutputs(
   )
 }
 
-export function getAssetOutputCount(
-  asset: Pick<AssetItem, 'user_metadata'>
-): number {
-  const count = asset.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
-
-export function getTotalAssetOutputCount(
-  assets: Pick<AssetItem, 'user_metadata'>[]
-): number {
-  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
-}
-
-export function getOutputKey({
-  nodeId,
-  subfolder,
-  filename
-}: OutputKeyParts): string | null {
-  if (nodeId == null || subfolder == null || !filename) {
-    return null
-  }
-
-  return `${nodeId}-${subfolder}-${filename}`
-}
-
 /**
  * Maps a job's outputs to AssetItems with ids derived from the composite
- * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
+ * `[nodeId, subfolder, filename]` key. Records sharing a composite key are
  * dropped after the first to keep `:key` unique in VirtualGrid — colliding
  * ids cause Vue to reuse one DOM node and visibly duplicate the asset on
  * scroll.
@@ -101,15 +71,15 @@ function mapOutputsToAssetItems({
     seenOutputKeys.add(outputKey)
 
     items.push({
-      id: `${jobId}-${outputKey}`,
+      id: output.assetId || `${jobId}-${outputKey}`,
       name: output.filename,
       display_name: output.display_name,
       size: 0,
       created_at: createdAtValue,
       updated_at: createdAtValue,
       tags: ['output'],
-      thumbnail_url: output.previewUrl,
-      preview_url: output.url,
+      thumbnail_url: resultItemPreviewUrl(output),
+      preview_url: resultItemUrl(output),
       user_metadata: {
         jobId,
         nodeId: output.nodeId,

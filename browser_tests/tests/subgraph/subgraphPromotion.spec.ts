@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
@@ -94,6 +93,83 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test('Promoted widget connected to the subgraph input is interactive on the host', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+
+          const subgraphNodeId = '2'
+          await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+          await comfyPage.subgraph.promoteWidget(
+            comfyPage.vueNodes.getNodeByTitle('KSampler'),
+            'steps'
+          )
+          await comfyPage.subgraph.exitViaBreadcrumb()
+
+          const promotedWidget = comfyPage.vueNodes
+            .getNodeLocator(subgraphNodeId)
+            .getByLabel('steps', { exact: true })
+          await expect(promotedWidget).toBeVisible()
+          await expect(promotedWidget).toBeEnabled()
+        })
+
+        test(
+          'Promoted advanced widget remains visible when global advanced widgets are disabled',
+          { tag: ['@node'] },
+          async ({ comfyPage }) => {
+            const subgraphNodeId =
+              await test.step('Convert a node with hidden advanced widgets to a subgraph', async () => {
+                await comfyPage.settings.setSetting(
+                  'Comfy.Node.AlwaysShowAdvancedWidgets',
+                  false
+                )
+                const modelSamplingNode = await comfyPage.nodeOps.addNode(
+                  'ModelSamplingFlux',
+                  {},
+                  { x: 500, y: 200 }
+                )
+                await comfyPage.nextFrame()
+                await expect(
+                  comfyPage.vueNodes.getNodeLocator(
+                    String(modelSamplingNode.id)
+                  )
+                ).toBeVisible()
+
+                await modelSamplingNode.click('title')
+                const subgraphNode = await modelSamplingNode.convertToSubgraph()
+                return String(subgraphNode.id)
+              })
+
+            await test.step('Promote an advanced interior widget', async () => {
+              await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+              const interiorNode =
+                comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
+              await expect(interiorNode).toBeVisible()
+              await interiorNode
+                .getByText('Show advanced inputs', { exact: true })
+                .click()
+              await expect(
+                interiorNode.getByLabel('max_shift', { exact: true })
+              ).toBeVisible()
+              await comfyPage.subgraph.promoteWidget(interiorNode, 'max_shift')
+              await comfyPage.subgraph.exitViaBreadcrumb()
+            })
+
+            await test.step('Keep the promoted widget visible on the host', async () => {
+              await expectPromotedWidgetNamesToContain(
+                comfyPage,
+                subgraphNodeId,
+                'max_shift'
+              )
+              await expect(
+                comfyPage.vueNodes
+                  .getNodeLocator(subgraphNodeId)
+                  .getByLabel('max_shift', { exact: true })
+              ).toBeVisible()
+            })
+          }
+        )
+
         test('Promoted text widget renders and enters the subgraph in Vue mode', async ({
           comfyPage
         }) => {
@@ -123,40 +199,42 @@ test.describe(
     )
 
     test.describe('Promoted Widget Reactivity', { tag: ['@vue-nodes'] }, () => {
-      test.fail(
-        'Promoted and interior widgets stay in sync across navigation',
-        async ({ comfyPage }) => {
-          await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-with-promoted-text-widget'
-          )
+      // https://github.com/Comfy-Org/ComfyUI_frontend/issues/14495
+      test('Promoted STRING widget edit survives a rebind of the interior link', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+        await comfyPage.vueNodes.waitForNodes()
 
-          const testContent = 'promoted-value-sync-test'
+        const hostValue = 'promoted-value-rebind-test'
+        const promotedTextarea = comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+        await promotedTextarea.fill(hostValue)
+        await expect(promotedTextarea).toHaveValue(hostValue)
 
-          const promotedTextarea = comfyPage.vueNodes
-            .getNodeLocator('11')
-            .getByRole('textbox', { name: 'text' })
-          await promotedTextarea.fill(testContent)
+        await comfyPage.vueNodes.enterSubgraph('11')
+        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-          await comfyPage.vueNodes.enterSubgraph('11')
+        const interiorNodes = await comfyPage.nodeOps.getNodeRefsByType(
+          'CLIPTextEncode',
+          true
+        )
+        expect(
+          interiorNodes,
+          'Expected exactly one interior CLIPTextEncode'
+        ).toHaveLength(1)
 
-          const interiorTextarea = comfyPage.page
-            .locator('[data-node-id]')
-            .getByRole('textbox', { name: 'text' })
-            .first()
-          await expect(interiorTextarea).toHaveValue(testContent)
+        await comfyPage.subgraph.rebindPromotedInput(interiorNodes[0], 'text')
 
-          const updatedInteriorContent = 'interior-value-sync-test'
-          await interiorTextarea.fill(updatedInteriorContent)
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.vueNodes.waitForNodes()
 
-          await comfyPage.subgraph.exitViaBreadcrumb()
-
-          await expect(
-            comfyPage.vueNodes
-              .getNodeLocator('11')
-              .getByRole('textbox', { name: 'text' })
-          ).toHaveValue(updatedInteriorContent)
-        }
-      )
+        test.fail()
+        await expect(promotedTextarea).toHaveValue(hostValue)
+      })
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {
@@ -218,23 +296,9 @@ test.describe(
         await expectPromotedWidgetCountToBeGreaterThan(comfyPage, '2', 0)
         const initialWidgetCount = await getPromotedWidgetCount(comfyPage, '2')
 
-        const subgraphNode2 = await comfyPage.nodeOps.getNodeRefById('2')
-        await subgraphNode2.navigateIntoSubgraph()
-        const ksampler2 = await comfyPage.nodeOps.getNodeRefById('1')
-        await ksampler2.click('title')
-        const stepsWidget2 = await ksampler2.getWidget(2)
-        const widgetPos2 = await stepsWidget2.getPosition()
-
-        await comfyPage.canvasOps.mouseClickAt(widgetPos2, { button: 'right' })
-
-        const unpromoteEntry = comfyPage.page
-          .locator('.litemenu-entry')
-          .filter({ hasText: /Un-Promote Widget/ })
-
-        await expect(unpromoteEntry).toBeVisible()
-        await unpromoteEntry.click()
-        await expect(unpromoteEntry).toBeHidden()
-
+        const subgraphNodeRef = await comfyPage.nodeOps.getNodeRefById('2')
+        await subgraphNodeRef.navigateIntoSubgraph()
+        await comfyPage.subgraph.removeSlot('input', 'steps')
         await comfyPage.subgraph.exitViaBreadcrumb()
 
         await expect
@@ -440,14 +504,14 @@ test.describe(
             return await comfyPage.page.evaluate(() => {
               const graph = window.app!.canvas.graph
               if (!graph || !('inputNode' in graph)) return null
-              return graph.inputs?.[0]?.name ?? null
+              return graph.inputs.at(0)?.name ?? null
             })
           })
           .not.toBeNull()
         const removedSlotName = await comfyPage.page.evaluate(() => {
           const graph = window.app!.canvas.graph
           if (!graph || !('inputNode' in graph)) return null
-          return graph.inputs?.[0]?.name ?? null
+          return graph.inputs.at(0)?.name ?? null
         })
 
         await comfyPage.subgraph.removeSlot('input')
@@ -511,7 +575,7 @@ test.describe(
       })
     })
 
-    test.fail(
+    test(
       'Promoted text widget is removed when source node is deleted inside the subgraph',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
@@ -535,7 +599,7 @@ test.describe(
           .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
           .toContain('text')
         await expect(
-          subgraphNode.getByTestId(TestIds.widgets.domWidgetTextarea)
+          subgraphNode.getByRole('textbox', { name: 'text' })
         ).toBeVisible()
 
         await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
@@ -551,8 +615,11 @@ test.describe(
         const subgraphNodeAfter =
           comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
         await expect(subgraphNodeAfter).toBeVisible()
+        await expect
+          .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
+          .not.toContain('text')
         await expect(
-          subgraphNodeAfter.getByTestId(TestIds.widgets.domWidgetTextarea)
+          subgraphNodeAfter.getByRole('textbox', { name: 'text' })
         ).toBeHidden()
       }
     )
@@ -578,7 +645,7 @@ test(
 
     await test.step('Un-promote widget', async () => {
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+      await comfyPage.subgraph.removeSlot('input', 'steps')
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       await expect(subgraphNode).toBeVisible()
@@ -626,8 +693,7 @@ test(
     })
 
     await comfyPage.vueNodes.enterSubgraph('2')
-    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await comfyPage.subgraph.unpromoteWidget(ksampler.root, 'steps')
+    await comfyPage.subgraph.removeSlot('input', 'steps')
     await comfyPage.subgraph.exitViaBreadcrumb()
     await expect(steps, 'Un-promote widget').toBeHidden()
   }

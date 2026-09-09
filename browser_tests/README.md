@@ -124,6 +124,112 @@ await comfyPage.setup({ mockReleases: false })
 
 See `tests/releaseNotifications.spec.ts` for release-specific tests.
 
+### Network isolation
+
+The shared fixtures allow HTTP and real WebSockets only to the configured
+frontend/backend origins: `PLAYWRIGHT_TEST_URL`, `PLAYWRIGHT_SETUP_API_URL`,
+`DEV_SERVER_COMFYUI_URL`, and Playwright's `baseURL`. Service workers are blocked.
+Other browser requests must have a local `route.fulfill()` or intentional
+`route.abort()` mock. An unmocked request is blocked and fails its owning test,
+even if the app catches the network error. Popup mocks belong on `context`,
+not `page`, so they cover the first navigation.
+
+Use `route.fallback()` for unmatched requests. `route.continue()` bypasses
+other handlers. Oxlint bans raw Playwright `test` imports and `continue()`
+outside `networkIsolationFixture.ts`. Extend that fixture for custom test roots.
+Keep auth mocks in the existing auth helpers; shared mocks
+only replace third-party scripts, model metadata lookups, and carousel media.
+Use scoped `test.use({ userAgent })` rather than `browser.newContext()` so
+custom user agents retain the fixture's isolation.
+
+Both `request` and `context.request` reject external URLs and disable automatic
+redirect following. Node networking, new standalone request/browser contexts,
+`route.fetch()`, and browser redirects can bypass fixture routing. For a full
+test-process network boundary, run the frontend, backend, and tests together
+in a Docker container with networking disabled:
+
+```bash
+pnpm install --frozen-lockfile
+VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm build
+docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+scripts/test-browser-offline.sh --project=chromium errorDialog.spec.ts
+```
+
+Complete downloads and builds first. The offline runner never pulls an image
+or invokes the package manager. It requires a Linux-compatible `node_modules`
+and a cached CI image. `COMFYUI_TEST_IMAGE` selects a source-built image;
+`PLAYWRIGHT_OFFLINE_DIST` selects another built distribution, such as a cloud
+build for `--project=cloud` or `--project=mobile-safari`. Remote backend runs
+still use the regular test commands, not the offline runner.
+
+The container runs as root so the bundled backend can write to `/ComfyUI`.
+Generated reports are root-owned on the host. Before running tests outside the
+container, restore ownership of each generated output directory with
+`sudo chown -R "$(id -u):$(id -g)" test-results`, substituting
+`playwright-report`, `blob-report`, `coverage`, or your `--output` directory
+when used.
+
+## Recording Tests (For Non-Developers)
+
+If you're a QA tester or non-developer, use the interactive recorder:
+
+```bash
+pnpm comfy-test record
+```
+
+This guides you through a 6-step flow:
+
+1. **Environment check** — verifies the tools, the backend, and the dev server (with install instructions if anything is missing)
+2. **Project setup** — installs dependencies
+3. **Configure** — set test name, tags, and starting workflow
+4. **Record** — opens the browser with the Playwright Inspector; press Record, act, then close both windows — the generated code is saved automatically as you go, no copy/paste
+5. **Transform** — the captured code is rewritten to project conventions automatically
+6. **Refactor (optional)** — offers to hand the spec to a local coding-agent CLI (Claude Code, Codex, Gemini CLI, ...) for a convention pass, if one is installed
+
+Then, if you want, it opens a PR for you via `gh` CLI (or gives manual instructions).
+
+`record` needs a real terminal — it exits immediately with guidance if run
+without one (piped input, CI, etc).
+
+The dev server must be serving _this_ checkout. Step 1 fails if the port is
+held by a server started from a different folder. To use another port:
+
+```bash
+pnpm dev --port 5174 --strictPort
+COMFY_TEST_DEV_PORT=5174 pnpm comfy-test record
+```
+
+### For agents
+
+`record` is built around a human clicking a real browser and can't be
+driven programmatically. An agent should use `comfy-test plan` instead —
+fully non-interactive, no terminal required:
+
+```bash
+pnpm comfy-test plan --description "collapsing a KSampler node keeps its connections" \
+  --tags @canvas,@widget
+```
+
+This validates the environment/tags/workflow and prints a test-plan block
+ready to hand to the `playwright-test-generator` agent
+(`.claude/agents/playwright-test-generator.md`), which drives the app via
+Playwright MCP tools and writes a convention-compliant spec directly — no
+`transform` step needed. Then open the PR:
+
+```bash
+pnpm comfy-test pr browser_tests/tests/<slug>.spec.ts
+```
+
+Other commands:
+
+```bash
+pnpm comfy-test check       # Just run environment checks
+pnpm comfy-test plan --description "<what to test>"  # Print a plan for playwright-test-generator
+pnpm comfy-test transform <file>  # Transform a raw codegen file
+pnpm comfy-test pr <file>   # Open a PR for a generated test
+pnpm comfy-test list        # List available workflow assets
+```
+
 ## Running Tests
 
 ```bash
@@ -205,6 +311,15 @@ flowchart TD
     E -- Yes --> P[fixtures/components/]
     E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
 ```
+
+### Custom-node regression suite
+
+`tests/customNodes/` holds the manifest-driven suite that proves community
+custom-node packs load, render in both renderers (LiteGraph canvas and Vue
+Nodes 2.0), and execute real workflows. It has its own prerequisites, pnpm
+scripts (`pnpm test:custom-nodes` and variants), and a one-JSON-row process
+for adding packs - see
+[docs/custom-node-regression-suite.md](../docs/custom-node-regression-suite.md).
 
 ## Writing Tests
 
@@ -391,8 +506,10 @@ await expect(node).toHaveClass(BYPASS_CLASS)
   before `page.keyboard.press(...)`, or keys go nowhere.
 - Mark the canvas dirty after programmatic state changes:
   `window['app'].graph.setDirtyCanvas(true, true)`.
-- `dblclick()` on canvas needs a small `{ delay: 5 }`; drags need
-  `{ steps: 10 }` not `{ steps: 1 }`.
+- `dblclick()` on canvas needs a small `{ delay: 5 }`. Use the shared drag
+  helpers, which emit enough intermediate events for canvas behavior without
+  making coverage runs process excessive pointer events. For a local drag,
+  use the fewest steps the behavior needs (usually 5–20), never 100.
 
 ### Custom assertions
 

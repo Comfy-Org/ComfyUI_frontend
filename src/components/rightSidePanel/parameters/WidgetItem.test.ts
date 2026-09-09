@@ -1,17 +1,27 @@
 import { render } from '@testing-library/vue'
-import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
-import WidgetItem from './WidgetItem.vue'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
-const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn(),
+import WidgetItem from './WidgetItem.vue'
+
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+})
+
+const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
@@ -20,39 +30,18 @@ const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty: vi.fn() }
-  })
-}))
-
-vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
-  useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
-  })
-}))
-
-vi.mock('@/composables/graph/useGraphNodeManager', () => ({
-  getControlWidget: vi.fn(() => undefined)
-}))
-
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
+
   () => ({
     getComponent: () => StubWidgetComponent,
     shouldExpand: () => false
   })
 )
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'),
+
   () => ({
     default: StubWidgetComponent
   })
@@ -75,7 +64,7 @@ function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
-    graph: { rootGraph: { id: 'test-graph-id' } },
+    graph: { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } },
     ...overrides
   })
 }
@@ -90,7 +79,7 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
       values: ['option_a', 'option_b', 'option_c']
     },
     ...overrides
-  } as IBaseWidget
+  }
 }
 
 function renderWidgetItem(
@@ -196,6 +185,54 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.value).toBe('model_a.safetensors')
+    })
+
+    it('passes null from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: null,
+        options: {}
+      })
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.value).toBe('null')
+    })
+
+    it('updates disabled options when the widget input is linked', async () => {
+      const inputs: INodeInputSlot[] = [
+        {
+          name: 'seed',
+          type: 'INT',
+          link: null,
+          boundingRect: [0, 0, 0, 0],
+          widget: { name: 'seed' }
+        }
+      ]
+      const node = createMockNode(
+        fromAny<Partial<LGraphNode>, unknown>({ inputs })
+      )
+      const widget = createMockWidget({ name: 'seed', options: {} })
+
+      const { container } = renderWidgetItem(widget, node)
+      expect(getStubWidget(container).options.disabled).toBeUndefined()
+
+      const graphScope = graphScopeOf(node.graph!)
+      useLinkStore().registerLink(graphScope, {
+        id: toLinkId(1),
+        graphId: graphScope.owningGraphId,
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: node.id,
+        targetSlot: 0,
+        type: 'INT'
+      })
+      await nextTick()
+
+      expect(getStubWidget(container).options.disabled).toBe(true)
     })
   })
 })

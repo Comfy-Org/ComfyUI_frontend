@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const benefits = affiliateBenefits.map((benefit) => ({
   id: benefit.id,
-  description: benefit.description[locale]
+  description: benefit.description[locale] || benefit.description.en
 }))
 </script>
 

@@ -1,23 +1,22 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import type * as DistributionModule from '@/platform/distribution/types'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
+import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 
-import { useSettingUI } from './useSettingUI'
+import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 
 const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
     isDesktop: false,
     isLoggedIn: false,
-    billingControlEnabled: false,
-    authenticatedConfigLoaded: false,
     partnerNodeGovernanceEnabled: false,
     userSecretsEnabled: false,
     workspaceRole: 'owner' as 'owner' | 'member',
@@ -38,20 +37,13 @@ const env = vi.hoisted(() => {
   return { state, fakeRef }
 })
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (_: string, fallback: string) => fallback })
-}))
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
-      get billingControlEnabled() {
-        return env.state.billingControlEnabled
-      },
       get partnerNodeGovernanceEnabled() {
         return env.state.partnerNodeGovernanceEnabled
       },
@@ -62,11 +54,12 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/composables/useVueFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({ shouldRenderVueNodes: ref(false) })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return env.state.isCloud
   },
@@ -75,31 +68,14 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  isAuthenticatedConfigLoaded: env.fakeRef('authenticatedConfigLoaded')
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(),
-  getSettingInfo: vi.fn()
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    workspaceRole: env.fakeRef('workspaceRole')
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      workspaceRole: env.fakeRef('workspaceRole')
+    })
   })
-}))
-
-vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
-  usePartnerNodeGovernanceStore: () => ({
-    get status() {
-      return env.state.partnerNodeGovernanceStatus
-    },
-    get providers() {
-      return env.state.partnerNodeGovernanceProviders
-    }
-  })
-}))
+)
 
 interface MockSettingParams {
   id: string
@@ -108,6 +84,46 @@ interface MockSettingParams {
   defaultValue: unknown
   category?: string[]
 }
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSettingUI(
+  ...options: Parameters<typeof useSettingUIComposable>
+): ReturnType<typeof useSettingUIComposable> {
+  let result!: ReturnType<typeof useSettingUIComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSettingUIComposable(...options)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
+
+beforeEach(() => {
+  vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
+    () => {
+      return env.state.partnerNodeGovernanceStatus
+    }
+  )
+  vi.spyOn(
+    usePartnerNodeGovernanceStore(),
+    'providers',
+    'get'
+  ).mockImplementation(() => {
+    return env.state.partnerNodeGovernanceProviders.map((provider) =>
+      fromPartial<
+        ReturnType<typeof usePartnerNodeGovernanceStore>['providers'][number]
+      >(provider)
+    )
+  })
+})
 
 describe('useSettingUI', () => {
   const mockSettings: Record<string, MockSettingParams> = {
@@ -132,14 +148,10 @@ describe('useSettingUI', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
-
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
       isLoggedIn: false,
-      billingControlEnabled: false,
-      authenticatedConfigLoaded: false,
       partnerNodeGovernanceEnabled: false,
       userSecretsEnabled: false,
       workspaceRole: 'owner',
@@ -147,17 +159,7 @@ describe('useSettingUI', () => {
       partnerNodeGovernanceProviders: []
     })
 
-    vi.mocked(useSettingStore).mockReturnValue({
-      settingsById: mockSettings
-    } as ReturnType<typeof useSettingStore>)
-
-    vi.mocked(getSettingInfo).mockImplementation((setting) => {
-      const parts = setting.category || setting.id.split('.')
-      return {
-        category: parts[0] ?? 'Other',
-        subCategory: parts[1] ?? 'Other'
-      }
-    })
+    Object.assign(useSettingStore(), { settingsById: mockSettings })
   })
 
   function findCategory(
@@ -203,70 +205,34 @@ describe('useSettingUI', () => {
     expect(defaultCategory.value).toBe(settingCategories.value[0])
   })
 
-  it('hides the empty Workspace navigation group for logged-out Cloud users', () => {
-    env.state.isCloud = true
-    env.state.isLoggedIn = false
+  it.for([false, true])(
+    'hides Workspace for logged-out users when isCloud is %s',
+    (isCloud) => {
+      env.state.isCloud = isCloud
 
-    const { navGroups } = useSettingUI()
+      const { navGroups } = useSettingUI()
 
-    expect(navGroups.value.map(({ title }) => title)).not.toContain('Workspace')
-  })
+      expect(navGroups.value.map(({ title }) => title)).not.toContain(
+        'Workspace'
+      )
+    }
+  )
 
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
   })
 
-  describe('billing-controlled workspace panels', () => {
+  describe('workspace panels', () => {
     beforeEach(() => {
       Object.assign(env.state, {
-        isCloud: true,
         isLoggedIn: true,
-        authenticatedConfigLoaded: true
-      })
-      window.__CONFIG__ = {
-        subscription_required: false
-      } as typeof window.__CONFIG__
-    })
-
-    it('keeps the legacy Workspace panel and standalone Credits when disabled', () => {
-      const { defaultCategory, findPanelByKey, navGroups } =
-        useSettingUI('workspace')
-      const workspaceItems = navGroups.value
-        .find((group) => group.title === 'Workspace')
-        ?.items.map(({ id, label }) => ({ id, label }))
-
-      expect(workspaceItems).toEqual([
-        { id: 'workspace', label: 'Workspace' },
-        { id: 'credits', label: 'Credits' }
-      ])
-      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
-      expect(findPanelByKey('workspace-members')).toBeNull()
-      expect(defaultCategory.value).toMatchObject({
-        key: 'workspace',
-        label: 'Workspace'
+        userSecretsEnabled: true
       })
     })
 
-    it('keeps the legacy Workspace panel until authenticated config loads', () => {
-      env.state.authenticatedConfigLoaded = false
-      env.state.billingControlEnabled = true
-
-      const { findPanelByKey, navGroups } = useSettingUI('workspace')
-      const workspaceItems = navGroups.value
-        .find((group) => group.title === 'Workspace')
-        ?.items.map(({ id, label }) => ({ id, label }))
-
-      expect(workspaceItems).toEqual([
-        { id: 'workspace', label: 'Workspace' },
-        { id: 'credits', label: 'Credits' }
-      ])
-      expect(findPanelByKey('workspace')?.node.label).toBe('Workspace')
-      expect(findPanelByKey('workspace-members')).toBeNull()
-    })
-
-    it('shows Plan & Credits and Members separately when enabled', () => {
-      env.state.billingControlEnabled = true
+    it('shows Plan & Credits and Members on cloud', () => {
+      env.state.isCloud = true
       const { defaultCategory, findPanelByKey, navGroups } =
         useSettingUI('workspace')
       const workspaceItems = navGroups.value
@@ -287,6 +253,58 @@ describe('useSettingUI', () => {
         label: 'PlanCredits'
       })
     })
+
+    it('shows only Plan & Credits in the local Workspace group', () => {
+      const { findPanelByKey, navGroups } = useSettingUI()
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'PlanCredits' }
+      ])
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(findPanelByKey('workspace-allowlist')).toBeNull()
+    })
+
+    it.for([false, true])(
+      'uses Workspace and General groups when isCloud is %s',
+      (isCloud) => {
+        env.state.isCloud = isCloud
+        const { navGroups } = useSettingUI()
+
+        expect(navGroups.value.map(({ title }) => title)).toEqual([
+          'Workspace',
+          'General'
+        ])
+        expect(
+          navGroups.value
+            .find((group) => group.title === 'General')
+            ?.items.map(({ id }) => id)
+        ).toEqual([
+          'user',
+          'root/Comfy',
+          'secrets',
+          'root/LiteGraph',
+          'root/Appearance',
+          'keybinding',
+          'extension',
+          'about'
+        ])
+      }
+    )
+
+    it('keeps the hidden legacy Credits panel reachable by deep link', () => {
+      const { defaultCategory, navGroups } = useSettingUI('credits')
+
+      expect(
+        navGroups.value.flatMap((group) => group.items.map(({ id }) => id))
+      ).not.toContain('credits')
+      expect(defaultCategory.value).toMatchObject({
+        key: 'credits',
+        label: 'Credits'
+      })
+    })
   })
 
   describe('plan and credits navigation', () => {
@@ -297,19 +315,8 @@ describe('useSettingUI', () => {
       Object.assign(env.state, {
         isCloud: true,
         isLoggedIn: true,
-        billingControlEnabled: true,
-        authenticatedConfigLoaded: true,
         partnerNodeGovernanceEnabled: true
       })
-      window.__CONFIG__ = {
-        subscription_required: true
-      } as typeof window.__CONFIG__
-    })
-
-    it('uses the Workspace panel for Cloud billing navigation', () => {
-      const { navGroups } = useSettingUI()
-
-      expect(navKeys(navGroups.value)).toContain('workspace')
     })
 
     it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
@@ -365,12 +372,14 @@ describe('useSettingUI', () => {
       expect(allowlistItem?.suffixIcon).toBeUndefined()
     })
 
-    it('keeps OSS account navigation on the legacy layout', () => {
+    it('uses Plan & Credits for logged-in local users', () => {
       env.state.isCloud = false
       const { navGroups } = useSettingUI()
 
-      expect(navKeys(navGroups.value)).toContain('credits')
-      expect(navKeys(navGroups.value)).not.toContain('workspace')
+      expect(navKeys(navGroups.value)).toContain('workspace')
+      expect(navKeys(navGroups.value)).not.toContain('credits')
+      expect(navKeys(navGroups.value)).not.toContain('workspace-members')
+      expect(navKeys(navGroups.value)).not.toContain('workspace-allowlist')
     })
   })
 })

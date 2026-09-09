@@ -14,7 +14,6 @@
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
 export type AuthMethod = 'email' | 'google' | 'github'
@@ -76,12 +75,60 @@ export type UnifiedAuthRetryFailureReason =
   | 'remint_failed'
   | 'retry_rejected'
   | 'retry_request_failed'
+  | 'token_unavailable'
 
 export interface UnifiedAuthRetryMetadata {
-  transport: 'axios' | 'fetch'
+  transport: 'axios' | 'fetch' | 'ws'
   outcome: 'succeeded' | 'failed'
   final_status?: number
   failure_reason?: UnifiedAuthRetryFailureReason
+}
+
+export type UnifiedAuthRefreshOutcome =
+  | 'succeeded'
+  | 'retry_scheduled'
+  | 'retries_exhausted'
+  | 'permanent_failure'
+
+/**
+ * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
+ * drives session-cookie rotation, so a dead refresh chain breaks every
+ * cookie-authenticated <img>/media load (FE-1595).
+ */
+export interface UnifiedAuthRefreshMetadata {
+  outcome: UnifiedAuthRefreshOutcome
+  retry_count?: number
+}
+
+export interface ImageLoadFailureMetadata {
+  source: 'node_image_preview'
+}
+
+/**
+ * One row per session describing how long startup took and where the time
+ * went. `total_ms` is measured from navigation start, so it is directly
+ * comparable to what a user experiences and can be percentiled across sessions
+ * without joining per-phase events.
+ *
+ * `outcome` keeps the bad sessions in the data:
+ * - `completed` — the loading screen came down normally.
+ * - `failed` — startup threw; the loading screen came down anyway.
+ * - `timed_out` — startup was still running at the watchdog deadline. Emitted
+ *   *in addition to* whichever terminal row eventually follows, so a load that
+ *   hangs is counted even when it never finishes. `pending` names the phases
+ *   still open, which is where the session is stuck.
+ *
+ * Without the `timed_out` row the sessions users complain about are precisely
+ * the ones absent from the data.
+ */
+export interface BootstrapCompleteMetadata {
+  total_ms: number
+  outcome: 'completed' | 'failed' | 'timed_out'
+  phase_count: number
+  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  phases: Record<string, number>
+  /** Phases still running when this row was emitted. Only set for `timed_out`. */
+  pending?: string[]
 }
 
 /**
@@ -524,6 +571,44 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * prior thumb, which the eval pipeline records as a retraction rather than dropping.
+ */
+export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
+  message_id: string
+  vote: 'up' | 'down' | null
+}
+
+export type AgentPanelCloseSource =
+  | 'close_button'
+  | 'workflow_switch'
+  | 'topbar_button'
+export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
+  source: 'restored' | 'topbar_button'
+}
+export interface AgentPanelClosedMetadata extends Record<string, unknown> {
+  source: AgentPanelCloseSource
+  open_duration_ms: number | null
+}
+export interface AgentEntryButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  resulting_state: 'opened' | 'closed'
+}
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  attachment_count: number
+  node_tag_count: number
+}
+export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
+  source: 'mention_picker'
+}
+export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
+  workflow_id: string
+  target: 'active_tab_switch' | 'active_tab_open'
+}
+
+/**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
  */
@@ -533,6 +618,22 @@ export interface WidgetFavoriteToggledMetadata {
   widget_type: string
   is_favorited: boolean
   source: 'right_side_panel'
+}
+
+/**
+ * Fired once per duplicate link dropped during workflow load, when the loser
+ * has a *different origin* from the survivor — i.e. a connection the file
+ * recorded is silently discarded, not merely a redundant same-origin copy.
+ * Cloud cannot see the accompanying `console.warn`, so this is the only
+ * signal that a load lost a link. The survivor follows an authoritative
+ * serialized reference: `input.link` for node inputs, `linkIds` priority
+ * order for subgraph boundaries, and document order otherwise. `target`
+ * names the contested input slot.
+ */
+export interface LinkDedupDropMetadata {
+  droppedLinkId: number
+  survivorLinkId: number
+  target: string
 }
 
 /**
@@ -734,6 +835,7 @@ type BillingFailureCategory =
   | 'provider_decline'
   | 'redirect'
   | 'poll_timeout'
+  | 'reconciliation_needed'
   | 'stale_operation'
   | 'rendering'
   | 'unknown'
@@ -895,17 +997,28 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   }
 }
 
+export interface FetchTimeoutMetadata {
+  route: string
+  method: string
+  timeout_ms: number
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagEvaluation?(key: string, value: unknown): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
+  trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
+  trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
+  trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -930,11 +1043,6 @@ export interface TelemetryProvider {
   trackRunButton?(properties: RunButtonProperties): void
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
-
-  // Credit top-up tracking (composition with internal utilities)
-  startTopupTracking?(): void
-  checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
-  clearTopupTracking?(): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1009,6 +1117,17 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // In-App Agent message rating (PM-98)
+  trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+  trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
+  trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
+  trackAgentCloseButtonClicked?(): void
+  trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentAttachButtonClicked?(): void
+  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
@@ -1020,8 +1139,14 @@ export interface TelemetryProvider {
     metadata: NamedValuesShadowDiffSummaryMetadata
   ): void
 
+  // Link deduplication diagnostics
+  trackLinkDedupDrop?(metadata: LinkDedupDropMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Network error events
+  trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
 }
 
 /**
@@ -1046,6 +1171,10 @@ export const TelemetryEvents = {
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
+  UNIFIED_AUTH_REFRESH_SUCCEEDED: 'auth.unified.refresh.succeeded',
+  UNIFIED_AUTH_REFRESH_FAILED: 'auth.unified.refresh.failed',
+  IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1158,6 +1287,17 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // In-App Agent
+  AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
+  AGENT_PANEL_OPENED: 'app:agent_panel_opened',
+  AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
+  AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
+  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
@@ -1165,8 +1305,14 @@ export const TelemetryEvents = {
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
 
+  // Link deduplication diagnostics
+  LINK_DEDUP_DROP: 'app:link_dedup_drop',
+
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Network
+  FETCH_TIMEOUT: 'app:fetch_timeout'
 } as const
 
 export type TelemetryEventName =
@@ -1221,6 +1367,9 @@ export type TelemetryEventProperties =
   | OnboardingTourMetadata
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
+  | UnifiedAuthRefreshMetadata
+  | ImageLoadFailureMetadata
+  | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1244,6 +1393,7 @@ export type TelemetryEventProperties =
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
+  | LinkDedupDropMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
@@ -1257,3 +1407,4 @@ export type TelemetryEventProperties =
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
+  | FetchTimeoutMetadata

@@ -17,6 +17,12 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
   - Hook execution sequence
   - Best practices for extension development
 - **[Node ID Migration Notes](./node-id-migration.md)** - Compatibility guidance for branded node IDs and subgraph boundary sentinel values
+- **[Link Registration Migration Notes](./link-registration-migration.md)** - Guidance for handling defensive floating-link registration failures
+- **[Widget System Migration Notes](./widgets-migration.md)** - Keep widget names unique per node; `node.widgets` may be `undefined` until first assigned
+- **[Connection Callbacks Migration Notes](./connection-callbacks-migration.md)** - Callback signatures are unchanged, but node removal and subgraph boundaries fire them in a specific order
+- **[Serialization Callbacks Migration Notes](./serialization-callbacks-migration.md)** - `LGraph.configure()` now needs an active Pinia instance; persist extension data via `properties`/`extra`, not by enumerating node fields
+- **[Node Geometry Migration Notes](./node-geometry-migration.md)** - `node.size` always reflects the requested size now; use `getBounding()` for the node's actual rendered footprint
+- **[Widget Value Recipe Book](./widget-value-recipe-book.md)** - General guidance for choosing between `computed`, `watch`, direct calls, and `effectScope()` when building widget-driven reactive UI
 
 ## Quick Links
 

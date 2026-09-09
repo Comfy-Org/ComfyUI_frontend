@@ -1,22 +1,53 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useReleaseStore } from '../common/releaseStore'
+beforeEach(() => {
+  Object.assign(useReleaseStore(), {
+    recentRelease: null as ReleaseNote | null
+  })
+  Object.assign(useReleaseStore(), { shouldShowToast: false })
+  vi.mocked(useReleaseStore().handleSkipRelease).mockResolvedValue(undefined)
+  vi.mocked(useReleaseStore().handleShowChangelog).mockResolvedValue(undefined)
+  Object.assign(useReleaseStore(), { releases: [] })
+  vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
+})
+import { useCommandStore } from '@/stores/commandStore'
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
 
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
 const { commandExecuteMock } = vi.hoisted(() => ({
-  commandExecuteMock: vi.fn()
+  commandExecuteMock: vi.fn<ReturnType<typeof useCommandStore>['execute']>(
+    async () => undefined
+  )
 }))
 
 const { toastErrorHandlerMock } = vi.hoisted(() => ({
   toastErrorHandlerMock: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: false,
   isNightly: false,
   get isDesktop() {
@@ -24,50 +55,27 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-// Mock dependencies
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    locale: { value: 'en' },
-    t: vi.fn((key: string) => {
-      const translations: Record<string, string> = {
-        'releaseToast.newVersionAvailable': 'New update is out!',
-        'releaseToast.whatsNew': "See what's new",
-        'releaseToast.skip': 'Skip',
-        'releaseToast.update': 'Update',
-        'releaseToast.description':
-          'Check out the latest improvements and features in this update.'
-      }
-      return translations[key] || key
-    })
-  })),
-  createI18n: vi.fn(() => ({
-    global: {
-      locale: { value: 'en' }
-    }
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   formatVersionAnchor: vi.fn((version: string) => version.replace(/\./g, ''))
 }))
 
-vi.mock('@/utils/markdownRendererUtil', () => ({
+vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: vi.fn(() => ({
     toastErrorHandler: toastErrorHandlerMock
   }))
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: commandExecuteMock
-  }))
-}))
-
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path: string) => `https://docs.comfy.org${path}`),
     staticUrls: {},
@@ -76,36 +84,16 @@ vi.mock('@/composables/useExternalLink', () => ({
 }))
 
 // Mock release store
-const mockReleaseStore = {
-  recentRelease: null as ReleaseNote | null,
-  shouldShowToast: false,
-  handleSkipRelease: vi.fn(),
-  handleShowChangelog: vi.fn(),
-  releases: [],
-  fetchReleases: vi.fn()
-}
 
-vi.mock('../common/releaseStore', () => ({
-  useReleaseStore: vi.fn(() => mockReleaseStore)
-}))
+beforeEach(() => {
+  vi.mocked(useCommandStore().execute).mockImplementation(commandExecuteMock)
+})
 
 describe('ReleaseNotificationToast', () => {
   const renderComponent = (props = {}) => {
     return render(ReleaseNotificationToast, {
       global: {
-        mocks: {
-          $t: (key: string) => {
-            const translations: Record<string, string> = {
-              'releaseToast.newVersionAvailable': 'New update is out!',
-              'releaseToast.whatsNew': "See what's new",
-              'releaseToast.skip': 'Skip',
-              'releaseToast.update': 'Update',
-              'releaseToast.description':
-                'Check out the latest improvements and features in this update.'
-            }
-            return translations[key] || key
-          }
-        },
+        plugins: [i18n],
         stubs: {
           'i-lucide-rocket': true,
           'i-lucide-external-link': true
@@ -117,25 +105,42 @@ describe('ReleaseNotificationToast', () => {
 
   beforeEach(() => {
     mockData.isDesktop = false
-    mockReleaseStore.recentRelease = null
-    mockReleaseStore.shouldShowToast = true
+    Object.assign(useReleaseStore(), { recentRelease: null })
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
   })
 
   it('renders correctly when shouldShow is true', () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release\n\nSome content'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release\n\nSome content'
+      } as ReleaseNote
+    })
 
     renderComponent()
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
   })
 
+  it('stays hidden while node selection mode is active', () => {
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release\n\nSome content'
+      } as ReleaseNote
+    })
+    useAgentNodeSelectionStore().isActive = true
+
+    renderComponent()
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
+  })
+
   it('displays rocket icon', () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     const { container } = renderComponent()
     /* eslint-disable testing-library/no-container, testing-library/no-node-access */
@@ -146,34 +151,40 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('displays release version', () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     renderComponent()
     expect(screen.getByText('1.2.3')).toBeInTheDocument()
   })
 
   it('calls handleSkipRelease when skip button is clicked', async () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     renderComponent()
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('button', { name: /skip/i }))
 
-    expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalledWith('1.2.3')
+    expect(useReleaseStore().handleSkipRelease).toHaveBeenCalledWith('1.2.3')
   })
 
   it('opens update URL when update button is clicked', async () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     const mockWindowOpen = vi.fn()
     Object.defineProperty(window, 'open', {
@@ -194,10 +205,12 @@ describe('ReleaseNotificationToast', () => {
 
   it('executes desktop updater flow when running on desktop', async () => {
     mockData.isDesktop = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     commandExecuteMock.mockResolvedValueOnce(undefined)
 
@@ -221,10 +234,12 @@ describe('ReleaseNotificationToast', () => {
 
   it('shows an error toast if the desktop updater flow fails on desktop', async () => {
     mockData.isDesktop = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     const error = new Error('Command Comfy-Desktop.CheckForUpdates not found')
     commandExecuteMock.mockRejectedValueOnce(error)
@@ -245,24 +260,28 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('calls handleShowChangelog when learn more link is clicked', async () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     renderComponent()
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('link', { name: /what's new/i }))
 
-    expect(mockReleaseStore.handleShowChangelog).toHaveBeenCalledWith('1.2.3')
+    expect(useReleaseStore().handleShowChangelog).toHaveBeenCalledWith('1.2.3')
   })
 
   it('generates correct changelog URL', () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     renderComponent()
 
@@ -282,10 +301,12 @@ describe('ReleaseNotificationToast', () => {
     )
     mockMarkdownRenderer.mockReturnValue('<div>Content without title</div>')
 
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release Title\n\nSome content'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release Title\n\nSome content'
+      } as ReleaseNote
+    })
 
     renderComponent()
 
@@ -293,19 +314,21 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('fetches releases on mount when not already loaded', () => {
-    mockReleaseStore.releases = []
+    useReleaseStore().releases = []
 
     renderComponent()
 
-    expect(mockReleaseStore.fetchReleases).toHaveBeenCalled()
+    expect(useReleaseStore().fetchReleases).toHaveBeenCalled()
   })
 
   it('handles missing release content gracefully', () => {
-    mockReleaseStore.shouldShowToast = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: ''
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: ''
+      } as ReleaseNote
+    })
 
     renderComponent()
 
@@ -313,10 +336,12 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('auto-hides after timeout', async () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     renderComponent()
 
@@ -329,10 +354,12 @@ describe('ReleaseNotificationToast', () => {
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
@@ -343,6 +370,6 @@ describe('ReleaseNotificationToast', () => {
     await user.click(screen.getByRole('button', { name: /skip/i }))
 
     expect(vi.getTimerCount()).toBe(0)
-    expect(mockReleaseStore.handleSkipRelease).toHaveBeenCalled()
+    expect(useReleaseStore().handleSkipRelease).toHaveBeenCalled()
   })
 })

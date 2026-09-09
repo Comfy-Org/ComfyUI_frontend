@@ -12,7 +12,12 @@ import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 
-const { locale = 'en', hero } = defineProps<{
+const {
+  headingTag = 'h1',
+  locale = 'en',
+  hero
+} = defineProps<{
+  headingTag?: 'h1' | 'h2'
   hero: ModelLaunchHero
   locale?: Locale
 }>()
@@ -20,12 +25,19 @@ const { locale = 'en', hero } = defineProps<{
 // SSR (and the first client tick, before onMounted) has no reliable viewport
 // to check, so it renders as if mobile: no <video> tag reaches the page at
 // all, meaning phones never start fetching hero.videoSrc. Only once mounted
-// on a >=768px viewport does the video swap in for the still.
+// on a >=768px viewport does the full video swap in; below that, phones play
+// hero.mobileVideoSrc when the page ships one, or keep the still when not.
 const isMounted = useMounted()
 const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+const hasMobileMedia = Boolean(
+  hero.mobileVideoSrc || hero.mobileFallbackImageSrc
+)
 const showVideo = computed(
+  () => !hasMobileMedia || (isMounted.value && isDesktopViewport.value)
+)
+const showMobileVideo = computed(
   () =>
-    !hero.mobileFallbackImageSrc || (isMounted.value && isDesktopViewport.value)
+    Boolean(hero.mobileVideoSrc) && isMounted.value && !isDesktopViewport.value
 )
 
 // 'overlay' is the announcement treatment: media, scrim and content stacked in
@@ -48,16 +60,31 @@ const isContentFirst = hero.layout === 'content-first'
         aria-hidden="true"
         width="1440"
         height="810"
-        :class="cn('w-full object-cover', OVERLAY_CELL, 'size-full')"
+        :class="cn('z-0 w-full object-cover', OVERLAY_CELL, 'size-full')"
       />
 
       <div v-if="hero.videoSrc" :class="cn('relative', OVERLAY_CELL)">
         <VideoPlayer
           v-if="showVideo"
           :locale
+          :aria-label="t(hero.titleKey, locale)"
           :src="hero.videoSrc"
+          :poster="hero.posterSrc"
           autoplay
           loop
+          mute-only
+          class="absolute inset-0 aspect-auto size-full rounded-none border-0"
+        />
+        <VideoPlayer
+          v-else-if="showMobileVideo"
+          :locale
+          :aria-label="t(hero.titleKey, locale)"
+          :src="hero.mobileVideoSrc"
+          :poster="hero.posterSrc"
+          autoplay
+          loop
+          mute-only
+          class="absolute inset-0 aspect-auto size-full rounded-none border-0"
         />
         <img
           v-else-if="hero.mobileFallbackImageSrc"
@@ -66,21 +93,21 @@ const isContentFirst = hero.layout === 'content-first'
           aria-hidden="true"
           width="1280"
           height="720"
-          class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+          class="absolute inset-0 size-full object-cover"
         />
       </div>
 
       <div
         aria-hidden="true"
-        :class="cn(OVERLAY_CELL, 'bg-primary-comfy-ink/50')"
+        :class="cn(OVERLAY_CELL, 'z-10 bg-primary-comfy-ink/50')"
       />
 
       <div
         :class="
           cn(
-            'flex flex-col items-center text-center',
+            'relative z-20 flex flex-col items-center text-center',
             OVERLAY_CELL,
-            'min-h-96 justify-center px-6 py-12 lg:aspect-21/9'
+            'min-h-112 justify-center px-6 py-16 lg:min-h-144 lg:px-12 lg:py-20'
           )
         "
       >
@@ -91,14 +118,15 @@ const isContentFirst = hero.layout === 'content-first'
           {{ t(hero.eyebrowKey, locale) }}
         </p>
 
-        <h1
-          class="text-4xl font-light tracking-tight text-primary-warm-white sm:text-6xl lg:text-8xl/none"
+        <component
+          :is="headingTag"
+          class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-warm-white sm:text-6xl lg:text-8xl/none"
         >
           {{ t(hero.titleKey, locale)
           }}<span v-if="hero.titleRestKey" class="text-primary-warm-white/80">{{
             t(hero.titleRestKey, locale)
           }}</span>
-        </h1>
+        </component>
 
         <p
           v-if="hero.descriptionKey"
@@ -113,20 +141,21 @@ const isContentFirst = hero.layout === 'content-first'
           :secondary-cta="hero.secondaryCta"
           :locale
         />
-
-        <div
-          v-if="hero.badgeKeys?.length"
-          class="mt-6 flex flex-wrap items-center justify-center gap-3"
-        >
-          <Badge
-            v-for="badgeKey in hero.badgeKeys"
-            :key="badgeKey"
-            variant="subtle"
-          >
-            {{ t(badgeKey, locale) }}
-          </Badge>
-        </div>
       </div>
+    </div>
+
+    <div
+      v-if="hero.badgeKeys?.length"
+      class="mt-3 flex flex-wrap items-center justify-center gap-3"
+    >
+      <Badge
+        v-for="badgeKey in hero.badgeKeys"
+        :key="badgeKey"
+        data-testid="model-launch-hero-badge"
+        variant="subtle"
+      >
+        {{ t(badgeKey, locale) }}
+      </Badge>
     </div>
   </section>
 
@@ -141,7 +170,17 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-if="showVideo"
         :locale
+        :aria-label="t(hero.titleKey, locale)"
         :src="hero.videoSrc"
+        :poster="hero.posterSrc"
+        autoplay
+        loop
+      />
+      <VideoPlayer
+        v-else-if="showMobileVideo"
+        :locale
+        :aria-label="t(hero.titleKey, locale)"
+        :src="hero.mobileVideoSrc"
         :poster="hero.posterSrc"
         autoplay
         loop
@@ -180,14 +219,15 @@ const isContentFirst = hero.layout === 'content-first'
         )
       "
     >
-      <h1
-        class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl/tight"
+      <component
+        :is="headingTag"
+        class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
       >
         {{ t(hero.titleKey, locale)
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
           t(hero.titleRestKey, locale)
         }}</span>
-      </h1>
+      </component>
 
       <p
         v-if="hero.descriptionKey"
@@ -210,6 +250,7 @@ const isContentFirst = hero.layout === 'content-first'
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
+          data-testid="model-launch-hero-badge"
           variant="subtle"
         >
           {{ t(badgeKey, locale) }}

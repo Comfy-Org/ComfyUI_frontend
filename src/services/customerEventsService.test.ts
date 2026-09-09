@@ -1,10 +1,14 @@
+import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('firebase/auth'))
 
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
+import type { AuthHeader } from '@/types/authTypes'
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
@@ -12,32 +16,24 @@ const mockAxiosInstance = vi.hoisted(() => ({
   interceptors: { response: { use: vi.fn() } }
 }))
 
-const mockAuthStore = vi.hoisted(() => ({
-  getAuthHeader: vi.fn()
-}))
-
 const mockI18n = vi.hoisted(() => ({
   d: vi.fn()
 }))
 
 // Mock dependencies
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn()
   }
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => mockAuthStore)
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   d: mockI18n.d,
   t: (key: string) => key
 }))
 
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: vi.fn()
 }))
 
@@ -45,9 +41,8 @@ describe('useCustomerEventsService', () => {
   let service: ReturnType<typeof useCustomerEventsService>
 
   const mockAuthHeaders = {
-    Authorization: 'Bearer mock-token',
-    'Content-Type': 'application/json'
-  }
+    Authorization: 'Bearer mock-token'
+  } satisfies AuthHeader
 
   const mockEventsResponse = {
     events: [
@@ -80,8 +75,10 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    // Setup default mocks
-    mockAuthStore.getAuthHeader.mockResolvedValue(mockAuthHeaders)
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
+      mockAuthHeaders
+    )
+    vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-a')
     mockI18n.d.mockImplementation((date, options) => {
       // Mock i18n date formatting
       if (options?.month === 'short') {
@@ -118,7 +115,7 @@ describe('useCustomerEventsService', () => {
         limit: 10
       })
 
-      expect(mockAuthStore.getAuthHeader).toHaveBeenCalled()
+      expect(useAuthStore().getUserAuthHeader).toHaveBeenCalled()
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
@@ -141,13 +138,88 @@ describe('useCustomerEventsService', () => {
     })
 
     it('should return null when auth headers are missing', async () => {
-      mockAuthStore.getAuthHeader.mockResolvedValue(null)
+      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
 
       const result = await service.getMyEvents()
 
       expect(result).toBeNull()
       expect(service.error.value).toBe('Authentication header is missing')
       expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+    })
+
+    it('discards events that resolve after an A->B API key switch', async () => {
+      let resolveEvents!: (value: unknown) => void
+      const eventsRequestStarted = new Promise<void>((requestStarted) => {
+        mockAxiosInstance.get.mockImplementation(() => {
+          requestStarted()
+          return new Promise((resolve) => {
+            resolveEvents = resolve
+          })
+        })
+      })
+
+      const request = service.getMyEvents()
+      await eventsRequestStarted
+      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
+      resolveEvents({ data: mockEventsResponse })
+
+      await expect(request).resolves.toBeNull()
+    })
+
+    it('never exposes a stale error after an A->B API key switch', async () => {
+      let rejectEvents!: (reason: unknown) => void
+      const eventsRequestStarted = new Promise<void>((requestStarted) => {
+        mockAxiosInstance.get.mockImplementation(() => {
+          requestStarted()
+          return new Promise((_resolve, reject) => {
+            rejectEvents = reject
+          })
+        })
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const request = service.getMyEvents()
+      await eventsRequestStarted
+      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
+      rejectEvents({
+        response: { status: 400, data: { message: 'account A backend error' } }
+      })
+
+      await expect(request).resolves.toBeNull()
+      expect(service.error.value).toBeNull()
+      expect(service.isLoading.value).toBe(false)
+    })
+
+    it('ignores a stale auth preflight once a newer request begins', async () => {
+      let resolveStaleHeader!: (
+        value: Awaited<
+          ReturnType<ReturnType<typeof useAuthStore>['getUserAuthHeader']>
+        >
+      ) => void
+      vi.mocked(useAuthStore().getUserAuthHeader).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStaleHeader = resolve
+          })
+      )
+      const staleRequest = service.getMyEvents()
+
+      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
+      const activeRequestStarted = new Promise<void>((requestStarted) => {
+        mockAxiosInstance.get.mockImplementation(() => {
+          requestStarted()
+          return new Promise(() => {})
+        })
+      })
+      const activeRequest = service.getMyEvents()
+      await activeRequestStarted
+
+      resolveStaleHeader(null)
+      await expect(staleRequest).resolves.toBeNull()
+
+      expect(service.error.value).toBeNull()
+      expect(service.isLoading.value).toBe(true)
+      void activeRequest
     })
 
     it('should handle 400 errors', async () => {

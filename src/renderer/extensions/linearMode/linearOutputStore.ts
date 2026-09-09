@@ -5,7 +5,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { ExecutedWsMessage, JobId } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -20,7 +20,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   const workflowStore = useWorkflowStore()
 
   const inProgressItems = ref<InProgressItem[]>([])
-  const resolvedOutputsCache = new Map<string, ResultItemImpl[]>()
+  const resolvedOutputsCache = new Map<string, AugmentedResultItem[]>()
   const selectedId = ref<string | null>(null)
   const isFollowing = ref(true)
   const trackedJobId = ref<JobId | null>(null)
@@ -121,7 +121,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     const outputNodeIds = appModeStore.selectedOutputs
     if (
       outputNodeIds.length > 0 &&
-      !outputNodeIds.some((id) => String(id) === String(nodeId))
+      !outputNodeIds.some((id) => String(id) === nodeId)
     )
       return
 
@@ -294,7 +294,9 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
       if (!jobId) return
-      const preview = previews[jobId]
+      const preview = Object.hasOwn(previews, jobId)
+        ? previews[jobId]
+        : undefined
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     },
     { deep: true }
@@ -334,7 +336,10 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // away, but only for a job belonging to the active workflow.
     const jobId = trackedJobId.value
     if (jobId && isJobForActiveWorkflow(jobId)) {
-      const preview = jobPreviewStore.nodePreviewsByPromptId[jobId]
+      const previews = jobPreviewStore.nodePreviewsByPromptId
+      const preview = Object.hasOwn(previews, jobId)
+        ? previews[jobId]
+        : undefined
       if (preview) onLatentPreview(jobId, preview.url, preview.nodeId)
     }
   }
