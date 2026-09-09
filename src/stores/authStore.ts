@@ -574,13 +574,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action()
 
-      // Create customer if needed
       if (options.createCustomer) {
-        const token = await getIdToken()
-        if (!token) {
-          throw new Error('Cannot create customer: User not authenticated')
-        }
-        await createCustomer(options.customerPayload)
+        await provisionCustomerForSignedInUser(options.customerPayload)
       }
 
       return result
@@ -640,15 +635,17 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  // The same pre-flight executeAuthAction runs for createCustomer: getIdToken
-  // surfaces a token-mint failure (dialog + report) and provisioning is never
-  // attempted without a token it would need anyway.
-  const provisionSocialCustomer = async (): Promise<void> => {
+  // Provisioning is gated on a mintable ID token: getIdToken surfaces a
+  // token-mint failure (dialog + report) and the record is never attempted
+  // without the token it would need anyway.
+  const provisionCustomerForSignedInUser = async (
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>
+  ): Promise<void> => {
     const token = await getIdToken()
     if (!token) {
-      throw new AuthStoreError('Cannot create customer: User not authenticated')
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
-    await createCustomer()
+    await createCustomer(payload)
   }
 
   const loginWithGoogle = async (options?: {
@@ -657,7 +654,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
         signIn: identity.signInWithGoogle,
-        provisionCustomer: provisionSocialCustomer
+        provisionCustomer: () => provisionCustomerForSignedInUser()
       })
     )
 
@@ -679,7 +676,7 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
         signIn: identity.signInWithGitHub,
-        provisionCustomer: provisionSocialCustomer
+        provisionCustomer: () => provisionCustomerForSignedInUser()
       })
     )
 

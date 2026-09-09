@@ -1,5 +1,6 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 

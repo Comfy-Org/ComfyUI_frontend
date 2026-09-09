@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SharedTurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
@@ -27,9 +27,11 @@ const unavailable = defineModel<boolean>('unavailable', { default: false })
 
 const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()
-const theme = colorPaletteStore.completedActivePalette.light_theme
-  ? 'light'
-  : 'dark'
+// The palette setting can settle after this dialog mounts; the shared widget
+// reads `theme` once its loader resolves, so a computed keeps that timing.
+const theme = computed(() =>
+  colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
+)
 
 const widget = ref<InstanceType<typeof SharedTurnstileWidget>>()
 
