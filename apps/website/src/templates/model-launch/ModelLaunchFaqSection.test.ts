@@ -50,6 +50,15 @@ describe('ModelLaunchFaqSection', () => {
 
     render(ModelLaunchFaqSection, { props: { faq: translated, locale: 'ja' } })
 
+    // The answer as well as the question. Asserting only the question let the
+    // exact defect this file exists for — an English answer under a Japanese
+    // question — render and still pass.
     expect(screen.getByText('LTX-2.5とは？')).toBeTruthy()
+    expect(screen.getByText('LTX-2.5は最新版です。')).toBeTruthy()
+    expect(
+      screen.queryByText(
+        'LTX-2.5 is the newest version of the open video model.'
+      )
+    ).toBeNull()
   })
 })

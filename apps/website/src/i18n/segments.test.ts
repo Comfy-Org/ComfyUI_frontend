@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { PLAN_LABELS } from '../components/individual-submission/planLabels'
 import resolved from './resolved/en.json'
 import { segments } from './segments'
 
@@ -60,8 +61,9 @@ describe('segments', () => {
  * from the map the page fills those slots from.
  */
 describe('every slot the copy uses has a label to fill it', () => {
-  // Mirrors PLAN_LABELS in individual-submission.astro.
-  const PLAN_LABELS = ['standard', 'creator', 'pro', 'teams']
+  // The page's own map, not a copy of it: a copy stayed green through a
+  // rename while the page rendered an empty slot where the plan name belonged.
+  const known = Object.keys(PLAN_LABELS)
 
   it('individualSubmission.plans names only known plans', () => {
     const english: string = resolved['individualSubmission.plans']
@@ -70,6 +72,6 @@ describe('every slot the copy uses has a label to fill it', () => {
       .map((segment) => segment.name)
 
     expect(used.length).toBeGreaterThan(0)
-    expect(used.filter((name) => !PLAN_LABELS.includes(name))).toEqual([])
+    expect(used.filter((name) => !known.includes(name))).toEqual([])
   })
 })

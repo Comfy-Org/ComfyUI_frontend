@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import PlansPricingCta from '../components/individual-submission/PlansPricingCta.vue'
+import { PLAN_LABELS } from '../components/individual-submission/planLabels'
 import HeroSection from '../components/legal/HeroSection.vue'
 import { getRoutes } from '../config/routes'
 import { segments } from '../i18n/segments'
@@ -16,18 +17,6 @@ const { locale } = pageContext(
 )
 
 const routes = getRoutes(locale)
-
-/**
- * Plan names are product names, identical in every language, so they are slots
- * the page fills rather than words the sentence has to carry. That leaves the
- * translated sentence free to put them wherever its own grammar wants.
- */
-const PLAN_LABELS: Record<string, string> = {
-  standard: 'Standard',
-  creator: 'Creator',
-  pro: 'Pro',
-  teams: 'Teams'
-}
 
 const SUPPORT_EMAILS: Record<string, string> = {
   enterprise: 'gtm-team@comfy.org',
