@@ -113,8 +113,6 @@ afterEach(() => {
   adapter.destroy()
   follower.destroy()
   host.destroy()
-  LiteGraph.unregisterNodeType('ReferenceSources')
-  LiteGraph.unregisterNodeType(minimaxNodeDef.name)
 })
 
 function deliver() {
