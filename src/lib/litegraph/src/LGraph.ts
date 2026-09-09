@@ -3393,16 +3393,12 @@ export class Subgraph
     this._configureSubgraph(cloned)
   }
 
-  /**
-   * Clones the subgraph, creating an identical copy. Generates a new ID by
-   * default; `clone(true)` preserves the existing ID for replacement flows.
-   * @returns A new subgraph with the same configuration.
-   */
+  /** Clones the subgraph with a new ID and an independent store scope. */
   // fallow-ignore-next-line unused-class-member
-  clone(keepId: boolean = false): Subgraph {
+  clone(): Subgraph {
     const exported = this.asSerialisable()
-    if (!keepId) exported.id = createUuidv4()
-    const subgraph = new Subgraph(this.rootGraph, exported, keepId)
+    exported.id = createUuidv4()
+    const subgraph = new Subgraph(this.rootGraph, exported)
     subgraph.configure(structuredClone(exported))
     return subgraph
   }

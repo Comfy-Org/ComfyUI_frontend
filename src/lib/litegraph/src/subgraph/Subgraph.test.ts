@@ -13,12 +13,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  createUuidv4,
-  LGraphNode,
-  LiteGraph,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,
@@ -27,11 +22,8 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-class CloneTestNode extends LGraphNode {}
-
 beforeEach(() => {
   resetSubgraphFixtureState()
-  LiteGraph.registerNodeType('clone-test', CloneTestNode)
 })
 
 describe('Subgraph Construction', () => {
@@ -75,22 +67,31 @@ describe('Subgraph Construction', () => {
     expect(subgraph.name).toBe(customName)
   })
 
-  it('clones with a new ID unless preserving it is requested', () => {
-    const subgraph = createTestSubgraph({ name: 'Clone source' })
-    subgraph.add(new CloneTestNode('Clone content'))
+  it('clones into an independent store scope', () => {
+    const subgraph = createTestSubgraph({
+      name: 'Clone source',
+      nodeCount: 1,
+      inputs: [{ name: 'source input', type: 'number' }]
+    })
+    const sourceBeforeClone = subgraph.asSerialisable()
 
     const clone = subgraph.clone()
-    const preservedIdClone = subgraph.clone(true)
+    for (const node of clone.nodes) node.title = 'Changed clone node'
+    clone.addInput('clone input', 'string')
 
     expect(clone).not.toBe(subgraph)
     expect(clone.id).not.toBe(subgraph.id)
     expect(clone.name).toBe(subgraph.name)
-    expect(clone.nodes.map(({ title }) => title)).toEqual(['Clone content'])
-    expect(preservedIdClone.id).toBe(subgraph.id)
-    expect(preservedIdClone.nodes.map(({ title }) => title)).toEqual([
-      'Clone content'
+    expect(clone.nodes.map(({ title }) => title)).toEqual([
+      'Changed clone node'
     ])
-    expect(subgraph.nodes.map(({ title }) => title)).toEqual(['Clone content'])
+    expect(clone.asSerialisable().inputs?.map(({ name }) => name)).toEqual([
+      'source input',
+      'clone input'
+    ])
+    expect(subgraph.nodes).toHaveLength(1)
+    expect(subgraph.nodes.map(({ title }) => title)).toEqual(['Test Node 0'])
+    expect(subgraph.asSerialisable()).toEqual(sourceBeforeClone)
   })
 })
 
