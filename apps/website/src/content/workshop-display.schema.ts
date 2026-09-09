@@ -7,6 +7,19 @@ import { z } from 'astro/zod'
  */
 const mediaKindSchema = z.enum(['image', 'video', 'audio'])
 
+export const WORKSHOP_USE_CASES = [
+  'generate-images',
+  'edit-images',
+  'animate-images',
+  'generate-videos',
+  'edit-videos',
+  'text',
+  '3d',
+  'audio'
+] as const
+
+const workshopUseCaseSchema = z.enum(WORKSHOP_USE_CASES)
+
 const mediaAssetSchema = z.object({
   url: z.string().url(),
   kind: mediaKindSchema,
@@ -63,7 +76,7 @@ export const workshopDisplaySchema = z.object({
     .default(null),
 
   status: z.enum(['active', 'deprecated', 'unavailable']).default('active'),
-  useCases: z.array(z.string()).default([]),
+  useCases: z.array(workshopUseCaseSchema).min(1),
   license: z.string().nullable().default(null),
 
   /**

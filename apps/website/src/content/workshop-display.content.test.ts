@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { workshopDisplaySchema } from './workshop-display.schema'
+import {
+  WORKSHOP_USE_CASES,
+  workshopDisplaySchema
+} from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
 
 const here = import.meta.dirname
@@ -18,6 +21,7 @@ const catalog = (
 ).map((entry) => workshopModelSchema.parse(entry))
 
 const modality = new Map(catalog.map((m) => [m.id, m.modality]))
+const displayById = new Map(display.map((entry) => [entry.id, entry]))
 /** Outputs that are a single still frame. */
 const STILL = new Set(['image', 'svg', '3d'])
 
@@ -29,6 +33,44 @@ describe('the display overlay against the catalog', () => {
       .filter((id) => !modality.has(id))
 
     expect(orphans).toEqual([])
+  })
+
+  it('assigns every model at least one supported use case', () => {
+    const supported = new Set<string>(WORKSHOP_USE_CASES)
+    const unclassified = display
+      .filter((entry) => entry.useCases.length === 0)
+      .map((entry) => entry.id)
+    const unknown = display.flatMap((entry) =>
+      entry.useCases
+        .filter((useCase) => !supported.has(useCase))
+        .map((useCase) => `${entry.id} ${useCase}`)
+    )
+
+    expect(unclassified).toEqual([])
+    expect(unknown).toEqual([])
+  })
+
+  it('keeps multi-purpose models in each applicable use case', () => {
+    expect(displayById.get('byteplus/seedream-4')?.useCases).toEqual([
+      'generate-images',
+      'edit-images'
+    ])
+    expect(displayById.get('gemini/omni-1.1-flash')?.useCases).toEqual([
+      'generate-videos',
+      'edit-videos'
+    ])
+  })
+
+  it('classifies required media by what the model does with it', () => {
+    expect(displayById.get('beeble/switchx-image-edit')?.useCases).toEqual([
+      'edit-images'
+    ])
+    expect(displayById.get('bfl/flux-3-image-to-video')?.useCases).toEqual([
+      'animate-images'
+    ])
+    expect(displayById.get('bfl/flux-3-video-continuation')?.useCases).toEqual([
+      'edit-videos'
+    ])
   })
 
   it('never puts a moving thumbnail on a model that makes stills', () => {

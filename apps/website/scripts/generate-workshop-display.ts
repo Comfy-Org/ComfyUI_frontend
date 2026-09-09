@@ -4,6 +4,8 @@ import { resolve } from 'node:path'
 
 import { workshopDisplaySchema } from '../src/content/workshop-display.schema'
 import type { WorkshopDisplayEntry } from '../src/content/workshop-display.schema'
+import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
+import { workshopModelSchema } from '../src/content/workshop-models.schema'
 
 /**
  * The display overlay, packed the same way as the catalog: one JSON array,
@@ -30,7 +32,87 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * some catalog fields under underscore names. The collection wants that key as
  * a field, so this is where the two shapes meet.
  */
-function project(modelId: string, value: unknown): unknown {
+const IMAGE_EDIT_TAGS = new Set([
+  'edit',
+  'editing',
+  'image-edit',
+  'image-to-image',
+  'image-to-svg',
+  'inpaint',
+  'outpaint',
+  'upscale',
+  'restore',
+  'image-enhance'
+])
+const IMAGE_GENERATE_TAGS = new Set(['text-to-image', 'text-to-svg'])
+const VIDEO_ANIMATE_TAGS = new Set([
+  'image-to-video',
+  'first-last-frame',
+  'start-end-frame',
+  'reference-to-video',
+  'subject-to-video',
+  'talking-image'
+])
+const VIDEO_GENERATE_TAGS = new Set(['text-to-video'])
+const VIDEO_EDIT_TAGS = new Set([
+  'video-edit',
+  'video-to-video',
+  'video-enhance',
+  'continuation',
+  'video-extend'
+])
+
+function hasAny(
+  values: ReadonlySet<string>,
+  tags: ReadonlySet<string>
+): boolean {
+  return [...values].some((value) => tags.has(value))
+}
+
+function isImageRole(role: string): boolean {
+  return role.includes('image') || role === 'mask' || role.startsWith('view_')
+}
+
+export function deriveWorkshopUseCases(
+  model: WorkshopModelEntry
+): WorkshopDisplayEntry['useCases'] {
+  if (model.modality === 'audio' || model.modality === 'music') return ['audio']
+  if (model.modality === '3d') return ['3d']
+
+  const tags = new Set(model.tags)
+  const requiredRoles = model.roles
+    .filter((role) => role.required)
+    .map((role) => role.role)
+
+  if (model.modality === 'image' || model.modality === 'svg') {
+    const useCases: Array<'generate-images' | 'edit-images'> = []
+    if (hasAny(IMAGE_GENERATE_TAGS, tags)) useCases.push('generate-images')
+    if (hasAny(IMAGE_EDIT_TAGS, tags) || requiredRoles.some(isImageRole)) {
+      useCases.push('edit-images')
+    }
+    return useCases.length > 0 ? useCases : ['generate-images']
+  }
+
+  const useCases: Array<'animate-images' | 'generate-videos' | 'edit-videos'> =
+    []
+  if (hasAny(VIDEO_ANIMATE_TAGS, tags)) useCases.push('animate-images')
+  if (hasAny(VIDEO_GENERATE_TAGS, tags)) useCases.push('generate-videos')
+  if (
+    hasAny(VIDEO_EDIT_TAGS, tags) ||
+    requiredRoles.some((role) => role.includes('video'))
+  ) {
+    useCases.push('edit-videos')
+  }
+  if (useCases.length > 0) return useCases
+  if (requiredRoles.some(isImageRole)) return ['animate-images']
+  return ['generate-videos']
+}
+
+function project(
+  modelId: string,
+  value: unknown,
+  catalogModel: WorkshopModelEntry
+): unknown {
   if (!isRecord(value)) return value
   return {
     id: modelId,
@@ -39,7 +121,7 @@ function project(modelId: string, value: unknown): unknown {
     examples: value.examples ?? [],
     pricing: value.pricing ?? null,
     status: value.status ?? 'active',
-    useCases: value.useCases ?? [],
+    useCases: deriveWorkshopUseCases(catalogModel),
     license: value.license ?? null,
     mediaConfidence: value._mediaConfidence,
     needsReview: value._needsReview
@@ -48,14 +130,22 @@ function project(modelId: string, value: unknown): unknown {
 
 export function buildWorkshopDisplay(
   input: unknown,
-  catalogIds: ReadonlySet<string>
+  catalog: ReadonlyMap<string, WorkshopModelEntry>
 ): WorkshopDisplayEntry[] {
   if (!isRecord(input)) {
     throw new Error('Display overlay is not an object keyed by model id')
   }
 
   const overlay = Object.entries(input).map(([modelId, value]) => {
-    const parsed = workshopDisplaySchema.safeParse(project(modelId, value))
+    const catalogModel = catalog.get(modelId)
+    if (!catalogModel) {
+      throw new Error(
+        `Display overlay names model absent from catalog: ${modelId}`
+      )
+    }
+    const parsed = workshopDisplaySchema.safeParse(
+      project(modelId, value, catalogModel)
+    )
     if (!parsed.success) {
       const issue = parsed.error.issues[0]
       throw new Error(
@@ -64,18 +154,6 @@ export function buildWorkshopDisplay(
     }
     return parsed.data
   })
-
-  // An overlay entry for a model the catalog does not have would render
-  // nowhere; a catalog model with no overlay entry is expected while the
-  // content pass is in progress. Only the first is an error.
-  const orphans = overlay
-    .map((entry) => entry.id)
-    .filter((id) => !catalogIds.has(id))
-  if (orphans.length > 0) {
-    throw new Error(
-      `Display overlay names ${orphans.length} model(s) absent from the catalog: ${orphans.slice(0, 3).join(', ')}`
-    )
-  }
 
   // An example is meant to be loaded into the form and its output shown
   // beside it, paired by index. More examples than samples would leave an
@@ -95,14 +173,20 @@ export function buildWorkshopDisplay(
   return overlay.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
-async function catalogModelIds(): Promise<Set<string>> {
+async function catalogModels(): Promise<Map<string, WorkshopModelEntry>> {
   const raw = JSON.parse(await readFile(CATALOG, 'utf8')) as unknown
   if (!Array.isArray(raw)) throw new Error('Catalog is not an array')
-  return new Set(
-    raw
-      .map((model) => (isRecord(model) ? String(model.id) : ''))
-      .filter(Boolean)
-  )
+  const models = raw.map((model, index) => {
+    const parsed = workshopModelSchema.safeParse(model)
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]
+      throw new Error(
+        `Invalid catalog entry at index ${index}: ${issue.path.join('.')} ${issue.message}`
+      )
+    }
+    return parsed.data
+  })
+  return new Map(models.map((model) => [model.id, model]))
 }
 
 async function main(): Promise<void> {
@@ -114,7 +198,7 @@ async function main(): Promise<void> {
   }
 
   const drop = JSON.parse(await readFile(resolve(dropPath), 'utf8')) as unknown
-  const overlay = buildWorkshopDisplay(drop, await catalogModelIds())
+  const overlay = buildWorkshopDisplay(drop, await catalogModels())
 
   const next = `[\n${overlay.map((entry) => JSON.stringify(entry)).join(',\n')}\n]\n`
   const previous = await readFile(OVERLAY, 'utf8').catch(() => undefined)
