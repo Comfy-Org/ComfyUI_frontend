@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -321,6 +326,86 @@ describe('graphMutations', () => {
       name: 'grown',
       link: toLinkId(9)
     })
+  })
+
+  it('preserves live slots through remote connect, reconnect, and removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.id = toNodeId(1)
+    source.addOutput('out', 'IMAGE', { label: 'Current output' })
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.id = toNodeId(2)
+    target.addInput('in', 'IMAGE', { label: 'Current input' })
+    graph.add(target)
+    const output = source.outputs[0]
+    const input = target.inputs[0]
+    const remote = createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+    const link = {
+      id: 9,
+      originNodeId: 1,
+      originSlot: 0,
+      targetNodeId: 2,
+      targetSlot: 0,
+      type: 'IMAGE',
+      originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+      targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+    }
+    const store = useNodeDataStore()
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(remote.connect(link, context)).toBe(true)
+      expect(store.getNode(graph.id, source.id)?.outputs).toBe(source.outputs)
+      expect(store.getNode(graph.id, target.id)?.inputs).toBe(target.inputs)
+      expect(source.outputs[0]).toBe(output)
+      expect(target.inputs[0]).toBe(input)
+      expect(output.label).toBe('Current output')
+      expect(input.label).toBe('Current input')
+      expect(source.isOutputConnected(0)).toBe(true)
+      expect(target.isInputConnected(0)).toBe(true)
+    }
+
+    expect(remote.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(source.outputs[0]).toBe(output)
+    expect(target.inputs[0]).toBe(input)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(target.isInputConnected(0)).toBe(false)
+  })
+
+  it('updates serialized slots whose optional link mirrors were absent', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({
+          ...node(1),
+          outputs: [{ name: 'out', type: 'IMAGE' }]
+        })
+        batch.addNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+        })
+      })
+    ).toBe(true)
+
+    const store = useNodeDataStore()
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([9])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBe(9)
+    expect(graph.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBeNull()
   })
 
   it('re-adds a normalized node id as a fresh widget incarnation', () => {
