@@ -1,5 +1,6 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
@@ -7,7 +8,7 @@ import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 const {
   mockTelemetry,
   mockGetAuthHeader,
-  mockUserId,
+
   mockIsCloud,
   mockGetCheckoutAttribution,
   mockLocalStorage
@@ -16,10 +17,10 @@ const {
     trackBeginCheckout: vi.fn(),
     trackBillingEvent: vi.fn()
   },
-  mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' })
-  ),
-  mockUserId: { value: 'user-123' },
+  mockGetAuthHeader: vi.fn<
+    ReturnType<typeof useAuthStore>['getFirebaseAuthHeader']
+  >(() => Promise.resolve({ Authorization: 'Bearer test-token' as const })),
+
   mockIsCloud: { value: true },
   mockGetCheckoutAttribution: vi.fn(() => ({
     ga_client_id: 'ga-client-id',
@@ -68,25 +69,8 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() =>
-    reactive({
-      getFirebaseAuthHeader: mockGetAuthHeader,
-      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
-        fetch(input, init),
-      userId: computed(() => mockUserId.value)
-    })
-  ),
-  AuthStoreError: class extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.status = status
-    }
-  }
-}))
-
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockIsCloud.value
   }
@@ -118,11 +102,21 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
+    mockGetAuthHeader
+  )
+  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
+    (input, init) => fetch(input, init)
+  )
+})
+
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
     setDistribution('cloud')
     mockIsCloud.value = true
-    mockUserId.value = 'user-123'
+    Object.assign(useAuthStore(), { userId: 'user-123' })
     mockLocalStorage.__reset()
   })
 
@@ -256,9 +250,14 @@ describe('performSubscriptionCheckout', () => {
   it('uses the latest userId when it changes after checkout starts', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => window)
-    const authHeader = createDeferred<{ Authorization: string }>()
+    const authHeader =
+      createDeferred<
+        Awaited<
+          ReturnType<ReturnType<typeof useAuthStore>['getFirebaseAuthHeader']>
+        >
+      >()
 
-    mockUserId.value = 'user-early'
+    Object.assign(useAuthStore(), { userId: 'user-early' })
     mockGetAuthHeader.mockImplementationOnce(() => authHeader.promise)
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -267,8 +266,8 @@ describe('performSubscriptionCheckout', () => {
 
     const checkoutPromise = performSubscriptionCheckout('pro', 'yearly')
 
-    mockUserId.value = 'user-late'
-    authHeader.resolve({ Authorization: 'Bearer test-token' })
+    Object.assign(useAuthStore(), { userId: 'user-late' })
+    authHeader.resolve({ Authorization: 'Bearer test-token' as const })
 
     await checkoutPromise
 
@@ -336,3 +335,10 @@ describe('performSubscriptionCheckout', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))

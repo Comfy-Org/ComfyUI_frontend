@@ -1,16 +1,19 @@
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import { api } from '@/scripts/api'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
@@ -50,10 +53,13 @@ const mockNodePack = {
 
 // Create mock functions
 const mockGetPackVersions = vi.fn()
-const mockInstallPack = vi.fn().mockResolvedValue(undefined)
+let mockInstallPack: MockInstance<
+  ReturnType<typeof useComfyManagerStore>['installPack']['call']
+>
 const mockCheckNodeCompatibility = vi.fn()
-const mockIsPackInstalled = vi.fn(() => false)
-const mockGetInstalledPackVersion = vi.fn(() => undefined)
+let mockIsPackInstalled: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackInstalled']>
+>
 
 // Mock the registry service
 vi.mock<unknown>(import('@/services/comfyRegistryService'), () => ({
@@ -61,22 +67,6 @@ vi.mock<unknown>(import('@/services/comfyRegistryService'), () => ({
     getPackVersions: mockGetPackVersions
   }))
 }))
-
-// Mock the manager store
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
-
-  () => ({
-    useComfyManagerStore: vi.fn(() => ({
-      installPack: {
-        call: mockInstallPack,
-        clear: vi.fn()
-      },
-      isPackInstalled: mockIsPackInstalled,
-      getInstalledPackVersion: mockGetInstalledPackVersion
-    }))
-  })
-)
 
 // Mock the conflict detection composable
 vi.mock<unknown>(
@@ -96,12 +86,18 @@ const waitForPromises = async () => {
 
 describe('PackVersionSelectorPopover', () => {
   beforeEach(() => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial({ system: { os: 'linux', argv: [] }, devices: [] })
+    )
+    const store = useComfyManagerStore()
+    vi.mocked(store.getInstalledPackVersion).mockReturnValue('')
+    mockInstallPack = vi.spyOn(store.installPack, 'call')
+    mockIsPackInstalled = vi.mocked(store.isPackInstalled)
     mockInstallPack.mockReset().mockResolvedValue(undefined)
     mockCheckNodeCompatibility
       .mockReset()
       .mockReturnValue({ hasConflict: false, conflicts: [] })
     mockIsPackInstalled.mockReset().mockReturnValue(false)
-    mockGetInstalledPackVersion.mockReset().mockReturnValue(undefined)
   })
 
   function renderComponent({
@@ -127,7 +123,7 @@ describe('PackVersionSelectorPopover', () => {
         ...(onSubmit ? { onSubmit } : {})
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        plugins: [PrimeVue, i18n],
         components: { Listbox, VerifiedIcon, Select },
         directives: { tooltip: Tooltip }
       }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -12,7 +13,6 @@ const {
   configureMock,
   configureForSaveMeshMock,
   getLoad3dMock,
-  toastAddAlertMock,
   getNodeByLocatorIdMock,
   nodeToLoad3dMap
 } = vi.hoisted(() => ({
@@ -22,7 +22,6 @@ const {
   configureMock: vi.fn(),
   configureForSaveMeshMock: vi.fn(),
   getLoad3dMock: vi.fn(),
-  toastAddAlertMock: vi.fn(),
   getNodeByLocatorIdMock: vi.fn(),
   nodeToLoad3dMap: new Map<object, unknown>()
 }))
@@ -110,13 +109,10 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: toastAddAlertMock })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog: vi.fn() })
-}))
+let toastAddAlertMock: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  toastAddAlertMock = useToastStore().addAlert
+})
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLoad3dNode: vi.fn(() => true)
