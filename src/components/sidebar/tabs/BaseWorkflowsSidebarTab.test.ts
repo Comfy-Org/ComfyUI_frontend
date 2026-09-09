@@ -282,7 +282,7 @@ describe('BaseWorkflowsSidebarTab', () => {
 
   it('propagates failed workflow operations to the tree', async () => {
     const workflow = createMockWorkflow('workflows/test.json')
-    mockWorkflowStore.workflows = [workflow]
+    Object.assign(useWorkflowStore(), { workflows: [workflow] })
     mockWorkflowService.renameWorkflow.mockResolvedValueOnce(false)
     mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
 
