@@ -290,28 +290,9 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
-  it('keeps the display title when a reconcile payload omits it', () => {
+  it('preserves the display title and widget presentation while reconciling values', () => {
     const graph = mutations()
     graph.addNode({ ...node(1), title: 'Nano Banana 2' }, context)
-    const { title: _title, ...withoutTitle } = node(1, { seed: 42 })
-
-    expect(
-      graph.batch({ ...context, opId: 'catch-up' }, (batch) => {
-        batch.reconcileNode(withoutTitle)
-      })
-    ).toBe(true)
-
-    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
-    expect(reconciled.title).toBe('Nano Banana 2')
-    expect(
-      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
-        ?.value
-    ).toBe(42)
-  })
-
-  it('preserves live widget presentation while applying authoritative values', () => {
-    const graph = mutations()
-    graph.addNode(node(1), context)
     const store = useWidgetValueStore()
     const id = widgetId('root', toNodeId(1), 'model.resolution')
     const widget = store.registerWidget(
@@ -336,14 +317,14 @@ describe('graphMutations', () => {
     const onChange = vi.fn()
     const dispose = store.onValueChange(onChange)
 
-    graph.batch(context, (batch) =>
-      batch.reconcileNode(
-        node(1, {
-          'model.resolution': '2K'
-        })
-      )
+    const { title: _title, ...payload } = node(1, { 'model.resolution': '2K' })
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
     )
 
+    expect(useNodeDataStore().getNode('root', toNodeId(1))?.title).toBe(
+      'Nano Banana 2'
+    )
     expect(store.getWidget(id)).toBe(widget)
     expect(store.getWidget(id)).toMatchObject({
       value: '2K',

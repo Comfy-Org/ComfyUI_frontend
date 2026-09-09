@@ -3481,62 +3481,42 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('binds a minted workflow to its unsaved tab and subscribes once', async () => {
-    const tab = makeTab()
-    tab.isTemporary = true
-    mockMessagesEndpoint('wf-fresh')
+  it.for([false, true])(
+    'subscribes once after binding and graph load (loading=%s)',
+    async (loading) => {
+      const tab = makeTab()
+      tab.isTemporary = true
+      mockMessagesEndpoint('wf-fresh')
+      const nodeSelectionStore = useAgentNodeSelectionStore()
+      if (loading) nodeSelectionStore.beginWorkflowLoad()
 
-    await renderAndSend('build a graph')
+      await renderAndSend('build a graph')
 
-    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
-      tab.path
-    )
-    const subscribes = socketSend.mock.calls
-      .map(
-        ([frame]) =>
-          JSON.parse(String(frame)) as { type: string; data: unknown }
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
+        tab.path
       )
-      .filter(({ type }) => type === 'doc_subscribe')
-    expect(subscribes).toEqual([
-      expect.objectContaining({
-        data: expect.objectContaining({ workflow_id: 'wf-fresh' })
-      })
-    ])
-  })
+      expect(
+        socketSend.mock.calls.filter(([frame]) =>
+          String(frame).includes('doc_subscribe')
+        )
+      ).toHaveLength(loading ? 0 : 1)
 
-  it('defers a minted workflow subscription until graph loading finishes', async () => {
-    const tab = makeTab()
-    tab.isTemporary = true
-    mockMessagesEndpoint('wf-fresh')
-    const nodeSelectionStore = useAgentNodeSelectionStore()
-    nodeSelectionStore.beginWorkflowLoad()
+      nodeSelectionStore.finishWorkflowLoad()
+      await nextTick()
 
-    await renderAndSend('build a graph')
-
-    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
-      tab.path
-    )
-    expect(
-      socketSend.mock.calls.some(([frame]) =>
-        String(frame).includes('doc_subscribe')
-      )
-    ).toBe(false)
-
-    nodeSelectionStore.finishWorkflowLoad()
-    await nextTick()
-
-    const subscribes = socketSend.mock.calls
-      .map(
-        ([frame]) =>
-          JSON.parse(String(frame)) as { type: string; data: unknown }
-      )
-      .filter(({ type }) => type === 'doc_subscribe')
-    expect(subscribes).toEqual([
-      expect.objectContaining({
-        data: expect.objectContaining({ workflow_id: 'wf-fresh' })
-      })
-    ])
-  })
+      const subscribes = socketSend.mock.calls
+        .map(
+          ([frame]) =>
+            JSON.parse(String(frame)) as { type: string; data: unknown }
+        )
+        .filter(({ type }) => type === 'doc_subscribe')
+      expect(subscribes).toEqual([
+        expect.objectContaining({
+          data: expect.objectContaining({ workflow_id: 'wf-fresh' })
+        })
+      ])
+    }
+  )
 
   it('does not subscribe a minted workflow after its tab is backgrounded', async () => {
     const origin = makeTab()
@@ -4259,12 +4239,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('does not finish a new graph load from stale restore state on mount', async () => {
     makeTab('wf-42')
-    const state = setupNodeSelectionCanvas()
     const nodeSelectionStore = useAgentNodeSelectionStore()
     nodeSelectionStore.beginWorkflowLoad()
     nodeSelectionStore.restoreNodeIds(['9'])
-    state.selectedItems.add(state.nodes[0])
-    hostStores.canvas.updateSelectedItems()
 
     nodeSelectionStore.beginWorkflowLoad()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

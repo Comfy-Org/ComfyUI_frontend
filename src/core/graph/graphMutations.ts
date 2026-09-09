@@ -358,27 +358,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
             return `node id ${key} belongs to graph ${incumbent.graphId}`
           }
-          if (
-            mutation.kind === 'reconcileNode' &&
-            incumbent &&
-            Array.isArray(mutation.payload.widgets_values)
-          ) {
-            const serializable = widgetStore
-              .getNodeWidgets(scope.rootGraphId, node.state.id)
-              .filter((widget) => widget.serialize !== false)
-            node.widgets.forEach((widget, index) => {
-              widget.name = serializable[index]?.name ?? widget.name
-            })
-          }
-          if (
-            mutation.kind === 'reconcileNode' &&
-            incumbent &&
-            !(
-              typeof mutation.payload.title === 'string' &&
-              mutation.payload.title.length > 0
-            )
-          ) {
-            node.state.title = incumbent.title
+          if (mutation.kind === 'reconcileNode' && incumbent) {
+            const { title, widgets_values } = mutation.payload
+            if (Array.isArray(widgets_values)) {
+              const serializable = widgetStore
+                .getNodeWidgets(scope.rootGraphId, node.state.id)
+                .filter((widget) => widget.serialize !== false)
+              node.widgets.forEach((widget, index) => {
+                widget.name = serializable[index]?.name ?? widget.name
+              })
+            }
+            if (typeof title !== 'string' || !title)
+              node.state.title = incumbent.title
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
@@ -653,21 +644,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode': {
-          const existing = nodeStore.getNode(
-            scope.rootGraphId,
-            mutation.node.state.id
-          )
+          const { state, widgets } = mutation.node
+          const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
-            nodeStore.updateNode(
-              scope,
-              mutation.node.state.id,
-              mutation.node.state,
-              context
-            )
-            const names = new Set(mutation.node.widgets.map(({ name }) => name))
+            nodeStore.updateNode(scope, state.id, state, context)
+            const names = new Set(widgets.map(({ name }) => name))
             for (const widget of widgetStore.getNodeWidgets(
               scope.rootGraphId,
-              mutation.node.state.id
+              state.id
             )) {
               if (
                 widget.serialize !== false &&
@@ -675,23 +659,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 !names.has(widget.name)
               ) {
                 widgetStore.deleteWidget(
-                  widgetId(
-                    scope.rootGraphId,
-                    mutation.node.state.id,
-                    widget.name
-                  )
+                  widgetId(scope.rootGraphId, state.id, widget.name)
                 )
               }
             }
           } else {
-            nodeStore.registerNode(scope, mutation.node.state, context)
+            nodeStore.registerNode(scope, state, context)
           }
-          for (const widget of mutation.node.widgets) {
-            const id = widgetId(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              widget.name
-            )
+          for (const widget of widgets) {
+            const id = widgetId(scope.rootGraphId, state.id, widget.name)
             if (
               mutation.kind === 'reconcileNode' &&
               widgetStore.setValue(id, widget.value, context)
@@ -714,7 +690,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (!existing) {
             deps.layout.createNode(
               scope,
-              mutation.node.state.id,
+              state.id,
               mutation.node.layout,
               context
             )

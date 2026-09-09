@@ -21,13 +21,13 @@ import {
   runMintPortsIntentionalClear
 } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
+import { mintWireOps } from './opEnvelope'
 
 const ROOT_ID = 'root-uuid'
 
 /** Structural stand-in for the two LGraphNode members the wiring reads. */
 interface FakeGraphNode {
   id?: unknown
-  isVirtualNode?: boolean
   serialize?: () => unknown
   widgets?: { name: string; type: string; serialize?: boolean }[]
 }
@@ -315,17 +315,13 @@ describe('attachMintPortWiring', () => {
   })
 
   it('preserves frontend-only note values through the real document applier', () => {
-    graphNodes.set('5', {
-      isVirtualNode: true,
-      serialize: () => ({
-        id: 5,
-        type: 'MarkdownNote',
-        pos: [10, 20],
-        widgets_values: ['Preserve this note'],
-        widgets_values_named: { text: 'Preserve this note' }
-      }),
-      widgets: [{ name: 'text', type: 'customtext' }]
-    })
+    const note = new LGraphNode('Note', 'MarkdownNote')
+    note.id = toNodeId(5)
+    note.pos = [10, 20]
+    note.isVirtualNode = true
+    note.serialize_widgets = true
+    note.addWidget('text', 'text', 'Preserve this note', () => {})
+    graphNodes.set('5', note)
     deliverLayoutChange({
       operation: {
         type: 'createNode',
@@ -338,20 +334,12 @@ describe('attachMintPortWiring', () => {
     expect(minted).toHaveLength(1)
     const catalog = { types: {} }
     const doc = mint({ nodes: [], links: [] }, catalog)
-    const actor = 'human:test:tab'
-    const result = applyOps(
-      doc,
-      minted.map((op) => ({
-        ...op,
-        op_id: 'add-note',
-        actor,
-        base_version: 1,
-        stamp: [1, actor] as [number, string]
-      })),
-      catalog
-    )
+    const ops = mintWireOps(minted, { actor: 'human:test:tab', baseVersion: 1 })
+    const result = applyOps(doc, ops, catalog)
 
-    expect(result.outcomes).toEqual([{ op_id: 'add-note', outcome: 'applied' }])
+    expect(result.outcomes).toEqual([
+      { op_id: ops[0].op_id, outcome: 'applied' }
+    ])
     expect(project(doc, catalog).nodes).toEqual([
       expect.objectContaining({
         id: 5,
