@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
-  clearAllWorkflowStorage,
   clearWorkflowRestoreState,
+  clearWorkflowStorageForScope,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
@@ -18,6 +18,9 @@ import {
   writeOpenPaths,
   writePayload
 } from './storageIO'
+
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 describe('storageIO', () => {
   beforeEach(() => {
@@ -276,11 +279,10 @@ describe('storageIO', () => {
     })
   })
 
-  describe('clearAllWorkflowStorage', () => {
-    it('clears all restorable workflow keys from localStorage', () => {
+  describe('clearWorkflowStorageForScope', () => {
+    it('clears only the given scope and unscoped legacy keys from localStorage', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
-      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-2:def', '{}')
       localStorage.setItem('Comfy.Workflow.LastActivePath:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.LastOpenPaths:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Drafts:ws-1', '{}')
@@ -291,15 +293,23 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.ActiveWorkflowIndex', '0')
       localStorage.setItem('Comfy.PreviousWorkflow', 'workflows/old.json')
       localStorage.setItem('workflow', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-10', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:ws-10:def', '{}')
+      localStorage.setItem('Comfy.Workflow.LastActivePath:ws-10', '{}')
       localStorage.setItem('unrelated', 'keep')
 
-      clearAllWorkflowStorage()
+      clearWorkflowStorageForScope('ws-1')
 
       expect(
-        [...Array(localStorage.length)].map((_, index) =>
-          localStorage.key(index)
-        )
-      ).toEqual(['unrelated'])
+        [...Array(localStorage.length)]
+          .map((_, index) => localStorage.key(index))
+          .sort()
+      ).toEqual([
+        'Comfy.Workflow.Draft.v2:ws-10:def',
+        'Comfy.Workflow.DraftIndex.v2:ws-10',
+        'Comfy.Workflow.LastActivePath:ws-10',
+        'unrelated'
+      ])
       expect(localStorage.getItem('unrelated')).toBe('keep')
     })
 
@@ -316,7 +326,7 @@ describe('storageIO', () => {
       sessionStorage.setItem('workflow:client-1', '{}')
       sessionStorage.setItem('unrelated', 'keep')
 
-      clearAllWorkflowStorage()
+      clearWorkflowStorageForScope('ws-1')
 
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
@@ -341,7 +351,7 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.clearAllWorkflowStorage()
+      isolatedStorageIO.clearWorkflowStorageForScope('ws-1')
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(
@@ -377,7 +387,7 @@ describe('storageIO', () => {
       sessionStorage.setItem('Comfy.Workflow.ActivePath:client-1', '{}')
       markStorageUnavailable()
 
-      clearAllWorkflowStorage()
+      clearWorkflowStorageForScope('personal')
 
       expect(
         localStorage.getItem('Comfy.Workflow.LastActivePath:personal')
@@ -385,6 +395,85 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
       ).toBeNull()
+    })
+  })
+
+  describe('storage scope', () => {
+    const emptyIndex: DraftIndexV2 = {
+      v: 2,
+      updatedAt: 1,
+      order: [],
+      entries: {}
+    }
+
+    beforeEach(() => {
+      mockDistributionTypes.isCloud = true
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'team', id: 'ws-1' })
+      )
+    })
+
+    it('defers writes in cloud until the storage identity is resolved', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      expect(isolatedStorageIO.getStorageScope()).toBeNull()
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('deferred')
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(isolatedStorageIO.writeIndex('ws-1', emptyIndex)).toBe(false)
+      expect(localStorage).toHaveLength(0)
+    })
+
+    it('scopes storage to the resolved user and current workspace', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.setStorageIdentity('user-a')
+
+      expect(isolatedStorageIO.getStorageScope()).toBe('user-a:ws-1')
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('open')
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+      expect(isolatedStorageIO.writeIndex('user-a:ws-1', emptyIndex)).toBe(
+        true
+      )
+    })
+
+    it('defers writes again once the identity is dropped', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      isolatedStorageIO.setStorageIdentity('user-a')
+
+      isolatedStorageIO.setStorageIdentity(null)
+
+      expect(isolatedStorageIO.getStorageScope()).toBeNull()
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('deferred')
+    })
+
+    it('reports closed rather than deferred when storage is unavailable', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      isolatedStorageIO.setStorageIdentity('user-a')
+
+      isolatedStorageIO.markStorageUnavailable()
+
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('closed')
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+    })
+
+    it('defers writes across a logout transition and reopens on completion', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      isolatedStorageIO.setStorageIdentity('user-a')
+
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('deferred')
+
+      isolatedStorageIO.completeWorkflowLogoutTransition()
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('open')
+    })
+
+    it('uses the personal scope without an identity outside cloud', async () => {
+      mockDistributionTypes.isCloud = false
+      const isolatedStorageIO = await import('./storageIO')
+
+      expect(isolatedStorageIO.getStorageScope()).toBe('personal')
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('open')
     })
   })
 
