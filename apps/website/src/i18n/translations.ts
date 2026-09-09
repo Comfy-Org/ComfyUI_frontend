@@ -8501,6 +8501,10 @@ Enterprise`
     en: 'Other formats',
     'zh-CN': '其他格式'
   },
+  'workshop.sections.seeAll': {
+    en: 'See all',
+    'zh-CN': '查看全部'
+  },
   'workshop.sections.scrollBack': {
     en: 'Scroll back',
     'zh-CN': '向前滚动'

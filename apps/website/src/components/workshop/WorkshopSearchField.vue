@@ -103,10 +103,18 @@ const clearButtonClass =
       type="button"
       :aria-label="t('workshop.search.label', locale)"
       data-testid="workshop-search-button"
-      class="text-content-secondary hover:text-content focus-visible:ring-brand grid size-10 cursor-pointer place-items-center rounded-xl bg-white/8 outline-none hover:bg-white/12 focus-visible:ring-2 sm:hidden"
+      :class="
+        cn(
+          'focus-visible:ring-brand flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 sm:hidden',
+          query ? 'text-primary-warm-white' : 'text-primary-warm-gray'
+        )
+      "
       @click="openSheet"
     >
-      <Search class="size-4" aria-hidden="true" />
+      <Search class="size-4 shrink-0" aria-hidden="true" />
+      <span class="truncate">
+        {{ query || t('workshop.search.short', locale) }}
+      </span>
     </button>
 
     <div :class="cn('relative', compact && 'max-sm:hidden')">

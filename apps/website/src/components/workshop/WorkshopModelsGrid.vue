@@ -338,7 +338,7 @@ const menuItemClass =
           :models
           :locale
           compact
-          class="sm:mr-auto sm:w-full sm:max-w-xl"
+          class="max-sm:min-w-0 max-sm:flex-1 sm:mr-auto sm:w-full sm:max-w-xl"
         />
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">

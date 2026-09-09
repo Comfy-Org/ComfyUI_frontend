@@ -67,7 +67,7 @@ const arrowClass = (disabled: boolean) =>
       other end of the row rather than crowding it. -->
     <div
       v-if="!atStart || !atEnd"
-      class="mt-4 flex justify-end gap-2"
+      class="mt-4 flex justify-end gap-2 max-sm:hidden"
       data-testid="card-row-arrows"
     >
       <button

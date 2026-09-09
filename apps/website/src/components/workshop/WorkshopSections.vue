@@ -2,6 +2,8 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { SortOrder, UseCase, WorkshopModel } from '../../config/workshop'
 import {
   USE_CASES,
@@ -36,8 +38,10 @@ const emit = defineEmits<{ open: [UseCase | 'other'] }>()
 
 const GROUPED = OTHER_FORMAT_USE_CASES
 
-const titleClass =
-  'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-baseline gap-2 rounded-lg text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
+const titleClass = 'flex items-baseline gap-2 text-primary-warm-white'
+
+const seeAllClass =
+  'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3'
 
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
@@ -84,23 +88,30 @@ const unplaced = computed(() =>
     >
       <CardRow :locale>
         <template #heading>
-          <h2 :id="`section-${section.useCase}`" class="text-xl font-medium">
-            <button
-              type="button"
-              :class="titleClass"
-              :data-testid="`section-${section.useCase}-see-all`"
-              @click="emit('open', section.useCase)"
-            >
-              {{ t(labelKey[section.useCase], locale) }}
-              <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{ section.total }}
-              </span>
-              <ChevronRight
-                class="size-5 self-center transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </button>
+          <h2
+            :id="`section-${section.useCase}`"
+            :class="cn(titleClass, 'text-xl font-medium')"
+          >
+            {{ t(labelKey[section.useCase], locale) }}
+            <span class="text-sm text-primary-warm-gray tabular-nums">
+              {{ section.total }}
+            </span>
           </h2>
+        </template>
+
+        <template #actions>
+          <button
+            type="button"
+            :class="seeAllClass"
+            :data-testid="`section-${section.useCase}-see-all`"
+            @click="emit('open', section.useCase)"
+          >
+            {{ t('workshop.sections.seeAll', locale) }}
+            <ChevronRight
+              class="size-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </button>
         </template>
 
         <li
@@ -125,23 +136,30 @@ const unplaced = computed(() =>
     >
       <CardRow :locale>
         <template #heading>
-          <h2 id="section-other-formats" class="text-xl font-medium">
-            <button
-              type="button"
-              :class="titleClass"
-              data-testid="section-other-formats-see-all"
-              @click="emit('open', 'other')"
-            >
-              {{ t('workshop.sections.otherFormats', locale) }}
-              <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{ otherFormats.length }}
-              </span>
-              <ChevronRight
-                class="size-5 self-center transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </button>
+          <h2
+            id="section-other-formats"
+            :class="cn(titleClass, 'text-xl font-medium')"
+          >
+            {{ t('workshop.sections.otherFormats', locale) }}
+            <span class="text-sm text-primary-warm-gray tabular-nums">
+              {{ otherFormats.length }}
+            </span>
           </h2>
+        </template>
+
+        <template #actions>
+          <button
+            type="button"
+            :class="seeAllClass"
+            data-testid="section-other-formats-see-all"
+            @click="emit('open', 'other')"
+          >
+            {{ t('workshop.sections.seeAll', locale) }}
+            <ChevronRight
+              class="size-4 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </button>
         </template>
 
         <li
