@@ -55,6 +55,13 @@ function contractDiagnostics(source: string, pack?: string): string[] {
 }
 
 describe('generated custom-node API contract', () => {
+  it('matches the checked-in machine-readable contract', () => {
+    const directory = resolve(process.cwd(), 'src/platform/nodeApi')
+    const checkedIn = readFileSync('docs/node-api/comfy-api.d.ts', 'utf8')
+
+    expect(checkedIn).toBe(buildApiDts(directory))
+  })
+
   it('includes only exported type declarations and their own documentation', () => {
     const source = `
 /** Public options. */

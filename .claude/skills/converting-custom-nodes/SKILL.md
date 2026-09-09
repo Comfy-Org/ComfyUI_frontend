@@ -7,6 +7,8 @@ description: 'Converts third-party custom-node JS off deprecated/unpublished Com
 
 Converts third-party pack JS from the old, unpublished ComfyUI internals onto
 the published node API (`src/platform/nodeApi/`, documented in `docs/node-api/`).
+Use `docs/node-api/comfy-api.d.ts` as the exact machine-readable contract. If a
+member is absent there, it is not published.
 
 This is **migration, not compatibility work**. The goal is that the old surface
 can be _deleted_, so never add a shim — rewrite the call site.
@@ -529,6 +531,7 @@ Prose is for the judgement calls.
 |                           |                                        |
 | ------------------------- | -------------------------------------- |
 | Published API guides      | `docs/node-api/`                       |
+| Machine-readable contract | `docs/node-api/comfy-api.d.ts`         |
 | Published API code        | `src/platform/nodeApi/`                |
 | Declaration generator     | `scripts/node-api/gen_api_dts.mjs`     |
 | Capability-list generator | `scripts/node-api/gen_api_surface.mjs` |
