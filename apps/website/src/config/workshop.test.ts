@@ -33,7 +33,6 @@ const collection = rawCatalog.map((entry) => workshopModelSchema.parse(entry))
 const models: WorkshopBrowseModel[] = [
   {
     id: 'bfl/flux',
-    slug: 'bfl--flux',
     href: '/workshop/models/bfl--flux/',
     name: 'Flux',
     provider: 'bfl',
@@ -43,7 +42,6 @@ const models: WorkshopBrowseModel[] = [
   },
   {
     id: 'kling/video',
-    slug: 'kling--video',
     href: '/workshop/models/kling--video/',
     name: 'Kling Video',
     provider: 'kling',

@@ -8,7 +8,6 @@ export type WorkshopOutputFilter = WorkshopOutput | 'all'
 
 export interface WorkshopBrowseModel {
   readonly id: string
-  readonly slug: string
   readonly href: string
   readonly name: string
   readonly provider: string
@@ -31,7 +30,6 @@ function outputFor(modality: WorkshopModelEntry['modality']): WorkshopOutput {
 export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
   return {
     id: entry.id,
-    slug: entry.slug,
     href: `/workshop/models/${entry.slug}/`,
     name: entry.displayName,
     provider: entry.provider,

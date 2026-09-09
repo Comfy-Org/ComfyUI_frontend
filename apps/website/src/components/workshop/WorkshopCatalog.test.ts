@@ -10,7 +10,6 @@ import WorkshopCatalog from './WorkshopCatalog.vue'
 const models: WorkshopBrowseModel[] = [
   {
     id: 'bfl/flux',
-    slug: 'bfl--flux',
     href: '/workshop/models/bfl--flux/',
     name: 'Flux',
     provider: 'bfl',
@@ -20,7 +19,6 @@ const models: WorkshopBrowseModel[] = [
   },
   {
     id: 'kling/video',
-    slug: 'kling--video',
     href: '/workshop/models/kling--video/',
     name: 'Kling Video',
     provider: 'kling',
@@ -64,7 +62,6 @@ describe('WorkshopCatalog', () => {
     const manyModels = Array.from({ length: 49 }, (_, index) => ({
       ...models[0],
       id: `bfl/flux-${index + 1}`,
-      slug: `bfl--flux-${index + 1}`,
       href: `/workshop/models/bfl--flux-${index + 1}/`,
       name: `Flux ${index + 1}`
     }))
