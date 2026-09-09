@@ -280,7 +280,10 @@ export class EcsFollowerAdapter {
     this.discardSessionPending(session)
 
     const doc = session.follower.doc
-    const definitions = readDefinitions(doc)
+    // Most frames touch no links or hosts; index the definitions only when a
+    // reader first needs them.
+    let definitionIndex: SubgraphDefinitionIndex | undefined
+    const definitions = () => (definitionIndex ??= readDefinitions(doc))
 
     const replacedNodeIds = new Set(
       [...nodeActions]
@@ -289,7 +292,7 @@ export class EcsFollowerAdapter {
     )
     if (replacedNodeIds.size > 0) {
       session.links.forEach((_raw, id) => {
-        const link = readSemanticLink(doc, id, definitions)
+        const link = readSemanticLink(doc, id, definitions())
         if (
           link &&
           (replacedNodeIds.has(String(link.originNodeId)) ||
@@ -306,7 +309,7 @@ export class EcsFollowerAdapter {
     const changedLinks = new Map(
       [...changedLinkIds].map((id) => [
         id,
-        session.links.has(id) ? readSemanticLink(doc, id, definitions) : null
+        session.links.has(id) ? readSemanticLink(doc, id, definitions()) : null
       ])
     )
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
@@ -319,7 +322,7 @@ export class EcsFollowerAdapter {
           return payload ? [payload] : []
         })
         const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(doc, id, definitions)
+          const link = readSemanticLink(doc, id, definitions())
           return link ? [link] : []
         })
         batch.removeMissing(
@@ -356,7 +359,7 @@ export class EcsFollowerAdapter {
         if (!(node instanceof Y.Map)) continue
         const type = node.get('type')
         const definition =
-          typeof type === 'string' ? definitions.get(type) : undefined
+          typeof type === 'string' ? definitions().get(type) : undefined
         if (!definition) {
           const payload = readSemanticNode(session.follower.doc, id)
           if (payload) batch.reconcileNode(payload)
