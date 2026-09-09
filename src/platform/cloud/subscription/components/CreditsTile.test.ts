@@ -325,10 +325,10 @@ describe('CreditsTile', () => {
       cloudCreditBalanceMicros: 0,
       prepaidBalanceMicros: 300
     }
-    const { container } = renderTile()
-    expect(container.textContent).toContain('Yearly credits are used up')
-    expect(container.textContent).not.toContain('used up. Refills')
-    expect(container.textContent).not.toContain('Monthly credits are used up')
+    renderTile()
+    expect(screen.getByText('Yearly credits are used up')).toBeTruthy()
+    expect(screen.queryByText(/used up\. Refills/)).toBeNull()
+    expect(screen.queryByText('Monthly credits are used up')).toBeNull()
   })
 
   it('hides the monthly usage bar on Local', () => {
