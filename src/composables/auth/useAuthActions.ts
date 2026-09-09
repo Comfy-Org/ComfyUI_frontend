@@ -33,13 +33,16 @@ import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /** The shipped auth.errors table, read through vue-i18n at resolution time. */
-const localizedAuthErrorCopy = (): AuthErrorCopy =>
-  Object.fromEntries(
+const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+  ...Object.fromEntries(
     Object.keys(AUTH_ERROR_COPY.en).map((key) => [
       key,
       st(`auth.errors.${key}`, t('auth.errors.generic'))
     ])
-  )
+  ),
+  generic: t('auth.errors.generic'),
+  signupBlocked: t('auth.errors.signupBlocked')
+})
 
 /**
  * Service for Firebase Auth actions.
