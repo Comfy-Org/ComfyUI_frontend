@@ -183,6 +183,7 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    openWorkflowMock.mockResolvedValue(true)
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
@@ -354,6 +355,24 @@ describe('useWorkflowPersistenceV2', () => {
       expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the latest draft when the saved workflow fails to open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('SavedWorkflow.json')
+      writeActivePath(savedWorkflow.path)
+      useWorkflowDraftStoreV2().saveDraft(
+        'workflows/Other.json',
+        JSON.stringify({ nodes: [] }),
+        { name: 'Other.json', isTemporary: true }
+      )
+      openWorkflowMock.mockResolvedValueOnce(false)
+
+      await mountWorkflowPersistence().initializeWorkflow()
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+      expect(mocks.loadGraphDataMock).toHaveBeenCalled()
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {

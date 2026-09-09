@@ -406,8 +406,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return false
     }
     const blueprint = subgraphCache[name]
-    useWorkflowStore().attachWorkflow(blueprint)
-    await useWorkflowService().openWorkflow(blueprint)
+    if (!(await useWorkflowService().openWorkflow(blueprint))) return false
     const canvas = useCanvasStore().getCanvas()
     if (canvas.graph && 'subgraph' in canvas.graph.nodes[0])
       canvas.setGraph(canvas.graph.nodes[0].subgraph)
