@@ -44,7 +44,9 @@ const {
   baseModelOptions,
   candidateIndex = -1,
   candidateLabel,
-  loadingMore = false
+  loadingMore = false,
+  onLoadMore,
+  canLoadMore
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
@@ -98,13 +100,16 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
-type VirtualDropdownItem = FormDropdownItem & { key: string }
-const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  items.map((item) => ({
-    ...item,
-    key: item.id
-  }))
-)
+const pagedItems = {
+  hasMore: computed(() => canLoadMore),
+  invalidate: async () => undefined,
+  isLoading: computed(() => loadingMore),
+  items: computed(() => items.map((item) => ({ ...item, key: item.id }))),
+  loadMore: async () => {
+    onLoadMore?.()
+  },
+  loadNew: async () => undefined
+}
 
 /**
  * The dropdown content is teleported to `document.body` by PrimeVue Popover,
@@ -153,15 +158,13 @@ const onWheel = (event: WheelEvent) => {
     />
     <VirtualGrid
       :key="layoutMode"
-      :items="virtualItems"
+      :items="pagedItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
-      :on-load-more
-      :can-load-more
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem

@@ -1,13 +1,7 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- Assets Grid -->
-    <VirtualGrid
-      class="flex-1"
-      :items="assetItems"
-      :grid-style
-      :on-load-more
-      :can-load-more
-    >
+    <VirtualGrid class="flex-1" :items="assetItems" :grid-style>
       <template #item="{ item }">
         <MediaAssetCard
           :asset="item.asset"
@@ -39,16 +33,16 @@ import {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
   defineProps<{
-    assets: AssetItem[]
+    assets: PagedList<AssetItem>
     isSelected: (assetId: string) => boolean
     showOutputCount: (asset: AssetItem) => boolean
     getOutputCount: (asset: AssetItem) => number
     gridMode: MediaAssetGridMode
-    onLoadMore?: () => unknown
-    canLoadMore?: boolean
   }>()
 
 const emit = defineEmits<{
@@ -59,10 +53,8 @@ const emit = defineEmits<{
   (e: 'output-count-click', asset: AssetItem): void
 }>()
 
-type AssetGridItem = { key: string; asset: AssetItem }
-
-const assetItems = computed<AssetGridItem[]>(() =>
-  assets.map((asset) => ({
+const assetItems = new WrappedList(assets, (items) =>
+  items.map((asset) => ({
     key: `asset-${asset.id}`,
     asset
   }))
