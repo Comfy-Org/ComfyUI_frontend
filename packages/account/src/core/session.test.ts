@@ -10,7 +10,6 @@ import type {
 } from './session.js'
 import {
   SESSION_ERROR_MESSAGES,
-  SESSION_SUCCESS_MESSAGES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
@@ -786,7 +785,5 @@ describe('shared session copy', () => {
     for (const code of codes) {
       expect(SESSION_ERROR_MESSAGES[code]).toBeTruthy()
     }
-    expect(SESSION_SUCCESS_MESSAGES.signedInHeading).toBeTruthy()
-    expect(SESSION_SUCCESS_MESSAGES.signedInAs).toBeTruthy()
   })
 })

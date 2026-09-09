@@ -15,7 +15,9 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
   })
 }))
 
-vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
+vi.mock('@comfyorg/account/webviewDetection', () => ({
+  isEmbeddedWebView: () => false
+}))
 vi.mock('@/utils/hostWhitelist', () => ({
   isHostWhitelisted: () => true,
   normalizeHost: (host: string) => host
@@ -45,7 +47,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock('@comfyorg/shared-frontend-utils/networkUtil', () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 

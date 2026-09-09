@@ -47,6 +47,10 @@ function hasReactNativeWebViewBridge(): boolean {
   }
 }
 
+/**
+ * Whether the page runs inside an app's embedded browser, where Google's
+ * popup sign-in is blocked. Both hosts show the same notice on that answer.
+ */
 export function isEmbeddedWebView(ua: string = navigator.userAgent): boolean {
   if (isSocialAppBrowser(ua)) return true
   if (isAndroidWebView(ua)) return true
