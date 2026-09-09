@@ -30,7 +30,7 @@ const handles = vi.hoisted(() => ({
   embedded: false
 }))
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   const settled = ref(true)
@@ -46,7 +46,7 @@ vi.mock('../../scripts/posthog', async () => {
   }
 })
 
-vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
+vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
   const { defineComponent, h, onMounted } = await import('vue')
   return {
     default: defineComponent({
@@ -60,7 +60,7 @@ vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
   }
 })
 
-vi.mock('@comfyorg/account/webviewDetection', () => ({
+vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
 }))
 
@@ -81,11 +81,12 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@comfyorg/shared-frontend-utils/networkUtil', () => ({
-  isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
+const isInChina = vi.hoisted(() => vi.fn())
+vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+  isInChina
 }))
 
-vi.mock('../../config/workshop-firebase', () => {
+vi.mock<unknown>(import('../../config/workshop-firebase'), () => {
   if (handles.chunkFails) {
     throw new TypeError('Failed to fetch dynamically imported module')
   }
@@ -99,7 +100,7 @@ vi.mock('../../config/workshop-firebase', () => {
   }
 })
 
-vi.mock('../../config/workshop-session-state', async () => {
+vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   const user = ref(null)
   const session = ref(undefined)
@@ -145,6 +146,9 @@ beforeEach(() => {
   handles.embedded = false
   inChina.value = false
   inChina.pending = undefined
+  isInChina
+    .mockReset()
+    .mockImplementation(() => inChina.pending ?? Promise.resolve(inChina.value))
   removeAllToasts()
   window.history.replaceState({}, '', '/')
   replace.mockReset()
@@ -1014,6 +1018,20 @@ describe('AuthSignIn region gate', () => {
       REGION_NOTICE
     )
     expect(screen.queryByLabelText('Email')).toBeNull()
+  })
+
+  it('does not probe the region while the flag keeps the page hidden', async () => {
+    handles.flag!.value = false
+    render(AuthSignIn, { props: { mode: 'signUp' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      isInChina,
+      "cloud's signup view is never mounted behind the router; a hidden page must not reach the geo edge"
+    ).not.toHaveBeenCalled()
+
+    handles.flag!.value = true
+    await waitFor(() => expect(isInChina).toHaveBeenCalledOnce())
   })
 
   it('does not gate the login form on the region', async () => {

@@ -86,11 +86,14 @@ const leaving = ref(false)
 const state = ref<AuthSignInState>({ step: 'idle' })
 const showEmailForm = ref(false)
 const isSecureContext = ref(true)
-// Sign-up only: the cloud app gates email registration on the region and
-// never decides before detection answers; the login page never probes.
+// Cloud's signup view mounts behind its router, so it probes only when the
+// form can show; the login page never probes.
+const formVisible = computed(
+  () => enabled.value && identitySettled.value && !leaving.value
+)
 const { status: regionStatus } =
   mode === 'signUp'
-    ? useRegionGate()
+    ? useRegionGate(formVisible)
     : { status: ref<RegionGateStatus>('allowed') }
 // Decided after mount: the server has no user agent, and a mismatch here
 // would break hydration.
@@ -309,7 +312,7 @@ onMounted(() => {
 
 <template>
   <section
-    v-if="enabled && identitySettled && !leaving"
+    v-if="formVisible"
     class="flex w-full flex-col"
     :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >

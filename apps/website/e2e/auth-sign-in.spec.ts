@@ -3,8 +3,14 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-/** Answer PostHog's flag request with the Workshop auth flag on, nothing else leaves. */
+/**
+ * Answer PostHog's flag request with the Workshop auth flag on and the geo
+ * edge with a non-China country; nothing else leaves the page.
+ */
 async function forceWorkshopAuthFlag(page: Page) {
+  await page.route('**/cdn-cgi/trace', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/plain', body: 'loc=US\n' })
+  )
   await page.route('**/t.comfy.org/**', (route) => {
     if (!/\/(flags|decide)\//.test(route.request().url())) {
       return route.abort('blockedbyclient')
