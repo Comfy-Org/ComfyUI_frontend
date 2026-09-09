@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveTranslation } from './source'
+import machineJa from './content/ja.json'
+import { resolveTranslation, translationKeys } from './source'
 import { t } from './translations'
 
 describe('t() fallback semantics', () => {
@@ -61,9 +62,28 @@ describe('resolveTranslation provenance', () => {
     })
   })
 
+  /**
+   * Asked of the shipped machine layer rather than of one named key.
+   *
+   * `tags.partnerNodes` stood here and would have failed for a non-defect: the
+   * source build drops a key from the machine layer the moment its English
+   * changes, so any copy edit broke this test until the next translation run
+   * refilled it. The behaviour worth pinning is not which key is machine-filled
+   * but that being in the machine layer is what `machine` means — and that a
+   * key sitting there can never resolve as English.
+   */
   it('reports machine-filled Japanese as machine, not as approved', () => {
-    const resolved = resolveTranslation('tags.partnerNodes', 'ja')
-    expect(resolved.provenance).toBe('machine')
-    expect(resolved.value).not.toBe('Partner Nodes')
+    const inMachineLayer = translationKeys.filter((key) =>
+      Object.hasOwn(machineJa, key)
+    )
+    const provenances = inMachineLayer.map(
+      (key) => resolveTranslation(key, 'ja').provenance
+    )
+
+    expect(inMachineLayer.length).toBeGreaterThan(100)
+    expect(
+      provenances.filter((provenance) => provenance === 'english')
+    ).toEqual([])
+    expect(provenances).toContain('machine')
   })
 })

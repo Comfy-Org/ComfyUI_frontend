@@ -146,25 +146,6 @@ describe('og locale', () => {
   })
 })
 
-/**
- * The partial-locale allowlist is hand-maintained, and the page tree is the
- * thing it is meant to describe.
- *
- * What that means changed in P3. The tree used to hold one file per locale, so
- * the check was "does the twin exist". Every localized page is now served from
- * the English one through the i18n fallback, so a localized URL exists exactly
- * when its English page does, and the rot moved with it: the allowlist is now
- * the only thing deciding which localized URLs are linked, indexed and listed
- * in the sitemap, so a wrong entry there is what advertises a URL that 404s.
- *
- * The four tests this replaced all read the tree for locale-named files, and
- * three of them could not fail once those files were gone: two iterated a set
- * that is now always empty, and one filtered the English routes by whether they
- * were absent from the English routes.
- *
- * Static routes only. A dynamic route's `getStaticPaths` can produce any slug
- * set, which the file tree cannot see.
- */
 describe('ogLocaleAlternate', () => {
   const alt = (...codes: Alternate['hreflang'][]): Alternate[] =>
     codes.map((hreflang) => ({ hreflang, href: 'https://comfy.org/x/' }))
@@ -194,6 +175,25 @@ describe('ogLocaleAlternate', () => {
   })
 })
 
+/**
+ * The partial-locale allowlist is hand-maintained, and the page tree is the
+ * thing it is meant to describe.
+ *
+ * What that means changed in P3. The tree used to hold one file per locale, so
+ * the check was "does the twin exist". Every localized page is now served from
+ * the English one through the i18n fallback, so a localized URL exists exactly
+ * when its English page does, and the rot moved with it: the allowlist is now
+ * the only thing deciding which localized URLs are linked, indexed and listed
+ * in the sitemap, so a wrong entry there is what advertises a URL that 404s.
+ *
+ * The four tests this replaced all read the tree for locale-named files, and
+ * three of them could not fail once those files were gone: two iterated a set
+ * that is now always empty, and one filtered the English routes by whether they
+ * were absent from the English routes.
+ *
+ * Static routes only. A dynamic route's `getStaticPaths` can produce any slug
+ * set, which the file tree cannot see.
+ */
 describe('the allowlist agrees with the page tree', () => {
   const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
 
