@@ -4,10 +4,12 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { until } from '@vueuse/core'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { api } from '@/scripts/api'
 
 let defaultSettingStore: ReturnType<typeof useSettingStore>
 
@@ -31,10 +33,16 @@ vi.mock(
 )
 
 describe('useTemplateFiltering', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial<Awaited<ReturnType<typeof api.getSystemStats>>>({
+        system: { os: 'linux' }
+      })
+    )
     defaultSettingStore = useSettingStore()
     defaultRankingStore = useTemplateRankingStore()
     mockSystemStatsStore = useSystemStatsStore()
+    await until(() => mockSystemStatsStore.isInitialized).toBe(true)
     defaultSettingStore.settingValues = {
       'Comfy.Templates.SelectedModels': [],
       'Comfy.Templates.SelectedUseCases': [],
