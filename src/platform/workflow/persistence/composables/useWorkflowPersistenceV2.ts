@@ -32,12 +32,17 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
-  clearAllWorkflowStorage,
   completeWorkflowLogoutTransition,
+  getStorageScope,
+  getStorageWriteGate,
   prepareWorkflowLogoutTransition,
-  registerWorkflowPersistenceFlush
+  readIndex,
+  registerWorkflowPersistenceFlush,
+  setStorageIdentity
 } from '../base/storageIO'
+import { getWorkspaceId } from '../base/storageKeys'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
+import { migrateWorkspaceToScope } from '../migration/migrateWorkspaceToScope'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -67,8 +72,20 @@ export function useWorkflowPersistenceV2() {
     stopWorkspaceReadinessWatcher = undefined
   }
 
-  // Run migration on module load, passing clientId for tab state migration
-  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
+  function ensureScopedStorage(clientId?: string): void {
+    const workspaceId = getWorkspaceId()
+    const scope = getStorageScope()
+    if (scope === null) return
+    if (scope === workspaceId) {
+      migrateV1toV2(scope, clientId)
+      return
+    }
+    if (readIndex(scope) !== null) return
+    migrateV1toV2(workspaceId, clientId)
+    migrateWorkspaceToScope(workspaceId, scope)
+  }
+
+  ensureScopedStorage(api.clientId ?? api.initialClientId ?? undefined)
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -108,6 +125,7 @@ export function useWorkflowPersistenceV2() {
 
     // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+    if (getStorageWriteGate() === 'deferred') return
 
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
@@ -147,16 +165,34 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
+  let resolvedUserId: string | null = null
+
+  function fenceIdentityChange(): void {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
     prepareWorkflowLogoutTransition()
-    clearAllWorkflowStorage()
-  })
-  onUserResolved(() => {
+    lastSavedJsonByPath.value = {}
+  }
+
+  function releaseIdentityFence(): void {
+    completeWorkflowLogoutTransition()
+    ensureScopedStorage()
+  }
+
+  onUserLogout(() => {
     if (!isCloud) return
+    fenceIdentityChange()
+    resolvedUserId = null
+    setStorageIdentity(null)
+  })
+  onUserResolved((user) => {
+    if (!isCloud) return
+    if (resolvedUserId !== null && resolvedUserId !== user.id) {
+      fenceIdentityChange()
+    }
     stopPendingWorkspaceReadinessWatcher()
+    resolvedUserId = user.id
+    setStorageIdentity(user.id)
 
     // Release the fence once initialization concludes either way: a resolved
     // workspace, or a permanent init failure. Waiting on 'ready' alone would
@@ -167,7 +203,7 @@ export function useWorkflowPersistenceV2() {
         teamWorkspaceStore.activeWorkspaceId !== null) ||
       teamWorkspaceStore.initState === 'error'
     if (isWorkspaceInitConcluded()) {
-      completeWorkflowLogoutTransition()
+      releaseIdentityFence()
       return
     }
 
@@ -175,7 +211,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeWorkflowLogoutTransition()
+        releaseIdentityFence()
       },
       { once: true }
     )
