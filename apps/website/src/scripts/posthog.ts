@@ -1,5 +1,12 @@
 import posthog from 'posthog-js'
+import { readonly, ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { AUTH_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
+import type {
+  AuthCompletedMetadata,
+  AuthErrorMetadata
+} from '@comfyorg/account/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
@@ -19,7 +26,12 @@ const ANALYTICS_EVENT = {
   cliConnectionTabClicked: 'website:cli_connection_tab_clicked',
   cliClientTabClicked: 'website:cli_client_tab_clicked',
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
-  mcpClientTabClicked: 'website:mcp_client_tab_clicked'
+  mcpClientTabClicked: 'website:mcp_client_tab_clicked',
+  // Shared with the cloud app so one PostHog funnel covers auth outcomes
+  // across every surface.
+  signUpOpened: AUTH_TELEMETRY_EVENT.signUpOpened,
+  authCompleted: AUTH_TELEMETRY_EVENT.authCompleted,
+  authFailed: AUTH_TELEMETRY_EVENT.authFailed
 } as const
 
 export type CliClientId =
@@ -52,8 +64,39 @@ type AnalyticsEvent =
       name: typeof ANALYTICS_EVENT.mcpClientTabClicked
       properties: { client: McpClientId }
     }
+  | { name: typeof ANALYTICS_EVENT.signUpOpened; properties?: undefined }
+  | {
+      name: typeof ANALYTICS_EVENT.authCompleted
+      properties: AuthCompletedMetadata
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.authFailed
+      properties: AuthErrorMetadata
+    }
 
 let initialized = false
+
+const WORKSHOP_AUTH_FLAG = 'workshop-auth'
+
+/**
+ * The build-time override forces the flag on for dev and preview builds, which
+ * have no PostHog to answer; without it no flag-gated surface is exercisable
+ * anywhere. It is sticky: an override-on build ignores PostHog turning the flag
+ * off. Otherwise the ref tracks PostHog's answer both ways, so disabling the
+ * flag remotely actually takes the surfaces down.
+ */
+const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+const workshopAuthEnabled = ref(OVERRIDDEN_ON)
+/** True once PostHog has answered (or the override stands in for it). */
+const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
+
+export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
+  return readonly(workshopAuthEnabled)
+}
+
+export function useWorkshopAuthFlagSettled(): Readonly<Ref<boolean>> {
+  return readonly(workshopAuthFlagSettled)
+}
 
 export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
@@ -68,6 +111,12 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    posthog.onFeatureFlags(() => {
+      workshopAuthFlagSettled.value = true
+      if (OVERRIDDEN_ON) return
+      workshopAuthEnabled.value =
+        posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
+    })
   } catch (error) {
     console.error('PostHog init failed', error)
   }
@@ -119,4 +168,16 @@ export function captureMcpClientTabClick(client: McpClientId): void {
     name: ANALYTICS_EVENT.mcpClientTabClicked,
     properties: { client }
   })
+}
+
+export function captureSignupOpened(): void {
+  captureEvent({ name: ANALYTICS_EVENT.signUpOpened })
+}
+
+export function captureAuthCompleted(metadata: AuthCompletedMetadata): void {
+  captureEvent({ name: ANALYTICS_EVENT.authCompleted, properties: metadata })
+}
+
+export function captureAuthFailed(metadata: AuthErrorMetadata): void {
+  captureEvent({ name: ANALYTICS_EVENT.authFailed, properties: metadata })
 }

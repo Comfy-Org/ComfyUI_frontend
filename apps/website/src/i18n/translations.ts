@@ -98,6 +98,213 @@ const translations = {
     en: 'Browse all models',
     'zh-CN': '浏览所有模型'
   },
+  'auth.signIn.meta.title': {
+    en: 'Sign in - Comfy',
+    'zh-CN': '登录 - Comfy'
+  },
+  'auth.signIn.meta.description': {
+    en: 'Sign in to your Comfy account.',
+    'zh-CN': '登录你的 Comfy 账户。'
+  },
+  'auth.signUp.meta.title': {
+    en: 'Sign up - Comfy',
+    'zh-CN': '注册 - Comfy'
+  },
+  'auth.signUp.meta.description': {
+    en: 'Create your Comfy account.',
+    'zh-CN': '创建你的 Comfy 账户。'
+  },
+  'auth.signIn.heading': {
+    en: 'Sign in to Comfy',
+    'zh-CN': '登录 Comfy'
+  },
+  'auth.signIn.body': {
+    en: 'Use your Comfy account across the Workshop, Cloud, and Platform.',
+    'zh-CN': '一个 Comfy 账户，通用于 Workshop、Cloud 和 Platform。'
+  },
+  'auth.signUp.heading': {
+    en: 'Create your Comfy account',
+    'zh-CN': '创建 Comfy 账户'
+  },
+  'auth.signUp.body': {
+    en: 'One account for the Workshop, Cloud, and Platform.',
+    'zh-CN': '一个账户，通用于 Workshop、Cloud 和 Platform。'
+  },
+  'auth.signIn.newHere': {
+    en: 'New to Comfy?',
+    'zh-CN': '第一次使用 Comfy？'
+  },
+  'auth.signIn.signUpLink': {
+    en: 'Create an account',
+    'zh-CN': '创建账户'
+  },
+  'auth.signUp.haveAccount': {
+    en: 'Already have an account?',
+    'zh-CN': '已经有账户？'
+  },
+  'auth.signUp.signInLink': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.signIn.google': {
+    en: 'Continue with Google',
+    'zh-CN': '使用 Google 继续'
+  },
+  'auth.signIn.github': {
+    en: 'Continue with GitHub',
+    'zh-CN': '使用 GitHub 继续'
+  },
+  'auth.signIn.googleSsoInAppBrowserNotice': {
+    en: "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
+    'zh-CN':
+      '如果您是从应用内浏览器（如 Instagram、LinkedIn）打开的，Google 登录可能无法使用。请使用 GitHub 或邮箱登录，或在设备默认浏览器中打开此页面。',
+    ja: 'アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。'
+  },
+  'auth.signIn.pending': {
+    en: 'Finish signing in from the pop-up window.',
+    'zh-CN': '请在弹出窗口中完成登录。'
+  },
+  'auth.signIn.signedInHeading': {
+    en: 'You are signed in',
+    'zh-CN': '已登录'
+  },
+  'auth.signIn.signedInAs': {
+    en: 'Signed in as',
+    'zh-CN': '当前账户：'
+  },
+  'auth.signIn.signOut': {
+    en: 'Sign out',
+    'zh-CN': '退出登录'
+  },
+  'auth.signIn.backToWorkshop': {
+    en: 'Back to Workshop',
+    'zh-CN': '返回 Workshop'
+  },
+  'auth.shell.logoAlt': {
+    en: 'ComfyOrg Logo',
+    'zh-CN': 'ComfyOrg 徽标',
+    ja: 'ComfyOrgロゴ'
+  },
+  'auth.shell.termsText': {
+    en: 'By clicking "Next" or "Sign Up", you agree to our',
+    'zh-CN': '点击“下一步”或“注册”即表示您同意我们的',
+    ja: '「次へ」または「サインアップ」をクリックすると、私たちの'
+  },
+  'auth.shell.termsLink': {
+    en: 'Terms of Use',
+    'zh-CN': '使用条款',
+    ja: '利用規約'
+  },
+  'auth.shell.andText': {
+    en: 'and',
+    'zh-CN': '和',
+    ja: 'および'
+  },
+  'auth.shell.privacyLink': {
+    en: 'Privacy Policy',
+    'zh-CN': '隐私政策',
+    ja: 'プライバシーポリシー'
+  },
+  'auth.shell.questionsText': {
+    en: 'Questions? Contact us',
+    'zh-CN': '有问题？联系我们',
+    ja: '質問がありますか？お問い合わせください'
+  },
+  'auth.shell.contactLink': {
+    en: 'here',
+    'zh-CN': '这里',
+    ja: 'こちら'
+  },
+  'auth.shell.needHelp': {
+    en: 'Need Help?',
+    'zh-CN': '需要帮助？',
+    ja: 'ヘルプが必要ですか？'
+  },
+  'auth.hero.carouselLabel': {
+    en: 'Featured models',
+    'zh-CN': '精选模型',
+    ja: '注目モデル'
+  },
+  'auth.hero.carouselRoleDescription': {
+    en: 'carousel',
+    'zh-CN': '轮播图',
+    ja: 'カルーセル'
+  },
+  'auth.hero.slideRoleDescription': {
+    en: 'slide',
+    'zh-CN': '幻灯片',
+    ja: 'スライド'
+  },
+  'auth.hero.slideStatus': {
+    en: '{title}, slide {current} of {total}',
+    'zh-CN': '{title}，第 {current} 张，共 {total} 张',
+    ja: '{title}、{total}枚中{current}枚目'
+  },
+  'auth.hero.previousSlide': {
+    en: 'Previous slide',
+    'zh-CN': '上一张幻灯片',
+    ja: '前のスライド'
+  },
+  'auth.hero.nextSlide': {
+    en: 'Next slide',
+    'zh-CN': '下一张幻灯片',
+    ja: '次のスライド'
+  },
+  'auth.signIn.error.provisioning': {
+    en: 'You are signed in, but account setup did not finish. Please try again shortly.',
+    'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
+  },
+  'auth.timeout.title': {
+    en: 'Connection Taking Too Long',
+    'zh-CN': '连接时间过长',
+    ja: '接続に時間がかかっています'
+  },
+  'auth.timeout.message': {
+    en: "We're having trouble connecting to ComfyUI Cloud. This could be due to a slow connection or temporary service issue.",
+    'zh-CN':
+      '我们无法连接到 ComfyUI 云端服务。这可能是由于网络连接缓慢或临时服务问题导致的。',
+    ja: 'ComfyUIクラウドへの接続に問題が発生しています。これは接続速度が遅いか、一時的なサービス障害が原因である可能性があります。'
+  },
+  'auth.timeout.troubleshooting': {
+    en: 'Common causes:',
+    'zh-CN': '常见原因：',
+    ja: '一般的な原因：'
+  },
+  'auth.timeout.causes.firewall': {
+    en: 'Corporate firewall or proxy blocking authentication services',
+    'zh-CN': 'Corporate firewall or proxy blocking authentication services'
+  },
+  'auth.timeout.causes.vpn': {
+    en: 'VPN or network restrictions',
+    'zh-CN': 'VPN or network restrictions'
+  },
+  'auth.timeout.causes.extensions': {
+    en: 'Browser extensions interfering with requests',
+    'zh-CN': 'Browser extensions interfering with requests'
+  },
+  'auth.timeout.causes.regional': {
+    en: 'Regional network limitations',
+    'zh-CN': 'Regional network limitations'
+  },
+  'auth.timeout.causes.differentBrowser': {
+    en: 'Try a different browser or network',
+    'zh-CN': 'Try a different browser or network'
+  },
+  'auth.timeout.helpText': {
+    en: 'Need help? Contact',
+    'zh-CN': '需要帮助？联系',
+    ja: 'ヘルプが必要ですか？サポートに連絡'
+  },
+  'auth.timeout.supportLink': {
+    en: 'support',
+    'zh-CN': '支持',
+    ja: 'サポート'
+  },
+  'auth.timeout.restart': {
+    en: 'Sign Out & Try Again',
+    'zh-CN': '退出并重试',
+    ja: 'サインアウトして再試行'
+  },
 
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
@@ -8855,7 +9062,7 @@ export function tPlural(
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
 
-export function hasKey(key: string): boolean {
+export function hasKey(key: string): key is TranslationKey {
   return key in translations
 }
 

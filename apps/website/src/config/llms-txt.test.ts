@@ -34,6 +34,8 @@ const EXCLUDED_PAGES = new Set([
   '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
   '/individual-submission', // gallery submission form
+  '/login', // auth surface, noindex
+  '/signup', // auth surface, noindex
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
