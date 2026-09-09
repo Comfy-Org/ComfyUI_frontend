@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { collectViolations, localizeMarkdownLinks } from './validate'
+import {
+  collectViolations,
+  linkTargets,
+  localizeMarkdownLinks
+} from './validate'
 
 const TERMS = ['ComfyUI', 'Comfy Cloud', 'MiniMax H3', 'API']
 
@@ -94,38 +98,6 @@ describe('collectViolations', () => {
    * translations were dropped to English by this before it was noticed, and the
    * failure is invisible: the page simply stays English.
    */
-  /**
-   * An internal link has to point where the locale actually serves.
-   *
-   * The Chinese files localize theirs by hand — `](/zh-CN/contact)` — so
-   * leaving a Japanese link at `/contact` would be inconsistent with them, and
-   * rewriting it to `/ja/contact` would point at a page Japanese does not
-   * publish. `localizeHref` already answers both, because it refuses to prefix
-   * a route the locale does not serve.
-   */
-  it('localizes an internal link only where the locale serves it', () => {
-    // Japanese publishes /pricing but not /contact.
-    expect(
-      localizeMarkdownLinks('See [pricing](/pricing) and [us](/contact).', 'ja')
-    ).toBe('See [pricing](/ja/pricing) and [us](/contact).')
-  })
-
-  it('localizes every internal link for a complete locale', () => {
-    expect(localizeMarkdownLinks('[us](/contact)', 'zh-CN')).toBe(
-      '[us](/zh-CN/contact)'
-    )
-  })
-
-  it('leaves external links and mailto alone', () => {
-    const text = '[docs](https://docs.comfy.org/x) [mail](mailto:a@comfy.org)'
-
-    expect(localizeMarkdownLinks(text, 'ja')).toBe(text)
-  })
-
-  it('is a no-op for English', () => {
-    expect(localizeMarkdownLinks('[us](/contact)', 'en')).toBe('[us](/contact)')
-  })
-
   it('does not treat sentence punctuation as part of the URL', () => {
     expect(
       kinds(
@@ -244,5 +216,65 @@ describe('collectViolations', () => {
     expect(violation.key).toBe('hero.title')
     expect(violation.locale).toBe('ja')
     expect(violation.detail).toContain('{email}')
+  })
+})
+
+describe('localizeMarkdownLinks', () => {
+  /**
+   * An internal link has to point where the locale actually serves.
+   *
+   * The Chinese files localize theirs by hand — `](/zh-CN/contact)` — so
+   * leaving a Japanese link at `/contact` would be inconsistent with them, and
+   * rewriting it to `/ja/contact` would point at a page Japanese does not
+   * publish. `localizeHref` already answers both, because it refuses to prefix
+   * a route the locale does not serve.
+   */
+  it('localizes an internal link only where the locale serves it', () => {
+    // Japanese publishes /pricing but not /contact.
+    expect(
+      localizeMarkdownLinks('See [pricing](/pricing) and [us](/contact).', 'ja')
+    ).toBe('See [pricing](/ja/pricing) and [us](/contact).')
+  })
+
+  it('localizes every internal link for a complete locale', () => {
+    expect(localizeMarkdownLinks('[us](/contact)', 'zh-CN')).toBe(
+      '[us](/zh-CN/contact)'
+    )
+  })
+
+  it('leaves external links and mailto alone', () => {
+    const text = '[docs](https://docs.comfy.org/x) [mail](mailto:a@comfy.org)'
+
+    expect(localizeMarkdownLinks(text, 'ja')).toBe(text)
+  })
+
+  it('is a no-op for English', () => {
+    expect(localizeMarkdownLinks('[us](/contact)', 'en')).toBe('[us](/contact)')
+  })
+})
+
+/**
+ * Shared by the translator, which asks the model to leave these alone, and by
+ * the FAQ verifier, which refuses a translation that moved one. Untested until
+ * now, which meant the list of things a translation must preserve was itself
+ * unguarded.
+ */
+describe('linkTargets', () => {
+  it('collects every target in order', () => {
+    expect(
+      linkTargets('See [pricing](/pricing) and [docs](https://docs.comfy.org).')
+    ).toEqual(['/pricing', 'https://docs.comfy.org'])
+  })
+
+  it('finds nothing in text that has no links', () => {
+    expect(
+      linkTargets('Plain copy with (parentheses) and a ] bracket.')
+    ).toEqual([])
+  })
+
+  it('collects a mailto target, which must survive translation too', () => {
+    expect(linkTargets('[mail](mailto:support@comfy.org)')).toEqual([
+      'mailto:support@comfy.org'
+    ])
   })
 })

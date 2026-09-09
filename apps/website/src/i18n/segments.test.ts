@@ -75,3 +75,32 @@ describe('every slot the copy uses has a label to fill it', () => {
     expect(used.filter((name) => !known.includes(name))).toEqual([])
   })
 })
+
+/**
+ * A near-miss token has to stay text rather than become a slot the page never
+ * fills — an unfilled slot renders as nothing, so the sentence loses a word
+ * silently. Only the lone opening brace was pinned; a parser change could have
+ * altered any of these without failing a test.
+ */
+describe('tokens that look like slots but are not', () => {
+  it('leaves an empty slot name as text', () => {
+    expect(segments('a {} b')).toEqual([{ type: 'text', value: 'a {} b' }])
+  })
+
+  it('leaves a lone closing brace as text', () => {
+    expect(segments('a } b')).toEqual([{ type: 'text', value: 'a } b' }])
+  })
+
+  /** The inner braces are the slot; the outer pair stays as written. */
+  it('reads a nested brace as one slot between two literals', () => {
+    expect(segments('{{count}}')).toEqual([
+      { type: 'text', value: '{' },
+      { type: 'slot', name: 'count' },
+      { type: 'text', value: '}' }
+    ])
+  })
+
+  it('leaves a name that does not start with a letter as text', () => {
+    expect(segments('{1st}')).toEqual([{ type: 'text', value: '{1st}' }])
+  })
+})
