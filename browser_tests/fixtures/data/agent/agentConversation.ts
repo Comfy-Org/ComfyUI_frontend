@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS, applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
+import type { Doc } from 'yjs'
 import { z } from 'zod'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -185,8 +186,9 @@ export function listRecordedConversations(): string[] {
 }
 
 // The production applier is the parser for the recorded operations: a
-// recording it would reject during replay is refused before one starts.
-export function assertOpsApply(conversation: AgentConversation): void {
+// recording it would reject during replay is refused before one starts. The
+// applied document is what the recorded operations leave behind.
+export function assertOpsApply(conversation: AgentConversation): Doc {
   const doc = mint(conversation.workflow.seed, conversation.workflow.catalog)
   let version = 1
   for (const [turnIndex, turn] of conversation.turns.entries())
@@ -207,6 +209,7 @@ export function assertOpsApply(conversation: AgentConversation): void {
           `turn ${turnIndex} entry ${entryIndex}: the applier rejected ${JSON.stringify(rejected)}`
         )
     }
+  return doc
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {

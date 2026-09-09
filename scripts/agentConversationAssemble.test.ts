@@ -54,6 +54,24 @@ const turnEvents = (turn: ConversationTurn): RecordedFrame[] =>
 const turnEventTypes = (turn: ConversationTurn): string[] =>
   turnEvents(turn).map((event) => event.type)
 
+const nodePayload = (id: number, type: string) => ({
+  id,
+  type,
+  pos: [0, 0],
+  size: [240, 86],
+  mode: 0,
+  flags: {},
+  order: 0,
+  inputs:
+    type === 'KSampler'
+      ? [{ name: 'latent_image', type: 'LATENT', link: null }]
+      : [],
+  outputs:
+    type === 'KSampler' ? [{ name: 'LATENT', type: 'LATENT', links: [] }] : [],
+  properties: {},
+  widgets_values: type === 'KSampler' ? [20] : []
+})
+
 const seed = (): SeedFixture => ({
   workflow: {
     id: WORKFLOW,
@@ -61,8 +79,8 @@ const seed = (): SeedFixture => ({
     catalog: { types: { KSampler: { widget_order: ['steps'] } } },
     seed: {
       nodes: [
-        { id: 3, type: 'CheckpointLoaderSimple' },
-        { id: 4, type: 'KSampler' }
+        nodePayload(3, 'CheckpointLoaderSimple'),
+        nodePayload(4, 'KSampler')
       ],
       links: []
     }
@@ -73,7 +91,9 @@ const addNodeOp = {
   op: 'add_node',
   op_id: 'op-1',
   node_id: 10,
-  class_type: 'KSampler'
+  class_type: 'KSampler',
+  pos: [0, 0],
+  node: nodePayload(10, 'KSampler')
 }
 // The same op as a recording carries it: the export drops the wire envelope.
 const { op_id: _addNodeOpId, ...addNodeOpSemantic } = addNodeOp
@@ -196,13 +216,39 @@ describe('assembleConversation', () => {
     ).toThrow('was cancelled before any frame arrived')
   })
 
-  it('records the cancel marker only for an accepted cancel', () => {
+  it('refuses a cancel that landed once agent_message_done had arrived', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          raw: cancelledTurn({ status: 202, body: {} }, 1_700_000_000_300)
+        })
+      )
+    ).toThrow('was cancelled after agent_message_done')
+  })
+
+  it('keeps a cancel that landed just before agent_message_done', () => {
     const { conversation } = assembleConversation(
-      input({ raw: cancelledTurn({ status: 202, body: {} }) })
+      input({
+        raw: cancelledTurn({ status: 202, body: {} }, 1_700_000_000_299)
+      })
     )
-    expect(conversation.turns[0].cancel_after).toBe(
-      conversation.turns[0].response.length - 1
-    )
+    expect(conversation.turns[0].cancel_after).toBe(3)
+    expect(conversation.turns[0].response.at(-1)).toMatchObject({
+      event: { type: 'agent_message_done' }
+    })
+  })
+
+  it('refuses to place a cancel among frames without receipt times', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          raw: {
+            ...cancelledTurn({ status: 202, body: {} }, 1_700_000_000_200),
+            frames: frames().map(({ type, data }) => ({ type, data }))
+          }
+        })
+      )
+    ).toThrow('carry no at_ms')
   })
 
   it('emits the turn response at its offsets with the applied ops inline', () => {
@@ -274,42 +320,38 @@ describe('assembleConversation', () => {
       for (const key of OP_ENVELOPE_KEYS) expect(op).not.toHaveProperty(key)
   })
 
-  it('accepts a node the ops delete and then add back', () => {
-    const { receipt } = assembleConversation(
-      input({
-        rows: rows({
-          parents: [
-            parent({
-              result: {
-                ok: true,
-                data: {
-                  ops: [
-                    { op: 'delete_node', op_id: 'op-1', node_id: 4 },
-                    {
-                      op: 'add_node',
-                      op_id: 'op-2',
-                      node_id: 4,
-                      class_type: 'KSampler'
-                    }
-                  ]
-                }
-              },
-              children: [
-                { op_id: 'op-1', status: 'ok' },
-                { op_id: 'op-2', status: 'ok' }
-              ]
-            })
-          ],
-          draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+  it('refuses a same-call re-add the replay applier drops as a stale stamp', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                result: {
+                  ok: true,
+                  data: {
+                    ops: [
+                      { op: 'delete_node', op_id: 'op-1', node_id: 4 },
+                      {
+                        ...addNodeOp,
+                        op_id: 'op-2',
+                        node_id: 4,
+                        node: nodePayload(4, 'KSampler')
+                      }
+                    ]
+                  }
+                },
+                children: [
+                  { op_id: 'op-1', status: 'ok' },
+                  { op_id: 'op-2', status: 'ok' }
+                ]
+              })
+            ],
+            draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+          })
         })
-      })
-    )
-
-    expect(receipt).toMatchObject({
-      added_nodes: 0,
-      deleted_nodes: 0,
-      unexplained_draft_nodes: 0
-    })
+      )
+    ).toThrow('the replay applier rejects this recording')
   })
 
   it('refuses a tool call whose terminal frame arrived twice', () => {
@@ -496,7 +538,13 @@ describe('assembleConversation', () => {
                 result: {
                   ok: true,
                   data: {
-                    ops: [{ ...addNodeOp, class_type: 'LatentUpscaleBy' }]
+                    ops: [
+                      {
+                        ...addNodeOp,
+                        class_type: 'LatentUpscaleBy',
+                        node: nodePayload(10, 'LatentUpscaleBy')
+                      }
+                    ]
                   }
                 }
               })
@@ -769,6 +817,132 @@ describe('assembleConversation', () => {
     expect(conversation.turns[0].cancel_after).toBe(3)
   })
 
+  const opsFrames = (order: string[]): RecordedFrame[] => [
+    ...frames().slice(0, 2),
+    ...order.map((toolCallId, index) =>
+      turnFrame(
+        'agent_tool_call',
+        { tool_call_id: toolCallId, tool_name: 'apply_ops', status: 'success' },
+        1_700_000_000_200 + index
+      )
+    ),
+    turnFrame('agent_message_done', {}, 1_700_000_000_300)
+  ]
+  const deleteThenAddRows = () =>
+    rows({
+      parents: [
+        parent({
+          id: 'parent-1',
+          tool_call_id: 'tool-1',
+          result: {
+            ok: true,
+            data: { ops: [{ op: 'delete_node', op_id: 'op-d', node_id: 4 }] }
+          },
+          children: [{ op_id: 'op-d', status: 'ok' }]
+        }),
+        parent({
+          id: 'parent-2',
+          tool_call_id: 'tool-2',
+          result: {
+            ok: true,
+            data: {
+              ops: [
+                {
+                  ...addNodeOp,
+                  op_id: 'op-a',
+                  node_id: 4,
+                  node: nodePayload(4, 'KSampler')
+                }
+              ]
+            }
+          },
+          children: [{ op_id: 'op-a', status: 'ok' }]
+        })
+      ],
+      draft: { nodes: [{ id: 3 }, { id: 4 }], links: [] }
+    })
+
+  it('checks the draft against the emitted order, not the parent row order', () => {
+    const { receipt } = assembleConversation(
+      input({
+        raw: raw({ frames: opsFrames(['tool-1', 'tool-2']) }),
+        rows: deleteThenAddRows()
+      })
+    )
+    expect(receipt).toMatchObject({ added_nodes: 0, deleted_nodes: 0 })
+
+    expect(() =>
+      assembleConversation(
+        input({
+          raw: raw({ frames: opsFrames(['tool-2', 'tool-1']) }),
+          rows: deleteThenAddRows()
+        })
+      )
+    ).toThrow('still holds node ids 4 that the applied ops removed')
+  })
+
+  const clearRows = (draft: Array<{ id: number }>) =>
+    rows({
+      parents: [
+        parent({
+          result: {
+            ok: true,
+            data: {
+              ops: [{ op: 'clear', op_id: 'op-1', removed_nodes: [3, 4] }]
+            }
+          }
+        })
+      ],
+      draft: { nodes: draft, links: [] }
+    })
+
+  it('accepts the empty draft a clear leaves and refuses a stale one', () => {
+    const { receipt } = assembleConversation(input({ rows: clearRows([]) }))
+    expect(receipt).toMatchObject({
+      draft_nodes: 0,
+      added_nodes: 0,
+      deleted_nodes: 2
+    })
+
+    expect(() =>
+      assembleConversation(input({ rows: clearRows([{ id: 3 }, { id: 4 }]) }))
+    ).toThrow('still holds node ids 3, 4 that the applied ops removed')
+  })
+
+  it('refuses a parent row that applies the same op id twice', () => {
+    expect(() =>
+      assembleConversation(
+        input({
+          rows: rows({
+            parents: [
+              parent({
+                children: [
+                  { op_id: 'op-1', status: 'ok' },
+                  { op_id: 'op-1', status: 'ok' }
+                ]
+              })
+            ]
+          })
+        })
+      )
+    ).toThrow('applies op ids op-1 more than once')
+  })
+
+  it('refuses an applied op the replay applier rejects', () => {
+    const { node: _node, ...withoutPayload } = addNodeOp
+    expect(() =>
+      assembleConversation(
+        input({
+          rows: rows({
+            parents: [
+              parent({ result: { ok: true, data: { ops: [withoutPayload] } } })
+            ]
+          })
+        })
+      )
+    ).toThrow('malformed_op')
+  })
+
   it('emits only the durably applied ops when the result echoes more', () => {
     const rejected = {
       op: 'add_node',
@@ -826,7 +1000,16 @@ describe('assembleConversation', () => {
 
 const MESSAGE_2 = 'message-2'
 
-const connectOp = { op: 'connect', op_id: 'op-2', from: 10, to: 3 }
+const connectOp = {
+  op: 'connect',
+  op_id: 'op-2',
+  link_id: 1,
+  from_node: 10,
+  from_slot: 0,
+  to_node: 4,
+  to_slot: 0,
+  link_type: 'LATENT'
+}
 
 const secondTurnFrames = (): RecordedFrame[] => [
   {
