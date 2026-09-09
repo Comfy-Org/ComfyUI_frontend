@@ -34,6 +34,26 @@ const selectedTeamPrice = computed(() => {
   return billingPeriod === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice
 })
 
+const MONTHS_PER_YEAR = 12
+
+const amountForBillingPeriod = (monthlyAmount: number) =>
+  billingPeriod === 'yearly' ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
+
+const teamCredits = computed(() =>
+  amountForBillingPeriod(selectedTeamTier.value.credits)
+)
+const teamVideos = computed(() =>
+  amountForBillingPeriod(selectedTeamTier.value.videos)
+)
+const teamCreditsLabel = computed(() =>
+  t(
+    billingPeriod === 'yearly'
+      ? 'pricing.creditsLabelYearly'
+      : 'pricing.creditsLabel',
+    locale
+  )
+)
+
 function fmtPrice(n: number): string {
   return `$${n.toLocaleString('en-US')}`
 }
@@ -112,7 +132,7 @@ const ctaHref = computed(() =>
             :step="1"
             :ticks="teamCreditTiers.length"
             :thumb-label="t('pricing.team.sliderLabel', locale)"
-            :thumb-value-text="`${selectedTeamTier.credits.toLocaleString('en-US')} ${t('pricing.creditsLabel', locale)}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
+            :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
               <CreditsIcon
@@ -137,10 +157,10 @@ const ctaHref = computed(() =>
         </div>
 
         <PricingCredits
-          :credits="selectedTeamTier.credits.toLocaleString('en-US')"
-          :label="t('pricing.creditsLabel', locale)"
+          :credits="teamCredits.toLocaleString('en-US')"
+          :label="teamCreditsLabel"
           estimate-key="pricing.team.videosEstimate"
-          :estimate-count="selectedTeamTier.videos.toLocaleString('en-US')"
+          :estimate-count="teamVideos.toLocaleString('en-US')"
           :locale
         />
       </div>
