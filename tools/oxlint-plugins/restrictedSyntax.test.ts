@@ -12,6 +12,7 @@ interface Diagnostic {
 
 const probeDirs = {
   source: path.resolve('src/__restricted_syntax_probes__'),
+  app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
   schemas: path.resolve('src/schemas/__restricted_syntax_probes__'),
   fixtureData: path.resolve(
@@ -25,6 +26,14 @@ const probes = [
     file: path.join(probeDirs.source, 'assertion.tsx'),
     source:
       'const asserted = value as Error & { code: string }\nvoid asserted\n'
+  },
+  {
+    file: path.join(probeDirs.app, 'assertion.vue'),
+    source: `<script setup lang="ts">
+const asserted = value as Error
+void asserted
+</script>
+`
   },
   {
     file: path.join(probeDirs.source, 'ignored.test.ts'),
@@ -174,13 +183,23 @@ describe('restricted syntax rules', () => {
 
   it('preserves Error assertion scope across source and remote files', () => {
     const assertionFindings = findingsFor('no-unsafe-error-assertion')
-    expect(assertionFindings).toHaveLength(2)
+    expect(assertionFindings).toHaveLength(3)
     expect(
       assertionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)
     expect(
+      assertionFindings.some(({ filename }) =>
+        filename.replaceAll('\\', '/').includes('apps/')
+      )
+    ).toBe(true)
+    expect(
       assertionFindings.some(({ filename }) => filename.endsWith('.test.ts'))
     ).toBe(false)
+    expect(new Set(assertionFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+      ])
+    )
   })
 
   it('reports only static DOM access nested inside computed calls', () => {
@@ -194,13 +213,39 @@ describe('restricted syntax rules', () => {
         message.startsWith('Do not measure the DOM')
       )
     ).toHaveLength(3)
+    expect(new Set(computedFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.',
+        'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+      ])
+    )
   })
 
   it('preserves the remote Zod and browser test restrictions', () => {
-    expect(findingsFor('no-new-zod-for-remote-api-types')).toHaveLength(1)
-    expect(findingsFor('no-playwright-imports-in-fixture-data')).toHaveLength(1)
-    expect(findingsFor('no-unit-test-files-in-browser-tests')).toHaveLength(1)
-    expect(findingsFor('no-misplaced-spec-files')).toHaveLength(1)
+    expect(findingsFor('no-new-zod-for-remote-api-types')).toEqual([
+      expect.objectContaining({
+        message:
+          'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+      })
+    ])
+    expect(findingsFor('no-playwright-imports-in-fixture-data')).toEqual([
+      expect.objectContaining({
+        message:
+          'fixtures/data/ must contain only static data. No Playwright imports allowed.'
+      })
+    ])
+    expect(findingsFor('no-unit-test-files-in-browser-tests')).toEqual([
+      expect.objectContaining({
+        message:
+          '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
+      })
+    ])
+    expect(findingsFor('no-misplaced-spec-files')).toEqual([
+      expect.objectContaining({
+        message:
+          '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
+      })
+    ])
   })
 
   it('preserves warning policies added after the original PR', () => {
@@ -213,5 +258,15 @@ describe('restricted syntax rules', () => {
         ({ severity }) => severity === 'warning'
       )
     ).toBe(true)
+    expect(new Set(apiSchemaFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+      ])
+    )
+    expect(new Set(zodSchemaFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+      ])
+    )
   })
 })
