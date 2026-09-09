@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import {
@@ -19,7 +20,10 @@ import {
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
-import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentTurnAccepted,
+  zAgentWsEvent
+} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   NormalizedRows,
   RawCapture,
@@ -158,7 +162,10 @@ async function recordTurns(
     raw.frames.push({ ...frame, at_ms: Date.now() })
   )
 
-  const postTurn = async (thread: string, turn: unknown): Promise<TurnAck> => {
+  const postTurn = async (
+    thread: string,
+    turn: AgentPostMessageRequest
+  ): Promise<TurnAck> => {
     const response = await fetch(
       `${raw.base}/agent/threads/${thread}/messages`,
       {
@@ -196,12 +203,17 @@ async function recordTurns(
     }
   }
 
+  const agentEvent = (frame: RecordedFrame) =>
+    zAgentWsEvent.safeParse(frame).data
+
   const done = (messageId: string): boolean =>
-    raw.frames.some(
-      (frame) =>
-        frame.type === 'agent_message_done' &&
-        frame.data.message_id === messageId
-    )
+    raw.frames.some((frame) => {
+      const event = agentEvent(frame)
+      return (
+        event?.type === 'agent_message_done' &&
+        event.data.message_id === messageId
+      )
+    })
 
   const waitDone = async (messageId: string, label: string): Promise<void> => {
     const started = Date.now()
@@ -285,12 +297,14 @@ async function recordTurns(
     }
 
     if (
-      !raw.frames.some(
-        (frame) =>
-          frame.type === 'agent_active_tab' &&
-          frame.data.message_id === opening &&
-          frame.data.workflow_id === seedAck.data.workflow_id
-      )
+      !raw.frames.some((frame) => {
+        const event = agentEvent(frame)
+        return (
+          event?.type === 'agent_active_tab' &&
+          event.data.message_id === opening &&
+          event.data.workflow_id === seedAck.data.workflow_id
+        )
+      })
     )
       refuse(
         `no agent_active_tab for ${seedAck.data.workflow_id}: the agent never switched tabs`
