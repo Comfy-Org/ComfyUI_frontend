@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { externalLinks } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
@@ -10,7 +10,8 @@ import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
-  buildWorkshopSnippet
+  buildWorkshopSnippet,
+  workshopIdempotencyKey
 } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -36,8 +37,33 @@ const {
 } = useClipboard({ copiedDuring: 1500, legacy: true })
 /** Which language was on screen when the copy happened. */
 const copiedLanguage = ref<WorkshopSnippetLanguage>()
+
+/**
+ * One key per page load, minted in `onMounted` rather than in setup.
+ *
+ * Setup also runs when Astro prerenders this island, so a key made there would
+ * be baked into the static HTML and shared by every visitor — they would all
+ * send the same `Idempotency-Key`, and the Router would treat one reader's run
+ * as a repeat of another's. Minting on the client gives each reader their own.
+ *
+ * Until then the snippet shows a placeholder, in the same spirit as the media
+ * URLs: visibly not a real value, so a reader who somehow copied it before
+ * hydration gets a request the Router rejects rather than one that silently
+ * collides with someone else's.
+ */
+const idempotencyKey = ref('REPLACE-WITH-A-UUID')
+onMounted(() => {
+  idempotencyKey.value = workshopIdempotencyKey()
+})
+
 const snippet = computed(() =>
-  buildWorkshopSnippet(language.value, model.id, model.fields, values.value)
+  buildWorkshopSnippet(
+    language.value,
+    model.id,
+    model.fields,
+    values.value,
+    idempotencyKey.value
+  )
 )
 const hasInvalidJson = computed(() =>
   model.fields.some((field) => {
@@ -139,7 +165,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
           <pre
             tabindex="0"
             class="focus-visible:ring-primary-comfy-yellow/50 mt-3 max-h-168 overflow-auto rounded-2xl border border-primary-comfy-canvas/10 bg-black p-6 text-sm/relaxed text-primary-comfy-canvas focus-visible:ring-2 focus-visible:outline-none"
-          ><code>{{ option === language ? snippet : buildWorkshopSnippet(option, model.id, model.fields, values) }}</code></pre>
+          ><code>{{ option === language ? snippet : buildWorkshopSnippet(option, model.id, model.fields, values, idempotencyKey) }}</code></pre>
         </TabsContent>
       </TabsRoot>
       <a
