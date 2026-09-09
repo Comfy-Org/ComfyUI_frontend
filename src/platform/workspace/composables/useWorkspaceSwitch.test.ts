@@ -1,31 +1,34 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 const mockSwitchWorkspace = vi.hoisted(() => vi.fn())
-const mockActiveWorkspace = vi.hoisted(() => ({
-  value: null as WorkspaceWithRole | null
+const mockWorkspaceStore = vi.hoisted(() => ({
+  store: null as {
+    activeWorkspace: WorkspaceWithRole | null
+    switchWorkspace: typeof mockSwitchWorkspace
+  } | null
 }))
 
 vi.mock<unknown>(
   import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
+  async () => {
+    const { reactive, ref } = await import('vue')
+    mockWorkspaceStore.store = reactive({
+      activeWorkspace: ref<WorkspaceWithRole | null>(null),
       switchWorkspace: mockSwitchWorkspace
     })
-  })
+    return { useTeamWorkspaceStore: () => mockWorkspaceStore.store }
+  }
 )
-
-vi.mock<unknown>(import('pinia'), () => ({
-  storeToRefs: () => ({
-    activeWorkspace: mockActiveWorkspace
-  })
-}))
 
 describe('useWorkspaceSwitch', () => {
   beforeEach(() => {
-    mockActiveWorkspace.value = {
+    setActivePinia(createPinia())
+    if (!mockWorkspaceStore.store) throw new Error('workspace store not ready')
+    mockWorkspaceStore.store.activeWorkspace = {
       id: 'workspace-1',
       name: 'Test Workspace',
       type: 'personal',

@@ -1,7 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, reactive } from 'vue'
+import {
+  computed,
+  createApp,
+  defineComponent,
+  effectScope,
+  reactive
+} from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -157,6 +164,7 @@ const {
   mockOpen,
   mockGetBillingStatus,
   mockGetPaymentPortalUrl,
+  mockReportError,
   mockPlans,
   mockResubscribe,
   mockToastAdd,
@@ -188,6 +196,7 @@ const {
     mockOpen: vi.fn(),
     mockGetBillingStatus: vi.fn(),
     mockGetPaymentPortalUrl: vi.fn(),
+    mockReportError: vi.fn(),
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
@@ -407,6 +416,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
   AuthStoreError: class AuthStoreError extends Error {
@@ -419,19 +432,10 @@ vi.mock<unknown>(import('@/stores/authStore'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('vue-i18n'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
-})
-
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
   const scopes: ReturnType<typeof effectScope>[] = []
+  const apps: App<Element>[] = []
 
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
@@ -442,12 +446,25 @@ describe('useSubscriptionCheckout', () => {
       await import('./useSubscriptionCheckout')
     const scope = effectScope()
     scopes.push(scope)
-    return scope.run(() =>
-      useSubscriptionCheckout(emit as never, paymentIntentSource, {
-        tierPlanType,
-        embeddedCheckoutEnabled
+    let checkout: ReturnType<typeof useSubscriptionCheckout> | undefined
+    const app = createApp(
+      defineComponent({
+        setup() {
+          checkout = scope.run(() =>
+            useSubscriptionCheckout(emit as never, paymentIntentSource, {
+              tierPlanType,
+              embeddedCheckoutEnabled
+            })
+          )
+          return () => null
+        }
       })
-    )!
+    )
+    app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+    app.mount(document.createElement('div'))
+    apps.push(app)
+    if (!checkout) throw new Error('subscription checkout not initialized')
+    return checkout
   }
 
   async function setupWithApprovedPreview(
@@ -474,7 +491,7 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    setActivePinia(createPinia())
     mockSubscribe.mockReset()
     mockPreviewSubscribe.mockReset()
     mockFetchPlans.mockReset()
@@ -532,6 +549,7 @@ describe('useSubscriptionCheckout', () => {
 
   afterEach(() => {
     for (const scope of scopes.splice(0)) scope.stop()
+    for (const app of apps.splice(0)) app.unmount()
   })
 
   describe('handleSubscribeClick', () => {
@@ -993,14 +1011,41 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('shows the portal error when payment recovery cannot open', async () => {
-      mockGetPaymentPortalUrl.mockRejectedValueOnce(
-        new Error('Portal unavailable')
+    it('shows the server guidance when payment recovery cannot open', async () => {
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
+      await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED',
+        'Update your payment method before changing plans'
       )
-      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'Update your payment method before changing plans'
+        })
+      )
+    })
+
+    it('keeps the portal error for legacy transition recovery', async () => {
+      mockGetBillingStatus.mockResolvedValueOnce({
+        billing_status: 'payment_failed'
+      })
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
+
+      await submitRejectedPreview(
+        'TRANSITION_NOT_ALLOWED',
+        'Plan change is unavailable'
+      )
+
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ detail: 'Portal unavailable' })
       )
@@ -1013,13 +1058,16 @@ describe('useSubscriptionCheckout', () => {
       'https://billing.stripe.com.evil.test/portal'
     ])('rejects an unsafe billing portal URL: %s', async (url) => {
       mockGetPaymentPortalUrl.mockResolvedValueOnce({ url })
-      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED',
+        'Update your payment method before changing plans'
+      )
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
-          detail: 'toastMessages.failedToAccessBillingPortal'
+          detail: 'Update your payment method before changing plans'
         })
       )
     })
@@ -1298,9 +1346,9 @@ describe('useSubscriptionCheckout', () => {
       discountedUsd: 1295
     }
 
-    async function startTeamPaymentRecovery() {
+    async function startTeamPaymentRecovery(message = 'error') {
       mockPreviewSubscribe.mockRejectedValueOnce(
-        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', message)
       )
       const checkout = await setup()
       const selection = checkout.handleSubscribeTeamClick({
@@ -1579,14 +1627,18 @@ describe('useSubscriptionCheckout', () => {
       mockGetPaymentPortalUrl.mockRejectedValueOnce(
         new Error('Portal unavailable')
       )
-      const { checkout, selection } = await startTeamPaymentRecovery()
+      const { checkout, selection } = await startTeamPaymentRecovery(
+        'Update your payment method before changing plans'
+      )
       await selection
 
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.selectedTeamStop.value).toBeNull()
       expect(mockToastAdd).toHaveBeenCalledOnce()
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Portal unavailable' })
+        expect.objectContaining({
+          detail: 'Update your payment method before changing plans'
+        })
       )
     })
 

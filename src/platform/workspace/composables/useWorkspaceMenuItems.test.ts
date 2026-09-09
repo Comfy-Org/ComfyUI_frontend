@@ -1,7 +1,9 @@
-import { computed } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
+import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
@@ -24,10 +26,6 @@ const dialogMocks = vi.hoisted(() => ({
   showEditWorkspaceDialog: vi.fn(),
   showDeleteWorkspaceDialog: vi.fn(),
   showLeaveWorkspaceDialog: vi.fn()
-}))
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key })
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -99,6 +97,29 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => dialogMocks
 }))
+
+const apps: App<Element>[] = []
+
+function useWorkspaceMenuItems(): ReturnType<typeof createWorkspaceMenuItems> {
+  let result: ReturnType<typeof createWorkspaceMenuItems> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createWorkspaceMenuItems()
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('workspace menu items not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {

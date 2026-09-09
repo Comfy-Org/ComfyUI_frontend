@@ -3,10 +3,12 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
   AgentThreadListResponse,
-  AgentThreadSummary
+  AgentThreadSummary,
+  SubscriptionTier
 } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createTestingPinia } from '@pinia/testing'
 import {
   createPinia,
   disposePinia,
@@ -308,6 +310,60 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => telemetry
 }))
 
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  isCloud: true
+}))
+
+const openAccountPrecondition = vi.hoisted(() => vi.fn())
+vi.mock(
+  '@/platform/cloud/subscription/composables/useAccountPreconditionDialog',
+  () => ({
+    useAccountPreconditionDialog: () => ({ open: openAccountPrecondition })
+  })
+)
+
+const paywallWorkspace = vi.hoisted(() => ({
+  role: 'owner' as 'owner' | 'member'
+}))
+const paywallCapabilities = vi.hoisted(() => ({
+  canTopUp: true,
+  canSubscribeSelfServe: true,
+  isReady: true
+}))
+const paywallBilling = vi.hoisted(() => ({
+  tier: 'STANDARD' as SubscriptionTier | null
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
+  const { computed } = await import('vue')
+  return {
+    useWorkspaceUI: () => ({
+      workspaceRole: computed(() => paywallWorkspace.role)
+    })
+  }
+})
+
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingContext: () => ({ tier: computed(() => paywallBilling.tier) })
+  }
+})
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingCapabilities: () => ({
+      canTopUp: computed(() => paywallCapabilities.canTopUp),
+      canSubscribeSelfServe: computed(
+        () => paywallCapabilities.canSubscribeSelfServe
+      ),
+      isReady: computed(() => paywallCapabilities.isReady)
+    })
+  }
+})
+
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
@@ -343,6 +399,11 @@ beforeEach(() => {
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
   socketSend.mockReset()
+  paywallWorkspace.role = 'owner'
+  paywallCapabilities.canTopUp = true
+  paywallCapabilities.canSubscribeSelfServe = true
+  paywallCapabilities.isReady = true
+  paywallBilling.tier = 'STANDARD'
 })
 
 afterEach(() => {
@@ -427,6 +488,166 @@ function addTab(path: string, overrides: Partial<FakeTab> = {}): FakeTab {
   hostStores.workflow.openTabPaths.add(tab.path)
   return tab
 }
+
+describe('AgentPanelRoot paywall actions', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    ws.clear()
+    openAccountPrecondition.mockClear()
+  })
+
+  it('routes the subscribed owner actions through account preconditions', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Upgrade plan' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+
+    expect(openAccountPrecondition.mock.calls).toEqual([
+      ['subscription'],
+      ['credits']
+    ])
+  })
+
+  it('hides purchase actions from a Team member without billing permissions', async () => {
+    paywallWorkspace.role = 'member'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await screen.findByText(
+      'This workspace has used all its credits. Ask your workspace owner to add more.'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it.for(['PRO', 'TEAM'] as const)(
+    'shows Add credits only for a %s owner even when self-serve subscription is allowed',
+    async (tier) => {
+      paywallBilling.tier = tier
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      useAgentConversationStore().messages.push({
+        id: 'msg-paywall' as TurnId,
+        role: 'assistant',
+        parts: [{ type: 'paywall' }],
+        streaming: false,
+        thinking: false
+      })
+
+      expect(
+        await screen.findByRole('button', { name: 'Add credits' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /upgrade|subscribe/i })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('keeps Add credits but hides Upgrade when self-serve subscription is unavailable', async () => {
+    paywallCapabilities.canSubscribeSelfServe = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows Subscribe only when the server allows self-serve subscription but not top-up', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows sales-managed remediation for a ready owner with no self-serve capability', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByText(
+        'This workspace is billed through your Comfy account team. Contact them to add credits.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not interpret the pending false pair as sales-managed', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallCapabilities.isReady = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Upgrade plan' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/billed through your Comfy account team/i)
+    ).not.toBeInTheDocument()
+  })
+})
 
 describe('AgentPanelRoot session notices', () => {
   beforeEach(() => {
@@ -1987,6 +2208,29 @@ describe('AgentPanelRoot greeting', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText('Hello Jo,')).toBeInTheDocument()
+  })
+})
+
+describe('AgentPanelRoot a11y id guard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    ws.clear()
+  })
+
+  // R-193 residual: a duplicated #agent-panel-title (the FE #16912 regression
+  // class) reached main unnoticed because the fast suite never asserted the id
+  // count. Assert the document-level count, not a getBy* query, so a second
+  // copy of the id fails loudly here instead of only in the Playwright suite
+  // (agentPanelLifecycle.spec.ts, still test.fixme pending FE #16919).
+  it('renders exactly one #agent-panel-title on the success path', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText(i18n.global.t('agent.title'))).toBeVisible()
+    // Document-level count is the point: the guard must see any duplicate id
+    // anywhere in the document, not just within the panel subtree.
+    /* eslint-disable testing-library/no-node-access */
+    expect(document.querySelectorAll('#agent-panel-title')).toHaveLength(1)
+    /* eslint-enable testing-library/no-node-access */
   })
 })
 

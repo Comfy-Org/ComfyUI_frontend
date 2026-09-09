@@ -1,8 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { AuthStoreError } from '@/stores/authStore'
 
-import { useResubscribe } from './useResubscribe'
+import { useResubscribe as createResubscribe } from './useResubscribe'
 
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
@@ -89,9 +92,28 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+const apps: App<Element>[] = []
+
+function useResubscribe(): ReturnType<typeof createResubscribe> {
+  let result: ReturnType<typeof createResubscribe> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createResubscribe()
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('resubscribe composable not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useResubscribe', () => {
   beforeEach(() => {

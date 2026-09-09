@@ -13,12 +13,32 @@ const dialogService = useDialogService()
 let isDisposed = false
 let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
 
+async function resetNotificationState(platform: string) {
+  try {
+    await settingStore.set('Comfy.Desktop.CloudNotificationShown', false)
+  } catch (error) {
+    reportError(error, {
+      errorType: 'cloud_notification_state_reset_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'cloud',
+        operation: 'save',
+        outcome: 'failed',
+        assert_mode: 'soft'
+      },
+      context: { platform, is_disposed: isDisposed },
+      level: 'error'
+    })
+  }
+}
+
 async function scheduleCloudNotification() {
   const platform = electronAPI()?.getPlatform()
   if (!isDesktop || platform !== 'darwin') return
 
   try {
     await settingStore.load()
+    if (settingStore.error !== undefined) throw settingStore.error
   } catch (error) {
     reportError(error, {
       errorType: 'cloud_notification_settings_load_failed',
@@ -43,7 +63,26 @@ async function scheduleCloudNotification() {
 
     try {
       await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
-      if (isDisposed) return
+    } catch (error) {
+      reportError(error, {
+        errorType: 'cloud_notification_state_save_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'cloud',
+          operation: 'save',
+          outcome: 'failed',
+          assert_mode: 'soft'
+        },
+        context: { platform, is_disposed: isDisposed },
+        level: 'error'
+      })
+      await resetNotificationState(platform)
+      return
+    }
+
+    if (isDisposed) return
+
+    try {
       await dialogService.showCloudNotification()
     } catch (error) {
       reportError(error, {
@@ -58,22 +97,7 @@ async function scheduleCloudNotification() {
         context: { platform, is_disposed: isDisposed },
         level: 'error'
       })
-      await settingStore
-        .set('Comfy.Desktop.CloudNotificationShown', false)
-        .catch((resetError) => {
-          reportError(resetError, {
-            errorType: 'cloud_notification_state_reset_failed',
-            tags: {
-              failure_kind: 'caught_unexpected',
-              feature_area: 'cloud',
-              operation: 'save',
-              outcome: 'failed',
-              assert_mode: 'soft'
-            },
-            context: { platform, is_disposed: isDisposed },
-            level: 'error'
-          })
-        })
+      await resetNotificationState(platform)
     }
   }, 2000)
 }

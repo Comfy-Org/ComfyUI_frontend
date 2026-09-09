@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -48,14 +49,6 @@ const {
     mockShowConfirmDialog: vi.fn(),
     mockStatus: ref('configured'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner')
-  }
-})
-
-vi.mock<unknown>(import('pinia'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
   }
 })
 
@@ -118,7 +111,7 @@ function nodeDef(
 
 function renderComponent() {
   return render(PartnerNodeAccessPanel, {
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [createPinia(), i18n], directives: { tooltip: {} } }
   })
 }
 

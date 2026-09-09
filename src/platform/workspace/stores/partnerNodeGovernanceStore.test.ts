@@ -39,17 +39,9 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 vi.mock(
   import('@/platform/workspace/api/partnerNodePolicyApi'),
-  () =>
+  async (importOriginal) =>
     ({
-      PartnerNodePolicyApiError: class PartnerNodePolicyApiError extends Error {
-        constructor(
-          readonly status: number,
-          message: string
-        ) {
-          super(message)
-          this.name = 'PartnerNodePolicyApiError'
-        }
-      },
+      ...(await importOriginal<typeof PartnerNodePolicyApi>()),
       getPartnerNodePolicy: mockGetPartnerNodePolicy,
       getPartnerProviders: mockGetPartnerProviders,
       updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
