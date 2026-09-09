@@ -1344,7 +1344,13 @@ export function useSubscriptionCheckout(
           initialActionUrl
         )
       : billingOperationStore.startOperation(opId, 'subscription', metadata)
-    if (embeddedCheckoutEnabled) isSubscribing.value = false
+    // The submit is over once the operation is adopted: isPolling is the busy
+    // state from here, and it is already true because startOperation registers
+    // synchronously above. Holding isSubscribing past this point kept the
+    // legacy dialog's loading input true until the operation went terminal,
+    // which disabled the recovery prompt's own CTA and Back for a checkout
+    // parked on the customer. Releasing it does not stop the poll.
+    isSubscribing.value = false
     const operation = await terminalOperation
     clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
     if (
