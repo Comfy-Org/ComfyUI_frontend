@@ -153,6 +153,29 @@ export interface SessionRequestOptions {
 }
 
 /**
+ * Cross-tab refresh coordination. One tab per (uid, workspace) key holds the
+ * lease and performs the proactive refresh; the others adopt its published
+ * credential and mint for themselves only when the leader goes quiet past
+ * their jittered fallback. Real hosts wrap Web Locks + BroadcastChannel
+ * (`createWebCrossTabRefreshPort` from `@comfyorg/account/web`); tests pass
+ * fakes.
+ */
+export interface CrossTabRefreshPort {
+  /**
+   * Queue for the key's lease. `onAcquired` fires if and when this tab
+   * becomes leader; the returned function abandons the request or releases
+   * held leadership.
+   */
+  requestLeadership: (key: string, onAcquired: () => void) => () => void
+  publishCredential: (key: string, credential: AccountCredential) => void
+  /** Messages cross a serialization boundary; the client validates them. */
+  onCredential: (
+    key: string,
+    callback: (message: unknown) => void
+  ) => () => void
+}
+
+/**
  * Opt-in proactive refresh, mirroring the cloud store's scheduled-refresh
  * semantics (its buffer, retry base, and retry cap are the defaults): arm at
  * expiry minus the buffer, retry transient failures with doubling backoff,
@@ -163,6 +186,22 @@ export interface RefreshSchedulerOptions {
   readonly bufferMs?: number
   readonly retryBaseMs?: number
   readonly maxRetries?: number
+  /**
+   * Cross-tab coordination (opt-in): the leader tab refreshes and publishes;
+   * followers adopt the published credential and fall back to their own mint
+   * only after a bounded random hold past the refresh point.
+   */
+  readonly crossTab?: {
+    readonly port: CrossTabRefreshPort
+    /** Upper bound for the follower's random hold. Default 15s. */
+    readonly followerJitterMs?: number
+    /**
+     * Fires when this tab commits a sibling's credential. Adoption is a
+     * rotation the tab did not perform itself, so a host that reacts to
+     * rotations (cookie refresh, extension hooks) needs this signal.
+     */
+    readonly onCredentialAdopted?: (credential: AccountCredential) => void
+  }
   /**
    * Called with the outcome of every SCHEDULED refresh attempt (never a
    * login or caller-initiated mint), so a host can feed its refresh
@@ -631,6 +670,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   const schedulerRetryBaseMs =
     clientOptions.refreshScheduler?.retryBaseMs ?? 5000
   const schedulerMaxRetries = clientOptions.refreshScheduler?.maxRetries ?? 3
+  const crossTab = clientOptions.refreshScheduler?.crossTab
+  const followerJitterMs = crossTab?.followerJitterMs ?? 15_000
   let scheduledTimer: ReturnType<typeof setTimeout> | undefined
   /**
    * The hard fail-close for a credential whose refresh chain died. Its own
@@ -639,6 +680,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    */
   let expiryTimer: ReturnType<typeof setTimeout> | undefined
   let scheduledRetryCount = 0
+  /** Without coordination every tab is its own leader. */
+  let isRefreshLeader = crossTab === undefined
+  let coordinationKey: string | undefined
+  /**
+   * Bumped on every coordination teardown. A leadership grant landing on an
+   * abandoned request carries the generation it was issued under — the key
+   * string alone cannot distinguish an abandoned request from its same-key
+   * successor after a sign-out/sign-in round trip.
+   */
+  let coordinationGeneration = 0
+  let armingScheduledRefresh = false
+  let releaseLeadership: (() => void) | undefined
+  let stopCredentialFeed: (() => void) | undefined
 
   function stopScheduledRefresh(): void {
     if (scheduledTimer !== undefined) {
@@ -654,19 +708,120 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
+  function teardownCoordination(): void {
+    coordinationGeneration += 1
+    releaseLeadership?.()
+    releaseLeadership = undefined
+    stopCredentialFeed?.()
+    stopCredentialFeed = undefined
+    coordinationKey = undefined
+    isRefreshLeader = crossTab === undefined
+  }
+
+  function ensureCoordination(): void {
+    if (crossTab === undefined || credential === undefined) return
+    // Keyed by the SERVER-RESOLVED workspace, never the requested target: a
+    // personal {} mint resolves to a concrete workspace the target string
+    // cannot name, and tabs on one workspace must share one lease however
+    // they reached it.
+    const key = `comfy-account-refresh:${credential.uid}:${credential.workspace.id}`
+    if (key === coordinationKey) return
+    teardownCoordination()
+    coordinationKey = key
+    const generationAtRequest = coordinationGeneration
+    stopCredentialFeed = crossTab.port.onCredential(
+      key,
+      adoptPublishedCredential
+    )
+    releaseLeadership = crossTab.port.requestLeadership(key, () => {
+      // A grant is honored only for the coordination generation that issued
+      // the request: abandoned requests can still win the grant race in the
+      // lock manager, and after a same-user round trip their key is
+      // byte-identical to the live request's.
+      if (generationAtRequest !== coordinationGeneration) return
+      isRefreshLeader = true
+      // Promotion retakes the schedule unconditionally — the follower timer
+      // may be jittered, mid-retry, or already dead from exhausted retries.
+      // The latch skips the redundant re-arm when the grant fires
+      // synchronously inside armScheduledRefresh itself.
+      if (credential !== undefined && !armingScheduledRefresh) {
+        armScheduledRefresh(
+          credential.expiresAt,
+          clientOptions.now?.() ?? Date.now()
+        )
+      }
+    })
+  }
+
+  /**
+   * Every committed mint is published once a coordination key exists —
+   * leadership gates adoption, never publication — so the reactive 401
+   * re-mint and a leaderless follower's fallback reach siblings too: those
+   * are exactly the rotations they must not miss. Adoption itself never
+   * republishes, and the monotonic-expiry guard makes redelivery a no-op,
+   * so the channel cannot loop.
+   */
+  function publishToSiblings(session: AccountCredential): void {
+    if (coordinationKey === undefined) return
+    crossTab?.port.publishCredential(coordinationKey, session)
+  }
+
+  function adoptPublishedCredential(message: unknown): void {
+    // Any tab adopts a strictly newer credential, the leader included: a
+    // leader whose own chain died recovers from a sibling's fallback mint,
+    // and the monotonic-expiry check keeps the channel from looping.
+    const parsed = CachedCredentialSchema.safeParse(message)
+    if (!parsed.success) return
+    if (currentUser?.uid !== parsed.data.uid) return
+    // Scope check: the channel key cannot fully encode the workspace (the
+    // personal target is server-resolved), so a same-user credential minted
+    // for a DIFFERENT workspace must never switch this tab.
+    if (credential === undefined) return
+    if (parsed.data.workspace.id !== credential.workspace.id) return
+    if (parsed.data.expiresAt <= credential.expiresAt) return
+    const next: AccountCredential = {
+      token: parsed.data.token,
+      expiresAt: parsed.data.expiresAt,
+      uid: parsed.data.uid,
+      workspace: parsed.data.workspace,
+      role: parsed.data.role,
+      permissions: parsed.data.permissions
+    }
+    // Adoption is a commit: it supersedes any in-flight mint of this tab's
+    // own, exactly like a newer mint would.
+    mintSequence += 1
+    clearExpiry()
+    credential = next
+    failure = undefined
+    safeWrite(JSON.stringify({ ...next, target: credentialTarget }))
+    publish()
+    armScheduledRefresh(next.expiresAt, clientOptions.now?.() ?? Date.now())
+    crossTab?.onCredentialAdopted?.(next)
+  }
+
   function armScheduledRefresh(expiresAt: number, now: number): void {
     if (!clientOptions.refreshScheduler) return
     stopScheduledRefresh()
     scheduledRetryCount = 0
-    // Never tighter than one retry interval: a token already inside the
-    // buffer (a host buffer at or above the TTL, a skewed clock) would
-    // otherwise re-mint in a loop with no backoff.
+    armingScheduledRefresh = true
+    try {
+      ensureCoordination()
+    } finally {
+      armingScheduledRefresh = false
+    }
+    // A follower holds past the leader's refresh point by bounded random
+    // jitter; when no published credential has arrived by then, the leader
+    // is gone and this tab refreshes for itself. Never tighter than one
+    // retry interval: a token already inside the buffer (a host buffer at
+    // or above the TTL, a skewed clock) would otherwise re-mint in a loop.
+    const jitter = isRefreshLeader ? 0 : Math.random() * followerJitterMs
     scheduledTimer = setTimeout(
       () => {
         scheduledTimer = undefined
         void runScheduledRefresh()
       },
-      Math.max(schedulerRetryBaseMs, expiresAt - schedulerBufferMs - now)
+      Math.max(schedulerRetryBaseMs, expiresAt - schedulerBufferMs - now) +
+        jitter
     )
   }
 
@@ -744,6 +899,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         result.session.expiresAt,
         clientOptions.now?.() ?? Date.now()
       )
+      publishToSiblings(result.session)
       reportOutcome?.('succeeded')
       return
     }
@@ -758,6 +914,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
     if (scheduledRetryCount >= schedulerMaxRetries) {
       if (credential !== undefined) armClearAtExpiry(credential)
+      // A leader with a dead chain must not sit on the lease: release it so
+      // a sibling can lead, and queue again as a follower so this tab can
+      // adopt what that sibling mints or be promoted back if nobody does.
+      teardownCoordination()
+      ensureCoordination()
       reportOutcome?.('retries_exhausted')
       return
     }
@@ -825,6 +986,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         result.session.expiresAt,
         options.now?.() ?? clientOptions.now?.() ?? Date.now()
       )
+      publishToSiblings(result.session)
     } else if (
       options.preserveCredentialOnTransientFailure === true &&
       credential !== undefined &&
@@ -847,6 +1009,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         if (!active) return
         identityEpoch += 1
         stopScheduledRefresh()
+        teardownCoordination()
         clearExpiry()
         currentUser = next
         credential = undefined
@@ -869,6 +1032,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         detachCurrent = undefined
         unsubscribe()
         stopScheduledRefresh()
+        teardownCoordination()
         clearExpiry()
         currentUser = null
         credential = undefined
@@ -897,6 +1061,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     invalidate() {
       invalidationEpoch += 1
       stopScheduledRefresh()
+      teardownCoordination()
       clearExpiry()
       // A mint still running belongs to the scope being discarded; a caller
       // arriving after this must start its own rather than join it.

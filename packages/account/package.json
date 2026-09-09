@@ -8,6 +8,7 @@
   "exports": {
     "./core": "./src/core/index.ts",
     "./firebase": "./src/firebase/index.ts",
+    "./web": "./src/web/index.ts",
     "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./signInSchemas": "./src/signInSchemas.ts",
     "./turnstile": "./src/turnstile.ts",
