@@ -147,9 +147,11 @@ export function usePricingTableUrlLoader() {
     await initializeCapabilities()
     const canManageSubscriptionAfterCapabilities: unknown =
       permissions.value.canManageSubscription
+    const canOpenPricingSurfaceAfterCapabilities: unknown =
+      canOpenPricingSurface.value
     if (
       canManageSubscriptionAfterCapabilities !== true ||
-      !canOpenPricingSurface.value
+      canOpenPricingSurfaceAfterCapabilities !== true
     ) {
       return
     }
@@ -171,9 +173,11 @@ export function usePricingTableUrlLoader() {
 
       const canManageSubscriptionAfterPlans: unknown =
         permissions.value.canManageSubscription
+      const canOpenPricingSurfaceAfterPlans: unknown =
+        canOpenPricingSurface.value
       if (
         canManageSubscriptionAfterPlans !== true ||
-        !canOpenPricingSurface.value
+        canOpenPricingSurfaceAfterPlans !== true
       ) {
         return
       }
