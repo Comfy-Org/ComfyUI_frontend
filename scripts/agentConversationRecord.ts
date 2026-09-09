@@ -15,11 +15,11 @@ import {
   parseOrRefuse,
   refuse,
   turnLabel,
-  zAck,
   zJsonObject,
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
+import { zAgentTurnAccepted } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   NormalizedRows,
   RawCapture,
@@ -45,7 +45,7 @@ const zEnv = z.object({
   AGENT_ATTEMPT: z.string().default('')
 })
 
-const zSeedAck = zAck.extend({ workflow_id: z.string().min(1) })
+const zSeedAck = zAgentTurnAccepted.required({ workflow_id: true })
 
 // The socket carries frames without a data object; the replay union does not.
 const zSocketFrame = z
@@ -262,7 +262,7 @@ async function recordTurns(
         saw_done: false
       }
       raw.turns.push(turn)
-      const ack = zAck.safeParse(posted.body)
+      const ack = zAgentTurnAccepted.safeParse(posted.body)
       if (posted.status !== 202 || !ack.success)
         refuse(`${turnLabel(index)} not accepted: ${JSON.stringify(posted)}`)
       thread = ack.data.thread_id
@@ -404,7 +404,7 @@ async function main(argv: string[]): Promise<void> {
 
     // One row set per turn; the last one also carries the final draft.
     const rows = raw.turns.map((turn, index) => {
-      const ids = zAck.parse(turn.accepted?.body)
+      const ids = zAgentTurnAccepted.parse(turn.accepted?.body)
       return readRows(
         env.AGENT_PG_EXEC.split(' ').filter(Boolean),
         sidecar(`rows.${index + 1}.json`),

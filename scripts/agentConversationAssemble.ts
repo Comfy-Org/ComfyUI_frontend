@@ -2,7 +2,6 @@
 // recording must clear. Nothing here touches the network, a socket or disk.
 import { basename } from 'node:path'
 
-import { FROZEN_OPS, readGraph } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import type {
@@ -16,13 +15,12 @@ import {
   zAgentConversation,
   zAgentConversationWorkflow
 } from '../browser_tests/fixtures/data/agent/agentConversation'
-import type { GraphOperation } from '../src/workbench/extensions/agent/crdt/graphOperations'
-import { AGENT_WS_EVENT_TYPES } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
-
-// The replay accepts exactly the agent events the panel itself parses.
-const REPLAYED_FRAMES: readonly string[] = [...AGENT_WS_EVENT_TYPES]
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import type { AgentWsEvent } from '../src/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  AGENT_WS_EVENT_TYPES,
+  zAgentTurnAccepted,
+  zAgentWsEvent
+} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 
 const STACK =
   'NON-standalone local full stack (Postgres + doc host, M2M identity headers)'
@@ -38,11 +36,6 @@ const zJsonColumn = z.unknown().transform((value, ctx) => {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'is not JSON' })
     return z.NEVER
   }
-})
-
-export const zAck = z.object({
-  thread_id: z.string().min(1),
-  message_id: z.string().min(1)
 })
 
 export const zSeedFixture = z.object({
@@ -88,6 +81,11 @@ export interface RecordedFrame {
   type: string
   data: Record<string, unknown>
   at_ms?: number
+}
+// A frame the replay carries: the production parse of one agent event.
+interface KeptFrame {
+  event: AgentWsEvent
+  at_ms: number | undefined
 }
 type GraphOps = Array<Record<string, unknown>>
 
@@ -156,7 +154,6 @@ interface DraftCounts {
   draft_nodes: number
   added_nodes: number
   deleted_nodes: number
-  unexplained_draft_nodes: number
 }
 
 export interface TurnIds {
@@ -219,7 +216,7 @@ function checkRecording(
 function turnIds(turn: RecordedTurn, label: string, raw: RawCapture): TurnIds {
   if (turn.accepted?.status !== 202)
     refuse(`${label} not accepted: ${JSON.stringify(turn.accepted)}`)
-  const ack = zAck.safeParse(turn.accepted.body)
+  const ack = zAgentTurnAccepted.safeParse(turn.accepted.body)
   if (!ack.success)
     refuse(
       `${label} ack without ids: ${JSON.stringify(turn.accepted.body ?? {})}`
@@ -235,8 +232,8 @@ function keepTurnFrames(
   frames: RecordedFrame[],
   ids: TurnIds[],
   seedTurn: TurnIds | null
-): { kept: RecordedFrame[][]; dropped: Record<string, number> } {
-  const kept: RecordedFrame[][] = ids.map(() => [])
+): { kept: KeptFrame[][]; dropped: Record<string, number> } {
+  const kept: KeptFrame[][] = ids.map(() => [])
   const dropped: Record<string, number> = {}
   const drop = (bucket: string): void => {
     dropped[bucket] = (dropped[bucket] ?? 0) + 1
@@ -258,9 +255,15 @@ function keepTurnFrames(
           ? 'seed_turn'
           : 'foreign'
       )
-    else if (REPLAYED_FRAMES.includes(type)) kept[turn].push(frame)
-    else if (type.startsWith('agent_'))
-      refuse(`frame type ${type} is outside the replay union`)
+    else if ((AGENT_WS_EVENT_TYPES as ReadonlySet<string>).has(type))
+      kept[turn].push({
+        event: parseOrRefuse(
+          zAgentWsEvent,
+          { type, data },
+          `${turnLabel(turn)} ${type} frame`
+        ),
+        at_ms: frame.at_ms
+      })
     else drop(`type:${type}`)
   }
 
@@ -268,35 +271,27 @@ function keepTurnFrames(
     refuse(`${dropped.unparseable} unparseable socket payload(s) recorded`)
   for (const [index, turn] of kept.entries()) {
     const last = turn.at(-1)
-    if (last?.type !== 'agent_message_done')
+    if (last?.event.type !== 'agent_message_done')
       refuse(
-        `last kept frame of ${turnLabel(index)} is ${last?.type}, not agent_message_done`
+        `last kept frame of ${turnLabel(index)} is ${last?.event.type}, not agent_message_done`
       )
   }
   return { kept, dropped }
 }
 
-function activeWorkflowId(
-  kept: RecordedFrame[],
-  seededId: string | null
-): string {
+function activeWorkflowId(kept: KeptFrame[], seededId: string | null): string {
   const tabs = new Set(
-    kept
-      .filter((frame) => frame.type === 'agent_active_tab')
-      .map((frame) => frame.data.workflow_id)
+    kept.flatMap(({ event }) =>
+      event.type === 'agent_active_tab' ? [event.data.workflow_id] : []
+    )
   )
   if (tabs.size === 0) refuse('no agent_active_tab frame in this turn')
   if (tabs.size > 1)
     refuse(`agent_active_tab frames disagree on workflow_id: ${list(tabs)}`)
   const [tab] = [...tabs]
-  const workflowId = z.string().regex(UUID).safeParse(tab)
-  if (!workflowId.success)
-    refuse(`active_tab workflow id is not a uuid: ${String(tab)}`)
-  if (workflowId.data !== seededId)
-    refuse(
-      `active_tab workflow ${workflowId.data} is not the seeded workflow ${seededId}`
-    )
-  return workflowId.data
+  if (tab !== seededId)
+    refuse(`active_tab workflow ${tab} is not the seeded workflow ${seededId}`)
+  return tab
 }
 
 // Every op the assembler will read out of this result, shape-checked once.
@@ -308,14 +303,6 @@ function echoedOps(row: ParentRow): Array<Record<string, unknown>> {
     .array(zJsonObject)
     .safeParse(data.ops ?? ('op' in data ? [data.op] : []))
   if (!ops.success) refuse(`parent row ${row.id} echoes a non-object op entry`)
-  const kinds = ops.data.map((op) => String(op.op))
-  const offFrozen = new Set(
-    kinds.filter((kind) => !(FROZEN_OPS as readonly string[]).includes(kind))
-  )
-  if (offFrozen.size > 0)
-    refuse(
-      `parent row ${row.id} echoes op kinds ${list(offFrozen)} outside the frozen op set`
-    )
   return ops.data
 }
 
@@ -337,17 +324,11 @@ function appliedOps(
       `parent row ${row.id} applied op ids ${missing.join(', ')} are not echoed in its result`
     )
   // The envelope is the wire's, not the operation's; the replay mints its own.
-  const ops = applied.map((opId) => {
+  return applied.map((opId) => {
     const op = { ...byId.get(opId)! }
     for (const key of OP_ENVELOPE_KEYS) delete op[key]
     return op
   })
-  // A node id of 0 is a real id, so only a missing one refuses.
-  if (
-    ops.some((op) => op.op === 'delete_node' && (op.node_id ?? null) === null)
-  )
-    refuse(`parent row ${row.id} has an applied delete_node without node_id`)
-  return ops
 }
 
 const repeated = (values: string[]): string[] => [
@@ -377,45 +358,48 @@ function parentToolCall(
   return { toolCallId: row.tool_call_id, appliedOps: appliedOps(row, applied) }
 }
 
+// The ops a call applied ride the frame that closed it.
+const isTerminalToolCall = (
+  event: AgentWsEvent
+): event is Extract<AgentWsEvent, { type: 'agent_tool_call' }> =>
+  event.type === 'agent_tool_call' && event.data.status !== 'running'
+
 // The replay's view of one turn: its frames, and the ops it applied, in order.
 // Frames belong to the turn (keepTurnFrames) and every row tool call has a
 // terminal frame here (checkTurnAgreement), so neither is re-checked.
 function buildResponse(
-  frames: RecordedFrame[],
+  frames: KeptFrame[],
   opsByToolCall: Map<string, GraphOps>,
-  cancelAfterFrame: number | undefined,
-  label: string
+  cancelAfterFrame: number | undefined
 ): { response: DraftEntry[]; cancelAfter: number | undefined } {
   const response: DraftEntry[] = []
-  let cancelAfter: number | undefined
+  const entryOfFrame: number[] = []
   const firstAt = frames[0].at_ms
 
-  for (const [index, frame] of frames.entries()) {
+  for (const { event, at_ms: receivedAt } of frames) {
     const at_ms =
-      firstAt === undefined || frame.at_ms === undefined
+      firstAt === undefined || receivedAt === undefined
         ? undefined
-        : frame.at_ms - firstAt
-    const data = { ...frame.data }
+        : receivedAt - firstAt
+    const data: Record<string, unknown> = { ...event.data }
     for (const key of Object.keys(mintedIds)) delete data[key]
 
-    if (frame.type === 'agent_tool_call') {
-      const { status, tool_call_id: toolCallId } = frame.data
-      if (status !== 'running' && status !== 'success' && status !== 'error')
-        refuse(
-          `${label}: agent_tool_call frame carries status ${JSON.stringify(status)}; only running, success or error are known`
-        )
-      const ops =
-        typeof toolCallId === 'string' && status !== 'running'
-          ? opsByToolCall.get(toolCallId)
-          : undefined
+    if (isTerminalToolCall(event)) {
+      const ops = opsByToolCall.get(event.data.tool_call_id)
       if (ops !== undefined && ops.length > 0)
         response.push({ kind: 'graph_ops', ops, at_ms })
     }
-    response.push({ kind: 'event', event: { type: frame.type, data }, at_ms })
-    if (cancelAfterFrame === index) cancelAfter = response.length - 1
+    response.push({ kind: 'event', event: { type: event.type, data }, at_ms })
+    entryOfFrame.push(response.length - 1)
   }
 
-  return { response, cancelAfter }
+  return {
+    response,
+    cancelAfter:
+      cancelAfterFrame === undefined
+        ? undefined
+        : (entryOfFrame[cancelAfterFrame] ?? -1)
+  }
 }
 
 // The frames and the audit rows must describe the same turn's tool calls, one
@@ -423,18 +407,13 @@ function buildResponse(
 // a second terminal frame replays the call's ops again, and a second parent row
 // is silently dropped from the replay while still counting toward the draft.
 function checkTurnAgreement(
-  kept: RecordedFrame[],
+  kept: KeptFrame[],
   rows: ParentRow[],
   label: string
 ): void {
-  const frameCalls = kept
-    .filter(
-      (frame) =>
-        frame.type === 'agent_tool_call' && frame.data.status !== 'running'
-    )
-    .flatMap(
-      (frame) => z.string().safeParse(frame.data.tool_call_id).data ?? []
-    )
+  const frameCalls = kept.flatMap(({ event }) =>
+    isTerminalToolCall(event) ? [event.data.tool_call_id] : []
+  )
   const repeatedFrames = repeated(frameCalls)
   if (repeatedFrames.length > 0)
     refuse(
@@ -452,98 +431,36 @@ function checkTurnAgreement(
     )
 }
 
-// The emitted operation stream, in the order the replay applies it: the one
-// list both the replay entries and the draft check are derived from.
-function emittedOps(conversation: AgentConversation): GraphOperation[] {
-  return conversation.turns.flatMap((turn) =>
-    turn.response.flatMap((entry) =>
-      entry.kind === 'graph_ops' ? entry.ops : []
-    )
-  )
-}
-
-// The node ids the production applier leaves after the emitted stream, and
-// every id the stream names; a name absent from the outcome was removed.
-function appliedNodeIds(conversation: AgentConversation): {
-  outcome: Set<string>
-  named: Set<string>
-} {
-  let outcome: Set<string>
+// The node ids the replay's own host is left with after the emitted stream.
+function replayOutcome(conversation: AgentConversation): Set<string> {
   try {
-    outcome = new Set(
-      Object.keys(readGraph(assertOpsApply(conversation)).nodes)
-    )
+    return new Set(Object.keys(assertOpsApply(conversation).graph().nodes))
   } catch (error) {
     refuse(
-      `the replay applier rejects this recording: ${error instanceof Error ? error.message : String(error)}`
+      `the replay rejects this recording: ${error instanceof Error ? error.message : String(error)}`
     )
   }
-  const named = new Set(
-    emittedOps(conversation)
-      .flatMap((op) =>
-        op.op === 'clear'
-          ? op.removed_nodes
-          : op.op === 'add_node' || op.op === 'delete_node'
-            ? [op.node_id]
-            : []
-      )
-      .map(String)
-  )
-  return { outcome, named }
 }
 
 // The draft is the only witness that the applied ops reached the document.
 function checkDraft(
   draft: NormalizedRows['draft'],
   seedIds: Set<string>,
-  applied: { outcome: Set<string>; named: Set<string> },
+  outcome: Set<string>,
   workflowId: string
 ): DraftCounts {
   if (draft === null)
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
   const draftIds = new Set(draft.nodes.map((node) => node.id))
-  const { outcome, named } = applied
-
-  const missing = [...outcome].filter((id) => !draftIds.has(id))
-  if (missing.length > 0)
+  if (!sameSet(draftIds, outcome))
     refuse(
-      `draft for ${workflowId} lacks node ids ${list(missing)} that the applied ops leave in place`
+      `draft for ${workflowId} holds node ids ${list(draftIds) || '(none)'} but the replayed ops leave ${list(outcome) || '(none)'}`
     )
-  // Still present although the ops ended by removing it: the ops did not reach
-  // the document. A node the ops never name is merely unexplained.
-  const undeleted = [...draftIds].filter(
-    (id) => named.has(id) && !outcome.has(id)
-  )
-  if (undeleted.length > 0)
-    refuse(
-      `draft for ${workflowId} still holds node ids ${list(undeleted)} that the applied ops removed`
-    )
-
   return {
     draft_nodes: draftIds.size,
     added_nodes: [...outcome].filter((id) => !seedIds.has(id)).length,
-    deleted_nodes: [...seedIds].filter((id) => !outcome.has(id)).length,
-    unexplained_draft_nodes: [...draftIds].filter((id) => !outcome.has(id))
-      .length
+    deleted_nodes: [...seedIds].filter((id) => !outcome.has(id)).length
   }
-}
-
-// An uncatalogued class is stored opaquely by the applier, so a later
-// set_widget on it throws.
-function checkAddedClasses(
-  ops: GraphOperation[],
-  catalog: SeedFixture['workflow']['catalog']
-): void {
-  const types = new Set(Object.keys(catalog.types))
-  const offCatalog = new Set(
-    ops
-      .flatMap((op) => (op.op === 'add_node' ? [op.class_type] : []))
-      .filter((type) => !types.has(type))
-  )
-  if (offCatalog.size > 0)
-    refuse(
-      `applied add_node classes ${list(offCatalog)} are not in the seed catalog ${list(types)}`
-    )
 }
 
 function buildConversation(options: {
@@ -641,12 +558,11 @@ function childStatuses(parents: ParentRow[]): Record<string, number> {
   return tally
 }
 
-// Where an accepted cancel falls among the turn's frames. The last kept frame
-// is agent_message_done (keepTurnFrames), so a cancel at or after it reached
-// a turn that had already completed: the replay would stop a finished turn.
+// Where an accepted cancel falls among the turn's frames; the conversation
+// schema decides whether the replay can stop at that entry.
 function cancelAfterFrame(
   turn: RecordedTurn,
-  frames: RecordedFrame[],
+  frames: KeptFrame[],
   label: string
 ): number | undefined {
   const sent = turn.cancel_sent_at_ms
@@ -658,22 +574,16 @@ function cancelAfterFrame(
   const stamps = frames.map((frame) => frame.at_ms)
   if (stamps.some((stamp) => stamp === undefined))
     refuse(`${label} was cancelled but its frames carry no at_ms to place it`)
-  const before = stamps.filter(
-    (stamp) => stamp !== undefined && stamp <= sent
-  ).length
-  if (before === 0) refuse(`${label} was cancelled before any frame arrived`)
-  if (before === frames.length)
-    refuse(
-      `${label} was cancelled after agent_message_done; the turn had already completed`
-    )
-  return before - 1
+  return (
+    stamps.filter((stamp) => stamp !== undefined && stamp <= sent).length - 1
+  )
 }
 
 // One recorded turn: its own frames, its own rows, and the gates binding them.
 function assembleTurn(
   turn: RecordedTurn,
   ids: TurnIds,
-  frames: RecordedFrame[],
+  frames: KeptFrame[],
   rows: NormalizedRows,
   workflowId: string,
   label: string
@@ -684,8 +594,7 @@ function assembleTurn(
   const { response, cancelAfter } = buildResponse(
     frames,
     new Map(calls.map((call) => [call.toolCallId, call.appliedOps])),
-    cancelAfterIndex,
-    label
+    cancelAfterIndex
   )
   return {
     turn: {
@@ -714,7 +623,7 @@ export function assembleConversation(input: AssembleInput) {
   const seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
   checkRecording(raw, seedIds, rows.length)
 
-  const seedAck = zAck.safeParse(raw.seed_turn?.body)
+  const seedAck = zAgentTurnAccepted.safeParse(raw.seed_turn?.body)
   const seedTurn = seedAck.success
     ? { threadId: seedAck.data.thread_id, messageId: seedAck.data.message_id }
     : null
@@ -749,14 +658,13 @@ export function assembleConversation(input: AssembleInput) {
     seedMessageId: seedTurn?.messageId ?? null,
     turns: turns.map((turn) => turn.turn)
   })
-  // The draft agrees with what the replay itself applies, in emitted order.
+  // The draft agrees with what the replay itself is left with.
   const draft = checkDraft(
     rows.at(-1)!.draft,
     seedIds,
-    appliedNodeIds(conversation),
+    replayOutcome(conversation),
     workflowId
   )
-  checkAddedClasses(emittedOps(conversation), workflow.catalog)
 
   return {
     conversation,
