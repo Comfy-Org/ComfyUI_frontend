@@ -3862,6 +3862,21 @@ export type BillingOpStatusResponse = {
    */
   payment_intent_client_secret?: string
   /**
+   * What a pending operation is waiting on, for callers deciding
+   * whether to keep polling or to put the customer back in the loop.
+   * The two awaiting_ values are blocked on the customer and will not
+   * advance on their own: awaiting_payment_method is parked on a hosted
+   * checkout needing a card, awaiting_invoice_payment on an invoice
+   * needing payment or authentication. in_progress means the operation
+   * is ours to finish, so polling is the right response. Deliberately
+   * coarser than the internal phase — phases that differ only in what
+   * the workflow is doing all report in_progress. Absent for a terminal
+   * operation, and for a phase this build does not recognise: absent
+   * means no claim, never an implied in_progress.
+   *
+   */
+  phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
+  /**
    * Typed next action for a failed operation. Absent for pending and succeeded operations.
    */
   recovery_action?:
@@ -4882,6 +4897,79 @@ export type AgentGetDraftResponses = {
 
 export type AgentGetDraftResponse =
   AgentGetDraftResponses[keyof AgentGetDraftResponses]
+
+export type AgentLlmAdmitData = {
+  body: {
+    /**
+     * The assistant message the turn is writing (attribution only).
+     */
+    message_id?: string
+    /**
+     * The zero-based index of the model round about to run.
+     */
+    step: number
+    /**
+     * The turn about to run a round; a bounded [A-Za-z0-9._:-] id.
+     */
+    turn_id: string
+  }
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/admit'
+}
+
+export type AgentLlmAdmitErrors = {
+  /**
+   * Malformed body, missing turn_id, or a negative step.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). Kept invisible when off, so 404 rather than 403.
+   */
+  404: ErrorResponse
+  /**
+   * Agent service unavailable (the binary proceeds).
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret).
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmAdmitError = AgentLlmAdmitErrors[keyof AgentLlmAdmitErrors]
+
+export type AgentLlmAdmitResponses = {
+  /**
+   * The admission verdict for the round.
+   */
+  200: {
+    /**
+     * For wait and pause, how long to sleep (already floored at 1 s and capped at 15 min) before asking again.
+     */
+    after_seconds?: number
+    kind: 'proceed' | 'wait' | 'pause' | 'fail'
+    /**
+     * Optional user-facing copy (the paused card's text).
+     */
+    message?: string
+    /**
+     * Tickets ahead of this round in the user's queue, when waiting on queue order.
+     */
+    position?: number
+    /**
+     * The binding limit or policy reason (workspace_inflight, user_inflight, queue_position, queue_full, workspace_paused, ...).
+     */
+    reason?: string
+  }
+}
+
+export type AgentLlmAdmitResponse =
+  AgentLlmAdmitResponses[keyof AgentLlmAdmitResponses]
 
 export type AgentLlmMessagesData = {
   /**

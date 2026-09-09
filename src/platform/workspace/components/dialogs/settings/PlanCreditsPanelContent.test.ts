@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json'
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
 const mockDistribution = vi.hoisted(() => ({ cloud: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistribution.cloud
   }

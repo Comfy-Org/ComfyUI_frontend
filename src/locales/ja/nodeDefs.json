@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "動画latentにディテール用キーフレームを追加します。各キーフレームは、RoPE位置が1つのピクセルフレームにまたがるトークンのlatentフレームです。これらは動画とともにノイズ除去され、デコード出力には含まれません。配置はinterval_framesピクセルごとに1スロットで、I2Vフレーム、既存のガイド、およびcondにすでにあるディテール用キーフレームをスキップします。接続されたキーフレームはコンテンツとしてのみ扱われ、frame_indicesが設定されていない限り、このキャンバス上に再配置されます。LTXV Separate Generated Keyframesで再び取り出せます。生成キーフレーム用に学習されたチェックポイント（keyframes_abs_pos_embeddingを含むもの）が必要です。",
+    "display_name": "LTXV 生成キーフレームを追加",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "任意のピクセルフレームインデックス。空欄のままにすると、現在のキャンバスでinterval_framesから配置します。設定した場合、このリストが配置位置になります（接続されたキーフレームは順番に対応付けられます）。最後のフレームは使用できますが、フレーム0は使用できません（すでに独立したトークンであるため）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自動配置のピクセルフレーム間隔。デフォルトの24は、24 fpsではおよそ毎秒1キーフレームです。使用済みのピクセルはスキップされます。frame_indicesが設定されている場合は無視されます。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "新しいキーフレームの初期化に使用する任意のコンテンツ。以前のSeparateからのキーフレーム（同じ空間サイズ）を接続するか、プレーンな動画latentを接続して各新規スロットで最も近いフレームをコピーします（例: 時間方向のアップスケール後）。これらもノイズ除去され、ガイドとして固定されません。frame_indicesが設定されていない限り、キーフレームlatentに記録されたインデックスは無視されます。サンプリングがsigma 1未満で開始される場合にのみ効果があります。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "キーフレームを併せて生成するプレーンな5D動画latent。Concat AV Latentの前に追加してください。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "キーフレームを接続するネガティブconditioning。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "キーフレームを接続するポジティブconditioning。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "latentのスケール係数の読み取りにのみ使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "生成キーフレームattentionが接続されたポジティブconditioning。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "生成キーフレームattentionが接続されたネガティブconditioning。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T方向に生成キーフレームを追加した動画latent。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9752,6 +9800,55 @@
       },
       "2": {
         "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "画像ではなく前段階からガイドが出力される場合に、すでにエンコード済みのlatentをガイドとして固定します。VAEのデコード/エンコード往復処理なしでLTXV Add Guideと同じ効果を得られます。ターゲットより空間サイズが小さいガイド（IC-LoRAまたはディテール用参照）は、疎なグリッド上に拡張され、そのRoPE終端位置も同じ比率で拡張されます。これにより、ターゲットの左上隅だけを指定するのではなく、ターゲットキャンバス全体をカバーします。",
+    "display_name": "LTXV Latentガイドを追加",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "任意のピクセル空間の空間mask。self-attentionを通じて領域ごとのconditioningの影響を制御し、strengthが乗算されます。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "ガイドlatent。空間サイズは、両軸で同じ整数比となるようターゲットのサイズを割り切る必要があります。同じサイズの場合はそのまま固定され、半分のサイズはx2 IC-LoRA参照として扱われます。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ガイドを固定する対象の動画latent。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "ガイドを開始するlatentフレームのインデックス。ピクセルフレームではなくlatentフレームで数えます。負の値は、latentの末尾から逆算するのではなく、latentの開始前のフレームにガイドを配置します。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "1.0に制限されます。拡張されたガイドはパディング位置を負のdenoise maskでマークするため、モデルはそれらを除外します。1.0を超えると保持する位置も負になり、ガイド全体が除外されます。1.0を超えて増幅するには、代わりにattention_maskを使用してください。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask を 0 に設定し、この潜在がサンプリング中にクリーンな状態に保たれるようにします。動画または音声で動作します。一般的な用途: Concat AV の前に音声を固定してクロスアテンションのみを提供させる、またはノイズ除去すべきでない潜在を固定する。",
+    "display_name": "LTXV 潜在を固定",
+    "inputs": {
+      "latent": {
+        "name": "潜在",
+        "tooltip": "固定する動画または音声の潜在。音声は4D、動画は5Dです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "前のステージで生成されたキーフレームを、後のキャンバス上で固定された画像ガイドとしてピン留めします。これらは独立したフレームとしてデコードされ、必要に応じてリサイズされ、noise_mask=0 で書き込まれるため再度ノイズ除去されません。時間方向のアップスケール後は、記録されたインデックスが生成元のキャンバスからこのキャンバスへスケーリングされます（同じ時点）。位置を明示的に設定するには override_frame_indices を使用します。新しい位置でキーフレームの生成（およびノイズ除去）を続けるには、Add Generated Keyframes を使用してください。",
+    "display_name": "LTXV 生成キーフレームをガイドに変換",
+    "inputs": {
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "各キーフレームが生成されたピクセルフレームのインデックスを保持する、LTXV Separate Generated Keyframes のキーフレーム出力。"
+      },
+      "latent": {
+        "name": "潜在",
+        "tooltip": "ガイドを追加する対象の動画潜在。例: 時間方向にアップスケールされたもの。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "任意 — 記録済み（または自動スケーリング済み）の位置ではなく、これらのピクセルフレームにピン留めします。キーフレームごとに1つのインデックスを指定してください。空欄の場合は記録済みの位置を再利用するか、対象キャンバスの長さが異なる場合（例: 時間方向 x2 の後）にスケーリングします。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "ガイドの強度。1.0 では強く固定され、値を下げると固定が緩和されます。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": "キーフレームを画像ガイドとしてピン留めしたポジティブ条件付け。"
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "キーフレームを画像ガイドとしてピン留めしたネガティブ条件付け。"
+      },
+      "2": {
+        "name": "潜在",
+        "tooltip": "キーフレームを固定ガイドとして追加した対象動画潜在。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV画像からビデオへ",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "オーディオlatent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Add Generated Keyframes で追加された生成キーフレームをサンプリング済みの潜在から再び分離し、条件付けから削除します。動画潜在を空間アップスケールする前に分離してください。先に LTXV Crop Guides を実行しないでください。生成キーフレームを破棄可能なガイドとして扱い、削除してしまいます。",
+    "display_name": "LTXV 生成キーフレームを分離",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "キーフレームを1フレーム潜在のバッチとして返します。オフのままにすると、1つの複数フレーム潜在として取得できます。これは潜在アップサンプラーおよび後続の Add Generated Keyframes が想定する形式です。"
+      },
+      "latent": {
+        "name": "潜在"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": "生成キーフレームのメタデータを削除したポジティブ条件付け。"
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "生成キーフレームのメタデータを削除したネガティブ条件付け。"
+      },
+      "2": {
+        "name": "潜在",
+        "tooltip": "生成キーフレームを取り除いた動画潜在。"
+      },
+      "3": {
+        "name": "キーフレーム",
+        "tooltip": "分離されたキーフレーム。generated_keyframe_indices および generated_keyframe_num_frames のラベル付きです。これらを後続の Add Generated Keyframes に渡して新しいスロットを初期化するか、Generated Keyframes To Guides に渡して固定画像ガイドとしてピン留めします（キャンバス長が変更された場合、インデックスは再マッピングされます）。"
       }
     }
   },
@@ -16705,6 +16900,45 @@
       },
       "1": {
         "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D マルチビュー条件付け",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "オブジェクトの背面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "同梱のNAF重みを含むDINOv3 ViT-L/16 ClipVision。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "構図どおりのビューにおける水平方向のFOV（度）。リグレンダーおよびほとんどのマルチビュー生成器では20、写真ではいずれかのビューにMoGeGeometryToFOVを使用します。"
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "オブジェクトの正面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "オブジェクトの左側面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "オブジェクトの右側面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

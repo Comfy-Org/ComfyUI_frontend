@@ -26,7 +26,7 @@ const tooltipDirectiveStub = {
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -187,33 +187,34 @@ describe('Composer', () => {
       expect(
         screen.getByRole('button', { name: 'Save changes' })
       ).toBeDisabled()
+      expect(screen.getAllByRole('radio')).toHaveLength(2)
+      expect(
+        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+      ).not.toBeInTheDocument()
     })
 
-    it('saves a new run mode with its credit limit and closes', async () => {
+    it('saves auto mode and closes', async () => {
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run with limits/ })
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       const save = screen.getByRole('button', { name: 'Save changes' })
       expect(save).toBeEnabled()
-      const input = screen.getByRole('spinbutton', { name: 'credits' })
-      expect(input).toHaveValue(300)
-      await userEvent.clear(input)
-      await userEvent.type(input, '500')
-      expect(save).toBeEnabled()
       await userEvent.click(save)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
 
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
+        await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto_limited')
-      expect(store.creditLimit).toBe(500)
+      expect(store.mode).toBe('auto')
+      expect(store.creditLimit).toBeNull()
     })
 
     it('keeps the popover open and reports a failed save', async () => {
@@ -236,47 +237,6 @@ describe('Composer', () => {
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
-    })
-
-    it('keeps Save disabled while the limit draft is invalid', async () => {
-      mount()
-      const store = useAgentRunModeStore()
-      await store.save('auto_limited', 450)
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
-      )
-      const input = await screen.findByRole('spinbutton', { name: 'credits' })
-      await userEvent.clear(input)
-
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-
-      await userEvent.type(input, '1.5')
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-    })
-
-    it('enables Save when only the credit limit changes', async () => {
-      mount()
-      const store = useAgentRunModeStore()
-      await store.save('auto_limited', 450)
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
-      )
-      const save = await screen.findByRole('button', { name: 'Save changes' })
-      expect(save).toBeDisabled()
-
-      const input = screen.getByRole('spinbutton', { name: 'credits' })
-      await userEvent.clear(input)
-      await userEvent.type(input, '460')
-      expect(save).toBeEnabled()
-
-      await userEvent.click(save)
-      await vi.waitFor(() => expect(store.creditLimit).toBe(460))
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
