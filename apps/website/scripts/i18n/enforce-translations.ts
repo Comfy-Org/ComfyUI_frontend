@@ -1,0 +1,124 @@
+/**
+ * enforce-translations — the gate between what the model produced and what the
+ * site publishes.
+ *
+ * Run: `WEBSITE_I18N_LOCALE=ja pnpm i18n:enforce` (no API key needed).
+ *
+ * Reads  src/i18n/incoming/{locale}.json   raw model output
+ * Writes src/i18n/content/{locale}.json    the layer the site actually reads
+ *
+ * Anything failing a deterministic check is DROPPED, not corrected. The key
+ * becomes absent, the resolver falls back to English, and the reader sees
+ * English rather than a translation that failed review. That is what makes
+ * publishing on the AI pass safe.
+ *
+ * Existing entries in `content` are merged with, never replaced, so a run that
+ * translates ten new keys cannot discard the hundred already there.
+ */
+import fs from 'node:fs'
+import path from 'node:path'
+
+import { isLocale } from '../../src/config/locales'
+import {
+  enforceTranslations,
+  isSystemicFailure
+} from '../../src/i18n/pipeline/enforce'
+import type {
+  EnglishSource,
+  TranslationLayer
+} from '../../src/i18n/pipeline/types'
+import { collectViolations } from '../../src/i18n/pipeline/validate'
+import { OUTPUT_LOCALES, preserveTerms } from './config'
+
+const I18N_DIR = path.join(process.cwd(), 'src', 'i18n')
+
+/**
+ * An absent file is fine. An unreadable one is not.
+ *
+ * `enforce` merges what it reads here with what it just kept and writes the
+ * result back. Treating a malformed `content/{locale}.json` as empty would
+ * therefore rewrite the published layer with only this run's keys and discard
+ * every translation already in it — silently, with a success message. The first
+ * run legitimately has no file yet, so only that case takes the fallback.
+ */
+function readJson<T>(file: string, fallback: T): T {
+  let text: string
+  try {
+    text = fs.readFileSync(file, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return fallback
+    throw error
+  }
+  return JSON.parse(text) as T
+}
+
+function writeJson(file: string, value: Record<string, string>): void {
+  const sorted: Record<string, string> = {}
+  for (const key of Object.keys(value).sort()) sorted[key] = value[key]
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
+}
+
+function main(): void {
+  const locale = process.env.WEBSITE_I18N_LOCALE
+  if (!isLocale(locale) || !OUTPUT_LOCALES[locale]) {
+    console.error(
+      `[i18n] set WEBSITE_I18N_LOCALE to one of: ${Object.keys(OUTPUT_LOCALES).join(', ')}`
+    )
+    process.exit(1)
+  }
+
+  const incomingFile = path.join(I18N_DIR, 'incoming', `${locale}.json`)
+  const incoming = readJson<TranslationLayer>(incomingFile, {})
+  if (Object.keys(incoming).length === 0) {
+    process.stdout.write(
+      `[i18n] ${locale}: nothing staged in ${incomingFile}.\n`
+    )
+    return
+  }
+
+  const english = readJson<EnglishSource>(
+    path.join(I18N_DIR, 'content', 'en.json'),
+    {}
+  )
+  const violations = collectViolations(
+    english,
+    incoming,
+    locale,
+    preserveTerms()
+  )
+  const { kept, dropped, droppedShare } = enforceTranslations(
+    incoming,
+    violations
+  )
+
+  for (const key of dropped) {
+    const why = violations
+      .filter((violation) => violation.key === key)
+      .map((violation) => violation.kind)
+    process.stdout.write(`  dropped ${key} (${[...new Set(why)].join(', ')})\n`)
+  }
+
+  const total = Object.keys(incoming).length
+  if (isSystemicFailure({ dropped: dropped.length, total })) {
+    console.error(
+      `[i18n] ${locale}: dropped ${Math.round(droppedShare * 100)}% of the run ` +
+        `(${dropped.length} of ${total}). That is a broken ` +
+        `model or config, not a weak tail. Publishing this would revert the ` +
+        `locale to English.`
+    )
+    process.exit(1)
+  }
+
+  const contentFile = path.join(I18N_DIR, 'content', `${locale}.json`)
+  const existing = readJson<TranslationLayer>(contentFile, {})
+  writeJson(contentFile, { ...existing, ...kept })
+
+  process.stdout.write(
+    `[i18n] ${locale}: published ${Object.keys(kept).length}, ` +
+      `dropped ${dropped.length} to English` +
+      `; content now holds ${Object.keys({ ...existing, ...kept }).length} key(s).\n`
+  )
+}
+
+main()
