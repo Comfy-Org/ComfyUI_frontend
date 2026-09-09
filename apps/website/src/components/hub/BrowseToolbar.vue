@@ -60,6 +60,7 @@ export interface ToolbarLabels {
   readonly sortPopular: string
   readonly sortNewest: string
   readonly showResults: string
+  readonly showModels: string
 }
 
 const {
@@ -131,6 +132,10 @@ const totalActiveFilters = computed(
   () =>
     facetsConfig.reduce((sum, cfg) => sum + activeCountForType(cfg.type), 0) +
     extraFilters
+)
+
+const showLabel = computed(() =>
+  store.activeTab.value === 'models' ? labels.showModels : labels.showResults
 )
 
 function clearAll() {
@@ -377,16 +382,29 @@ function phoneToggle(value: string) {
         data-testid="hub-filter-menu"
       >
         <span
-          class="mx-auto -mb-4 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
+          class="mx-auto -mb-2 h-1 w-10 shrink-0 rounded-full bg-white/20 sm:hidden"
           aria-hidden="true"
         />
+
+        <div class="flex items-center justify-between sm:hidden">
+          <h2 class="text-content text-base font-bold">{{ labels.filter }}</h2>
+          <button
+            type="button"
+            :aria-label="labels.filter"
+            class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
+            data-testid="hub-filter-close"
+            @click="filterOpen = false"
+          >
+            <X class="size-4" aria-hidden="true" />
+          </button>
+        </div>
 
         <div
           class="-mx-5 flex flex-col sm:hidden"
           data-testid="hub-filter-phone"
         >
           <div
-            class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
+            class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 px-3 py-2"
             role="tablist"
           >
             <button
@@ -416,7 +434,7 @@ function phoneToggle(value: string) {
               type="search"
               :placeholder="labels.searchPlaceholder"
               :aria-label="labels.searchPlaceholder"
-              class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-xs outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
+              class="text-content placeholder:text-content-muted focus-visible:ring-brand w-full rounded-lg bg-white/5 px-3 py-2 text-base outline-none focus-visible:ring-2 [&::-webkit-search-cancel-button]:hidden"
             />
           </div>
 
@@ -430,7 +448,7 @@ function phoneToggle(value: string) {
                 type="button"
                 role="option"
                 :aria-selected="isPhoneChosen(option.value)"
-                class="text-content-secondary flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5"
+                class="text-content-secondary flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors outline-none hover:bg-white/5"
                 @click="phoneToggle(option.value)"
               >
                 <span
@@ -459,7 +477,7 @@ function phoneToggle(value: string) {
             <li
               v-if="phoneOptions.length === 0"
               role="none"
-              class="text-content-muted px-3 py-2 text-xs"
+              class="text-content-muted px-3 py-10 text-center text-sm"
             >
               {{ labels.noResults }}
             </li>
@@ -641,6 +659,7 @@ function phoneToggle(value: string) {
           class="flex items-center justify-between gap-4 border-t border-white/10 pt-6 max-sm:pt-5"
         >
           <button
+            v-if="resultCount > 0"
             type="button"
             class="text-content-secondary hover:text-content shrink-0 cursor-pointer rounded-lg text-base whitespace-nowrap transition-colors max-sm:text-sm"
             data-testid="hub-filter-clear"
@@ -652,9 +671,13 @@ function phoneToggle(value: string) {
             type="button"
             class="bg-brand text-page hover:bg-brand/90 focus-visible:ring-brand cursor-pointer rounded-full px-8 py-3.5 text-base font-bold whitespace-nowrap transition-colors outline-none focus-visible:ring-2 max-sm:flex-1 max-sm:px-4 max-sm:py-3 max-sm:text-sm"
             data-testid="hub-filter-show"
-            @click="filterOpen = false"
+            @click="resultCount > 0 ? (filterOpen = false) : clearAll()"
           >
-            {{ labels.showResults.replace('{n}', String(resultCount)) }}
+            {{
+              resultCount > 0
+                ? showLabel.replace('{n}', String(resultCount))
+                : labels.clearAll
+            }}
           </button>
         </div>
       </div>

@@ -157,7 +157,8 @@ const toolbarLabels: ToolbarLabels = {
   selected: t('workshop.hub.facets.selected', locale),
   sortPopular: t('workshop.hub.sort.popular', locale),
   sortNewest: t('workshop.hub.sort.newest', locale),
-  showResults: t('workshop.hub.facets.show', locale)
+  showResults: t('workshop.hub.facets.show', locale),
+  showModels: t('workshop.search.show', locale)
 }
 const facetsConfig: FacetGroupConfig[] = [
   {
@@ -300,6 +301,7 @@ const filteredTemplates = computed(() => {
           :labels="gridLabels"
           :href-for="hrefFor"
           :extra-filters="providers.length + capabilities.length"
+          :model-count="modelFamilies.length"
           @clear-extra="clearSearchFilters"
         >
           <template #search>

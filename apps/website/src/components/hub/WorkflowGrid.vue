@@ -25,6 +25,7 @@ const {
   labels,
   hrefFor,
   extraFilters = 0,
+  modelCount = 0,
   locale = 'en'
 } = defineProps<{
   templates: readonly HubTemplate[]
@@ -32,6 +33,9 @@ const {
   facetsConfig: readonly FacetGroupConfig[]
   toolbarLabels: ToolbarLabels
   extraFilters?: number
+  /** The Models tab lists what the parent passes in, so its tally comes from
+   * there rather than from the workflows this grid holds. */
+  modelCount?: number
   labels: GridLabels
   hrefFor: (template: HubTemplate) => string
   locale?: Locale
@@ -94,7 +98,11 @@ const showingText = computed(() =>
         :templates="facetSource"
         :facets-config="facetsConfig"
         :labels="toolbarLabels"
-        :result-count="sortedTemplates.length"
+        :result-count="
+          store.activeTab.value === 'models'
+            ? modelCount
+            : sortedTemplates.length
+        "
         :extra-filters="extraFilters"
         @clear-extra="emit('clearExtra')"
       >
