@@ -12,7 +12,8 @@ const handles = vi.hoisted(() => ({
   google: vi.fn(),
   github: vi.fn(),
   isProvisioningError: vi.fn(),
-  emitUser: undefined as ((user: unknown) => void) | undefined
+  emitUser: undefined as ((user: unknown) => void) | undefined,
+  chunkFails: false
 }))
 
 vi.mock('../../scripts/posthog', async () => {
@@ -22,17 +23,22 @@ vi.mock('../../scripts/posthog', async () => {
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('../../config/workshop-firebase', () => ({
-  signInWorkshopWithGoogle: handles.google,
-  signInWorkshopWithGitHub: handles.github,
-  signOutWorkshop: handles.signOut,
-  isWorkshopProvisioningError: handles.isProvisioningError,
-  onWorkshopUserChanged: (cb: (user: unknown) => void) => {
-    handles.emitUser = cb
-    handles.onUserChanged()
-    return () => {}
+vi.mock('../../config/workshop-firebase', () => {
+  if (handles.chunkFails) {
+    throw new TypeError('Failed to fetch dynamically imported module')
   }
-}))
+  return {
+    signInWorkshopWithGoogle: handles.google,
+    signInWorkshopWithGitHub: handles.github,
+    signOutWorkshop: handles.signOut,
+    isWorkshopProvisioningError: handles.isProvisioningError,
+    onWorkshopUserChanged: (cb: (user: unknown) => void) => {
+      handles.emitUser = cb
+      handles.onUserChanged()
+      return () => {}
+    }
+  }
+})
 
 beforeEach(() => {
   handles.flag!.value = true
@@ -45,14 +51,64 @@ beforeEach(() => {
 })
 
 describe('AuthSignIn', () => {
-  it('does not attach the Firebase listener when the auth flag is off', () => {
+  it('does not attach the Firebase listener when the auth flag is off', async () => {
     handles.flag!.value = false
     render(AuthSignIn)
 
+    await vi.waitFor(() => expect(handles.flag!.value).toBe(false))
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(
       handles.onUserChanged,
       'a flag-off page must not load Firebase or attach its listener'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('when the Firebase chunk fails to load', () => {
+    async function renderWithFailingChunk() {
+      const staticFlag = handles.flag
+      handles.chunkFails = true
+      vi.resetModules()
+      const { default: FreshAuthSignIn } = await import('./AuthSignIn.vue')
+      handles.flag!.value = true
+      render(FreshAuthSignIn)
+      return () => {
+        handles.chunkFails = false
+        vi.resetModules()
+        handles.flag = staticFlag
+      }
+    }
+
+    it('leaves the buttons usable after a click instead of stranding the page in pending', async () => {
+      const restore = await renderWithFailingChunk()
+      try {
+        const button = screen.getByRole('button', {
+          name: /continue with google/i
+        }) as HTMLButtonElement
+        await userEvent.setup().click(button)
+
+        await waitFor(() =>
+          expect(screen.getByRole('alert').textContent).toMatch(
+            /something went wrong/i
+          )
+        )
+        expect(button.disabled).toBe(false)
+      } finally {
+        restore()
+      }
+    })
+
+    it('shows no failure before any click, since nothing was attempted', async () => {
+      const restore = await renderWithFailingChunk()
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        expect(screen.queryByRole('alert')).toBeNull()
+        expect(
+          screen.getByRole('button', { name: /continue with google/i })
+        ).toBeTruthy()
+      } finally {
+        restore()
+      }
+    })
   })
 
   it('attaches the listener when the flag is on', async () => {

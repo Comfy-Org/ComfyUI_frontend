@@ -34,8 +34,9 @@ function dispatch(event: AuthSignInEvent) {
 async function signInWith(provider: AuthSignInProvider) {
   if (state.value.step === 'pending') return
   dispatch({ type: 'signInStarted', provider })
-  const firebase = await loadWorkshopFirebase()
+  let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
+    firebase = await loadWorkshopFirebase()
     const credential =
       provider === 'google'
         ? await firebase.signInWorkshopWithGoogle()
@@ -45,7 +46,7 @@ async function signInWith(provider: AuthSignInProvider) {
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
   } catch (error) {
-    if (firebase.isWorkshopProvisioningError(error)) {
+    if (firebase?.isWorkshopProvisioningError(error)) {
       dispatch({
         type: 'provisioningFailed',
         email: error.user.email ?? error.user.displayName ?? ''
@@ -92,8 +93,10 @@ watch(
         )
       })
     } catch (error) {
+      // Nothing was attempted yet, so there is no sign-in failure to show;
+      // the buttons stay usable and a click reports its own outcome.
       if (generation === listenerGeneration) {
-        dispatch({ type: 'signInFailed', error })
+        console.error('Workshop auth listener failed to load', error)
       }
     }
   },
