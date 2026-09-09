@@ -121,11 +121,9 @@
       <VirtualGrid
         v-else
         id="results-grid"
-        :items="resultsWithKeys"
+        :items="pagedResults"
         :buffer-rows="4"
         :grid-style="GRID_STYLE"
-        :on-load-more="loadMorePacks"
-        :can-load-more="canLoadMorePacks"
         @click="handleGridContainerClick"
       >
         <template #item="{ item }">
@@ -381,7 +379,6 @@ const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(
   () => isSearchBacked.value && toValue(packs.isLoading)
 )
-const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
 const filterOptions = computed(() => [
@@ -397,10 +394,6 @@ const availableSortOptions = computed(() =>
 const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
 }
-const loadMorePacks = () => packs.loadMore()
-const canLoadMorePacks = computed(
-  () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
-)
 const isInitialLoad = computed(
   () =>
     isSearchBacked.value &&
@@ -517,6 +510,18 @@ const resultsWithKeys = computed(
       key: item.id || item.name
     })) as (components['schemas']['Node'] & { key: string })[]
 )
+
+const pagedResults = {
+  hasMore: computed(
+    () =>
+      toValue(packs.hasMore) && !isSearchLoading.value && isSearchBacked.value
+  ),
+  invalidate: packs.invalidate,
+  isLoading: packs.isLoading,
+  items: resultsWithKeys,
+  loadMore: packs.loadMore,
+  loadNew: packs.loadNew
+}
 
 const selectedNodePacks = ref<components['schemas']['Node'][]>([])
 const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
