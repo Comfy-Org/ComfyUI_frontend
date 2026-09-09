@@ -1,16 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
-import type {
-  CanvasPointerEvent,
-  IContextMenuOptions,
-  IContextMenuValue,
-  LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { drawHiddenLinkBadges } from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
@@ -19,12 +13,10 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createTestCanvas,
   createTestLink
 } from '@/utils/__tests__/litegraphTestUtils'
-
-type MenuValue = string | IContextMenuValue<string> | null
 
 function createLinkedNodes(graph: LGraph): LLink {
   const source = new LGraphNode('Source')
@@ -36,57 +28,34 @@ function createLinkedNodes(graph: LGraph): LLink {
   return createTestLink(graph, source, 0, target, 0)
 }
 
+function createFixture() {
+  const graph = new LGraph()
+  const canvas = createTestCanvas(
+    graph,
+    createMockCanvasRenderingContext2D({
+      lineWidth: 3,
+      isPointInStroke: vi.fn().mockReturnValue(false),
+      measureText: vi.fn().mockReturnValue({ width: 50 }),
+      getTransform: vi
+        .fn()
+        .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
+    })
+  )
+  const link = createLinkedNodes(graph)
+  return { graph, canvas, link }
+}
+
 describe('LGraphCanvas link visibility interactions', () => {
-  let graph: LGraph
-  let canvas: LGraphCanvas
-  let link: LLink
-  let originalContextMenu: typeof LiteGraph.ContextMenu
-  let menuValues: readonly MenuValue[] = []
-  let menuOptions: IContextMenuOptions<string> = {}
-
-  beforeEach(() => {
-    menuValues = []
-    menuOptions = {}
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    graph = new LGraph()
-    canvas = createTestCanvas(
-      graph,
-      createMockCanvas2DContext({
-        lineWidth: 3,
-        isPointInStroke: vi.fn().mockReturnValue(false),
-        measureText: vi.fn().mockReturnValue({ width: 50 }),
-        getTransform: vi
-          .fn()
-          .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
-      })
-    )
-    link = createLinkedNodes(graph)
-    originalContextMenu = LiteGraph.ContextMenu
-    const MockContextMenu = fromPartial<typeof LiteGraph.ContextMenu>(
-      class {
-        constructor(
-          values: readonly MenuValue[],
-          options: IContextMenuOptions<string>
-        ) {
-          menuValues = values
-          menuOptions = options
-        }
-      }
-    )
-    LiteGraph.ContextMenu = MockContextMenu
-  })
-
-  afterEach(() => {
-    canvas.pointer.finally?.()
-    LiteGraph.ContextMenu = originalContextMenu
-  })
-
   const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
 
   it('adds hide and show actions while omitting reroutes for hidden links', () => {
+    const { graph, canvas, link } = createFixture()
+    const menu = vi
+      .spyOn(LiteGraph, 'ContextMenu')
+      .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
     canvas.showLinkMenu(link, event)
 
-    expect(menuValues).toEqual([
+    expect(menu.mock.calls[0][0]).toEqual([
       { content: 'Hide Link', value: 'Hide Link' },
       null,
       'Add Node',
@@ -95,7 +64,10 @@ describe('LGraphCanvas link visibility interactions', () => {
       'Delete',
       null
     ])
-    void menuOptions.callback?.({ content: 'Hide Link', value: 'Hide Link' })
+    void menu.mock.calls[0][1]?.callback?.({
+      content: 'Hide Link',
+      value: 'Hide Link'
+    })
     expect(
       useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
         ?.hidden
@@ -103,7 +75,7 @@ describe('LGraphCanvas link visibility interactions', () => {
 
     canvas.showLinkMenu(link, event)
 
-    expect(menuValues).toEqual([
+    expect(menu.mock.calls[1][0]).toEqual([
       { content: 'Rename', value: 'Rename' },
       { content: 'Show Link', value: 'Show Link' },
       null,
@@ -112,7 +84,10 @@ describe('LGraphCanvas link visibility interactions', () => {
       'Delete',
       null
     ])
-    void menuOptions.callback?.({ content: 'Show Link', value: 'Show Link' })
+    void menu.mock.calls[1][1]?.callback?.({
+      content: 'Show Link',
+      value: 'Show Link'
+    })
     expect(
       useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
         ?.hidden
@@ -120,6 +95,10 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   it('does not add visibility actions for a floating link', () => {
+    const { graph, canvas, link } = createFixture()
+    const menu = vi
+      .spyOn(LiteGraph, 'ContextMenu')
+      .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
     const floating = new LLink(
       toLinkId(99),
       'MODEL',
@@ -132,7 +111,7 @@ describe('LGraphCanvas link visibility interactions', () => {
 
     canvas.showLinkMenu(floating, event)
 
-    expect(menuValues).toEqual([
+    expect(menu.mock.calls[0][0]).toEqual([
       'Add Node',
       'Add Reroute',
       null,
@@ -142,6 +121,10 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   it('opens the localized seeded rename prompt from the hidden-link menu', async () => {
+    const { graph, canvas, link } = createFixture()
+    const menu = vi
+      .spyOn(LiteGraph, 'ContextMenu')
+      .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
     useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
       hidden: true,
       label: 'Checkpoint'
@@ -155,7 +138,10 @@ describe('LGraphCanvas link visibility interactions', () => {
     i18n.global.locale.value = 'fr'
     try {
       canvas.showLinkMenu(link, event)
-      void menuOptions.callback?.({ content: 'Renommer', value: 'Rename' })
+      void menu.mock.calls[0][1]?.callback?.({
+        content: 'Renommer',
+        value: 'Rename'
+      })
 
       expect(prompt).toHaveBeenCalledWith(
         'Renommer',
@@ -174,6 +160,7 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   it('routes a visible curve right-click to the link menu', () => {
+    const { canvas, link } = createFixture()
     canvas.renderedPaths.add(link)
     vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
     vi.spyOn(layoutStore, 'queryLinkSegmentAtPoint').mockReturnValue({
@@ -187,7 +174,8 @@ describe('LGraphCanvas link visibility interactions', () => {
     expect(showLinkMenu).toHaveBeenCalledWith(link, event, link)
   })
 
-  it('opens the visible link menu from a shared reroute segment', () => {
+  it('deletes the selected visible link and preserves its hidden shared-reroute sibling', () => {
+    const { graph, canvas, link } = createFixture()
     const source = graph.getNodeById(link.origin_id)
     if (!source) throw new Error('Missing source node')
     const target = new LGraphNode('Other target')
@@ -206,16 +194,72 @@ describe('LGraphCanvas link visibility interactions', () => {
       linkId: link.id,
       rerouteId: reroute.id
     })
-    const showLinkMenu = vi.spyOn(canvas, 'showLinkMenu').mockReturnValue(false)
+    const menu = vi
+      .spyOn(LiteGraph, 'ContextMenu')
+      .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
 
     canvas.processContextMenu(undefined, event)
 
-    expect(showLinkMenu).toHaveBeenCalledWith(reroute, event, visibleLink)
+    void menu.mock.calls[0][1]?.callback?.('Delete')
+
+    expect(graph.getLink(visibleLink.id)).toBeUndefined()
+    expect(graph.getLink(link.id)).toBe(link)
   })
+
+  it.for([false, true])(
+    'respects selectOnly=%s when double-clicking a hidden badge',
+    (selectOnly) => {
+      const { graph, canvas, link } = createFixture()
+      canvas.selectOnly = selectOnly
+      useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+        hidden: true
+      })
+      drawHiddenLinkBadges(
+        canvas,
+        canvas.ctx,
+        link,
+        { hidden: true },
+        [400, 300],
+        [700, 300],
+        '#89A',
+        [0, 0, 800, 600]
+      )
+      const prompt = vi
+        .spyOn(canvas, 'prompt')
+        .mockReturnValue(document.createElement('div'))
+      onTestFinished(() => canvas.pointer.reset())
+
+      for (const timeStamp of [100, 200]) {
+        const down = new PointerEvent('pointerdown', {
+          button: 0,
+          buttons: 1,
+          isPrimary: true,
+          pointerId: 1,
+          clientX: 420,
+          clientY: 300
+        })
+        const up = new PointerEvent('pointerup', {
+          button: 0,
+          buttons: 0,
+          isPrimary: true,
+          pointerId: 1,
+          clientX: 420,
+          clientY: 300
+        })
+        vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(timeStamp)
+        vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(timeStamp + 20)
+        canvas.processMouseDown(down)
+        canvas.processMouseUp(up)
+      }
+
+      expect(prompt).toHaveBeenCalledTimes(selectOnly ? 0 : 1)
+    }
+  )
 
   it.for(['layout', 'path'])(
     'starts a Shift drag from a %s hit',
     (hitSource) => {
+      const { graph, canvas, link } = createFixture()
       canvas.renderedPaths.add(link)
       link.path = fromPartial<Path2D>({})
       vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
@@ -228,6 +272,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       const drag = vi.spyOn(canvas.linkConnector, 'dragFromLinkSegment')
       const lineWidth = canvas.ctx.lineWidth
 
+      onTestFinished(() => canvas.pointer.reset())
       canvas.processMouseDown(
         new PointerEvent('pointerdown', {
           button: 0,
@@ -244,6 +289,7 @@ describe('LGraphCanvas link visibility interactions', () => {
   )
 
   it('inserts a reroute when Alt-clicking a rendered curve', () => {
+    const { graph, canvas, link } = createFixture()
     canvas.renderedPaths.add(link)
     vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
     vi.spyOn(layoutStore, 'queryLinkSegmentAtPoint').mockReturnValue({
@@ -251,6 +297,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       rerouteId: null
     })
 
+    onTestFinished(() => canvas.pointer.reset())
     canvas.processMouseDown(
       new PointerEvent('pointerdown', {
         button: 0,
@@ -267,6 +314,7 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   it('keeps an earlier marker ahead of a later Alt-clicked curve', () => {
+    const { graph, canvas, link } = createFixture()
     const laterLink = createLinkedNodes(graph)
     link._pos[0] = 400
     link._pos[1] = 300
@@ -288,6 +336,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       isPrimary: false
     })
 
+    onTestFinished(() => canvas.pointer.reset())
     canvas.processMouseDown(pointerEvent)
     canvas.pointer.onClick?.(pointerEvent as CanvasPointerEvent)
 

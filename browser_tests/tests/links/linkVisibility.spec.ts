@@ -1,111 +1,35 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { test } from '@e2e/fixtures/linkVisibilityFixture'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
 })
-
-interface Point {
-  x: number
-  y: number
-}
-
-async function graphPointToClient(
-  comfyPage: ComfyPage,
-  point: Point
-): Promise<Point> {
-  return comfyPage.page.evaluate(({ x, y }) => {
-    const canvas = window.app!.canvas
-    const rect = canvas.canvas.getBoundingClientRect()
-    const { scale, offset } = canvas.ds
-    return {
-      x: rect.left + (x + offset[0]) * scale,
-      y: rect.top + (y + offset[1]) * scale
-    }
-  }, point)
-}
-
-async function firstLinkMidpoint(comfyPage: ComfyPage): Promise<Point> {
-  const handle = await comfyPage.page.waitForFunction(() => {
-    const link = window.app!.graph.links.values().next().value
-    const pos = link?._pos
-    return pos ? { x: pos[0], y: pos[1] } : null
-  })
-  const point = await handle.jsonValue()
-  if (!point) throw new Error('Rendered link midpoint was not found')
-  return point
-}
-
-async function firstBadgeCenter(comfyPage: ComfyPage): Promise<Point> {
-  const handle = await comfyPage.page.waitForFunction((gap) => {
-    const link = window.app!.graph.links.values().next().value
-    if (!link) return null
-    const origin = window.app!.graph.getNodeById(link.origin_id)
-    const socket = origin?.getOutputPos(link.origin_slot)
-    return socket ? { x: socket[0] + gap + 4, y: socket[1] } : null
-  }, BADGE_GAP)
-  const point = await handle.jsonValue()
-  if (!point) throw new Error('Hidden link badge was not found')
-  return point
-}
-
-async function hideLinkViaMenu(
-  comfyPage: ComfyPage,
-  graphPoint: Point
-): Promise<void> {
-  const clientPoint = await graphPointToClient(comfyPage, graphPoint)
-  await comfyPage.page.mouse.click(clientPoint.x, clientPoint.y, {
-    button: 'right'
-  })
-  await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
-  await comfyPage.contextMenu.clickLitegraphMenuItem('Hide Link')
-  await comfyPage.contextMenu.waitForHidden()
-  await parkPointer(comfyPage)
-}
-
-/** Moves the pointer off the canvas so screenshots are cursor-independent. */
-async function parkPointer(comfyPage: ComfyPage): Promise<void> {
-  await comfyPage.page.mouse.move(1, 1)
-  await comfyPage.nextFrame()
-}
 
 test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
   })
 
-  test('hides, reveals, and restores a link from canvas gestures', async ({
-    comfyPage
+  test('hides and restores a link from canvas gestures', async ({
+    comfyPage,
+    linkVisibility
   }) => {
     await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
 
-    await hideLinkViaMenu(comfyPage, await firstLinkMidpoint(comfyPage))
+    await linkVisibility.hideFirstLink()
 
     await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
 
-    const badgeCenter = await graphPointToClient(
-      comfyPage,
-      await firstBadgeCenter(comfyPage)
-    )
-    await comfyPage.page.mouse.click(badgeCenter.x, badgeCenter.y, {
-      button: 'right'
-    })
-    await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
-    await comfyPage.contextMenu.clickLitegraphMenuItem('Show Link')
-    await comfyPage.contextMenu.waitForHidden()
-    await parkPointer(comfyPage)
+    await linkVisibility.showFirstHiddenLink()
 
     await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
   })
 
-  test('persists hidden state through a serialize and load round-trip', async ({
-    comfyPage
+  test('persists a hidden renamed link through graph load and browser reload', async ({
+    comfyPage,
+    linkVisibility
   }) => {
-    await hideLinkViaMenu(comfyPage, await firstLinkMidpoint(comfyPage))
+    await linkVisibility.hideFirstLink()
 
     const serialized = await comfyPage.workflow.getExportedWorkflow()
     const serializedLink = serialized.links?.[0]
@@ -121,49 +45,29 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     await comfyPage.nextFrame()
 
     await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
-  })
 
-  test('renames a hidden badge and persists the label after reload', async ({
-    comfyPage
-  }) => {
-    await hideLinkViaMenu(comfyPage, await firstLinkMidpoint(comfyPage))
+    await linkVisibility.openRenamePrompt()
 
-    const badgeCenter = await graphPointToClient(
-      comfyPage,
-      await firstBadgeCenter(comfyPage)
-    )
-    await comfyPage.page.mouse.dblclick(badgeCenter.x, badgeCenter.y, {
-      delay: 5
-    })
+    await expect(linkVisibility.promptInput).toHaveValue('')
 
-    const prompt = comfyPage.page.locator('.graphdialog')
-    await expect(prompt).toBeVisible()
-    const promptInput = prompt.locator('input.value')
-    await expect(promptInput).toHaveValue('')
-    await promptInput.fill('Renamed badge')
-    await promptInput.press('Enter')
-    await expect(prompt).toBeHidden()
+    await linkVisibility.promptInput.fill('Renamed badge')
+    await linkVisibility.promptInput.press('Enter')
 
-    const linkId = await comfyPage.page.evaluate(() => {
-      const link = window.app!.graph.links.values().next().value
-      return link ? String(link.id) : undefined
-    })
-    if (!linkId) throw new Error('Hidden badge link was not found')
-
+    await expect(linkVisibility.promptInput).toBeHidden()
     await expect
       .poll(async () => {
         const workflow = await comfyPage.workflow.getExportedWorkflow()
-        return workflow.extra?.linkPresentation?.[linkId]?.label
+        return workflow.extra?.linkPresentation?.[linkId]
       })
-      .toBe('Renamed badge')
+      .toEqual({ hidden: true, label: 'Renamed badge' })
 
     await comfyPage.workflow.reloadAndWaitForApp()
 
     await expect
       .poll(async () => {
         const workflow = await comfyPage.workflow.getExportedWorkflow()
-        return workflow.extra?.linkPresentation?.[linkId]?.label
+        return workflow.extra?.linkPresentation?.[linkId]
       })
-      .toBe('Renamed badge')
+      .toEqual({ hidden: true, label: 'Renamed badge' })
   })
 })

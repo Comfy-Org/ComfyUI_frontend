@@ -4,7 +4,6 @@ import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { st } from '@/i18n'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -37,12 +36,7 @@ import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import {
-  compareNodeIds,
-  parseNodeId,
-  serializeNodeId,
-  toNodeId
-} from '@/types/nodeId'
+import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
@@ -55,20 +49,23 @@ import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
-import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
+import {
+  findRerouteAtPoint,
+  queryRenderedLinkSegmentsAtPoint
+} from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
+import { clearLinkBadgeHitAreas } from './canvas/linkBadges'
 import {
-  clearLinkBadgeHitAreas,
-  drawHiddenLinkBadges,
-  queryLinkBadgeAtPoint
-} from './canvas/linkBadges'
+  drawGraphLinkBadges,
+  queryHiddenLinkBadgeAtPoint
+} from './canvas/linkBadgeRenderer'
 import {
+  getLinkMenuOptions,
   hideLink,
   promptRenameLinkBadge,
   showLink
 } from './canvas/linkVisibility'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
-import { queryRenderedLinkSegmentsAtPoint } from './canvas/queryRenderedLinkSegmentsAtPoint'
 import { strokeShape } from './draw'
 import { defineDeprecatedProperty } from './utils/feedback'
 import {
@@ -304,53 +301,6 @@ const temp_vec2: Point = [0, 0]
 const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
-
-function getLinkEndpointPositions(
-  graph: LGraph,
-  link: LLink
-): [Point, Point] | undefined {
-  const resolved = link.resolve(graph)
-  const { subgraphInput, inputNode, input } = resolved
-  if (subgraphInput) {
-    if (!inputNode || !input || !subgraphInput.linkIds.includes(link.id)) {
-      return
-    }
-
-    const endPos = LiteGraph.vueNodesMode
-      ? getSlotPosition(inputNode, link.target_slot, true)
-      : inputNode.getInputPos(link.target_slot)
-    return [subgraphInput.pos, endPos]
-  }
-
-  const { subgraphOutput, outputNode, output } = resolved
-  if (subgraphOutput) {
-    if (!outputNode || !output || subgraphOutput.linkIds[0] !== link.id) {
-      return
-    }
-
-    const startPos = LiteGraph.vueNodesMode
-      ? getSlotPosition(outputNode, link.origin_slot, false)
-      : outputNode.getOutputPos(link.origin_slot)
-    return [startPos, subgraphOutput.pos]
-  }
-
-  if (
-    !inputNode ||
-    !input ||
-    inputLinkId(graph, inputNode.id, link.target_slot) !== link.id
-  )
-    return
-  if (!outputNode || !output) return
-
-  const endPos: Point = LiteGraph.vueNodesMode
-    ? getSlotPosition(inputNode, link.target_slot, true)
-    : inputNode.getInputPos(link.target_slot)
-  const startPos: Point = LiteGraph.vueNodesMode
-    ? getSlotPosition(outputNode, link.origin_slot, false)
-    : outputNode.getOutputPos(link.origin_slot)
-
-  return [startPos, endPos]
-}
 
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
@@ -2526,18 +2476,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
-      const badgeLinkId = queryLinkBadgeAtPoint(this, x, y)
-      const badgeLink =
-        badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
-      if (
-        badgeLink &&
-        useLinkPresentationStore().getPresentation(
-          graphScopeOf(graph),
-          badgeLink.id
-        )?.hidden
-      ) {
-        pointer.onDoubleClick = () =>
-          promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
+      const badgeLink = queryHiddenLinkBadgeAtPoint(this, graph, x, y)
+      if (badgeLink) {
+        if (!this.selectOnly) {
+          pointer.onDoubleClick = () =>
+            promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
+        }
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -6146,13 +6090,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.arrange()
     }
 
-    const hiddenLinkIds = presentationStore.graphHiddenLinkIds(graphScope)
-    const hiddenIdSet = new Set(hiddenLinkIds)
-    const hiddenLinks: LLink[] = []
-    for (const linkId of hiddenLinkIds) {
-      const link = graph.getLink(linkId)
-      if (link) hiddenLinks.push(link)
-    }
+    const hiddenIdSet = new Set(
+      presentationStore.graphHiddenLinkIds(graphScope)
+    )
 
     const renderConnection = (
       link: LLink,
@@ -6294,34 +6234,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    hiddenLinks.sort(
-      (first, second) =>
-        compareNodeIds(first.origin_id, second.origin_id) ||
-        first.origin_slot - second.origin_slot ||
-        first.id - second.id
+    drawGraphLinkBadges(
+      this,
+      ctx,
+      graph,
+      margin_area,
+      LGraphCanvas.link_type_colors,
+      this.default_link_color
     )
-    for (const link of hiddenLinks) {
-      const endpoints = getLinkEndpointPositions(graph, link)
-      const presentation = presentationStore.getPresentation(
-        graphScope,
-        link.id
-      )
-      if (!endpoints || !presentation) continue
-
-      const [startPos, endPos] = endpoints
-      drawHiddenLinkBadges(
-        this,
-        ctx,
-        link,
-        presentation,
-        startPos,
-        endPos,
-        (typeof link.color === 'string' && link.color) ||
-          LGraphCanvas.link_type_colors[link.type] ||
-          this.default_link_color,
-        margin_area
-      )
-    }
 
     ctx.globalAlpha = 1
   }
@@ -6787,27 +6707,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ? segment
         : presentationLink
     const graphScope = graphScopeOf(graph)
-    const hidden = link
-      ? useLinkPresentationStore().getPresentation(graphScope, link.id)?.hidden
-      : false
-    const menuItem = (value: string): IContextMenuValue<string> => ({
-      content: st(`contextMenu.${value}`, value),
-      value
-    })
-    const visibilityOptions: (IContextMenuValue<string> | string | null)[] =
-      !link
-        ? []
-        : hidden
-          ? [menuItem('Rename'), menuItem('Show Link'), null]
-          : [menuItem('Hide Link'), null]
-    const options: (IContextMenuValue<string> | string | null)[] = [
-      ...visibilityOptions,
-      'Add Node',
-      ...(hidden ? [] : ['Add Reroute']),
-      null,
-      'Delete',
-      null
-    ]
+    const options = getLinkMenuOptions(graphScope, link?.id)
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
       title,
@@ -6866,11 +6766,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         case 'Delete': {
           // segment can be a Reroute object, in which case segment.id is the reroute id
           const linkId =
-            segment instanceof Reroute
+            link?.id ??
+            (segment instanceof Reroute
               ? segment.linkIds.values().next().value
               : segment instanceof LLink
                 ? segment.id
-                : undefined
+                : undefined)
           if (linkId !== undefined) {
             graph.removeLink(linkId)
             // Clean up layout store

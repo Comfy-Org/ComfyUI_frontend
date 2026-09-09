@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
@@ -39,17 +37,6 @@ vi.mock<unknown>(
   })
 )
 
-let strokeHit = false
-const isPointInStrokeMock = vi.fn()
-function isPointInStroke(x: number, y: number): boolean
-function isPointInStroke(path: Path2D, x: number, y: number): boolean
-function isPointInStroke(
-  ...args: [x: number, y: number] | [path: Path2D, x: number, y: number]
-): boolean {
-  isPointInStrokeMock(...args)
-  return strokeHit
-}
-
 describe('getCanvasContextMenuTarget', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
@@ -57,11 +44,8 @@ describe('getCanvasContextMenuTarget', () => {
   let reroute: Reroute
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockQueryLinkSegmentAtPoint.mockReturnValue(null)
     mockQueryRerouteAtPoint.mockReturnValue(null)
-    isPointInStrokeMock.mockClear()
-    strokeHit = false
     graph = new LGraph()
     group = new LGraphGroup('Group', toGroupId(1))
     reroute = new Reroute(toRerouteId(9), graph)
@@ -72,7 +56,7 @@ describe('getCanvasContextMenuTarget', () => {
       graph,
       createMockCanvasRenderingContext2D({
         lineWidth: 3,
-        isPointInStroke
+        isPointInStroke: vi.fn().mockReturnValue(false)
       })
     )
     canvas.connections_width = 3
@@ -115,6 +99,7 @@ describe('getCanvasContextMenuTarget', () => {
     })
     expect(graph.getReroute).toHaveBeenCalledWith(9)
     expect(graph.getRerouteOnPos).not.toHaveBeenCalled()
+    expect(target.group).toBe(group)
     expect(target.reroute).toBe(reroute)
   })
 
@@ -162,24 +147,24 @@ describe('getCanvasContextMenuTarget', () => {
       { x: 10, y: 20 },
       canvas.ctx
     )
+    expect(target.group).toBe(group)
     expect(target.link).toBe(link)
   })
 
-  it.for([0.5, 2])('falls back to current-frame paths at DPI %s', (dpi) => {
+  it.for([
+    { dpi: 0.5, x: 10, y: 20 },
+    { dpi: 2, x: 20, y: 40 }
+  ])('falls back to current-frame paths at DPI $dpi', ({ dpi, x, y }) => {
     vi.stubGlobal('devicePixelRatio', dpi)
     const link = createLink(4)
     link.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(link)
-    strokeHit = true
+    vi.mocked(canvas.ctx.isPointInStroke).mockReturnValue(true)
 
     const target = resolve()
 
-    const scale = Math.max(dpi, 1)
-    expect(isPointInStrokeMock).toHaveBeenCalledWith(
-      link.path,
-      10 * scale,
-      20 * scale
-    )
+    expect(canvas.ctx.isPointInStroke).toHaveBeenCalledWith(link.path, x, y)
+    expect(target.group).toBe(group)
     expect(target.link).toBe(link)
     expect(canvas.ctx.lineWidth).toBe(3)
   })
@@ -208,6 +193,7 @@ describe('getCanvasContextMenuTarget', () => {
     )
     const target = resolve()
 
+    expect(target.group).toBe(group)
     expect(target.link).toBe(link)
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
   })
@@ -220,7 +206,7 @@ describe('getCanvasContextMenuTarget', () => {
     visibleLink.path = fromPartial<Path2D>({})
     canvas.renderedPaths.add(hiddenLink)
     canvas.renderedPaths.add(visibleLink)
-    strokeHit = true
+    vi.mocked(canvas.ctx.isPointInStroke).mockReturnValue(true)
 
     const target = resolve()
 
@@ -249,6 +235,7 @@ describe('getCanvasContextMenuTarget', () => {
 
     const target = resolve()
 
+    expect(target.group).toBe(group)
     expect(target.reroute).toBe(reroute)
     expect(target.link).toBeUndefined()
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
@@ -272,6 +259,7 @@ describe('getCanvasContextMenuTarget', () => {
     const target = resolve()
 
     expect(target.reroute).toBeUndefined()
+    expect(target.group).toBe(group)
     expect(target.link).toBe(link)
     expect(graph.getRerouteOnPos).toHaveBeenCalledWith(
       10,

@@ -7,9 +7,11 @@ import { LinkRenderType } from '../types/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
-import { findRerouteAtPoint } from './findRerouteAtPoint'
-import { queryLinkBadgeAtPoint } from './linkBadges'
-import { queryRenderedLinkSegmentsAtPoint } from './queryRenderedLinkSegmentsAtPoint'
+import {
+  findRerouteAtPoint,
+  queryRenderedLinkSegmentsAtPoint
+} from './hitTesting'
+import { queryHiddenLinkBadgeAtPoint } from './linkBadgeRenderer'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
@@ -52,36 +54,23 @@ export function getCanvasContextMenuTarget(
 ): CanvasContextMenuTarget {
   const { graph } = canvas
   if (!graph) return {}
-  const scope = graphScopeOf(graph)
+  const group = graph.getGroupOnPos(x, y)
+  if (canvas.links_render_mode === LinkRenderType.HIDDEN_LINK) return { group }
 
-  let reroute: Reroute | undefined
-  let linkSegment: LinkSegment | undefined
-  let link: LLink | undefined
-  if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-    reroute = findRerouteAtPoint(
-      graph,
-      x,
-      y,
-      canvas._visibleReroutes,
-      canvas.renderedPaths
-    )
+  const reroute = findRerouteAtPoint(
+    graph,
+    x,
+    y,
+    canvas._visibleReroutes,
+    canvas.renderedPaths
+  )
+  if (reroute) return { reroute, group }
 
-    if (!reroute) {
-      const badgeLinkId = queryLinkBadgeAtPoint(canvas, x, y)
-      const badgeLink =
-        badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
-      if (
-        badgeLink &&
-        useLinkPresentationStore().getPresentation(scope, badgeLink.id)?.hidden
-      ) {
-        link = badgeLink
-      } else {
-        const hit = queryVisibleLinkAtPoint(canvas, x, y)
-        linkSegment = hit?.segment
-        link = hit?.link
-      }
-    }
-  }
+  const badgeLink = queryHiddenLinkBadgeAtPoint(canvas, graph, x, y)
+  if (badgeLink) return { link: badgeLink, group }
 
-  return { reroute, linkSegment, link, group: graph.getGroupOnPos(x, y) }
+  const hit = queryVisibleLinkAtPoint(canvas, x, y)
+  if (hit) return { linkSegment: hit.segment, link: hit.link, group }
+
+  return { group }
 }
