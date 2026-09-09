@@ -460,6 +460,7 @@ const emit = defineEmits<{
   changePaymentMethod: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  restoreQuote: []
   retryAuthentication: []
 }>()
 
@@ -528,6 +529,7 @@ watch(
   () => previewData?.promotion_code,
   (code) => {
     promotionCode.value = code ?? ''
+    invalidatedByPromoEdit.value = false
   }
 )
 
@@ -571,9 +573,16 @@ function clearPromotionCode() {
   emit('applyPromotionCode', '')
 }
 
+const invalidatedByPromoEdit = ref(false)
+
 function invalidateEditedPromotion() {
-  if (promotionCode.value !== (previewData?.promotion_code ?? '')) {
+  const edited = promotionCode.value !== (previewData?.promotion_code ?? '')
+  if (edited && quoteIsCurrent) {
+    invalidatedByPromoEdit.value = true
     emit('invalidateQuote')
+  } else if (!edited && invalidatedByPromoEdit.value) {
+    invalidatedByPromoEdit.value = false
+    emit('restoreQuote')
   }
 }
 

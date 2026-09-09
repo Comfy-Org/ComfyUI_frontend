@@ -111,6 +111,7 @@
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -138,6 +139,7 @@
         @confirm-payment="handleTeamSubscriptionPayment"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -165,6 +167,7 @@
         @confirm-payment="handleSubscriptionPayment"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -185,6 +188,7 @@
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -274,6 +278,7 @@ const {
   retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
+  restoreQuote,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason)
 

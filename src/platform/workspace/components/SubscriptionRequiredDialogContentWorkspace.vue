@@ -97,6 +97,7 @@
       @add-credit-card="handleAddCreditCard"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
+      @restore-quote="restoreQuote"
       @back="handleBackToPricing"
       @retry-authentication="retryPaymentAuthentication"
     />
@@ -122,6 +123,7 @@
       @confirm="handleConfirmTransition"
       @apply-promotion-code="applyPromotionCode"
       @invalidate-quote="invalidateQuote"
+      @restore-quote="restoreQuote"
       @back="handleBackToPricing"
       @retry-authentication="retryPaymentAuthentication"
     />
@@ -192,6 +194,7 @@ const {
   retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
+  restoreQuote,
   handleResubscribe,
   handleSuccessClose
 } = useSubscriptionCheckout(emit, reason, {

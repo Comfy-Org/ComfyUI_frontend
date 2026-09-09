@@ -297,6 +297,29 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(emitted().applyPromotionCode?.at(-1)).toEqual(['SAVE20'])
   })
 
+  it('restores the quote when a typed promo is deleted back to empty', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: previewFixture('MONTHLY', 3500),
+        quoteIsCurrent: true
+      },
+      global: globalOptions
+    })
+
+    await userEvent.click(screen.getByText('subscription.preview.addPromoCode'))
+    const input = screen.getByPlaceholderText(
+      'subscription.preview.promoCodePlaceholder'
+    )
+
+    await userEvent.type(input, 'X')
+    expect(emitted().invalidateQuote).toBeTruthy()
+    expect(emitted().restoreQuote).toBeUndefined()
+
+    await userEvent.clear(input)
+    expect(emitted().restoreQuote).toBeTruthy()
+  })
+
   it('renders the applied code as a chip with no editable field', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
