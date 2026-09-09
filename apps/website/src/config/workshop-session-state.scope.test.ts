@@ -7,25 +7,25 @@ const h = vi.hoisted(() => ({
   attachIdentity: vi.fn(() => () => undefined)
 }))
 
-vi.mock('../scripts/posthog', async () => {
+vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   h.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('./workshop-firebase', () => ({
+vi.mock<unknown>(import('./workshop-firebase'), () => ({
   onWorkshopUserChanged: () => () => undefined,
   signOutWorkshop: vi.fn()
 }))
 
-vi.mock('./workshop-account', () => ({
+vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopSessionClient: {
     subscribe: () => () => undefined,
     attachIdentity: h.attachIdentity,
     ensureFresh: vi.fn(),
     remint: vi.fn(),
-    clearCache: vi.fn(),
+    clearStoredCredential: vi.fn(),
     getSnapshot: () => ({
       phase: 'signed-out',
       user: null,

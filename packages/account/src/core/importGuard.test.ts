@@ -6,10 +6,20 @@ import { describe, expect, it } from 'vitest'
 const CORE_DIR = dirname(fileURLToPath(import.meta.url))
 
 const FORBIDDEN_IMPORTS = ['firebase', 'vue', 'pinia', 'astro', '@/']
-const FORBIDDEN_GLOBALS = /\b(window|document|localStorage|sessionStorage)\b/
+/** A browser global being read, not the word appearing in a comment. */
+const FORBIDDEN_GLOBALS =
+  /\b(?:globalThis\.)?(window|document|localStorage|sessionStorage)\s*[.[(]/
+
+function specifierPattern(forbidden: string): RegExp {
+  const escaped = forbidden.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
+  return new RegExp(
+    `(?:from\\s*|import\\s*\\(?\\s*|require\\s*\\(\\s*)['"]${escaped}`
+  )
+}
 
 describe('core import guard', () => {
-  const sources = readdirSync(CORE_DIR)
+  const sources = readdirSync(CORE_DIR, { recursive: true })
+    .map(String)
     .filter((name) => name.endsWith('.ts') && !name.endsWith('.test.ts'))
     .map((name) => ({
       name,
@@ -20,10 +30,7 @@ describe('core import guard', () => {
     for (const { name, text } of sources) {
       for (const forbidden of FORBIDDEN_IMPORTS) {
         expect(text, `${name} imports ${forbidden}`).not.toMatch(
-          new RegExp(`from '${forbidden}`)
-        )
-        expect(text, `${name} dynamically imports ${forbidden}`).not.toMatch(
-          new RegExp(`import\\('${forbidden}`)
+          specifierPattern(forbidden)
         )
       }
     }

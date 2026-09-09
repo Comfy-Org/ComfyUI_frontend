@@ -92,21 +92,16 @@ A push to main deploys comfy.org. Anything here is a blocker.
   the exit code first: a gate that removes its output and then throws is
   correct by page count and still fails every deploy.
 - **Entry point on a different switch than the routes.** _How:_ grep the
-  literal path, not the word — `grep -rlE "['\"]/workshop" src` — and classify
-  every hit; do not count them. `*.test.ts` → ignore.
-  `src/config/workshop-release.ts` → the switch itself; ignore.
-  `src/config/indexing.ts` and `src/config/routes.ts` → metadata lists that
-  name the path in order to exclude or annotate it; ignore. A file under `src/pages/workshop/` or
-  `src/components/workshop/` → the feature itself; ignore. Anything else that
-  renders — an `.astro` page, a `.vue` island — must either read
-  `isWorkshopInBuild()` itself or be rendered only by a parent that does:
-  `grep -rl <ComponentName> src/pages` and check each parent. On the current
-  tree the only such hit is `src/components/home/WorkshopSection.vue`,
-  rendered solely by `src/pages/index.astro`, which gates it at the call site.
-  _Failure:_ a rendered surface reaches `/workshop` with no gate on that path
-  — including one gated on `noindex`, a runtime flag, or a second constant.
-  Do not grep for the word `workshop`: it appears in prompt copy on
-  `pixal3d-trellis2.astro` and will always false-positive.
+  literal path, not the word — `grep -rlE "['\"\`]/workshop" src`— and classify
+every hit; do not count them.`*.test.ts`→ ignore.`src/config/workshop-release.ts`→ the switch itself; ignore.`src/config/indexing.ts`and`src/config/routes.ts`→ metadata lists that
+name the path in order to exclude or annotate it; ignore. A file under`src/pages/workshop/`or`src/components/workshop/`→ the feature itself; ignore. Anything else that
+renders — an`.astro`page, a`.vue`island — must either read`isWorkshopInBuild()`itself or be rendered only by a parent that does:`grep -rl <ComponentName> src/pages`and check each parent. On the current
+tree the only such hit is`src/components/home/WorkshopSection.vue`,
+rendered solely by `src/pages/index.astro`, which gates it at the call site.
+_Failure:_ a rendered surface reaches `/workshop`with no gate on that path
+— including one gated on`noindex`, a runtime flag, or a second constant.
+Do not grep for the word `workshop`: it appears in prompt copy on
+`pixal3d-trellis2.astro` and will always false-positive.
 - **Secret in the client bundle.** Astro inlines every `PUBLIC_*` variable
   into the browser bundle. _How:_
   `grep -rhoE "PUBLIC_[A-Z0-9_]+" src astro.config.ts | sort -u` (do not glob
