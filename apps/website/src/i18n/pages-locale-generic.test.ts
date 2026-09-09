@@ -4,9 +4,22 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { isLocale } from '../config/locales'
+import { LOCALE_CODES, isLocale } from '../config/locales'
 
 const pagesDir = join(dirname(dirname(fileURLToPath(import.meta.url))), 'pages')
+
+/**
+ * Every configured locale, as one regex alternation.
+ *
+ * Derived rather than written out. The three guards below each held their own
+ * `(?:en|zh-CN|ja)`, so adding a fourth locale would have left all three
+ * quietly matching less than they claimed — which is the failure this file
+ * exists to catch, reproduced in the file itself. Escaped because a locale code
+ * may contain `-`, and could one day contain something the regex engine reads.
+ */
+const LOCALE_ALTERNATION = LOCALE_CODES.map((code) =>
+  code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+).join('|')
 
 function astroPages(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -86,7 +99,9 @@ describe('page files never name a locale', () => {
   it('never passes a literal locale to t()', () => {
     const offenders = pages
       .filter(({ body }) =>
-        /\bt\(\s*['"][^'"]+['"]\s*,\s*['"](?:en|zh-CN|ja)['"]\s*\)/.test(body)
+        new RegExp(
+          `\\bt\\(\\s*['"][^'"]+['"]\\s*,\\s*['"](?:${LOCALE_ALTERNATION})['"]\\s*\\)`
+        ).test(body)
       )
       .map(({ name }) => name)
 
@@ -95,7 +110,9 @@ describe('page files never name a locale', () => {
 
   it('never hands a component a literal locale prop', () => {
     const offenders = pages
-      .filter(({ body }) => /\blocale="(?:en|zh-CN|ja)"/.test(body))
+      .filter(({ body }) =>
+        new RegExp(`\\blocale="(?:${LOCALE_ALTERNATION})"`).test(body)
+      )
       .map(({ name }) => name)
 
     expect(offenders).toEqual([])
@@ -116,9 +133,9 @@ describe('page files never name a locale', () => {
   it('never names a locale when asking for routes or content', () => {
     const offenders = pages
       .filter(({ body }) =>
-        /\b(?:getRoutes|loadStories|localizeHref|createBannerVersion)\([^)]*['"](?:en|zh-CN|ja)['"]\s*\)/.test(
-          body
-        )
+        new RegExp(
+          `\\b(?:getRoutes|loadStories|localizeHref|createBannerVersion)\\([^)]*['"](?:${LOCALE_ALTERNATION})['"]\\s*\\)`
+        ).test(body)
       )
       .map(({ name }) => name)
 

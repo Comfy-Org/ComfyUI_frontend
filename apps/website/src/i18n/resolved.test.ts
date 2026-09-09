@@ -69,6 +69,23 @@ const SINGLE_ARG_T = /\bt\(\s*(?:'[^']*'|"[^"]*"|`[^`]*`|[A-Za-z_$][\w$]*)\s*\)/
  */
 const RELATIVE_SPECIFIER = /(?:from|import)\s+'(\.[^']*)'/g
 
+/**
+ * `import type` is erased by TypeScript, so it never loads the module at
+ * runtime and is not what this check looks for. Stripped before scanning
+ * rather than filtered after, so a file may import the client module's types
+ * freely.
+ */
+const TYPE_ONLY_IMPORT = /\bimport\s+type\b[^'"]*['"][^'"]*['"]/g
+
+/**
+ * An explicit extension names the same module. `join` produced
+ * `.../translations.ts`, which never equalled the extensionless path this
+ * compares against — so an offender written `import '../translations.ts'`
+ * passed the guard unnoticed.
+ */
+const withoutExtension = (path: string) =>
+  path.replace(/\.(?:ts|js|mts|mjs)$/, '')
+
 describe('the per-locale split cannot be silently undone', () => {
   it('never asks the browser for a locale its page did not load', () => {
     // In the browser only the page's own locale is loaded, so `t(key)` with no
@@ -99,11 +116,13 @@ describe('the per-locale split cannot be silently undone', () => {
       ...walk(join(i18nDir, 'pipeline'), '.ts')
     ]
       .filter((file) => !file.endsWith('.test.ts'))
-      .filter((file) =>
-        [...readFileSync(file, 'utf8').matchAll(RELATIVE_SPECIFIER)].some(
-          ([, specifier]) => join(dirname(file), specifier) === clientModule
+      .filter((file) => {
+        const source = readFileSync(file, 'utf8').replace(TYPE_ONLY_IMPORT, '')
+        return [...source.matchAll(RELATIVE_SPECIFIER)].some(
+          ([, specifier]) =>
+            withoutExtension(join(dirname(file), specifier)) === clientModule
         )
-      )
+      })
       .map((file) => file.slice(websiteDir.length + 1))
 
     expect(offenders).toEqual([])
