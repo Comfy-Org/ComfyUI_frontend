@@ -104,7 +104,7 @@ const pagedItems = {
   hasMore: computed(() => canLoadMore),
   invalidate: async () => undefined,
   isLoading: computed(() => loadingMore),
-  items: computed(() => items.map((item) => ({ ...item, key: item.id }))),
+  items,
   loadMore: async () => {
     onLoadMore?.()
   },

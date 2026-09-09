@@ -15,7 +15,7 @@
     </div>
     <VirtualGrid
       v-else
-      :items="assetsWithKey"
+      :items="assets"
       :grid-style
       :default-item-height="320"
       :default-item-width="240"
@@ -72,10 +72,6 @@ defineEmits<{
   assetDeleted: [asset: AssetDisplayItem]
   assetShowInfo: [asset: AssetDisplayItem]
 }>()
-
-const assetsWithKey = computed(() =>
-  assets.map((asset) => ({ ...asset, key: asset.id }))
-)
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const is2Xl = breakpoints.greaterOrEqual('2xl')

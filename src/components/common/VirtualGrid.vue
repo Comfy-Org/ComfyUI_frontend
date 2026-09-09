@@ -9,7 +9,7 @@
     <div :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
-        :key="item.key"
+        :key="item.id"
         data-virtual-grid-item
       >
         <slot name="item" :item :index="state.start + i" />
@@ -19,7 +19,7 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T extends { key: string }">
+<script setup lang="ts" generic="T extends { id: string }">
 import {
   useElementSize,
   useInfiniteScroll,
