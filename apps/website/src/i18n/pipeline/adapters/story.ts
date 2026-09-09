@@ -236,6 +236,17 @@ export interface StoryTranslation {
 const IDENTIFIER_ATTRIBUTES = new Set(['id', 'src', 'href', 'width'])
 
 const COMPONENT = /<([A-Z][A-Za-z]*)((?:\s+[a-zA-Z][a-zA-Z0-9]*="[^"]*")*)/g
+
+/**
+ * A component's whole opening tag, whatever its attributes look like.
+ *
+ * `COMPONENT` stops its attribute run at the first thing it cannot parse — a
+ * hyphenated name, a brace value, a single-quoted value — so an identifier
+ * standing after one was never collected, never sent to the translator as
+ * protected, and never checked on the way back. Quoted runs are consumed whole
+ * so a `>` inside a value cannot end the tag early.
+ */
+const OPENING_TAG = /<([A-Z][A-Za-z]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g
 const ATTRIBUTE = /([a-zA-Z][a-zA-Z0-9]*)="([^"]*)"/g
 
 /** Component names in the order they appear. */
@@ -251,7 +262,7 @@ function componentSequence(body: string): string[] {
  */
 export function identifierValues(body: string): string[] {
   const found: string[] = []
-  for (const [, , blob] of body.matchAll(COMPONENT)) {
+  for (const [, , blob] of body.matchAll(OPENING_TAG)) {
     for (const [, name, value] of blob.matchAll(ATTRIBUTE)) {
       if (IDENTIFIER_ATTRIBUTES.has(name)) found.push(value)
     }
@@ -262,7 +273,7 @@ export function identifierValues(body: string): string[] {
 /** Every `name="value"` whose name identifies rather than describes. */
 function identifiers(body: string): string[] {
   const found: string[] = []
-  for (const [, component, blob] of body.matchAll(COMPONENT)) {
+  for (const [, component, blob] of body.matchAll(OPENING_TAG)) {
     for (const [, name, value] of blob.matchAll(ATTRIBUTE)) {
       if (IDENTIFIER_ATTRIBUTES.has(name))
         found.push(`${component}.${name}=${value}`)

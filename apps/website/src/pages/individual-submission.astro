@@ -4,8 +4,10 @@ import PlansPricingCta from '../components/individual-submission/PlansPricingCta
 import HeroSection from '../components/legal/HeroSection.vue'
 import { getRoutes } from '../config/routes'
 import { segments } from '../i18n/segments'
+import type { TranslationKey } from '../i18n/translations'
 import { t } from '../i18n/translations'
 import { pageContext } from '../utils/jsonLd'
+import { requirePlaceholder } from '../utils/placeholders'
 
 const { locale } = pageContext(
   Astro.site,
@@ -32,6 +34,34 @@ const SUPPORT_EMAILS: Record<string, string> = {
   support: 'support@comfy.org'
 }
 
+/**
+ * Each sentence's segments, with every placeholder name checked against the set
+ * that sentence is allowed to carry.
+ *
+ * The loops below used to end in a wildcard, so an unexpected name rendered the
+ * enterprise address, or an empty plan name, rather than failing. Checked here
+ * so the templates stay declarative and one unknown name stops the build.
+ */
+function checkedSegments(key: TranslationKey, allowed: readonly string[]) {
+  const parts = segments(t(key, locale))
+  for (const part of parts) {
+    if (part.type !== 'text') requirePlaceholder(part.name, allowed, key)
+  }
+  return parts
+}
+
+const planSegments = checkedSegments(
+  'individualSubmission.plans',
+  Object.keys(PLAN_LABELS),
+)
+const enterpriseSegments = checkedSegments('individualSubmission.enterpriseNeed', [
+  'break',
+  'email',
+])
+const otherHelpSegments = checkedSegments('individualSubmission.otherHelp', [
+  'email',
+])
+
 
 ---
 
@@ -51,7 +81,7 @@ const SUPPORT_EMAILS: Record<string, string> = {
     >
       <p>
         {
-          segments(t('individualSubmission.plans', locale)).map((segment) =>
+          planSegments.map((segment) =>
             segment.type === 'text' ? (
               segment.value
             ) : (
@@ -70,7 +100,7 @@ const SUPPORT_EMAILS: Record<string, string> = {
 
       <p class="text-primary-warm-gray mt-8 text-sm">
         {
-          segments(t('individualSubmission.enterpriseNeed', locale)).map(
+          enterpriseSegments.map(
             (segment) =>
               segment.type === 'text' ? (
                 segment.value
@@ -90,7 +120,7 @@ const SUPPORT_EMAILS: Record<string, string> = {
 
       <p class="text-primary-warm-gray text-sm">
         {
-          segments(t('individualSubmission.otherHelp', locale)).map((segment) =>
+          otherHelpSegments.map((segment) =>
             segment.type === 'text' ? (
               segment.value
             ) : (

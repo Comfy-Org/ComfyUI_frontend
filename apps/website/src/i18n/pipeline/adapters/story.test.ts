@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { entriesFromStories, parseStory, storyAdapter } from './story'
+import {
+  entriesFromStories,
+  identifierValues,
+  parseStory,
+  storyAdapter
+} from './story'
 
 const STORY = `---
 title: "Seeing the world in new ways"
@@ -140,5 +145,33 @@ describe('the story adapter over src/content/customers', () => {
 
   it('never emits an entry with nothing to translate', () => {
     expect(entries.filter((e) => e.english.trim() === '')).toEqual([])
+  })
+})
+
+describe('identifierValues', () => {
+  it('collects the identifiers a translator must not touch', () => {
+    expect(
+      identifierValues(
+        '<Video src="https://media.comfy.org/a.mp4" id="hero" />'
+      )
+    ).toEqual(['https://media.comfy.org/a.mp4', 'hero'])
+  })
+
+  /**
+   * The attribute run stopped at the first attribute it could not parse, so an
+   * identifier standing after a hyphenated name, a brace value or a
+   * single-quoted value was never collected — and an uncollected identifier is
+   * one the translator is not told to preserve and the verifier does not check.
+   * A guard that protects fewer things than it appears to is worse than none,
+   * because the green result is what people trust.
+   */
+  it('reaches an identifier standing after an attribute it cannot parse', () => {
+    expect(identifierValues('<Video data-track="x" id="hero" />')).toContain(
+      'hero'
+    )
+    expect(identifierValues('<Video width={800} src="/a.mp4" />')).toContain(
+      '/a.mp4'
+    )
+    expect(identifierValues('<Video alt=\'x\' href="/b" />')).toContain('/b')
   })
 })
