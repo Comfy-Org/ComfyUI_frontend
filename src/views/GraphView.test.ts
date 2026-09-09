@@ -181,7 +181,7 @@ vi.mock<unknown>(
   import('@/platform/workspace/components/toasts/InviteAcceptedToast.vue'),
   () => stubModule
 )
-vi.mock<unknown>(import('@/components/toast/GlobalToast.vue'), () => stubModule)
+vi.mock<unknown>(import('@/components/ui/toast/Toaster.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/components/toast/RerouteMigrationToast.vue'),
   () => stubModule
@@ -196,11 +196,6 @@ vi.mock<unknown>(
 
   () => stubModule
 )
-vi.mock('@/components/ui/toast/Toaster.vue', () => stubModule)
-vi.mock('@/components/toast/RerouteMigrationToast.vue', () => stubModule)
-vi.mock('@/components/MenuHamburger.vue', () => stubModule)
-vi.mock('@/components/dialog/UnloadWindowConfirmDialog.vue', () => stubModule)
-vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 
 // Imported at module scope, not inside the test. `vi.mock` is hoisted above
 // every import, so the stubs above still apply — but compiling GraphView.vue

@@ -77,7 +77,6 @@ vi.mock(
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
 )
-)
 vi.mock<unknown>(import('@/components/ui/toast'), () => ({
   useToast: () => ({
     success: toastAdd,

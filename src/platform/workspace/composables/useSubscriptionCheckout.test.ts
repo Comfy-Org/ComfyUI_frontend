@@ -982,6 +982,29 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.any(String),
+        expect.objectContaining({
+          description: 'Update your payment method before changing plans'
+        })
+      )
+    })
+
+    it('keeps the portal error for legacy transition recovery', async () => {
+      mockGetBillingStatus.mockResolvedValueOnce({
+        billing_status: 'payment_failed'
+      })
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
+
+      await submitRejectedPreview(
+        'TRANSITION_NOT_ALLOWED',
+        'Plan change is unavailable'
+      )
+
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.any(String),
         expect.objectContaining({ description: 'Portal unavailable' })
       )
     })
@@ -1003,7 +1026,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          description: 'toastMessages.failedToAccessBillingPortal'
+          description: 'Update your payment method before changing plans'
         })
       )
     })
@@ -1569,7 +1592,9 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).toHaveBeenCalledOnce()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ description: 'Portal unavailable' })
+        expect.objectContaining({
+          description: 'Update your payment method before changing plans'
+        })
       )
     })
 
