@@ -6,6 +6,7 @@ import {
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
@@ -23,17 +24,23 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
     if (!graph || options.nodeId === undefined) return
 
     const scope = graphScopeOf(graph)
-    const linkIds = useLinkPresentationStore()
-      .graphHiddenLinkIds(scope)
-      .filter((linkId) => {
-        const link = graph.getLink(linkId)
-        if (!link) return false
-        return options.type === 'output'
-          ? link.origin_id === options.nodeId &&
-              link.origin_slot === options.index
-          : link.target_id === options.nodeId &&
-              link.target_slot === options.index
-      })
+    const linkStore = useLinkStore()
+    const presentationStore = useLinkPresentationStore()
+    const links =
+      options.type === 'output'
+        ? [
+            ...linkStore.getOutputSlotLinks(
+              scope,
+              options.nodeId,
+              options.index
+            )
+          ]
+        : [linkStore.getInputSlotLink(scope, options.nodeId, options.index)]
+    const linkIds = links.flatMap((link) =>
+      link && presentationStore.getPresentation(scope, link.id)?.hidden
+        ? [link.id]
+        : []
+    )
     if (setRevealedLinks(scope.rootGraphId, linkIds, owner)) {
       app.canvas.setDirty(false, true)
     }
