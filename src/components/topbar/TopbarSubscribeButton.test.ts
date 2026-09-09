@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -55,7 +55,7 @@ function renderComponent() {
 
   return render(TopbarSubscribeButton, {
     global: {
-      plugins: [i18n, createPinia()]
+      plugins: [i18n, getActivePinia()!]
     }
   })
 }
