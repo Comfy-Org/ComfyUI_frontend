@@ -4,6 +4,7 @@ import type {
   ModelState,
   RunOutcome,
   TopUpOutcome,
+  TopUpRail,
   Version
 } from '../composables/usePrototypeTweaks'
 import {
@@ -11,6 +12,7 @@ import {
   MODEL_STATES,
   RUN_OUTCOMES,
   TOP_UP_OUTCOMES,
+  TOP_UP_RAILS,
   VERSIONS
 } from '../composables/usePrototypeTweaks'
 
@@ -30,6 +32,7 @@ export interface ShareState {
   readonly modelState: ModelState
   readonly topUpOutcome: TopUpOutcome
   readonly buyStep: BuyStep
+  readonly topUpRail: TopUpRail
 }
 
 export const SHARE_DEFAULTS: ShareState = {
@@ -43,7 +46,8 @@ export const SHARE_DEFAULTS: ShareState = {
   outcome: 'success',
   modelState: 'none',
   topUpOutcome: 'landed',
-  buyStep: 'closed'
+  buyStep: 'closed',
+  topUpRail: 'in-place'
 }
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -64,7 +68,8 @@ const KEYS = {
   outcome: 'outcome',
   modelState: 'state',
   topUpOutcome: 'topup',
-  buyStep: 'buy'
+  buyStep: 'buy',
+  topUpRail: 'rail'
 } as const
 
 const flag = (value: boolean) => (value ? '1' : '0')
@@ -113,7 +118,8 @@ export function decodeShareSearch(search: string): Partial<ShareState> {
     outcome: pick(RUN_OUTCOMES, params.get(KEYS.outcome)),
     modelState: pick(MODEL_STATES, params.get(KEYS.modelState)),
     topUpOutcome: pick(TOP_UP_OUTCOMES, params.get(KEYS.topUpOutcome)),
-    buyStep: pick(BUY_STEPS, params.get(KEYS.buyStep))
+    buyStep: pick(BUY_STEPS, params.get(KEYS.buyStep)),
+    topUpRail: pick(TOP_UP_RAILS, params.get(KEYS.topUpRail))
   }
   return Object.fromEntries(
     Object.entries(decoded).filter(([, value]) => value !== undefined)

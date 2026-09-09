@@ -38,6 +38,14 @@ export const BUY_STEPS = [
 ] as const
 export type BuyStep = (typeof BUY_STEPS)[number]
 
+// Which rail the buy actions use. 'in-place' is the designed flow (DES-1013):
+// our dialog, then hosted checkout, then the outcome states. 'platform' is the
+// MVP that ships first (DES-1015): every buy action is a plain link out to
+// platform.comfy.org, and this page's only job on return is to re-read the
+// balance. The two share a gate and nothing else.
+export const TOP_UP_RAILS = ['in-place', 'platform'] as const
+export type TopUpRail = (typeof TOP_UP_RAILS)[number]
+
 // One control for the whole prototype: V1 is the flat models catalog (11 Sep),
 // V1.1 opens that same catalog as browseable rows per use case, V1.2 moves the
 // categories into a rail beside the grid, and V2 is the screen where workflows,
@@ -57,11 +65,19 @@ const showStatuses = ref(false)
 const groupVersions = ref(false)
 const topUpOutcome = ref<TopUpOutcome>('landed')
 const buyStep = ref<BuyStep>('closed')
+const topUpRail = ref<TopUpRail>('in-place')
 let hydrated = false
 
 function isVersion(value: unknown): value is Version {
   return (
     typeof value === 'string' && (VERSIONS as readonly string[]).includes(value)
+  )
+}
+
+function isTopUpRail(value: unknown): value is TopUpRail {
+  return (
+    typeof value === 'string' &&
+    (TOP_UP_RAILS as readonly string[]).includes(value)
   )
 }
 
@@ -95,8 +111,11 @@ export function usePrototypeTweaks() {
     // imports this module. Hydrating here rather than in the tweaks panel keeps
     // it independent of which island mounts first, and means the dialog can
     // consume it without the panel putting it back.
-    const entry = new URLSearchParams(location.search).get('buy')
+    const query = new URLSearchParams(location.search)
+    const entry = query.get('buy')
     if (isBuyStep(entry)) buyStep.value = entry
+    const rail = query.get('rail')
+    if (isTopUpRail(rail)) topUpRail.value = rail
   })
   return {
     outcome,
@@ -105,6 +124,7 @@ export function usePrototypeTweaks() {
     showStatuses,
     groupVersions,
     topUpOutcome,
-    buyStep
+    buyStep,
+    topUpRail
   }
 }

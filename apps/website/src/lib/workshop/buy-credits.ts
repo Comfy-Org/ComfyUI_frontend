@@ -13,6 +13,22 @@ export function stripeCheckoutHref(returnPath: string, usd: number): string {
   return url.toString()
 }
 
+// The MVP rail (DES-1015) does not buy anything here — every action is a link
+// to platform's billing page, which the visitor never returns from directly.
+//
+// The workspace has to travel with them: comfy.org and platform keep separate
+// switchers, so without it someone can top up the wallet that is not the empty
+// one. The parameter name and the identifier are both unconfirmed on platform's
+// side — the mock only has display names — so this is the shape, not the
+// contract. See DES-1015.
+const PLATFORM_ORIGIN = 'https://platform.comfy.org'
+
+export function platformTopUpHref(workspace?: string): string {
+  const url = new URL('/billing', PLATFORM_ORIGIN)
+  if (workspace) url.searchParams.set('workspace', workspace)
+  return url.toString()
+}
+
 // How long the prototype holds `waiting` before resolving. The real wait is a
 // webhook we do not control; this only has to be long enough to read.
 export const SETTLE_DELAY_MS = 1200

@@ -83,4 +83,16 @@ describe('share links for the prototype controls', () => {
     expect(encodeShareSearch(SHARE_DEFAULTS)).not.toContain('topup=')
     expect(encodeShareSearch(SHARE_DEFAULTS)).not.toContain('buy=')
   })
+
+  it('carries which top-up rail the link should open on', () => {
+    const search = encodeShareSearch({
+      ...SHARE_DEFAULTS,
+      topUpRail: 'platform'
+    })
+
+    expect(search).toContain('rail=platform')
+    expect(decodeShareSearch(search)).toMatchObject({ topUpRail: 'platform' })
+    // The designed flow is the default, so only the MVP shows up in a link.
+    expect(encodeShareSearch(SHARE_DEFAULTS)).not.toContain('rail=')
+  })
 })

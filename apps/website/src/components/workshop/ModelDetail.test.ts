@@ -8,6 +8,7 @@ import {
   useMockSession,
   EXISTING_CREDITS
 } from '../../composables/useMockSession'
+import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import { SETTLE_DELAY_MS } from '../../lib/workshop/buy-credits'
 import ModelDetail from './ModelDetail.vue'
@@ -283,5 +284,52 @@ describe('ModelDetail', () => {
     expect(
       (screen.getByTestId('field-prompt') as HTMLTextAreaElement).value
     ).toBe('a capybara')
+  })
+})
+
+describe('ModelDetail — the MVP top-up rail', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('turns the gate into a link out and names the workspace', async () => {
+    let tweaks!: ReturnType<typeof usePrototypeTweaks>
+    let api!: ReturnType<typeof useMockSession>
+    render(
+      defineComponent({
+        setup() {
+          api = useMockSession()
+          tweaks = usePrototypeTweaks()
+          tweaks.topUpRail.value = 'platform'
+          return () => h(ModelDetail, { model })
+        }
+      })
+    )
+    api.signIn('existing')
+    api.setCredits(0)
+    await nextTick()
+
+    const gate = screen.getByTestId('run-button')
+    expect(gate.tagName).toBe('A')
+    expect(gate.getAttribute('href')).toBe(
+      'https://platform.comfy.org/billing?workspace=Ada%27s+Studio'
+    )
+    expect(gate.getAttribute('target')).toBe('_blank')
+    // Naming the workspace is what makes a wrong-wallet top-up visible before
+    // it happens, since platform keeps its own switcher.
+    expect(screen.getByTestId('gate-note').textContent).toContain(
+      "Ada's Studio"
+    )
+    tweaks.topUpRail.value = 'in-place'
+  })
+
+  it('keeps the dialog on the in-place rail', async () => {
+    const api = await signedInDetail()
+    api.setCredits(0)
+    await nextTick()
+
+    const gate = screen.getByTestId('run-button')
+    expect(gate.tagName).toBe('BUTTON')
+    expect(gate.getAttribute('href')).toBeNull()
   })
 })

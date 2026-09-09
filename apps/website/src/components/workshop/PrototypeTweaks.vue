@@ -20,12 +20,14 @@ import type {
   ModelState,
   RunOutcome,
   TopUpOutcome,
+  TopUpRail,
   Version
 } from '../../composables/usePrototypeTweaks'
 import {
   MODEL_STATES,
   RUN_OUTCOMES,
   TOP_UP_OUTCOMES,
+  TOP_UP_RAILS,
   VERSIONS,
   usePrototypeTweaks
 } from '../../composables/usePrototypeTweaks'
@@ -51,7 +53,8 @@ const {
   showStatuses,
   groupVersions,
   topUpOutcome,
-  buyStep
+  buyStep,
+  topUpRail
 } = usePrototypeTweaks()
 
 const SESSION_CHOICES: readonly SessionChoice[] = [
@@ -91,6 +94,7 @@ onMounted(() => {
   if (shared.outcome) outcome.value = shared.outcome
   if (shared.modelState) modelState.value = shared.modelState
   if (shared.topUpOutcome) topUpOutcome.value = shared.topUpOutcome
+  if (shared.topUpRail) topUpRail.value = shared.topUpRail
   if (shared.session === 'signedOut') signOut()
   else if (shared.session) signIn(shared.session)
   if (shared.subscribed !== undefined) setSubscribed(shared.subscribed)
@@ -114,7 +118,8 @@ const shareState = computed<ShareState>(() => ({
   outcome: outcome.value,
   modelState: modelState.value,
   topUpOutcome: topUpOutcome.value,
-  buyStep: buyStep.value
+  buyStep: buyStep.value,
+  topUpRail: topUpRail.value
 }))
 const shareUrl = computed(
   () =>
@@ -160,6 +165,10 @@ const outcomeLabel: Record<RunOutcome, TranslationKey> = {
   provider: 'workshop.proto.outcome.provider',
   rateLimit: 'workshop.proto.outcome.rateLimit',
   timeout: 'workshop.proto.outcome.timeout'
+}
+const topUpRailLabel: Record<TopUpRail, TranslationKey> = {
+  'in-place': 'workshop.proto.rail.inPlace',
+  platform: 'workshop.proto.rail.platform'
 }
 const topUpOutcomeLabel: Record<TopUpOutcome, TranslationKey> = {
   landed: 'workshop.proto.topUp.landed',
@@ -394,6 +403,32 @@ const selectClass =
           </label>
 
           <label class="flex flex-col gap-1">
+            <span class="text-primary-warm-gray">
+              {{ t('workshop.proto.rail', locale) }}
+            </span>
+            <span class="relative flex items-center">
+              <select
+                v-model="topUpRail"
+                data-testid="tweak-rail"
+                :class="selectClass"
+              >
+                <option
+                  v-for="option in TOP_UP_RAILS"
+                  :key="option"
+                  :value="option"
+                  class="bg-primary-comfy-ink"
+                >
+                  {{ t(topUpRailLabel[option], locale) }}
+                </option>
+              </select>
+              <ChevronDown
+                class="pointer-events-none absolute right-2 size-3.5 text-primary-warm-gray"
+                aria-hidden="true"
+              />
+            </span>
+          </label>
+
+          <label v-if="topUpRail === 'in-place'" class="flex flex-col gap-1">
             <span class="text-primary-warm-gray">
               {{ t('workshop.proto.topUp', locale) }}
             </span>

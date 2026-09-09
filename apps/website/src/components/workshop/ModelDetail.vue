@@ -13,6 +13,7 @@ import {
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import type { WorkshopModelDetail } from '../../config/workshop'
 import type {
   FieldErrors,
@@ -110,13 +111,20 @@ const {
   outcome: simOutcome,
   modelState: simGate,
   showStatuses,
-  buyStep
+  buyStep,
+  topUpRail
 } = usePrototypeTweaks()
 const signInHref = useSignInHref(locale)
 
 const credits = computed(() =>
   session.value.status === 'signedIn' ? session.value.account.credits : 0
 )
+const workspace = computed(() =>
+  session.value.status === 'signedIn' ? session.value.account.workspace : ''
+)
+// On the MVP rail the gate is a link, not a trigger: the destination is known
+// at click time, so a plain anchor is enough and no popup can be blocked.
+const topUpHref = computed(() => platformTopUpHref(workspace.value))
 const creditsPerRun = model.creditsPerRun
 const modelStatus = computed(() =>
   simGate.value === 'deprecated' || simGate.value === 'degraded'
@@ -379,6 +387,19 @@ function useInCode() {
             {{ t('workshop.run.signIn', locale) }}
           </Button>
           <Button
+            v-else-if="gate === 'noCredits' && topUpRail === 'platform'"
+            as="a"
+            :href="topUpHref"
+            target="_blank"
+            rel="noopener"
+            size="lg"
+            class="w-full px-5"
+            data-testid="run-button"
+            data-gate="noCredits"
+          >
+            {{ t('workshop.run.buyCreditsPlatform', locale) }}
+          </Button>
+          <Button
             v-else-if="gate === 'noCredits'"
             size="lg"
             class="w-full px-5"
@@ -450,11 +471,16 @@ function useInCode() {
             data-testid="gate-note"
           >
             {{
-              credits > 0
-                ? t('workshop.error.lowCredits', locale)
-                    .replace('{credits}', String(credits))
-                    .replace('{n}', String(creditsPerRun))
-                : t('workshop.error.noCredits', locale)
+              topUpRail === 'platform'
+                ? t('workshop.error.noCreditsPlatform', locale).replace(
+                    '{workspace}',
+                    workspace
+                  )
+                : credits > 0
+                  ? t('workshop.error.lowCredits', locale)
+                      .replace('{credits}', String(credits))
+                      .replace('{n}', String(creditsPerRun))
+                  : t('workshop.error.noCredits', locale)
             }}
           </p>
           <p

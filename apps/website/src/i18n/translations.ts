@@ -8371,6 +8371,7 @@ Enterprise`
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
   'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
+  'nav.creditsLabelPlatform': { en: 'Add credits ↗', 'zh-CN': '添加积分 ↗' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
   'nav.workspaceSettings': {
@@ -8726,6 +8727,15 @@ Enterprise`
     en: 'Contact support',
     'zh-CN': '联系客服'
   },
+  'workshop.proto.rail': { en: 'Top-up rail', 'zh-CN': '充值通道' },
+  'workshop.proto.rail.inPlace': {
+    en: 'In place · DES-1013',
+    'zh-CN': '站内完成 · DES-1013'
+  },
+  'workshop.proto.rail.platform': {
+    en: 'Platform · DES-1015 MVP',
+    'zh-CN': '跳转 Platform · DES-1015 MVP'
+  },
   'workshop.proto.topUp': {
     en: 'Return from Stripe',
     'zh-CN': '从 Stripe 返回后'
@@ -8816,6 +8826,10 @@ Enterprise`
     en: 'Add credits',
     'zh-CN': '添加积分'
   },
+  'workshop.run.buyCreditsPlatform': {
+    en: 'Add credits ↗',
+    'zh-CN': '添加积分 ↗'
+  },
   'workshop.run.run': { en: 'Run', 'zh-CN': '运行' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
@@ -8878,6 +8892,11 @@ Enterprise`
   'workshop.error.policy': {
     en: 'Your workspace policy blocks this provider.',
     'zh-CN': '你的工作区策略禁止了该提供方。'
+  },
+  'workshop.error.noCreditsPlatform': {
+    en: 'Not enough credits for this run. Add credits to {workspace} on your Comfy account. Your inputs stay here.',
+    'zh-CN':
+      '本次运行积分不足。请在你的 Comfy 账户中为 {workspace} 添加积分。你的输入会保留在这里。'
   },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Payment happens on Stripe.',

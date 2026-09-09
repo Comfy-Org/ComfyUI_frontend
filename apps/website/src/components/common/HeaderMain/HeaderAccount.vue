@@ -17,8 +17,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import { WORKSPACES, useMockSession } from '../../../composables/useMockSession'
+import { usePrototypeTweaks } from '../../../composables/usePrototypeTweaks'
 import { useSignInHref } from '../../../composables/useSignInHref'
 import { externalLinks } from '../../../config/routes'
+import { platformTopUpHref } from '../../../lib/workshop/buy-credits'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import BuyCreditsDialog from '../../workshop/BuyCreditsDialog.vue'
@@ -26,12 +28,19 @@ import BuyCreditsDialog from '../../workshop/BuyCreditsDialog.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const { session, signOut, switchWorkspace } = useMockSession()
+const { topUpRail } = usePrototypeTweaks()
 const signInHref = useSignInHref(locale)
 
 const account = computed(() =>
   session.value.status === 'signedIn' ? session.value.account : undefined
 )
 const hasCredits = computed(() => (account.value?.credits ?? 0) > 0)
+// Buying is owner-only server-side, so a member gets no purchase route here.
+// Not a balance-only row either: the header pill already carries the number,
+// and repeating it under a dead action is worse than leaving it out. See
+// DES-1015.
+const canTopUp = computed(() => account.value?.role !== 'member')
+const topUpHref = computed(() => platformTopUpHref(account.value?.workspace))
 const formattedCredits = computed(() =>
   new Intl.NumberFormat(locale).format(account.value?.credits ?? 0)
 )
@@ -181,6 +190,33 @@ const avatarClass =
         </DropdownMenuSub>
 
         <DropdownMenuItem
+          v-if="canTopUp && topUpRail === 'platform'"
+          as-child
+          :class="itemClass"
+          data-testid="account-plan"
+        >
+          <a :href="topUpHref" target="_blank" rel="noopener">
+            <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
+            <span class="flex-1">
+              {{ t('nav.creditsLabelPlatform', locale) }}
+            </span>
+            <span
+              :class="
+                cn(
+                  'text-base font-bold tabular-nums',
+                  hasCredits
+                    ? 'text-primary-warm-white'
+                    : 'text-primary-comfy-yellow'
+                )
+              "
+            >
+              {{ formattedCredits }}
+            </span>
+          </a>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          v-else-if="canTopUp"
           :class="itemClass"
           data-testid="account-plan"
           @click="buyingCredits = true"
