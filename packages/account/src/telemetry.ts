@@ -11,8 +11,19 @@ export const SESSION_TELEMETRY_EVENT = {
 
 export const AUTH_TELEMETRY_EVENT = {
   signUpOpened: 'app:user_sign_up_opened',
+  authCompleted: 'app:user_auth_completed',
   authFailed: 'app:user_auth_failed'
 } as const
+
+export type AuthMethod = 'email' | 'google' | 'github'
+
+/** What the cloud app reports on every successful credential. */
+export interface AuthCompletedMetadata {
+  method: AuthMethod
+  is_new_user: boolean
+  user_id: string
+  email?: string
+}
 
 export type AuthFlowAction =
   | 'email_sign_in'
