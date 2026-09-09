@@ -13,26 +13,28 @@ const copy = {
 }
 
 describe('PasswordRules', () => {
-  it('lists every rule and marks only the unmet ones', () => {
-    render(PasswordRules, { props: { password: 'short', copy } })
+  it("lists every rule and marks only the unmet ones with the host's class", () => {
+    render(PasswordRules, {
+      props: { password: 'short', copy, unmetClass: 'unmet' }
+    })
 
     expect(screen.getByText('Password requirements:')).toBeTruthy()
-    expect(
-      screen.getByText(copy.length).classList.contains('text-red-500')
-    ).toBe(true)
-    expect(
-      screen.getByText(copy.uppercase).classList.contains('text-red-500')
-    ).toBe(true)
-    expect(
-      screen.getByText(copy.lowercase).classList.contains('text-red-500')
-    ).toBe(false)
+    expect(screen.getByText(copy.length).classList.contains('unmet')).toBe(true)
+    expect(screen.getByText(copy.uppercase).classList.contains('unmet')).toBe(
+      true
+    )
+    expect(screen.getByText(copy.lowercase).classList.contains('unmet')).toBe(
+      false
+    )
   })
 
   it('clears every mark once the password satisfies all rules', () => {
-    render(PasswordRules, { props: { password: 'Sup3r-secret', copy } })
+    render(PasswordRules, {
+      props: { password: 'Sup3r-secret', copy, unmetClass: 'unmet' }
+    })
 
     for (const item of screen.getAllByRole('listitem')) {
-      expect(item.classList.contains('text-red-500')).toBe(false)
+      expect(item.classList.contains('unmet')).toBe(false)
     }
   })
 })
