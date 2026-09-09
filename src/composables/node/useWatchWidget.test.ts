@@ -6,7 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Mock useChainCallback
-vi.mock('@/composables/functional/useChainCallback', () => ({
+vi.mock<unknown>(import('@/composables/functional/useChainCallback'), () => ({
   useChainCallback: vi.fn((original, newCallback) => {
     return function (this: unknown, ...args: unknown[]) {
       original?.call(this, ...args)

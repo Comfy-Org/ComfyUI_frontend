@@ -58,6 +58,10 @@ describe('toDetailModel', () => {
 })
 
 describe('defaultWorkshopValues', () => {
+  it('returns no values when there are no fields', () => {
+    expect(defaultWorkshopValues([])).toEqual({})
+  })
+
   it('seeds a value for every field, defined or not', () => {
     expect(
       defaultWorkshopValues([
@@ -101,5 +105,11 @@ describe('relatedWorkshopModels', () => {
 
   it('never returns more than the limit', () => {
     expect(relatedWorkshopModels(subject, pool, 2)).toHaveLength(2)
+  })
+
+  it('returns every remaining candidate when the pool is smaller than the limit', () => {
+    expect(relatedWorkshopModels(subject, [subject, pool[1]], 4)).toEqual([
+      pool[1]
+    ])
   })
 })

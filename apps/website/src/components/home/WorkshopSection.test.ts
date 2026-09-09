@@ -8,7 +8,6 @@ import WorkshopSection from './WorkshopSection.vue'
 const models: WorkshopBrowseModel[] = [
   {
     id: 'bfl/flux-2-pro',
-    slug: 'bfl--flux-2-pro',
     href: '/workshop/models/bfl--flux-2-pro/',
     name: 'FLUX 2 Pro',
     provider: 'bfl',
@@ -18,7 +17,6 @@ const models: WorkshopBrowseModel[] = [
   },
   {
     id: 'kling/text-to-video',
-    slug: 'kling--text-to-video',
     href: '/workshop/models/kling--text-to-video/',
     name: 'Kling 2.5 Turbo',
     provider: 'kling',

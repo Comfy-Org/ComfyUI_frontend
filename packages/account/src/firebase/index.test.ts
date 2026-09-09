@@ -26,12 +26,12 @@ const app = vi.hoisted(() => ({
   initializeApp: vi.fn(() => ({ name: 'test-app' }))
 }))
 
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   getApps: () => [],
   initializeApp: app.initializeApp
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock(import('firebase/auth'), () => ({
   GoogleAuthProvider: class {
     addScope() {}
     setCustomParameters() {}

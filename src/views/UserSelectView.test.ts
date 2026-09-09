@@ -13,7 +13,7 @@ const i18n = createI18n({
 })
 
 const mockRouterPush = vi.hoisted(() => vi.fn())
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ push: mockRouterPush })
 }))
 
@@ -23,11 +23,11 @@ const userStoreMock = vi.hoisted(() => ({
   createUser: vi.fn(),
   login: vi.fn().mockResolvedValue(undefined)
 }))
-vi.mock('@/stores/userStore', () => ({
+vi.mock<unknown>(import('@/stores/userStore'), () => ({
   useUserStore: () => userStoreMock
 }))
 
-vi.mock('@/views/templates/BaseViewTemplate.vue', () => ({
+vi.mock<unknown>(import('@/views/templates/BaseViewTemplate.vue'), () => ({
   default: {
     name: 'BaseViewTemplate',
     template: '<div><slot /></div>'

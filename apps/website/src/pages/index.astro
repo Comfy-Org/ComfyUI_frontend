@@ -14,8 +14,7 @@ import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSect
 import GetStartedSection from "../components/home/GetStartedSection.vue";
 import { getCollection } from "astro:content";
 import { isWorkshopInBuild } from "../config/workshop-release";
-import { toBrowseModel } from "../config/workshop";
-import { featuredWorkshopModels } from "../config/workshop-featured";
+import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -33,13 +32,11 @@ const { siteUrl } = pageContext(
 // The same switch that decides whether Workshop is built at all. A release
 // build has no Workshop routes, so the homepage must not link to them; one
 // control rather than two that can drift apart.
-const workshopModels = !isWorkshopInBuild()
-  ? []
-  : featuredWorkshopModels(
-      (await getCollection("workshopModels")).map((entry) =>
-        toBrowseModel(entry.data),
-      ),
-    );
+const workshopModels = await resolveHomepageWorkshopModels(
+  isWorkshopInBuild(),
+  async () =>
+    (await getCollection("workshopModels")).map((entry) => entry.data),
+);
 ---
 
 <BaseLayout
