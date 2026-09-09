@@ -19,13 +19,11 @@ import TagRow from '../hub/TagRow.vue'
 const {
   model,
   locale = 'en',
-  showStatus = false,
   versionCount = 1,
   providerBadge = false
 } = defineProps<{
   model: WorkshopModel
   locale?: Locale
-  showStatus?: boolean
   versionCount?: number
   providerBadge?: boolean
 }>()
@@ -153,16 +151,6 @@ const pillClass =
       >
         {{
           t('workshop.model.versions', locale).replace('{n}', `${versionCount}`)
-        }}
-      </span>
-      <span
-        v-if="showStatus && model.status"
-        class="bg-primary-comfy-yellow/80 absolute top-4 right-4 z-10 inline-flex h-8 items-center rounded-xl px-2.5 text-[10px] font-bold tracking-wider text-primary-comfy-ink uppercase backdrop-blur-md"
-      >
-        {{
-          model.status === 'deprecated'
-            ? t('workshop.model.deprecated', locale)
-            : t('workshop.model.degraded', locale)
         }}
       </span>
     </div>

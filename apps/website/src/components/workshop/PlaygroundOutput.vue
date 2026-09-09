@@ -230,7 +230,9 @@ const earlierClass = (active: boolean) =>
 
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
-      <div class="relative flex-1">
+      <div
+        class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+      >
         <div
           :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
@@ -241,8 +243,9 @@ const earlierClass = (active: boolean) =>
             :src="currentUrl"
             :locale
             :aria-label="t('workshop.output.title', locale)"
-            class="aspect-auto h-auto max-h-[70vh] w-full"
+            class="size-full"
             fit="contain"
+            controls-on-hover
             autoplay
             loop
           />
@@ -250,15 +253,15 @@ const earlierClass = (active: boolean) =>
             v-else-if="currentUrl && shown.kind !== 'text'"
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
-            class="h-auto max-h-[70vh] w-full object-contain"
+            class="size-full object-contain"
           />
           <pre
             v-else-if="shown.kind === 'text'"
-            class="p-5 font-mono text-sm whitespace-pre-wrap text-primary-warm-white"
+            class="size-full overflow-y-auto p-5 font-mono text-sm whitespace-pre-wrap text-primary-warm-white"
             >{{ shown.text }}</pre>
           <div
             v-else
-            class="flex h-full min-h-48 items-end justify-center gap-1 p-8"
+            class="flex size-full items-end justify-center gap-1 p-8"
             aria-hidden="true"
           >
             <span

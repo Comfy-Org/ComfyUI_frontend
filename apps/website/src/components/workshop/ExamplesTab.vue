@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Check } from '@lucide/vue'
+
 import type { PlaygroundExample } from '../../config/workshop-playground'
 import { isVideoUrl } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
@@ -60,15 +62,20 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
           :aria-current="example.id === activeId ? 'true' : undefined"
           class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
           data-testid="example-card"
+          :title="
+            example.id === activeId
+              ? t('workshop.examples.using', locale)
+              : t('workshop.examples.use', locale)
+          "
           @click="emit('open', example)"
         >
           <span
             :class="
               cn(
-                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-[box-shadow,filter]',
+                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-[box-shadow,transform,filter]',
                 example.id === activeId
                   ? 'ring-primary-comfy-yellow ring-2'
-                  : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
+                  : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
               )
             "
           >
@@ -89,6 +96,21 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
               loading="lazy"
               decoding="async"
             />
+
+            <span
+              v-if="example.id === activeId"
+              class="bg-primary-comfy-yellow absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full text-primary-comfy-ink"
+              data-testid="example-chosen"
+            >
+              <Check class="size-3" :stroke-width="3" aria-hidden="true" />
+            </span>
+            <span
+              v-else
+              class="absolute inset-x-0 bottom-0 truncate bg-black/70 px-2 py-1 text-center text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              aria-hidden="true"
+            >
+              {{ t('workshop.examples.use', locale) }}
+            </span>
           </span>
 
           <span class="flex flex-col gap-0.5">
