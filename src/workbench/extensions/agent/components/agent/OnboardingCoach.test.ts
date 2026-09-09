@@ -19,20 +19,17 @@ let target: HTMLElement | undefined
 function mountWithTarget(rect: { left: number; top: number }) {
   target = document.createElement('div')
   target.id = 'coach-target'
-  target.getBoundingClientRect = vi.fn(
-    () =>
-      ({
-        left: rect.left,
-        top: rect.top,
-        right: rect.left + 400,
-        bottom: 800,
-        width: 400,
-        height: 700,
-        x: rect.left,
-        y: rect.top,
-        toJSON: () => ({})
-      }) as DOMRect
-  )
+  target.getBoundingClientRect = vi.fn(() => ({
+    left: rect.left,
+    top: rect.top,
+    right: rect.left + 400,
+    bottom: 800,
+    width: 400,
+    height: 700,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => ({})
+  }))
   document.body.appendChild(target)
   return render(OnboardingCoach, {
     props: { step: STEP, storageKey: `coach-${Math.random()}` },

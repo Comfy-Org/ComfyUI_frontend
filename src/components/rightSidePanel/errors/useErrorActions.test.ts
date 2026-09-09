@@ -15,19 +15,19 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     execute: mocks.execute
   })
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     staticUrls: mocks.staticUrls
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mocks.telemetry
 }))
 
@@ -39,9 +39,7 @@ describe('useErrorActions', () => {
       trackUiButtonClicked: mocks.trackUiButtonClicked,
       trackHelpResourceClicked: mocks.trackHelpResourceClicked
     }
-    windowOpenSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => null as unknown as Window)
+    windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
   afterEach(() => {

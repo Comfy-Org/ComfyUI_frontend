@@ -14,13 +14,13 @@ const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get supportsModelTypeTags() {
@@ -30,13 +30,13 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: mockSettingStoreGet
   }))
 }))
 
-vi.mock('@/stores/modelToNodeStore', () => {
+vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => {
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
     LoraLoader: 'lora_name'
@@ -56,13 +56,13 @@ vi.mock('@/stores/modelToNodeStore', () => {
 })
 
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     inputAssets: { invalidate: mockInvalidateInputAssets }
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     addCustomEventListener: vi.fn(),
@@ -70,7 +70,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -426,7 +426,7 @@ describe(assetService.getAssetModels, () => {
     await assetService.getAssetModels('checkpoints')
 
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('models')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -762,7 +762,7 @@ describe(assetService.onModelsScanned, () => {
     const unsubscribe = assetService.onModelsScanned(callback)
 
     const [eventType, handler] = vi.mocked(api.addCustomEventListener).mock
-      .calls[0]!
+      .calls[0]
     expect(eventType).toBe('assets.seed.fast_complete')
 
     handler!(new CustomEvent(eventType))
@@ -852,7 +852,7 @@ describe(assetService.getAssetsByTag, () => {
 
     expect(assets.map((a) => a.id)).toEqual(['visible'])
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_public')).toBe('true')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -865,7 +865,7 @@ describe(assetService.getAssetsByTag, () => {
 
     await assetService.getAssetsByTag(' input ')
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('input')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -894,7 +894,7 @@ describe(assetService.getAllAssetsByTag, () => {
 
     expect(assets.map((a) => a.id)).toEqual(['a', 'b', 'c'])
 
-    const firstUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const firstUrl = fetchApiMock.mock.calls[0]?.[0]
     const firstParams = new URL(firstUrl, 'http://localhost').searchParams
     expect(firstParams.get('include_public')).toBe('true')
     expect(firstParams.get('exclude_tags')).toBe(MISSING_TAG)
@@ -903,7 +903,7 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(firstParams.has('after')).toBe(false)
     expect(firstParams.has('offset')).toBe(false)
 
-    const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
+    const secondUrl = fetchApiMock.mock.calls[1]?.[0]
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('include_public')).toBe('true')
     expect(secondParams.get('exclude_tags')).toBe(MISSING_TAG)
@@ -1102,7 +1102,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
     expect(page.has_more).toBe(true)
     expect(page.next_cursor).toBe('cursor-1')
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('models,checkpoints')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -1121,7 +1121,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
       after: 'cursor-2'
     })
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('after')).toBe('cursor-2')
     expect(params.has('offset')).toBe(false)
@@ -1137,7 +1137,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
       after: ''
     })
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('after')).toBe('')
     expect(params.has('offset')).toBe(false)
@@ -1152,7 +1152,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
       offset: 500
     })
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('offset')).toBe('500')
     expect(params.has('after')).toBe(false)

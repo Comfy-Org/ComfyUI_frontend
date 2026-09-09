@@ -23,15 +23,15 @@ import userEvent from '@testing-library/user-event'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     shiftDown: false
   })

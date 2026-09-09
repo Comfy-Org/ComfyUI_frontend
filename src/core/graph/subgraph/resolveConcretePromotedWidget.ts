@@ -51,7 +51,7 @@ function hasActiveConsumer(
 
     const { inputNode } = link.resolve(hostNode.subgraph)
     if (!inputNode || !isNodeActive(inputNode)) continue
-    const targetInput = inputNode.inputs?.find((entry) => entry.link === linkId)
+    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
     if (!targetInput) continue
 
     if (inputNode.isSubgraphNode()) {

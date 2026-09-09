@@ -1,0 +1,331 @@
+{
+  "id": "aaaaaaaa-1111-4111-8111-00000000000a",
+  "revision": 0,
+  "last_node_id": 11,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "bbbbbbbb-2222-4222-8222-00000000000b",
+      "pos": [100, 100],
+      "size": [300, 160],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "title": "Decoy Host",
+      "properties": {
+        "previewExposures": []
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "cccccccc-3333-4333-8333-00000000000c",
+      "pos": [100, 400],
+      "size": [300, 160],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "title": "Outer Host",
+      "properties": {
+        "previewExposures": []
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "bbbbbbbb-2222-4222-8222-00000000000b",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 3,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Decoy Host",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "dddddddd-4444-4444-8444-00000000000d",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": {
+              "0": 920,
+              "1": 220
+            }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 3,
+            "type": "KSampler",
+            "pos": [250, 120],
+            "size": [280, 260],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "title": "Decoy Sampler",
+            "properties": {
+              "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [1, "increment", 20, 8, "euler", "normal", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      },
+      {
+        "id": "cccccccc-3333-4333-8333-00000000000c",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 10,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Outer Host",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "eeeeeeee-5555-4555-8555-00000000000e",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": {
+              "0": 920,
+              "1": 220
+            }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 10,
+            "type": "ffffffff-6666-4666-8666-00000000000f",
+            "pos": [400, 200],
+            "size": [400, 200],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "output",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "title": "Inner Host",
+            "properties": {
+              "previewExposures": []
+            },
+            "widgets_values": []
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 10,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      },
+      {
+        "id": "ffffffff-6666-4666-8666-00000000000f",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 11,
+          "lastLinkId": 1,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Inner Host",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "99999999-7777-4777-8777-000000000009",
+            "name": "output",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": {
+              "0": 920,
+              "1": 220
+            }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 11,
+            "type": "KSampler",
+            "pos": [250, 120],
+            "size": [280, 260],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "title": "Inner Sampler",
+            "properties": {
+              "Node name for S&R": "KSampler"
+            },
+            "widgets_values": [1, "increment", 20, 8, "euler", "normal", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 11,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
+  },
+  "version": 0.4
+}

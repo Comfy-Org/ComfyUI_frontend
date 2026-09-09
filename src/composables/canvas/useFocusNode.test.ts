@@ -17,21 +17,22 @@ const { canvasStore, createCanvas } = vi.hoisted(() => {
     return canvas
   }
 
+  const canvasStore: {
+    canvas: ReturnType<typeof createCanvas> | undefined
+  } = { canvas: createCanvas() }
   return {
-    canvasStore: {
-      canvas: createCanvas() as ReturnType<typeof createCanvas> | undefined
-    },
+    canvasStore,
     createCanvas
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => canvasStore
 }))
-vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
+vi.mock(import('@/composables/canvas/visibleCanvasViewport'), () => ({
   visibleCanvasViewport: () => viewport
 }))
-vi.mock('@/scripts/app', () => ({ app: { rootGraph: {} } }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { rootGraph: {} } }))
 
 import { useFocusNode } from './useFocusNode'
 

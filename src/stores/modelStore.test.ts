@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -13,17 +14,16 @@ import {
   useModelStore
 } from '@/stores/modelStore'
 
-const { isCloudRef } = vi.hoisted(() => ({ isCloudRef: { value: false } }))
+const mockDistribution = vi.hoisted(
+  (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
+)
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  get isCloud() {
-    return isCloudRef.value
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistribution
+)
 
-// Mock the api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
@@ -39,7 +39,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the assetService
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
@@ -49,7 +49,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
 }))
 
 // Mock the settingStore
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn()
 }))
 
@@ -110,7 +110,7 @@ describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
   beforeEach(async () => {
-    isCloudRef.value = false
+    mockDistribution.isCloud = false
     remoteConfig.value = {}
   })
 
@@ -121,6 +121,13 @@ describe('useModelStore', () => {
     const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).toBeDefined()
     expect(Object.keys(folderStore!.models)).toHaveLength(3)
+  })
+
+  it('returns null when a model folder is unavailable', async () => {
+    enableMocks()
+    store = useModelStore()
+
+    await expect(store.getLoadedModelFolder('unknown')).resolves.toBeNull()
   })
 
   it('should load model metadata', async () => {
@@ -510,7 +517,7 @@ describe('useModelStore', () => {
       )
       const eagerLoad = store.getLoadedModelFolder('checkpoints')
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       // The rebuilt folder must have been re-loaded, not left uninitialized
@@ -535,7 +542,7 @@ describe('useModelStore', () => {
 
       const scanCallback = getScanCallback()
       expect(scanCallback).toBeDefined()
-      await scanCallback!()
+      await scanCallback()
       await flushScanReload()
 
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
@@ -550,7 +557,7 @@ describe('useModelStore', () => {
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
 
-      const scanCallback = getScanCallback()!
+      const scanCallback = getScanCallback()
       await scanCallback()
       await scanCallback()
       await scanCallback()
@@ -564,7 +571,7 @@ describe('useModelStore', () => {
       enableMocks(true)
       store = useModelStore()
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       // The bucket cache is still dropped so the eventual first read is
@@ -582,7 +589,7 @@ describe('useModelStore', () => {
         new Error('transient network failure')
       )
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       expect(error).toHaveBeenCalledWith(
@@ -677,7 +684,7 @@ describe('useModelStore', () => {
 
   describe('cloud gating', () => {
     beforeEach(() => {
-      isCloudRef.value = true
+      mockDistribution.isCloud = true
     })
 
     it('does not read safetensors metadata from disk on cloud', async () => {

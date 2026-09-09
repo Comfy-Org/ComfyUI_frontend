@@ -19,7 +19,7 @@ import type * as VueUse from '@vueuse/core'
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal<typeof VueUse>()),
   useIntersectionObserver: (
     _target: unknown,
@@ -40,8 +40,7 @@ import { useAgentConversationStore } from '../../stores/agent/agentConversationS
 import ConversationView from './ConversationView.vue'
 
 const T = 'msg-1' as TurnId
-const chat = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
   chat({
     type: 'agent_thinking',

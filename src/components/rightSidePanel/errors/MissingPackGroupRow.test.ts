@@ -16,8 +16,9 @@ const mockOpenManager = vi.fn()
 const mockMissingNodePacks = ref<Array<{ id: string; name: string }>>([])
 const mockIsLoading = ref(false)
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useMissingNodes',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
+
   () => ({
     useMissingNodes: () => ({
       missingNodePacks: mockMissingNodePacks,
@@ -26,8 +27,9 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/usePackInstall',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/usePackInstall'),
+
   () => ({
     usePackInstall: () => ({
       isInstalling: mockIsInstalling,
@@ -36,22 +38,34 @@ vi.mock(
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
-  })
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: mockShouldShowManagerButtons,
-    openManager: mockOpenManager
+  () => ({
+    useComfyManagerStore: () => ({
+      isPackInstalled: mockIsPackInstalled
+    })
   })
-}))
+)
 
-vi.mock('@/workbench/extensions/manager/types/comfyManagerTypes', () => ({
-  ManagerTab: { Missing: 'missing', All: 'all' }
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+
+  () => ({
+    useManagerState: () => ({
+      shouldShowManagerButtons: mockShouldShowManagerButtons,
+      openManager: mockOpenManager
+    })
+  })
+)
+
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/types/comfyManagerTypes'),
+
+  () => ({
+    ManagerTab: { Missing: 'missing', All: 'all' }
+  })
+)
 
 import MissingPackGroupRow from './MissingPackGroupRow.vue'
 
@@ -287,7 +301,7 @@ describe('MissingPackGroupRow', () => {
     it('does not show Locate for nodeType without nodeId', () => {
       renderRow({
         group: makeGroup({
-          nodeTypes: [{ type: 'NoId', isReplaceable: false } as never]
+          nodeTypes: [{ type: 'NoId', isReplaceable: false }]
         })
       })
       expect(
@@ -303,7 +317,7 @@ describe('MissingPackGroupRow', () => {
         group: makeGroup({
           nodeTypes: [
             { type: 'WithId', nodeId: '100', isReplaceable: false },
-            { type: 'WithoutId', isReplaceable: false } as never
+            { type: 'WithoutId', isReplaceable: false }
           ]
         })
       })

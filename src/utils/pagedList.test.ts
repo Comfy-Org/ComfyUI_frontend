@@ -3,7 +3,7 @@ import { computed, effectScope, ref, shallowRef, toValue } from 'vue'
 import type { Ref } from 'vue'
 
 import type { PagedList, SharedPagedListState } from './pagedList'
-import { getPagedList, usePreemptableQueue } from './pagedList'
+import { getPagedList, usePreemptableQueue, WrappedList } from './pagedList'
 
 function mockPagedList<T>(initial: T[] = [], genNew?: () => T): PagedList<T> {
   const items: Ref<T[]> = shallowRef(initial)
@@ -32,6 +32,47 @@ function makeShared<TParams, TItem>(
   }
   return (params: TParams) => getPagedList(params, state)
 }
+
+describe('WrappedList', () => {
+  it('transforms items and delegates stateful operations', async () => {
+    const child = {
+      isLoading: ref(false),
+      items: ref([1, 2]),
+      get hasMore() {
+        return this.items.value.length < 3
+      },
+      async invalidate(stale?: string[]) {
+        this.items.value = this.items.value.filter(
+          (item) => !stale?.includes(String(item))
+        )
+      },
+      async loadMore() {
+        this.items.value.push(3)
+      },
+      async loadNew() {
+        this.items.value.unshift(0)
+      }
+    }
+
+    const list = new WrappedList(child, (items) =>
+      items.map((item) => item * 2)
+    )
+
+    expect(toValue(list.items)).toEqual([2, 4])
+    expect(toValue(list.hasMore)).toBe(true)
+    expect(toValue(list.isLoading)).toBe(false)
+
+    await list.loadMore()
+    expect(toValue(list.items)).toEqual([2, 4, 6])
+    expect(toValue(list.hasMore)).toBe(false)
+
+    await list.loadNew()
+    expect(toValue(list.items)).toEqual([0, 2, 4, 6])
+
+    await list.invalidate(['2'])
+    expect(toValue(list.items)).toEqual([0, 2, 6])
+  })
+})
 
 describe('getPagedList', () => {
   it('same params share reactive state', async () => {

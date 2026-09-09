@@ -1,11 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useMouse } from '@vueuse/core'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import type { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
-// Mock dependencies
-vi.mock('@vueuse/core', () => ({
+const { mockAdjustMouseEvent } = vi.hoisted(() => ({
+  mockAdjustMouseEvent: vi.fn((event: PointerEvent) => {
+    Object.assign(event, {
+      canvasX: 50,
+      canvasY: 75,
+      deltaX: 0,
+      deltaY: 0,
+      safeOffsetX: event.clientX,
+      safeOffsetY: event.clientY
+    })
+  })
+}))
+
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useMouse: vi.fn(() => ({
     x: { value: 100 },
     y: { value: 200 }
@@ -13,14 +26,25 @@ vi.mock('@vueuse/core', () => ({
 }))
 
 const mockSettingStore = createMockSettingStore()
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
-function createMockPopover(): InstanceType<typeof NodeSearchBoxPopover> {
-  return { showSearchBox: vi.fn() } as Partial<
-    InstanceType<typeof NodeSearchBoxPopover>
-  > as InstanceType<typeof NodeSearchBoxPopover>
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
+
+  () => ({
+    useCanvasStore: () => ({
+      getCanvas: () => ({ adjustMouseEvent: mockAdjustMouseEvent })
+    })
+  })
+)
+
+function createMockPopover(): Pick<
+  InstanceType<typeof NodeSearchBoxPopover>,
+  'showSearchBox'
+> {
+  return { showSearchBox: vi.fn() }
 }
 
 function createMockSettingStore(): ReturnType<typeof useSettingStore> {
@@ -79,9 +103,13 @@ describe('useSearchBoxStore', () => {
       expect(vi.mocked(mockPopover.showSearchBox)).toHaveBeenCalledWith(
         expect.objectContaining({
           clientX: 100,
-          clientY: 200
+          clientY: 200,
+          canvasX: 50,
+          canvasY: 75
         })
       )
+      expect(useMouse).toHaveBeenCalledWith({ type: 'client' })
+      expect(mockAdjustMouseEvent).toHaveBeenCalledOnce()
     })
 
     it('should do nothing when user presses shortcut but popover is not ready', () => {

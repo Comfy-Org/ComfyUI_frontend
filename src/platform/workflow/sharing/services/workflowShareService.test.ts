@@ -7,10 +7,13 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,
+  get isGraphReady() {
+    return this.rootGraph !== null
+  },
   graphToPrompt: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
@@ -18,13 +21,13 @@ const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/assetsStore', () => ({
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
     inputAssets: { invalidate: mockInvalidateInputAssets }
   })
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),

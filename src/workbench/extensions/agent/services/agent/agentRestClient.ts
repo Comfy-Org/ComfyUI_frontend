@@ -3,17 +3,21 @@ import type { z } from 'zod'
 import { api } from '@/scripts/api'
 
 import {
+  zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
+  zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
   zUploadImageResult
 } from '../../schemas/agentApiSchema'
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry,
@@ -26,12 +30,19 @@ const CLOUD_WORKFLOW_MAX_PAGES = 5
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
+  readonly retryAfterSeconds?: number
 
-  constructor(message: string, status: number, body: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    body: unknown,
+    retryAfterSeconds?: number
+  ) {
     super(message)
     this.name = 'AgentApiError'
     this.status = status
     this.body = body
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -85,11 +96,23 @@ export function createAgentRestClient() {
     }
     const plain = zAgentError.safeParse(body)
     const message = plain.success
-      ? plain.data.error
+      ? typeof plain.data.error === 'string'
+        ? plain.data.error
+        : plain.data.error.message
       : isIngestErrorBody(body)
         ? body.error.message
         : response.statusText
-    return new AgentApiError(message, response.status, body)
+    const retryAfterHeader = response.headers.get('Retry-After')
+    const retryAfterSeconds =
+      retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
+        ? Number(retryAfterHeader)
+        : undefined
+    return new AgentApiError(
+      message,
+      response.status,
+      body,
+      Number.isSafeInteger(retryAfterSeconds) ? retryAfterSeconds : undefined
+    )
   }
 
   async function request<T>(
@@ -148,6 +171,20 @@ export function createAgentRestClient() {
     return page.threads
   }
 
+  async function getRunMode(): Promise<AgentRunModePreference> {
+    return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
+  }
+
+  async function putRunMode(
+    preference: AgentRunModePreference
+  ): Promise<AgentRunModePreference> {
+    return request(
+      '/agent/run-mode',
+      jsonInit('PUT', preference),
+      zAgentRunMode
+    )
+  }
+
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
     let hasMore = false
@@ -184,6 +221,18 @@ export function createAgentRestClient() {
     )
   }
 
+  async function answerAsk(
+    threadId: string,
+    askId: string,
+    selected: string[]
+  ): Promise<AgentAnswerAccepted> {
+    return request(
+      `/agent/threads/${threadId}/asks/${encodeURIComponent(askId)}/answer`,
+      jsonInit('POST', { selected }),
+      zAgentAnswerAccepted
+    )
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string
@@ -201,8 +250,11 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getRunMode,
+    putRunMode,
     listCloudWorkflows,
     cancelMessage,
+    answerAsk,
     uploadImage
   }
 }
