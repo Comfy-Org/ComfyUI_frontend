@@ -810,7 +810,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/nw9z51dh?tk=H7wqxP'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-creative-ai-august-forum.jpg', {
+      en: 'NYC Creative AI August Forum',
+      'zh-CN': 'NYC Creative AI 八月论坛'
+    })
   },
   {
     id: 'nyc-creative-ai-july-forum',
@@ -838,7 +842,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/nyc-creative-ai-july-2026'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-creative-ai-july-forum.jpg', {
+      en: 'NYC Creative AI July Forum (formerly ComfyUI NYC)',
+      'zh-CN': 'NYC Creative AI 七月论坛（前身为 ComfyUI NYC）'
+    })
   },
   {
     id: 'nyc-february-meetup-2026',
@@ -893,7 +901,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/v980qiad'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-january-meetup-2026.jpg', {
+      en: 'ComfyUI Official NYC January Meetup',
+      'zh-CN': 'ComfyUI 官方纽约一月见面会'
+    })
   },
   {
     id: 'nyc-december-meetup-2025',
@@ -950,7 +962,11 @@ const events: readonly ComfyEvent[] = [
           'https://www.eventbrite.com/e/ai-creative-comfyui-event-in-nyc-with-secret-sauce-tickets-1976638614305'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-secret-sauce-workshop.jpg', {
+      en: 'AI Creative / ComfyUI Event in NYC with Secret Sauce',
+      'zh-CN': 'AI Creative / ComfyUI 纽约活动（与 Secret Sauce 共同举办）'
+    })
   },
   {
     id: 'low-rank-adapters-comfyui-chill',
@@ -977,7 +993,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://partiful.com/e/Hn6yX0pB4P1xQVuROTdn'
       },
       newTab: true
-    }
+    },
+    media: eventImage('low-rank-adapters-comfyui-chill.jpg', {
+      en: 'low rank adapters present: ComfyUI & Chill',
+      'zh-CN': 'low rank adapters 呈现：ComfyUI & Chill'
+    })
   },
   {
     id: 'nyc-october-meetup-2025',
@@ -1004,7 +1024,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/f2begllt'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-october-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC October Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约十月见面会'
+    })
   },
   {
     id: 'nyc-august-meetup-2025',
@@ -1031,7 +1055,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/62hfwf86'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-august-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC August Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约八月见面会'
+    })
   },
   {
     id: 'nyc-july-meetup-2025',
@@ -1058,7 +1086,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/xxu75lsj'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-july-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC July Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约七月见面会'
+    })
   },
   {
     id: 'nvidia-rtx-mini-hackathon',
@@ -1086,7 +1118,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/zndawmg9'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nvidia-rtx-mini-hackathon.jpg', {
+      en: 'ComfyUI x NVIDIA RTX Hackathon (Mini-Hackathon) @ GitHub HQ',
+      'zh-CN': 'ComfyUI x NVIDIA RTX 黑客松（迷你黑客松）@ GitHub 总部'
+    })
   },
   {
     id: 'nyc-june-meetup-2025',
@@ -1113,7 +1149,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/jvagiopg'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-june-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC June Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约六月见面会'
+    })
   },
   {
     id: 'nyc-may-meetup-2025',
@@ -1140,7 +1180,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/q4ibx9ia'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-may-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC May Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约五月见面会'
+    })
   },
   {
     id: 'genart-nyu-real-time-video',
@@ -1171,7 +1215,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/wyvt8b4k'
       },
       newTab: true
-    }
+    },
+    media: eventImage('genart-nyu-real-time-video.jpg', {
+      en: 'Real-Time Video AI @GenART NYU with ComfyUI & Livepeer',
+      'zh-CN': '实时视频 AI @GenART NYU：ComfyUI 与 Livepeer'
+    })
   },
   {
     id: 'nyc-april-meetup-2025',
@@ -1201,7 +1249,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/7p7kppqx'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-april-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC April Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约四月见面会'
+    })
   },
   {
     id: 'comfycon-shanghai',
@@ -1230,7 +1282,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/ComfyCon'
       },
       newTab: true
-    }
+    },
+    media: eventImage('comfycon-shanghai.jpg', {
+      en: "ComfyCon: ComfyUI's first official global conference",
+      'zh-CN': 'ComfyCon：ComfyUI 首届官方全球大会'
+    })
   },
   {
     id: 'austin-ai-film-fest-meetup',
@@ -1259,7 +1315,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/nkiothz3'
       },
       newTab: true
-    }
+    },
+    media: eventImage('austin-ai-film-fest-meetup.jpg', {
+      en: 'ComfyUI Official Meetup: Austin AI Film Fest Edition',
+      'zh-CN': 'ComfyUI 官方见面会：Austin AI Film Fest 特别场'
+    })
   },
   {
     id: 'nyc-march-meetup-women-in-ai-2025',
@@ -1286,7 +1346,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://lu.ma/8uvt2vnz'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-march-meetup-women-in-ai-2025.jpg', {
+      en: 'ComfyUI Official NYC March Meet-Up: Celebrating Women in AI',
+      'zh-CN': 'ComfyUI 官方纽约三月见面会：致敬 AI 领域的女性'
+    })
   },
   {
     id: 'ai-la-march-meetup',
@@ -1315,7 +1379,11 @@ const events: readonly ComfyEvent[] = [
           'https://curiousrefuge.com/all-events/comfyui-officalaila-meetup-march'
       },
       newTab: true
-    }
+    },
+    media: eventImage('ai-la-march-meetup.jpg', {
+      en: 'ComfyUI Official AI LA March Meet-Up',
+      'zh-CN': 'ComfyUI 官方 AI LA 三月见面会'
+    })
   },
   {
     id: 'bentoml-api-endpoints',
@@ -1342,7 +1410,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/ahyuo5m6'
       },
       newTab: true
-    }
+    },
+    media: eventImage('bentoml-api-endpoints.jpg', {
+      en: 'Turning ComfyUI workflows into API endpoints with BentoML',
+      'zh-CN': '用 BentoML 把 ComfyUI 工作流变成 API 端点'
+    })
   },
   {
     id: 'la-february-meetup',
@@ -1370,7 +1442,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/COMFYUI'
       },
       newTab: true
-    }
+    },
+    media: eventImage('la-february-meetup.jpg', {
+      en: 'ComfyUI Official LA February Meet-Up',
+      'zh-CN': 'ComfyUI 官方洛杉矶二月见面会'
+    })
   },
   {
     id: 'nyc-february-meetup-2025',
@@ -1398,7 +1474,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://lu.ma/ettshrqa'
       },
       newTab: true
-    }
+    },
+    media: eventImage('nyc-february-meetup-2025.jpg', {
+      en: 'ComfyUI Official NYC February Meet-Up',
+      'zh-CN': 'ComfyUI 官方纽约二月见面会'
+    })
   },
   {
     id: 'sf-meetup-github',
@@ -1426,7 +1506,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/6skuqn7c'
       },
       newTab: true
-    }
+    },
+    media: eventImage('sf-meetup-github.jpg', {
+      en: 'ComfyUI Official SF Meet-up at GitHub',
+      'zh-CN': 'ComfyUI 官方旧金山见面会 @ GitHub'
+    })
   },
   {
     id: 'kikk-festival-comfyui-workshop',
@@ -1455,7 +1539,11 @@ const events: readonly ComfyEvent[] = [
           'https://www.eventbrite.fr/e/workshop-exploring-generative-ai-with-comfyui-by-varvara-mar-tickets-1030013276437'
       },
       newTab: true
-    }
+    },
+    media: eventImage('kikk-festival-comfyui-workshop.jpg', {
+      en: 'Workshop: Exploring Generative AI with ComfyUI (by Varvara & Mar)',
+      'zh-CN': '工作坊：用 ComfyUI 探索生成式 AI（Varvara & Mar 主讲）'
+    })
   },
   {
     id: 'tokyo-comfyui-meetup',
@@ -1483,7 +1571,11 @@ const events: readonly ComfyEvent[] = [
         'zh-CN': 'https://luma.com/01dbvc75'
       },
       newTab: true
-    }
+    },
+    media: eventImage('tokyo-comfyui-meetup.jpg', {
+      en: 'Tokyo ComfyUI Meet Up (東京ComfyUI交流イベント)',
+      'zh-CN': 'Tokyo ComfyUI Meet Up（東京ComfyUI交流イベント）'
+    })
   }
 ]
 
