@@ -160,6 +160,23 @@ describe('examplesForModel', () => {
     })
   })
 
+  it('carries the declared media kind without guessing from the URL', () => {
+    const [audio] = examplesForModel({
+      examples: [
+        {
+          name: 'speech',
+          title: 'Speech',
+          description: '',
+          tags: [],
+          thumbnailUrl: 'https://cdn.example/asset-without-extension',
+          mediaKind: 'audio',
+          values: {}
+        }
+      ]
+    })
+    expect(audio.mediaKind).toBe('audio')
+  })
+
   it('reads back only the settings that say something', () => {
     const shared = {
       description: '',

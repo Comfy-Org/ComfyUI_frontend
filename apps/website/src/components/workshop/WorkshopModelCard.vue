@@ -92,9 +92,19 @@ const pillClass =
     >
       <HubTypeBadge kind="model" :locale />
 
+      <video
+        v-if="model.thumbnail?.kind === 'video'"
+        :src="model.thumbnail.url"
+        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+        muted
+        loop
+        playsinline
+        autoplay
+        preload="metadata"
+      />
       <img
-        v-if="model.thumbnailUrl"
-        :src="model.thumbnailUrl"
+        v-else-if="model.thumbnail"
+        :src="model.thumbnail.url"
         :alt="model.name"
         class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
         loading="lazy"

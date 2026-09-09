@@ -1,9 +1,8 @@
 import type { Model } from './models'
-import { models } from './models'
-import displayOverrides from './workshop-model-display.json'
-import generatedModels from './workshop-models.generated.json'
-import generatedVersions from './workshop-model-versions.generated.json'
-import { usdToCredits } from './credits'
+import {
+  getRouterWorkshopModelDetail,
+  routerWorkshopModels
+} from './workshop-router-content'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -16,17 +15,6 @@ export type ModelStatus = 'deprecated' | 'degraded'
 const TASK_INPUTS = ['text', 'image', 'video', 'audio'] as const
 export type TaskInput = (typeof TASK_INPUTS)[number]
 export type WorkshopTask = `${TaskInput}-to-${Exclude<ModalityFilter, 'all'>}`
-
-// Hand-maintained overrides on top of workshop-models.generated.json:
-// status flags Router does not report and fallbacks for models the
-// generator could not resolve. Prices here are placeholders.
-interface WorkshopModelDisplay {
-  readonly provider?: string
-  readonly modality?: Modality
-  readonly creditsPerRun?: number
-  readonly status?: ModelStatus
-  readonly successorSlug?: string
-}
 
 export type GeneratedField =
   | {
@@ -78,6 +66,7 @@ export interface GeneratedExample {
   readonly description: string
   readonly tags: readonly string[]
   readonly thumbnailUrl: string
+  readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly node?: { readonly id: string; readonly displayName: string }
   readonly fields?: readonly GeneratedField[]
   readonly values: Readonly<Record<string, string | number | boolean>>
@@ -108,6 +97,11 @@ export interface WorkshopModel {
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
+  readonly thumbnail?: {
+    readonly url: string
+    readonly kind: 'image' | 'video' | 'audio'
+  }
+  readonly useCases?: readonly UseCase[]
   readonly status?: ModelStatus
   readonly successorSlug?: string
 }
@@ -118,8 +112,6 @@ export interface WorkshopModelDetail extends WorkshopModel {
   readonly defaults: Readonly<Record<string, string | number | boolean>>
   readonly examples: readonly GeneratedExample[]
 }
-
-const display = displayOverrides as Record<string, WorkshopModelDisplay>
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -229,22 +221,6 @@ export function decodeGeneratedModels(
   )
 }
 
-const generated = decodeGeneratedModels(generatedModels)
-
-function modelDetailHref(slug: string): string {
-  return `/workshop/models/${slug}/`
-}
-
-// Router ids are `{provider}/{model}`; the registry only knows the slug, so
-// the provider half is derived from display metadata until Router serves it.
-function routerIdFor(slug: string, provider?: string): string {
-  const providerSlug = (provider ?? 'comfy')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-  return `${providerSlug}/${slug}`
-}
-
 // The task is the model's primary input to its output: a required upload
 // makes it image/video/audio-to-X, anything else is text-to-X.
 export function taskFor(
@@ -283,7 +259,7 @@ export const USE_CASES = [
 ] as const
 export type UseCase = (typeof USE_CASES)[number]
 
-export function useCaseFor(model: WorkshopModel): UseCase | undefined {
+function derivedUseCaseFor(model: WorkshopModel): UseCase | undefined {
   const input = model.task ? splitTask(model.task)?.input : undefined
   switch (model.modality) {
     case 'image':
@@ -301,6 +277,16 @@ export function useCaseFor(model: WorkshopModel): UseCase | undefined {
     default:
       return undefined
   }
+}
+
+export function useCasesFor(model: WorkshopModel): readonly UseCase[] {
+  if (model.useCases?.length) return model.useCases
+  const derived = derivedUseCaseFor(model)
+  return derived ? [derived] : []
+}
+
+export function useCaseFor(model: WorkshopModel): UseCase | undefined {
+  return useCasesFor(model)[0]
 }
 
 // Example tags that say what a model can do beyond its use case. Tags that
@@ -331,7 +317,9 @@ const CAPABILITY_LABELS: Readonly<Record<string, string>> = {
 // derived from, which lands video capabilities on an image model and the other
 // way round. What a model puts out is the one thing we know first-hand, so it
 // decides which of the inherited labels may stand.
-const CAPABILITY_MODALITY: Readonly<Record<string, 'image' | 'video'>> = {
+const CAPABILITY_MODALITY: Readonly<
+  Partial<Record<string, 'image' | 'video'>>
+> = {
   'Image editing': 'image',
   Inpainting: 'image',
   Outpainting: 'image',
@@ -358,14 +346,6 @@ export function capabilitiesFor(
   return [...new Set(labels)].filter(fits).sort()
 }
 
-// The registry names some models "Model (Provider)" or "Model (API)"; the
-// card already shows the provider, and every Workshop model runs via API.
-function withoutRegistrySuffix(name: string, provider?: string): string {
-  const suffixes = ['(API)', ...(provider ? [`(${provider})`] : [])]
-  const suffix = suffixes.find((candidate) => name.endsWith(candidate))
-  return suffix ? name.slice(0, -suffix.length).trim() : name
-}
-
 // Router does not report usage yet; until it does, each model gets a stable
 // placeholder derived from its slug and workflow count.
 export function mockRuns(slug: string, workflowCount: number): number {
@@ -384,137 +364,22 @@ export function formatRuns(runs: number, locale: string): string {
     .toLowerCase()
 }
 
-function toWorkshopModel(model: Model): WorkshopModel {
-  const overrides = display[model.slug] ?? {}
-  const data = generated[model.slug]
-  const provider = overrides.provider ?? data?.provider
-  const modality = overrides.modality ?? data?.modality
-  // One preset price per model, edited in workshop-model-display.json.
-  const creditsPerRun =
-    overrides.creditsPerRun ??
-    (data?.priceUsdFrom !== undefined
-      ? usdToCredits(data.priceUsdFrom)
-      : undefined)
-  return {
-    slug: model.slug,
-    name: withoutRegistrySuffix(model.displayName, provider),
-    workflowCount: model.workflowCount,
-    href: modelDetailHref(model.slug),
-    routerId: routerIdFor(model.slug, provider),
-    ...(provider ? { provider } : {}),
-    ...(modality ? { modality } : {}),
-    ...(data ? { task: taskFor(data.fields, modality) } : {}),
-    capabilities: capabilitiesFor(data?.examples ?? [], modality),
-    runs: mockRuns(model.slug, model.workflowCount),
-    ...(creditsPerRun !== undefined ? { creditsPerRun } : {}),
-    ...(data?.priceUsdFrom !== undefined
-      ? { priceUsdFrom: data.priceUsdFrom }
-      : {}),
-    ...(data?.thumbnailUrl ? { thumbnailUrl: data.thumbnailUrl } : {}),
-    ...(overrides.status ? { status: overrides.status } : {}),
-    ...(overrides.successorSlug
-      ? { successorSlug: overrides.successorSlug }
-      : {})
-  }
-}
-
 export function isRouterModel(model: Model): boolean {
   return (
     model.directory === 'partner_nodes' && model.canonicalSlug === undefined
   )
 }
 
-const routerModels: readonly WorkshopModel[] = models
-  .filter(isRouterModel)
-  .map(toWorkshopModel)
-
-// The releases the templates name that the node-level catalogue never had.
-// Each runs on its node's schema, defaults, examples and price.
-interface GeneratedVersion {
-  readonly name: string
-  readonly slug: string
-  readonly baseSlug: string
-  readonly provider?: string
-  readonly modality?: Modality
-  readonly workflowCount: number
-  readonly thumbnailUrl?: string
-}
-
-const versions = generatedVersions as GeneratedVersion[]
-const baseSlugFor = new Map(
-  versions.map((version) => [version.slug, version.baseSlug])
-)
-
-function toVersionModel(version: GeneratedVersion): WorkshopModel {
-  const base = routerModels.find((model) => model.slug === version.baseSlug)
-  const data = generated[version.baseSlug]
-  const provider = version.provider ?? base?.provider
-  return {
-    slug: version.slug,
-    name: version.name,
-    workflowCount: version.workflowCount,
-    href: modelDetailHref(version.slug),
-    routerId: routerIdFor(version.slug, provider),
-    ...(provider ? { provider } : {}),
-    ...(version.modality ? { modality: version.modality } : {}),
-    ...(data ? { task: taskFor(data.fields, version.modality) } : {}),
-    capabilities: capabilitiesFor(data?.examples ?? [], version.modality),
-    runs: mockRuns(version.slug, version.workflowCount),
-    ...(base?.creditsPerRun !== undefined
-      ? { creditsPerRun: base.creditsPerRun }
-      : {}),
-    ...(base?.priceUsdFrom !== undefined
-      ? { priceUsdFrom: base.priceUsdFrom }
-      : {}),
-    ...(version.thumbnailUrl ? { thumbnailUrl: version.thumbnailUrl } : {})
-  }
-}
-
-// A model the generator could not resolve has no schema to run and no template
-// to show, so its page is an empty shell. Until the data is there it stays out
-// of the catalogue rather than being listed as something a visitor can try.
-function isRunnable(model: WorkshopModel): boolean {
-  const data = generated[baseSlugFor.get(model.slug) ?? model.slug]
-  return (data?.fields ?? []).length > 0 && (data?.examples ?? []).length > 0
-}
-
-export const workshopModels: readonly WorkshopModel[] = [
-  ...routerModels,
-  ...versions.map(toVersionModel)
-].filter(isRunnable)
+export const workshopModels: readonly WorkshopModel[] = routerWorkshopModels
 
 export function getWorkshopModel(slug: string): WorkshopModel | undefined {
   return workshopModels.find((model) => model.slug === slug)
 }
 
-// A family's releases run the same templates, and those titles lead with the
-// one release they were written for ("Kling 3.0: Motion Control"). On a sibling
-// page that names a model the reader is not looking at, so the prefix goes.
-const modelNames = new Set(workshopModels.map((model) => model.name))
-
-function withoutModelPrefix(title: string): string {
-  const prefix = /^(.+?):\s+/.exec(title)
-  return prefix && modelNames.has(prefix[1])
-    ? title.slice(prefix[0].length)
-    : title
-}
-
 export function getWorkshopModelDetail(
   slug: string
 ): WorkshopModelDetail | undefined {
-  const model = getWorkshopModel(slug)
-  if (!model) return undefined
-  const data = generated[baseSlugFor.get(slug) ?? slug]
-  return {
-    ...model,
-    ...(data?.node ? { nodeDisplayName: data.node.displayName } : {}),
-    fields: data?.fields ?? [],
-    defaults: data?.defaults ?? {},
-    examples: (data?.examples ?? []).map((example) => ({
-      ...example,
-      title: withoutModelPrefix(example.title)
-    }))
-  }
+  return getRouterWorkshopModelDetail(slug)
 }
 
 export function modalityOf(
@@ -581,7 +446,7 @@ export function filterWorkshopModels(
   const needle = query.trim().toLowerCase()
   return list.filter(
     (model) =>
-      (useCase === 'all' || useCaseFor(model) === useCase) &&
+      (useCase === 'all' || useCasesFor(model).includes(useCase)) &&
       (modalities.length === 0 || modalities.includes(modalityOf(model))) &&
       matchesFacet(providers, model.provider) &&
       (capabilities.length === 0 ||
@@ -596,7 +461,7 @@ function searchText(model: WorkshopModel): string {
   return [
     model.name,
     model.provider ?? '',
-    useCaseFor(model)?.replaceAll('-', ' ') ?? '',
+    ...useCasesFor(model).map((useCase) => useCase.replaceAll('-', ' ')),
     ...model.capabilities,
     modalityOf(model),
     model.task?.replaceAll('-', ' ') ?? ''
@@ -672,8 +537,7 @@ export function countByUseCase(
   ) as Record<UseCase | 'all', number>
   for (const model of list) {
     counts.all += 1
-    const useCase = useCaseFor(model)
-    if (useCase) counts[useCase] += 1
+    for (const useCase of useCasesFor(model)) counts[useCase] += 1
   }
   return counts
 }

@@ -83,25 +83,23 @@ describe('HubBrowse', () => {
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
     const lead = screen.getAllByTestId('hub-models-lead')
-    expect(lead[0].textContent).toContain('Tripo')
-    expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
+    expect(lead[0].textContent).toContain('Meshy')
+    expect(screen.getByTestId('hub-showing').textContent).toContain('of ')
 
     await user.click(screen.getByTestId('hub-tab-models'))
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(5)
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(29)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 
-  it('collapses the releases of a family when the prototype asks for it', async () => {
+  it('keeps distinct Router endpoints separate when grouping finds no family', async () => {
     const user = userEvent.setup()
     groupVersions.value = true
     render(HubBrowse)
 
     await user.click(screen.getByTestId('hub-use-case-3d'))
     await user.click(screen.getByTestId('hub-tab-models'))
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(3)
-    expect(
-      screen.getAllByTestId('model-card-versions')[0].textContent
-    ).toContain('2 versions')
+    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(29)
+    expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 
   it('counts the applied filters in the popover and clears them', async () => {

@@ -74,13 +74,22 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
             "
           >
             <video
-              v-if="isVideoUrl(example.outputUrl)"
+              v-if="
+                example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
+              "
               :src="example.outputUrl"
               class="size-full object-cover"
               muted
               loop
               playsinline
               autoplay
+            />
+            <audio
+              v-else-if="example.mediaKind === 'audio'"
+              :src="example.outputUrl"
+              class="size-full px-3"
+              controls
+              preload="metadata"
             />
             <img
               v-else-if="example.outputUrl"

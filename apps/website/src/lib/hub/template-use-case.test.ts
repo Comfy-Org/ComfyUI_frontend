@@ -56,7 +56,7 @@ describe('partnerModelFor', () => {
   it('falls back to the generated join for a name-only template', () => {
     const tmpl = { ...template(['API']), name: 'api_bytedance_text_to_video' }
     expect(partnerModelFor(tmpl, workshopModels)?.slug).toBe(
-      'seedance-bytedance'
+      'byteplus--seedance-1-0-lite-text-to-video'
     )
   })
 

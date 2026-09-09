@@ -7,6 +7,30 @@ import type { HubTemplate } from './types'
 // model only in the file name, and only where the two agree on the medium.
 const JOINED_SLUG = templateModelJoin as Record<string, string>
 
+const ROUTER_SLUG_BY_LEGACY_FAMILY: Readonly<Record<string, string>> = {
+  beeble: 'beeble--switchx-image-edit',
+  'bria-ai': 'bria--fibo-image-edit',
+  'gemini-image': 'vertexai--gemini-2.5-flash-image',
+  'grok-imagine': 'xai--grok-imagine-video',
+  happyhorse1: 'wan--happyhorse-text-to-video',
+  'kling-ai': 'kling--v3',
+  'ltx-2': 'ltx--text-to-video-v2',
+  'luma-dream-machine': 'luma--ray-2-text-to-video',
+  'magnific-ai': 'freepik--magnific-upscaler-creative',
+  'meshy-7': 'meshy--text-to-model',
+  'meshy-ai': 'meshy--text-to-model',
+  minimax: 'minimax--hailuo-03',
+  'nano-banana': 'vertexai--gemini-nano-banana-2',
+  'openai-dall-e': 'openai--dall-e-3',
+  'rodin-3d': 'rodin--gen2',
+  'seedance-2': 'byteplus--seedance-2-5-text-to-video',
+  'seedance-bytedance': 'byteplus--seedance-1-0-lite-text-to-video',
+  sync: 'synclabs--lip-sync',
+  'topaz-labs': 'topaz--image-enhance',
+  'tripo-3d': 'tripo--text-to-model',
+  vidu: 'vidu--text-to-video-q3-pro'
+}
+
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
@@ -26,7 +50,8 @@ export function partnerModelFor(
   template: HubTemplate,
   models: readonly WorkshopModel[]
 ): WorkshopModel | undefined {
-  const joined = JOINED_SLUG[template.name]
+  const legacy = JOINED_SLUG[template.name]
+  const joined = legacy ? ROUTER_SLUG_BY_LEGACY_FAMILY[legacy] : undefined
   return (
     modelNamedBy(template, models) ??
     (template.tags.includes('API')

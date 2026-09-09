@@ -35,7 +35,7 @@ import {
   modalityOf,
   filterWorkshopModels,
   sortWorkshopModels,
-  useCaseFor
+  useCasesFor
 } from '../../config/workshop'
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -185,9 +185,8 @@ const inModality = (model: WorkshopModel) =>
 // The other-formats section stands in for several sparse use cases at once, so
 // its models come from that whole set rather than a single-use-case filter.
 const inOtherFormats = (model: WorkshopModel) => {
-  const modelUseCase = useCaseFor(model)
-  return (
-    modelUseCase !== undefined && OTHER_FORMAT_USE_CASES.includes(modelUseCase)
+  return useCasesFor(model).some((useCase) =>
+    OTHER_FORMAT_USE_CASES.includes(useCase)
   )
 }
 const inSectionScope = (model: WorkshopModel) =>

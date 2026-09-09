@@ -57,6 +57,23 @@ describe('WorkshopSections', () => {
     expect(screen.queryByTestId('section-audio')).toBeNull()
   })
 
+  it('shows a multi-purpose model in each tagged row', () => {
+    render(WorkshopSections, {
+      props: {
+        models: [
+          {
+            ...models[2],
+            useCases: ['generate-images', 'edit-images']
+          }
+        ],
+        labelKey
+      }
+    })
+
+    expect(screen.getByTestId('section-generate-images')).toBeTruthy()
+    expect(screen.getByTestId('section-edit-images')).toBeTruthy()
+  })
+
   it('applies the chosen sort inside each row', () => {
     render(WorkshopSections, {
       props: { models, labelKey, sort: 'name' }
