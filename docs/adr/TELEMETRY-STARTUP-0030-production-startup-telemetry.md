@@ -62,8 +62,8 @@ reconstructing one.
 | Signal                             | Mechanism                         | Lands in                       |
 | ---------------------------------- | --------------------------------- | ------------------------------ |
 | Phase boundary                     | `datadogRum.addTiming(phase)`     | `@view.custom_timings.<phase>` |
-| Time to a usable app               | `datadogRum.setViewLoadingTime()` | `@view.loading_time`           |
-| Per-session outcome and breakdown  | `app:bootstrap_complete` action   | `@context.*`                   |
+| Current RUM view loading time      | `datadogRum.setViewLoadingTime()` | `@view.loading_time`           |
+| Per-attempt outcome and breakdown  | `app:bootstrap_complete` action   | `@context.*`                   |
 | Phase timings attached to an error | Sentry breadcrumb                 | breadcrumb trail               |
 | Local investigation                | `performance.mark`/`measure`      | DevTools timeline              |
 
@@ -73,6 +73,11 @@ attribute, and we do not use a duration vital for the page load: duration
 vitals describe discrete operations inside a view, such as
 `workflow_execution`, not the load of the view itself.
 
+`setViewLoadingTime()` measures from the start of the current RUM view. When a
+route change creates a new view during startup, such as a login redirect,
+`@view.loading_time` covers only the final view segment. The aggregate action's
+`@context.total_ms` covers the complete startup attempt.
+
 ### The aggregate action still earns its place
 
 `app:bootstrap_complete` carries `total_ms`, `outcome`, `phase_count`,
@@ -80,21 +85,27 @@ vitals describe discrete operations inside a view, such as
 and per-phase events cannot be percentiled without a fifteen-row join. This row
 is what makes "how many users hit a slow load" a single query.
 
-**Cardinality is one to two rows per session, not one.** A session that
-finishes normally emits exactly one terminal row. A session still running at
-the watchdog deadline emits a `timed_out` row first and then its terminal row
-if it ever finishes, so it contributes two. A session that never finishes
-contributes only the `timed_out` row.
+**Cardinality is one to two rows per startup attempt, not per Datadog
+session.** An attempt that finishes normally emits exactly one terminal row.
+An attempt still running at the watchdog deadline emits a `timed_out` row first
+and then its terminal row if it ever finishes, so it contributes two. An
+attempt that never finishes contributes only the `timed_out` row.
+
+A Datadog session can span multiple page loads and startup attempts. Its
+`session.id` groups those attempts; it does not identify one attempt.
 
 Queries must therefore select an outcome rather than counting rows:
 
-| Question                               | Filter                                                                  |
-| -------------------------------------- | ----------------------------------------------------------------------- |
-| How long did startup take              | `@context.outcome:(completed OR failed)` — one row per finished session |
-| How many sessions blew past 30 s       | `@context.outcome:timed_out` — one row per affected session             |
-| How many sessions are affected overall | count distinct session id, not rows                                     |
+| Question                                   | Filter                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| How long did a startup attempt take        | `@context.outcome:(completed OR failed)` — one row per finished attempt |
+| How many attempts exceeded 30 seconds      | `@context.outcome:timed_out` — one row per affected attempt             |
+| How many RUM sessions contained an overrun | `@context.outcome:timed_out`, counted by distinct `session.id`          |
 
-An undifferentiated row count double-counts every hung session.
+An undifferentiated row count double-counts every attempt that emits both a
+watchdog row and a terminal row. A distinct `session.id` count answers how many
+RUM sessions were affected, not how many startup attempts or users were
+affected.
 
 ### Outcomes are recorded so the bad sessions survive
 
@@ -146,9 +157,11 @@ past telemetry init.
   6.33.0. If its behavior changes, `@view.loading_time` is affected;
   `@context.total_ms` is the unaffected fallback and is
   deliberately retained rather than deduplicated away.
-- Custom timings attach to the view current when recorded, so a route change
-  mid-startup — the login redirect — splits the timing series across views.
-  The aggregate action carries the complete series and is the system of record.
+- Custom timings attach to the view current when recorded, and loading time is
+  measured from that view's start. A route change during startup, such as the
+  login redirect, splits the timing series across views and makes
+  `@view.loading_time` cover only the final view segment. The aggregate action
+  carries the complete series and total and is the system of record.
 - Emitting to Datadog directly rather than through the registry means a future
   sink added to the registry does not automatically receive this signal.
 - Datadog and PostHog will disagree on volume, as ADR-TELEMETRY-ROUTING-0013
