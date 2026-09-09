@@ -213,6 +213,47 @@ describe('agentSubgraphHostSlots', () => {
     expect(promotedWidgetNames(outer, index)).toEqual(['value'])
   })
 
+  it('resolves a cyclic fan-out without revisiting definitions exponentially', () => {
+    // `sg-outer.extra` fans out to two `sg-1` instances (nodes 1 and 3), and
+    // `sg-1.extra` links back into an `sg-outer` instance. A depth-only walk
+    // doubles the work at every level (2^32 lookups before the cap); a walk
+    // that remembers in-flight and resolved inputs settles in a handful.
+    const outer = outerWithNestedInstance()
+    outer.inputs![0] = { ...outer.inputs![0], linkIds: [1, 3] }
+    outer.nodes[0].inputs = [{ name: 'extra', type: 'NUMBER', link: 1 }]
+    outer.nodes.push({
+      ...outer.nodes[0],
+      id: 3,
+      inputs: [{ name: 'extra', type: 'NUMBER', link: 3 }]
+    })
+    outer.links!.push({
+      id: 3,
+      origin_id: -10,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'NUMBER'
+    })
+    const nested = definition()
+    nested.nodes[0] = {
+      ...nested.nodes[0],
+      type: 'sg-outer',
+      inputs: [{ name: 'extra', type: 'NUMBER', link: 1 }]
+    }
+    class CountingIndex extends Map<string, ExportedSubgraph> {
+      lookups = 0
+      override get(key: string) {
+        if (++this.lookups > 1000) {
+          throw new Error(`definition lookups exceeded 1000 (${key})`)
+        }
+        return super.get(key)
+      }
+    }
+    const index = new CountingIndex(indexSubgraphDefinitions([outer, nested]))
+    expect(promotedWidgetNames(outer, index)).toEqual(['value'])
+    expect(index.lookups).toBeLessThan(50)
+  })
+
   it('resolves host slot index from definition order, not doc order', () => {
     const def = definition()
     expect(hostSlotIndex(def, 'extra')).toBe(0)

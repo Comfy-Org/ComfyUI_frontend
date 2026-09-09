@@ -68,35 +68,99 @@ const MAX_NESTED_PROMOTION_DEPTH = 32
  *   `_resolveNestedPromotedSource`.
  *
  * A nested instance whose definition is missing from `index`, or whose chain
- * exceeds the depth cap, counts as unpromoted.
+ * exceeds the depth cap, counts as unpromoted. So does an input whose chain
+ * leads back to itself: a cyclic definition reference can never reach a real
+ * widget, and the walk stops the first time it meets an input it is already
+ * resolving instead of chasing the cycle to the depth cap. Each (definition,
+ * input) pair is resolved once per call, so a fan-out of nested instances
+ * costs linear, not exponential, work.
  */
 export function promotedWidgetNames(
   definition: ExportedSubgraph,
-  index: SubgraphDefinitionIndex,
-  depth = 0
+  index: SubgraphDefinitionIndex
 ): string[] {
-  const linksById = new Map(
-    (definition.links ?? []).map((link) => [link.id, link])
+  const traversal: PromotionTraversal = {
+    index,
+    active: new Set(),
+    resolved: new Map(),
+    capHits: 0,
+    lookups: new Map()
+  }
+  return (definition.inputs ?? []).flatMap((input, inputIndex) =>
+    isPromoted(definition, inputIndex, traversal, 0) ? [input.name] : []
   )
-  const nodesById = new Map(
-    (definition.nodes ?? []).map((node) => [String(node.id), node])
-  )
-  return (definition.inputs ?? []).flatMap((input) => {
-    const promoted = (input.linkIds ?? []).some((linkId) => {
-      const link = linksById.get(linkId)
-      if (!link) return false
-      const target = nodesById.get(String(link.target_id))
-      const targetInput = target?.inputs?.[link.target_slot]
-      if (!target || !targetInput) return false
-      const nested = index.get(target.type)
-      if (!nested) return targetInput.widget != null
-      if (depth >= MAX_NESTED_PROMOTION_DEPTH) return false
-      return promotedWidgetNames(nested, index, depth + 1).includes(
-        targetInput.name
-      )
-    })
-    return promoted ? [input.name] : []
+}
+
+interface DefinitionLookups {
+  linksById: ReadonlyMap<number, NonNullable<ExportedSubgraph['links']>[number]>
+  nodesById: ReadonlyMap<string, NonNullable<ExportedSubgraph['nodes']>[number]>
+}
+
+interface PromotionTraversal {
+  index: SubgraphDefinitionIndex
+  /** `${definition.id}#${inputIndex}` keys currently being resolved. */
+  active: Set<string>
+  /** Settled answers for keys whose resolution never touched the depth cap. */
+  resolved: Map<string, boolean>
+  /** How many times the depth cap has cut a chain short so far. */
+  capHits: number
+  lookups: Map<ExportedSubgraph, DefinitionLookups>
+}
+
+function lookupsFor(
+  definition: ExportedSubgraph,
+  traversal: PromotionTraversal
+): DefinitionLookups {
+  const existing = traversal.lookups.get(definition)
+  if (existing) return existing
+  const lookups: DefinitionLookups = {
+    linksById: new Map((definition.links ?? []).map((link) => [link.id, link])),
+    nodesById: new Map(
+      (definition.nodes ?? []).map((node) => [String(node.id), node])
+    )
+  }
+  traversal.lookups.set(definition, lookups)
+  return lookups
+}
+
+function isPromoted(
+  definition: ExportedSubgraph,
+  inputIndex: number,
+  traversal: PromotionTraversal,
+  depth: number
+): boolean {
+  const input = definition.inputs?.[inputIndex]
+  if (!input) return false
+  const key = `${definition.id}#${inputIndex}`
+  const settled = traversal.resolved.get(key)
+  if (settled !== undefined) return settled
+  if (traversal.active.has(key)) return false
+  traversal.active.add(key)
+  const capHitsBefore = traversal.capHits
+  const { linksById, nodesById } = lookupsFor(definition, traversal)
+  const promoted = (input.linkIds ?? []).some((linkId) => {
+    const link = linksById.get(linkId)
+    if (!link) return false
+    const target = nodesById.get(String(link.target_id))
+    const targetInput = target?.inputs?.[link.target_slot]
+    if (!target || !targetInput) return false
+    const nested = traversal.index.get(target.type)
+    if (!nested) return targetInput.widget != null
+    if (depth >= MAX_NESTED_PROMOTION_DEPTH) {
+      traversal.capHits++
+      return false
+    }
+    return (nested.inputs ?? []).some(
+      (nestedInput, nestedIndex) =>
+        nestedInput.name === targetInput.name &&
+        isPromoted(nested, nestedIndex, traversal, depth + 1)
+    )
   })
+  traversal.active.delete(key)
+  // An answer that was cut short by the depth cap depends on where in the
+  // chain this input was reached, so only depth-independent answers are kept.
+  if (traversal.capHits === capHitsBefore) traversal.resolved.set(key, promoted)
+  return promoted
 }
 
 /**
