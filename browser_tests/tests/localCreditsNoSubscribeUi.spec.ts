@@ -69,8 +69,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await expect(
       planCreditsContent.getByRole('button', { name: 'Activity', exact: true })
     ).toBeVisible()
-    // Anchored on the test id, not the copy: a copy rename would silently
-    // defuse this guard while leaving it green.
+      // Test id, not copy: a rename would defuse this guard while leaving it green.
     await expect(
       planCreditsContent.getByTestId('upgrade-for-more-credits-button')
     ).toHaveCount(0)

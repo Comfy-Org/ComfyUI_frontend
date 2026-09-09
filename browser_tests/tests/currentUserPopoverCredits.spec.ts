@@ -73,8 +73,7 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-// Free tier on the workspace backend: the popover swaps "Add credits" for
-// the single contextual "Upgrade" action (DES-534).
+  // Free tier: the popover swaps Add credits for the single Upgrade action.
 const mockFreeTierBillingStatus: BillingStatusResponse = {
   ...mockBillingStatus,
   subscription_status: 'active',
@@ -253,9 +252,7 @@ freeTierTest.describe(
 
         const popover = page.getByTestId(TestIds.user.currentUserPopover)
         await expect(popover).toBeVisible()
-        // Both popovers share the container test id and, after this PR, the
-        // upgrade button too — so pin the workspace one before asserting on
-        // it, or a broken flag seed would silently test the legacy popover.
+          // Both popovers share these test ids, so pin the workspace one first.
         await expect(
           popover.getByTestId('workspace-switcher-trigger')
         ).toBeVisible()

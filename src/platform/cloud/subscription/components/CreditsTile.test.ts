@@ -552,7 +552,7 @@ describe('CreditsTile', () => {
     state.canAccessSubscriptionFeatures = false
     state.balance = { amountMicros: 500 }
     renderTile()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.queryByTestId('upgrade-for-more-credits-button')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
@@ -563,7 +563,7 @@ describe('CreditsTile', () => {
     state.isTeamPlan = true
     state.balance = { amountMicros: 500 }
     renderTile()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.queryByTestId('upgrade-for-more-credits-button')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })

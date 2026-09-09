@@ -92,8 +92,7 @@ describe('SubscribeToRun', () => {
     renderButton()
 
     const button = screen.getByTestId('subscribe-to-run-button')
-    // Exact match: a substring check on 'Run' would also pass for the owner
-    // label 'Upgrade to Run'.
+      // Exact match: 'Run' as a substring would also pass for 'Upgrade to Run'.
     expect(button).toHaveTextContent(/^Run$/)
   })
 

@@ -111,7 +111,7 @@ describe('TopbarSubscribeButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('hides when the user cannot run (e.g. free-tier quota exhausted)', () => {
+  it('hides whenever the user cannot run, whatever closed it', () => {
     mockBilling.canRunWorkflows = false
     renderComponent()
     expect(
@@ -119,9 +119,6 @@ describe('TopbarSubscribeButton', () => {
     ).not.toBeInTheDocument()
   })
 
-  // The run bar is the only thing this button defers to, and builder and
-  // arrange mode omit the menu that hosts it — so hiding there would leave
-  // a free-tier user with no upgrade entry at all on the Legacy tab layout.
   it('stays visible in builder mode even when the user cannot run', () => {
     mockBilling.canRunWorkflows = false
     mockBilling.isBuilderMode = true

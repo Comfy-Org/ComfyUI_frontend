@@ -23,12 +23,7 @@ import { isCloud } from '@/platform/distribution/types'
 const { isFreeTier, canRunWorkflows } = useBillingContext()
 const { isBuilderMode } = useAppMode()
 
-// Hidden only when the run bar is there to carry the upgrade instead: it
-// turns into "Upgrade to Run" whenever the user cannot run, and two gold
-// CTAs at once is what DES-534 set out to remove. Builder and arrange mode
-// omit #topmenu entirely (GraphCanvas.vue), so there is nothing to defer to
-// and this stays the only entry point — on the Legacy tab layout it is also
-// the only one, since the avatar lives in that same omitted menu.
+// Builder and arrange mode omit the run bar, so this stays the only entry.
 const showUpgradeCta = computed(
   () =>
     isCloud &&
