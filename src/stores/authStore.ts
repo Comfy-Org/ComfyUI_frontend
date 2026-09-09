@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
 import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/core'
@@ -124,7 +124,9 @@ export const useAuthStore = defineStore('auth', () => {
   // Retrieves the Firebase Auth instance. Returns `null` on the server.
   // When using this function on the client in TypeScript, you can force the type with `useFirebaseAuth()!`.
   const auth = useFirebaseAuth()!
-  // The package's sign-in actions over this same instance: no second app.
+  // The package's identity entry over this same instance, no second app:
+  // sign-in actions here, the session client's identity source in
+  // workspaceAuthStore.
   const identity = createFirebaseIdentity({ auth })
   // Set persistence to localStorage (works in both browser and Electron)
   void setPersistence(auth, browserLocalPersistence)
@@ -152,9 +154,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     currentUser.value = user
     isInitialized.value = true
-    if (isCloud) {
-      useWorkspaceAuthStore().syncUnifiedIdentity()
-    }
     if (user === null) {
       lastTokenUserId.value = null
     } else if (isCloud) {
@@ -808,6 +807,7 @@ export const useAuthStore = defineStore('auth', () => {
     // State
     loading,
     currentUser,
+    identity: markRaw(identity),
     isInitialized,
     balance,
     lastBalanceUpdateTime,

@@ -183,13 +183,16 @@ describe('useAuthStore', () => {
       > as ReturnType<typeof vuefire.useFirebaseAuth>
     )
 
-    // Mock onAuthStateChanged to capture the callback and simulate initial auth state
+    // Every observer registered on the Auth instance (the store's listener
+    // and the package port) gets each auth-state event, as Firebase does.
+    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateCallback = (user) =>
+      authStateObservers.forEach((observer) => observer(user))
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        // Call the callback with our mock user
-        ;(callback as (user: User | null) => void)(mockUser)
-        // Return an unsubscribe function
+        const observer = callback as (user: User | null) => void
+        authStateObservers.push(observer)
+        observer(mockUser)
         return vi.fn()
       }
     )
@@ -336,23 +339,18 @@ describe('useAuthStore', () => {
     })
   })
 
-  describe('unified identity push', () => {
-    it('pushes the identity sync into the workspace store on every auth-state event', () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      const syncSpy = vi.spyOn(workspaceAuth, 'syncUnifiedIdentity')
+  describe('unified identity source', () => {
+    it('the session client listens to the same Auth instance through the package port', async () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
 
-      authStateCallback(mockUser)
-      expect(
-        syncSpy,
-        'identity must reach the unified client on the auth event itself, not on the next entry-point call'
-      ).toHaveBeenCalled()
+      await useWorkspaceAuthStore().mintAtLogin()
 
-      syncSpy.mockClear()
-      authStateCallback(null)
       expect(
-        syncSpy,
-        'sign-out must push the identity diff too, so the client can never hold a stale user'
-      ).toHaveBeenCalled()
+        vi.mocked(firebaseAuth.onAuthStateChanged),
+        'identity must come from Firebase itself, not be pushed from this store'
+      ).toHaveBeenCalledWith(mockAuth, expect.any(Function))
+      expect(useWorkspaceAuthStore()).not.toHaveProperty('syncUnifiedIdentity')
     })
   })
 
