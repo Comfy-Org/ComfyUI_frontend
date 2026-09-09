@@ -4,7 +4,11 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SortOrder, UseCase, WorkshopModel } from '../../config/models-catalogue'
+import type {
+  SortOrder,
+  UseCase,
+  WorkshopModel
+} from '../../config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
