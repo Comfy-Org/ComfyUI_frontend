@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "Fixa um latent já codificado como guia, para quando o guia vem de uma etapa anterior em vez de uma imagem. Tem o mesmo efeito de LTXV Add Guide sem o ciclo de decodificação/codificação do VAE. Um guia espacialmente menor que o alvo (uma referência IC-LoRA ou de detalhamento) é dilatado em uma grade esparsa, e suas posições finais de RoPE são expandidas pela mesma proporção para que cubra a tela de destino, em vez de abordar apenas o canto superior esquerdo dela.",
+    "display_name": "LTXV Adicionar Guia Latent",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional no espaço de pixels. Controla a influência do condicionamento por região por meio de autoatenção, multiplicada por strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Latent do guia. Seu tamanho espacial deve dividir o do alvo pelo mesmo número inteiro em ambos os eixos; tamanho igual o fixa como está, e metade do tamanho é tratada como uma referência IC-LoRA x2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latent de vídeo de destino no qual o guia é fixado."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Índice do quadro latent em que o guia começa, contado em quadros latent em vez de quadros de pixels. Valores negativos colocam o guia em quadros anteriores ao início do latent, sem contar a partir do fim dele."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "Limitado a 1.0. Um guia dilatado marca suas posições de preenchimento com uma máscara de denoise negativa para que o modelo as descarte; acima de 1.0, as posições mantidas também ficariam negativas e todo o guia seria descartado. Em vez disso, amplifique além de 1.0 com attention_mask."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV Decodificar Áudio VAE",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "Carregar 3D (Avançado)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderização do viewport em pixels."
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largura de renderização do viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D carregado (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço global com Y para cima)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informações da câmera do viewport: posição, alvo de mira, zoom e tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largura de renderização do viewport em pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderização do viewport em pixels."
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Gera imagens via endpoint GPT Image da OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Condicionamento Multivista",
+    "inputs": {
+      "back": {
+        "name": "trás",
+        "tooltip": "Vista quadrada da parte traseira do objeto, com alfa ou sobre fundo preto, enquadrada como o rig: o objeto ocupa cerca de 1/1.1 do quadro em sua maior largura, na mesma escala em todas as vistas. A primeira vista conectada (ordem: frente, esquerda, trás, direita) é a frente para a qual a malha é posicionada."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision DINOv3 ViT-L/16 com pesos NAF incluídos."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FOV horizontal em graus das vistas conforme enquadradas: 20 para renderizações de rig e a maioria dos geradores multivista, ou MoGeGeometryToFOV em uma das vistas para fotos."
+      },
+      "front": {
+        "name": "frente",
+        "tooltip": "Vista quadrada da frente do objeto, com alfa ou sobre fundo preto, enquadrada como o rig: o objeto ocupa cerca de 1/1.1 do quadro em sua maior largura, na mesma escala em todas as vistas. A primeira vista conectada (ordem: frente, esquerda, trás, direita) é a frente para a qual a malha é posicionada."
+      },
+      "left": {
+        "name": "esquerda",
+        "tooltip": "Vista quadrada do lado esquerdo do objeto, com alfa ou sobre fundo preto, enquadrada como o rig: o objeto ocupa cerca de 1/1.1 do quadro em sua maior largura, na mesma escala em todas as vistas. A primeira vista conectada (ordem: frente, esquerda, trás, direita) é a frente para a qual a malha é posicionada."
+      },
+      "right": {
+        "name": "direita",
+        "tooltip": "Vista quadrada do lado direito do objeto, com alfa ou sobre fundo preto, enquadrada como o rig: o objeto ocupa cerca de 1/1.1 do quadro em sua maior largura, na mesma escala em todas as vistas. A primeira vista conectada (ordem: frente, esquerda, trás, direita) é a frente para a qual a malha é posicionada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "Gera vídeos com base no prompt e no output_size.",
     "display_name": "PixVerse Imagem para Vídeo",
@@ -17300,10 +17390,12 @@
     "display_name": "Visualizar 3D (Avançado)",
     "inputs": {
       "camera_info": {
-        "name": "info_câmera"
+        "name": "info_câmera",
+        "tooltip": "Informações da câmera da área de visualização: posição, alvo de visualização, zoom e tipo."
       },
       "height": {
-        "name": "altura"
+        "name": "altura",
+        "tooltip": "Altura de renderização da área de visualização em pixels."
       },
       "model_3d": {
         "name": "modelo_3d",
@@ -17316,29 +17408,30 @@
         "name": "estado_da_janela_de_visualização"
       },
       "width": {
-        "name": "largura"
+        "name": "largura",
+        "tooltip": "Largura de renderização da área de visualização em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "arquivo_modelo",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D (glb/obj/stl/etc.) de um nó 3D anterior."
       },
       "1": {
         "name": "info_câmera",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "info_modelo_3d",
-        "tooltip": null
+        "tooltip": "Informações da câmera da área de visualização: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "largura",
-        "tooltip": null
+        "tooltip": "Largura de renderização da área de visualização em pixels."
       },
       "4": {
         "name": "altura",
-        "tooltip": null
+        "tooltip": "Altura de renderização da área de visualização em pixels."
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "Salvar 3D (Avançado)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Informações da câmera da área de visualização: posição, alvo de visualização, zoom e tipo."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderização da área de visualização em pixels."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Arquivo de modelo 3D de um nó 3D upstream."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largura de renderização da área de visualização em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D (glb/obj/stl/etc.) de um nó 3D anterior."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informações da câmera da área de visualização: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largura de renderização da área de visualização em pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderização da área de visualização em pixels."
       }
     }
   },

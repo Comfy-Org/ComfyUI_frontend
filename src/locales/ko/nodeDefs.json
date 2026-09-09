@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "이미지가 아닌 이전 단계에서 나온 이미 인코딩된 latent를 가이드로 고정합니다. VAE 디코드/인코드 왕복 없이 LTXV Add Guide와 동일한 효과를 냅니다. 대상보다 공간적으로 작은 가이드(IC-LoRA 또는 디테일링 참조)는 희소 그리드에 확장되며, RoPE 끝 위치도 동일한 비율로 확장되어 캔버스의 왼쪽 위 모서리만이 아니라 대상 캔버스 전체를 포괄합니다.",
+    "display_name": "LTXV Latent 가이드 추가",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "선택적 픽셀 공간 공간 마스크입니다. self-attention을 통해 영역별 컨디셔닝 영향을 제어하며, strength와 곱해집니다."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "가이드 latent입니다. 공간 크기는 두 축 모두에서 동일한 정수로 대상 크기를 나눌 수 있어야 합니다. 크기가 같으면 그대로 고정되며, 절반 크기는 x2 IC-LoRA 참조로 처리됩니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "가이드가 고정될 대상 비디오 latent입니다."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "가이드를 시작할 latent 프레임 인덱스입니다. 픽셀 프레임이 아닌 latent 프레임 기준으로 계산됩니다. 음수 값은 latent 끝에서 거꾸로 계산하지 않고, latent 시작 전 프레임에 가이드를 배치합니다."
+      },
+      "negative": {
+        "name": "부정"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "최대값은 1.0입니다. 확장된 가이드는 패딩 위치에 음수 디노이즈 마스크를 지정하여 모델이 이를 제외하도록 합니다. 1.0을 초과하면 유지할 위치도 음수가 되어 전체 가이드가 제외됩니다. 1.0을 초과하여 증폭하려면 대신 attention_mask를 사용하세요."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV 오디오 VAE 디코드",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "3D 불러오기 (고급)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "뷰포트의 렌더 높이(픽셀)입니다."
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "뷰포트의 렌더 너비(픽셀)입니다."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "불러온 3D 모델 파일(glb/obj/stl 등)입니다."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "씬 내 각 모델의 배치입니다: 위치, 회전 및 크기(Y-up 월드 공간)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "뷰포트 카메라 정보입니다: 위치, 주시 대상, 줌 및 유형."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더 너비(픽셀)입니다."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더 높이(픽셀)입니다."
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAI의 GPT 이미지 엔드포인트를 통해 이미지를 생성합니다.",
-    "display_name": "OpenAI GPT 이미지 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D 다중 뷰 컨디셔닝",
+    "inputs": {
+      "back": {
+        "name": "후면",
+        "tooltip": "알파가 있거나 검은 배경 위에 있는 객체 후면의 정사각형 뷰입니다. 리그와 같이 구도화해야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(전면, 왼쪽, 후면, 오른쪽 순서)가 메시가 향하는 전면입니다."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "NAF 가중치가 포함된 DINOv3 ViT-L/16 ClipVision입니다."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "구도에 따른 뷰의 수평 FOV(도)입니다. 리그 렌더와 대부분의 다중 뷰 생성기에는 20을 사용하거나, 사진의 경우 한 뷰에서 MoGeGeometryToFOV를 사용하세요."
+      },
+      "front": {
+        "name": "전면",
+        "tooltip": "알파가 있거나 검은 배경 위에 있는 객체 전면의 정사각형 뷰입니다. 리그와 같이 구도화해야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(전면, 왼쪽, 후면, 오른쪽 순서)가 메시가 향하는 전면입니다."
+      },
+      "left": {
+        "name": "왼쪽",
+        "tooltip": "알파가 있거나 검은 배경 위에 있는 객체 왼쪽 면의 정사각형 뷰입니다. 리그와 같이 구도화해야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(전면, 왼쪽, 후면, 오른쪽 순서)가 메시가 향하는 전면입니다."
+      },
+      "right": {
+        "name": "오른쪽",
+        "tooltip": "알파가 있거나 검은 배경 위에 있는 객체 오른쪽 면의 정사각형 뷰입니다. 리그와 같이 구도화해야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(전면, 왼쪽, 후면, 오른쪽 순서)가 메시가 향하는 전면입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "네거티브",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
     "display_name": "PixVerse 이미지에서 비디오로",
@@ -17300,10 +17390,12 @@
     "display_name": "3D 미리보기 (고급)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "뷰포트 카메라 정보: 위치, 주시 대상, 확대/축소 및 유형."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "뷰포트의 렌더 높이(픽셀)입니다."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "뷰포트의 렌더 너비(픽셀)입니다."
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "업스트림 3D 노드의 3D 모델 파일(glb/obj/stl 등)입니다."
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "장면 내 각 모델의 배치: 위치, 회전 및 크기(Y-up 월드 공간)."
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "뷰포트 카메라 정보: 위치, 주시 대상, 확대/축소 및 유형."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더 너비(픽셀)입니다."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더 높이(픽셀)입니다."
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "3D 저장 (고급)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "뷰포트 카메라 정보: 위치, 주시 대상, 확대/축소 및 유형."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "뷰포트의 렌더 높이(픽셀)입니다."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "상위 3D 노드에서 가져온 3D 모델 파일입니다."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "장면 내 각 모델의 배치: 위치, 회전 및 크기(Y-up 월드 공간)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "뷰포트의 렌더 너비(픽셀)입니다."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "업스트림 3D 노드의 3D 모델 파일(glb/obj/stl 등)입니다."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "장면 내 각 모델의 배치: 위치, 회전 및 크기(Y-up 월드 공간)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "뷰포트 카메라 정보: 위치, 주시 대상, 확대/축소 및 유형."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더 너비(픽셀)입니다."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더 높이(픽셀)입니다."
       }
     }
   },

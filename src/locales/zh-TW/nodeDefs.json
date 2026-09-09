@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "將已編碼的 latent 固定為引導，適用於引導來自較早階段而非影像的情況。效果與 LTXV Add Guide 相同，但不需經過 VAE 解碼／編碼往返。空間尺寸小於目標的引導（IC-LoRA 或細節參考）會擴張至稀疏網格，其 RoPE 結束位置也會依相同比例擴展，使其覆蓋目標畫布，而非僅對應其左上角。",
+    "display_name": "LTXV 新增 Latent 引導",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "選用的像素空間區域 mask。透過自注意力控制各區域的條件影響力，並乘以 strength。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "引導 latent。其空間尺寸必須在兩個軸向皆以相同整數比例整除目標尺寸；相同尺寸會原樣固定，半尺寸則視為 x2 IC-LoRA 參考。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "引導所固定至的目標影片 latent。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "開始套用引導的 latent 影格索引，以 latent 影格而非像素影格計算。負值會將引導置於 latent 起始點之前的影格，而非從其結尾往回計算。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "上限為 1.0。擴張的引導會以負值去噪 mask 標記其填補位置，讓模型捨棄這些位置；超過 1.0 時，保留位置也會變成負值，整個引導都會被捨棄。請改用 attention_mask 將強度放大至 1.0 以上。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV 音訊 VAE 解碼",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "載入 3D（進階）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "視窗的渲染高度，以像素為單位。"
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "視窗的渲染寬度，以像素為單位。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "已載入的 3D 模型檔案（glb/obj/stl/etc.）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的位置：位置、旋轉與縮放（Y 軸向上的世界空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放與類型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度，以像素為單位。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度，以像素為單位。"
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
-    "display_name": "OpenAI GPT 圖像 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D 多視角條件化",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "物件背面的正方形視圖，具 Alpha 通道或黑色背景，構圖方式如同轉臺：物件最寬處約佔畫面的 1/1.1，且每個視角的比例相同。第一個連接的視圖（順序為 front、left、back、right）會成為網格所採用的正面。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "具有內建 NAF 權重的 DINOv3 ViT-L/16 ClipVision。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "依目前構圖的視角水平 FOV（度）：轉臺渲染和大多數多視角產生器使用 20；相片則在其中一個視角使用 MoGeGeometryToFOV。"
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "物件正面的正方形視圖，具 Alpha 通道或黑色背景，構圖方式如同轉臺：物件最寬處約佔畫面的 1/1.1，且每個視角的比例相同。第一個連接的視圖（順序為 front、left、back、right）會成為網格所採用的正面。"
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "物件左側的正方形視圖，具 Alpha 通道或黑色背景，構圖方式如同轉臺：物件最寬處約佔畫面的 1/1.1，且每個視角的比例相同。第一個連接的視圖（順序為 front、left、back、right）會成為網格所採用的正面。"
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "物件右側的正方形視圖，具 Alpha 通道或黑色背景，構圖方式如同轉臺：物件最寬處約佔畫面的 1/1.1，且每個視角的比例相同。第一個連接的視圖（順序為 front、left、back、right）會成為網格所採用的正面。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負面",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "根據提示詞與輸出尺寸同步生成影片。",
     "display_name": "PixVerse 影像轉影片",
@@ -17300,10 +17390,12 @@
     "display_name": "3D 預覽（進階）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "視窗相機資訊：位置、注視目標、縮放及類型。"
       },
       "height": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": "視窗的渲染高度（以像素為單位）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "寬度"
+        "name": "寬度",
+        "tooltip": "視窗的渲染寬度（以像素為單位）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的位置：位置、旋轉與縮放（Y 軸向上的世界空間）。"
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "視窗相機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "寬度",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（以像素為單位）。"
       },
       "4": {
         "name": "高度",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（以像素為單位）。"
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "儲存 3D（進階）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "視窗相機資訊：位置、注視目標、縮放及類型。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "視窗的渲染高度（以像素為單位）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "場景中各模型的位置：位置、旋轉與縮放（Y 軸向上的世界空間）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "視窗的渲染寬度（以像素為單位）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的位置：位置、旋轉與縮放（Y 軸向上的世界空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "視窗相機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（以像素為單位）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（以像素為單位）。"
       }
     }
   },

@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "Fixiert ein bereits encodiertes latent als Guide, wenn der Guide aus einer früheren Phase statt aus einem Bild stammt. Derselbe Effekt wie LTXV Add Guide ohne den VAE-Decodier-/Encodierdurchlauf. Ein räumlich kleinerer Guide als das Ziel (eine IC-LoRA- oder Detaillierungsreferenz) wird auf ein sparsames Raster dilatiert, und seine RoPE-Endpositionen werden um denselben Faktor erweitert, sodass er den Ziel-Canvas abdeckt, statt nur dessen obere linke Ecke anzusprechen.",
+    "display_name": "LTXV Add Latent Guide",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optionale räumliche mask im Pixelraum. Steuert den Konditionierungseinfluss pro Region über Self-Attention, multipliziert mit strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Guide-latent. Seine räumliche Größe muss die des Ziels auf beiden Achsen durch dieselbe ganze Zahl teilen; bei gleicher Größe wird es unverändert fixiert, bei halber Größe wird es als x2-IC-LoRA-Referenz behandelt."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Video-Ziel-latent, auf dem der Guide fixiert wird."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Index des latent-Frames, bei dem der Guide beginnt, gezählt in latent-Frames statt in Pixelframes. Negative Werte platzieren den Guide auf Frames vor dem Beginn des latent und werden nicht vom Ende rückwärts gezählt."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Auf 1.0 begrenzt. Ein dilatierter Guide markiert seine Padding-Positionen mit einer negativen Denoise-mask, sodass das Modell sie verwirft; über 1.0 würden auch die beibehaltenen Positionen negativ und der gesamte Guide würde verworfen. Verstärken Sie stattdessen über 1.0 hinaus mit attention_mask."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV Audio VAE dekodieren",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "3D laden (Erweitert)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Geladene 3D-Modelldatei (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Rotation und Skalierung (Y-up-Weltraum)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport-Kamerainformationen: Position, Blickziel, Zoom und Typ."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Generiert Bilder über den GPT-Image-Endpoint von OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Multi-View Conditioning",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "Quadratische Ansicht der Rückseite des Objekts, mit Alpha oder vor schwarzem Hintergrund, wie beim Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Frames ein, bei jeder Ansicht im selben Maßstab. Die erste verbundene Ansicht (Reihenfolge: front, left, back, right) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision mit gebündelten NAF-Gewichten."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Horizontales FOV der gerahmten Ansichten in Grad: 20 für Rig-Renderings und die meisten Multi-View-Generatoren oder MoGeGeometryToFOV für Fotos auf einer der Ansichten."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "Quadratische Ansicht der Vorderseite des Objekts, mit Alpha oder vor schwarzem Hintergrund, wie beim Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Frames ein, bei jeder Ansicht im selben Maßstab. Die erste verbundene Ansicht (Reihenfolge: front, left, back, right) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Quadratische Ansicht der linken Seite des Objekts, mit Alpha oder vor schwarzem Hintergrund, wie beim Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Frames ein, bei jeder Ansicht im selben Maßstab. Die erste verbundene Ansicht (Reihenfolge: front, left, back, right) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Quadratische Ansicht der rechten Seite des Objekts, mit Alpha oder vor schwarzem Hintergrund, wie beim Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Frames ein, bei jeder Ansicht im selben Maßstab. Die erste verbundene Ansicht (Reihenfolge: front, left, back, right) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativ",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "Generiert Videos basierend auf Prompt und output_size.",
     "display_name": "PixVerse Image to Video",
@@ -17300,10 +17390,12 @@
     "display_name": "3D-Vorschau (Erweitert)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Kamerainformationen des Viewports: Position, Blickziel, Zoom und Typ."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D-Modelldatei (glb/obj/stl/etc.) von einem vorgeschalteten 3D-Node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Drehung und Skalierung (Y-up-Weltkoordinatenraum)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Kamerainformationen des Viewports: Position, Blickziel, Zoom und Typ."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "3D speichern (Erweitert)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Kamerainformationen des Viewports: Position, Blickziel, Zoom und Typ."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "3D-Modelldatei von einem vorgeschalteten 3D-Node."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Drehung und Skalierung (Y-up-Weltkoordinatenraum)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D-Modelldatei (glb/obj/stl/etc.) von einem vorgeschalteten 3D-Node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Drehung und Skalierung (Y-up-Weltkoordinatenraum)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Kamerainformationen des Viewports: Position, Blickziel, Zoom und Typ."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       }
     }
   },
