@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
@@ -72,7 +73,7 @@ function renderListView(
 ) {
   return render(AssetsSidebarListView, {
     props: {
-      assetItems,
+      assetItems: mockPagedList({ items: assetItems }),
       selectableAssets: [],
       isSelected: () => false,
       isStackExpanded: () => false,
