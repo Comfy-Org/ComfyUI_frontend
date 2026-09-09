@@ -11,7 +11,7 @@ const hoisted = vi.hoisted(() => ({
   authStore: null as unknown as MockAuthStore
 }))
 
-vi.mock('@/stores/authStore', async () => {
+vi.mock<unknown>(import('@/stores/authStore'), async () => {
   const { reactive } = await vi.importActual<typeof VueModule>('vue')
   hoisted.authStore = reactive<MockAuthStore>({
     isInitialized: false,

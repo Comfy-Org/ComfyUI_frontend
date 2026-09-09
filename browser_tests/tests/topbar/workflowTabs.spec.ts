@@ -200,9 +200,18 @@ test.describe('Workflow tabs', () => {
 
     // WorkflowTab renders the dirty-state dot when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
-    await expect(
-      activeTab.getByTestId('workflow-dirty-indicator')
-    ).toBeVisible()
+    const indicator = activeTab.getByTestId('workflow-dirty-indicator')
+    const closeButton = activeTab.getByTestId('close-workflow-button')
+    await expect(indicator).toBeVisible()
+    await expect(closeButton).toBeHidden()
+
+    await activeTab.hover()
+    await expect(indicator).toBeHidden()
+    await expect(closeButton).toBeVisible()
+
+    await comfyPage.canvas.hover()
+    await expect(indicator).toBeVisible()
+    await expect(closeButton).toBeHidden()
   })
 
   test('Can drag tab to end', async ({ comfyPage }) => {
@@ -314,9 +323,7 @@ test.describe('Workflow tabs', () => {
       }
       await expect.poll(() => topbar.getTabNames()).toHaveLength(6)
 
-      const scrollContent = comfyPage.page.locator(
-        '.workflow-tabs-container .p-scrollpanel-content'
-      )
+      const scrollContent = comfyPage.page.getByTestId('workflow-tabs-scroll')
       const rightArrow = comfyPage.page.getByRole('button', {
         name: /scroll right/i
       })

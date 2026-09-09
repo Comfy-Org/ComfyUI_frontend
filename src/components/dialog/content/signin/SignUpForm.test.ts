@@ -13,12 +13,12 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import SignUpForm from './SignUpForm.vue'
 
-vi.mock('firebase/app', () => ({
+vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
 }))
 
-vi.mock('firebase/auth', () => ({
+vi.mock<unknown>(import('firebase/auth'), () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -28,7 +28,7 @@ vi.mock('firebase/auth', () => ({
 }))
 
 const mockLoadingRef = ref(false)
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     get loading() {
       return mockLoadingRef.value
@@ -43,7 +43,7 @@ const mockReset = vi.fn()
 let emitTurnstileToken: ((token: string) => void) | undefined
 let emitTurnstileUnavailable: ((unavailable: boolean) => void) | undefined
 
-vi.mock('@/composables/auth/useTurnstile', () => ({
+vi.mock<unknown>(import('@/composables/auth/useTurnstile'), () => ({
   useTurnstile: () => ({
     enabled: mockTurnstileEnabled
   }),
@@ -61,7 +61,7 @@ vi.mock('@/composables/auth/useTurnstile', () => ({
 
 // The real widget loads an external Turnstile script; this stub exposes a
 // spyable reset() and lets a test drive the token/unavailable v-models.
-vi.mock('./TurnstileWidget.vue', async () => {
+vi.mock<unknown>(import('./TurnstileWidget.vue'), async () => {
   const { defineComponent: defineMock } = await import('vue')
   return {
     default: defineMock({

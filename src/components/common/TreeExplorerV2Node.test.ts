@@ -17,13 +17,13 @@ const i18n = createI18n({
   messages: { en: { g: { delete: 'Delete' } } }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn().mockReturnValue('left')
   })
 }))
 
-vi.mock('@/stores/nodeBookmarkStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeBookmarkStore'), () => ({
   useNodeBookmarkStore: () => ({
     isBookmarked: vi.fn().mockReturnValue(false),
     toggleBookmark: vi.fn()
@@ -33,7 +33,7 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
 const mockDeleteBlueprint = vi.fn()
 const mockIsUserBlueprint = vi.fn().mockReturnValue(false)
 
-vi.mock('@/stores/subgraphStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
   useSubgraphStore: () => ({
     isUserBlueprint: mockIsUserBlueprint,
     deleteBlueprint: mockDeleteBlueprint,
@@ -41,14 +41,14 @@ vi.mock('@/stores/subgraphStore', () => ({
   })
 }))
 
-vi.mock('@/components/node/NodePreviewCard.vue', () => ({
+vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: { template: '<div />' }
 }))
 
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
 
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
     handleNativeDrop: mockHandleNativeDrop
