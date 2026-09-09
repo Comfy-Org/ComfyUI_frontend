@@ -125,6 +125,55 @@ describe('billingOperationStore', () => {
       expect(store.hasPendingOperations).toBe(true)
     })
 
+    // This API-to-store hop is what activates the recovery prompt. The checkout
+    // tests take an operation that already has a phase, so only these fail if
+    // the propagation is dropped.
+    async function pollPhase(
+      served?: 'awaiting_payment_method' | 'awaiting_invoice_payment'
+    ) {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-phase',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        ...(served ? { phase: served } : {})
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-phase', 'subscription')
+      await vi.waitFor(() =>
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-phase')
+      )
+      return store
+    }
+
+    it('carries a parked-on-checkout phase onto the operation', async () => {
+      const store = await pollPhase('awaiting_payment_method')
+
+      await vi.waitFor(() =>
+        expect(store.getOperation('op-phase')?.phase).toBe(
+          'awaiting_payment_method'
+        )
+      )
+    })
+
+    it('carries a parked-on-invoice phase onto the operation', async () => {
+      const store = await pollPhase('awaiting_invoice_payment')
+
+      await vi.waitFor(() =>
+        expect(store.getOperation('op-phase')?.phase).toBe(
+          'awaiting_invoice_payment'
+        )
+      )
+    })
+
+    it('leaves the phase null when the server reports none', async () => {
+      const store = await pollPhase()
+
+      await vi.waitFor(() =>
+        expect(store.getOperation('op-phase')?.phase).toBeNull()
+      )
+    })
+
     it('exposes a validated recovered action before the first poll completes', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValue(
         new Promise(() => {})

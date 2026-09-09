@@ -1,69 +1,9 @@
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
-// Define the store shape to avoid 'any' and cast to the expected type
-interface MaskEditorStoreState {
-  maskCanvas: HTMLCanvasElement | null
-  rgbCanvas: HTMLCanvasElement | null
-  imgCanvas: HTMLCanvasElement | null
-  maskCtx: CanvasRenderingContext2D | null
-  rgbCtx: CanvasRenderingContext2D | null
-  imgCtx: CanvasRenderingContext2D | null
-}
-
-// Use vi.hoisted to create isolated mock state container
-const mockRefs = vi.hoisted(() => ({
-  maskCanvas: null as HTMLCanvasElement | null,
-  rgbCanvas: null as HTMLCanvasElement | null,
-  imgCanvas: null as HTMLCanvasElement | null,
-  maskCtx: null as CanvasRenderingContext2D | null,
-  rgbCtx: null as CanvasRenderingContext2D | null,
-  imgCtx: null as CanvasRenderingContext2D | null
-}))
-
-const mockStore: MaskEditorStoreState = {
-  get maskCanvas() {
-    return mockRefs.maskCanvas
-  },
-  set maskCanvas(val) {
-    mockRefs.maskCanvas = val
-  },
-  get rgbCanvas() {
-    return mockRefs.rgbCanvas
-  },
-  set rgbCanvas(val) {
-    mockRefs.rgbCanvas = val
-  },
-  get imgCanvas() {
-    return mockRefs.imgCanvas
-  },
-  set imgCanvas(val) {
-    mockRefs.imgCanvas = val
-  },
-  get maskCtx() {
-    return mockRefs.maskCtx
-  },
-  set maskCtx(val) {
-    mockRefs.maskCtx = val
-  },
-  get rgbCtx() {
-    return mockRefs.rgbCtx
-  },
-  set rgbCtx(val) {
-    mockRefs.rgbCtx = val
-  },
-  get imgCtx() {
-    return mockRefs.imgCtx
-  },
-  set imgCtx(val) {
-    mockRefs.imgCtx = val
-  }
-}
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockRefs: ReturnType<typeof useMaskEditorStore>
 
 // Mock ImageBitmap using safe global augmentation pattern
 if (typeof globalThis.ImageBitmap === 'undefined') {
@@ -80,6 +20,7 @@ if (typeof globalThis.ImageBitmap === 'undefined') {
 
 describe('useCanvasHistory', () => {
   beforeEach(() => {
+    mockRefs = useMaskEditorStore()
     let rafCallCount = 0
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
       (cb: FrameRequestCallback) => {
@@ -122,16 +63,19 @@ describe('useCanvasHistory', () => {
 
     // Mock canvases using explicit partial-cast pattern
     mockRefs.maskCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
       width: 100,
       height: 100
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockRefs.rgbCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockRefs.rgbCtx),
       width: 100,
       height: 100
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockRefs.imgCanvas = {
+      getContext: vi.fn().mockImplementation(() => mockRefs.imgCtx),
       width: 100,
       height: 100
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
@@ -166,6 +110,7 @@ describe('useCanvasHistory', () => {
       const rafSpy = vi.spyOn(window, 'requestAnimationFrame')
 
       mockRefs.maskCanvas = {
+        getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
         // oxlint-disable-next-line no-misused-spread
         ...mockRefs.maskCanvas,
         width: 0,
@@ -178,6 +123,7 @@ describe('useCanvasHistory', () => {
       expect(rafSpy).toHaveBeenCalled()
 
       mockRefs.maskCanvas = {
+        getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
         width: 100,
         height: 100
       } as Partial<HTMLCanvasElement> as HTMLCanvasElement
@@ -623,6 +569,7 @@ describe('useCanvasHistory', () => {
     it('should handle zero-sized canvas', () => {
       if (mockRefs.maskCanvas) {
         mockRefs.maskCanvas = {
+          getContext: vi.fn().mockImplementation(() => mockRefs.maskCtx),
           width: 0,
           height: 0
         } as Partial<HTMLCanvasElement> as HTMLCanvasElement
