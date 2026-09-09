@@ -259,11 +259,6 @@
       "count": 11
     }
   },
-  "src/platform/workspace/stores/workspaceAuthStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/core/canvas/canvasStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
