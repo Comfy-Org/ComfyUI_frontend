@@ -13,7 +13,7 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({ currentUser: null, loading: false }))
 }))
 

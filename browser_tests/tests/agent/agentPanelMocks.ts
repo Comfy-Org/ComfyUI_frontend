@@ -15,6 +15,7 @@ import type {
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
@@ -151,6 +152,14 @@ async function mockAgentBoot(
   }, panelInitiallyOpen)
 
   await mockBilling(page)
+  await page.route(
+    'https://media.comfy.org/website/mcp/launch-film.mp4',
+    (route) =>
+      route.fulfill({
+        contentType: 'video/mp4',
+        path: assetPath('plain_video.mp4')
+      })
+  )
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))
   )

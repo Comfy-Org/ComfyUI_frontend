@@ -23,8 +23,12 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   let session = 0
   let pendingLoad: { identity: string; result: Promise<boolean> } | null = null
 
+  function currentUserId(): string | undefined {
+    return resolvedUserInfo.value?.id
+  }
+
   function currentIdentity(): string | null {
-    const userId = resolvedUserInfo.value?.id
+    const userId = currentUserId()
     const workspaceId = workspaceStore.activeWorkspaceId
     if (!userId || !workspaceId || workspaceStore.isSwitching) return null
     return JSON.stringify([
@@ -51,7 +55,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   )
 
   async function ensureScope(): Promise<string | null> {
-    const userId = resolvedUserInfo.value?.id
+    const userId = currentUserId()
     if (!userId) {
       throw new AgentConsentAuthenticationError(
         'Comfy account authentication is required'
@@ -62,7 +66,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       await workspaceStore.initialize()
     }
     if (
-      resolvedUserInfo.value?.id !== userId ||
+      currentUserId() !== userId ||
       workspaceStore.workspaceTransitionGeneration !== generation ||
       workspaceStore.isSwitching
     )

@@ -56,7 +56,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       const outNode = relativeId != null ? nodes[relativeId] : undefined
 
       const inNode = nodes[info[2]]
-      if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
+      if (outNode) outNode.connect(info[1], inNode, info[3])
       else console.warn('Warning, nodes missing on pasting')
     }
 

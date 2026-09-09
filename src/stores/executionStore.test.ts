@@ -8,9 +8,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
@@ -49,13 +47,9 @@ const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock('@/composables/useAppMode', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    useAppMode: () => mockAppModeState
-  }
-})
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
+  useAppMode: () => mockAppModeState
+}))
 
 beforeEach(() => {
   mockAppModeState.mode.value = 'graph'
@@ -64,13 +58,9 @@ beforeEach(() => {
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
-// Mock the workflowStore
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ComfyWorkflow } = await vi.importActual<typeof WorkflowStoreModule>(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ComfyWorkflow,
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
     useWorkflowStore: vi.fn(() => ({
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
       nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
@@ -84,17 +74,14 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
       isOpen: (workflow: { path?: string }) =>
         mockOpenWorkflows.value.some((w) => w.path === workflow.path)
     }))
-  }
-})
+  })
+)
 
-vi.mock('@/platform/distribution/types', async () => ({
-  ...(await vi.importActual<typeof DistributionTypes>(
-    '@/platform/distribution/types'
-  )),
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
     trackExecutionOutcome: mockTrackExecutionOutcome,
@@ -108,7 +95,7 @@ declare global {
   interface Window {}
 }
 
-vi.mock('@/composables/node/useNodeProgressText', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
   useNodeProgressText: () => ({
     showTextPreview: mockShowTextPreview
   })
@@ -120,7 +107,7 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
  */
 type EventHandler = (...args: unknown[]) => void
 const apiEventHandlers = new Map<string, EventHandler>()
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn((event: string, handler: EventHandler) => {
       apiEventHandlers.set(event, handler)
@@ -139,29 +126,33 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: vi.fn()
   })
 }))
 
-vi.mock('@/stores/jobPreviewStore', () => ({
+vi.mock<unknown>(import('@/stores/jobPreviewStore'), () => ({
   useJobPreviewStore: () => ({
     clearPreview: vi.fn()
   })
 }))
 
 // Mock the app import with proper implementation
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      getNodeById: vi.fn(),
-      nodes: [] // Add nodes array for workflowStore iteration
-    },
-    revokePreviews: vi.fn(),
-    nodePreviewImages: {}
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const rootGraph = {
+    getNodeById: vi.fn(),
+    nodes: [] // Add nodes array for workflowStore iteration
   }
-}))
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph,
+      revokePreviews: vi.fn(),
+      nodePreviewImages: {}
+    }
+  }
+})
 
 beforeEach(() => {
   mockActiveWorkflow.value = null
@@ -230,6 +221,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
       // For numeric IDs, it should convert to string and return as-is
       expect(result).toBe('123')
+    })
+
+    it('should handle IDs before the root graph is initialized', () => {
+      expect(executionIdToNodeLocatorId(undefined, '123')).toBe('123')
+      expect(executionIdToNodeLocatorId(undefined, '123:456')).toBeUndefined()
     })
 
     it('should return undefined when conversion fails', () => {
@@ -1946,6 +1942,21 @@ describe('useExecutionStore - RAF batching', () => {
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
     })
+
+    it('accepts a snapshot that omits the previously executing node', () => {
+      const handler = getRegisteredHandler('progress_state')
+      handler(makeProgressStateEvent('1', 'running'))
+      vi.advanceTimersToNextFrame()
+
+      handler(
+        new CustomEvent('progress_state', {
+          detail: { prompt_id: 'job-1', nodes: {} }
+        })
+      )
+
+      expect(() => vi.advanceTimersToNextFrame()).not.toThrow()
+      expect(store.nodeProgressStates).toEqual({})
+    })
   })
 
   describe('pending RAF is discarded when execution completes', () => {
@@ -2248,7 +2259,7 @@ describe('useExecutionStore - RAF batching', () => {
 describe('useExecutionStore - WebSocket event handlers', () => {
   let store: ReturnType<typeof useExecutionStore>
 
-  function fire<T>(event: string, detail: T) {
+  function fire(event: string, detail: unknown) {
     const handler = apiEventHandlers.get(event)
     if (!handler) throw new Error(`${event} handler not bound`)
     handler(new CustomEvent(event, { detail }))

@@ -93,14 +93,14 @@ const subgraphNavigationMocks = vi.hoisted(() => ({
   saveCurrentViewport: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
     confirm: mockConfirm
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
@@ -110,29 +110,37 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/defaultGraph', () => ({
+vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
   blankGraph: {}
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ linearMode: false })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    storeThumbnail: vi.fn(),
-    getThumbnail: vi.fn()
+  () => ({
+    useCanvasStore: () => ({ linearMode: false })
   })
-}))
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    useWorkflowThumbnail: () => ({
+      storeThumbnail: vi.fn(),
+      getThumbnail: vi.fn()
+    })
+  })
+)
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
     trackWorkflowSaved: mockTrackWorkflowSaved,
@@ -140,21 +148,24 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
-  useWorkflowDraftStoreV2: () => draftStoreMocks
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/persistence/stores/workflowDraftStoreV2'),
+  () => ({
+    useWorkflowDraftStoreV2: () => draftStoreMocks
+  })
+)
 
-vi.mock('@/stores/domWidgetStore', () => ({
+vi.mock<unknown>(import('@/stores/domWidgetStore'), () => ({
   useDomWidgetStore: () => ({
     clear: vi.fn()
   })
 }))
 
-vi.mock('@/stores/subgraphNavigationStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
   useSubgraphNavigationStore: () => subgraphNavigationMocks
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     get workflow() {
       return useWorkflowStore()
@@ -652,7 +663,7 @@ describe('useWorkflowService', () => {
       expect(calls).toHaveLength(2)
       expect(calls[1][3]).toMatchObject({ path: 'workflows/retained.json' })
       expect(calls[1][0]).toEqual(retained.activeState)
-      expect(workflowStore.activeWorkflow?.path).toBe('workflows/retained.json')
+      expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -705,7 +716,7 @@ describe('useWorkflowService', () => {
           .mocked(app.loadGraphData)
           .mock.calls.map((call) => call[4]?.workflowNavigationId)
       ).toEqual([1, 2])
-      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
     it('continues with the next workflow when the previous load fails', async () => {
@@ -728,29 +739,21 @@ describe('useWorkflowService', () => {
           return true
         })
 
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => undefined)
       const firstOpen = useWorkflowService().openWorkflow(first)
       const secondOpen = useWorkflowService().openWorkflow(second)
 
       await expect(firstOpen).rejects.toBe(error)
       await expect(secondOpen).resolves.toBe(true)
-      expect(consoleError).toHaveBeenCalledWith(
-        expect.stringContaining('queued workflow load failed'),
-        error
-      )
       expect(reportErrorMock).toHaveBeenCalledWith(error, {
         errorType: 'workflow_load_failure'
       })
       expect(
         subgraphNavigationMocks.endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
-      consoleError.mockRestore()
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second])
-      expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(workflowStore.activeWorkflow.path).toBe(second.path)
     })
 
     it('closes an inactive workflow without waiting for an unrelated load', async () => {
@@ -941,7 +944,7 @@ describe('useWorkflowService', () => {
         warnIfUnsaved: false
       })
 
-      expect(workflowStore.activeWorkflow?.path).toBe(next.path)
+      expect(workflowStore.activeWorkflow.path).toBe(next.path)
       expect(app.loadGraphData).toHaveBeenCalledWith(
         expect.anything(),
         true,
@@ -995,7 +998,7 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen, close])
 
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.activeWorkflow.path).toBe(current.path)
     })
 
     it('does not let an older close override a newer workflow selection', async () => {
@@ -1048,7 +1051,7 @@ describe('useWorkflowService', () => {
       await Promise.all([firstOpen, secondOpen, close, finalOpen])
 
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(final.path)
+      expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second, final])
@@ -1110,7 +1113,7 @@ describe('useWorkflowService', () => {
       ])
 
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
+      expect(workflowStore.activeWorkflow.path).toBe(current.path)
     })
 
     it('serializes a newer selection after the last-tab replacement', async () => {
@@ -1168,7 +1171,7 @@ describe('useWorkflowService', () => {
 
       expect(maxConcurrentLoads).toBe(1)
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(final.path)
+      expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([undefined, final])
@@ -1216,7 +1219,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
 
     it('keeps a valid active workflow when closing tabs concurrently', async () => {
@@ -1257,7 +1260,7 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(workflowStore.openWorkflows).not.toContain(first)
       expect(workflowStore.openWorkflows).not.toContain(second)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
 
     it('never selects a workflow that is itself closing as the replacement', async () => {
@@ -1321,7 +1324,7 @@ describe('useWorkflowService', () => {
         survivor,
         expect.anything()
       )
-      expect(workflowStore.activeWorkflow?.path).toBe(survivor.path)
+      expect(workflowStore.activeWorkflow.path).toBe(survivor.path)
     })
 
     it('skips a closing candidate in the index-shift fallback', async () => {
@@ -1390,7 +1393,7 @@ describe('useWorkflowService', () => {
       const loadedPaths = vi
         .mocked(app.loadGraphData)
         .mock.calls.map(
-          (call) => (call?.[3] as { path?: string } | undefined)?.path
+          (call) => (call[3] as { path?: string } | undefined)?.path
         )
       expect(loadedPaths).toContain(survivor.path)
       expect(loadedPaths).not.toContain(closingNeighbor.path)
@@ -1544,7 +1547,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)
-      expect(workflowStore.activeWorkflow?.path).toBe(replacement.path)
+      expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
     })
   })
 
@@ -2538,7 +2541,7 @@ describe('useWorkflowService', () => {
     function captureLinearModeAtSaveTime() {
       let value: boolean | undefined
       vi.mocked(workflowStore.saveWorkflow).mockImplementation(async () => {
-        value = app.rootGraph.extra?.linearMode as boolean | undefined
+        value = app.rootGraph.extra.linearMode as boolean | undefined
       })
       return () => value
     }

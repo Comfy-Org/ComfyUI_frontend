@@ -5,6 +5,8 @@ import type {
   ActivityPart,
   AssistantMessage,
   NoticePart,
+  RunApprovalPart,
+  PaywallPart,
   TabLinkPart,
   TextPart
 } from '../../../services/agent/agentMessageParts'
@@ -13,18 +15,40 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import MarkdownStream from './MarkdownStream.vue'
+import AgentPaywallCard from './AgentPaywallCard.vue'
 import MessageFeedback from './MessageFeedback.vue'
+import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
-const { message } = defineProps<{ message: AssistantMessage }>()
-const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
+const {
+  message,
+  answeringAskIds = new Set<string>(),
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION
+} = defineProps<{
+  message: AssistantMessage
+  answeringAskIds?: ReadonlySet<string>
+  paywallPresentation?: AgentPaywallPresentation
+}>()
+const emit = defineEmits<{
+  feedback: [vote: 'up' | 'down' | null]
+  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  openWorkflow: [workflowId: string, workflowName?: string]
+  paywallAction: [action: AgentPaywallAction]
+}>()
 
 type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }
+  | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'activity'; parts: ActivityPart[] }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
+  | { kind: 'runApproval'; part: RunApprovalPart }
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
@@ -41,6 +65,10 @@ const groups = computed<Group[]>(() => {
     } else if (part.type === 'tabLink') {
       if (prev?.kind === 'tabLinks') prev.parts.push(part)
       else out.push({ kind: 'tabLinks', parts: [part] })
+    } else if (part.type === 'runApproval') {
+      out.push({ kind: 'runApproval', part })
+    } else if (part.type === 'paywall') {
+      out.push({ kind: 'paywall', part })
     } else {
       out.push({ kind: 'notice', part })
     }
@@ -90,6 +118,21 @@ const hasTools = computed(() =>
           :name="link.name"
         />
       </div>
+      <RunApprovalCard
+        v-else-if="group.kind === 'runApproval'"
+        :part="group.part"
+        :answering="answeringAskIds.has(group.part.askId)"
+        @answer="(askId, selection) => emit('answerAsk', askId, selection)"
+        @open-workflow="
+          (workflowId, workflowName) =>
+            emit('openWorkflow', workflowId, workflowName)
+        "
+      />
+      <AgentPaywallCard
+        v-else-if="group.kind === 'paywall'"
+        :presentation="paywallPresentation"
+        @paywall-action="emit('paywallAction', $event)"
+      />
       <div
         v-else
         :role="group.part.level === 'error' ? 'alert' : 'status'"

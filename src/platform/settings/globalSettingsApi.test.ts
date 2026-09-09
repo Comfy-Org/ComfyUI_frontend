@@ -7,17 +7,17 @@ import {
   setGlobalSetting
 } from './globalSettingsApi'
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock<unknown>(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
-vi.mock('@/platform/distribution/types', () => distribution)
+vi.mock<unknown>(import('@/platform/distribution/types'), () => distribution)
 const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { fetchApi, apiURL: (path: string) => `/api${path}` }
 }))
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/auth/unified/remintRetry', () => ({
+vi.mock<unknown>(import('@/platform/auth/unified/remintRetry'), () => ({
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))

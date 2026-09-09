@@ -12,7 +12,7 @@ const authState = vi.hoisted(() => ({
   workspaceId: 'workspace-a' as string | null,
   generation: 0
 }))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     get isLoggedIn() {
       return { value: authState.loggedIn }
@@ -29,51 +29,58 @@ const accountAuthState = vi.hoisted(() => ({
   getUserAuthHeader: vi.fn(),
   initialize: vi.fn()
 }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     getUserAuthHeader: accountAuthState.getUserAuthHeader,
     getWorkspaceAuthHeader: accountAuthState.getUserAuthHeader
   })
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return authState.workspaceId
-    },
-    get workspaceTransitionGeneration() {
-      return authState.generation
-    },
-    isSwitching: false,
-    initialize: accountAuthState.initialize
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return authState.workspaceId
+      },
+      get workspaceTransitionGeneration() {
+        return authState.generation
+      },
+      isSwitching: false,
+      initialize: accountAuthState.initialize
+    })
   })
-}))
+)
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock<unknown>(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  isCloud: false
+}))
 
 const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/auth/unified/remintRetry', () => ({
+vi.mock<unknown>(import('@/platform/auth/unified/remintRetry'), () => ({
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
 
 const showSignInDialog = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showSignInDialog })
 }))
 
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError
+}))
 
 const addToast = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: addToast })
 }))
 

@@ -8,17 +8,20 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const dialogStack = vi.hoisted(() => [] as unknown[])
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ dialogStack })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ isLoggedIn: { value: true } })
 }))
 
-vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
-  useAgentConsentStore: () => ({ accepted: true })
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/stores/agent/agentConsentStore'),
+  () => ({
+    useAgentConsentStore: () => ({ accepted: true })
+  })
+)
 
 const settings = vi.hoisted(() => {
   const values = new Map<string, unknown>()
@@ -32,7 +35,7 @@ const settings = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => settings
 }))
 

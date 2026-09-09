@@ -40,10 +40,7 @@ async function responseBody(response: Response): Promise<unknown> {
   }
 }
 
-async function storedSetting(
-  response: Response,
-  key: GlobalSettingKey
-): Promise<GlobalSetting> {
+async function storedSetting(response: Response): Promise<GlobalSetting> {
   if (!response.ok) {
     throw new GlobalSettingsApiError(
       `Global setting request failed: ${response.status}`,
@@ -51,7 +48,7 @@ async function storedSetting(
     )
   }
   const payload = zGlobalSetting.safeParse(await responseBody(response))
-  if (!payload.success || payload.data.key !== key) {
+  if (!payload.success) {
     throw new GlobalSettingsApiError(
       'Global setting returned an invalid response',
       response.status
@@ -73,7 +70,7 @@ export async function getGlobalSetting(
     const error = zErrorResponse.safeParse(await responseBody(response))
     if (error.success && error.data.code === 'NOT_FOUND') return undefined
   }
-  return storedSetting(response, key)
+  return storedSetting(response)
 }
 
 export async function setGlobalSetting(
@@ -89,5 +86,5 @@ export async function setGlobalSetting(
     },
     await shouldRemintCloudRequest()
   )
-  return storedSetting(response, setting.key)
+  return storedSetting(response)
 }

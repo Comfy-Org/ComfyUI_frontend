@@ -51,7 +51,10 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await expect(dialog).toHaveCount(0)
     await expect(panel).toBeVisible()
 
-    await openButton.click()
+    await expect(openButton).toHaveCount(0)
+    await panel
+      .getByRole('button', { name: enMessages.agent.close, exact: true })
+      .click()
     await expect(panel).toHaveCount(0)
     await openButton.click()
     await expect(dialog).toHaveCount(0)

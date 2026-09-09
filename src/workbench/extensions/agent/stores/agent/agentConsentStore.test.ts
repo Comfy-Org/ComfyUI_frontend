@@ -8,7 +8,7 @@ const accountApi = vi.hoisted(() => ({
   get: vi.fn(),
   set: vi.fn()
 }))
-vi.mock('@/platform/settings/globalSettingsApi', () => ({
+vi.mock<unknown>(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
   setGlobalSetting: accountApi.set
 }))
@@ -31,7 +31,7 @@ const authMocks = vi.hoisted(() => ({
   getHeader: vi.fn(),
   initialize: vi.fn()
 }))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: {
       get value() {
@@ -40,26 +40,29 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
     }
   })
 }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     getUserAuthHeader: authMocks.getHeader,
     getWorkspaceAuthHeader: authMocks.getHeader
   })
 }))
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return authState.workspaceId
-    },
-    get isSwitching() {
-      return authState.isSwitching
-    },
-    get workspaceTransitionGeneration() {
-      return authState.generation
-    },
-    initialize: authMocks.initialize
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return authState.workspaceId
+      },
+      get isSwitching() {
+        return authState.isSwitching
+      },
+      get workspaceTransitionGeneration() {
+        return authState.generation
+      },
+      initialize: authMocks.initialize
+    })
   })
-}))
+)
 const stored: GlobalSetting = {
   key: 'Comfy.AgentPanel.ConsentAccepted',
   value: true,

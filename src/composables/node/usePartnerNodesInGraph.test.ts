@@ -21,13 +21,15 @@ const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as { nodes: unknown[] } | undefined
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({ nodeDefsByName: hoisted.nodeDefsByName })
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
+  useNodeDefStore: () => ({
+    fromLGraphNode: (node: FakeNode) => hoisted.nodeDefsByName[node.type]
+  })
 }))
 
 // Mirrors ComfyApp: reading `rootGraph` before init logs an error, so
 // consumers must gate on `isGraphReady` instead.
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       if (!hoisted.rootGraph) {
@@ -41,7 +43,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => {
+vi.mock<unknown>(import('@/scripts/api'), () => {
   const target = new EventTarget()
   return {
     api: target,
@@ -55,20 +57,23 @@ const { __dispatchGraphChanged } = apiModule as typeof apiModule & {
   __dispatchGraphChanged: () => void
 }
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { ref } = await import('vue')
-  const activeWorkflow = ref<{ path: string } | null>(null)
-  return {
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return activeWorkflow.value
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  async () => {
+    const { ref } = await import('vue')
+    const activeWorkflow = ref<{ path: string } | null>(null)
+    return {
+      useWorkflowStore: () => ({
+        get activeWorkflow() {
+          return activeWorkflow.value
+        }
+      }),
+      __setActiveWorkflow: (workflow: { path: string } | null) => {
+        activeWorkflow.value = workflow
       }
-    }),
-    __setActiveWorkflow: (workflow: { path: string } | null) => {
-      activeWorkflow.value = workflow
     }
   }
-})
+)
 
 const { __setActiveWorkflow } =
   workflowStoreModule as typeof workflowStoreModule & {
