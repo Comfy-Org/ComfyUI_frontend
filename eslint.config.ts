@@ -214,6 +214,7 @@ export default defineConfig([
       'dist/*',
       'apps/*/dist/**',
       'apps/*/.astro/**',
+      'docs/node-api/comfy-api.d.ts',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
