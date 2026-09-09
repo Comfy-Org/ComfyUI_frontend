@@ -18,9 +18,9 @@ import type { WorkspaceStore } from '@e2e/types/globals'
  * out.
  *
  * Both windows live in one browser context, which is what a second window is:
- * shared localStorage, separate sessionStorage. The second window clears
- * Firebase's shared auth persistence, which is what a real sign-in does to that
- * store, and the first window's SDK observes the transient null.
+ * shared localStorage, separate sessionStorage. A sign-in in the second window
+ * briefly replaces Firebase's shared auth persistence, and the first window's
+ * SDK observes the transient null before the same user returns.
  *
  * `onUserLogout` (`useCurrentUser.ts:43`) fires on `prevUser && !user` — it
  * cannot distinguish that blip from a real sign-out.
@@ -33,9 +33,6 @@ const BOOT_SETTINGS = {
   'Comfy.Workflow.Persist': true
 }
 
-const FIREBASE_DB = 'firebaseLocalStorageDb'
-const FIREBASE_STORE = 'firebaseLocalStorage'
-
 async function bootWindow(page: Page): Promise<void> {
   await mockCloudBoot(page, {
     features: BOOT_FEATURES,
@@ -44,6 +41,11 @@ async function bootWindow(page: Page): Promise<void> {
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+  await page.waitForFunction(
+    () =>
+      !!(window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
+        ?.activeState
+  )
 }
 
 /**
@@ -52,17 +54,19 @@ async function bootWindow(page: Page): Promise<void> {
  * changes the serialized JSON, so `persistCurrentWorkflow`'s unchanged-payload
  * check does not skip the write.
  */
-async function touchGraph(page: Page): Promise<void> {
-  await page.evaluate(() => {
+async function touchGraph(page: Page): Promise<string> {
+  return await page.evaluate(() => {
     const app = window.app!
     const graph = app.rootGraph
-    graph.extra = { ...graph.extra, e2eTouch: performance.now() }
+    const e2eTouch = crypto.randomUUID()
+    graph.extra = { ...graph.extra, e2eTouch }
 
     const { activeWorkflow } = (app.extensionManager as WorkspaceStore).workflow
     const activeState = activeWorkflow?.activeState
     if (!activeState) throw new Error('no active workflow to persist')
 
     app.api.dispatchCustomEvent('graphChanged', activeState)
+    return e2eTouch
   })
 }
 
@@ -73,46 +77,56 @@ function localKeys(page: Page, prefix: string): Promise<string[]> {
       const key = localStorage.key(i)
       if (key?.startsWith(keyPrefix)) keys.push(key)
     }
-    return keys
+    return keys.sort()
   }, prefix)
 }
 
-async function draftIndexUpdatedAt(page: Page): Promise<number | null> {
-  const [indexKey] = await localKeys(page, 'Comfy.Workflow.DraftIndex.v2:')
-  if (!indexKey) return null
-  return page.evaluate((key) => {
-    const raw = localStorage.getItem(key)
-    if (!raw) return null
-    const parsed: unknown = JSON.parse(raw)
-    return typeof parsed === 'object' &&
-      parsed !== null &&
-      'updatedAt' in parsed &&
-      typeof parsed.updatedAt === 'number'
-      ? parsed.updatedAt
-      : null
-  }, indexKey)
+function hasPersistedTouch(page: Page, e2eTouch: string): Promise<boolean> {
+  return page.evaluate((expectedTouch) => {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key?.startsWith('Comfy.Workflow.Draft.v2:')) continue
+
+      const rawPayload = localStorage.getItem(key)
+      if (!rawPayload) continue
+
+      const payload: unknown = JSON.parse(rawPayload)
+      if (
+        typeof payload !== 'object' ||
+        payload === null ||
+        !('data' in payload) ||
+        typeof payload.data !== 'string'
+      )
+        continue
+
+      const graph: unknown = JSON.parse(payload.data)
+      if (
+        typeof graph === 'object' &&
+        graph !== null &&
+        'extra' in graph &&
+        typeof graph.extra === 'object' &&
+        graph.extra !== null &&
+        'e2eTouch' in graph.extra &&
+        graph.extra.e2eTouch === expectedTouch
+      )
+        return true
+    }
+
+    return false
+  }, e2eTouch)
 }
 
-/**
- * Drops Firebase's shared auth record, the way a sign-in in another window
- * replaces it. The first window's SDK reads the same IndexedDB.
- */
-async function clearSharedFirebaseAuth(page: Page): Promise<void> {
-  await page.evaluate(
-    ([dbName, storeName]) =>
-      new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName)
-        request.onerror = () => reject(request.error)
-        request.onsuccess = () => {
-          const db = request.result
-          const tx = db.transaction(storeName, 'readwrite')
-          tx.objectStore(storeName).clear()
-          tx.oncomplete = () => resolve()
-          tx.onerror = () => reject(tx.error)
-        }
-      }),
-    [FIREBASE_DB, FIREBASE_STORE] as const
-  )
+async function removeSharedFirebaseAuth(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const key = Object.keys(localStorage).find((candidate) =>
+      candidate.startsWith('firebase:authUser:')
+    )
+    if (!key || !localStorage.getItem(key)) {
+      throw new Error('no shared Firebase auth record')
+    }
+
+    localStorage.removeItem(key)
+  })
 }
 
 test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
@@ -121,20 +135,21 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
   }) => {
     await bootWindow(page)
 
-    await touchGraph(page)
-    await expect
-      .poll(
-        async () => (await localKeys(page, 'Comfy.Workflow.Draft.v2:')).length
-      )
-      .toBeGreaterThan(0)
+    const initialTouch = await touchGraph(page)
+    await expect.poll(() => hasPersistedTouch(page, initialTouch)).toBe(true)
 
     const draftsBefore = await localKeys(page, 'Comfy.Workflow.Draft.v2:')
-    const indexBefore = await draftIndexUpdatedAt(page)
-    expect(indexBefore).not.toBeNull()
 
     const secondWindow = await page.context().newPage()
     await bootWindow(secondWindow)
-    await clearSharedFirebaseAuth(secondWindow)
+
+    expect(
+      await page.evaluate(() =>
+        sessionStorage.getItem('Comfy.Workspace.Current')
+      )
+    ).not.toBeNull()
+
+    await removeSharedFirebaseAuth(secondWindow)
 
     // Precondition, not the assertion under test: the first window must
     // actually observe the auth change, which it signals by tearing down its
@@ -142,8 +157,10 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
     // rather than pass vacuously.
     await expect
       .poll(
-        async () =>
-          (await localKeys(page, 'Comfy.Workspace.Current')).length === 0,
+        () =>
+          page.evaluate(
+            () => sessionStorage.getItem('Comfy.Workspace.Current') === null
+          ),
         {
           message:
             "first window never observed the second window's auth change - repro harness needs work, not a passing build"
@@ -151,17 +168,23 @@ test.describe('workflow drafts across windows', { tag: '@cloud' }, () => {
       )
       .toBe(true)
 
-    expect(
-      await localKeys(page, 'Comfy.Workflow.Draft.v2:'),
-      'drafts were wiped by a transient auth change in another window'
-    ).toEqual(draftsBefore)
+    await expect(
+      page.getByRole('button', { name: 'Logout (E2E Test User)' })
+    ).toBeVisible()
 
-    await touchGraph(page)
+    expect
+      .soft(
+        await localKeys(page, 'Comfy.Workflow.Draft.v2:'),
+        'drafts were wiped by a transient auth change in another window'
+      )
+      .toEqual(draftsBefore)
+
+    const touchAfterAuthChange = await touchGraph(page)
     await expect
-      .poll(() => draftIndexUpdatedAt(page), {
+      .poll(() => hasPersistedTouch(page, touchAfterAuthChange), {
         message:
           'persistence stayed fenced after the auth change - the logout transition was never completed'
       })
-      .not.toBe(indexBefore)
+      .toBe(true)
   })
 })
