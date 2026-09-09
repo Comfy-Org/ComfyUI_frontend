@@ -1,18 +1,18 @@
 import * as THREE from 'three'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { ModelExporter } from './ModelExporter'
 
 const {
   downloadBlobMock,
-  addAlertMock,
   gltfParseMock,
   objParseMock,
   stlParseMock,
   fbxParseAsyncMock
 } = vi.hoisted(() => ({
   downloadBlobMock: vi.fn(),
-  addAlertMock: vi.fn(),
   gltfParseMock: vi.fn(),
   objParseMock: vi.fn(),
   stlParseMock: vi.fn(),
@@ -28,9 +28,10 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: addAlertMock })
-}))
+let addAlertMock: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  addAlertMock = useToastStore().addAlert
+})
 
 vi.mock('three/examples/jsm/exporters/GLTFExporter', () => ({
   GLTFExporter: class {

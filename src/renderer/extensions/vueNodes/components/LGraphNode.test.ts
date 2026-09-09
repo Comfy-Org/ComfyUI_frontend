@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
@@ -153,11 +152,6 @@ const i18n = createI18n({
   }
 })
 
-const pinia = createTestingPinia({
-  createSpy: vi.fn,
-  stubActions: false
-})
-
 function getNodeRoot(container: Element): HTMLElement {
   return container.firstElementChild as HTMLElement
 }
@@ -166,7 +160,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return render(LGraphNode, {
     props,
     global: {
-      plugins: [pinia, i18n],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
@@ -208,11 +202,10 @@ describe('LGraphNode', () => {
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
 
-    setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
     canvasStore.currentGraph = null
-    const settingStore = useSettingStore(pinia)
+    const settingStore = useSettingStore()
     useNodeOutputStore().nodeOutputs = {}
     useWidgetValueStore().clearGraph('graph-test')
     vi.mocked(settingStore.get).mockImplementation((key) => {
@@ -240,7 +233,7 @@ describe('LGraphNode', () => {
     const { container } = render(LGraphNode, {
       props: { nodeData: mockNodeData },
       global: {
-        plugins: [pinia, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
@@ -278,7 +271,7 @@ describe('LGraphNode', () => {
         nodeData: { ...mockNodeData, graphId: 'graph-test' }
       },
       global: {
-        plugins: [pinia, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           AsyncComponentWrapper: {
             props: ['modelValue'],

@@ -1,6 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -84,7 +82,6 @@ function linksIntoTargetSlot(
 
 describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/DupTestNode', DupTestNode)
   })
 
@@ -150,7 +147,6 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
 
 describe('legacy mirror link creation (#15577 reachability)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.registerNodeType('test/DupTestNode', DupTestNode)
   })
 
