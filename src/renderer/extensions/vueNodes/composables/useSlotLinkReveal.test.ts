@@ -3,16 +3,15 @@ import { setActivePinia } from 'pinia'
 import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LLink } from '@/lib/litegraph/src/LLink'
 import {
   clearRootLinkReveals,
   isLinkRevealed
 } from '@/lib/litegraph/src/canvas/linkRevealState'
-import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
 import { useSlotLinkReveal } from './useSlotLinkReveal'
@@ -23,7 +22,6 @@ const SCOPE = {
 }
 
 const mocks = vi.hoisted(() => ({
-  links: new Map<LinkId, LLink>(),
   setDirty: vi.fn()
 }))
 
@@ -32,9 +30,7 @@ vi.mock('@/scripts/app', () => ({
     canvas: {
       graph: {
         id: 'root-a',
-        rootGraph: { id: 'root-a' },
-        links: mocks.links,
-        getLink: (id: LinkId) => mocks.links.get(id)
+        rootGraph: { id: 'root-a' }
       },
       setDirty: mocks.setDirty
     }
@@ -49,15 +45,16 @@ function addLink(
   targetSlot: number,
   hidden: boolean
 ): void {
-  const link = new LLink(
-    toLinkId(id),
-    'MODEL',
-    originNode,
+  const link = useLinkStore().registerLink(SCOPE, {
+    id: toLinkId(id),
+    graphId: SCOPE.owningGraphId,
+    originNodeId: toNodeId(originNode),
     originSlot,
-    targetNode,
-    targetSlot
-  )
-  mocks.links.set(link.id, link)
+    targetNodeId: toNodeId(targetNode),
+    targetSlot,
+    type: 'MODEL'
+  })
+  if (!link) throw new Error('Failed to register slot link')
   if (hidden) {
     useLinkPresentationStore().patch(SCOPE, link.id, { hidden: true })
   }
@@ -72,8 +69,6 @@ function createReveal(options: Parameters<typeof useSlotLinkReveal>[0]) {
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  mocks.links.clear()
-  mocks.setDirty.mockClear()
   clearRootLinkReveals(SCOPE.rootGraphId)
 })
 
@@ -83,6 +78,7 @@ describe('useSlotLinkReveal', () => {
     addLink(2, 0, 0, 9, 0, false)
     addLink(3, 0, 1, 10, 0, true)
     addLink(4, 6, 0, 11, 0, true)
+    addLink(5, 0, 0, 12, 0, true)
 
     const { reveal, scope } = createReveal({
       nodeId: toNodeId(0),
@@ -95,6 +91,7 @@ describe('useSlotLinkReveal', () => {
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(2))).toBe(false)
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(3))).toBe(false)
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(4))).toBe(false)
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(5))).toBe(true)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
     scope.stop()
   })
@@ -133,6 +130,24 @@ describe('useSlotLinkReveal', () => {
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(false)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
   })
+
+  it.for(['input', 'output'] as const)(
+    'does not reveal links on an unconnected %s slot',
+    (type) => {
+      addLink(10, 1, 0, 5, 2, true)
+      const { reveal, scope } = createReveal({
+        nodeId: toNodeId(8),
+        index: 0,
+        type
+      })
+
+      reveal.revealLinks()
+
+      expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(false)
+      expect(mocks.setDirty).not.toHaveBeenCalled()
+      scope.stop()
+    }
+  )
 
   it('does not clear another slot reveal when an unrelated scope is disposed', () => {
     addLink(10, 1, 0, 5, 2, true)

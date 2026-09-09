@@ -1934,7 +1934,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
-    if (graph) clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
+    if (graph && clearRootLinkReveals(graphScopeOf(graph).rootGraphId))
+      this.dirty_bgcanvas = true
     if (newGraph === graph) return
     clearLinkBadgeHitAreas(this)
 
@@ -2107,7 +2108,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
-    clearRevealedLinks(this)
+    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
       return

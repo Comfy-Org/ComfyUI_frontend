@@ -860,8 +860,10 @@ describe('drawConnections hidden links', () => {
     setRevealedLinks(scope.rootGraphId, [link.id], {})
     canvas.drawConnections(createMockCtx())
     expect(canvas.renderedPaths.has(link)).toBe(true)
+    canvas.dirty_bgcanvas = false
 
     canvas.setGraph(graph)
+    expect(canvas.dirty_bgcanvas).toBe(true)
     canvas.drawConnections(createMockCtx())
 
     expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(false)
@@ -869,6 +871,18 @@ describe('drawConnections hidden links', () => {
     expect(useLinkPresentationStore().getPresentation(scope, link.id)).toEqual({
       hidden: true
     })
+  })
+
+  it('invalidates revealed links when canvas events are unbound', () => {
+    const link = createHiddenLink()
+    const scope = graphScopeOf(graph)
+    setRevealedLinks(scope.rootGraphId, [link.id], canvas)
+    canvas.dirty_bgcanvas = false
+
+    canvas.unbindEvents()
+
+    expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(true)
   })
 
   it('clears slot-owned reveals and badge hit areas when the graph changes', () => {
