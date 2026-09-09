@@ -270,6 +270,34 @@ describe('agentSubgraphHostSlots', () => {
     expect(hostSlotIndex(def, 'value')).toBe(-1)
   })
 
+  it('stops chasing promotion through a nested chain deeper than the cap', () => {
+    // A linear chain: `chain-0` hosts `chain-1`, which hosts `chain-2`, …
+    // `chain-33` finally lands on a real widget. Thirty-three hops exceed
+    // the 32-deep cap, so the root input must resolve as unpromoted rather
+    // than walking the whole chain (comfy-cli `_MAX_NESTED_PROMOTION_DEPTH`).
+    const depth = 33
+    const chain: DefinitionWithNodes[] = []
+    for (let level = 0; level <= depth; level++) {
+      const def = definition()
+      def.id = `chain-${level}`
+      def.inputs = [
+        { id: 'in-value', name: 'value', type: 'NUMBER', linkIds: [2] }
+      ]
+      if (level < depth) {
+        def.nodes[1] = {
+          ...def.nodes[1],
+          type: `chain-${level + 1}`,
+          inputs: [{ name: 'value', type: 'NUMBER', link: 2 }]
+        }
+      }
+      chain.push(def)
+    }
+    const index = indexSubgraphDefinitions(chain)
+    expect(promotedWidgetNames(chain[0], index)).toEqual([])
+    // A chain that fits under the cap still resolves to the leaf widget.
+    expect(promotedWidgetNames(chain[depth - 32], index)).toEqual(['value'])
+  })
+
   it('resolves host slot index from definition order, not doc order', () => {
     const def = definition()
     expect(hostSlotIndex(def, 'extra')).toBe(0)
