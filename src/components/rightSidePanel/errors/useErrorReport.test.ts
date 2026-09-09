@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -70,7 +71,7 @@ describe('useErrorReport', () => {
 
   beforeEach(async () => {
     const store = useSystemStatsStore()
-    await flushPromises()
+    await until(() => store.isInitialized).toBe(true)
     store.systemStats = null
     store.isLoading = false
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
