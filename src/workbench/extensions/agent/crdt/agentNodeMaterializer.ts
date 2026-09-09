@@ -345,6 +345,7 @@ function materialize(
       serialised.inputs?.map((input, index) => [input.name, index])
     )
     node.configure(withNamedWidgetValues(serialised))
+    // Shared-document connections use these slot indexes in both directions.
     node.inputs = node.inputs.toSorted(
       (a, b) =>
         (inputOrder.get(a.name) ?? inputOrder.size) -
