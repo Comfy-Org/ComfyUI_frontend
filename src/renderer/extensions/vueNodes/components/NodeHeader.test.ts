@@ -25,8 +25,8 @@ const { toggleNodeSelectionAfterPointerUp } = vi.hoisted(() => ({
   toggleNodeSelectionAfterPointerUp: vi.fn()
 }))
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => ({
     useNodeEventHandlers: () => ({ toggleNodeSelectionAfterPointerUp })
   })
