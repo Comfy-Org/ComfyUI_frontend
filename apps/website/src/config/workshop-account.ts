@@ -55,13 +55,7 @@ export const workshopSessionClient: SessionClient<User> =
 
 export const workshopBillingClient: BillingClient = createBillingClient({
   session: workshopSessionClient,
-  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`,
-  // A session restored from a cached credential never re-ran sign-in, so its
-  // account may still lack the customer record; the cloud app heals the same way.
-  provisionCustomer: async (user) => {
-    const { provisionCustomer } = await import('./workshop-firebase')
-    await provisionCustomer(user)
-  }
+  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
 })
 
 /**
