@@ -12,6 +12,7 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "docs/node-api/comfy-api.d.ts",
     "packages/design-system/src/css/lucideStrokePlugin.js",
     "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
