@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "비디오 latent에 디테일링 키프레임을 추가합니다. 각 키프레임은 RoPE 위치가 단일 픽셀 프레임에 걸쳐 있는 토큰으로 이루어진 하나의 latent 프레임입니다. 키프레임은 비디오와 함께 노이즈 제거되며 디코딩된 출력에는 포함되지 않습니다. interval_frames 픽셀마다 한 슬롯에 배치하며, I2V 프레임, 기존 가이드 및 이미 cond에 있는 디테일링 키프레임은 건너뜁니다. 연결된 키프레임은 콘텐츠로만 사용되며 frame_indices가 설정되지 않은 경우 이 캔버스에 다시 배치됩니다. LTXV Separate Generated Keyframes로 다시 분리할 수 있습니다. 생성된 키프레임용으로 학습된 체크포인트(keyframes_abs_pos_embedding를 포함한 체크포인트)가 필요합니다.",
+    "display_name": "LTXV 생성된 키프레임 추가",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "선택적 픽셀 프레임 인덱스입니다. 현재 캔버스에서 interval_frames를 기준으로 배치하려면 비워 두세요. 설정하면 이 목록이 배치 위치가 되며(연결된 키프레임은 순서대로 일치됨), 마지막 프레임은 허용되지만 프레임 0은 허용되지 않습니다(이미 독립 토큰이기 때문)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "자동 배치를 위한 픽셀 프레임 간격입니다. 기본값 24는 24fps에서 초당 약 하나의 키프레임입니다. 이미 사용 중인 픽셀은 건너뜁니다. frame_indices가 설정된 경우 무시됩니다."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "새 키프레임을 초기화할 선택적 콘텐츠입니다. 이전 Separate의 키프레임(동일한 공간 크기)을 연결하거나, 각 새 슬롯에서 가장 가까운 프레임을 복사할 일반 비디오 latent를 연결합니다(예: 시간 업스케일 후). 이들은 가이드로 고정되지 않고 계속 노이즈 제거됩니다. frame_indices가 설정되지 않은 경우 키프레임 latent에 기록된 인덱스는 무시됩니다. 샘플링이 sigma 1 미만에서 시작할 때만 효과가 있습니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "키프레임을 함께 생성할 일반 5D 비디오 latent입니다. Concat AV Latent 전에 추가하세요."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "키프레임이 연결될 네거티브 컨디셔닝입니다."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "키프레임이 연결될 포지티브 컨디셔닝입니다."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "latent 스케일 계수를 읽는 데만 사용됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "생성된 키프레임 어텐션이 연결된 포지티브 컨디셔닝입니다."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "생성된 키프레임 어텐션이 연결된 네거티브 컨디셔닝입니다."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T에 생성된 키프레임이 추가된 비디오 latent입니다."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV 가이드 추가",
     "inputs": {
@@ -9752,6 +9800,55 @@
       },
       "2": {
         "name": "잠재 비디오",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "이미지 대신 이전 단계에서 나온 가이드를 사용할 때, 이미 인코딩된 latent를 가이드로 고정합니다. VAE 디코드/인코드 왕복 과정 없이 LTXV Add Guide와 동일한 효과를 제공합니다. 대상보다 공간적으로 작은 가이드(IC-LoRA 또는 디테일링 참조)는 희소 그리드에 맞춰 확장되며, RoPE 끝 위치도 같은 비율로 확장되어 대상 캔버스의 왼쪽 상단 모서리만 지정하는 대신 전체를 포괄합니다.",
+    "display_name": "LTXV Latent 가이드 추가",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "선택적 픽셀 공간 마스크입니다. self-attention을 통해 영역별 컨디셔닝 영향력을 제어하며 strength와 곱해집니다."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "가이드 latent입니다. 공간 크기는 두 축 모두에서 대상 크기를 동일한 정수로 나눌 수 있어야 합니다. 크기가 같으면 그대로 고정되고, 절반 크기는 x2 IC-LoRA 참조로 처리됩니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "가이드가 고정될 대상 비디오 latent입니다."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "가이드를 시작할 latent 프레임 인덱스입니다. 픽셀 프레임이 아닌 latent 프레임 단위로 계산합니다. 음수 값은 latent 끝에서 거꾸로 계산하지 않고 latent 시작 전 프레임에 가이드를 배치합니다."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "최대 1.0으로 제한됩니다. 확장된 가이드는 모델이 제거하도록 패딩 위치를 음수 노이즈 제거 마스크로 표시합니다. 1.0을 초과하면 유지할 위치도 음수가 되어 전체 가이드가 제거됩니다. 대신 attention_mask로 1.0 이상 증폭하세요."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask를 0으로 설정하여 샘플링 중 이 latent가 깨끗하게 유지되도록 합니다. 비디오 또는 오디오에서 작동합니다. 일반적인 용도: Concat AV 전에 오디오를 고정하여 교차 어텐션만 제공하도록 하거나, 노이즈 제거를 하지 않아야 하는 모든 latent를 고정합니다.",
+    "display_name": "LTXV Latent 고정",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "고정할 비디오 또는 오디오 latent입니다. 오디오는 4D이고 비디오는 5D입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "이전 단계에서 생성된 키프레임을 이후 캔버스의 고정된 이미지 가이드로 고정합니다. 독립 프레임으로 디코딩되고 필요 시 크기가 조정되며, 다시 노이즈 제거되지 않도록 noise_mask=0으로 기록됩니다. 시간적 업스케일 후에는 기록된 인덱스가 생성된 캔버스에서 이 캔버스로 스케일링됩니다(동일한 시점). 위치를 명시적으로 설정하려면 override_frame_indices를 사용하세요. 새 위치에서 키프레임을 계속 생성하고 노이즈 제거하려면 대신 Add Generated Keyframes를 사용하세요.",
+    "display_name": "LTXV 생성된 키프레임을 가이드로",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "각 키프레임이 생성된 픽셀 프레임 인덱스를 포함하는 LTXV Separate Generated Keyframes의 keyframes 출력입니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "가이드를 추가할 대상 비디오 latent입니다. 예: 시간적으로 업스케일된 latent."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "선택 사항 — 기록된 위치(또는 자동 스케일된 위치) 대신 이 픽셀 프레임에 고정합니다. 키프레임당 하나의 인덱스를 제공하세요. 기록된 위치를 재사용하거나 대상 캔버스의 길이가 다른 경우(예: 시간적 x2 후) 스케일링하려면 비워 두세요."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "가이드 강도입니다. 1.0은 강한 고정이며, 더 낮은 값은 고정을 완화합니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "키프레임이 이미지 가이드로 고정된 positive 컨디셔닝입니다."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "키프레임이 이미지 가이드로 고정된 negative 컨디셔닝입니다."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "키프레임이 고정된 가이드로 추가된 대상 비디오 latent입니다."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV 비디오 생성 (이미지 → 비디오)",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Add Generated Keyframes로 추가된 생성 키프레임을 샘플링된 latent에서 다시 분리하고, 컨디셔닝에서 제거합니다. 비디오 latent를 공간적으로 업스케일하기 전에 분리하세요. 먼저 LTXV Crop Guides를 실행하지 마세요. 생성 키프레임을 일회용 가이드로 처리하여 제거합니다.",
+    "display_name": "LTXV 생성된 키프레임 분리",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "키프레임을 단일 프레임 latent 배치로 반환합니다. 끄면 하나의 다중 프레임 latent로 가져오며, 이는 latent 업스케일러와 이후의 Add Generated Keyframes에서 필요로 하는 형식입니다."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "생성 키프레임 메타데이터가 제거된 positive 컨디셔닝입니다."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "생성 키프레임 메타데이터가 제거된 negative 컨디셔닝입니다."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "생성 키프레임이 제거된 비디오 latent입니다."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "분리된 키프레임이며 generated_keyframe_indices 및 generated_keyframe_num_frames로 레이블됩니다. 새 슬롯을 초기화하려면 이후 Add Generated Keyframes에, 또는 고정된 이미지 가이드로 고정하려면 Generated Keyframes To Guides에 입력하세요(캔버스 길이가 변경된 경우 인덱스가 다시 매핑됨)."
       }
     }
   },
@@ -16696,6 +16891,45 @@
       "image": {
         "name": "이미지",
         "tooltip": "ImageCropToMask에서 전처리된 이미지(Pixal3D의 경우 pad_factor=1.1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D 다중 뷰 컨디셔닝",
+    "inputs": {
+      "back": {
+        "name": "후면",
+        "tooltip": "알파가 있거나 검은 배경의 정사각형 객체 후면 뷰입니다. 리그처럼 구도를 잡아야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(front, left, back, right 순서)가 메시가 포즈를 취할 전면입니다."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "번들 NAF 가중치가 포함된 DINOv3 ViT-L/16 ClipVision."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "구도에 맞춘 뷰의 수평 FOV(도)입니다. 리그 렌더 및 대부분의 멀티뷰 생성기에는 20을 사용하거나, 사진의 경우 뷰 중 하나에 MoGeGeometryToFOV를 사용합니다."
+      },
+      "front": {
+        "name": "전면",
+        "tooltip": "알파가 있거나 검은 배경의 정사각형 객체 전면 뷰입니다. 리그처럼 구도를 잡아야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(front, left, back, right 순서)가 메시가 포즈를 취할 전면입니다."
+      },
+      "left": {
+        "name": "왼쪽",
+        "tooltip": "알파가 있거나 검은 배경의 정사각형 객체 왼쪽면 뷰입니다. 리그처럼 구도를 잡아야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(front, left, back, right 순서)가 메시가 포즈를 취할 전면입니다."
+      },
+      "right": {
+        "name": "오른쪽",
+        "tooltip": "알파가 있거나 검은 배경의 정사각형 객체 오른쪽면 뷰입니다. 리그처럼 구도를 잡아야 합니다. 객체는 가장 넓은 지점에서 프레임의 약 1/1.1을 차지하며, 모든 뷰에서 동일한 크기여야 합니다. 처음 연결된 뷰(front, left, back, right 순서)가 메시가 포즈를 취할 전면입니다."
       }
     },
     "outputs": {

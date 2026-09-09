@@ -4,15 +4,18 @@ import { describe, expect, it, vi } from 'vitest'
 
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 
-vi.mock('@/components/templates/thumbnails/BaseThumbnail.vue', () => ({
-  default: {
-    name: 'BaseThumbnail',
-    template: '<div class="base-thumbnail"><slot /></div>',
-    props: ['isHovered']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/templates/thumbnails/BaseThumbnail.vue'),
+  () => ({
+    default: {
+      name: 'BaseThumbnail',
+      template: '<div class="base-thumbnail"><slot /></div>',
+      props: ['isHovered']
+    }
+  })
+)
 
-vi.mock('@/components/common/LazyImage.vue', () => ({
+vi.mock<unknown>(import('@/components/common/LazyImage.vue'), () => ({
   default: {
     name: 'LazyImage',
     template:

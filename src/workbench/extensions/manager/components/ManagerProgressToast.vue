@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
-import Panel from 'primevue/panel'
 import TabMenu from 'primevue/tabmenu'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -84,11 +84,6 @@ const currentTaskName = computed(() => {
   const task = comfyManagerStore.taskLogs.at(-1)
   return task?.taskName ?? t('manager.installingDependencies')
 })
-
-const collapsedPanels = ref<Record<number, boolean>>({})
-function togglePanel(index: number) {
-  collapsedPanels.value[index] = !collapsedPanels.value[index]
-}
 
 const sectionsContainerRef = ref<HTMLElement | null>(null)
 const { y: scrollY } = useScroll(sectionsContainerRef, {
@@ -180,68 +175,57 @@ onBeforeUnmount(() => {
           scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
         }"
       >
-        <div v-for="(log, index) in focusedLogs" :key="index">
-          <Panel
-            :expanded="collapsedPanels[index] === true"
-            toggleable
-            class="shadow-elevation-1 mt-2 rounded-lg"
+        <details
+          v-for="(log, index) in focusedLogs"
+          :key="log.taskId"
+          open
+          class="group/log shadow-elevation-1 mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface"
+        >
+          <summary
+            class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
           >
-            <template #header>
-              <div class="flex w-full items-center justify-between py-2">
-                <div class="flex flex-col text-sm/normal font-medium">
-                  <span>{{ log.taskName }}</span>
-                  <span class="text-muted">
-                    {{
-                      isTaskInProgress(index)
-                        ? t('g.inProgress')
-                        : t('g.completedWithCheckmark')
-                    }}
-                  </span>
-                </div>
-              </div>
-            </template>
-            <template #toggleicon>
-              <Button
-                variant="textonly"
-                class="text-neutral-300"
-                @click="togglePanel(index)"
+            <span class="flex flex-col text-sm/normal font-medium">
+              <span>{{ log.taskName }}</span>
+              <span class="text-muted">
+                {{
+                  isTaskInProgress(index)
+                    ? t('g.inProgress')
+                    : t('g.completedWithCheckmark')
+                }}
+              </span>
+            </span>
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--chevron-right] size-4 text-neutral-300 group-open/log:rotate-90"
+            />
+          </summary>
+          <div
+            :ref="
+              index === focusedLogs.length - 1
+                ? (el) => (lastPanelRef = el as HTMLElement)
+                : undefined
+            "
+            :class="
+              cn(
+                'h-64 overflow-y-auto rounded-lg bg-black',
+                index === focusedLogs.length - 1 && 'grow'
+              )
+            "
+            @scroll="handleScroll"
+          >
+            <div class="h-full">
+              <div
+                v-for="(logLine, logIndex) in log.logs"
+                :key="logIndex"
+                class="text-muted"
               >
-                <i
-                  :class="
-                    collapsedPanels[index]
-                      ? 'pi pi-chevron-right'
-                      : 'pi pi-chevron-down'
-                  "
-                />
-              </Button>
-            </template>
-            <div
-              :ref="
-                index === focusedLogs.length - 1
-                  ? (el) => (lastPanelRef = el as HTMLElement)
-                  : undefined
-              "
-              class="h-64 overflow-y-auto rounded-lg bg-black"
-              :class="{
-                'h-64': index !== focusedLogs.length - 1,
-                grow: index === focusedLogs.length - 1
-              }"
-              @scroll="handleScroll"
-            >
-              <div class="h-full">
-                <div
-                  v-for="(logLine, logIndex) in log.logs"
-                  :key="logIndex"
-                  class="text-muted"
-                >
-                  <pre class="wrap-break-word whitespace-pre-wrap">{{
-                    logLine
-                  }}</pre>
-                </div>
+                <pre class="wrap-break-word whitespace-pre-wrap">{{
+                  logLine
+                }}</pre>
               </div>
             </div>
-          </Panel>
-        </div>
+          </div>
+        </details>
       </div>
     </template>
 
