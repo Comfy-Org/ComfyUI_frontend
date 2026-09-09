@@ -132,13 +132,8 @@ const lastIndex = computed(() => Math.max(stops.length - 1, 0))
 
 const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
 
-const stopCreditLabels = computed(() =>
-  stops.map((stop) =>
-    formatCreditsCompact(
-      amountForBillingCycle(stop.credits, cycle === 'yearly')
-    )
-  )
-)
+const creditLabelFor = (stop: CreditStop) =>
+  formatCreditsCompact(amountForBillingCycle(stop.credits, cycle === 'yearly'))
 
 const { t } = useI18n()
 </script>
@@ -234,7 +229,7 @@ const { t } = useI18n()
           "
           aria-hidden="true"
         />
-        {{ stopCreditLabels[i] }}
+        {{ creditLabelFor(stop) }}
       </li>
     </ol>
   </div>

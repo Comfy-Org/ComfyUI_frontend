@@ -222,7 +222,7 @@ describe('CreditSlider', () => {
     const labels = within(screen.getByTestId('credit-slider-stops'))
     expect(labels.getByText('126.6K')).toBeInTheDocument()
     expect(labels.getByText('253.2K')).toBeInTheDocument()
-    expect(labels.queryByText('1.8M')).not.toBeInTheDocument()
+    expect(labels.queryByText('1.7M')).not.toBeInTheDocument()
   })
 
   it('keeps every credit amount equal to usdToCredits(usd) (guards rate drift)', () => {
