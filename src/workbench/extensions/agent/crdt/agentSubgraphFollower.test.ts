@@ -592,6 +592,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
           replacement.set(key, value)
         }
         replacement.set(OPAQUE_WIDGETS_KEY, [44])
+        replacement.set('title', 'Replaced host')
         nodes.set('1', replacement)
       },
       1
@@ -600,6 +601,40 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(storedHostWidgets(state)).toEqual([['value', 44]])
     expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
     expect(state.instance.widgets[0]?.value).toBe(44)
+    // The replacement is not widget-only: non-widget fields must land too.
+    expect(state.instance.title).toBe('Replaced host')
+  })
+
+  it('S1k resyncs live host fields without rebuilding promoted widgets', () => {
+    // A doc edit to a host's non-widget fields (title, mode, flags, ...) must
+    // reach the live SubgraphNode. The live-host path used to return after
+    // writing promoted values, so these edits were silently dropped.
+    const state = startFollower()
+    deliver(state, hostSetWidget(47), 1)
+    const inputBefore = state.instance.inputs[0]
+    forwardRaw(
+      state,
+      (nodes) => {
+        const node = nodes.get('1')!
+        node.set('title', 'Renamed host')
+        node.set('mode', 2)
+        node.set('flags', { collapsed: true })
+        node.set('properties', { note: 'kept' })
+      },
+      2
+    )
+
+    expect(state.instance.title).toBe('Renamed host')
+    expect(state.instance.mode).toBe(2)
+    expect(state.instance.flags.collapsed).toBe(true)
+    expect(state.instance.properties.note).toBe('kept')
+    // Promoted widget bindings survive: same widget surface, same value, and
+    // the input slot object (which carries the `_subgraphSlot`/`widgetId`
+    // bindings) is not replaced.
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(47)
+    expect(storedHostWidgets(state)).toEqual([['value', 47]])
+    expect(state.instance.inputs[0]).toBe(inputBefore)
   })
 
   it('S1i keeps promoted names when the host flips back to named storage', () => {

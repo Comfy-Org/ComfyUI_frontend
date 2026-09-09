@@ -67,6 +67,12 @@ interface GraphMutationBatch {
   hasNode(nodeId: NodeId): boolean
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
+  /**
+   * Resyncs only the scalar fields (title, mode, flags, properties, colors,
+   * shape) of an existing node. Slots, registered widgets, and layout are
+   * left untouched, so a live subgraph host keeps its promoted-slot bindings.
+   */
+  reconcileNodeFields(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
   connect(link: SemanticLinkPayload): void
   /** Derived cleanup for an authoritative snapshot; not a wire op. */
@@ -109,6 +115,7 @@ export interface GraphMutationsDeps {
 type QueuedMutation =
   | { kind: 'addNode'; payload: SemanticNodePayload }
   | { kind: 'reconcileNode'; payload: SemanticNodePayload }
+  | { kind: 'reconcileNodeFields'; payload: SemanticNodePayload }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: unknown }
   | { kind: 'connect'; link: SemanticLinkPayload }
   | {
@@ -133,6 +140,7 @@ interface PreparedNode {
 type PreparedMutation =
   | { kind: 'addNode'; node: PreparedNode }
   | { kind: 'reconcileNode'; node: PreparedNode }
+  | { kind: 'reconcileNodeFields'; state: NodeState }
   | { kind: 'setWidget'; nodeId: NodeId; name: string; value: WidgetValue }
   | {
       kind: 'connect'
@@ -393,6 +401,26 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           nodes.set(key, node.state)
           widgets.set(key, new Set(node.widgets.map(({ name }) => name)))
           prepared.push({ kind: mutation.kind, node })
+          break
+        }
+        case 'reconcileNodeFields': {
+          if (
+            (typeof mutation.payload.id !== 'string' &&
+              typeof mutation.payload.id !== 'number') ||
+            typeof mutation.payload.type !== 'string' ||
+            mutation.payload.type.length === 0
+          ) {
+            return 'reconcileNodeFields requires a payload id and type'
+          }
+          const key = nodeKey(toNodeId(mutation.payload.id))
+          const existing = nodes.get(key)
+          if (!existing) return `node ${key} does not exist`
+          // Slots come from the live node; only scalar fields are resynced.
+          const { state } = prepareNode(mutation.payload, scope, existing)
+          state.inputs = existing.inputs
+          state.outputs = existing.outputs
+          nodes.set(key, state)
+          prepared.push({ kind: mutation.kind, state })
           break
         }
         case 'setWidget': {
@@ -708,6 +736,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           break
         }
+        case 'reconcileNodeFields': {
+          nodeStore.updateNodeFields(
+            scope,
+            mutation.state.id,
+            mutation.state,
+            context
+          )
+          break
+        }
         case 'setWidget': {
           const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
           if (!widgetStore.getWidget(id)) {
@@ -839,6 +876,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         },
         reconcileNode(payload) {
           queued.push({ kind: 'reconcileNode', payload })
+        },
+        reconcileNodeFields(payload) {
+          queued.push({ kind: 'reconcileNodeFields', payload })
         },
         setWidget(nodeId, name, value) {
           queued.push({ kind: 'setWidget', nodeId, name, value })
