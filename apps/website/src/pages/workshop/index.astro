@@ -19,6 +19,6 @@ const models = prepareWorkshopBrowseModels(
   description={t('workshop.meta.description')}
 >
   <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
-    <WorkshopCatalog models={models} client:load />
+    <WorkshopCatalog models={models} detailRoutesAvailable client:load />
   </main>
 </BaseLayout>
