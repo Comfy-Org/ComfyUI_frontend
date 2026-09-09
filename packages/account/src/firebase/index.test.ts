@@ -113,11 +113,7 @@ describe('createFirebaseIdentity over a host-owned Auth', () => {
 })
 
 describe('createFirebaseIdentity action ceilings', () => {
-  it.for([
-    ['signInWithEmail'],
-    ['createUserWithEmail'],
-    ['sendPasswordReset']
-  ] as const)(
+  it.for([['signInWithEmail'], ['sendPasswordReset']] as const)(
     'leaves %s unbounded by default, as the cloud app runs it',
     async ([method]) => {
       const identity = await makeIdentity()
@@ -133,6 +129,25 @@ describe('createFirebaseIdentity action ceilings', () => {
       expect(settled).not.toHaveBeenCalled()
     }
   )
+
+  it('never bounds account creation, even when a host asks for a ceiling', async () => {
+    const { createFirebaseIdentity } = await import('./index.js')
+    const identity = createFirebaseIdentity({
+      options: { apiKey: 'test' },
+      actionTimeoutMs: 2_000
+    })
+    const settled = vi.fn()
+    identity
+      .createUserWithEmail('a@b.example', 'hunter22!')
+      .then(settled, settled)
+
+    await vi.advanceTimersByTimeAsync(2_000 * 10)
+
+    expect(
+      settled,
+      'a rejected caller with a still-running SDK call orphans the account; every retry then fails email-already-in-use'
+    ).not.toHaveBeenCalled()
+  })
 
   it('applies the ceiling a host asks for', async () => {
     const { createFirebaseIdentity } = await import('./index.js')
