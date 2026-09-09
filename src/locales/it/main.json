@@ -4995,7 +4995,7 @@
       "accessDenied": "Non hai accesso a questo workspace",
       "invalidFirebaseToken": "Autenticazione non riuscita. Prova ad accedere di nuovo.",
       "notAuthenticated": "Devi essere loggato per accedere ai workspace",
-      "tokenExchangeFailed": "Autenticazione con workspace non riuscita: {error}",
+      "tokenExchangeFailed": "Autenticazione con workspace non riuscita",
       "workspaceNotFound": "Workspace non trovato"
     },
     "initializationFailed": "Impossibile caricare il tuo workspace",

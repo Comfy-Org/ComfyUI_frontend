@@ -1,6 +1,6 @@
 # ADR-AUTH-IDENTITY-0028: The Account Package's Firebase Entry Delivers Identity to the Cloud Session Client
 
-Date: 2026-09-08 (revised 2026-09-09)
+Date: 2026-09-09
 
 ## Status
 

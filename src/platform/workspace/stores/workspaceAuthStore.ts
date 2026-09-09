@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 
-import type { SessionErrorCode } from '@comfyorg/account/core'
+import type { SessionErrorCode, SessionFailure } from '@comfyorg/account/core'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
@@ -303,6 +303,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     stopRefreshTimer()
     detachUnifiedIdentity?.()
     detachUnifiedIdentity = undefined
+    clearUnifiedContext()
+    stopUnifiedSnapshot()
   }
 
   function initializeFromSession(): boolean {
@@ -761,7 +763,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function handleScheduledRefreshOutcome(
-    outcome: UnifiedAuthRefreshOutcome
+    outcome: UnifiedAuthRefreshOutcome,
+    scheduledFailure?: SessionFailure
   ): void {
     if (outcome === 'succeeded') {
       unifiedScheduledRetryCount = 0
@@ -792,11 +795,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return
     }
     trackUnifiedRefresh('permanent_failure')
-    const snapshot = unifiedSessionClient.getSnapshot()
-    const code =
-      snapshot.phase === 'error'
-        ? snapshot.failure.code
-        : 'TOKEN_EXCHANGE_FAILED'
+    const code = scheduledFailure?.code ?? 'TOKEN_EXCHANGE_FAILED'
     surfaceUnifiedPermanentFailure(code)
     endWorkspaceSession(
       unifiedSelectionInvalid(code)
@@ -822,7 +821,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   })
 
-  unifiedSessionClient.subscribe((snapshot) => {
+  const stopUnifiedSnapshot = unifiedSessionClient.subscribe((snapshot) => {
     if (snapshot.phase === 'authenticated') {
       const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
       unifiedTarget = target
@@ -875,16 +874,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const current = unifiedSessionClient.getSnapshot().user
     if (matches(current)) return Promise.resolve(current)
     return new Promise((resolve) => {
+      // Held in an object: subscribe() replays synchronously, and a settle
+      // from that replay must never touch a binding declared after it.
+      const subscription = { stop: () => {} }
       const settle = (user: User | null) => {
         clearTimeout(ceiling)
-        stop()
+        subscription.stop()
         resolve(user)
       }
       const ceiling = setTimeout(() => {
         console.warn('Unified identity did not settle before the ceiling')
         settle(null)
       }, UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS)
-      const stop = unifiedSessionClient.subscribe(({ user }) => {
+      subscription.stop = unifiedSessionClient.subscribe(({ user }) => {
         if (matches(user)) settle(user)
         else if ((user?.uid ?? null) !== (current?.uid ?? null)) settle(null)
       })
@@ -920,15 +922,18 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
     unifiedTarget = { workspace_id: workspaceId }
     const result = await unifiedSessionClient.remint(authUser, { workspaceId })
-    if (result?.status === 'error') {
-      throw new WorkspaceAuthError(
-        t(sessionErrorMessageKey(result.code)),
-        result.code
-      )
-    }
+    if (result?.status === 'ok') return
+    // A workspace we could not enter must not become the next login's
+    // target, or an unreachable workspace locks the user out of the personal
+    // session that would have worked.
+    unifiedTarget = null
     if (result === undefined) {
       throw new WorkspaceAuthError('Workspace identity changed during switch')
     }
+    throw new WorkspaceAuthError(
+      t(sessionErrorMessageKey(result.code)),
+      result.code
+    )
   }
 
   function trackUnifiedRefresh(outcome: UnifiedAuthRefreshOutcome): void {
