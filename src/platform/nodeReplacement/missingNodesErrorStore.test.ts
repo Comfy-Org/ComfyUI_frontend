@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
@@ -17,7 +17,7 @@ const mockSettings = vi.hoisted(() => ({
   } as Record<string, boolean>
 }))
 
-vi.mock('@/platform/settings/settingStore', async () => {
+vi.mock<unknown>(import('@/platform/settings/settingStore'), async () => {
   const { reactive } = await import('vue')
   mockSettings.values = reactive(mockSettings.values)
   return {

@@ -10,7 +10,7 @@ import type { JobStatus } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 

@@ -4,27 +4,33 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWorkflowActionsService } from './workflowActionsService'
 
 const mockPrompt = vi.hoisted(() => vi.fn())
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ prompt: mockPrompt })
 }))
 
 const mockGetSetting = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: mockGetSetting })
 }))
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   downloadBlob: mockDownloadBlob
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ createTemporary: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ createTemporary: vi.fn() })
+  })
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({ openWorkflow: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({ openWorkflow: vi.fn() })
+  })
+)
 
 const minimalWorkflow: ComfyWorkflowJSON = {
   version: 0.4,
