@@ -7,6 +7,7 @@
  * effects and wires them to the package identity.
  */
 import type { User, UserCredential } from 'firebase/auth'
+import { getAdditionalUserInfo } from 'firebase/auth'
 
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
@@ -25,6 +26,8 @@ import {
 
 // Named app: never contend with a default app another script might create.
 const WORKSHOP_APP_NAME = 'workshop'
+/** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
+const PROVISIONING_TIMEOUT_MS = 15_000
 
 const identity = createFirebaseIdentity({
   options: WORKSHOP_FIREBASE_OPTIONS,
@@ -68,7 +71,8 @@ export async function provisionCustomer(
     customerProvisioningRequest({
       authHeaders: { Authorization: `Bearer ${token}` },
       signupSource: 'comfy-workshop',
-      turnstileToken
+      turnstileToken,
+      signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
     })
   )
   if (!isCustomerProvisioned(response)) {
@@ -104,16 +108,19 @@ export function signInWorkshopWithGitHub(): Promise<UserCredential> {
   return socialSignIn(identity.signInWithGitHub)
 }
 
+/** Whether the credential created the account, the way the cloud app reports it. */
+export function isNewWorkshopUser(credential: UserCredential): boolean {
+  return getAdditionalUserInfo(credential)?.isNewUser ?? false
+}
+
 export function signInWorkshopWithEmail(
   email: string,
   password: string
 ): Promise<UserCredential> {
   // Sign-in provisions too, mirroring the platform app: an account created
-  // elsewhere may reach billing surfaces here first.
-  return socialSignInWithProvisioning({
-    signIn: () => identity.signInWithEmail(email, password),
-    provisionCustomer: (credential) => provisionCustomer(credential.user)
-  })
+  // elsewhere may reach billing surfaces here first; a provisioning failure
+  // keeps the user signed in, as after a social popup.
+  return socialSignIn(() => identity.signInWithEmail(email, password))
 }
 
 /**

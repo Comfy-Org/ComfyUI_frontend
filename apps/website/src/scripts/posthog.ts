@@ -7,7 +7,10 @@ import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account/telemetry'
-import type { AuthErrorMetadata } from '@comfyorg/account/telemetry'
+import type {
+  AuthCompletedMetadata,
+  AuthErrorMetadata
+} from '@comfyorg/account/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
 import type { TurnstileMode } from '@comfyorg/account/turnstile'
@@ -35,6 +38,7 @@ const ANALYTICS_EVENT = {
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
   authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed,
   signUpOpened: AUTH_TELEMETRY_EVENT.signUpOpened,
+  authCompleted: AUTH_TELEMETRY_EVENT.authCompleted,
   authFailed: AUTH_TELEMETRY_EVENT.authFailed,
   workshopSignupRollbackFailed: 'website:workshop_signup_rollback_failed'
 } as const
@@ -81,6 +85,10 @@ type AnalyticsEvent =
     }
   | { name: typeof ANALYTICS_EVENT.signUpOpened; properties?: undefined }
   | {
+      name: typeof ANALYTICS_EVENT.authCompleted
+      properties: AuthCompletedMetadata
+    }
+  | {
       name: typeof ANALYTICS_EVENT.authFailed
       properties: AuthErrorMetadata
     }
@@ -99,6 +107,8 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
  */
 const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(OVERRIDDEN_ON)
+/** True once PostHog has answered (or the override stands in for it). */
+const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
 const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
 const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
 const workshopTurnstileMode = ref<TurnstileMode>(
@@ -107,6 +117,10 @@ const workshopTurnstileMode = ref<TurnstileMode>(
 
 export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
+}
+
+export function useWorkshopAuthFlagSettled(): Readonly<Ref<boolean>> {
+  return readonly(workshopAuthFlagSettled)
 }
 
 export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {
@@ -127,6 +141,7 @@ export function initPostHog() {
     })
     initialized = true
     posthog.onFeatureFlags(() => {
+      workshopAuthFlagSettled.value = true
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
           posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
@@ -217,6 +232,10 @@ export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {
 
 export function captureSignupOpened(): void {
   captureEvent({ name: ANALYTICS_EVENT.signUpOpened })
+}
+
+export function captureAuthCompleted(metadata: AuthCompletedMetadata): void {
+  captureEvent({ name: ANALYTICS_EVENT.authCompleted, properties: metadata })
 }
 
 export function captureAuthFailed(metadata: AuthErrorMetadata): void {

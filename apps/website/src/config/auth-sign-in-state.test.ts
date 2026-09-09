@@ -154,19 +154,19 @@ describe('signInErrorMessage', () => {
       AUTH_ERROR_MESSAGES['auth/too-many-requests']
     ],
     [
-      'an unknown address, collapsed so the page cannot confirm accounts',
+      'an unknown address, worded as the cloud app words it',
       { code: 'auth/user-not-found', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+      AUTH_ERROR_MESSAGES['auth/user-not-found']
     ],
     [
-      'a wrong password, collapsed for the same reason',
+      'a wrong password',
       { code: 'auth/wrong-password', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+      AUTH_ERROR_MESSAGES['auth/wrong-password']
     ],
     [
-      'a malformed address, collapsed for the same reason',
+      'a malformed address',
       { code: 'auth/invalid-email', message: 'x' },
-      AUTH_ERROR_MESSAGES['auth/invalid-credential']
+      AUTH_ERROR_MESSAGES['auth/invalid-email']
     ],
     [
       'a network failure, which the cloud app names',
@@ -181,6 +181,11 @@ describe('signInErrorMessage', () => {
     [
       'a non-Firebase failure',
       new Error('customers 500'),
+      AUTH_ERROR_MESSAGES.generic
+    ],
+    [
+      'a non-auth Firebase failure, which the cloud app also reads as generic',
+      { code: 'app/no-app', message: 'x' },
       AUTH_ERROR_MESSAGES.generic
     ]
   ] as const)("speaks the cloud app's line for %s", ([, error, copy]) => {

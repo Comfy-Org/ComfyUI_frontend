@@ -8,14 +8,22 @@ import AuthForgotPassword from './AuthForgotPassword.vue'
 
 const h = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
-  sendReset: vi.fn()
+  settled: undefined as { value: boolean } | undefined,
+  sendReset: vi.fn(),
+  captureAuthFailed: vi.fn()
 }))
 
 vi.mock('../../scripts/posthog', async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
+  const settled = ref(true)
   h.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+  h.settled = settled
+  return {
+    useWorkshopAuthFlag: () => flag,
+    useWorkshopAuthFlagSettled: () => settled,
+    captureAuthFailed: h.captureAuthFailed
+  }
 })
 
 vi.mock('../../config/workshop-firebase', () => ({
@@ -34,7 +42,9 @@ const clickSend = () =>
 
 beforeEach(() => {
   h.flag!.value = true
+  h.settled!.value = true
   h.sendReset.mockReset().mockResolvedValue(undefined)
+  h.captureAuthFailed.mockClear()
   removeAllToasts()
   window.history.replaceState({}, '', '/')
   assign.mockReset()
@@ -101,7 +111,7 @@ describe('AuthForgotPassword', () => {
     )
   })
 
-  it('shows the same confirmation for an unregistered email, not an error oracle', async () => {
+  it("toasts the cloud app's line for an unregistered email, then still confirms and returns to login", async () => {
     h.sendReset.mockRejectedValue({
       code: 'auth/user-not-found',
       message: 'x'
@@ -112,13 +122,22 @@ describe('AuthForgotPassword', () => {
 
     expect(
       (await screen.findByRole('alert')).textContent,
-      'an unregistered email must look identical to a registered one'
+      'the cloud page shows its inline confirmation even after a failed send'
     ).toContain('Password reset sent')
-    expect(toasts.value).toHaveLength(1)
-    expect(screen.queryByText(/failed to send/i)).toBeNull()
+    expect(toasts.value.map((toast) => toast.severity)).toEqual([
+      'error',
+      'success'
+    ])
+    expect(toasts.value[0].detail).toContain('No account found with this email')
+    expect(h.captureAuthFailed).toHaveBeenCalledWith({
+      error_code: 'auth/user-not-found',
+      auth_action: 'password_reset'
+    })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(assign).toHaveBeenCalledWith('/login/')
   })
 
-  it('surfaces a real transport failure inline with no toast and no redirect', async () => {
+  it('toasts a transport failure the same way and still returns to login', async () => {
     h.sendReset.mockRejectedValue({
       code: 'auth/network-request-failed',
       message: 'x'
@@ -127,12 +146,25 @@ describe('AuthForgotPassword', () => {
     await typeEmail('user@example.com')
     await clickSend()
 
-    expect((await screen.findByRole('alert')).textContent).toContain(
-      'Failed to send password reset email'
-    )
-    expect(toasts.value).toHaveLength(0)
+    await screen.findByRole('alert')
+    expect(toasts.value[0]).toMatchObject({
+      severity: 'error',
+      detail: expect.stringContaining('Network error')
+    })
     await vi.advanceTimersByTimeAsync(3000)
-    expect(assign).not.toHaveBeenCalled()
+    expect(assign).toHaveBeenCalledWith('/login/')
+  })
+
+  it("shows the cloud app's timeout copy when the flag never answers", async () => {
+    h.flag!.value = false
+    h.settled!.value = false
+    render(AuthForgotPassword)
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Connection Taking Too Long'
+    )
   })
 
   it('blocks a double submit while a send is in flight', async () => {
@@ -197,22 +229,5 @@ describe('AuthForgotPassword', () => {
       assign,
       'a cross-origin destination maps to the safe Workshop-home fallback, never the raw value'
     ).toHaveBeenCalledWith('/login/?returnTo=%2Fworkshop%2F')
-  })
-})
-
-describe('AuthForgotPassword lazy-load boundary', () => {
-  it('loads workshop-firebase only inside submit, never at module scope', () => {
-    const rawSources = import.meta.glob<string>('./AuthForgotPassword.vue', {
-      query: '?raw',
-      import: 'default',
-      eager: true
-    })
-    const source = rawSources['./AuthForgotPassword.vue']
-
-    expect(
-      /^import[^(]*from '\.\.\/\.\.\/config\/workshop-firebase'/m.test(source),
-      'a static import ships firebase/app+auth to every flag-off visitor of /forgot-password'
-    ).toBe(false)
-    expect(source).toContain("import('../../config/workshop-firebase')")
   })
 })

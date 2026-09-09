@@ -2,8 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef } from 'vue'
 
+import PasswordRules from '@comfyorg/account/PasswordRules.vue'
 import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
-import { passwordRuleChecks } from '@comfyorg/account/signInSchemas'
 import {
   TURNSTILE_MESSAGES,
   isTurnstileEnabled,
@@ -65,15 +65,20 @@ const turnstileEnabled = computed(
 )
 const { token, unavailable, waiting } = useTurnstileGate(turnstileEnabled)
 
-const formValid = computed(() =>
-  Object.values(fieldErrors.value).every((error) => !error)
-)
+/** Held until every field validates, as the cloud forms are. */
+const formValid = computed(() => Object.keys(issuesByField()).length === 0)
 const submitDisabled = computed(
   () => loading || waiting.value || !formValid.value
 )
 
-/** Cloud's sign-up form lists every rule while the password is being typed. */
-const passwordChecks = computed(() => passwordRuleChecks(values.value.password))
+const passwordRulesCopy = computed(() => ({
+  requirements: t('validation.password.requirements', locale),
+  length: t('validation.password.lengthRange', locale),
+  uppercase: t('validation.password.uppercase', locale),
+  lowercase: t('validation.password.lowercase', locale),
+  number: t('validation.password.number', locale),
+  special: t('validation.password.special', locale)
+}))
 
 const fieldId = (field: Field) => `workshop-${mode}-${field}`
 
@@ -192,44 +197,11 @@ defineExpose({ resetTurnstile })
         :hide-label="t('auth.password.hide', locale)"
         @input="validateField('password')"
       />
-      <small
+      <PasswordRules
         v-if="mode === 'signUp' && passwordDirty && passwordFocused"
-        class="text-sm"
-      >
-        {{ t('validation.password.requirements', locale) }}:
-        <ul class="mt-1 space-y-1">
-          <li
-            :data-satisfied="passwordChecks.length"
-            :class="cn(!passwordChecks.length && 'text-red-500')"
-          >
-            {{ t('validation.password.lengthRange', locale) }}
-          </li>
-          <li
-            :data-satisfied="passwordChecks.uppercase"
-            :class="cn(!passwordChecks.uppercase && 'text-red-500')"
-          >
-            {{ t('validation.password.uppercase', locale) }}
-          </li>
-          <li
-            :data-satisfied="passwordChecks.lowercase"
-            :class="cn(!passwordChecks.lowercase && 'text-red-500')"
-          >
-            {{ t('validation.password.lowercase', locale) }}
-          </li>
-          <li
-            :data-satisfied="passwordChecks.number"
-            :class="cn(!passwordChecks.number && 'text-red-500')"
-          >
-            {{ t('validation.password.number', locale) }}
-          </li>
-          <li
-            :data-satisfied="passwordChecks.special"
-            :class="cn(!passwordChecks.special && 'text-red-500')"
-          >
-            {{ t('validation.password.special', locale) }}
-          </li>
-        </ul>
-      </small>
+        :password="values.password"
+        :copy="passwordRulesCopy"
+      />
       <small
         v-else-if="mode === 'signIn' && fieldErrors.password"
         role="alert"

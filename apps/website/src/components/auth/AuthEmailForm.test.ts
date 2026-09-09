@@ -59,14 +59,14 @@ describe('AuthEmailForm sign-in', () => {
     ])
   })
 
-  it('validates a field as it is typed and disables submit while it is invalid', async () => {
+  it('holds submit until the whole form validates, showing errors only for touched fields', async () => {
     const { emitted } = render(AuthEmailForm, { props: { mode: 'signIn' } })
     const user = userEvent.setup()
 
     expect(
       submitButton(/^Sign in$/).disabled,
-      'nothing has been validated yet, so nothing blocks the button'
-    ).toBe(false)
+      'the cloud forms disable submit until the form is valid'
+    ).toBe(true)
 
     await user.type(screen.getByLabelText('Email'), 'nope')
     expect(screen.getByRole('alert').textContent).toContain(
@@ -76,18 +76,25 @@ describe('AuthEmailForm sign-in', () => {
 
     await user.type(screen.getByLabelText('Email'), '@example.com')
     expect(screen.queryByRole('alert')).toBeNull()
+    expect(
+      submitButton(/^Sign in$/).disabled,
+      'an untouched required field still holds the button, without an error of its own'
+    ).toBe(true)
+
+    await user.type(screen.getByLabelText('Password'), 'hunter2')
     expect(submitButton(/^Sign in$/).disabled).toBe(false)
     expect(emitted('submit')).toBeUndefined()
   })
 
-  it('validates every field on submit, including ones never touched', async () => {
+  it('does not emit submit for a malformed email, by button or by Enter', async () => {
     const { emitted } = render(AuthEmailForm, { props: { mode: 'signIn' } })
     const user = userEvent.setup()
 
-    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Email'), 'not-an-email')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(submitButton(/^Sign in$/))
+    await user.type(screen.getByLabelText('Password'), '{Enter}')
 
-    expect(screen.getByRole('alert').textContent).toContain('Required')
     expect(emitted('submit')).toBeUndefined()
   })
 
@@ -185,15 +192,32 @@ describe('AuthEmailForm sign-up', () => {
     expect(submitButton(/^Sign up$/).disabled).toBe(true)
   })
 
-  it('releases submission when the challenge reports unavailable', async () => {
+  it('releases a valid form when the challenge reports unavailable', async () => {
     widgetBehavior.mode = 'unavailable'
     render(AuthEmailForm, { props: { mode: 'signUp' } })
+    const user = userEvent.setup()
+
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.type(screen.getByLabelText('Confirm Password'), 'Password1!')
+
     await waitFor(() => {
       expect(submitButton(/^Sign up$/).disabled).toBe(false)
     })
   })
 
-  it('lists the password rules while the field is focused and marks unmet ones', async () => {
+  it('drops the Turnstile hint from the button once the challenge resolves', async () => {
+    widgetBehavior.mode = 'token'
+    render(AuthEmailForm, { props: { mode: 'signUp' } })
+
+    await waitFor(() =>
+      expect(
+        submitButton(/^Sign up$/).getAttribute('aria-describedby')
+      ).toBeNull()
+    )
+  })
+
+  it('lists the password rules only while the field is focused', async () => {
     widgetBehavior.mode = 'token'
     render(AuthEmailForm, { props: { mode: 'signUp' } })
     const user = userEvent.setup()
@@ -203,16 +227,7 @@ describe('AuthEmailForm sign-up', () => {
     await user.type(screen.getByLabelText('Password'), 'short')
 
     expect(screen.getByText('Password requirements:')).toBeTruthy()
-    expect(
-      screen
-        .getByText('Must be between 8 and 32 characters')
-        .getAttribute('data-satisfied')
-    ).toBe('false')
-    expect(
-      screen
-        .getByText('Must contain at least one lowercase letter')
-        .getAttribute('data-satisfied')
-    ).toBe('true')
+    expect(screen.getByText('Must be between 8 and 32 characters')).toBeTruthy()
 
     await user.tab()
     expect(

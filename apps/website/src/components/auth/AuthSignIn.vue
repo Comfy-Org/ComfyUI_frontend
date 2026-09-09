@@ -5,9 +5,12 @@ import {
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
+import { until } from '@vueuse/core'
+import type { UserCredential } from 'firebase/auth'
 import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import { useRegionGate } from '@comfyorg/account/regionGate'
+import type { RegionGateStatus } from '@comfyorg/account/regionGate'
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
@@ -31,11 +34,14 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
+  captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
-  useWorkshopAuthFlag
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'
+import AuthFlagTimeout from './AuthFlagTimeout.vue'
 import {
   AUTH_BRAND_GHOST_BUTTON_CLASS,
   AUTH_LINK_BUTTON_CLASS,
@@ -50,25 +56,36 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 }>()
 
 const HOME = '/'
+/** The cloud app's router gives auth this long to initialize before its timeout view. */
+const AUTH_INIT_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
-const { user, session, ensureFresh } = useWorkshopSession()
+const flagSettled = useWorkshopAuthFlagSettled()
+const authTimedOut = ref(false)
+const {
+  user,
+  session,
+  settled: identitySettled,
+  ensureFresh
+} = useWorkshopSession()
+// A returning signed-in visitor leaves without ever seeing the form, as on
+// cloud where the router holds the route until auth has initialized.
+const leaving = ref(false)
 const state = ref<AuthSignInState>({ step: 'idle' })
 const showEmailForm = ref(false)
 const isSecureContext = ref(true)
 // Sign-up only: the cloud app gates email registration on the region and
-// never decides before detection answers.
-const { status: regionStatus } = useRegionGate()
+// never decides before detection answers; the login page never probes.
+const { status: regionStatus } =
+  mode === 'signUp'
+    ? useRegionGate()
+    : { status: ref<RegionGateStatus>('allowed') }
 // Decided after mount: the server has no user agent, and a mismatch here
 // would break hydration.
 const inAppBrowser = ref(false)
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
-type AuthenticatedUser = WorkshopSessionUser & {
-  readonly email: string | null
-  readonly displayName: string | null
-}
 const emailForm =
   useTemplateRef<InstanceType<typeof AuthEmailForm>>('emailForm')
 
@@ -119,15 +136,14 @@ async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
     dispatch({ type: 'mintSucceeded' })
     leaveSignInPage()
   } else {
+    leaving.value = false
     dispatch({ type: 'mintFailed' })
   }
 }
 
 async function completeSignIn(
   provider: AuthSignInProvider,
-  authenticate: (
-    firebase: WorkshopFirebase
-  ) => Promise<{ user: AuthenticatedUser }>
+  authenticate: (firebase: WorkshopFirebase) => Promise<UserCredential>
 ) {
   if (state.value.step === 'pending' || state.value.step === 'minting') return
   dispatch({ type: 'signInStarted', provider })
@@ -135,6 +151,14 @@ async function completeSignIn(
   try {
     firebase = await loadWorkshopFirebase()
     const credential = await authenticate(firebase)
+    captureAuthCompleted({
+      method: provider,
+      is_new_user:
+        mode === 'signUp' ||
+        (provider !== 'email' && firebase.isNewWorkshopUser(credential)),
+      user_id: credential.user.uid,
+      email: credential.user.email ?? undefined
+    })
     dispatch({
       type: 'credentialSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
@@ -210,6 +234,7 @@ const stopUserWatch = watch(
       email: restored.email ?? restored.displayName ?? ''
     })
     if (before !== state.value.step && state.value.step === 'minting') {
+      leaving.value = true
       // No argument: `restored` is a readonly proxy, and the client already
       // holds the raw current user.
       void runMint()
@@ -226,16 +251,26 @@ const stopSessionWatch = watch(session, (active) => {
 })
 onBeforeUnmount(stopSessionWatch)
 
+let initTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(initTimer))
+
 onMounted(() => {
   isSecureContext.value = window.isSecureContext !== false
   inAppBrowser.value = isEmbeddedWebView()
-  if (mode === 'signUp') captureSignupOpened()
+  // Cloud reports the open when its sign-up page renders; here that is the
+  // moment the flag lets the page show.
+  if (mode === 'signUp')
+    void until(enabled).toBe(true).then(captureSignupOpened)
+  initTimer = setTimeout(() => {
+    authTimedOut.value =
+      !flagSettled.value || (enabled.value && !identitySettled.value)
+  }, AUTH_INIT_TIMEOUT_MS)
 })
 </script>
 
 <template>
   <section
-    v-if="enabled"
+    v-if="enabled && identitySettled && !leaving"
     class="flex w-full flex-col"
     :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >
@@ -271,6 +306,7 @@ onMounted(() => {
         >
           {{ t('auth.signIn.signUpLink', locale) }}
         </a>
+        <span>{{ ' ' + t('auth.signIn.freeRunsSuffix', locale) }}</span>
       </template>
     </p>
 
@@ -399,4 +435,17 @@ onMounted(() => {
       </template>
     </div>
   </section>
+  <AuthFlagTimeout v-else-if="authTimedOut" :locale="locale" />
+  <div
+    v-else-if="enabled"
+    data-testid="auth-initializing"
+    aria-busy="true"
+    class="mt-12 flex w-full flex-col gap-6"
+  >
+    <div
+      v-for="n in 3"
+      :key="n"
+      class="h-10 w-full animate-pulse rounded-md bg-primary-comfy-canvas/10"
+    />
+  </div>
 </template>

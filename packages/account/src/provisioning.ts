@@ -67,15 +67,13 @@ export async function socialSignInWithProvisioning<T>(deps: {
   return credential
 }
 
-/** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
-const CUSTOMER_PROVISIONING_TIMEOUT_MS = 15_000
-
 export const CUSTOMER_PROVISIONING_PATH = '/customers'
 
 /**
  * The `POST /customers` request both hosts send. `signupSource` names the
  * host for the backend's attribution; the Turnstile token rides along only
- * on email sign-up, where the server validates it.
+ * on email sign-up, where the server validates it. Body and headers only: a
+ * host that wants a bound passes its own `signal`.
  */
 export function customerProvisioningRequest(options: {
   authHeaders: Record<string, string>
@@ -91,7 +89,7 @@ export function customerProvisioningRequest(options: {
       signup_source: signupSource,
       ...(turnstileToken ? { turnstile_token: turnstileToken } : {})
     }),
-    signal: signal ?? AbortSignal.timeout(CUSTOMER_PROVISIONING_TIMEOUT_MS)
+    ...(signal ? { signal } : {})
   }
 }
 

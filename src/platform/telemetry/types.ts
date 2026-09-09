@@ -18,14 +18,15 @@ import {
 } from '@comfyorg/account/telemetry'
 import type {
   AuthErrorMetadata,
-  AuthFlowAction
+  AuthFlowAction,
+  AuthMethod
 } from '@comfyorg/account/telemetry'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AppMode } from '@/utils/appMode'
 
-export type AuthMethod = 'email' | 'google' | 'github'
+export type { AuthMethod }
 
 export type PaymentIntentSource =
   | 'subscription_required'
@@ -1151,7 +1152,7 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
 export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: AUTH_TELEMETRY_EVENT.signUpOpened,
-  USER_AUTH_COMPLETED: 'app:user_auth_completed',
+  USER_AUTH_COMPLETED: AUTH_TELEMETRY_EVENT.authCompleted,
   USER_AUTH_FAILED: AUTH_TELEMETRY_EVENT.authFailed,
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
+  signInWorkshopWithEmail,
   signInWorkshopWithGoogle,
   signUpWorkshopWithEmail
 } from './workshop-firebase'
@@ -10,6 +11,7 @@ import {
 const h = vi.hoisted(() => ({
   captureRollback: vi.fn(),
   createUserWithEmail: vi.fn(),
+  signInWithEmail: vi.fn(),
   signInWithGoogle: vi.fn()
 }))
 
@@ -22,7 +24,7 @@ vi.mock('@comfyorg/account/firebase', () => ({
     onUserChanged: vi.fn(() => () => undefined),
     signInWithGoogle: h.signInWithGoogle,
     signInWithGitHub: vi.fn(),
-    signInWithEmail: vi.fn(),
+    signInWithEmail: h.signInWithEmail,
     createUserWithEmail: h.createUserWithEmail,
     sendPasswordReset: vi.fn(),
     signOut: vi.fn()
@@ -160,5 +162,34 @@ describe('social sign-in provisioning boundary', () => {
     ).toBe(true)
     expect(failure.user).toBe(user)
     expect(String(failure.cause)).toContain('500')
+  })
+})
+
+describe('email sign-in provisioning boundary', () => {
+  const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
+
+  it('wraps a provisioning failure with the signed-in user, exactly like a social popup', async () => {
+    h.signInWithEmail.mockResolvedValue({ user })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 500 }))
+    )
+
+    const failure = await signInWorkshopWithEmail('a@b.co', 'hunter2!').catch(
+      (error) => error
+    )
+
+    expect(
+      isWorkshopProvisioningError(failure),
+      'the cloud app keeps an email user signed in when the customer step fails; so must this page'
+    ).toBe(true)
+    expect(failure.user).toBe(user)
+  })
+
+  it('rethrows a credential failure untouched', async () => {
+    const wrong = { code: 'auth/wrong-password', message: 'x' }
+    h.signInWithEmail.mockRejectedValue(wrong)
+
+    await expect(signInWorkshopWithEmail('a@b.co', 'nope')).rejects.toBe(wrong)
   })
 })

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { User, UserCredential } from 'firebase/auth'
+import type { Auth, User, UserCredential } from 'firebase/auth'
 
 const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
@@ -22,9 +22,13 @@ const sdk = vi.hoisted(() => {
   }
 })
 
+const app = vi.hoisted(() => ({
+  initializeApp: vi.fn(() => ({ name: 'test-app' }))
+}))
+
 vi.mock('firebase/app', () => ({
   getApps: () => [],
-  initializeApp: () => ({ name: 'test-app' })
+  initializeApp: app.initializeApp
 }))
 
 vi.mock('firebase/auth', () => ({
@@ -51,6 +55,13 @@ async function makeIdentity() {
   return createFirebaseIdentity({ options: { apiKey: 'test' } })
 }
 
+const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
+
+async function makeHostBoundIdentity(actionTimeoutMs?: number) {
+  const { createFirebaseIdentity } = await import('./index.js')
+  return createFirebaseIdentity({ auth: hostAuth, actionTimeoutMs })
+}
+
 const testUser = { uid: 'user-1' } as Partial<User> as User
 const testCredential = {
   user: testUser
@@ -58,7 +69,60 @@ const testCredential = {
 
 beforeEach(() => {
   sdk.listeners.length = 0
+  app.initializeApp.mockClear()
   vi.useFakeTimers()
+})
+
+describe('createFirebaseIdentity over a host-owned Auth', () => {
+  it('binds every action and the listener to the given instance without initializing an app', async () => {
+    sdk.signInWithPopup.mockResolvedValueOnce(testCredential)
+    sdk.signInWithEmailAndPassword.mockResolvedValueOnce(testCredential)
+    const identity = await makeHostBoundIdentity()
+
+    identity.onUserChanged(() => {})
+    await identity.signInWithGoogle()
+    await identity.signInWithEmail('a@b.example', 'hunter22!')
+    await identity.signOut()
+
+    expect(
+      app.initializeApp,
+      'a second Firebase app would hold its own persistence and split the session'
+    ).not.toHaveBeenCalled()
+    for (const call of [
+      sdk.onAuthStateChanged,
+      sdk.signInWithPopup,
+      sdk.signInWithEmailAndPassword,
+      sdk.signOut
+    ]) {
+      expect(call).toHaveBeenLastCalledWith(
+        hostAuth,
+        ...call.mock.lastCall!.slice(1)
+      )
+    }
+  })
+
+  it('leaves the network-shaped actions unbounded unless the host asks for a ceiling', async () => {
+    const identity = await makeHostBoundIdentity()
+    const settled = vi.fn()
+    identity.signInWithEmail('a@b.example', 'hunter22!').then(settled, settled)
+
+    await vi.advanceTimersByTimeAsync(15_000 * 10)
+
+    expect(
+      settled,
+      'the cloud app runs these calls without a timeout; adopting the entry must not add one'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('applies the ceiling the host asks for', async () => {
+    const identity = await makeHostBoundIdentity(2_000)
+    const outcome = vi.fn()
+    identity.sendPasswordReset('a@b.example').catch(outcome)
+
+    await vi.advanceTimersByTimeAsync(2_000 + 10)
+
+    expect(outcome).toHaveBeenCalledOnce()
+  })
 })
 
 describe('createFirebaseIdentity action ceilings', () => {

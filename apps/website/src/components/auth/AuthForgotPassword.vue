@@ -1,13 +1,24 @@
 <script setup lang="ts">
-import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
+import {
+  AUTH_TOAST_SUMMARIES,
+  classifyAuthError,
+  isFirebaseAuthErrorLike,
+  severityForAuthError
+} from '@comfyorg/account/firebaseAuthError'
 import { cn } from '@comfyorg/tailwind-utils'
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+import { signInErrorMessage } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
 import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { useWorkshopAuthFlag } from '../../scripts/posthog'
+import {
+  captureAuthFailed,
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
+} from '../../scripts/posthog'
+import AuthFlagTimeout from './AuthFlagTimeout.vue'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_SOLID_BUTTON_CLASS,
@@ -20,17 +31,24 @@ const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-/** The cloud page returns to login this long after a successful send. */
+/** The cloud page returns to login this long after a send. */
 const RETURN_TO_LOGIN_MS = 3000
 const TOAST_LIFE_MS = 5000
+/** The cloud app's router gives auth this long to answer before its timeout view. */
+const AUTH_FLAG_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
+const flagSettled = useWorkshopAuthFlagSettled()
+const flagTimedOut = ref(false)
 const email = ref('')
 const errorMessage = ref('')
+const hostname = typeof window === 'undefined' ? '' : window.location.hostname
+const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
 let returnTimer: ReturnType<typeof setTimeout> | undefined
+let flagTimer: ReturnType<typeof setTimeout> | undefined
 
 function signInDestination(): string {
   const destination = requestedReturnPath(window.location.search)
@@ -59,22 +77,34 @@ async function submit() {
   }
   errorMessage.value = ''
   state.value = 'sending'
-  try {
-    const { sendWorkshopPasswordReset } =
-      await import('../../config/workshop-firebase')
-    await sendWorkshopPasswordReset(email.value)
-    reportSent()
-  } catch (error) {
-    // An unregistered email must look identical to a registered one, or the
-    // sent/error split becomes an account-enumeration oracle. Only a real
-    // transport failure surfaces the error state.
-    if (isUnknownEmailError(error)) {
-      reportSent()
-    } else {
-      state.value = 'error'
-      errorMessage.value = t('auth.forgot.error', locale)
-    }
+  const firebase = await loadWorkshopFirebase().catch(() => undefined)
+  if (!firebase) {
+    state.value = 'error'
+    errorMessage.value = t('auth.forgot.error', locale)
+    return
   }
+  // As on cloud: a failed send toasts the code's own line, and the page still
+  // confirms and returns to login.
+  try {
+    await firebase.sendWorkshopPasswordReset(email.value)
+  } catch (error) {
+    reportSendFailure(error)
+  }
+  reportSent()
+}
+
+function reportSendFailure(error: unknown) {
+  captureAuthFailed({
+    error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
+    auth_action: 'password_reset'
+  })
+  const classification = classifyAuthError(error)
+  const severity = severityForAuthError(classification)
+  addToast({
+    severity,
+    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    detail: signInErrorMessage(classification, locale, hostname)
+  })
 }
 
 function reportSent() {
@@ -90,17 +120,16 @@ function reportSent() {
   }, RETURN_TO_LOGIN_MS)
 }
 
-function isUnknownEmailError(error: unknown): boolean {
-  const classified = classifyAuthError(error)
-  return (
-    classified.kind === 'auth' &&
-    (classified.code === 'auth/user-not-found' ||
-      classified.code === 'auth/invalid-email')
-  )
-}
+onMounted(() => {
+  if (flagSettled.value) return
+  flagTimer = setTimeout(() => {
+    flagTimedOut.value = !flagSettled.value
+  }, AUTH_FLAG_TIMEOUT_MS)
+})
 
 onBeforeUnmount(() => {
-  if (returnTimer !== undefined) clearTimeout(returnTimer)
+  clearTimeout(returnTimer)
+  clearTimeout(flagTimer)
 })
 </script>
 
@@ -179,4 +208,5 @@ onBeforeUnmount(() => {
       {{ t('auth.forgot.didntReceive', locale) }}
     </p>
   </section>
+  <AuthFlagTimeout v-else-if="flagTimedOut" :locale="locale" />
 </template>
