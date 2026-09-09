@@ -18,10 +18,14 @@ import type { Auth, Persistence, User, UserCredential } from 'firebase/auth'
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
   initializeAuth,
   onAuthStateChanged,
-  signInWithPopup
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut
 } from 'firebase/auth'
 
 interface ActionCeiling {
@@ -134,21 +138,12 @@ export function createFirebaseIdentity(
     onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
-    signInWithEmail: async (email, password) => {
-      const { signInWithEmailAndPassword } = await import('firebase/auth')
-      return bounded(signInWithEmailAndPassword(auth(), email, password))
-    },
-    createUserWithEmail: async (email, password) => {
-      const { createUserWithEmailAndPassword } = await import('firebase/auth')
-      return bounded(createUserWithEmailAndPassword(auth(), email, password))
-    },
-    sendPasswordReset: async (email) => {
-      const { sendPasswordResetEmail } = await import('firebase/auth')
-      return bounded(sendPasswordResetEmail(auth(), email))
-    },
-    signOut: async () => {
-      const { signOut } = await import('firebase/auth')
-      return signOut(auth())
-    }
+    signInWithEmail: (email, password) =>
+      bounded(signInWithEmailAndPassword(auth(), email, password)),
+    createUserWithEmail: (email, password) =>
+      bounded(createUserWithEmailAndPassword(auth(), email, password)),
+    sendPasswordReset: (email) =>
+      bounded(sendPasswordResetEmail(auth(), email)),
+    signOut: () => signOut(auth())
   }
 }
