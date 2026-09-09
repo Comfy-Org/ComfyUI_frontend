@@ -42,7 +42,8 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     outputs: [],
     title: 'Test Node',
     type: 'TestNode',
-    ...overrides
+    ...overrides,
+    properties: overrides.properties ?? {}
   }
 }
 
@@ -61,6 +62,7 @@ export function createMockLGraphNode(
     renderingSize: size,
     title: 'Test Node',
     mode: LGraphEventMode.ALWAYS,
+    flags: {},
     ...nodeOverrides
   })
 }
@@ -76,7 +78,7 @@ export function createMockPositionable(
     pos: [0, 0],
     ...overrides
   }
-  return partial as Partial<Positionable> as Positionable
+  return partial as Positionable
 }
 
 /**
@@ -91,7 +93,7 @@ export function createMockLGraphGroup(
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
   }
-  return partial as Partial<LGraphGroup> as LGraphGroup
+  return partial as LGraphGroup
 }
 
 /**
@@ -194,8 +196,8 @@ export function createMockCanvasRenderingContext2D(
     strokeStyle: '',
     lineWidth: 1,
     globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
     ...overrides
   }
   return partial as CanvasRenderingContext2D
@@ -281,7 +283,7 @@ export function createMockFileList(files: File[]): FileList {
     },
     files
   )
-  return fileList as FileList
+  return fileList
 }
 
 /**
@@ -292,6 +294,15 @@ export function createMockChangeTracker(
   overrides: Partial<ChangeTracker> = {}
 ): ChangeTracker {
   const partial = {
+    initialState: {
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      version: 0.4
+    },
     activeState: {
       last_node_id: 0,
       last_link_id: 0,
@@ -397,16 +408,17 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
     map.set(link.id, link)
     record[link.id] = link
   }
-  return Object.assign(map, record) as LGraph['links']
+  return Object.assign(map, record)
 }
 export function reloadSerializedGraph(
   serialized: ISerialisedGraph | SerialisableGraph,
   graphFactory: () => LGraph
 ): LGraph {
   const payload = JSON.parse(JSON.stringify(serialized)) as typeof serialized
+  const reloaded = graphFactory()
+  payload.id = reloaded.id
   useWidgetValueStore().clearGraph(payload.id)
   usePreviewExposureStore().clearGraph(payload.id)
-  const reloaded = graphFactory()
   reloaded.configure(payload)
   return reloaded
 }

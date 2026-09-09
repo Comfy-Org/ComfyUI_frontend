@@ -16,7 +16,7 @@ function createItem(id: string, name: string): FormDropdownItem {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     addAlert: vi.fn()
   })
@@ -24,11 +24,14 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 const transformState = vi.hoisted(() => ({ camera: { x: 0, y: 0, z: 1 } }))
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', async () => {
-  const { reactive } = await import('vue')
-  transformState.camera = reactive(transformState.camera)
-  return { useTransformState: () => ({ camera: transformState.camera }) }
-})
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  async () => {
+    const { reactive } = await import('vue')
+    transformState.camera = reactive(transformState.camera)
+    return { useTransformState: () => ({ camera: transformState.camera }) }
+  }
+)
 
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',

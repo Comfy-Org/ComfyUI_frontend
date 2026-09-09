@@ -195,7 +195,7 @@ async function expectHitParity(
       const graph = window.app!.graph
       const group = graph.getGroupOnPos(x, y)
       return {
-        node: graph.getNodeOnPos(x, y)?.id?.toString() ?? null,
+        node: graph.getNodeOnPos(x, y)?.id.toString() ?? null,
         group: Boolean(group),
         groupTitlebar: group?.isPointInTitlebar(x, y) ?? false,
         reroute: Boolean(graph.getRerouteOnPos(x, y))

@@ -61,7 +61,7 @@ function captureGraphSnapshot(comfyPage: ComfyPage): Promise<GraphSnapshot> {
       nodes: graph.nodes
         .map((node) => ({
           id: String(node.id),
-          type: String(node.type),
+          type: node.type,
           pos: [round2(node.pos[0]), round2(node.pos[1])] as [number, number],
           size: [round2(node.size[0]), round2(node.size[1])] as [
             number,
@@ -117,7 +117,7 @@ function linkCountReferencing(
       }
     }
     return count
-  }, String(nodeId))
+  }, nodeId)
 }
 
 async function expectHistorySizes(

@@ -4,29 +4,42 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { useLayerEditor } from './useLayerEditor'
 
-const { showDialog, getNodeImageUrls } = vi.hoisted(() => ({
+const { showDialog, getNodeImageUrls, toastAdd } = vi.hoisted(() => ({
   showDialog: vi.fn(),
-  getNodeImageUrls: vi.fn()
+  getNodeImageUrls: vi.fn(),
+  toastAdd: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({ getNodeImageUrls })
+}))
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
+  useToastStore: () => ({ add: toastAdd })
+}))
+vi.mock(import('@/i18n'), () => ({
+  t: (key: string) => key
 }))
 
 describe('useLayerEditor', () => {
   it('does nothing without a node', () => {
-    useLayerEditor().openLayerEditor(null as unknown as LGraphNode)
+    useLayerEditor().openLayerEditor(null)
     expect(showDialog).not.toHaveBeenCalled()
   })
 
-  it('does nothing when the node has fewer than 2 output images', () => {
+  it('toasts instead of opening when the node has fewer than 2 output images', () => {
     const node = {} as LGraphNode
     getNodeImageUrls.mockReturnValue(['only-one.png'])
     useLayerEditor().openLayerEditor(node)
     expect(showDialog).not.toHaveBeenCalled()
+    expect(toastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'info',
+        detail: 'layerEditor.needsTwoImages'
+      })
+    )
   })
 
   it('opens the layer editor dialog for a node with multiple images', () => {

@@ -32,20 +32,24 @@ const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 const selectedItems: unknown[] = []
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty, graph: { getNodeById }, animateToBounds },
-    selectedItems
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/nodeDefStore', () => ({
+  () => ({
+    useCanvasStore: () => ({
+      canvas: { setDirty, graph: { getNodeById }, animateToBounds },
+      selectedItems
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     getInputSpecForWidget: mockGetInputSpecForWidget
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUiButtonClicked: mockTrackUiButtonClicked
   })
@@ -112,7 +116,7 @@ function createHostWithPromotedModel(): {
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget).ok
   ).toBe(true)
 
-  const promotedWidget = host.widgets?.find(
+  const promotedWidget = host.widgets.find(
     (widget) => widget.name === sourceWidget.name
   )
   if (!promotedWidget) throw new Error('Expected promoted widget')

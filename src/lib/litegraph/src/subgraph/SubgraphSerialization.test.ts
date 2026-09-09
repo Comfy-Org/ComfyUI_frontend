@@ -22,6 +22,7 @@ import {
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -45,6 +46,28 @@ afterEach(() => {
 })
 
 describe('SubgraphSerialization - Basic Serialization', () => {
+  it('rekeys a registered subgraph and preserves its interface', () => {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root, name: 'Stored' })
+    root.subgraphs.set(subgraph.id, subgraph)
+
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+
+    const previousId = subgraph.id
+    subgraph.id = createUuidv4()
+    const input = subgraph.addInput('input', 'number')
+    const output = subgraph.addOutput('output', 'number')
+    expect(subgraph.name).toBe('Stored')
+    expect(subgraph.inputs).toEqual([input])
+    expect(subgraph.outputs).toEqual([output])
+
+    expect(() => {
+      subgraph.id = createUuidv4()
+    }).not.toThrow()
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect(root.subgraphs.has(previousId)).toBe(false)
+  })
+
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
       name: 'Simple Test',
@@ -551,6 +574,8 @@ describe('SubgraphSerialization - Data Integrity', () => {
     data.links!.push({ ...data.links![0], id: rejectedId })
     data.outputs![0].linkIds = [rejectedId]
     const original = structuredClone(data)
+    const expectedLinkId = link.id
+    subgraph.clear()
 
     const restored = createTestSubgraph({
       rootGraph: subgraph.rootGraph,
@@ -558,14 +583,14 @@ describe('SubgraphSerialization - Data Integrity', () => {
     })
     restored.configure(data)
 
-    expect(restored.outputs[0].linkIds).toEqual([link.id])
+    expect(restored.outputs[0].linkIds).toEqual([expectedLinkId])
     expect(data).toEqual(original)
   })
 
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
     const data = structuredClone(duplicateSubgraphNodeIds)
-    const expectedRootIds = data.nodes.map((node) => Number(node.id))
+    const expectedRootIds = data.nodes.map((node) => node.id)
     graph.configure(data)
 
     const rootIds = graph.nodes.map((node) => Number(node.id))
@@ -593,18 +618,20 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
     const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
 
-    const rootProxyWidgetsA = graph.getNodeById(toNodeId(102))?.properties
-      ?.proxyWidgets
+    const rootNodeA = graph.getNodeById(toNodeId(102))
+    if (!rootNodeA) throw new Error('Missing root node 102')
+    const rootProxyWidgetsA = rootNodeA.properties.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
     for (const entry of rootProxyWidgetsA as string[][]) {
-      expect(subgraphAIds.has(String(entry[0]))).toBe(true)
+      expect(subgraphAIds.has(entry[0])).toBe(true)
     }
 
-    const rootProxyWidgetsB = graph.getNodeById(toNodeId(103))?.properties
-      ?.proxyWidgets
+    const rootNodeB = graph.getNodeById(toNodeId(103))
+    if (!rootNodeB) throw new Error('Missing root node 103')
+    const rootProxyWidgetsB = rootNodeB.properties.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
     for (const entry of rootProxyWidgetsB as string[][]) {
-      expect(subgraphBIds.has(String(entry[0]))).toBe(true)
+      expect(subgraphBIds.has(entry[0])).toBe(true)
     }
 
     for (const [, link] of subgraphB.links) {

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
@@ -19,7 +17,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
-vi.mock('@/utils/colorUtil', async (importOriginal) => {
+vi.mock(import('@/utils/colorUtil'), async (importOriginal) => {
   const actual = await importOriginal<typeof colorUtil>()
   return { ...actual, readableTextColor: vi.fn(actual.readableTextColor) }
 })
@@ -44,12 +42,22 @@ function createMockContext() {
 
 const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
 describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {
     const link = new LGraphGroup('title', toGroupId(929))
     expect(link.serialize()).toMatchSnapshot('Basic')
+  })
+
+  test('clears a color option', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(932))
+    graph.add(group)
+    group.color = '#123456'
+
+    group.setColorOption(null)
+
+    expect(group.color).toBeUndefined()
+    expect(group.serialize().color).toBeUndefined()
   })
 
   describe('recomputeInsideNodes', () => {

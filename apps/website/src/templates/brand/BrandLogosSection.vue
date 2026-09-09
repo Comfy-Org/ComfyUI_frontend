@@ -34,7 +34,7 @@ const assets = affiliateBrandAssets.map((asset) =>
         <div class="flex flex-1 items-center justify-center p-8">
           <img
             :src="asset.preview"
-            :alt="asset.title[locale]"
+            :alt="asset.title[locale] || asset.title.en"
             :class="
               cn(
                 'object-contain',
@@ -50,7 +50,7 @@ const assets = affiliateBrandAssets.map((asset) =>
         <p
           class="pb-8 text-center text-[21px] font-medium tracking-[1.05px] text-primary-comfy-canvas"
         >
-          {{ asset.title[locale] }}
+          {{ asset.title[locale] || asset.title.en }}
         </p>
       </li>
     </ul>

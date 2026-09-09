@@ -14,7 +14,7 @@ import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 const mockShowSettingsDialog = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
     show: mockShowSettingsDialog,
     hide: vi.fn(),
@@ -32,7 +32,7 @@ afterAll(() => {
 })
 
 const mockHandleSignOut = vi.fn()
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: vi.fn(() => ({
     userPhotoUrl: 'https://example.com/avatar.jpg',
     userDisplayName: 'Test User',
@@ -41,7 +41,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }))
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   }))
@@ -55,6 +55,7 @@ function makeSubscription(
     tier: 'CREATOR',
     duration: 'MONTHLY',
     planSlug: null,
+    scheduledChange: null,
     renewalDate: null,
     endDate: null,
     isCancelled: false,
@@ -70,8 +71,10 @@ const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
+const mockCanTopUp = ref(true)
+const mockCanSubscribeSelfServe = ref(false)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     tier: mockTier,
@@ -83,7 +86,17 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   }))
 }))
 
-vi.mock('@/components/common/UserAvatar.vue', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: mockCanTopUp,
+      canSubscribeSelfServe: mockCanSubscribeSelfServe
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
     name: 'UserAvatarMock',
     render() {
@@ -92,11 +105,11 @@ vi.mock('@/components/common/UserAvatar.vue', () => ({
   }
 }))
 
-vi.mock('@/base/credits/comfyCredits', () => ({
+vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     buildDocsUrl: vi.fn((path) => `https://docs.comfy.org${path}`),
     docsPaths: {
@@ -105,7 +118,7 @@ vi.mock('@/composables/useExternalLink', () => ({
   }))
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackAddApiCreditButtonClicked: vi.fn()
   }))
@@ -122,6 +135,8 @@ describe('CurrentUserPopoverLegacy', () => {
       currency: 'usd'
     }
     mockIsLoading.value = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
   })
 
   function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
@@ -285,7 +300,7 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('opens credits settings from the legacy account menu', async () => {
+  it('opens Plan & Credits from the legacy account menu', async () => {
     const { user, onClose } = renderComponent()
 
     const menuItem = screen.getByTestId('manage-plan-menu-item')
@@ -293,7 +308,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(menuItem)
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('workspace')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -479,6 +494,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
+      mockCanTopUp.value = false
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'

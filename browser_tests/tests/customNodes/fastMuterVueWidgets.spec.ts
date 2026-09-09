@@ -55,7 +55,7 @@ async function buildMuterPair(comfyPage: ComfyPage): Promise<MuterModel> {
               (l) =>
                 String(l.origin_id) === srcId &&
                 String(l.target_id) === muterId &&
-                Number(l.target_slot) === 0
+                l.target_slot === 0
             ),
           { srcId: String(source.id), muterId: String(muter.id) }
         ),
@@ -85,8 +85,8 @@ async function expectMuterWidgetInModel(
         const source = graph.getNodeById(srcId)
         return {
           widgetCount: muter.widgets?.length ?? 0,
-          widgetNames: (muter.widgets ?? []).map((w) => String(w.name)),
-          linkedTitle: source ? String(source.title) : ''
+          widgetNames: (muter.widgets ?? []).map((w) => w.name),
+          linkedTitle: source ? source.title : ''
         }
       },
       { id: toNodeId(muterId), srcId: toNodeId(sourceId) }

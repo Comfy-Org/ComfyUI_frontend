@@ -7,23 +7,23 @@ import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: { value: true },
     isTeamPlan: { value: false },
@@ -31,6 +31,17 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     type: { value: 'legacy' }
   })
 }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: { value: true },
+      canSubscribeSelfServe: { value: false },
+      isReady: { value: true }
+    })
+  })
+)
 
 import { useDialogService } from '@/services/dialogService'
 
@@ -47,6 +58,20 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+  })
+
+  it('confirm() opens under its own stack key when the caller passes one', () => {
+    void useDialogService().confirm({ title: 'T', message: 'M' })
+    void useDialogService().confirm({
+      key: 'global-desktop-login-confirm',
+      title: 'T2',
+      message: 'M2'
+    })
+    const keys = showDialog.mock.calls.slice(-2).map(([args]) => args.key)
+    expect(
+      keys,
+      'a shared key would make showDialog reuse the open prompt and drop the second resolver, leaving its promise pending forever'
+    ).toEqual(['global-prompt', 'global-desktop-login-confirm'])
   })
 
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {

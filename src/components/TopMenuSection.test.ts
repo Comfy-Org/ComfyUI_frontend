@@ -18,6 +18,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -26,7 +27,7 @@ const mockData = vi.hoisted(() => ({
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => {
     return {
       isLoggedIn: computed(() => mockData.isLoggedIn)
@@ -34,19 +35,20 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false
 }))
 
-vi.mock('@/platform/updates/common/releaseStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/releaseStore'), () => ({
   useReleaseStore: () => ({
     shouldShowRedDot: computed(() => true)
   })
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+
   () => {
     const shouldShowConflictRedDot = ref(false)
     mockData.setShowConflictRedDot = (value: boolean) => {
@@ -61,21 +63,25 @@ vi.mock(
   }
 )
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: computed(() => true),
-    openManager: vi.fn()
-  })
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
 
-vi.mock('@/stores/authStore', () => ({
+  () => ({
+    useManagerState: () => ({
+      shouldShowManagerButtons: computed(() => true),
+      openManager: vi.fn()
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: vi.fn(() => ({
     currentUser: null,
     loading: false
   }))
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     menu: {
       element: document.createElement('div')
@@ -85,7 +91,7 @@ vi.mock('@/scripts/app', () => ({
 
 const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUiButtonClicked: mockTrackUiButtonClicked
   })
@@ -259,6 +265,26 @@ describe('TopMenuSection', () => {
     expect(screen.queryByTestId('active-jobs-indicator')).toBeNull()
   })
 
+  it('keeps action bars mounted while hiding the error overlay in node selection mode', () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+
+    createWrapper({
+      pinia,
+      stubs: {
+        ErrorOverlay: {
+          template: '<div data-testid="error-overlay" />'
+        }
+      }
+    })
+
+    expect(screen.getByTestId('top-menu-actionbars')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(screen.queryByTestId('error-overlay')).toBeNull()
+  })
+
   it('tracks right side panel opens', async () => {
     const { user } = createWrapper()
 
@@ -426,6 +452,7 @@ describe('TopMenuSection', () => {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.Queue.ShowRunProgressBar') return true
         if (key === 'Comfy.UseNewMenu') return 'Top'
         return undefined
       })

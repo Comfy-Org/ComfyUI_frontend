@@ -1,14 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
 import type { NodeError } from '@/schemas/apiSchema'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
-import { computed } from 'vue'
+import { widgetId } from '@/types/widgetId'
+import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -22,35 +23,42 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    getNodeByLocatorId: vi.fn(
-      () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
-    )
+vi.mock<unknown>(
+  import('@/utils/graphTraversalUtil'),
+  async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>
+    return {
+      ...actual,
+      getNodeByLocatorId: vi.fn(
+        () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+      )
+    }
   }
-})
+)
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
-  return {
-    useTransformState: () => ({
-      screenToCanvas: vi.fn(),
-      canvasToScreen: vi.fn(),
-      camera: { z: 1 },
-      isNodeInViewport: vi.fn()
-    })
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => {
+    return {
+      useTransformState: () => ({
+        screenToCanvas: vi.fn(),
+        canvasToScreen: vi.fn(),
+        camera: { z: 1 },
+        isNodeInViewport: vi.fn()
+      })
+    }
   }
-})
+)
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => {
     const handleNodeSelect = vi.fn()
     return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
@@ -58,39 +66,44 @@ vi.mock(
 )
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking',
+  import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
   () => ({
     useVueElementTracking: vi.fn()
   })
 )
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
-    canvas: { setDirty: vi.fn() }
+    canvas: { setDirty: vi.fn() },
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()
   })
 }))
 
-vi.mock('@/renderer/extensions/vueNodes/layout/useNodeLayout', () => ({
-  useNodeLayout: () => ({
-    position: { x: 100, y: 50 },
-    size: computed(() => ({ width: 200, height: 100 })),
-    zIndex: 0,
-    startDrag: vi.fn(),
-    handleDrag: vi.fn(),
-    endDrag: vi.fn(),
-    moveTo: vi.fn()
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
+  () => ({
+    useNodeLayout: () => ({
+      position: { x: 100, y: 50 },
+      size: computed(() => ({ width: 200, height: 100 })),
+      zIndex: 0,
+      startDrag: vi.fn(),
+      handleDrag: vi.fn(),
+      endDrag: vi.fn(),
+      moveTo: vi.fn()
+    })
   })
-}))
+)
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/execution/useNodeExecutionState',
+  import('@/renderer/extensions/vueNodes/execution/useNodeExecutionState'),
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
@@ -102,15 +115,18 @@ vi.mock(
   })
 )
 
-vi.mock('@/renderer/extensions/vueNodes/preview/useNodePreviewState', () => ({
-  useNodePreviewState: vi.fn(() => ({
-    latestPreviewUrl: computed(() => ''),
-    shouldShowPreviewImg: computed(() => false)
-  }))
-}))
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/preview/useNodePreviewState'),
+  () => ({
+    useNodePreviewState: vi.fn(() => ({
+      latestPreviewUrl: computed(() => ''),
+      shouldShowPreviewImg: computed(() => false)
+    }))
+  })
+)
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize',
+  import('@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'),
   () => ({
     useNodeResize: vi.fn(() => ({
       startResize: vi.fn(),
@@ -136,10 +152,6 @@ const i18n = createI18n({
   }
 })
 
-const pinia = createTestingPinia({
-  createSpy: vi.fn
-})
-
 function getNodeRoot(container: Element): HTMLElement {
   return container.firstElementChild as HTMLElement
 }
@@ -148,12 +160,18 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   return render(LGraphNode, {
     props,
     global: {
-      plugins: [pinia, i18n],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
-        NodeWidgets: true,
-        NodeContent: true,
+        NodeWidgets: {
+          props: ['nodeData', 'widgetIds'],
+          template:
+            '<div data-testid="node-widgets">{{ widgetIds.join(",") }}</div>'
+        },
+        NodeContent: {
+          template: '<div data-testid="node-content" />'
+        },
         SlotConnectionDot: true
       }
     }
@@ -167,7 +185,8 @@ const mockNodeData: NodeState = {
   mode: 0,
   flags: {},
   inputs: [],
-  outputs: []
+  outputs: [],
+  properties: {}
 }
 
 const mockRerouteNodeData: NodeState = {
@@ -183,10 +202,12 @@ describe('LGraphNode', () => {
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
 
-    setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
-    const settingStore = useSettingStore(pinia)
+    canvasStore.currentGraph = null
+    const settingStore = useSettingStore()
+    useNodeOutputStore().nodeOutputs = {}
+    useWidgetValueStore().clearGraph('graph-test')
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
       if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
@@ -212,7 +233,7 @@ describe('LGraphNode', () => {
     const { container } = render(LGraphNode, {
       props: { nodeData: mockNodeData },
       global: {
-        plugins: [pinia, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           NodeSlots: true,
           NodeWidgets: true,
@@ -223,6 +244,48 @@ describe('LGraphNode', () => {
     })
 
     expect(container.textContent).toContain('Test Node')
+  })
+
+  it('renders a customtext widget registered by graph mutations', async () => {
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => null,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+    useWidgetValueStore().registerWidget(
+      widgetId('graph-test', mockNodeData.id, 'prompt'),
+      {
+        name: 'prompt',
+        type: 'customtext',
+        value: 'A projected prompt',
+        options: {},
+        label: 'prompt'
+      },
+      {}
+    )
+
+    render(LGraphNode, {
+      props: {
+        nodeData: { ...mockNodeData, graphId: 'graph-test' }
+      },
+      global: {
+        plugins: [getActivePinia()!, i18n],
+        stubs: {
+          AsyncComponentWrapper: {
+            props: ['modelValue'],
+            template: '<textarea :value="modelValue" />'
+          },
+          NodeHeader: true,
+          NodeSlots: true,
+          NodeContent: true,
+          SlotConnectionDot: true
+        }
+      }
+    })
+
+    expect(await screen.findByRole('textbox')).toHaveValue('A projected prompt')
   })
 
   it('should apply selected styling when selected prop is true', async () => {
@@ -249,6 +312,107 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('hides a linked core LoadImage input preview', () => {
+    mockData.mockLgraphNode = {
+      constructor: {
+        comfyClass: 'LoadImage',
+        nodeData: { isCoreNode: true }
+      },
+      inputs: [{ name: 'image', widget: { name: 'image' } }],
+      isInputConnected: vi.fn(() => true),
+      isSubgraphNode: () => false
+    }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'input.png', type: 'input' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/input.png'])
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadImage'
+      }
+    })
+
+    expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
+  })
+
+  it('keeps an executed output preview when the LoadImage selector is linked', () => {
+    mockData.mockLgraphNode = {
+      constructor: {
+        comfyClass: 'LoadImage',
+        nodeData: { isCoreNode: true }
+      },
+      inputs: [{ name: 'image', widget: { name: 'image' } }],
+      isInputConnected: vi.fn(() => true),
+      isSubgraphNode: () => false
+    }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', type: 'output' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/output.png'])
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadImage'
+      }
+    })
+
+    expect(screen.getByTestId('node-content')).toBeInTheDocument()
+  })
+
+  it('restores only the core LoadAudio input player on disconnect', async () => {
+    const isAudioLinked = ref(true)
+    mockData.mockLgraphNode = {
+      constructor: {
+        comfyClass: 'LoadAudio',
+        nodeData: { isCoreNode: true }
+      },
+      inputs: [{ name: 'audio', widget: { name: 'audio' } }],
+      isInputConnected: vi.fn(() => isAudioLinked.value),
+      isSubgraphNode: () => false
+    }
+    // widgetIds/nodeLocatorId derive from canvasStore.rootGraphId
+    // (currentGraph.rootGraph.id), so this test needs a minimal root graph.
+    // Scoped to this test only; beforeEach resets currentGraph to null.
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => mockData.mockLgraphNode,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+    const widgetValueStore = useWidgetValueStore()
+    widgetValueStore.registerWidget(
+      widgetId('graph-test', mockNodeData.id, 'audio'),
+      { type: 'combo', value: '', options: {} }
+    )
+    widgetValueStore.registerWidget(
+      widgetId('graph-test', mockNodeData.id, 'audioUI'),
+      { type: 'audioUI', value: '', options: {} }
+    )
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        // graphId must match the root graph id, or locatorIdFromState treats
+        // it as a (non-UUID) subgraph id and resolves no lgraphNode.
+        graphId: 'graph-test',
+        type: 'LoadAudio'
+      }
+    })
+
+    expect(screen.getByTestId('node-widgets')).not.toHaveTextContent('audioUI')
+
+    isAudioLinked.value = false
+    await nextTick()
+
+    expect(screen.getByTestId('node-widgets')).toHaveTextContent('audioUI')
   })
 
   it('should widen the selection outline rounding when the node has an error', () => {
@@ -328,6 +492,33 @@ describe('LGraphNode', () => {
         flags: { collapsed: true }
       }
     })
+
+    expect(
+      screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('ignores widgets advanced only on another surface', () => {
+    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    const rootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => mockData.mockLgraphNode,
+      subgraphs: new Map()
+    }
+    rootGraph.rootGraph = rootGraph
+    useCanvasStore().currentGraph = fromAny(rootGraph)
+
+    const store = useWidgetValueStore()
+    const id = widgetId('graph-test', mockNodeData.id, 'canvasAdvanced')
+    store.registerWidget(id, { type: 'number', value: 0, options: {} })
+    const visibility = store.getWidgetVisibility(id)
+    expect(visibility).toBeDefined()
+    if (visibility) {
+      visibility.surfaces.canvas = 'advanced'
+      visibility.surfaces.vueNode = 'shown'
+    }
+
+    renderLGraphNode({ nodeData: mockNodeData })
 
     expect(
       screen.queryByRole('button', { name: /show advanced/i })

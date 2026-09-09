@@ -38,7 +38,7 @@ async function replaceHostInPlace(
     }
     const originalWidgetId = String(promotedInput.widgetId)
 
-    const promotedWidget = host.widgets?.[0]
+    const promotedWidget = host.widgets.at(0)
     if (!promotedWidget) throw new Error('Host must carry a promoted widget')
     promotedWidget.value = probeValue
 

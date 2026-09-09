@@ -17,17 +17,17 @@ const mockCanvas = vi.hoisted(() => ({
   setDirty: vi.fn()
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => mockSettingStore
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     getCanvas: () => mockCanvas
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       emitBeforeChange: vi.fn(),
@@ -44,6 +44,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
+// oxlint-disable-next-line vitest/prefer-import-in-mock -- import() would mark createImageHost used and retire its knip tag
 vi.mock('@/scripts/ui/imagePreview', () => ({
   calculateImageGrid: vi.fn(() => ({
     cellWidth: 100,
@@ -54,7 +55,7 @@ vi.mock('@/scripts/ui/imagePreview', () => ({
   }))
 }))
 
-vi.mock('@/utils/imageUtil', () => ({
+vi.mock(import('@/utils/imageUtil'), () => ({
   is_all_same_aspect_ratio: vi.fn(() => true)
 }))
 
@@ -188,7 +189,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node1)
       const node2 = createMockNode({ id: 2 })
-      const copy = widget.createCopyForNode!(node2)
+      const copy = widget.createCopyForNode(node2)
 
       expect(copy.name).toBe('preview')
       expect(copy.type).toBe('custom')
@@ -248,6 +249,29 @@ describe('useImagePreviewWidget', () => {
       await vi.waitFor(() => {
         expect(ctx.drawImage).toHaveBeenCalled()
       })
+    })
+
+    it('does not draw an image that breaks before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const img = createMockImage(200, 100)
+      const node = createMockNode({
+        imgs: [img],
+        imageIndex: 0
+      })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      Object.defineProperties(img, {
+        naturalHeight: { value: 0 },
+        naturalWidth: { value: 0 }
+      })
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('auto-sets imageIndex to 0 for single image with null index', () => {
@@ -388,6 +412,28 @@ describe('useImagePreviewWidget', () => {
 
       expect(calculateImageGrid).toHaveBeenCalledWith(imgs, 300, 220)
       expect(node.imageRects).toHaveLength(2)
+    })
+
+    it('does not draw thumbnails that break before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const imgs = [createMockImage(100, 100), createMockImage(100, 100)]
+      const node = createMockNode({ imgs, imageIndex: null })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      for (const img of imgs) {
+        Object.defineProperties(img, {
+          naturalHeight: { value: 0 },
+          naturalWidth: { value: 0 }
+        })
+      }
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
     })
 
     it('uses non-compact mode for mixed aspect ratios', () => {

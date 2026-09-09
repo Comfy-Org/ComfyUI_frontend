@@ -1,6 +1,5 @@
 import { truncate } from 'es-toolkit/compat'
 
-import { CORE_JOIN_ORDER } from '@/types/badgeData'
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -22,9 +21,9 @@ function getCreditsIconOptions(): LGraphIconOptions {
 }
 
 function joinedCoreText(coreRows: readonly CoreBadgeData[]): string {
-  const byPart = new Map(coreRows.map((row) => [row.part, row.text]))
   return truncate(
-    CORE_JOIN_ORDER.map((part) => byPart.get(part) ?? '')
+    coreRows
+      .map((row) => row.text)
       .filter((text) => text.length > 0)
       .join(' '),
     { length: CORE_TEXT_LIMIT }
@@ -36,17 +35,15 @@ function buildDrawObjects(rows: readonly BadgeData[]): LGraphBadge[] {
 
   const coreRows = rows.filter((row) => row.kind === 'core')
   const [firstCore] = coreRows
-  if (firstCore) {
-    const coreText = joinedCoreText(coreRows)
-    if (coreText) {
-      badges.push(
-        new LGraphBadge({
-          text: coreText,
-          fgColor: firstCore.fgColor,
-          bgColor: firstCore.bgColor
-        })
-      )
-    }
+  const coreText = joinedCoreText(coreRows)
+  if (coreText) {
+    badges.push(
+      new LGraphBadge({
+        text: coreText,
+        fgColor: firstCore.fgColor,
+        bgColor: firstCore.bgColor
+      })
+    )
   }
 
   for (const row of rows) {
@@ -72,17 +69,29 @@ export function badgeRows(node: LGraphNode): readonly BadgeData[] {
 type BadgeRowsProvider = typeof badgeRows
 
 let rowsProvider: BadgeRowsProvider | undefined
+let rowsProviderRegistration: symbol | undefined
 
 /**
  * Installs the app-layer badge derivation. A seam so litegraph never
  * imports the derivation's store/pricing dependency graph.
  */
-export function registerBadgeRowsProvider(provider: BadgeRowsProvider): void {
+export function registerBadgeRowsProvider(
+  provider: BadgeRowsProvider
+): () => void {
   if (rowsProvider && rowsProvider !== provider) {
     console.error('A badge rows provider is already registered')
-    return
+    return () => {}
   }
+
+  const registration = Symbol()
   rowsProvider = provider
+  rowsProviderRegistration = registration
+
+  return () => {
+    if (rowsProviderRegistration !== registration) return
+    rowsProvider = undefined
+    rowsProviderRegistration = undefined
+  }
 }
 
 const drawCache = new WeakMap<

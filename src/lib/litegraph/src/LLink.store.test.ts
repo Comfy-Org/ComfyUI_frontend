@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -11,15 +10,17 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { NodeSlotType } from './types/globalEnums'
 
-import { registerLinkTopology, resolveLinkTopology } from './LLink'
+import {
+  registerLinkTopology,
+  resolveLinkTopology,
+  unregisterLinkTopology
+} from './LLink'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LLink ↔ linkStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('preserves the id and reactive state of a registered link', () => {
     const graph = new LGraph()
     const link = new LLink(
@@ -63,9 +64,13 @@ describe('LLink ↔ linkStore integration', () => {
   })
 
   it('requires Pinia when constructing a root graph', () => {
+    const pinia = getActivePinia()
     setActivePinia(undefined)
-
-    expect(() => new LGraph()).toThrow()
+    try {
+      expect(() => new LGraph()).toThrow()
+    } finally {
+      setActivePinia(pinia)
+    }
   })
 
   it('does not add a link when topology registration is rejected', () => {
@@ -134,6 +139,41 @@ describe('LLink ↔ linkStore integration', () => {
 
     graph.removeLink(link.id)
     expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
+  })
+
+  it('preserves extension-visible link fields on the link', () => {
+    vi.stubGlobal('Path2D', class {})
+    const graph = new LGraph()
+    const link = new LLink(
+      toLinkId(1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    graph.addFloatingLink(link)
+    const path = new Path2D()
+
+    link.data = 42
+    link._data = { output: true }
+    link._pos = [10, 20]
+    link._last_time = 30
+    link.path = path
+    link._centreAngle = 0.5
+    link._dragging = true
+    link.color = ''
+
+    expect(link).toMatchObject({
+      data: 42,
+      _data: { output: true },
+      _pos: [10, 20],
+      _last_time: 30,
+      path,
+      _centreAngle: 0.5,
+      _dragging: true
+    })
+    expect(link.color).toBeNull()
   })
 
   it('commits a replacement before disconnect callbacks run', () => {
@@ -259,6 +299,27 @@ describe('LLink ↔ linkStore integration', () => {
       link.target_slot = 3
     }).not.toThrow()
     expect(link.target_slot).toBe(3)
+  })
+
+  it('discards rejected endpoint patches when a link is unregistered', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const link = a.connect(0, b, 0)!
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    link.target_slot = 1
+
+    unregisterLinkTopology(link)
+    link.target_slot = 0
+    expect(registerLinkTopology(graph, link)).toBe(true)
+    link.origin_slot = 0
+
+    expect(link.target_slot).toBe(0)
   })
 
   it('keeps the winner registered when a colliding loser link disconnects', () => {
@@ -470,6 +531,63 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 1)).toBe(
       true
     )
+  })
+
+  it('reports a rejected legacy endpoint mutation without throwing', () => {
+    const graph = new LGraph()
+    const firstSource = new LGraphNode('First source')
+    const secondSource = new LGraphNode('Second source')
+    const target = new LGraphNode('Target')
+    firstSource.addOutput('out', 'INT')
+    secondSource.addOutput('out', 'INT')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(firstSource)
+    graph.add(secondSource)
+    graph.add(target)
+    const first = firstSource.connect(0, target, 0)!
+    secondSource.connect(0, target, 1)
+
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => {
+      first.target_slot = 1
+    }).not.toThrow()
+    expect(error).toHaveBeenCalledWith(
+      'Failed to update link endpoints',
+      expect.objectContaining({ code: 'occupied-target' })
+    )
+    expect(first.target_slot).toBe(0)
+  })
+
+  it('does not replay a rejected endpoint write', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    const firstTarget = new LGraphNode('First target')
+    const secondTarget = new LGraphNode('Second target')
+    source.addOutput('out', 'INT')
+    firstTarget.addInput('first', 'INT')
+    firstTarget.addInput('second', 'INT')
+    secondTarget.addInput('occupied', 'INT')
+    secondTarget.addInput('destination', 'INT')
+    graph.add(source)
+    graph.add(firstTarget)
+    graph.add(secondTarget)
+    const moving = source.connect(0, firstTarget, 0)!
+    const blocker = new LGraphNode('Blocker')
+    blocker.addOutput('out', 'INT')
+    graph.add(blocker)
+    blocker.connect(0, secondTarget, 0)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    moving.target_id = secondTarget.id
+    expect(moving.target_id).toBe(firstTarget.id)
+    moving.target_slot = 1
+
+    expect(moving.target_id).toBe(firstTarget.id)
+    expect(moving.target_slot).toBe(1)
+    expect(firstTarget.inputs[0].link).toBeNull()
+    expect(firstTarget.inputs[1].link).toBe(moving.id)
+    expect(secondTarget.inputs[1].link).toBeNull()
   })
 
   it('updates regular and floating views after endpoint changes', () => {

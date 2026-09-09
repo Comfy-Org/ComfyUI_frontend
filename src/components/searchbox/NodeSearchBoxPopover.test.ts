@@ -18,24 +18,22 @@ const { addNodeOnGraph } = vi.hoisted(() => ({
   addNodeOnGraph: vi.fn()
 }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({
     getCanvasCenter: vi.fn(() => [0, 0]),
     addNodeOnGraph
   })
 }))
 
-type EmitAddFilter = (
-  filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
-) => void
+type EmitAddFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl>) => void
 type EmitAddNode = (nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) => void
 
 function createFilter(
   id: string,
   value: string
-): FuseFilterWithValue<ComfyNodeDefImpl, string> {
+): FuseFilterWithValue<ComfyNodeDefImpl> {
   return {
-    filterDef: { id } as FuseFilter<ComfyNodeDefImpl, string>,
+    filterDef: { id } as FuseFilter<ComfyNodeDefImpl>,
     value
   }
 }

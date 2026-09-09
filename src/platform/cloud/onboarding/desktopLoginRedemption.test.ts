@@ -12,14 +12,14 @@ import type { RouteRecordRaw } from 'vue-router'
  */
 
 const mockConfirm = vi.hoisted(() => vi.fn())
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     confirm: mockConfirm
   })
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     add: mockToastAdd
   })
@@ -43,15 +43,15 @@ const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 const authStoreHolder = vi.hoisted(() => ({
   store: null as MockAuthStore | null
 }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => authStoreHolder.store
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => `/api${path}`
   }
@@ -161,6 +161,7 @@ describe('installDesktopLoginRedemption', () => {
 
     expect(mockConfirm).toHaveBeenCalledTimes(1)
     expect(mockConfirm).toHaveBeenCalledWith({
+      key: 'global-desktop-login-confirm',
       title: 'desktopLogin.confirmSummary',
       message: 'desktopLogin.confirmMessage'
     })

@@ -93,7 +93,7 @@ async function probeGraph(comfyPage: ComfyPage): Promise<GraphProbe> {
     }
 
     const targetNode = graph.getNodeById(targetId)
-    const targetInputLink = targetNode?.inputs?.[0]?.link
+    const targetInputLink = targetNode?.inputs[0]?.link
     return {
       targetExists: !!targetNode,
       nodeCount: graph.nodes.length,

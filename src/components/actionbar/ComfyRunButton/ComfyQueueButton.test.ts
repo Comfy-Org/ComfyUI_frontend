@@ -1,4 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -21,15 +23,15 @@ import userEvent from '@testing-library/user-event'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     shiftDown: false
   })
@@ -46,6 +48,7 @@ const i18n = createI18n({
     en: {
       menu: {
         run: 'Run',
+        runOptions: 'Run options',
         disabledTooltip: 'Disabled tooltip',
         onChange: 'On Change',
         onChangeTooltip: 'On change tooltip',
@@ -157,9 +160,9 @@ function renderQueueButton(
   const result = render(ComfyQueueButton, {
     props,
     global: {
-      plugins: [pinia, i18n],
+      plugins: [PrimeVue, pinia, i18n],
       directives: {
-        tooltip: () => {}
+        tooltip: Tooltip
       },
       stubs
     }
@@ -221,6 +224,21 @@ describe('ComfyQueueButton', () => {
       expect(getQueueButtonIcon()).toHaveClass('icon-[lucide--play]')
     }
   )
+
+  it('keeps Run enabled with the missing-resource warning and tooltip', async () => {
+    const { user } = renderQueueButton()
+    useMissingModelStore().missingModelCandidates = [missingModelCandidate]
+    await nextTick()
+
+    const queueButton = screen.getByTestId('queue-button')
+    expect(queueButton).toBeEnabled()
+
+    await user.hover(queueButton)
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Workflow contains missing resources'
+    )
+  })
 
   it('keeps the play icon for non-missing errors', async () => {
     renderQueueButton()

@@ -8,7 +8,7 @@ import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSc
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-vi.mock('@/stores/widgetStore', () => ({
+vi.mock<unknown>(import('@/stores/widgetStore'), () => ({
   useWidgetStore: () => ({ inputIsWidget: () => true })
 }))
 
@@ -59,7 +59,7 @@ function renderedWidgets(
     }
   })
   const nodeData: { widgets?: ProbedWidget[] } = JSON.parse(
-    screen.getByTestId('node-data').textContent ?? ''
+    screen.getByTestId('node-data').textContent
   )
   return nodeData.widgets ?? []
 }
@@ -71,6 +71,37 @@ function renderedComboWidget(
 }
 
 describe('LGraphNodePreview', () => {
+  it('does not synchronize preview geometry with the canvas layout', () => {
+    render(LGraphNodePreview, {
+      props: { nodeDef },
+      global: {
+        plugins: [createTestingPinia({ stubActions: false })],
+        stubs: {
+          NodeHeader: true,
+          NodeSlots: {
+            props: ['syncLayout'],
+            template:
+              '<div data-testid="preview-slots" :data-sync-layout="syncLayout" />'
+          },
+          WidgetGrid: {
+            props: ['syncLayout'],
+            template:
+              '<div data-testid="preview-widgets" :data-sync-layout="syncLayout" />'
+          }
+        }
+      }
+    })
+
+    expect(screen.getByTestId('preview-slots')).toHaveAttribute(
+      'data-sync-layout',
+      'false'
+    )
+    expect(screen.getByTestId('preview-widgets')).toHaveAttribute(
+      'data-sync-layout',
+      'false'
+    )
+  })
+
   it('leads the combo options with the provided widget value', () => {
     const widget = renderedComboWidget({
       widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' }

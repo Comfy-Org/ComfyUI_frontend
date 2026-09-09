@@ -26,9 +26,7 @@ async function readTargetInputState(
       const input = target.inputs[0]
       const liveLinksAtInput = [...graph.links.values()]
         .filter(
-          (l) =>
-            String(l.target_id) === String(targetId) &&
-            Number(l.target_slot) === 0
+          (l) => String(l.target_id) === String(targetId) && l.target_slot === 0
         )
         .map((l) => ({ id: Number(l.id), originId: Number(l.origin_id) }))
       const inputLinkId = input.link

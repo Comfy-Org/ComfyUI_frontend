@@ -1,5 +1,3 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
@@ -7,14 +5,16 @@ import {
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia({ stubActions: false }))
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
 
-const { addNodeInput } = useLitegraphService()
+let addNodeInput: ReturnType<typeof useLitegraphService>['addNodeInput']
+beforeEach(() => {
+  ;({ addNodeInput } = useLitegraphService())
+})
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
@@ -141,6 +141,30 @@ describe('Dynamic Combos', () => {
       node.inputs[1]
     )
   })
+  test('Restoring serialised state preserves the saved node height', () => {
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.widgets[0].value = '1'
+    node.setSize([node.size[0], 500])
+    const data = node.serialize()
+
+    const restored = testNode()
+    addDynamicCombo(restored, [['INT'], ['INT', 'STRING']])
+    restored.configure(data)
+
+    expect(restored.widgets[0].value).toBe('1')
+    expect(restored.widgets.length).toBe(3)
+    expect(restored.size[1]).toBe(500)
+  })
+  test('Interactive combo selection still refits the node height', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    node.setSize([node.size[0], 500])
+    node.widgets[0].value = '1'
+    node.widgets[0].callback?.('1')
+    expect(node.size[1]).toBeLessThan(500)
+  })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
     addDynamicCombo(node, [['INT'], ['STRING']])
@@ -238,6 +262,36 @@ describe('Autogrow', () => {
     expect(inputCalls.every(([, slot]) => slot >= 0)).toBe(true)
     expect(inputCalls.filter(([, , connected]) => !connected)).toHaveLength(1)
   })
+  test('Rejected autogrow compaction preserves its input layout', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    connectInput(node, 2, graph)
+    const updateEndpoints = vi
+      .spyOn(useLinkStore(), 'updateEndpoints')
+      .mockReturnValue({
+        ok: false,
+        error: { code: 'occupied-target', message: 'Target is occupied' }
+      })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    node.disconnectInput(1)
+    const inputNames = node.inputs.map(({ name }) => name)
+    const widgetNames = node.widgets.map(({ name }) => name)
+    onConnectionsChange.mockClear()
+    await nextTick()
+
+    expect(updateEndpoints).toHaveBeenCalled()
+    expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
+    expect(node.widgets.map(({ name }) => name)).toEqual(widgetNames)
+    expect(onConnectionsChange).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
   test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()
     const node = testNode() as TestAutogrowNode
@@ -327,7 +381,7 @@ describe('Autogrow', () => {
     const serialized = graph.serialize()
     graph.clear()
     graph.configure(serialized)
-    const newNode = graph.nodes[0]!
+    const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
       '0.a0',
