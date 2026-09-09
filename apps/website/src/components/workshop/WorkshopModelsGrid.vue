@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpDown, ChevronDown, ChevronLeft } from '@lucide/vue'
+import { ArrowUpDown, ChevronDown } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -34,8 +34,7 @@ import {
   countByUseCase,
   modalityOf,
   filterWorkshopModels,
-  sortWorkshopModels,
-  useCaseFor
+  sortWorkshopModels
 } from '../../config/models-catalogue'
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -73,8 +72,9 @@ onMounted(() => {
 // would otherwise leave the viewport parked on the footer.
 watch(useCase, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
-const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
+const useCaseLabelKey: Record<UseCase | 'all' | 'other', TranslationKey> = {
   all: 'workshop.useCase.all',
+  other: 'workshop.sections.otherFormats',
   'generate-images': 'workshop.useCase.generateImages',
   'edit-images': 'workshop.useCase.editImages',
   'generate-videos': 'workshop.useCase.generateVideos',
@@ -97,48 +97,45 @@ const railBeside = computed(() => version.value === 'v1.2')
 
 const railLabel: TranslationKey = 'workshop.launch.label'
 
-// One flat list of use cases, in the catalogue's own reading order. Only the
-// ones nothing falls into drop out.
+// The same shelves the browsing rows show, in the catalogue's own reading
+// order: text, 3D and audio share one "Other formats" entry, and a use case
+// nothing falls into drops out. All is not a seventh category, it is no
+// category selected, which is why the rows are what it renders.
 const rail = computed(() => {
   const counts = countByUseCase(models)
+  const otherCount = OTHER_FORMAT_USE_CASES.reduce(
+    (total, value) => total + counts[value],
+    0
+  )
   return [
-    {
-      value: 'all' as const,
-      label: t('workshop.launch.allUseCases', locale),
-      current: useCase.value === 'all'
-    },
-    ...USE_CASES.filter((value) => counts[value] > 0).map((value) => ({
-      value,
-      label: t(useCaseLabelKey[value], locale),
-      current: useCase.value === value
-    }))
-  ]
+    { value: 'all' as const, count: models.length },
+    ...USE_CASES.filter(
+      (value) => !OTHER_FORMAT_USE_CASES.includes(value) && counts[value] > 0
+    ).map((value) => ({ value, count: counts[value] })),
+    ...(otherCount > 0 ? [{ value: 'other' as const, count: otherCount }] : [])
+  ].map((entry) => ({
+    ...entry,
+    label: t(useCaseLabelKey[entry.value], locale),
+    current: useCase.value === entry.value
+  }))
 })
 
 const onPhone = useMediaQuery('(max-width: 639px)')
 
-const useCaseOptions = computed<FacetMenuOption[]>(() => {
-  const counts = countByUseCase(models)
-  return rail.value.map((entry) => ({
-    value: entry.value,
-    label: entry.label,
-    count: entry.value === 'all' ? models.length : counts[entry.value]
-  }))
-})
+const useCaseOptions = computed<FacetMenuOption[]>(() =>
+  rail.value.map(({ value, label, count }) => ({ value, label, count }))
+)
 
 const chosenUseCase = computed<string[]>({
   get: () => (useCase.value === 'all' ? [] : [useCase.value]),
   set: (values) => {
     const last = values.at(-1)
-    selectRail(
-      (USE_CASES as readonly string[]).includes(last ?? '')
-        ? (last as UseCase)
-        : 'all'
-    )
+    const match = rail.value.find((entry) => entry.value === last)
+    selectRail(match?.value ?? 'all')
   }
 })
 
-function selectRail(value: UseCase | 'all') {
+function selectRail(value: UseCase | 'all' | 'other') {
   useCase.value = value
 }
 
@@ -178,28 +175,15 @@ const modalityLabelKey: Record<
 const inModality = (model: WorkshopModel) =>
   modalities.value.length === 0 || modalities.value.includes(modalityOf(model))
 
-// The other-formats shelf stands for several sparse use cases at once, so its
-// models come from that whole set rather than from one use case.
-const inOtherFormats = (model: WorkshopModel) => {
-  const modelUseCase = useCaseFor(model)
-  return (
-    modelUseCase !== undefined && OTHER_FORMAT_USE_CASES.includes(modelUseCase)
-  )
-}
-const inSectionScope = (model: WorkshopModel) =>
-  useCase.value !== 'other' || inOtherFormats(model)
-
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
       filterWorkshopModels(models, {
         query: query.value,
-        useCase: useCase.value === 'other' ? 'all' : useCase.value,
+        useCase: useCase.value,
         providers: providers.value,
         capabilities: capabilities.value
-      })
-        .filter(inModality)
-        .filter(inSectionScope),
+      }).filter(inModality),
       sort.value
     )
   )
@@ -217,22 +201,9 @@ const isFiltered = computed(
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
 const browsing = computed(() => version.value === 'v1.1' && !isFiltered.value)
-const inSection = computed(
-  () => version.value === 'v1.1' && useCase.value !== 'all'
-)
-// V1.1 navigates through its section rows and the way back out of one, so the
-// row of use cases would be a second, competing way to move around.
-const showRail = computed(() => version.value !== 'v1.1')
 // Wherever the use cases have no row of their own on screen, the filter menu
 // carries them.
-const useCasesInFilter = computed(
-  () => !showRail.value || (onPhone.value && railBeside.value)
-)
-const sectionTitleKey = computed<TranslationKey>(() =>
-  useCase.value === 'other'
-    ? 'workshop.sections.otherFormats'
-    : useCaseLabelKey[useCase.value]
-)
+const useCasesInFilter = computed(() => onPhone.value && railBeside.value)
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
@@ -280,7 +251,6 @@ const menuItemClass =
     "
   >
     <aside
-      v-if="showRail"
       :class="
         railBeside &&
         'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4'
@@ -410,21 +380,6 @@ const menuItemClass =
       />
 
       <template v-else>
-        <div v-if="inSection" class="mb-8 flex flex-col gap-2">
-          <button
-            type="button"
-            class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -ml-1 inline-flex w-fit cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none focus-visible:ring-3"
-            data-testid="section-back"
-            @click="clearFilters"
-          >
-            <ChevronLeft class="size-4" aria-hidden="true" />
-            {{ t('workshop.sections.back', locale) }}
-          </button>
-          <h2 class="text-2xl font-bold text-primary-warm-white">
-            {{ t(sectionTitleKey, locale) }}
-          </h2>
-        </div>
-
         <div v-if="visible.length">
           <h2 id="workshop-models-heading" class="sr-only">
             {{ t('workshop.models.heading', locale) }}
@@ -442,11 +397,7 @@ const menuItemClass =
             data-testid="workshop-models-grid"
           >
             <li v-for="family in visible" :key="family.key">
-              <WorkshopModelCard
-                :model="family.latest"
-                :version-count="family.versions.length"
-                :locale
-              />
+              <WorkshopModelCard :model="family.latest" :locale />
             </li>
           </ul>
         </div>

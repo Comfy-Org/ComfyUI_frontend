@@ -8614,10 +8614,6 @@ Enterprise`
     en: 'Scroll forward',
     'zh-CN': '向后滚动'
   },
-  'workshop.sections.back': {
-    en: 'Back to all categories',
-    'zh-CN': '返回所有类别'
-  },
   'workshop.sections.count': {
     en: '{n} models',
     'zh-CN': '{n} 个模型'
@@ -8667,10 +8663,6 @@ Enterprise`
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
   'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.launch.allUseCases': {
-    en: 'All use cases',
-    'zh-CN': '全部用例'
-  },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'

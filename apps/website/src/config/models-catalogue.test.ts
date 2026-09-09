@@ -18,6 +18,7 @@ import {
   isRouterModel,
   sortWorkshopModels,
   splitTask,
+  summaryFor,
   capabilitiesFor,
   taskFor,
   useCaseFor,
@@ -369,6 +370,37 @@ describe('catalog deep links', () => {
   it('ignores unknown use cases and yields no query string when empty', () => {
     expect(parseCatalogSearch('?useCase=nonsense').useCase).toBe('all')
     expect(catalogSearch({ useCase: 'all', capabilities: [] })).toBe('')
+  })
+})
+
+describe('summaryFor', () => {
+  const example = {
+    name: 'n',
+    title: 't',
+    tags: [],
+    thumbnailUrl: '',
+    values: {}
+  }
+
+  it('keeps the second sentence while the pair stays short', () => {
+    expect(
+      summaryFor([
+        { ...example, description: 'Generates video. Audio comes with it.' }
+      ])
+    ).toBe('Generates video. Audio comes with it.')
+  })
+
+  it('stops at the first sentence when the pair would run long', () => {
+    const first =
+      'Generates up to four megapixel photorealistic images with multi-reference consistency, professional text rendering and precise control over lighting.'
+    const second = 'It also inpaints and outpaints at full resolution too.'
+    expect(
+      summaryFor([{ ...example, description: `${first} ${second}` }])
+    ).toBe(first)
+  })
+
+  it('has nothing to say without an example', () => {
+    expect(summaryFor([])).toBeUndefined()
   })
 })
 

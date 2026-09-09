@@ -97,7 +97,7 @@ test.describe('Workshop catalog', () => {
     await page.goto('/models/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
-    await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
+    await expect(page.getByTestId('workshop-use-cases')).toBeVisible()
 
     const videos = page.getByTestId('section-generate-videos')
     const rowHeading = await videos
@@ -108,15 +108,21 @@ test.describe('Workshop catalog', () => {
 
     await videos.getByTestId('section-generate-videos-see-all').click()
 
+    const cards = page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
     await expect(sections).toHaveCount(0)
-    await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
-    await expect(
-      page
-        .getByTestId('workshop-models-grid')
-        .getByTestId('workshop-model-card')
-    ).toHaveCount(promisedCount)
+    await expect(cards).toHaveCount(promisedCount)
+    await expect(page.getByTestId('use-case-generate-videos')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
 
-    await page.getByTestId('section-back').click()
+    await page.getByTestId('use-case-edit-videos').click()
+    await expect(sections).toHaveCount(0)
+    await expect(cards.first()).toBeVisible()
+
+    await page.getByTestId('use-case-all').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 

@@ -4,6 +4,7 @@ import displayOverrides from './workshop-model-display.json'
 import generatedModels from './workshop-models.generated.json'
 import generatedVersions from './workshop-model-versions.generated.json'
 import { usdToCredits } from './credits'
+import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -108,6 +109,7 @@ export interface WorkshopModel {
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
+  readonly summary?: string
   readonly status?: ModelStatus
   readonly successorSlug?: string
 }
@@ -220,7 +222,7 @@ function isGeneratedModel(value: unknown): value is GeneratedModel {
 // dropped here rather than crashing a model page.
 export function decodeGeneratedModels(
   manifest: unknown
-): Record<string, GeneratedModel> {
+): Record<string, GeneratedModel | undefined> {
   if (typeof manifest !== 'object' || manifest === null) return {}
   return Object.fromEntries(
     Object.entries(manifest).filter(
@@ -305,7 +307,7 @@ export function useCaseFor(model: WorkshopModel): UseCase | undefined {
 
 // Example tags that say what a model can do beyond its use case. Tags that
 // only repeat the modality or the task are left out.
-const CAPABILITY_LABELS: Readonly<Record<string, string>> = {
+const CAPABILITY_LABELS: Readonly<Record<string, string | undefined>> = {
   'Image Upscale': 'Upscale',
   'Video Upscale': 'Upscale',
   'Image Edit': 'Image editing',
@@ -331,7 +333,9 @@ const CAPABILITY_LABELS: Readonly<Record<string, string>> = {
 // derived from, which lands video capabilities on an image model and the other
 // way round. What a model puts out is the one thing we know first-hand, so it
 // decides which of the inherited labels may stand.
-const CAPABILITY_MODALITY: Readonly<Record<string, 'image' | 'video'>> = {
+const CAPABILITY_MODALITY: Readonly<
+  Record<string, 'image' | 'video' | undefined>
+> = {
   'Image editing': 'image',
   Inpainting: 'image',
   Outpainting: 'image',
@@ -384,6 +388,28 @@ export function formatRuns(runs: number, locale: string): string {
     .toLowerCase()
 }
 
+// The templates already describe what each model does, in Comfy's own words.
+// One sentence is a label, so a short second one comes along when it fits.
+const SUMMARY_MAX = 200
+
+export function summaryFor(
+  examples: readonly GeneratedExample[]
+): string | undefined {
+  const description = examples[0]?.description.trim()
+  if (!description) return undefined
+  const sentences = description.match(/[^.!?]+[.!?]+/g) ?? [description]
+  const first = sentences.at(0) ?? description
+  const pair = `${first}${sentences.at(1) ?? ''}`.trim()
+  return pair.length <= SUMMARY_MAX ? pair : first.trim()
+}
+
+function summaryField(examples: readonly GeneratedExample[] | undefined): {
+  summary?: string
+} {
+  const summary = summaryFor(examples ?? [])
+  return summary ? { summary } : {}
+}
+
 function toWorkshopModel(model: Model): WorkshopModel {
   const overrides = display[model.slug] ?? {}
   const data = generated[model.slug]
@@ -411,6 +437,7 @@ function toWorkshopModel(model: Model): WorkshopModel {
       ? { priceUsdFrom: data.priceUsdFrom }
       : {}),
     ...(data?.thumbnailUrl ? { thumbnailUrl: data.thumbnailUrl } : {}),
+    ...summaryField(data?.examples),
     ...(overrides.status ? { status: overrides.status } : {}),
     ...(overrides.successorSlug
       ? { successorSlug: overrides.successorSlug }
@@ -466,7 +493,8 @@ function toVersionModel(version: GeneratedVersion): WorkshopModel {
     ...(base?.priceUsdFrom !== undefined
       ? { priceUsdFrom: base.priceUsdFrom }
       : {}),
-    ...(version.thumbnailUrl ? { thumbnailUrl: version.thumbnailUrl } : {})
+    ...(version.thumbnailUrl ? { thumbnailUrl: version.thumbnailUrl } : {}),
+    ...summaryField(data?.examples)
   }
 }
 
@@ -525,10 +553,23 @@ export function modalityOf(
 
 export interface WorkshopFilter {
   readonly query?: string
-  readonly useCase?: UseCase | 'all'
+  readonly useCase?: UseCase | 'all' | 'other'
   readonly modalities?: readonly string[]
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
+}
+
+// 'other' is the shelf that holds text, 3D and audio at once.
+function matchesUseCase(
+  useCase: UseCase | 'all' | 'other',
+  model: WorkshopModel
+): boolean {
+  if (useCase === 'all') return true
+  const modelUseCase = useCaseFor(model)
+  return useCase === 'other'
+    ? modelUseCase !== undefined &&
+        OTHER_FORMAT_USE_CASES.includes(modelUseCase)
+    : modelUseCase === useCase
 }
 
 function matchesFacet(
@@ -561,7 +602,9 @@ export function parseCatalogSearch(search: string): WorkshopFilter {
   const useCase = params.get('useCase')
   return {
     query: params.get('q') ?? '',
-    useCase: USE_CASES.find((value) => value === useCase) ?? 'all',
+    useCase:
+      USE_CASES.find((value) => value === useCase) ??
+      (useCase === 'other' ? 'other' : 'all'),
     capabilities: params.getAll('capability'),
     providers: params.getAll('provider'),
     modalities: params.getAll('modality')
@@ -581,7 +624,7 @@ export function filterWorkshopModels(
   const needle = query.trim().toLowerCase()
   return list.filter(
     (model) =>
-      (useCase === 'all' || useCaseFor(model) === useCase) &&
+      matchesUseCase(useCase, model) &&
       (modalities.length === 0 || modalities.includes(modalityOf(model))) &&
       matchesFacet(providers, model.provider) &&
       (capabilities.length === 0 ||

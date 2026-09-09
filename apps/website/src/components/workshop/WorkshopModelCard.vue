@@ -6,14 +6,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   ModalityFilter,
-  TaskInput,
   WorkshopModel
 } from '../../config/models-catalogue'
-import { modalityOf, splitTask } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import { modalityOf } from '../../config/models-catalogue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
+import { taskLabelFor } from '../../lib/workshop/task-label'
 import TagRow from '../hub/TagRow.vue'
 
 const {
@@ -28,25 +28,6 @@ const {
 
 const modality = computed(() => modalityOf(model))
 
-const modalityLabelKey: Record<
-  Exclude<ModalityFilter, 'all'>,
-  TranslationKey
-> = {
-  image: 'workshop.filter.image',
-  video: 'workshop.filter.video',
-  audio: 'workshop.filter.audio',
-  '3d': 'workshop.filter.3d',
-  text: 'workshop.filter.text',
-  other: 'workshop.filter.other'
-}
-
-const taskInputKey: Record<TaskInput, TranslationKey> = {
-  text: 'workshop.task.text',
-  image: 'workshop.task.image',
-  video: 'workshop.task.video',
-  audio: 'workshop.task.audio'
-}
-
 const providerName = computed(
   () => model.provider ?? t('workshop.card.partnerNode', locale)
 )
@@ -55,14 +36,7 @@ const logo = computed(
   () => getLogoPath(model.provider ?? '') ?? getLogoPath(model.name)
 )
 
-const taskLabel = computed(() => {
-  const task = model.task ? splitTask(model.task) : undefined
-  return task && task.output !== 'other'
-    ? t('workshop.task.label', locale)
-        .replace('{input}', t(taskInputKey[task.input], locale))
-        .replace('{output}', t(modalityLabelKey[task.output], locale))
-    : t(modalityLabelKey[modality.value], locale)
-})
+const taskLabel = computed(() => taskLabelFor(model, locale))
 
 const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
   image: 'from-primary-comfy-plum to-secondary-deep-plum',
