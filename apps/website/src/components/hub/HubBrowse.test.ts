@@ -116,6 +116,25 @@ describe('HubBrowse', () => {
     expect(screen.queryByTestId('hub-filter-count')).toBeNull()
   })
 
+  it('offers the orders each tab can honour, and orders by the one chosen', async () => {
+    const user = userEvent.setup()
+    render(HubBrowse)
+
+    await user.click(screen.getByTestId('hub-tab-nodeGraphs'))
+    await user.click(screen.getByTestId('hub-sort'))
+    expect(screen.queryByTestId('hub-sort-priceAsc')).toBeNull()
+    await user.click(await screen.findByTestId('hub-sort-name'))
+    const titles = screen
+      .getAllByTestId('hub-card-link')
+      .map((card) => card.textContent.trim())
+    expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b)))
+
+    await user.click(screen.getByTestId('hub-tab-models'))
+    await user.click(screen.getByTestId('hub-sort'))
+    expect(await screen.findByTestId('hub-sort-priceAsc')).toBeTruthy()
+    expect(screen.queryByTestId('hub-sort-newest')).toBeNull()
+  })
+
   it('filters from the phone panel, one facet at a time', async () => {
     const user = userEvent.setup()
     render(HubBrowse)

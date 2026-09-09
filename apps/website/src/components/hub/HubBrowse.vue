@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -7,7 +7,12 @@ import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { UseCase, WorkshopModel } from '../../config/workshop'
-import { USE_CASES, useCaseFor, workshopModels } from '../../config/workshop'
+import {
+  USE_CASES,
+  sortWorkshopModels,
+  useCaseFor,
+  workshopModels
+} from '../../config/workshop'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
@@ -20,7 +25,11 @@ import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
+import type {
+  FacetGroupConfig,
+  SortOption,
+  ToolbarLabels
+} from './BrowseToolbar.vue'
 import HubUseCaseNav from './HubUseCaseNav.vue'
 import type { GridLabels } from './WorkflowGrid.vue'
 import WorkflowGrid from './WorkflowGrid.vue'
@@ -155,11 +164,32 @@ const toolbarLabels: ToolbarLabels = {
   typeAll: t('workshop.hub.kind.all', locale),
   less: t('workshop.hub.facets.less', locale),
   selected: t('workshop.hub.facets.selected', locale),
-  sortPopular: t('workshop.hub.sort.popular', locale),
-  sortNewest: t('workshop.hub.sort.newest', locale),
   showResults: t('workshop.hub.facets.show', locale),
   showModels: t('workshop.search.show', locale)
 }
+// Workflows are dated and models are priced, so a tab offers what the things
+// it lists can actually be ordered by.
+const WORKFLOW_SORTS: SortOption[] = [
+  { value: 'popular', label: t('workshop.sort.popular', locale) },
+  { value: 'newest', label: t('workshop.hub.sort.newest', locale) },
+  { value: 'name', label: t('workshop.sort.name', locale) }
+]
+const MODEL_SORTS: SortOption[] = [
+  { value: 'popular', label: t('workshop.sort.popular', locale) },
+  { value: 'name', label: t('workshop.sort.name', locale) },
+  { value: 'priceAsc', label: t('workshop.sort.priceAsc', locale) },
+  { value: 'priceDesc', label: t('workshop.sort.priceDesc', locale) }
+]
+const sortOptions = computed(() =>
+  store.activeTab.value === 'models' ? MODEL_SORTS : WORKFLOW_SORTS
+)
+
+// An order the new tab cannot honour would otherwise linger in the button.
+watch(sortOptions, (options) => {
+  if (!options.some((option) => option.value === store.sortBy.value))
+    store.setSort('popular')
+})
+
 const facetsConfig: FacetGroupConfig[] = [
   {
     key: 'media',
@@ -212,9 +242,8 @@ const filteredModels = computed(() => {
       model.name.toLowerCase().includes(query) ||
       (model.provider ?? '').toLowerCase().includes(query)
   )
-  return store.sortBy.value === 'popular'
-    ? [...matches].sort((a, b) => b.runs - a.runs)
-    : [...matches].sort((a, b) => a.name.localeCompare(b.name))
+  const order = store.sortBy.value
+  return sortWorkshopModels(matches, order === 'newest' ? 'popular' : order)
 })
 
 // Models open the All tab, in the same grid as the workflows behind them.
@@ -285,6 +314,7 @@ const filteredTemplates = computed(() => {
           :facet-templates="templates"
           :facets-config="facetsConfig"
           :toolbar-labels="toolbarLabels"
+          :sort-options="sortOptions"
           :labels="gridLabels"
           :href-for="hrefFor"
           :extra-filters="providers.length + capabilities.length"

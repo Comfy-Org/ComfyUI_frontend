@@ -12,6 +12,9 @@ export function withFacetFields(
 ): FacetedTemplate {
   return {
     ...template,
+    // Ten registry titles carry a stray leading or trailing space, which reads
+    // as a blank first character and sorts ahead of every digit and letter.
+    title: template.title.trim(),
     partner: partnerModelFor(template, models)?.provider
   }
 }

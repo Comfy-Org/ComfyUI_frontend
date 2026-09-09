@@ -8,7 +8,9 @@ export interface FilterBadge {
 }
 
 export type HubTab = 'all' | 'nodeGraphs' | 'comfyApps' | 'models'
-type HubSort = 'popular' | 'newest'
+// Workflows carry a date and models carry a price, so the orders on offer
+// depend on what the tab is listing.
+export type HubSort = 'popular' | 'newest' | 'name' | 'priceAsc' | 'priceDesc'
 
 // Module-level refs: every island on the page shares the same browse state.
 const filterBadges = ref<FilterBadge[]>([])
@@ -28,8 +30,8 @@ export function useHubStore() {
     setTab(tab: HubTab) {
       activeTab.value = tab
     },
-    cycleSort() {
-      sortBy.value = sortBy.value === 'popular' ? 'newest' : 'popular'
+    setSort(order: HubSort) {
+      sortBy.value = order
     },
     toggleBadge(badge: FilterBadge) {
       filterBadges.value = filterBadges.value.some((b) => sameBadge(b, badge))

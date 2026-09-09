@@ -9,6 +9,12 @@ import {
   X
 } from '@lucide/vue'
 import {
+  DropdownMenuContent,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
   PopoverContent,
   PopoverPortal,
   PopoverRoot,
@@ -27,11 +33,20 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { FacetTemplate, FacetValue } from '../../composables/useFacets'
 import { useFacets } from '../../composables/useFacets'
 import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
-import type { FilterBadge, HubTab } from '../../composables/useHubStore'
+import type {
+  FilterBadge,
+  HubSort,
+  HubTab
+} from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
+
+export interface SortOption {
+  readonly value: HubSort
+  readonly label: string
+}
 
 export interface FacetGroupConfig {
   readonly key: string
@@ -57,8 +72,6 @@ export interface ToolbarLabels {
   readonly less: string
   readonly selected: string
   readonly typeAll: string
-  readonly sortPopular: string
-  readonly sortNewest: string
   readonly showResults: string
   readonly showModels: string
 }
@@ -67,12 +80,15 @@ const {
   templates,
   facetsConfig,
   labels,
+  sortOptions,
   resultCount,
   extraFilters = 0
 } = defineProps<{
   templates: readonly FacetTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   labels: ToolbarLabels
+  /** What this tab can be ordered by: workflows have a date, models a price. */
+  sortOptions: readonly SortOption[]
   resultCount: number
   /** Narrowing chosen elsewhere, such as the search panel, so the filter
    * button still says how much is on. */
@@ -197,8 +213,10 @@ const selectLabel = (group: FacetGroupConfig) => {
     : labels.selected.replace('{n}', String(chosen))
 }
 
-const sortLabel = computed(() =>
-  store.sortBy.value === 'popular' ? labels.sortPopular : labels.sortNewest
+const sortLabel = computed(
+  () =>
+    sortOptions.find((option) => option.value === store.sortBy.value)?.label ??
+    sortOptions[0].label
 )
 
 const controlClass =
@@ -345,23 +363,51 @@ function phoneToggle(value: string) {
           />
         </button>
 
-        <button
-          type="button"
-          :aria-label="sortLabel"
-          data-testid="hub-sort"
-          :class="
-            cn(
-              controlClass,
-              'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
-            )
-          "
-          @click="store.cycleSort()"
-        >
-          <ArrowUpDown class="size-3.5 shrink-0" aria-hidden="true" />
-          <span class="ppformula-text-center-sm max-sm:hidden">{{
-            sortLabel
-          }}</span>
-        </button>
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger
+            :aria-label="sortLabel"
+            data-testid="hub-sort"
+            :class="
+              cn(
+                controlClass,
+                'text-content-secondary hover:text-content bg-white/8 hover:bg-white/12'
+              )
+            "
+          >
+            <ArrowUpDown class="size-3.5 shrink-0" aria-hidden="true" />
+            <span class="ppformula-text-center-sm max-sm:hidden">{{
+              sortLabel
+            }}</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuContent
+              align="end"
+              :side-offset="8"
+              class="bg-site-dropdown z-50 w-56 rounded-2xl border border-white/10 p-2 shadow-lg"
+            >
+              <DropdownMenuRadioGroup
+                :model-value="store.sortBy.value"
+                @update:model-value="(value) => store.setSort(value as HubSort)"
+              >
+                <DropdownMenuRadioItem
+                  v-for="option in sortOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :data-testid="`hub-sort-${option.value}`"
+                  :class="
+                    cn(
+                      'text-content-secondary hover:text-content flex cursor-pointer items-center rounded-xl px-3 py-2 text-sm outline-none select-none hover:bg-white/5 focus-visible:bg-white/5',
+                      store.sortBy.value === option.value &&
+                        'text-content bg-white/8'
+                    )
+                  "
+                >
+                  {{ option.label }}
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenuPortal>
+        </DropdownMenuRoot>
       </div>
     </div>
 

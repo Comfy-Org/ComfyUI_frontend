@@ -5,7 +5,11 @@ import { useHubStore } from '../../composables/useHubStore'
 import { badgesAvailableIn, templatesInTab } from '../../lib/hub/hub-tabs'
 import type { HubTemplate } from '../../lib/hub/types'
 import type { Locale } from '../../i18n/translations'
-import type { FacetGroupConfig, ToolbarLabels } from './BrowseToolbar.vue'
+import type {
+  FacetGroupConfig,
+  SortOption,
+  ToolbarLabels
+} from './BrowseToolbar.vue'
 import BrowseToolbar from './BrowseToolbar.vue'
 import HubWorkflowCard from './HubWorkflowCard.vue'
 
@@ -22,6 +26,7 @@ const {
   facetTemplates,
   facetsConfig,
   toolbarLabels,
+  sortOptions,
   labels,
   hrefFor,
   extraFilters = 0,
@@ -32,6 +37,7 @@ const {
   facetTemplates: readonly HubTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   toolbarLabels: ToolbarLabels
+  sortOptions: readonly SortOption[]
   extraFilters?: number
   /** The Models tab lists what the parent passes in, so its tally comes from
    * there rather than from the workflows this grid holds. */
@@ -71,10 +77,21 @@ const byDate = (a: HubTemplate, b: HubTemplate) => {
   return new Date(b.date).getTime() - new Date(a.date).getTime()
 }
 
+const byUsage = (a: HubTemplate, b: HubTemplate) => b.usage - a.usage
+const byTitle = (a: HubTemplate, b: HubTemplate) =>
+  a.title.localeCompare(b.title)
+
+// The price orders belong to the models tab, which this grid does not draw, so
+// anything it is not asked to order by falls back to what it opens on.
+const templateOrder = computed(() => {
+  const order = store.sortBy.value
+  if (order === 'newest') return byDate
+  if (order === 'name') return byTitle
+  return byUsage
+})
+
 const sortedTemplates = computed(() =>
-  templatesInTab(templates, store.activeTab.value).sort(
-    store.sortBy.value === 'popular' ? (a, b) => b.usage - a.usage : byDate
-  )
+  templatesInTab(templates, store.activeTab.value).sort(templateOrder.value)
 )
 const displayedTemplates = computed(() =>
   sortedTemplates.value.slice(0, displayCount.value)
@@ -98,6 +115,7 @@ const showingText = computed(() =>
         :templates="facetSource"
         :facets-config="facetsConfig"
         :labels="toolbarLabels"
+        :sort-options="sortOptions"
         :result-count="
           store.activeTab.value === 'models'
             ? modelCount
