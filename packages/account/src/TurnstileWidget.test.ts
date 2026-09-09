@@ -193,6 +193,56 @@ describe('TurnstileWidget', () => {
     expect(unavailableUpdates.at(-1)).toBe(false)
   })
 
+  it('falls back if a post-solve expiry is not followed by a fresh token within the load timeout', async () => {
+    const { api, options } = fakeTurnstile()
+    const { emitted } = render(TurnstileWidget, {
+      props: { ...baseProps, loader: async () => api }
+    })
+    await flush()
+    options()['error-callback']?.()
+    options().callback?.('token-abc')
+    expect(emitted('update:unavailable').at(-1)).toEqual([false])
+
+    // The token expires on its own (a tab backgrounded past its lifetime)
+    // and nothing solves the fresh challenge before the re-armed timeout.
+    options()['expired-callback']?.()
+    await flush()
+    expect(emitted('update:unavailable').at(-1)).toEqual([false])
+    await vi.advanceTimersByTimeAsync(9_000)
+
+    expect(
+      emitted('update:unavailable').at(-1),
+      'submit must be unblocked again, not stuck behind a challenge that never resolves'
+    ).toEqual([true])
+  })
+
+  it('reset() clears the token even when the widget never rendered', async () => {
+    const widgetRef = ref<{ reset: () => void } | null>(null)
+    const tokenUpdates: string[] = []
+    const Host = defineComponent({
+      setup() {
+        return () =>
+          h(TurnstileWidget, {
+            ...baseProps,
+            loader: async () => {
+              throw new Error('script failed')
+            },
+            ref: widgetRef,
+            'onUpdate:token': (value: string) => {
+              tokenUpdates.push(value)
+            }
+          })
+      }
+    })
+    render(Host)
+    await flush()
+
+    widgetRef.value!.reset()
+    await flush()
+
+    expect(tokenUpdates.at(-1) ?? '').toBe('')
+  })
+
   it('removes the challenge on unmount', async () => {
     const { api } = fakeTurnstile()
     window.turnstile = api
