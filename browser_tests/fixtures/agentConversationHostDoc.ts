@@ -1,4 +1,9 @@
-import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  mint,
+  project,
+  readGraph
+} from '@comfyorg/comfy-multi-player'
 import type {
   GraphSnapshot,
   WidgetCatalog,
@@ -43,6 +48,12 @@ export class HostDoc {
 
   graph(): GraphSnapshot {
     return readGraph(this.doc)
+  }
+
+  // The canonical workflow the library projects from the document: the
+  // nodes, titles, inputs and link tuples the canvas is expected to show.
+  projection(): WorkflowJSON {
+    return project(this.doc, this.catalog)
   }
 
   subscribed(): HostFrame {

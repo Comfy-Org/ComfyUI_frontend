@@ -1,5 +1,6 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { marked } from 'marked'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -37,13 +38,7 @@ const CANCEL_TIMEOUT = 10_000
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-
-type NodeBody = {
-  id: number | string
-  type: string
-  title?: string
-  inputs?: Array<{ name: string; widget?: unknown }>
-}
+const GROUP_LABEL = /^Ran (\d+) tool calls?/
 
 interface RecordedToolCall {
   callId: string
@@ -63,8 +58,13 @@ interface RecordedWidgetValue {
   value: string | number
 }
 
-// [id, from, from_slot, to, to_slot, type], as a workflow file stores a link.
-const zSeedLink = z
+interface PanelCounts {
+  streams: number
+  groups: number
+}
+
+// [id, from, from_slot, to, to_slot, type], as the projection stores a link.
+const zProjectedLink = z
   .tuple([
     z.unknown(),
     z.union([z.string(), z.number()]),
@@ -74,12 +74,43 @@ const zSeedLink = z
   ])
   .rest(z.unknown())
 
+// The projected node fields the canvas assertions read.
+const zProjectedNode = z
+  .object({
+    id: z.union([z.string(), z.number()]),
+    type: z.string(),
+    title: z.string().optional(),
+    inputs: z
+      .array(z.object({ widget: z.unknown().optional() }).passthrough())
+      .optional()
+  })
+  .passthrough()
+
 function linkKey(link: RecordedLink): string {
   return `${link.fromNode}:${link.fromSlot}->${link.toNode}:${link.toSlot}`
 }
 
 function byLinkKey(a: RecordedLink, b: RecordedLink): number {
   return linkKey(a).localeCompare(linkKey(b))
+}
+
+function collapse(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+// The recorded markdown as the panel's own renderer (marked) lays it out,
+// reduced to the words a user reads.
+function visibleText(markdown: string): string {
+  return collapse(
+    marked
+      .parse(markdown, { async: false })
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+  )
 }
 
 async function withTimeout(
@@ -104,6 +135,9 @@ class AgentConversationHarness {
   readonly vueNodes: VueNodeHelpers
 
   private readonly host: HostDoc
+  private readonly streams: Locator
+  private readonly groups: Locator
+  private readonly seedIds: Set<string>
   private socket: WebSocketRoute | null = null
   private postedTurns = 0
   private readonly displayNames = new Map<string, string>()
@@ -121,7 +155,10 @@ class AgentConversationHarness {
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
+    this.seedIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     this.panel = page.locator('#agent-panel-root')
+    this.streams = this.panel.getByTestId('markdown-stream')
+    this.groups = this.panel.getByRole('button', { name: GROUP_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
   }
 
@@ -195,11 +232,22 @@ class AgentConversationHarness {
     }
   }
 
+  // Every turn in order, each judged on the panel and the canvas as it lands.
   async runTurns(): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
+      const before = await this.panelCounts()
       await this.sendPrompt(turn)
       await this.replayResponse(turn)
       await this.waitForTurnComplete()
+      await this.expectTurnRendered(turn, before)
+      await this.expectCanvasReplayed(turn)
+    }
+  }
+
+  private async panelCounts(): Promise<PanelCounts> {
+    return {
+      streams: await this.streams.count(),
+      groups: await this.groups.count()
     }
   }
 
@@ -235,73 +283,11 @@ class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
-  // Every node the recording ever placed through the given turn, deleted or not.
-  private nodeBodies(throughTurn?: number): NodeBody[] {
-    const seed = this.conversation.workflow.seed.nodes as NodeBody[]
-    const added = this.entries(throughTurn).flatMap((entry) =>
-      entry.kind === 'graph_ops'
-        ? entry.ops.flatMap((op) =>
-            op.op === 'add_node' ? [op.node as NodeBody] : []
-          )
-        : []
-    )
-    return [...seed, ...added]
-  }
-
-  // The graph the recording promises through the given turn: the seed, then
-  // every add, delete, clear and connect in order. An input holds one link,
-  // so a later connect to it replaces the earlier one.
-  private expectedGraph(throughTurn?: number): {
-    nodes: Map<string, NodeBody>
-    links: Map<string, RecordedLink>
-  } {
-    const { seed } = this.conversation.workflow
-    const nodes = new Map(
-      (seed.nodes as NodeBody[]).map((node) => [String(node.id), node])
-    )
-    const links = new Map<string, RecordedLink>()
-    const connect = (link: RecordedLink) =>
-      links.set(`${link.toNode}:${link.toSlot}`, link)
-    for (const raw of seed.links) {
-      const [, fromNode, fromSlot, toNode, toSlot] = zSeedLink.parse(raw)
-      connect({
-        fromNode: String(fromNode),
-        fromSlot,
-        toNode: String(toNode),
-        toSlot
-      })
-    }
-    for (const entry of this.entries(throughTurn)) {
-      if (entry.kind !== 'graph_ops') continue
-      for (const op of entry.ops) {
-        if (op.op === 'add_node')
-          nodes.set(String(op.node.id), op.node as NodeBody)
-        else if (op.op === 'delete_node') {
-          const id = String(op.node_id)
-          nodes.delete(id)
-          for (const [key, link] of links)
-            if (link.fromNode === id || link.toNode === id) links.delete(key)
-        } else if (op.op === 'clear') {
-          nodes.clear()
-          links.clear()
-        } else if (op.op === 'connect' && op.grow == null)
-          connect({
-            fromNode: String(op.from_node),
-            fromSlot: op.from_slot,
-            toNode: String(op.to_node),
-            toSlot: op.to_slot
-          })
-      }
-    }
-    return { nodes, links }
-  }
-
-  // One row per recorded tool call; failed when the recording reported an
-  // error status for it. The panel's own grouping and coalescing rules are the
-  // thing under test, so they are not reproduced here.
-  recordedToolCalls(throughTurn?: number): RecordedToolCall[] {
+  // One row per tool call the turn recorded, in first-seen order; failed when
+  // the recording reported an error status for it.
+  private recordedToolCalls(turn: number): RecordedToolCall[] {
     const calls = new Map<string, RecordedToolCall>()
-    for (const entry of this.entries(throughTurn)) {
+    for (const entry of this.conversation.turns[turn].response) {
       if (entry.kind !== 'event' || entry.event.type !== 'agent_tool_call')
         continue
       const { tool_call_id: callId, status } = entry.event.data
@@ -313,7 +299,7 @@ class AgentConversationHarness {
   }
 
   // Last write wins per widget; the rendered control shows only the final value.
-  private recordedWidgetValues(throughTurn?: number): RecordedWidgetValue[] {
+  private recordedWidgetValues(throughTurn: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
     for (const entry of this.entries(throughTurn)) {
@@ -333,6 +319,18 @@ class AgentConversationHarness {
     return [...latest.values()]
   }
 
+  // Every node the recording seeded or placed through the given turn.
+  private placedNodeIds(throughTurn: number): string[] {
+    const placed = this.entries(throughTurn).flatMap((entry) =>
+      entry.kind === 'graph_ops'
+        ? entry.ops.flatMap((op) =>
+            op.op === 'add_node' ? [String(op.node.id)] : []
+          )
+        : []
+    )
+    return [...this.seedIds, ...placed]
+  }
+
   // The assistant text a turn recorded, concatenated as the panel streams it.
   recordedAssistantText(turn: number): string {
     return this.conversation.turns[turn].response
@@ -344,19 +342,24 @@ class AgentConversationHarness {
       .join('')
   }
 
-  // A recorded title renders verbatim. An untitled node should show its
-  // display name, but the follower's full reconcile (the catch-up path) still
-  // re-titles it by type through graphMutations.ts prepareNode, so until that
-  // is settled either spelling of the same node identity passes.
-  private expectedTitle(body: NodeBody): string | RegExp {
-    if (body.title) return body.title
-    const displayName = this.displayNames.get(body.type)
-    if (displayName === undefined)
-      throw new Error(`the server registers no node type ${body.type}`)
-    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`^(?:${escape(displayName)}|${escape(body.type)})$`)
+  private displayName(type: string): string {
+    const name = this.displayNames.get(type)
+    if (name === undefined)
+      throw new Error(`the server registers no node type ${type}`)
+    return name
   }
 
+  // A recorded title renders verbatim and an untitled node shows its display
+  // name, except a node the catch-up materialized: the follower titles that
+  // one by its type (#17171), and this pin turns red the day it stops.
+  private expectedTitle(id: string, node: { type: string; title?: string }) {
+    if (node.title) return node.title
+    return this.seedIds.has(id) ? node.type : this.displayName(node.type)
+  }
+
+  // The renderer's link map is the one structure the canvas painter draws
+  // wires from; the slot rows below show a user that both ends are wired, but
+  // no DOM surface names the endpoints, so the pairs are read from the map.
   private async renderedLinks(): Promise<RecordedLink[]> {
     const links = await this.page.evaluate(() =>
       [...window.app!.graph.links.values()].map((link) => ({
@@ -369,25 +372,63 @@ class AgentConversationHarness {
     return links.sort(byLinkKey)
   }
 
-  // What the canvas shows after the given turn (the end state by default),
-  // judged the way a user would: which nodes are there and what they are
-  // called, what their widgets say, and which wires join them.
-  async expectCanvasReplayed(throughTurn?: number): Promise<void> {
-    const { nodes, links } = this.expectedGraph(throughTurn)
-    const bodies = this.nodeBodies(throughTurn)
-    for (const body of bodies)
-      if (!nodes.has(String(body.id)))
-        await expect(this.vueNodes.getNodeLocator(String(body.id))).toHaveCount(
-          0
+  // What this turn put on the panel: its complete assistant text, and tool
+  // call groups that add up to every recorded call and stay open exactly
+  // where a call failed.
+  private async expectTurnRendered(
+    turn: number,
+    before: PanelCounts
+  ): Promise<void> {
+    const text = visibleText(this.recordedAssistantText(turn))
+    if (text !== '')
+      await expect
+        .poll(async () =>
+          collapse(
+            (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
+          )
         )
-    for (const [id, body] of nodes) {
-      const node = this.vueNodes.getNodeLocator(id)
-      await expect(node).toBeVisible()
-      await expect(node.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(body)
+        .toBe(text)
+
+    const calls = this.recordedToolCalls(turn)
+    await expect
+      .poll(async () => {
+        const groups = (await this.groups.all()).slice(before.groups)
+        let taken = 0
+        let total = 0
+        let misplaced = 0
+        for (const group of groups) {
+          const size = Number(GROUP_LABEL.exec(await group.innerText())?.[1])
+          const expanded =
+            (await group.getAttribute('aria-expanded')) === 'true'
+          const failed = calls.slice(taken, taken + size).some((c) => c.failed)
+          if (expanded !== failed) misplaced += 1
+          taken += size
+          total += size
+        }
+        return { total, misplaced }
+      })
+      .toEqual({ total: calls.length, misplaced: 0 })
+  }
+
+  // What the canvas shows after the given turn, judged the way a user would
+  // (which nodes, under which titles, with which widget values, wired on
+  // both slot rows) against the workflow the production library projects.
+  async expectCanvasReplayed(throughTurn: number): Promise<void> {
+    const projected = this.host.projection()
+    const nodes = projected.nodes.map((node) => zProjectedNode.parse(node))
+    const present = new Set(nodes.map((node) => String(node.id)))
+    for (const id of this.placedNodeIds(throughTurn))
+      if (!present.has(id))
+        await expect(this.vueNodes.getNodeLocator(id)).toHaveCount(0)
+    for (const node of nodes) {
+      const id = String(node.id)
+      const locator = this.vueNodes.getNodeLocator(id)
+      await expect(locator).toBeVisible()
+      await expect(locator.getByTestId('node-title')).toHaveText(
+        this.expectedTitle(id, node)
       )
     }
-    await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.size)
+    await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
     for (const { nodeId, widget, value } of this.recordedWidgetValues(
       throughTurn
@@ -409,20 +450,26 @@ class AgentConversationHarness {
       else await expect(field).toHaveValue(value)
     }
 
-    await expect
-      .poll(() => this.renderedLinks())
-      .toEqual([...links.values()].sort(byLinkKey))
+    const links = projected.links
+      .map((raw): RecordedLink => {
+        const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
+        return {
+          fromNode: String(fromNode),
+          fromSlot,
+          toNode: String(toNode),
+          toSlot
+        }
+      })
+      .sort(byLinkKey)
+    await expect.poll(() => this.renderedLinks()).toEqual(links)
     // A widget-backed input renders no slot row on an uncollapsed node
     // (NodeSlots.vue); the wire above already covers that end.
-    for (const link of links.values()) {
+    for (const link of links) {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
       ).toHaveClass(/lg-slot--connected/)
-      const widgetBacked =
-        bodies.find((body) => String(body.id) === link.toNode)?.inputs?.[
-          link.toSlot
-        ]?.widget != null
-      if (!widgetBacked)
+      const target = nodes.find((node) => String(node.id) === link.toNode)
+      if (target?.inputs?.[link.toSlot]?.widget == null)
         await expect(
           this.vueNodes.getInputSlotRow(link.toNode, link.toSlot)
         ).toHaveClass(/lg-slot--connected/)
