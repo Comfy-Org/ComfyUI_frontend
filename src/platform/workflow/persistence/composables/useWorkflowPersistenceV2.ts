@@ -196,10 +196,7 @@ export function useWorkflowPersistenceV2() {
     // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
-      if (saved) {
-        await useWorkflowService().openWorkflow(saved)
-        return true
-      }
+      if (saved && (await useWorkflowService().openWorkflow(saved))) return true
     }
 
     // 3. Fall back to most recent draft
