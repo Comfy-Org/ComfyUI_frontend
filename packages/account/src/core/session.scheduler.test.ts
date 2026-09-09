@@ -750,6 +750,77 @@ describe('cross-tab refresh coordination', () => {
     ).toBe('jwt-2')
   })
 
+  it("an exhausted leader releases the lease, re-queues as a follower, and adopts a sibling's credential", async () => {
+    const adopted: AccountCredential[] = []
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementation(async () => new Response('{}', { status: 503 }))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: {
+          port: tab.port,
+          onCredentialAdopted: (credential) => adopted.push(credential)
+        }
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+    tab.grantLeadership()
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS - DEFAULT_BUFFER_MS)
+    await vi.advanceTimersByTimeAsync(35_000 + 10)
+    expect(fetchImpl).toHaveBeenCalledTimes(5)
+
+    expect(
+      tab.leadershipRequests[0].abandoned,
+      'a leader with a dead chain must not sit on the lease'
+    ).toBe(true)
+    expect(
+      tab.leadershipRequests.length,
+      'and must queue again so it can be promoted back if nobody else leads'
+    ).toBe(2)
+
+    tab.receive(publishedCredential({ token: 'jwt-from-sibling' }))
+    expect(
+      client.getToken(),
+      'the sibling that took the lease refreshes for everyone, this tab included'
+    ).toBe('jwt-from-sibling')
+    expect(adopted.map((credential) => credential.token)).toEqual([
+      'jwt-from-sibling'
+    ])
+  })
+
+  it('tells the host when a credential was adopted, since the tab did not rotate it itself', async () => {
+    const adopted: string[] = []
+    const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: {
+          port: tab.port,
+          onCredentialAdopted: (credential) => adopted.push(credential.token)
+        }
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-own')
+    })
+
+    tab.receive(publishedCredential())
+
+    expect(adopted).toEqual(['jwt-from-leader'])
+  })
+
   it('never adopts a credential minted for a different workspace', async () => {
     const fetchImpl = vi.fn<typeof fetch>(
       async () =>

@@ -1,4 +1,4 @@
-import type { CrossTabRefreshPort } from './session.js'
+import type { CrossTabRefreshPort } from '../core/session.js'
 
 /**
  * Web Locks + BroadcastChannel implementation of the cross-tab refresh port.
@@ -6,6 +6,15 @@ import type { CrossTabRefreshPort } from './session.js'
  * undefined where either API is missing (older browsers, non-browser and
  * unit-test environments), so hosts fall back to uncoordinated per-tab
  * refresh.
+ *
+ * Trust boundary, decided rather than assumed: the workspace JWT travels on
+ * a same-origin BroadcastChannel whose name any script in the page can
+ * derive from the uid and workspace id, and an inbound message is accepted
+ * on shape, uid, workspace and a newer expiry, all of which a script in the
+ * realm can read and forge. Same-origin script already holds the token and
+ * the session client's storage adapter, so this widens what such a script
+ * can do to siblings (hand them a token), not what it can reach. Hosts that
+ * load third-party script into the realm accept that when they opt in.
  */
 export function createWebCrossTabRefreshPort():
   | CrossTabRefreshPort
@@ -29,18 +38,18 @@ export function createWebCrossTabRefreshPort():
     requestLeadership(key, onAcquired) {
       const controller = new AbortController()
       let disposed = false
-      const isDisposed = () => disposed
       let releaseHeld: (() => void) | undefined
       void locks
         .request(key, { signal: controller.signal }, () => {
           // A grant can win the race against our own abandon; returning
           // without holding releases the lock straight to the next tab.
-          if (isDisposed()) return
+          if (disposed) return
           onAcquired()
           // onAcquired may dispose synchronously, and neither abort() (a
           // no-op on a granted lock) nor releaseHeld (not wired yet) can
           // observe that — re-check before committing to the hold.
-          if (isDisposed()) return
+          // oxlint-disable-next-line typescript/no-unnecessary-condition -- the narrowing is not call-aware; onAcquired() can flip this
+          if (disposed) return
           // Hold the lock until released; the browser releases it for us
           // when the tab dies, which is what promotes the next tab.
           return new Promise<void>((resolve) => {

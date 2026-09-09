@@ -9,6 +9,7 @@
     "./core": "./src/core/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
+    "./web": "./src/web/index.ts",
     "./signInSchemas": "./src/signInSchemas.ts",
     "./turnstile": "./src/turnstile.ts",
     "./turnstileScript": "./src/turnstileScript.ts",
