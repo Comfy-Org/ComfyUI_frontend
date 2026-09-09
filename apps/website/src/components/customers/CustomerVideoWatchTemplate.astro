@@ -33,18 +33,18 @@ interface Props {
 
 const { story } = Astro.props
 
-const { siteUrl, locale, url } = pageContext(
+const { siteUrl, locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
 const routes = getRoutes(locale)
-const videoId = jsonLdId(url, 'video')
+const videoId = jsonLdId(canonicalUrl, 'video')
 
 const video = videoObjectNode({
   siteUrl,
   id: videoId,
-  pageUrl: url,
+  pageUrl: canonicalUrl,
   name: story.title,
   description: story.description,
   thumbnailUrl: story.poster,

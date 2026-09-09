@@ -11,10 +11,11 @@ import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import OfferGrid01 from '../../components/blocks/OfferGrid01.vue'
 import SectionIntro01 from '../../components/blocks/SectionIntro01.vue'
 import EnterpriseHeroScene from '../../components/product/enterprise/EnterpriseHeroScene.vue'
-import { externalLinks } from '../../config/routes'
+import { externalLinks, localizeHref } from '../../config/routes'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 import { buildFaqPageNode } from './_faqMetadata'
+import { t } from '../../i18n/translations'
 
 const faqs = [
   {
@@ -145,25 +146,25 @@ const productionRows = [
   },
 ] as const
 
-const { url } = pageContext(
+const { locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
-const faqPage = buildFaqPageNode(url, faqs)
+const faqPage = buildFaqPageNode(canonicalUrl, faqs)
 ---
 
 <BaseLayout
-  title="Comfy Enterprise | Govern visual AI across every team"
-  description="Standardize ComfyUI across teams and runtimes with Managed Builds, self-serve Team plans, commercial model licensing, enterprise security, and hands-on delivery."
+  title={t('enterprise.meta.title', locale)}
+  description={t('enterprise.meta.description', locale)}
   pageType="WebPage"
   breadcrumbs={[
-    { name: 'Home', url: absoluteUrl(Astro.site, '/') },
+    { name: 'Home', url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: 'Enterprise' },
   ]}
   extraJsonLd={[faqPage]}
 >
-  <HeroSplit01
+  <HeroSplit01 locale={locale}
     badgeText="ENTERPRISE"
     title={'Govern ComfyUI across\nevery team and runtime.'}
     subtitle="Standardize how teams build, run, and deploy visual AI with ComfyUI Managed Builds, production capacity, commercial licensing, and hands-on implementation support."

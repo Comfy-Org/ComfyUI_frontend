@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
+import { localizeHref } from '../../config/routes'
 
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import GlassCard from '../common/GlassCard.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = DEFAULT_LOCALE } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
@@ -39,7 +40,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         </div>
         <div>
           <BrandButton
-            :href="locale === 'zh-CN' ? '/zh-CN/careers' : '/careers'"
+            :href="localizeHref('/careers', locale)"
             variant="solid"
             size="lg"
             class="mt-8 self-start"

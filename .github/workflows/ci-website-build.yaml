@@ -56,6 +56,14 @@ jobs:
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
 
+      # A localized page is served from the English page file, but content read
+      # at render time is outside Astro's i18n fallback: a collection filtered
+      # by locale returns an empty array and the section vanishes rather than
+      # falling back. That shipped twice before this check existed, and the
+      # build exits 0 either way.
+      - name: Check localized pages render their content
+        run: pnpm --filter @comfyorg/website check:localized-pages
+
       # The build above is the development shape: Workshop included. Preview
       # and production build the other shape, and nothing else here exercises
       # it -- so a fault on the exclusion path reaches a deploy untested. It

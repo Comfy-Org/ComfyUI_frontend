@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content'
 
+import { DEFAULT_LOCALE } from '../../config/locales'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FaqLink from './FaqLink.astro'
@@ -12,9 +13,18 @@ interface Props {
 
 const { locale = 'en', category = 'pricing' } = Astro.props
 
-const entries = await getCollection('faq', (entry) =>
-  entry.id.startsWith(`${category}/${locale}/`)
-)
+// A locale with no FAQ entries falls back to English rather than to nothing.
+// The collection has `en` and `zh-CN` only, so once one page file served every
+// language `/ja/pricing` rendered the FAQ heading with all 21 questions gone.
+// Missing copy is worse than English copy: the reader cannot tell it existed.
+const forLocale = async (code: string) =>
+  await getCollection('faq', (entry) => entry.id.startsWith(`${category}/${code}/`))
+
+const localized = await forLocale(locale)
+const entries =
+  localized.length > 0 || locale === DEFAULT_LOCALE
+    ? localized
+    : await forLocale(DEFAULT_LOCALE)
 entries.sort((a, b) => a.data.order - b.data.order)
 
 const items = await Promise.all(

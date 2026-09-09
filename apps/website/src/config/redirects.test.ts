@@ -1,117 +1,70 @@
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readdirSync, statSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
 
-import { redirects as astroRedirects } from './redirects'
-import { getRoutes } from './routes'
+import { DEFAULT_LOCALE, LOCALE_CODES, localePrefix } from './locales'
+import { redirects } from './redirects'
 
-const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const pagesDir = join(dirname(dirname(fileURLToPath(import.meta.url))), 'pages')
 
-const VercelRedirectSchema = z.object({
-  source: z.string(),
-  destination: z.string(),
-  permanent: z.boolean().optional(),
-  statusCode: z.number().optional()
-})
+/** Every route the English page files serve, as a path with no trailing slash. */
+function englishRoutes(dir: string, acc = new Set<string>()): Set<string> {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) {
+      englishRoutes(full, acc)
+      continue
+    }
+    if (!entry.endsWith('.astro')) continue
 
-const VercelConfigSchema = z.object({
-  redirects: z.array(VercelRedirectSchema)
-})
+    const rel = relative(pagesDir, full).replace(/\\/g, '/')
+    if (
+      LOCALE_CODES.some((l) => l !== DEFAULT_LOCALE && rel.startsWith(`${l}/`))
+    )
+      continue
+    // Dynamic segments cannot be compared as literal paths.
+    if (rel.includes('[')) continue
 
-type VercelRedirect = z.infer<typeof VercelRedirectSchema>
-
-const { redirects } = VercelConfigSchema.parse(
-  JSON.parse(readFileSync(join(appDir, 'vercel.json'), 'utf8'))
-)
-
-function findRedirect(source: string): VercelRedirect | undefined {
-  return redirects.find((redirect) => redirect.source === source)
+    const route = `/${rel.replace(/\.astro$/, '').replace(/\/index$/, '')}`
+    acc.add(route === '/index' ? '/' : route)
+  }
+  return acc
 }
 
-const minimaxCanonical = `${getRoutes('en').minimax}/`
-const minimaxZhCanonical = `${getRoutes('zh-CN').minimax}/`
-
-describe('legacy MiniMax H3 redirects', () => {
-  it.for([
-    { source: '/minimax', destination: minimaxCanonical },
-    { source: '/minimax/', destination: minimaxCanonical },
-    { source: '/zh-CN/minimax', destination: minimaxZhCanonical },
-    { source: '/zh-CN/minimax/', destination: minimaxZhCanonical }
-  ])(
-    'sends $source to $destination with a temporary status',
-    ({ source, destination }) => {
-      const redirect = findRedirect(source)
-
-      if (!redirect) {
-        throw new Error(`${source} is missing from vercel.json`)
-      }
-
-      expect(redirect.destination).toBe(destination)
-      expect(redirect.permanent, `${source} must be a temporary redirect`).toBe(
-        false
-      )
-    }
-  )
-
-  it.for([
-    getRoutes('en').minimax,
-    minimaxCanonical,
-    getRoutes('zh-CN').minimax,
-    minimaxZhCanonical
-  ])('leaves the new canonical path %s unredirected', (canonicalPath) => {
-    expect(findRedirect(canonicalPath)).toBeUndefined()
-  })
-})
-
 /**
- * Astro renders a stub page for each entry in its redirect map, and that stub's
- * canonical is the destination string verbatim. Every real page self-canonicalizes
- * with a trailing slash via `absoluteUrl()`, so a slash-less destination points
- * the stub's canonical one hop short of the page it redirects to.
+ * A redirect and the i18n fallback cannot both own a path.
  *
- * #14390 fixed exactly this once already and it regressed, which is why it is a
- * test now rather than a convention.
+ * Astro gives the fallback route higher priority, drops the redirect, and says
+ * so only in a build WARNING while still exiting 0. Three redirects were lost
+ * that way when Chinese gained a fallback — `/zh-CN/affiliates`,
+ * `/zh-CN/affiliates/terms` and `/zh-CN/terms-of-service` — and the URLs went
+ * from a 301 to a silent 404.
+ *
+ * A localized redirect is safe only where the English route does not exist, so
+ * no fallback page is generated to collide with it.
  */
-describe('astro redirect destinations', () => {
-  const destinations = Object.values(astroRedirects).map((entry) =>
-    typeof entry === 'string' ? entry : entry.destination
-  )
+describe('redirects cannot collide with the i18n fallback', () => {
+  const english = englishRoutes(pagesDir)
 
-  it('every destination ends with a trailing slash', () => {
-    const slashless = destinations.filter(
-      (destination) => !destination.endsWith('/')
-    )
-    expect(
-      slashless,
-      'these canonicalize one hop short of their target'
-    ).toEqual([])
-  })
-})
-
-describe('legacy Enterprise redirects', () => {
-  it.for([
-    '/cloud/enterprise',
-    '/cloud/enterprise/',
-    '/zh-CN/cloud/enterprise',
-    '/zh-CN/cloud/enterprise/'
-  ])('sends %s to the canonical Enterprise route permanently', (source) => {
-    const redirect = findRedirect(source)
-
-    if (!redirect) {
-      throw new Error(`${source} is missing from vercel.json`)
-    }
-
-    expect(redirect.destination).toBe('/enterprise/')
-    expect(redirect.permanent).toBe(true)
+  it('reads the English routes it compares against', () => {
+    expect(english.size).toBeGreaterThan(40)
+    expect(english.has('/pricing')).toBe(true)
   })
 
-  it('leaves the canonical Enterprise routes unredirected', () => {
-    expect(findRedirect('/enterprise')).toBeUndefined()
-    expect(findRedirect('/enterprise/')).toBeUndefined()
-    expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
-    expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
+  it('declares no localized redirect whose English route exists', () => {
+    const offenders = Object.keys(redirects)
+      .map((from) => {
+        const locale = LOCALE_CODES.find(
+          (l) => l !== DEFAULT_LOCALE && from.startsWith(`${localePrefix(l)}/`)
+        )
+        if (!locale) return null
+        const route = from.slice(localePrefix(locale).length)
+        return english.has(route) ? `${from} collides with ${route}` : null
+      })
+      .filter(Boolean)
+
+    expect(offenders).toEqual([])
   })
 })

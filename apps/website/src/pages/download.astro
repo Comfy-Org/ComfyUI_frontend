@@ -15,30 +15,33 @@ import {
   comfyUiSourceCodeNode,
   pageContext,
 } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const { siteUrl, locale } = pageContext(
+const { siteUrl, locale, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
+
+
 ---
 
 <BaseLayout
-  title="Download Comfy Desktop - Run AI on Your Hardware"
-  description={t('download.meta.description', 'en')}
+  title={t('download.meta.title', locale)}
+  description={t('download.meta.description', locale)}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   breadcrumbs={[
-    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, localizeHref('/', canonicalLocale)) },
     { name: t('breadcrumb.download', locale) },
   ]}
   extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
-  keywords={['comfyui app', 'comfyui desktop app', 'comfyui desktop', 'comfy ui application', 'comfyui download', 'download comfyui', 'comfyui windows', 'comfyui mac', 'comfyui linux']}
+  keywords={t('download.meta.keywords', locale).split(', ')}
 >
-  <CloudBannerSection />
-  <HeroSection client:load />
-  <ReasonSection />
-  <EcoSystemSection client:visible />
-  <AIModelsSection />
-  <ProductCardsSection />
-  <FAQSection client:visible />
+  <CloudBannerSection locale={locale} />
+  <HeroSection locale={locale} client:load />
+  <ReasonSection locale={locale} />
+  <EcoSystemSection locale={locale} client:visible />
+  <AIModelsSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <FAQSection locale={locale} client:visible />
 </BaseLayout>

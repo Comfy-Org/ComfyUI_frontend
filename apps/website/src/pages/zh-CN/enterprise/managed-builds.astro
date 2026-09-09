@@ -111,7 +111,7 @@ const compareRows = [
 
 const { url } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const faqPage = buildFaqPageNode(url, faqs)

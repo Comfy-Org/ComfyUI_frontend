@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
+import { LOCALE_CODES, localePrefix } from '../config/locales'
 
 import { isWorkshopInBuild, isWorkshopRoute } from '../config/workshop-release'
 
@@ -39,13 +40,19 @@ export function workshopReleaseGate(): AstroIntegration {
         ).length
 
         const root = fileURLToPath(dir)
-        const workshopOutput = join(root, 'workshop')
-        await rm(workshopOutput, { recursive: true, force: true })
+        const workshopOutputs = LOCALE_CODES.map((locale) =>
+          join(root, localePrefix(locale), 'workshop')
+        )
+        await Promise.all(
+          workshopOutputs.map((output) =>
+            rm(output, { recursive: true, force: true })
+          )
+        )
 
         // The whole point of this integration is that nothing ships. If the
         // directory is somehow still there, fail the build rather than let a
         // release go out with it.
-        if (existsSync(workshopOutput)) {
+        if (workshopOutputs.some((output) => existsSync(output))) {
           throw new Error(
             'workshop-release-gate could not remove the Workshop output; refusing to ship it.'
           )

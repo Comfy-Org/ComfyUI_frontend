@@ -26,6 +26,11 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'workshop-release-test-'))
   await mkdir(join(root, 'workshop'), { recursive: true })
   await writeFile(join(root, 'workshop/index.html'), 'Workshop')
+  for (const locale of ['ja', 'zh-CN']) {
+    await mkdir(join(root, locale, 'workshop'), { recursive: true })
+    await writeFile(join(root, locale, 'workshop/index.html'), 'Workshop')
+    await writeFile(join(root, locale, 'index.html'), 'Localized home')
+  }
   await writeFile(join(root, 'index.html'), 'Home')
 })
 afterEach(async () => {
@@ -48,6 +53,12 @@ describe('Workshop release output', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await buildDone()
     expect(existsSync(join(root, 'workshop'))).toBe(false)
+    for (const locale of ['ja', 'zh-CN']) {
+      expect(existsSync(join(root, locale, 'workshop'))).toBe(false)
+      expect(await readFile(join(root, locale, 'index.html'), 'utf8')).toBe(
+        'Localized home'
+      )
+    }
     expect(await readFile(join(root, 'index.html'), 'utf8')).toBe('Home')
     await expect(buildDone()).resolves.toBeUndefined()
   })

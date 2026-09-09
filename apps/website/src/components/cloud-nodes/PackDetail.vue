@@ -1,25 +1,26 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
 import type { Pack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
 
 import {
   formatLocalizedMediumDate,
   formatLocalizedNumber
 } from '@comfyorg/shared-frontend-utils/formatUtil'
 
+import { localizeHref } from '../../config/routes'
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
 import PackBanner from './PackBanner.vue'
 
-const { pack, locale = 'en' } = defineProps<{
+const { pack, locale = DEFAULT_LOCALE } = defineProps<{
   pack: Pack
   locale?: Locale
 }>()
 
-const backHref =
-  locale === 'zh-CN' ? '/zh-CN/cloud/supported-nodes' : '/cloud/supported-nodes'
+// See StoryCard.vue: localizeHref knows which locales serve this route.
+const backHref = localizeHref('/cloud/supported-nodes', locale)
 
 const { groupedNodes } = useNodesByCategory(() => pack.nodes)
 </script>

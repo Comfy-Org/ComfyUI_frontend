@@ -1,8 +1,24 @@
 // Image URLs are placeholders at media.comfy.org/website/drops/<id>.png —
 // asset uploads and native zh-CN review are pending follow-ups (see
 // apps/website/.scratch/drops-page/PRD.md).
-import { externalLinks } from '../config/routes'
+import { LOCALE_CODES } from '../config/locales'
+import { externalLinks, localizeHref } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
+
+/**
+ * One path, resolved to every locale's URL through the route table.
+ *
+ * Each locale's URL used to be typed by hand beside the English one, and two of
+ * the seven were wrong: `/zh-CN/enterprise` and `/zh-CN/p/supported-models` have
+ * never existed, so the Chinese launches page shipped two dead links. Japanese
+ * had no URL at all. Deriving them means a link can only point where the locale
+ * actually serves, and a new language needs no edit here.
+ */
+function localizedHref(path: string): LocalizedText {
+  const href: LocalizedText = { en: localizeHref(path) }
+  for (const locale of LOCALE_CODES) href[locale] = localizeHref(path, locale)
+  return href
+}
 
 type DropMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
@@ -69,7 +85,14 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/cloud-nodes', 'zh-CN': '/zh-CN/cloud-nodes' }
+      href: {
+        en: '/cloud-nodes',
+        'zh-CN': '/zh-CN/cloud-nodes',
+        // Japanese publishes tier 1 only, and /cloud-nodes is not in it, so the
+        // link stays on the English page rather than pointing at a URL that is
+        // built but held back.
+        ja: '/cloud-nodes'
+      }
     }
   },
   {
@@ -87,7 +110,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/download', 'zh-CN': '/zh-CN/download' }
+      href: localizedHref('/download')
     }
   },
   {
@@ -105,7 +128,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
+      href: localizedHref('/mcp')
     }
   },
   {
@@ -124,9 +147,14 @@ export const drops: readonly Drop[] = [
     // TODO: no destination page yet — link out when App Mode lands.
     cta: {
       label: EXPLORE,
+      // Not `localizedHref`: the docs site carries its own locale segment, so
+      // each language points at a different external page rather than at a
+      // prefixed version of this site's. Japanese has no docs translation yet
+      // and falls back to English, matching how `t()` resolves.
       href: {
         en: 'https://docs.comfy.org/interface/app-mode',
-        'zh-CN': 'https://docs.comfy.org/zh/interface/app-mode'
+        'zh-CN': 'https://docs.comfy.org/zh/interface/app-mode',
+        ja: 'https://docs.comfy.org/interface/app-mode'
       }
     }
   },
@@ -145,7 +173,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/platform', 'zh-CN': '/zh-CN/platform' }
+      href: localizedHref('/platform')
     }
   },
   {
@@ -165,7 +193,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: externalLinks.workflows, 'zh-CN': externalLinks.workflows }
+      href: localizedHref(externalLinks.workflows)
     }
   },
   {
@@ -183,7 +211,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/p/supported-models', 'zh-CN': '/zh-CN/p/supported-models' }
+      href: localizedHref('/p/supported-models')
     }
   },
   {
@@ -201,10 +229,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: {
-        en: '/cloud/supported-nodes',
-        'zh-CN': '/zh-CN/cloud/supported-nodes'
-      }
+      href: localizedHref('/cloud/supported-nodes')
     }
   },
   {
@@ -221,7 +246,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/enterprise', 'zh-CN': '/zh-CN/enterprise' }
+      href: localizedHref('/enterprise')
     }
   },
   {
@@ -238,7 +263,7 @@ export const drops: readonly Drop[] = [
     },
     cta: {
       label: { en: 'START LEARNING', 'zh-CN': '开始学习' },
-      href: { en: '/learning', 'zh-CN': '/zh-CN/learning' }
+      href: localizedHref('/learning')
     }
   },
   {
@@ -260,7 +285,7 @@ export const drops: readonly Drop[] = [
     // /affiliates is locale-invariant: same URL in both locales.
     cta: {
       label: { en: 'LEARN MORE', 'zh-CN': '了解更多' },
-      href: { en: '/affiliates', 'zh-CN': '/affiliates' }
+      href: localizedHref('/affiliates')
     }
   }
 ]
