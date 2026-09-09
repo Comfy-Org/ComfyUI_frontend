@@ -47,13 +47,21 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 }>()
 
 const HOME = '/'
-/** The cloud app's router gives auth this long to answer before its timeout view. */
-const AUTH_FLAG_TIMEOUT_MS = 16_000
+/** The cloud app's router gives auth this long to initialize before its timeout view. */
+const AUTH_INIT_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
 const flagSettled = useWorkshopAuthFlagSettled()
-const flagTimedOut = ref(false)
-const { user, session, ensureFresh } = useWorkshopSession()
+const authTimedOut = ref(false)
+const {
+  user,
+  session,
+  settled: identitySettled,
+  ensureFresh
+} = useWorkshopSession()
+// A returning signed-in visitor leaves without ever seeing the form, as on
+// cloud where the router holds the route until auth has initialized.
+const leaving = ref(false)
 const state = ref<AuthSignInState>({ step: 'idle' })
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
@@ -92,6 +100,7 @@ async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
     dispatch({ type: 'mintSucceeded' })
     leaveSignInPage()
   } else {
+    leaving.value = false
     dispatch({ type: 'mintFailed' })
   }
 }
@@ -155,6 +164,7 @@ const stopUserWatch = watch(
       email: restored.email ?? restored.displayName ?? ''
     })
     if (before !== state.value.step && state.value.step === 'minting') {
+      leaving.value = true
       // No argument: `restored` is a readonly proxy, and the client already
       // holds the raw current user.
       void runMint()
@@ -171,8 +181,8 @@ const stopSessionWatch = watch(session, (active) => {
 })
 onBeforeUnmount(stopSessionWatch)
 
-let flagTimer: ReturnType<typeof setTimeout> | undefined
-onBeforeUnmount(() => clearTimeout(flagTimer))
+let initTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(initTimer))
 
 onMounted(() => {
   inAppBrowser.value = isEmbeddedWebView()
@@ -180,17 +190,16 @@ onMounted(() => {
   // moment the flag lets the page show.
   if (mode === 'signUp')
     void until(enabled).toBe(true).then(captureSignupOpened)
-  if (!flagSettled.value) {
-    flagTimer = setTimeout(() => {
-      flagTimedOut.value = !flagSettled.value
-    }, AUTH_FLAG_TIMEOUT_MS)
-  }
+  initTimer = setTimeout(() => {
+    authTimedOut.value =
+      !flagSettled.value || (enabled.value && !identitySettled.value)
+  }, AUTH_INIT_TIMEOUT_MS)
 })
 </script>
 
 <template>
   <section
-    v-if="enabled"
+    v-if="enabled && identitySettled && !leaving"
     class="mx-auto w-full max-w-md rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
     :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >
@@ -272,5 +281,17 @@ onMounted(() => {
       </template>
     </p>
   </section>
-  <AuthFlagTimeout v-else-if="flagTimedOut" :locale="locale" />
+  <AuthFlagTimeout v-else-if="authTimedOut" :locale="locale" />
+  <div
+    v-else-if="enabled"
+    data-testid="auth-initializing"
+    aria-busy="true"
+    class="mx-auto flex w-full max-w-md flex-col gap-6 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
+  >
+    <div
+      v-for="n in 3"
+      :key="n"
+      class="h-10 w-full animate-pulse rounded-md bg-primary-comfy-canvas/10"
+    />
+  </div>
 </template>

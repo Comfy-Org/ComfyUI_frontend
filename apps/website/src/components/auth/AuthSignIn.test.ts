@@ -14,6 +14,7 @@ const handles = vi.hoisted(() => ({
   settled: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
   session: undefined as { value: unknown } | undefined,
+  identitySettled: undefined as { value: boolean } | undefined,
   chunkFails: false,
   ensureFresh: vi.fn(),
   google: vi.fn(),
@@ -61,12 +62,15 @@ vi.mock('../../config/workshop-session-state', async () => {
   const { ref } = await import('vue')
   const user = ref(null)
   const session = ref(undefined)
+  const settled = ref(true)
   handles.user = user
   handles.session = session
+  handles.identitySettled = settled
   return {
     useWorkshopSession: () => ({
       user,
       session,
+      settled,
       ensureFresh: handles.ensureFresh
     })
   }
@@ -80,6 +84,7 @@ beforeEach(() => {
   handles.settled!.value = true
   handles.user!.value = null
   handles.session!.value = undefined
+  handles.identitySettled!.value = true
   handles.chunkFails = false
   handles.ensureFresh.mockReset().mockResolvedValue({
     status: 'ok',
@@ -155,7 +160,7 @@ describe('AuthSignIn', () => {
     )
   })
 
-  it('sends an already-signed-in visitor away without showing a panel, and without the readonly proxy', async () => {
+  it('sends an already-signed-in visitor away without showing a panel', async () => {
     render(AuthSignIn)
 
     handles.user!.value = {
@@ -166,13 +171,67 @@ describe('AuthSignIn', () => {
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
     expect(
-      handles.ensureFresh,
-      'the session client already holds the raw current user; a readonly proxy would drop Firebase token writes'
-    ).toHaveBeenCalledWith()
-    expect(
       screen.queryByText(/a@b\.co/),
       'the cloud app never shows a signed-in state on its login page'
     ).toBeNull()
+  })
+
+  it('holds the form until Firebase has settled, then shows it to a signed-out visitor', async () => {
+    handles.identitySettled!.value = false
+    render(AuthSignIn)
+
+    expect(screen.getByTestId('auth-initializing')).toBeTruthy()
+    expect(
+      screen.queryByRole('button'),
+      'painting the form before auth settles flashes it at a returning signed-in visitor'
+    ).toBeNull()
+
+    handles.identitySettled!.value = true
+
+    expect(
+      await screen.findByRole('button', { name: /continue with google/i })
+    ).toBeTruthy()
+    expect(screen.queryByTestId('auth-initializing')).toBeNull()
+  })
+
+  it('never paints the form for a returning signed-in visitor on the way out', async () => {
+    handles.identitySettled!.value = false
+    render(AuthSignIn)
+
+    handles.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: null }
+    handles.identitySettled!.value = true
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('shows the form with the session-failure banner when a returning visitor cannot mint', async () => {
+    handles.identitySettled!.value = false
+    handles.ensureFresh.mockResolvedValueOnce({
+      status: 'error',
+      reason: 'network'
+    })
+    render(AuthSignIn)
+
+    handles.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: null }
+    handles.identitySettled!.value = true
+
+    expect(
+      await screen.findByRole('button', { name: 'Retry session' })
+    ).toBeTruthy()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it("shows the cloud app's timeout copy when Firebase never settles", async () => {
+    handles.identitySettled!.value = false
+    render(AuthSignIn)
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Connection Taking Too Long'
+    )
+    expect(screen.queryByTestId('auth-initializing')).toBeNull()
   })
 
   it('keeps a signed-in visitor on the page when they asked to switch accounts', async () => {

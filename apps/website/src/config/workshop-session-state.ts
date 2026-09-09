@@ -24,6 +24,8 @@ export type {
 
 const user = ref<User | null>(null)
 const session = ref<AccountCredential | undefined>(undefined)
+/** True once Firebase has reported the restored user (or none) at least once. */
+const settled = ref(false)
 let started = false
 let generation = 0
 let detachIdentity: (() => void) | undefined
@@ -49,7 +51,11 @@ async function begin(expectedGeneration: number): Promise<void> {
       snapshot.phase === 'authenticated' ? snapshot.session : undefined
   })
   detachIdentity = workshopSessionClient.attachIdentity({
-    onUserChanged: firebase.onWorkshopUserChanged
+    onUserChanged: (callback) =>
+      firebase.onWorkshopUserChanged((current) => {
+        settled.value = true
+        callback(current)
+      })
   })
 
   const onFocus = () => void workshopSessionClient.ensureFresh()
@@ -70,6 +76,7 @@ function start(): void {
       (on, wasOn) => {
         const expectedGeneration = ++generation
         stopListeners()
+        settled.value = false
         if (!on) {
           user.value = null
           session.value = undefined
@@ -99,6 +106,7 @@ export function useWorkshopSession() {
   return {
     user: readonly(user),
     session: readonly(session),
+    settled: readonly(settled),
     signedIn: computed(() => session.value !== undefined),
     ensureFresh: workshopSessionClient.ensureFresh,
     remint: workshopSessionClient.remint,
