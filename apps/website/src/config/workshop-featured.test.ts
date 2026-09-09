@@ -24,7 +24,7 @@ function catalogIds(): Set<string> {
 function model(id: string): WorkshopBrowseModel {
   return {
     id,
-    href: `/workshop/models/${id.replace('/', '--')}/`,
+    href: `/workshop/workshop/models/${id.replace('/', '--')}/`,
     name: id,
     provider: id.split('/')[0],
     output: 'image',

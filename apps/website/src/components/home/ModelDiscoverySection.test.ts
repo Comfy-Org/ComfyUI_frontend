@@ -19,11 +19,11 @@ describe('ModelDiscoverySection', () => {
     render(ModelDiscoverySection)
 
     const bytedance = screen.getByRole('link', { name: /ByteDance/ })
-    expect(bytedance.getAttribute('href')).toBe('/models?provider=ByteDance')
+    expect(bytedance.getAttribute('href')).toBe('/workshop?provider=ByteDance')
     expect(screen.getByRole('link', { name: /Black Forest Labs/ })).toBeTruthy()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })
-    expect(browse.getAttribute('href')).toBe('/models')
+    expect(browse.getAttribute('href')).toBe('/workshop')
   })
 
   it('hides the looping copy of the row from assistive tech', () => {
@@ -53,6 +53,6 @@ describe('ModelDiscoverySection', () => {
     render(ModelDiscoverySection, { props: { locale: 'zh-CN' } })
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
-    expect(browse.getAttribute('href')).toBe('/models')
+    expect(browse.getAttribute('href')).toBe('/workshop')
   })
 })

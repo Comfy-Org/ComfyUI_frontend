@@ -32,7 +32,7 @@ const model = (name: string): WorkshopModel => ({
   slug: 'demo',
   name,
   workflowCount: 1,
-  href: '/models/demo/',
+  href: '/workshop/models/demo/',
   routerId: `acme/${name}`,
   capabilities: [],
   runs: 10,

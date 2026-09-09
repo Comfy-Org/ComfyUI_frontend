@@ -50,7 +50,7 @@ describe('isWorkshopInBuild', () => {
 describe('isWorkshopRoute', () => {
   it('claims the Workshop tree and nothing else', () => {
     expect(isWorkshopRoute('/workshop')).toBe(true)
-    expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
+    expect(isWorkshopRoute('/workshop/workshop/models/[slug]')).toBe(true)
 
     expect(isWorkshopRoute('/')).toBe(false)
     expect(isWorkshopRoute('/pricing')).toBe(false)

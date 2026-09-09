@@ -1,7 +1,6 @@
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
 
-export const WORKSHOP_OUTPUTS = ['image', 'video', 'audio', '3d'] as const
-export const WORKSHOP_PAGE_SIZE = 48
+const WORKSHOP_OUTPUTS = ['image', 'video', 'audio', '3d'] as const
 
 type WorkshopOutput = (typeof WORKSHOP_OUTPUTS)[number]
 export type WorkshopOutputFilter = WorkshopOutput | 'all'

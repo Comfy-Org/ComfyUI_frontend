@@ -46,7 +46,7 @@ export interface HubWorkflowPage {
   readonly related: readonly HubTemplate[]
 }
 
-export const hubWorkflowPath = (name: string) => `/models/workflows/${name}/`
+export const hubWorkflowPath = (name: string) => `/workshop/workflows/${name}/`
 
 const templates = hubTemplates as HubTemplate[]
 const details = hubTemplateDetails as Record<string, HubTemplateDetails>

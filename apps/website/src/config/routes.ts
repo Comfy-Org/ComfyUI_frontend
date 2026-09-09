@@ -24,7 +24,7 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  modelsShowcase: '/models/showcase',
+  modelsShowcase: '/models',
   mcp: '/mcp',
   agent: '/agent',
   platform: '/platform',
@@ -45,10 +45,11 @@ const baseRoutes = {
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
   brand: '/brand',
-  // The catalogue answers to /models now. The keys keep their old names while
-  // the pull requests stacked on this branch are still open against them.
-  workshop: '/models',
-  workshopSignIn: '/models/sign-in'
+  // The section is called Models, but the address stays /workshop until launch:
+  // the branch, the stacked pull requests and the release gate all coordinate
+  // on that name, and renaming the URL first only splits them.
+  workshop: '/workshop',
+  workshopSignIn: '/workshop/sign-in'
 } as const
 
 type RouteKey = keyof typeof baseRoutes

@@ -7,9 +7,11 @@ import { safeReturnPath, useSignInHref } from './useSignInHref'
 
 describe('safeReturnPath', () => {
   it('keeps same-origin paths only', () => {
-    expect(safeReturnPath('/models/kling-ai/', '/')).toBe('/models/kling-ai/')
-    expect(safeReturnPath('/models/?q=1', '/')).toBe('/models/?q=1')
-    expect(safeReturnPath(null, '/models')).toBe('/models')
+    expect(safeReturnPath('/workshop/models/kling-ai/', '/')).toBe(
+      '/workshop/models/kling-ai/'
+    )
+    expect(safeReturnPath('/workshop/?q=1', '/')).toBe('/workshop/?q=1')
+    expect(safeReturnPath(null, '/workshop')).toBe('/workshop')
     expect(safeReturnPath('https://evil.example', '/')).toBe('/')
     expect(safeReturnPath('//evil.example', '/')).toBe('/')
     expect(safeReturnPath('/\\evil.example', '/')).toBe('/')
@@ -22,7 +24,7 @@ describe('safeReturnPath', () => {
 
 describe('useSignInHref', () => {
   it('points the sign-in page back at the current location once mounted', async () => {
-    history.replaceState(null, '', '/models/demo/?tab=api')
+    history.replaceState(null, '', '/workshop/models/demo/?tab=api')
     let href!: ReturnType<typeof useSignInHref>
     render(
       defineComponent({
@@ -34,7 +36,7 @@ describe('useSignInHref', () => {
     )
     await nextTick()
     expect(href.value).toBe(
-      '/models/sign-in?return=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
+      '/workshop/sign-in?return=%2Fworkshop%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
     )
   })
 })

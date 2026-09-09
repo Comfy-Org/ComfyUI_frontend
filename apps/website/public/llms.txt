@@ -94,7 +94,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 ## Models
 
 - [Supported Models](https://comfy.org/p/supported-models/): Directory of 380+ models that run in ComfyUI: image, video, audio, 3D, and utility models, each with its own page. Machine-readable catalog at https://comfy.org/p/supported-models/llms.txt.
-- [Models Overview](https://comfy.org/models/showcase/): Flagship models available on Comfy, with links to each launch page.
+- [Models Overview](https://comfy.org/models/): Flagship models available on Comfy, with links to each launch page.
 - [Flux 3 (Black Forest Labs, video model)](https://comfy.org/flux-3/): Multimodal model: video with native audio, up to 20 seconds per generation, from text, image, video, or keyframes.
 - [Gemini Omni 1.1 Flash (Google, video model)](https://comfy.org/gemini-omni/): One node covers text to video, image to video, reference to video, editing, and scene extension, with output up to 4K and audio on every clip.
 - [LTX 2.5 (Lightricks, video model)](https://comfy.org/ltx-2.5/): Open weights: free to run on your own GPU, or on Comfy Cloud alongside every other model.

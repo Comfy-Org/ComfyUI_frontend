@@ -4,11 +4,13 @@ import { stripeCheckoutHref } from './buy-credits'
 
 describe('stripeCheckoutHref', () => {
   it('sends the page as the return address', () => {
-    const url = new URL(stripeCheckoutHref('/workshop/models/vidu-q2/', 25))
+    const url = new URL(
+      stripeCheckoutHref('/workshop/workshop/models/vidu-q2/', 25)
+    )
 
     expect(url.origin).toBe('https://checkout.stripe.com')
     expect(url.searchParams.get('success_url')).toBe(
-      '/workshop/models/vidu-q2/'
+      '/workshop/workshop/models/vidu-q2/'
     )
     expect(url.searchParams.get('amount')).toBe('25')
   })

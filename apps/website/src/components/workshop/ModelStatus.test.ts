@@ -30,11 +30,11 @@ describe('ModelStatus', () => {
     render(ModelStatus, {
       props: {
         variant: 'banner',
-        successor: { name: 'Kling 2.6', href: '/models/kling-2-6/' }
+        successor: { name: 'Kling 2.6', href: '/workshop/models/kling-2-6/' }
       }
     })
     const link = screen.getByRole('link')
-    expect(link.getAttribute('href')).toBe('/models/kling-2-6/')
+    expect(link.getAttribute('href')).toBe('/workshop/models/kling-2-6/')
     expect(link.textContent).toContain('Kling 2.6')
   })
 

@@ -13,7 +13,7 @@ describe('SiteFooter', () => {
     const hrefs = screen
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'))
-    expect(hrefs).not.toContain('/models')
+    expect(hrefs).not.toContain('/workshop')
   })
 
   it.for([

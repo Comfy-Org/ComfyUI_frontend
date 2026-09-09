@@ -28,7 +28,7 @@ function model(
     slug,
     name: slug,
     workflowCount: 1,
-    href: `/models/${slug}/`,
+    href: `/workshop/models/${slug}/`,
     routerId: `acme/${slug}`,
     capabilities: [],
     runs: 10,

@@ -35,13 +35,5 @@ export const redirects = {
   '/zh-CN/affiliates': '/affiliates/',
   '/zh-CN/affiliates/terms': '/affiliates/terms/',
   '/minimax': { status: 307, destination: '/minimax-h3/' },
-  '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' },
-  // The models catalogue was prototyped under /workshop, and the links to it
-  // are already out in Slack, tickets and review threads. /workshop and
-  // /workshop/models/[slug] are pages of their own again, so only the paths
-  // this prototype added are redirected.
-  '/workshop/sign-in': '/models/sign-in/',
-  // A dynamic destination names the route, so this one carries no trailing
-  // slash: Astro matches it against the page file, not against a URL.
-  '/workshop/workflows/[name]': '/models/workflows/[name]'
+  '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
 } satisfies Record<string, RedirectConfig>

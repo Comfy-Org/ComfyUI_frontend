@@ -9,7 +9,7 @@ const base: WorkshopModel = {
   slug: 'flux',
   name: 'Flux',
   workflowCount: 2,
-  href: '/models/flux/',
+  href: '/workshop/models/flux/',
   routerId: 'bfl/flux',
   capabilities: [],
   runs: 12_000,
@@ -22,7 +22,7 @@ describe('WorkshopModelCard', () => {
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
-    expect(link.getAttribute('href')).toBe('/models/flux/')
+    expect(link.getAttribute('href')).toBe('/workshop/models/flux/')
     expect(screen.getByText('Flux')).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Black Forest Labs' })).toBeTruthy()
     expect(screen.getByTestId('model-card-name').textContent).toBe('Flux')

@@ -23,7 +23,7 @@ const model: WorkshopModelDetail = {
   slug: 'demo',
   name: 'Demo',
   workflowCount: 1,
-  href: '/models/demo/',
+  href: '/workshop/models/demo/',
   routerId: 'demo/demo',
   capabilities: [],
   runs: 12_000,
@@ -107,7 +107,7 @@ describe('ModelDetail', () => {
     await nextTick()
     const button = screen.getByTestId('run-button')
     expect(button.getAttribute('data-gate')).toBe('signedOut')
-    expect(button.getAttribute('href')).toMatch(/^\/models\/sign-in\?return=/)
+    expect(button.getAttribute('href')).toMatch(/^\/workshop\/sign-in\?return=/)
   })
 
   it('shows the estimated credits as a chip on the run button', async () => {

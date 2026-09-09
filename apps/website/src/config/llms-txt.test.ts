@@ -41,9 +41,9 @@ const EXCLUDED_PAGES = new Set([
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
-  '/models', // noindex models prototype, mock data
-  '/models/workflows', // noindex models prototype, mock data
-  '/models/sign-in', // noindex models prototype, mock data
+  '/workshop', // noindex models prototype, mock data
+  '/workshop/models/workflows', // noindex models prototype, mock data
+  '/workshop/sign-in', // noindex models prototype, mock data
   '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
 

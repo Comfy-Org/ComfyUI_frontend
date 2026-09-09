@@ -1,22 +1,22 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
-import ModelsCatalogue from '../../components/workshop/ModelsCatalogue.vue'
-import { workshopModels } from '../../config/models-catalogue'
-import { t } from '../../i18n/translations'
-
-// Which layout the listing shows is stored in the browser, so the server cannot
-// render it. The model and workflow pages stay prerendered; this one goes back
-// to client:load when the prototype's version switch goes away.
+import ModelsHeroSection from '../../components/models/ModelsHeroSection.vue'
+import ModelCreationsSection from '../../components/models/ModelCreationsSection.vue'
+import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
+import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue' 
 ---
 
 <BaseLayout
-  title={t('workshop.meta.title')}
-  description={t('workshop.meta.description')}
-  noindex
+  title="Models - Comfy"
+  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
 >
-  <div class="mx-auto max-w-10xl px-6 py-16 max-sm:py-10 lg:px-8 lg:py-24">
-    <ModelsCatalogue models={workshopModels} client:only="vue" />
-  </div>
-  <PrototypeTweaks client:load />
+  <ModelsHeroSection
+    modelName="Grok Imagine"
+    ctaHref="/p/supported-models/grok-imagine"
+    videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
+    videoAriaLabel="Grok Imagine output created with ComfyUI"
+  />
+  <ModelCreationsSection client:load />
+  <AIModelsSection client:load />
+  <ProductShowcaseSection client:load />
 </BaseLayout>

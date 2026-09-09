@@ -20,7 +20,7 @@ export function getStaticPaths() {
 
 const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
-if (!page) return Astro.redirect('/models/')
+if (!page) return Astro.redirect('/workshop/')
 
 const { template, mediaType, details, model, stats, inputs, outputs, related } =
   page

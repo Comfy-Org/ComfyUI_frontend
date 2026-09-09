@@ -9,11 +9,11 @@ describe('localizeHref', () => {
 
   it('leaves the default locale unprefixed', () => {
     expect(localizeHref('/mcp', 'en')).toBe('/mcp')
-    expect(localizeHref('/models/seedance-2/', 'zh-CN')).toBe(
-      '/models/seedance-2/'
+    expect(localizeHref('/workshop/models/seedance-2/', 'zh-CN')).toBe(
+      '/workshop/models/seedance-2/'
     )
-    expect(localizeHref('/models/sign-in?return=%2Fmodels', 'ja')).toBe(
-      '/models/sign-in?return=%2Fmodels'
+    expect(localizeHref('/workshop/sign-in?return=%2Fmodels', 'ja')).toBe(
+      '/workshop/sign-in?return=%2Fmodels'
     )
   })
 
@@ -40,8 +40,8 @@ describe('localizeHref', () => {
 describe('getRoutes workshop', () => {
   it('keeps the workshop routes locale-invariant', () => {
     for (const locale of ['en', 'zh-CN', 'ja'] as const) {
-      expect(getRoutes(locale).workshop).toBe('/models')
-      expect(getRoutes(locale).workshopSignIn).toBe('/models/sign-in')
+      expect(getRoutes(locale).workshop).toBe('/workshop')
+      expect(getRoutes(locale).workshopSignIn).toBe('/workshop/sign-in')
     }
   })
 

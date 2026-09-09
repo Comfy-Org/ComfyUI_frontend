@@ -25,7 +25,7 @@ async function versionFor(search: string, remembered?: string) {
   return version?.value
 }
 
-beforeEach(() => history.replaceState({}, '', '/models'))
+beforeEach(() => history.replaceState({}, '', '/workshop'))
 
 it('takes the version a link asks for, by either name', async () => {
   expect(await versionFor('?v=v2')).toBe('v2')

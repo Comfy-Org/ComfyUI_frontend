@@ -10,7 +10,7 @@ const base: WorkshopModel = {
   slug: 'flux',
   name: 'Flux',
   workflowCount: 2,
-  href: '/models/flux/',
+  href: '/workshop/models/flux/',
   routerId: 'bfl/flux',
   capabilities: ['Inpainting'],
   runs: 12_000,
@@ -24,7 +24,7 @@ const kling: WorkshopModel = {
   ...base,
   slug: 'kling',
   name: 'Kling',
-  href: '/models/kling/',
+  href: '/workshop/models/kling/',
   modality: 'video',
   task: 'image-to-video',
   summary: 'Turns a still frame into a short video.'
@@ -36,7 +36,7 @@ describe('FeaturedBanner', () => {
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to Image')).toBeTruthy()
     expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
-      '/models/flux/'
+      '/workshop/models/flux/'
     )
   })
 
@@ -49,7 +49,7 @@ describe('FeaturedBanner', () => {
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
     expect(screen.getByText(kling.summary ?? '')).toBeTruthy()
     expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
-      '/models/kling/'
+      '/workshop/models/kling/'
     )
   })
 

@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-const MODEL_PATH = '/models/openai-dall-e/'
+const MODEL_PATH = '/workshop/models/openai-dall-e/'
 
 async function useAccount(page: Page, kind: 'new' | 'existing') {
   await page.getByTestId('prototype-tweaks').click()
@@ -21,7 +21,7 @@ test.describe('Workshop V2', () => {
   test('mirrors comfy.org/workflows and links partner models to their page', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/workshop/')
     const hub = page.getByTestId('workshop-hub')
     await expect(hub.getByTestId('hub-heading')).toContainText('Browse models')
     await expect(hub.getByTestId('hub-use-case-generate-images')).toBeVisible()
@@ -45,7 +45,7 @@ test.describe('Workshop V2', () => {
   test('workflow cards open a detail page with the model playground', async ({
     page
   }) => {
-    await page.goto('/models/?q=minimax%20h3')
+    await page.goto('/workshop/?q=minimax%20h3')
     const hub = page.getByTestId('workshop-hub')
     await hub.getByTestId('hub-card-link').first().click()
     await page.waitForURL(/\/models\/workflows\/video_minimax_h3_i2v\/?$/)
@@ -69,7 +69,7 @@ test.describe('Workshop catalog', () => {
   test('lists partner models by what they do and filters by search', async ({
     page
   }) => {
-    await page.goto('/models/?version=v1.2')
+    await page.goto('/workshop/?version=v1.2')
     const grid = page.getByTestId('workshop-models-grid')
     const cards = grid.getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
@@ -94,7 +94,7 @@ test.describe('Workshop catalog', () => {
   test('the rows listing browses category rows and drills into one', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/workshop/')
     const sections = page.getByTestId('workshop-sections')
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
@@ -125,7 +125,7 @@ test.describe('Workshop catalog', () => {
   })
 
   test('model cards open the model detail page', async ({ page }) => {
-    await page.goto('/models/')
+    await page.goto('/workshop/')
     await page.getByTestId('workshop-search').fill('kling ai')
     await page.getByRole('heading', { level: 1 }).click()
     await page.getByTestId('workshop-model-card').first().click()
@@ -139,7 +139,7 @@ test.describe('Workshop catalog', () => {
   test('the filter menu drills into a facet and narrows the grid', async ({
     page
   }) => {
-    await page.goto('/models/')
+    await page.goto('/workshop/')
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
@@ -156,11 +156,11 @@ test.describe('Workshop catalog', () => {
   })
 
   test('model tags deep-link into a filtered catalog', async ({ page }) => {
-    await page.goto('/models/topaz-labs/')
+    await page.goto('/workshop/models/topaz-labs/')
     const tag = page
       .getByTestId('model-tags')
       .getByRole('link', { name: 'Upscale' })
-    await expect(tag).toHaveAttribute('href', '/models?capability=Upscale')
+    await expect(tag).toHaveAttribute('href', '/workshop?capability=Upscale')
     await tag.click()
     await expect(page).toHaveURL(/\/models\/?\?capability=Upscale$/)
     await expect(page.getByTestId('workshop-filter-count')).toHaveText('1')
@@ -172,7 +172,7 @@ test.describe('Workshop catalog', () => {
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
-    await page.goto('/models/kling-ai/')
+    await page.goto('/workshop/models/kling-ai/')
     await page
       .getByTestId('model-hero')
       .getByRole('link', { name: 'Video', exact: true })

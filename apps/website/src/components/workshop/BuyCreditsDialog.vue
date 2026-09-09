@@ -30,7 +30,7 @@ const credits = computed(() => usdToCredits(usd.value))
 type Step = 'leaving' | 'checkout' | 'back'
 const step = ref<Step>('leaving')
 
-const returnPath = ref('/models/')
+const returnPath = ref('/workshop/')
 const href = computed(() => stripeCheckoutHref(returnPath.value, usd.value))
 
 watch(open, (value) => {

@@ -13,7 +13,9 @@ describe('indexing policy', () => {
   it('excludes only the disabled Workshop route tree', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     expect(
-      isExcludedFromSitemap('https://comfy.org/workshop/models/example/')
+      isExcludedFromSitemap(
+        'https://comfy.org/workshop/workshop/models/example/'
+      )
     ).toBe(true)
     expect(isExcludedFromSitemap('https://comfy.org/workshops/')).toBe(false)
   })
