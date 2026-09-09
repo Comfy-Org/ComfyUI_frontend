@@ -31,7 +31,7 @@ const routerMocks = vi.hoisted(() => ({
 const routeHashRef = ref('')
 const currentGraphRef = shallowRef<LGraph | null>(null)
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   NavigationFailureType: { cancelled: 8, duplicated: 16 },
   isNavigationFailure: vi.fn(() => false),
   useRouter: () => ({
@@ -40,11 +40,11 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-vi.mock('@vueuse/router', () => ({
+vi.mock(import('@vueuse/router'), () => ({
   useRouteHash: () => routeHashRef
 }))
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: null,
     graph: null,
@@ -74,22 +74,26 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas,
-    get currentGraph() {
-      return currentGraphRef.value
-    }
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
+
+  () => ({
+    useCanvasStore: () => ({
+      getCanvas: () => app.canvas,
+      get currentGraph() {
+        return currentGraphRef.value
+      }
+    })
   })
-}))
+)
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ fitView: vi.fn() })
 }))
 
@@ -97,12 +101,18 @@ const workflowServiceMocks = vi.hoisted(() => ({
   openWorkflow: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => workflowServiceMocks
-}))
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStoreState
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => workflowServiceMocks
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => workflowStoreState
+  })
+)
 
 function makeSubgraph(id: string): Subgraph {
   return fromPartial<Subgraph>({
@@ -346,7 +356,9 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
         expect.stringContaining('workflow load failed')
       )
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'workflow_navigation_failure'
+        errorType: 'workflow_navigation_failure',
+        level: 'warning',
+        context: { stage: 'recovery' }
       })
     })
     warnSpy.mockRestore()

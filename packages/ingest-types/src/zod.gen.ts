@@ -527,6 +527,28 @@ export const zSubscribeRequest = z.object({
 })
 
 /**
+ * The last-changed timestamp every stored setting carries.
+ */
+export const zGlobalSettingUpdatedAt = z.object({
+  updated_at: z.string().datetime()
+})
+
+/**
+ * Consent to the in-app Agent panel. `true` is the only value that can be written — consent is revoked by DELETE, not by writing `false`, so the audit trail records a revocation rather than a value flip.
+ */
+export const zAgentConsentSettingValue = z.object({
+  key: z.enum(['Comfy.AgentPanel.ConsentAccepted']),
+  value: z.literal(true)
+})
+
+/**
+ * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ */
+export const zStoredAgentConsentSetting = zAgentConsentSettingValue.and(
+  zGlobalSettingUpdatedAt
+)
+
+/**
  * User secret metadata (the secret value itself is never returned after creation).
  */
 export const zSecretResponse = z.object({
@@ -1823,6 +1845,29 @@ export const zGlobalSubgraphData = z.object({
 })
 
 /**
+ * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
+ */
+export const zGlobalSettingValue = z
+  .object({
+    key: z.literal('Comfy.AgentPanel.ConsentAccepted')
+  })
+  .and(zAgentConsentSettingValue)
+
+/**
+ * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
+ */
+export const zGlobalSettingKey = z.enum(['Comfy.AgentPanel.ConsentAccepted'])
+
+/**
+ * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
+ */
+export const zGlobalSetting = z
+  .object({
+    key: z.literal('Comfy.AgentPanel.ConsentAccepted')
+  })
+  .and(zStoredAgentConsentSetting)
+
+/**
  * Individual file entry within a full user data response.
  */
 export const zGetUserDataResponseFullFile = z.object({
@@ -2209,6 +2254,13 @@ export const zBillingOpStatusResponse = z.object({
   error_message: z.string().optional(),
   id: z.string(),
   payment_intent_client_secret: z.string().optional(),
+  phase: z
+    .enum([
+      'awaiting_payment_method',
+      'awaiting_invoice_payment',
+      'in_progress'
+    ])
+    .optional(),
   recovery_action: z
     .enum([
       'retry',
@@ -2709,6 +2761,23 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+export const zAgentLlmAdmitBody = z.object({
+  message_id: z.string().optional(),
+  step: z.number().int().gte(0),
+  turn_id: z.string()
+})
+
+/**
+ * The admission verdict for the round.
+ */
+export const zAgentLlmAdmitResponse = z.object({
+  after_seconds: z.number().int().optional(),
+  kind: z.enum(['proceed', 'wait', 'pause', 'fail']),
+  message: z.string().optional(),
+  position: z.number().int().optional(),
+  reason: z.string().optional()
+})
 
 /**
  * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
@@ -3300,6 +3369,31 @@ export const zFreeMemoryBody = z.object({
   free_memory: z.boolean().optional(),
   unload_models: z.boolean().optional()
 })
+
+export const zSetGlobalSettingBody = zGlobalSettingValue
+
+/**
+ * Setting stored
+ */
+export const zSetGlobalSettingResponse = zGlobalSetting
+
+export const zDeleteGlobalSettingPath = z.object({
+  key: zGlobalSettingKey
+})
+
+/**
+ * Setting unset
+ */
+export const zDeleteGlobalSettingResponse = z.void()
+
+export const zGetGlobalSettingPath = z.object({
+  key: zGlobalSettingKey
+})
+
+/**
+ * Success
+ */
+export const zGetGlobalSettingResponse = zGlobalSetting
 
 /**
  * Success - Map of subgraph IDs to their metadata

@@ -17,6 +17,8 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import * as Sentry from '@sentry/vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import {
@@ -129,6 +131,58 @@ interface QueuePromptRequestBody {
   }
   front?: boolean
   number?: number
+}
+
+const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+
+interface FetchApiOptions extends RequestInit {
+  timeoutMs?: number | null
+}
+
+const FETCH_ROUTE_GROUPS = new Set([
+  'assets',
+  'embeddings',
+  'experiment',
+  'extensions',
+  'features',
+  'files',
+  'folder_paths',
+  'free',
+  'global_subgraphs',
+  'history',
+  'hub',
+  'internal',
+  'interrupt',
+  'jobs',
+  'logs',
+  'models',
+  'node_replacements',
+  'object_info',
+  'prompt',
+  'providers',
+  'queue',
+  'secrets',
+  'settings',
+  'system_stats',
+  'upload',
+  'user',
+  'userdata',
+  'users',
+  'video_metadata',
+  'view',
+  'view_metadata',
+  'workflow_templates',
+  'workflows',
+  'workspace'
+])
+
+function getFetchRouteTemplate(route: string): string {
+  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
+  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
+  const [routeGroup, ...resources] = routeSegments
+
+  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
+  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
 }
 
 /**
@@ -490,8 +544,10 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  async fetchApi(route: string, options?: RequestInit) {
-    const headers: HeadersInit = options?.headers ?? {}
+  async fetchApi(route: string, options?: FetchApiOptions) {
+    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
+      options ?? {}
+    const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
 
     if (isCloud) {
@@ -519,11 +575,51 @@ export class ComfyApi extends EventTarget {
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
+
+    const timeout =
+      timeoutMs === null
+        ? null
+        : { controller: new AbortController(), duration: timeoutMs }
+    const timeoutId = timeout
+      ? setTimeout(() => {
+          const method = (requestOptions.method ?? 'GET').toUpperCase()
+          const routeTemplate = getFetchRouteTemplate(route)
+
+          Sentry.addBreadcrumb({
+            category: 'fetch',
+            message: `Timeout on ${method} ${routeTemplate}`,
+            level: 'warning',
+            data: { timeout_ms: timeout.duration }
+          })
+
+          useTelemetry()?.trackFetchTimeout({
+            route: routeTemplate,
+            method,
+            timeout_ms: timeout.duration
+          })
+
+          timeout.controller.abort(
+            new DOMException('Fetch timeout', 'TimeoutError')
+          )
+        }, timeout.duration)
+      : undefined
+    const signal =
+      requestOptions.signal && timeout
+        ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
+        : (requestOptions.signal ?? timeout?.controller.signal)
+
     return fetchWithUnifiedRemint(
       this.apiURL(route),
-      { cache: 'no-cache', ...options, headers },
+      {
+        cache: 'no-cache',
+        ...requestOptions,
+        headers,
+        signal
+      },
       unifiedRetryOn401
-    )
+    ).finally(() => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    })
   }
 
   /**
