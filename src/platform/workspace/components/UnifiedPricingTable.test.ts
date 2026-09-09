@@ -91,20 +91,23 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/workspace/composables/useBillingCapabilities'), () => ({
-  useBillingCapabilities: () => ({
-    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-    canReactivate: computed(() => mockRawCanReactivate.value),
-    canChangeSeats: computed(
-      () => mockCanChangeSeats.value ?? mockCanManageSubscription.value
-    ),
-    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
-    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value),
-    snapshotResolved: computed(() => mockSnapshotResolved.value),
-    capabilityReadFailed: computed(() => mockCapabilityReadFailed.value),
-    retryCapabilityRead: mockRetryCapabilityRead
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+      canReactivate: computed(() => mockRawCanReactivate.value),
+      canChangeSeats: computed(
+        () => mockCanChangeSeats.value ?? mockCanManageSubscription.value
+      ),
+      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
+      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value),
+      snapshotResolved: computed(() => mockSnapshotResolved.value),
+      capabilityReadFailed: computed(() => mockCapabilityReadFailed.value),
+      retryCapabilityRead: mockRetryCapabilityRead
+    })
   })
-}))
+)
 
 const mockBuildSupportUrl = vi.hoisted(() =>
   vi.fn(() => 'https://support.comfy.test/hc')
