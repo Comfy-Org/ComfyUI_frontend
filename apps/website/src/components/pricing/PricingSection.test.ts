@@ -56,20 +56,22 @@ describe('PricingSection credit allotment copy', () => {
 
   it('keeps every yearly figure at twelve times its monthly counterpart', () => {
     const annualPlans = pricingPlans.flatMap((plan) => {
-      const { creditsKey, yearlyCreditsKey, estimateKey, yearlyEstimateKey } =
-        plan
-      return creditsKey && yearlyCreditsKey && estimateKey && yearlyEstimateKey
-        ? [{ creditsKey, yearlyCreditsKey, estimateKey, yearlyEstimateKey }]
+      const { creditsKey, estimateKey, yearlyAllotment } = plan
+      return creditsKey && estimateKey && yearlyAllotment
+        ? [{ creditsKey, estimateKey, yearlyAllotment }]
         : []
     })
     expect(annualPlans.length).toBeGreaterThan(0)
+    expect(annualPlans).toHaveLength(
+      pricingPlans.filter((plan) => plan.yearlyAllotment).length
+    )
 
     for (const plan of annualPlans) {
       for (const locale of LOCALES) {
-        expect(firstNumber(plan.yearlyCreditsKey, locale)).toBe(
+        expect(firstNumber(plan.yearlyAllotment.creditsKey, locale)).toBe(
           firstNumber(plan.creditsKey, locale) * MONTHS_PER_YEAR
         )
-        expect(firstNumber(plan.yearlyEstimateKey, locale)).toBe(
+        expect(firstNumber(plan.yearlyAllotment.estimateKey, locale)).toBe(
           firstNumber(plan.estimateKey, locale) * MONTHS_PER_YEAR
         )
       }
