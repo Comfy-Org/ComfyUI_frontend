@@ -697,7 +697,7 @@ describe('useSubscription', () => {
           errorType: 'cloud_checkout_recovery_unreachable',
           tags: expect.objectContaining({
             failure_kind: 'degraded',
-            outcome: 'failed'
+            outcome: 'aborted'
           })
         })
       )
