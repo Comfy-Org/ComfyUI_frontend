@@ -53,8 +53,8 @@ function proofRow(value: string | undefined): ProofRow {
   return value as ProofRow
 }
 
-function run(command: string, args: string[]): void {
-  const result = spawnSync(command, args, { stdio: 'inherit' })
+function run(command: string, args: string[], cwd?: string): void {
+  const result = spawnSync(command, args, { stdio: 'inherit', cwd })
   if (result.status !== 0)
     throw new Error(`${command} ${args.join(' ')} exited ${result.status}`)
 }
@@ -89,6 +89,12 @@ export function hasSourceChanges(cwd?: string): boolean {
   if (result.status === 0) return false
   if (result.status === 1) return true
   throw new Error('could not inspect src/ for detection proof changes')
+}
+
+export function applySourcePatch(path: string, cwd?: string): void {
+  run('git', ['apply', '--3way', '--check', path], cwd)
+  run('git', ['apply', '--3way', path], cwd)
+  if (!hasSourceChanges(cwd)) throw new Error('patch did not change src/')
 }
 
 function actionOutputs(values: Record<string, string>): void {
@@ -155,9 +161,7 @@ function mutateSource(row: ProofRow): void {
   if (matches.length !== 1)
     throw new Error(`expected one patch for S${row}, found ${matches.length}`)
   const path = join(directory, matches[0])
-  run('git', ['apply', '--3way', '--check', path])
-  run('git', ['apply', '--3way', path])
-  if (!hasSourceChanges()) throw new Error(`S${row} patch did not change src/`)
+  applySourcePatch(path)
   actionOutputs({ path, digest: digest(path) })
 }
 
