@@ -688,7 +688,10 @@ fix so the bug stays fixed:
 2. **Add the replay case.** Drive the fixture through the conversation
    replay fixture (`agentConversationFixture`), asserting the
    canvas-observable outcome the bug corrupted (graph end-state or
-   panel state - not mock call counts, not model text).
+   panel state - not mock call counts, not model text). Write what a
+   user sees for each turn (complete assistant text, tool rows in order)
+   into `agentConversationExpectations.ts`; the replay asserts those
+   literals and never predicts production rendering.
 3. **Prove it bites.** Before merging, run the case once against the
    fix's parent commit (red) and once at the fix (green); paste both
    run lines in the PR description. A replay case that never went red
