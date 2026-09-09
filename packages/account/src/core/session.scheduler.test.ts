@@ -283,6 +283,34 @@ describe('opt-in refresh scheduler', () => {
     ])
   })
 
+  it('hands the committed failure to the host hook with a permanent outcome', async () => {
+    const reported: unknown[] = []
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementation(async () => new Response('{}', { status: 403 }))
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        onScheduledOutcome: (outcome, failure) =>
+          reported.push([outcome, failure])
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS)
+
+    expect(reported.at(-1)).toEqual([
+      'permanent_failure',
+      { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 }
+    ])
+  })
+
   it('reports a permanent scheduled failure to the host hook', async () => {
     const outcomes: string[] = []
     const fetchImpl = vi
