@@ -35,11 +35,10 @@ onMounted(() => {
   const restored = popWorkshopForm(model.slug, model.fields)
   if (restored) values.value = { ...values.value, ...restored }
 })
-onUnmounted(
-  onBeforeSignInLeave(() =>
-    stashWorkshopForm(model.slug, model.fields, values.value)
-  )
+const stopStashing = onBeforeSignInLeave(() =>
+  stashWorkshopForm(model.slug, model.fields, values.value)
 )
+onUnmounted(stopStashing)
 const language = ref<WorkshopSnippetLanguage>('typescript')
 // `legacy: true` on purpose. Without it `isSupported` is just the Clipboard
 // API check, so on an insecure origin — a LAN-IP or staging preview, where
