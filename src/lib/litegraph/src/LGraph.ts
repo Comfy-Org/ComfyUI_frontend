@@ -3395,7 +3395,7 @@ export class Subgraph
 
   /**
    * Clones the subgraph, creating an identical copy. Generates a new ID by
-   * default; `clone(true)` preserves the existing ID.
+   * default; `clone(true)` preserves the existing ID for replacement flows.
    * @returns A new subgraph with the same configuration.
    */
   // fallow-ignore-next-line unused-class-member
@@ -3403,7 +3403,7 @@ export class Subgraph
     const exported = this.asSerialisable()
     if (!keepId) exported.id = createUuidv4()
     const subgraph = new Subgraph(this.rootGraph, exported, keepId)
-    subgraph.configure(exported)
+    subgraph.configure(structuredClone(exported))
     return subgraph
   }
 

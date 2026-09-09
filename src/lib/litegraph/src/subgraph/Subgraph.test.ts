@@ -90,6 +90,7 @@ describe('Subgraph Construction', () => {
     expect(preservedIdClone.nodes.map(({ title }) => title)).toEqual([
       'Clone content'
     ])
+    expect(subgraph.nodes.map(({ title }) => title)).toEqual(['Clone content'])
   })
 })
 
