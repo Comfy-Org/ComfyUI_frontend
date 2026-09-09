@@ -7,7 +7,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
-vi.mock('@/config/turnstile', () => ({
+vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: () => 'site-key'
 }))
 
@@ -15,7 +15,7 @@ vi.mock('@/config/turnstile', () => ({
 // else in this render, the app adapter and the shared @comfyorg/account
 // component, is the real code, unmocked, unlike SignUpForm.test.ts and
 // TurnstileWidget.test.ts, which both stub the shared component away.
-vi.mock('@comfyorg/account/turnstileScript', () => ({
+vi.mock<unknown>(import('@comfyorg/account/turnstileScript'), () => ({
   loadTurnstile: vi.fn(() => new Promise(() => {}))
 }))
 

@@ -7,13 +7,13 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
 // Mock the API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: vi.fn()
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   },

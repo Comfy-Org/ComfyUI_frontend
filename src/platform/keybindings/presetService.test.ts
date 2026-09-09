@@ -30,19 +30,19 @@ const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: mockDownloadBlob
 }))
 
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   uploadFile: mockUploadFile
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     confirm: mockConfirm,
     prompt: mockPrompt,
@@ -50,20 +50,20 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     set: mockSettingSet,
     get: vi.fn(() => 'default')
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
       fn,
@@ -74,13 +74,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/platform/keybindings/keybindingService', () => ({
+vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     persistUserKeybindings: mockPersistUserKeybindings
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     showDialog: vi.fn(),
     closeDialog: vi.fn(),
@@ -88,7 +88,7 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 

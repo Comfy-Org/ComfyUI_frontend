@@ -11,7 +11,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 import { useGraphHierarchy } from './useGraphHierarchy'
 
-vi.mock('@/renderer/core/canvas/canvasStore')
+vi.mock(import('@/renderer/core/canvas/canvasStore'))
 
 function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
   return Object.assign(

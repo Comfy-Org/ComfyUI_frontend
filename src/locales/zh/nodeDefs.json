@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "向视频潜空间追加细化关键帧。每个关键帧都是一帧潜空间 token，其 RoPE 位置覆盖单个像素帧；它们会与视频一同去噪，且不属于解码输出。每隔 interval_frames 个像素帧放置一个槽位，跳过 I2V 帧、现有引导以及条件中已有的细化关键帧。连接的关键帧仅作为内容使用，除非设置了 frame_indices，否则会在此画布上重新放置。可使用 LTXV Separate Generated Keyframes 将其取出。需要使用经过生成关键帧训练的检查点（包含 keyframes_abs_pos_embedding）。",
+    "display_name": "LTXV 添加生成的关键帧",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "可选的像素帧索引。留空时，将根据当前画布上的 interval_frames 放置。设置后，此列表即为放置位置（连接的关键帧按顺序匹配）。允许最后一帧；不允许第 0 帧（它已是独立 token）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自动放置的像素帧步长。默认值 24 在 24 fps 下约为每秒一个关键帧。会跳过已占用的像素帧。设置 frame_indices 时将忽略此项。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可选内容，用于初始化新关键帧。可连接先前 Separate 输出的关键帧（空间尺寸相同），或连接普通视频潜空间以复制每个新槽位处最近的帧（例如时间上采样后）。它们仍会被去噪，不会作为引导固定。除非设置 frame_indices，否则会忽略关键帧潜空间中记录的索引。仅当采样从低于 sigma 1 时开始才有效。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "用于同时生成关键帧的普通 5D 视频潜空间。请在 Concat AV Latent 之前添加它们。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "关键帧所附加的负向条件。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "关键帧所附加的正向条件。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "仅用于读取潜空间缩放系数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "附加了生成关键帧注意力的正向条件。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "附加了生成关键帧注意力的负向条件。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "在时间维度追加了生成关键帧的视频潜空间。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXV添加指导",
     "inputs": {
@@ -9752,6 +9800,55 @@
       },
       "2": {
         "name": "潜在空间",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "将已编码的潜空间固定为引导，适用于引导来自先前阶段而非图像的情况。效果等同于 LTXV Add Guide，但无需 VAE 解码/编码往返。空间尺寸小于目标的引导（IC-LoRA 或细化参考）会被扩展到稀疏网格上，其 RoPE 结束位置也会按相同比例扩展，使其覆盖目标画布，而非仅定位到其左上角。",
+    "display_name": "LTXV 添加潜空间引导",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "可选的像素空间 mask。通过自注意力控制各区域的条件影响，并与 strength 相乘。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "引导潜空间。其空间尺寸必须在两个轴上都以相同的整数比例整除目标尺寸；相同尺寸会按原样固定，半尺寸会被视为 x2 IC-LoRA 参考。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "引导所固定到的目标视频潜空间。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "引导开始处的潜空间帧索引，按潜空间帧而非像素帧计数。负值会将引导放置在潜空间起始位置之前的帧上，而不是从末尾倒数。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "上限为 1.0。扩展后的引导会以负去噪 mask 标记其填充位置，使模型丢弃它们；超过 1.0 时，保留位置也会变为负值，整个引导都会被丢弃。请改用 attention_mask 将强度放大到 1.0 以上。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "将 noise_mask 设为 0，使该潜空间在采样期间保持干净。适用于视频或音频。典型用途：在 Concat AV 之前冻结音频，使其仅提供交叉注意力；或冻结任何不应被去噪的潜空间。",
+    "display_name": "LTXV 冻结潜空间",
+    "inputs": {
+      "latent": {
+        "name": "潜空间",
+        "tooltip": "要冻结的视频或音频潜空间。音频为 4D；视频为 5D。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜空间",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "将较早阶段生成的关键帧固定为后续画布上的冻结图像引导。它们会被解码为独立帧，按需调整大小，并以 noise_mask=0 写入，因此不会再次被去噪。时间上采样后，记录的索引会从生成它们的画布按比例映射到当前画布（相同的时刻）。使用 override_frame_indices 可显式设置位置。如需继续在新位置生成（并去噪）关键帧，请改用 Add Generated Keyframes。",
+    "display_name": "LTXV 将生成的关键帧转为引导",
+    "inputs": {
+      "keyframes": {
+        "name": "关键帧",
+        "tooltip": "LTXV Separate Generated Keyframes 的关键帧输出，其中包含每个关键帧生成时所在的像素帧索引。"
+      },
+      "latent": {
+        "name": "潜空间",
+        "tooltip": "要添加引导的目标视频潜空间，例如经过时间上采样的视频潜空间。"
+      },
+      "negative": {
+        "name": "负面条件"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "可选——在这些像素帧处固定，而非使用记录的位置（或自动缩放后的位置）。每个关键帧提供一个索引。留空可复用记录的位置；当目标画布长度不同时，则会缩放这些位置（例如时间 2 倍上采样后）。"
+      },
+      "positive": {
+        "name": "正面条件"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "引导强度。1.0 为硬性固定；较低值会放宽固定效果。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": "将关键帧作为图像引导固定后的正面条件。"
+      },
+      "1": {
+        "name": "负面条件",
+        "tooltip": "将关键帧作为图像引导固定后的负面条件。"
+      },
+      "2": {
+        "name": "潜空间",
+        "tooltip": "已将关键帧作为冻结引导添加的目标视频潜空间。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "图像到视频（LTXV）",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "从已采样的潜空间中分离出由 LTXV Add Generated Keyframes 添加的生成关键帧，并将其从条件中移除。请在对视频潜空间进行空间上采样前分离它们。不要先运行 LTXV Crop Guides——它会将生成的关键帧视为可丢弃的引导并将其移除。",
+    "display_name": "LTXV 分离生成的关键帧",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "将关键帧作为单帧潜空间批次返回。关闭此选项可将其作为一个多帧潜空间获取，潜空间上采样器和后续的 Add Generated Keyframes 均需要此格式。"
+      },
+      "latent": {
+        "name": "潜空间"
+      },
+      "negative": {
+        "name": "负面条件"
+      },
+      "positive": {
+        "name": "正面条件"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": "已移除生成关键帧元数据的正面条件。"
+      },
+      "1": {
+        "name": "负面条件",
+        "tooltip": "已移除生成关键帧元数据的负面条件。"
+      },
+      "2": {
+        "name": "潜空间",
+        "tooltip": "已剥离生成关键帧的视频潜空间。"
+      },
+      "3": {
+        "name": "关键帧",
+        "tooltip": "已分离的关键帧，带有 generated_keyframe_indices 和 generated_keyframe_num_frames 标签。将其输入后续的 Add Generated Keyframes 以初始化新槽位，或输入 Generated Keyframes To Guides 以将其固定为冻结图像引导（若画布长度已更改，索引会重新映射）。"
       }
     }
   },
@@ -16705,6 +16900,45 @@
       },
       "1": {
         "name": "负面",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D 多视角条件控制",
+    "inputs": {
+      "back": {
+        "name": "后",
+        "tooltip": "物体背面的正方形视图，带 alpha 或使用黑色背景，构图与装置一致：物体最宽处约占画面宽度的 1/1.1，所有视图中的比例相同。第一个连接的视图（顺序为前、左、后、右）是网格所朝向的正面。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "带有捆绑 NAF 权重的 DINOv3 ViT-L/16 ClipVision。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "按所示构图的视图水平 FOV（度）：装置渲染和大多数多视图生成器使用 20；照片则对其中一个视图使用 MoGeGeometryToFOV。"
+      },
+      "front": {
+        "name": "前",
+        "tooltip": "物体正面的正方形视图，带 alpha 或使用黑色背景，构图与装置一致：物体最宽处约占画面宽度的 1/1.1，所有视图中的比例相同。第一个连接的视图（顺序为前、左、后、右）是网格所朝向的正面。"
+      },
+      "left": {
+        "name": "左",
+        "tooltip": "物体左侧的正方形视图，带 alpha 或使用黑色背景，构图与装置一致：物体最宽处约占画面宽度的 1/1.1，所有视图中的比例相同。第一个连接的视图（顺序为前、左、后、右）是网格所朝向的正面。"
+      },
+      "right": {
+        "name": "右",
+        "tooltip": "物体右侧的正方形视图，带 alpha 或使用黑色背景，构图与装置一致：物体最宽处约占画面宽度的 1/1.1，所有视图中的比例相同。第一个连接的视图（顺序为前、左、后、右）是网格所朝向的正面。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
         "tooltip": null
       }
     }

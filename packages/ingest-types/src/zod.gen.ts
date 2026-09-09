@@ -2254,6 +2254,13 @@ export const zBillingOpStatusResponse = z.object({
   error_message: z.string().optional(),
   id: z.string(),
   payment_intent_client_secret: z.string().optional(),
+  phase: z
+    .enum([
+      'awaiting_payment_method',
+      'awaiting_invoice_payment',
+      'in_progress'
+    ])
+    .optional(),
   recovery_action: z
     .enum([
       'retry',
@@ -2754,6 +2761,23 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+export const zAgentLlmAdmitBody = z.object({
+  message_id: z.string().optional(),
+  step: z.number().int().gte(0),
+  turn_id: z.string()
+})
+
+/**
+ * The admission verdict for the round.
+ */
+export const zAgentLlmAdmitResponse = z.object({
+  after_seconds: z.number().int().optional(),
+  kind: z.enum(['proceed', 'wait', 'pause', 'fail']),
+  message: z.string().optional(),
+  position: z.number().int().optional(),
+  reason: z.string().optional()
+})
 
 /**
  * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.

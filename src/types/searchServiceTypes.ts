@@ -17,12 +17,6 @@ export interface SearchPacksResult {
   querySuggestions: QuerySuggestion[]
 }
 
-export interface SortableField<T = string> {
-  id: T
-  label: string
-  direction: 'asc' | 'desc'
-}
-
 export interface NodePackSearchProvider {
   /**
    * Search for node packs
@@ -36,14 +30,4 @@ export interface NodePackSearchProvider {
    * Clear the search cache
    */
   clearSearchCache(): void
-
-  /**
-   * Get the sort value for a pack based on the sort field
-   */
-  getSortValue(pack: RegistryNodePack, sortField: string): string | number
-
-  /**
-   * Get the list of sortable fields supported by this provider
-   */
-  getSortableFields(): SortableField[]
 }
