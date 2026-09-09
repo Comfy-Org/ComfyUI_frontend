@@ -134,18 +134,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
-import { useAuthStore } from '@/stores/authStore'
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn(async () => {}),
-  onAuthStateChanged: vi.fn(() => () => {}),
-  onIdTokenChanged: vi.fn(() => () => {})
-}))
-
-beforeEach(() => {
-  Object.assign(useAuthStore(), { userId: 'user-1' })
-})
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'

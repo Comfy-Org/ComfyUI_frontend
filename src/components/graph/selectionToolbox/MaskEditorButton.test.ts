@@ -61,14 +61,17 @@ describe('MaskEditorButton', () => {
 
   it('should execute the OpenMaskEditor command on click', async () => {
     const user = userEvent.setup()
+    const openMaskEditor = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      function: openMaskEditor
+    })
     renderButton()
 
     await user.click(
       screen.getByRole('button', { name: 'Open in Mask Editor' })
     )
 
-    expect(useCommandStore().execute).toHaveBeenCalledWith(
-      'Comfy.MaskEditor.OpenMaskEditor'
-    )
+    expect(openMaskEditor).toHaveBeenCalledOnce()
   })
 })

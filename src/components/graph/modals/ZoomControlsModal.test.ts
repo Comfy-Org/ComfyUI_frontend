@@ -153,15 +153,6 @@ describe('ZoomControlsModal', () => {
     expect(screen.getByText('Ctrl+')).toBeInTheDocument()
     expect(screen.getByText('Ctrl-')).toBeInTheDocument()
     expect(screen.getByText('Ctrl+0')).toBeInTheDocument()
-    expect(useCommandStore().getCommand).toHaveBeenCalledWith(
-      'Comfy.Canvas.ZoomIn'
-    )
-    expect(useCommandStore().getCommand).toHaveBeenCalledWith(
-      'Comfy.Canvas.ZoomOut'
-    )
-    expect(useCommandStore().getCommand).toHaveBeenCalledWith(
-      'Comfy.Canvas.FitView'
-    )
   })
 
   it('should not be visible when visible prop is false', () => {

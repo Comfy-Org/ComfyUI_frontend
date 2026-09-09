@@ -118,7 +118,7 @@ const appMock = vi.hoisted(() => {
           multi_select: boolean
           allow_dragnodes: boolean
           selectOnly: boolean
-          canvas: { focus: ReturnType<typeof vi.fn> }
+          canvas: HTMLCanvasElement
         }
       | undefined
   }
@@ -290,11 +290,6 @@ beforeEach(() => {
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())
   executionErrors.showErrorOverlay.mockImplementation(() => {})
-  vi.mocked(canvasStore.updateSelectedItems).mockImplementation(() => {
-    canvasStore.selectedItems = fromPartial([
-      ...(appMock.canvas?.selectedItems ?? [])
-    ])
-  })
   vi.useRealTimers()
   Element.prototype.scrollIntoView = vi.fn()
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
@@ -639,7 +634,8 @@ async function openMentionPicker(): Promise<void> {
 }
 
 function setupNodeSelectionCanvas() {
-  const focus = vi.fn()
+  const canvasElement = document.createElement('canvas')
+  const focus = vi.spyOn(canvasElement, 'focus')
   const nodes: LGraphNode[] = [
     createMockLGraphNode({
       isNodeFake: true,
@@ -673,12 +669,14 @@ function setupNodeSelectionCanvas() {
     selectItems,
     deselect,
     deselectAll,
+    animateToBounds: vi.fn(),
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
-    canvas: { focus }
+    canvas: canvasElement
   }
   appMock.canvas = canvas
+  canvasStore.canvas = fromPartial(canvas)
   canvasStore.currentGraph = fromPartial(graph)
   return {
     canvas,
@@ -3992,7 +3990,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(selection.canvas.multi_select).toBe(false)
     expect(selection.canvas.allow_dragnodes).toBe(true)
     expect(selection.canvas.selectOnly).toBe(false)
-    expect(selection.deselectAll).toHaveBeenCalledOnce()
+    expect(canvasStore.selectedItems).toEqual([])
     expect([...selection.selectedItems]).toEqual([])
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
@@ -4110,7 +4108,7 @@ describe('AgentPanelRoot workflow binding', () => {
       multi_select: false,
       allow_dragnodes: true,
       selectOnly: false,
-      canvas: { focus: vi.fn() }
+      canvas: document.createElement('canvas')
     }
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

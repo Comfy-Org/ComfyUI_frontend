@@ -13,11 +13,14 @@ import TabLinkCard from './TabLinkCard.vue'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
 
 vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+  )
 })
 
 const mocks = vi.hoisted(() => ({
