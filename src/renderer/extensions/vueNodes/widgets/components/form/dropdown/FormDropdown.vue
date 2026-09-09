@@ -49,6 +49,8 @@ interface Props {
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
   loadingMore?: boolean
+  onLoadMore?: () => unknown
+  canLoadMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -81,10 +83,6 @@ const {
   searcher = defaultSearcher,
   items
 } = defineProps<Props>()
-
-const emit = defineEmits<{
-  (e: 'approach-end'): void
-}>()
 
 const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
@@ -384,12 +382,13 @@ function showPicker() {
         :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
-        :loading-more="loadingMore"
+        :loading-more
+        :on-load-more
+        :can-load-more
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"
         @show-picker="showPicker"
-        @approach-end="emit('approach-end')"
       />
     </Popover>
   </div>

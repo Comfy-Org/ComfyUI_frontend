@@ -1,15 +1,19 @@
-import { ref } from 'vue'
+import { render } from '@testing-library/vue'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string) => key
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 const mockBookmarkStore = vi.hoisted(() => ({
   isBookmarked: vi.fn(() => false),
@@ -60,36 +64,56 @@ const mockFeatureFlags = vi.hoisted(() => ({
   flags: { linearToggleEnabled: false }
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => mockWorkflowStore),
-  useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => mockWorkflowStore),
+    useWorkflowBookmarkStore: vi.fn(() => mockBookmarkStore)
+  })
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: vi.fn(() => mockWorkflowService)
+  })
+)
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: vi.fn(() => mockCommandStore)
 }))
 
-vi.mock('@/stores/subgraphStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
   useSubgraphStore: vi.fn(() => mockSubgraphStore)
 }))
 
-vi.mock('@/stores/menuItemStore', () => ({
+vi.mock<unknown>(import('@/stores/menuItemStore'), () => ({
   useMenuItemStore: vi.fn(() => mockMenuItemStore)
 }))
 
-vi.mock('@/stores/appModeStore', () => ({
+vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
   useAppModeStore: vi.fn(() => mockAppModeStore)
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({}))
+vi.mock(import('@/composables/useErrorHandling'), () => ({}))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
+
+function useWorkflowActionsMenu(
+  ...args: Parameters<typeof useWorkflowActionsMenuComposable>
+) {
+  let composable!: ReturnType<typeof useWorkflowActionsMenuComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      composable = useWorkflowActionsMenuComposable(...args)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return composable
+}
 
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
