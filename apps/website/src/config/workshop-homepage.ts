@@ -15,5 +15,7 @@ export async function resolveHomepageWorkshopModels(
   loadModels: LoadWorkshopModels
 ): Promise<WorkshopBrowseModel[]> {
   if (!enabled) return []
-  return featuredWorkshopModels((await loadModels()).map(toBrowseModel))
+  return featuredWorkshopModels(
+    (await loadModels()).map((entry) => toBrowseModel(entry))
+  )
 }

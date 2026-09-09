@@ -1,3 +1,4 @@
+import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
 
 export const WORKSHOP_OUTPUTS = ['image', 'video', 'audio', '3d'] as const
@@ -5,6 +6,14 @@ export const WORKSHOP_PAGE_SIZE = 48
 
 type WorkshopOutput = (typeof WORKSHOP_OUTPUTS)[number]
 export type WorkshopOutputFilter = WorkshopOutput | 'all'
+
+/** Not exported: it is only ever reached through `WorkshopBrowseModel`. */
+interface WorkshopBrowseThumbnail {
+  readonly url: string
+  /** Carried explicitly: CDN assets are often named by UUID, so the file
+   *  extension is not reliably there to read. */
+  readonly kind: 'image' | 'video' | 'audio'
+}
 
 export interface WorkshopBrowseModel {
   readonly id: string
@@ -14,6 +23,8 @@ export interface WorkshopBrowseModel {
   readonly output: WorkshopOutput
   readonly description: string
   readonly tags: readonly string[]
+  /** Absent for the 7 models the content pass has not reached yet. */
+  readonly thumbnail?: WorkshopBrowseThumbnail
 }
 
 function outputFor(modality: WorkshopModelEntry['modality']): WorkshopOutput {
@@ -27,7 +38,11 @@ function outputFor(modality: WorkshopModelEntry['modality']): WorkshopOutput {
  * whole entry: `parameters` is the largest field on a model and the browse
  * page has no use for it, so it never reaches the browser.
  */
-export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
+export function toBrowseModel(
+  entry: WorkshopModelEntry,
+  display?: WorkshopDisplayEntry
+): WorkshopBrowseModel {
+  const thumbnail = display?.media.thumbnail
   return {
     id: entry.id,
     href: `/workshop/models/${entry.slug}/`,
@@ -35,7 +50,12 @@ export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
     provider: entry.provider,
     output: outputFor(entry.modality),
     description: entry.description,
-    tags: entry.tags
+    tags: entry.tags,
+    // Only the two fields a card needs. The overlay also carries prompts and
+    // review flags, which have no business reaching the browser.
+    ...(thumbnail && {
+      thumbnail: { url: thumbnail.url, kind: thumbnail.kind }
+    })
   }
 }
 
@@ -43,10 +63,12 @@ export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
  * Projects and orders the Router snapshot for the catalog page at build time.
  */
 export function prepareWorkshopBrowseModels(
-  entries: readonly WorkshopModelEntry[]
+  entries: readonly WorkshopModelEntry[],
+  display: readonly WorkshopDisplayEntry[] = []
 ): WorkshopBrowseModel[] {
+  const byModelId = new Map(display.map((entry) => [entry.id, entry]))
   return entries
-    .map(toBrowseModel)
+    .map((entry) => toBrowseModel(entry, byModelId.get(entry.id)))
     .sort((left, right) => left.id.localeCompare(right.id))
 }
 
