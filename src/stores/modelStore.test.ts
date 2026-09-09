@@ -48,24 +48,8 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   }
 }))
 
-// Mock the settingStore
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn()
-}))
-
 function enableMocks(useAssetAPI = false) {
-  // Mock settingStore to return the useAssetAPI setting
-  const mockSettingStore = {
-    get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.Assets.UseAssetAPI') {
-        return useAssetAPI
-      }
-      return false
-    })
-  }
-  vi.mocked(useSettingStore, { partial: true }).mockReturnValue(
-    mockSettingStore
-  )
+  useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = useAssetAPI
 
   // Mock experimental API - returns objects with name and folders properties
   vi.mocked(api.getModels).mockResolvedValue([

@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 
@@ -78,7 +77,6 @@ describe('attachMintPortWiring', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     minted = []
     enabled = true
     bound = true

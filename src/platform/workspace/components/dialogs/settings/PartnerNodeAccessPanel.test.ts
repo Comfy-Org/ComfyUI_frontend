@@ -1,87 +1,40 @@
+import { getActivePinia } from 'pinia'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type {
-  PartnerNodePolicy,
-  PartnerProvider
-} from '@/platform/workspace/api/partnerNodePolicyApi'
+import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
 
-const {
-  mockCloseDialog,
-  mockGovernedWorkspaceId,
-  mockIsProviderEnabled,
-  mockIsSaving,
-  mockLoadPolicy,
-  mockNodeDefsByName,
-  mockPolicy,
-  mockProviders,
-  mockSetAllProvidersEnabled,
-  mockSetEnforcementEnabled,
-  mockSetProviderEnabled,
-  mockSetProvidersEnabled,
-  mockShowConfirmDialog,
-  mockStatus,
-  mockWorkspaceRole
-} = vi.hoisted(() => {
+const { mockShowConfirmDialog, mockWorkspaceRole } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
   return {
-    mockCloseDialog: vi.fn(),
-    mockGovernedWorkspaceId: ref('workspace-one'),
-    mockIsProviderEnabled: vi.fn(),
-    mockIsSaving: ref(false),
-    mockLoadPolicy: vi.fn(),
-    mockNodeDefsByName: ref<Record<string, ComfyNodeDefImpl>>({}),
-    mockPolicy: ref<PartnerNodePolicy | null>(null),
-    mockProviders: ref<PartnerProvider[]>([]),
-    mockSetAllProvidersEnabled: vi.fn(),
-    mockSetEnforcementEnabled: vi.fn(),
-    mockSetProviderEnabled: vi.fn(),
-    mockSetProvidersEnabled: vi.fn(),
     mockShowConfirmDialog: vi.fn(),
-    mockStatus: ref('configured'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner')
   }
 })
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/partnerNodeGovernanceStore'),
-  () => ({
-    usePartnerNodeGovernanceStore: () => ({
-      governedWorkspaceId: mockGovernedWorkspaceId,
-      policy: mockPolicy,
-      providers: mockProviders,
-      status: mockStatus,
-      isSaving: mockIsSaving,
-      isProviderEnabled: mockIsProviderEnabled,
-      loadPolicy: mockLoadPolicy,
-      setAllProvidersEnabled: mockSetAllProvidersEnabled,
-      setEnforcementEnabled: mockSetEnforcementEnabled,
-      setProviderEnabled: mockSetProviderEnabled,
-      setProvidersEnabled: mockSetProvidersEnabled
-    })
-  })
-)
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
 
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ closeDialog: mockCloseDialog })
-}))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({ nodeDefsByName: mockNodeDefsByName })
-}))
+vi.mock(
+  import('@/platform/workspace/api/partnerNodePolicyApi'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    getPartnerNodePolicy: vi.fn(() => new Promise<never>(() => {})),
+    getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -111,7 +64,7 @@ function nodeDef(
 
 function renderComponent() {
   return render(PartnerNodeAccessPanel, {
-    global: { plugins: [createPinia(), i18n], directives: { tooltip: {} } }
+    global: { plugins: [getActivePinia()!, i18n], directives: { tooltip: {} } }
   })
 }
 
@@ -120,7 +73,12 @@ function restrictPolicy(
     { providerId: 'openai', enabled: true }
   ]
 ) {
-  mockPolicy.value = { enforcementEnabled: true, providers: entries }
+  Object.assign(usePartnerNodeGovernanceStore(), {
+    policy: {
+      enforcementEnabled: true,
+      providers: entries
+    }
+  })
 }
 
 const allowAllSwitchName = 'Allow all partner models'
@@ -129,35 +87,80 @@ async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Disable all' }))
 }
 
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
+beforeEach(async () => {
+  vi.mocked(usePartnerNodeGovernanceStore().isProviderEnabled).mockReturnValue(
+    false
+  )
+  vi.mocked(usePartnerNodeGovernanceStore().loadPolicy).mockResolvedValue(
+    undefined
+  )
+  vi.mocked(
+    usePartnerNodeGovernanceStore().setAllProvidersEnabled
+  ).mockResolvedValue(undefined)
+  vi.mocked(
+    usePartnerNodeGovernanceStore().setEnforcementEnabled
+  ).mockResolvedValue(undefined)
+  vi.mocked(
+    usePartnerNodeGovernanceStore().setProviderEnabled
+  ).mockResolvedValue(undefined)
+  vi.mocked(
+    usePartnerNodeGovernanceStore().setProvidersEnabled
+  ).mockResolvedValue(undefined)
+  Object.assign(usePartnerNodeGovernanceStore(), {
+    governedWorkspaceId: 'workspace-one'
+  })
+  await nextTick()
+})
+
 describe('PartnerNodeAccessPanel', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    mockGovernedWorkspaceId.value = 'workspace-one'
-    mockStatus.value = 'configured'
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      governedWorkspaceId: 'workspace-one'
+    })
+    Object.assign(usePartnerNodeGovernanceStore(), { status: 'configured' })
     mockWorkspaceRole.value = 'owner'
-    mockIsSaving.value = false
-    mockPolicy.value = null
-    mockProviders.value = [
-      {
-        id: 'openai',
-        displayName: 'OpenAI (inc. Sora)',
-        nodeCategories: ['OpenAI', 'Sora']
-      },
-      {
-        id: 'route-only',
-        displayName: 'Route only',
-        nodeCategories: []
+    Object.assign(usePartnerNodeGovernanceStore(), { isSaving: false })
+    Object.assign(usePartnerNodeGovernanceStore(), { policy: null })
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        {
+          id: 'openai',
+          displayName: 'OpenAI (inc. Sora)',
+          nodeCategories: ['OpenAI', 'Sora']
+        },
+        {
+          id: 'route-only',
+          displayName: 'Route only',
+          nodeCategories: []
+        }
+      ]
+    })
+    Object.assign(useNodeDefStore(), {
+      nodeDefsByName: {
+        ImageNode: nodeDef('ImageNode', 'Create image', 'partner/image/OpenAI'),
+        VideoNode: nodeDef('VideoNode', 'Create video', 'partner/video/Sora')
       }
-    ]
-    mockNodeDefsByName.value = {
-      ImageNode: nodeDef('ImageNode', 'Create image', 'partner/image/OpenAI'),
-      VideoNode: nodeDef('VideoNode', 'Create video', 'partner/video/Sora')
-    }
-    mockIsProviderEnabled.mockReturnValue(true)
-    mockSetAllProvidersEnabled.mockResolvedValue(undefined)
-    mockSetEnforcementEnabled.mockResolvedValue(undefined)
-    mockSetProviderEnabled.mockResolvedValue(undefined)
-    mockSetProvidersEnabled.mockResolvedValue(undefined)
+    })
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(true)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setAllProvidersEnabled
+    ).mockResolvedValue(undefined)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).mockResolvedValue(undefined)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).mockResolvedValue(undefined)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setProvidersEnabled
+    ).mockResolvedValue(undefined)
     mockShowConfirmDialog.mockReturnValue({ key: 'disable-all-dialog' })
   })
 
@@ -182,14 +185,16 @@ describe('PartnerNodeAccessPanel', () => {
       { providerId: 'openai', enabled: true },
       { providerId: 'acme', enabled: true }
     ])
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
     renderComponent()
 
     const table = screen.getByRole('table', {
@@ -215,15 +220,17 @@ describe('PartnerNodeAccessPanel', () => {
       { providerId: 'openai', enabled: true },
       { providerId: 'acme', enabled: true }
     ])
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
-    mockNodeDefsByName.value.AcmeNode = nodeDef(
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
+    useNodeDefStore().nodeDefsByName.AcmeNode = nodeDef(
       'AcmeNode',
       'Enhance image',
       'partner/image/Acme'
@@ -252,17 +259,19 @@ describe('PartnerNodeAccessPanel', () => {
       { providerId: 'openai', enabled: false },
       { providerId: 'acme', enabled: true }
     ])
-    mockIsProviderEnabled.mockImplementation(
-      (providerId: string) => providerId !== 'openai'
-    )
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockImplementation((providerId: string) => providerId !== 'openai')
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
     renderComponent()
 
     const table = screen.getByRole('table', {
@@ -280,20 +289,22 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('searches both provider and model names', async () => {
     const user = userEvent.setup()
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
-    mockNodeDefsByName.value.AcmeNode = nodeDef(
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
+    useNodeDefStore().nodeDefsByName.AcmeNode = nodeDef(
       'AcmeNode',
       'Enhance image',
       'partner/image/Acme'
     )
-    mockNodeDefsByName.value.AcmeResize = nodeDef(
+    useNodeDefStore().nodeDefsByName.AcmeResize = nodeDef(
       'AcmeResize',
       'Resize video',
       'partner/video/Acme'
@@ -321,15 +332,17 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('keeps provider-name matches collapsed while searching', async () => {
     const user = userEvent.setup()
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
-    mockNodeDefsByName.value.AcmeNode = nodeDef(
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
+    useNodeDefStore().nodeDefsByName.AcmeNode = nodeDef(
       'AcmeNode',
       'Enhance image',
       'partner/image/Acme'
@@ -349,14 +362,16 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('keeps name-matched providers without loaded nodes', async () => {
     const user = userEvent.setup()
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
     renderComponent()
     const search = screen.getByRole('combobox', {
       name: 'Search providers and partner models...'
@@ -377,7 +392,9 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('shows stored disabled state while restricted', () => {
     restrictPolicy([{ providerId: 'openai', enabled: false }])
-    mockIsProviderEnabled.mockReturnValue(false)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(false)
     renderComponent()
 
     expect(
@@ -405,11 +422,15 @@ describe('PartnerNodeAccessPanel', () => {
   })
 
   it('hides provider controls while access is unrestricted', () => {
-    mockPolicy.value = {
-      enforcementEnabled: false,
-      providers: [{ providerId: 'openai', enabled: false }]
-    }
-    mockIsProviderEnabled.mockReturnValue(false)
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      policy: {
+        enforcementEnabled: false,
+        providers: [{ providerId: 'openai', enabled: false }]
+      }
+    })
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(false)
     renderComponent()
 
     expect(
@@ -456,7 +477,9 @@ describe('PartnerNodeAccessPanel', () => {
   it('applies bulk enable to every provider from the menu', async () => {
     const user = userEvent.setup()
     restrictPolicy([{ providerId: 'openai', enabled: false }])
-    mockIsProviderEnabled.mockReturnValue(false)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(false)
     renderComponent()
 
     await openBulkMenu(user)
@@ -464,7 +487,9 @@ describe('PartnerNodeAccessPanel', () => {
       screen.getByRole('menuitem', { name: 'Enable all 1 provider' })
     )
 
-    expect(mockSetProvidersEnabled).toHaveBeenCalledWith(['openai'], true)
+    expect(
+      usePartnerNodeGovernanceStore().setProvidersEnabled
+    ).toHaveBeenCalledWith(['openai'], true)
   })
 
   it('disables no-op bulk actions in the menu', async () => {
@@ -488,14 +513,16 @@ describe('PartnerNodeAccessPanel', () => {
       { providerId: 'openai', enabled: true },
       { providerId: 'acme', enabled: true }
     ])
-    mockProviders.value = [
-      ...mockProviders.value,
-      {
-        id: 'acme',
-        displayName: 'Acme',
-        nodeCategories: ['Acme']
-      }
-    ]
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      providers: [
+        ...usePartnerNodeGovernanceStore().providers,
+        {
+          id: 'acme',
+          displayName: 'Acme',
+          nodeCategories: ['Acme']
+        }
+      ]
+    })
     renderComponent()
 
     await user.type(
@@ -510,13 +537,17 @@ describe('PartnerNodeAccessPanel', () => {
     )
 
     expect(mockShowConfirmDialog).not.toHaveBeenCalled()
-    expect(mockSetProvidersEnabled).toHaveBeenCalledWith(['acme'], false)
+    expect(
+      usePartnerNodeGovernanceStore().setProvidersEnabled
+    ).toHaveBeenCalledWith(['acme'], false)
   })
 
   it('surfaces save failures', async () => {
     const user = userEvent.setup()
     restrictPolicy()
-    mockSetProviderEnabled.mockRejectedValueOnce(new Error('Save failed'))
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).mockRejectedValueOnce(new Error('Save failed'))
     renderComponent()
 
     await user.click(
@@ -532,7 +563,7 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('locks provider controls while saving', () => {
     restrictPolicy()
-    mockIsSaving.value = true
+    Object.assign(usePartnerNodeGovernanceStore(), { isSaving: true })
     renderComponent()
 
     expect(
@@ -584,8 +615,10 @@ describe('PartnerNodeAccessPanel', () => {
     const options = mockShowConfirmDialog.mock.calls[0][0]
     expect(options.headerProps.title).toBe('Disable all providers?')
     await options.footerProps.onConfirm()
-    expect(mockSetAllProvidersEnabled).toHaveBeenCalledWith(false)
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setAllProvidersEnabled
+    ).toHaveBeenCalledWith(false)
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('ignores a disable-all confirmation after the workspace changes', async () => {
@@ -598,11 +631,15 @@ describe('PartnerNodeAccessPanel', () => {
       screen.getByRole('menuitem', { name: 'Disable all 1 provider' })
     )
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    mockGovernedWorkspaceId.value = 'workspace-two'
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      governedWorkspaceId: 'workspace-two'
+    })
     await options.footerProps.onConfirm()
 
-    expect(mockSetAllProvidersEnabled).not.toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setAllProvidersEnabled
+    ).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('ignores a disable-all confirmation after the owner loses access', async () => {
@@ -618,8 +655,10 @@ describe('PartnerNodeAccessPanel', () => {
     mockWorkspaceRole.value = 'member'
     await options.footerProps.onConfirm()
 
-    expect(mockSetAllProvidersEnabled).not.toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setAllProvidersEnabled
+    ).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('confirms before turning on restrictions', async () => {
@@ -631,7 +670,9 @@ describe('PartnerNodeAccessPanel', () => {
     const options = mockShowConfirmDialog.mock.calls[0][0]
     expect(options.headerProps.title).toBe('Restrict access to partner models?')
     await options.footerProps.onConfirm()
-    expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(true)
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).toHaveBeenCalledWith(true)
   })
 
   it('ignores a restriction confirmation after the workspace changes', async () => {
@@ -640,33 +681,47 @@ describe('PartnerNodeAccessPanel', () => {
 
     await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    mockGovernedWorkspaceId.value = 'workspace-two'
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      governedWorkspaceId: 'workspace-two'
+    })
     await options.footerProps.onConfirm()
 
-    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('ignores a restriction confirmation after a workspace round trip', async () => {
     const user = userEvent.setup()
-    mockPolicy.value = {
-      enforcementEnabled: false,
-      providers: [{ providerId: 'openai', enabled: true }]
-    }
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      policy: {
+        enforcementEnabled: false,
+        providers: [{ providerId: 'openai', enabled: true }]
+      }
+    })
     renderComponent()
 
     await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
     const options = mockShowConfirmDialog.mock.calls[0][0]
-    mockGovernedWorkspaceId.value = 'workspace-two'
-    mockPolicy.value = {
-      enforcementEnabled: false,
-      providers: [{ providerId: 'openai', enabled: false }]
-    }
-    mockGovernedWorkspaceId.value = 'workspace-one'
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      governedWorkspaceId: 'workspace-two'
+    })
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      policy: {
+        enforcementEnabled: false,
+        providers: [{ providerId: 'openai', enabled: false }]
+      }
+    })
+    Object.assign(usePartnerNodeGovernanceStore(), {
+      governedWorkspaceId: 'workspace-one'
+    })
     await options.footerProps.onConfirm()
 
-    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('keeps the access toggle in place until the change is confirmed', async () => {
@@ -684,7 +739,9 @@ describe('PartnerNodeAccessPanel', () => {
     await nextTick()
 
     expect(toggle.getAttribute('aria-checked')).toBe('true')
-    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).not.toHaveBeenCalled()
   })
 
   it('toggles access mode from the keyboard', async () => {
@@ -700,7 +757,7 @@ describe('PartnerNodeAccessPanel', () => {
   it.for(['loading', 'error'] as const)(
     'locks the access toggle while policy status is %s',
     (status) => {
-      mockStatus.value = status
+      Object.assign(usePartnerNodeGovernanceStore(), { status: status })
       renderComponent()
 
       expect(
@@ -712,8 +769,8 @@ describe('PartnerNodeAccessPanel', () => {
   it.for(['ineligible', 'inactive'] as const)(
     'shows an unavailable state while policy status is %s',
     (status) => {
-      mockStatus.value = status
-      mockProviders.value = []
+      Object.assign(usePartnerNodeGovernanceStore(), { status: status })
+      Object.assign(usePartnerNodeGovernanceStore(), { providers: [] })
       renderComponent()
 
       expect(
@@ -726,7 +783,7 @@ describe('PartnerNodeAccessPanel', () => {
 
   it('offers the enterprise dialog when the gated toggle is clicked', async () => {
     const user = userEvent.setup()
-    mockStatus.value = 'ineligible'
+    Object.assign(usePartnerNodeGovernanceStore(), { status: 'ineligible' })
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     renderComponent()
 
@@ -745,12 +802,12 @@ describe('PartnerNodeAccessPanel', () => {
       'https://comfy.org/cloud/enterprise/',
       '_blank'
     )
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
     openSpy.mockRestore()
   })
 
   it('shows the enterprise upsell when the catalog loads but policy access is forbidden', () => {
-    mockStatus.value = 'ineligible'
+    Object.assign(usePartnerNodeGovernanceStore(), { status: 'ineligible' })
     renderComponent()
 
     expect(screen.getByText('Enterprise')).toBeTruthy()
@@ -773,9 +830,9 @@ describe('PartnerNodeAccessPanel', () => {
   it('confirms expanded access when a restricted provider is disabled', async () => {
     const user = userEvent.setup()
     restrictPolicy([{ providerId: 'openai', enabled: false }])
-    mockIsProviderEnabled.mockImplementation(
-      (providerId: string) => providerId !== 'openai'
-    )
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockImplementation((providerId: string) => providerId !== 'openai')
     renderComponent()
 
     await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
@@ -785,7 +842,9 @@ describe('PartnerNodeAccessPanel', () => {
       'Allow access to all partner models?'
     )
     await options.footerProps.onConfirm()
-    expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).toHaveBeenCalledWith(false)
   })
 
   it('confirms before returning to unrestricted when every provider is enabled', async () => {
@@ -796,7 +855,9 @@ describe('PartnerNodeAccessPanel', () => {
     await user.click(screen.getByRole('switch', { name: allowAllSwitchName }))
 
     expect(mockShowConfirmDialog).toHaveBeenCalledOnce()
-    expect(mockSetEnforcementEnabled).not.toHaveBeenCalled()
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).not.toHaveBeenCalled()
     const options = mockShowConfirmDialog.mock.calls[0][0]
     expect(options.headerProps.title).toBe(
       'Allow access to all partner models?'
@@ -805,12 +866,14 @@ describe('PartnerNodeAccessPanel', () => {
       'Partner models from every provider will become available to every workspace member. This can take up to 10 minutes to apply across your workspace.'
     )
     await options.footerProps.onConfirm()
-    expect(mockSetEnforcementEnabled).toHaveBeenCalledWith(false)
+    expect(
+      usePartnerNodeGovernanceStore().setEnforcementEnabled
+    ).toHaveBeenCalledWith(false)
   })
 
   it('retries a failed load', async () => {
     const user = userEvent.setup()
-    mockStatus.value = 'error'
+    Object.assign(usePartnerNodeGovernanceStore(), { status: 'error' })
     renderComponent()
 
     expect(
@@ -818,6 +881,6 @@ describe('PartnerNodeAccessPanel', () => {
     ).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
 
-    expect(mockLoadPolicy).toHaveBeenCalledOnce()
+    expect(usePartnerNodeGovernanceStore().loadPolicy).toHaveBeenCalledOnce()
   })
 })
