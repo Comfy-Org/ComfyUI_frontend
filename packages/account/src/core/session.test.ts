@@ -745,6 +745,38 @@ describe('host-driven invalidation', () => {
     ).toBeNull()
   })
 
+  it('keeps the identity after invalidation, so a host scope change never strands the port', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    client.invalidate()
+
+    const snapshot = client.getSnapshot()
+    expect(snapshot.phase).toBe('minting')
+    expect(
+      snapshot.user?.uid,
+      'a real port never re-delivers an unchanged user, so nulling it here would leave the client signed-out for good'
+    ).toBe(user.uid)
+    expect(client.getToken()).toBeUndefined()
+
+    const after = await client.ensureFresh()
+    expect(
+      after?.status === 'ok' && after.session.token,
+      'an implicit-user mint after invalidation must commit for the still attached user'
+    ).toBe('post-invalidate-jwt')
+    expect(client.getToken()).toBe('post-invalidate-jwt')
+  })
+
   it('a mint outliving invalidation must not write the credential cache', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
@@ -767,21 +799,6 @@ describe('host-driven invalidation', () => {
       storage.raw(),
       'a storage-backed host would resurrect the invalidated credential on the next reload'
     ).toBeNull()
-  })
-
-  it('reads signed-out immediately after invalidation, not minting', async () => {
-    const { client } = makeClient({ fetchImpl: okFetch() })
-    const identity = manualIdentity()
-    client.attachIdentity(identity.port)
-    identity.fire(testUser())
-    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
-
-    client.invalidate()
-
-    expect(
-      client.getSnapshot().phase,
-      "an invalidated client claiming 'minting' hands a signed-out host a stale identity until the port re-diffs"
-    ).toBe('signed-out')
   })
 })
 
