@@ -11,7 +11,7 @@ import type { MessageVariants } from './message.variants'
 import { messageVariants } from './message.variants'
 
 const {
-  severity = 'info',
+  severity,
   closable = false,
   icon,
   class: customClass = ''
