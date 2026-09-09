@@ -37,21 +37,24 @@ const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   copyMock: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: downloadFileMock
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: copyMock })
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: () => ({})
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ nodeToNodeLocatorId: () => LOCATOR })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ nodeToNodeLocatorId: () => LOCATOR })
+  })
+)
 
 interface SavedFile {
   filename: string

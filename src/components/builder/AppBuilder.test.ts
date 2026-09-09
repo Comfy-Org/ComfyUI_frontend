@@ -10,7 +10,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 
 import AppBuilder from './AppBuilder.vue'
 
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { ref } = await import('vue')
   return {
     useAppMode: () => ({
@@ -26,7 +26,7 @@ vi.mock('@/composables/useAppMode', async () => {
   }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       id: '11111111-1111-4111-8111-111111111111',

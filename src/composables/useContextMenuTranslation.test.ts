@@ -10,7 +10,7 @@ import type {
 
 import { translateContextMenuItems } from './useContextMenuTranslation'
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   resolveNodeDefText: vi.fn(),
   st: (_key: string, fallback: string) => fallback,
   te: () => false

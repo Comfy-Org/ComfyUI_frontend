@@ -9,7 +9,7 @@ import type { ControlOptions } from '@/types/simplifiedWidget'
 
 const mockGet = vi.hoisted(() => vi.fn<(key: string) => string>())
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: mockGet })
 }))
 

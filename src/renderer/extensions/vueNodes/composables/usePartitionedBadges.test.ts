@@ -17,12 +17,12 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 const NODE_ID = toNodeId(5)
 
 const settings = vi.hoisted(() => new Map<string, unknown>())
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({ get: (key: string) => settings.get(key) })
 }))
 
 const getNodeDisplayPrice = vi.fn(() => '$0.05 x 3 Runs')
-vi.mock('@/composables/node/useNodePricing', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
   useNodePricing: () => ({
     getNodeDisplayPrice,
     getNodeRevisionRef: () => ({ value: 0 }),

@@ -74,11 +74,6 @@ vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
-}))
-
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
