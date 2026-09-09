@@ -1,7 +1,6 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import type { Pinia } from 'pinia'
-import { createPinia, disposePinia, setActivePinia } from 'pinia'
+import { disposePinia, getActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
@@ -59,12 +58,8 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 }))
 
 describe('API key authentication initialization', () => {
-  let pinia: Pinia
-
   beforeEach(() => {
     localStorage.clear()
-    pinia = createPinia()
-    setActivePinia(pinia)
     vi.stubGlobal('fetch', mockFetch)
     mockFetch.mockResolvedValue({
       ok: true,
@@ -85,7 +80,8 @@ describe('API key authentication initialization', () => {
   })
 
   afterEach(() => {
-    disposePinia(pinia)
+    const pinia = getActivePinia()
+    if (pinia) disposePinia(pinia)
   })
 
   const customerResponse = (id: string) => ({

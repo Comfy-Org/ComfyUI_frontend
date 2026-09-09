@@ -1,6 +1,4 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
-import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -110,7 +108,6 @@ const i18n = createI18n({
   missingWarn: false,
   fallbackWarn: false
 })
-let pinia: Pinia
 
 function useSettingUI(
   ...options: Parameters<typeof useSettingUIComposable>
@@ -122,7 +119,7 @@ function useSettingUI(
       return () => null
     }
   })
-  render(Wrapper, { global: { plugins: [pinia, i18n] } })
+  render(Wrapper, { global: { plugins: [i18n] } })
   return result
 }
 
@@ -149,9 +146,6 @@ describe('useSettingUI', () => {
   }
 
   beforeEach(() => {
-    pinia = createPinia()
-    setActivePinia(pinia)
-
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,

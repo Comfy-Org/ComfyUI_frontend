@@ -1,7 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createPinia, setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
@@ -161,7 +160,6 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
