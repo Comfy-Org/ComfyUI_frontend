@@ -31,6 +31,7 @@ import {
 import { subgraphComplexPromotion1 } from './subgraphComplexPromotion1'
 
 const FIXTURE_STRING_CONCAT_TYPE = 'Fixture/StringConcatenate'
+const FIXTURE_TEST_NODE_TYPE = 'Fixture/TestNode'
 const FIXTURE_UUID_PREFIX = '00000000-0000-4000-8000-'
 
 let fixtureUuidSequence = 1
@@ -44,6 +45,14 @@ class FixtureStringConcatenateNode extends LGraphNode {
     this.addWidget('text', 'string_a', '', () => {})
     this.addWidget('text', 'string_b', '', () => {})
     this.addWidget('text', 'delimiter', '', () => {})
+  }
+}
+
+class FixtureTestNode extends LGraphNode {
+  constructor(title = 'Test Node') {
+    super(title, FIXTURE_TEST_NODE_TYPE)
+    this.addInput('in', '*')
+    this.addOutput('out', '*')
   }
 }
 
@@ -61,6 +70,9 @@ function nextFixtureUuid(): UUID {
 export function resetSubgraphFixtureState(): void {
   fixtureUuidSequence = 1
   cleanupComplexPromotionFixtureNodeType()
+  if (FIXTURE_TEST_NODE_TYPE in LiteGraph.registered_node_types) {
+    LiteGraph.unregisterNodeType(FIXTURE_TEST_NODE_TYPE)
+  }
 }
 
 export function enableSubgraphNodeCreation(rootGraph: LGraph): () => void {
@@ -275,11 +287,9 @@ export function createTestSubgraph(
 
   // Add test nodes if requested
   if (options.nodeCount) {
+    LiteGraph.registered_node_types[FIXTURE_TEST_NODE_TYPE] ??= FixtureTestNode
     for (let i = 0; i < options.nodeCount; i++) {
-      const node = new LGraphNode(`Test Node ${i}`)
-      node.addInput('in', '*')
-      node.addOutput('out', '*')
-      subgraph.add(node)
+      subgraph.add(new FixtureTestNode(`Test Node ${i}`))
     }
   }
 

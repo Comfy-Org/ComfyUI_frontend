@@ -5,7 +5,7 @@ import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'

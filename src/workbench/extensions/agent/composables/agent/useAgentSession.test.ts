@@ -1,6 +1,6 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -32,7 +32,9 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -201,7 +203,6 @@ function admissionError(
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })
@@ -1163,7 +1164,8 @@ describe('useAgentSession (v1 composition root)', () => {
       'wf-existing',
       'workflows/existing.json'
     )
-    setActivePinia(createPinia())
+    await nextTick()
+    useAgentWorkflowTabBindingStore().$dispose()
     localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
@@ -1979,7 +1981,6 @@ describe('thread resume (B17)', () => {
   ]
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
   })
 

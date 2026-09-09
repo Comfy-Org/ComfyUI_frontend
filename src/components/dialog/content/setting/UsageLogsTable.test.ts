@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -95,11 +95,6 @@ const i18n = createI18n({
     }
   }
 })
-
-const globalConfig = {
-  plugins: [PrimeVue, i18n, createTestingPinia()],
-  directives: { tooltip: Tooltip }
-}
 
 async function flushMicrotasks() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -199,7 +194,12 @@ describe('UsageLogsTable', () => {
   })
 
   function renderComponent() {
-    return render(UsageLogsTable, { global: globalConfig })
+    return render(UsageLogsTable, {
+      global: {
+        plugins: [PrimeVue, i18n, getActivePinia()!],
+        directives: { tooltip: Tooltip }
+      }
+    })
   }
 
   async function renderLoaded() {
