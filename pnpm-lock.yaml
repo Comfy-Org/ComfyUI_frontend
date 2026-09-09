@@ -1044,6 +1044,9 @@ importers:
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../shared-frontend-utils
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../tailwind-utils
       zod:
         specifier: 'catalog:'
         version: 3.25.76

@@ -4,7 +4,12 @@
  * stale token is allowed. Presentation (unit conversion, chips, focus
  * triggers) stays with the host.
  */
-import type { AccountCredential, SessionClient } from './session.js'
+import { fetchWithCustomerRecovery } from './customerRecovery.js'
+import type {
+  AccountCredential,
+  AccountUser,
+  SessionClient
+} from './session.js'
 
 export type CreditsState =
   | { readonly status: 'unknown' }
@@ -16,6 +21,12 @@ export interface BillingClientOptions {
   readonly balanceUrl: string
   readonly fetchImpl?: typeof fetch
   readonly timeoutMs?: number
+  /**
+   * Provisions the customer record for the read's owner when the balance
+   * endpoint answers a missing-customer 409; the read is then retried once.
+   * Without it a 409 is a plain error.
+   */
+  readonly provisionCustomer?: (user: AccountUser) => Promise<void>
 }
 
 export interface BillingClient {
@@ -50,7 +61,8 @@ export function createBillingClient(
     session,
     balanceUrl,
     fetchImpl = globalThis.fetch,
-    timeoutMs = DEFAULT_BALANCE_TIMEOUT_MS
+    timeoutMs = DEFAULT_BALANCE_TIMEOUT_MS,
+    provisionCustomer
   } = options
 
   let state: CreditsState = { status: 'unknown' }
@@ -70,13 +82,26 @@ export function createBillingClient(
     return snapshot.phase === 'authenticated' ? snapshot.session : undefined
   }
 
-  async function fetchBalance(token: string): Promise<CreditsState> {
+  function requestBalance(token: string): Promise<Response> {
+    return fetchImpl(balanceUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(timeoutMs)
+    })
+  }
+
+  async function fetchBalance(
+    owner: AccountUser,
+    token: string
+  ): Promise<CreditsState> {
     let response: Response
     try {
-      response = await fetchImpl(balanceUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(timeoutMs)
-      })
+      response = provisionCustomer
+        ? await fetchWithCustomerRecovery(balanceUrl, {
+            request: () => requestBalance(token),
+            recoverMissingCustomer: () => provisionCustomer(owner),
+            identityUnchanged: () => activeCredential()?.uid === owner.uid
+          })
+        : await requestBalance(token)
     } catch {
       return { status: 'error' }
     }
@@ -104,7 +129,7 @@ export function createBillingClient(
     const owner = snapshot.user
     const uid = snapshot.session.uid
     let token = snapshot.session.token
-    let result = await fetchBalance(token)
+    let result = await fetchBalance(owner, token)
     // One re-mint on a stale token, mirroring the run path's single retry,
     // spent for the identity whose read failed — never whoever is signed in
     // by the time the 401 lands. Other failures are not the token's fault,
@@ -113,7 +138,7 @@ export function createBillingClient(
       const reminted = await session.remint(owner)
       if (reminted?.status === 'ok') {
         token = reminted.session.token
-        result = await fetchBalance(token)
+        result = await fetchBalance(owner, token)
       }
     }
     // Publish only if the same user and token are still live. A sign-out,
