@@ -1,4 +1,6 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
@@ -6,8 +8,8 @@ const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
-    Object.assign(useWorkflowStore(), {
-      activeWorkflow: { filename: 'my-workflow.json' }
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      filename: 'my-workflow.json'
     })
   })
 
@@ -18,7 +20,7 @@ describe('useComfyHubPublishWizard', () => {
     })
 
     it('defaults name to empty string when no active workflow', () => {
-      Object.assign(useWorkflowStore(), { activeWorkflow: null })
+      useWorkflowStore().activeWorkflow = null
       const { formData } = useComfyHubPublishWizard()
       expect(formData.value.name).toBe('')
     })

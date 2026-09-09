@@ -85,12 +85,6 @@ type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
-  vi.mocked(usePartnerNodesEducationStore().requestCard).mockImplementation(
-    () => {}
-  )
-  vi.mocked(usePartnerNodesEducationStore().dismissCard).mockImplementation(
-    () => {}
-  )
 })
 
 describe('useTemplateWorkflows', () => {
@@ -369,7 +363,7 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(usePartnerNodesEducationStore().requestCard).toHaveBeenCalledWith(
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
       'loaded-template'
     )
   })
@@ -378,12 +372,13 @@ describe('useTemplateWorkflows', () => {
     const { loadWorkflowTemplate } = useTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
     mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+    usePartnerNodesEducationStore().requestedForWorkflowKey =
+      'previous-template'
     mockLoadedWorkflow.value = undefined
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(usePartnerNodesEducationStore().requestCard).not.toHaveBeenCalled()
-    expect(usePartnerNodesEducationStore().dismissCard).toHaveBeenCalled()
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
   })
 
   it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
@@ -398,7 +393,7 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(usePartnerNodesEducationStore().requestCard).toHaveBeenCalledWith(
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
       'template-a'
     )
   })
@@ -410,7 +405,7 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(usePartnerNodesEducationStore().requestCard).not.toHaveBeenCalled()
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
   })
 
   it('retires an earlier request when an open-source template loads next', async () => {
@@ -422,12 +417,14 @@ describe('useTemplateWorkflows', () => {
     )
 
     await loadWorkflowTemplate('template1', 'default')
-    expect(usePartnerNodesEducationStore().requestCard).toHaveBeenCalledTimes(1)
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'loaded-template'
+    )
 
     // The open-source template may still contain partner nodes, so the card
     // would otherwise linger and describe the wrong template.
     await loadWorkflowTemplate('template2', 'default')
-    expect(usePartnerNodesEducationStore().dismissCard).toHaveBeenCalledTimes(1)
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
   })
 
   it('should handle errors when loading templates', async () => {

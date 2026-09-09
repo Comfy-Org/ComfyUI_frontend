@@ -1,4 +1,6 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -110,8 +112,8 @@ vi.mock<unknown>(
   })
 )
 
-function setActiveWorkflow(workflow: Record<string, unknown> | null) {
-  Object.assign(useWorkflowStore(), { activeWorkflow: workflow })
+function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
 }
 
 function createTestI18n() {
