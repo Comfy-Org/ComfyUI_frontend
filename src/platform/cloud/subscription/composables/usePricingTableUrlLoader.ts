@@ -145,7 +145,12 @@ export function usePricingTableUrlLoader() {
     // The loader can run before the capability snapshot resolves; a
     // sales-managed workspace must not see the table through that gap.
     await initializeCapabilities()
-    if (!canOpenPricingSurface.value) return
+    if (
+      !permissions.value.canManageSubscription ||
+      !canOpenPricingSurface.value
+    ) {
+      return
+    }
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,

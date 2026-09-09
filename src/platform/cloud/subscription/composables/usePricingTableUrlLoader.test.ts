@@ -150,6 +150,20 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
+  it('rechecks permission after capabilities initialize', async () => {
+    mockRouteQuery.value = { pricing: 'team' }
+    mockInitializeCapabilities.mockImplementation(async () => {
+      mockPermissions.value = { canManageSubscription: false }
+    })
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
+    expect(mockFetchPlans).not.toHaveBeenCalled()
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
   it('rechecks the capability after plans load, catching a workspace switch', async () => {
     mockRouteQuery.value = {
       pricing: 'team',

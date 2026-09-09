@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
@@ -144,7 +144,13 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     })
 
     expect(screen.getByText('Some Future Tier')).toBeTruthy()
-    expect(screen.getByText('0', { exact: true })).toBeTruthy()
+    expect(
+      within(
+        screen.getByRole('group', {
+          name: 'subscription.preview.eachMonthCreditsRefill'
+        })
+      ).getByText('0', { exact: true })
+    ).toBeTruthy()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {
