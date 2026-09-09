@@ -10811,6 +10811,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "display_name": "LTXV Add Generated Keyframes",
+    "description": "Append detailing keyframes to a video latent. Each keyframe is one latent frame of tokens whose RoPE position spans a single pixel frame; they are denoised with the video and are not part of the decoded output. Placement is one slot every interval_frames pixels, skipping I2V frames, existing guides, and detailing keyframes already on the cond. Connected keyframes are content only and are re-placed on this canvas unless frame_indices is set. Pull them back out with LTXV Separate Generated Keyframes. Requires a checkpoint trained for generated keyframes (one carrying keyframes_abs_pos_embedding).",
+    "inputs": {
+      "positive": {
+        "name": "positive",
+        "tooltip": "Positive conditioning the keyframes are attached to."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative conditioning the keyframes are attached to."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Only used to read the latent scale factors."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Plain 5D video latent to generate keyframes alongside. Add them before Concat AV Latent."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Pixel-frame stride for auto placement. Default 24 is about one keyframe per second at 24 fps. Occupied pixels are skipped. Ignored when frame_indices is set."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optional content to initialize the new keyframes with. Connect keyframes from an earlier Separate (same spatial size), or a plain video latent to copy the nearest frame at each new slot (e.g. after temporal upscale). These are still denoised, not pinned as guides. Recorded indices on a keyframes latent are ignored unless frame_indices is set. Only has an effect when sampling starts below sigma 1."
+      },
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Optional pixel-frame indices. Leave empty to place from interval_frames on the current canvas. When set, this list is the placement (connected keyframes are matched in order). The last frame is allowed; frame 0 is not (it is already a standalone token)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive conditioning with generated-keyframe attention attached."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative conditioning with generated-keyframe attention attached."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video latent with generated keyframes appended on T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -10844,6 +10892,55 @@
       "iclora_parameters": {
         "name": "iclora_parameters",
         "tooltip": "Optional IC-LoRA parameters from a Get IC-LoRA Parameters node. Used for adjusting guide processing as required by certain IC-LoRAs (eg. those with a reference_downscale_factor > 1). When chained, each LTXVAddGuide uses only the parameters connected to it."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "display_name": "LTXV Add Latent Guide",
+    "description": "Pins an already-encoded latent as a guide, for when the guide comes out of an earlier stage rather than an image. Same effect as LTXV Add Guide without the VAE decode/encode round trip. A guide that is spatially smaller than the target (an IC-LoRA or detailing reference) is dilated onto a sparse grid, and its RoPE end positions are expanded by the same ratio so it covers the target canvas instead of addressing only the top-left corner of it.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Target video latent the guide is pinned onto."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Guide latent. Its spatial size must divide the target's by the same whole number on both axes; equal size pins it as-is, half size is treated as an x2 IC-LoRA reference."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Latent frame index to start the guide at, counted in latent frames rather than pixel frames. Negative values place the guide on frames before the start of the latent, not counted back from its end."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Capped at 1.0. A dilated guide marks its padding positions with a negative denoise mask so the model drops them; above 1.0 the kept positions would go negative too and the whole guide would be dropped. Amplify beyond 1.0 with attention_mask instead."
+      },
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optional pixel-space spatial mask. Controls per-region conditioning influence via self-attention, multiplied by strength."
       }
     },
     "outputs": {
@@ -11123,6 +11220,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "display_name": "LTXV Freeze Latent",
+    "description": "Set noise_mask to 0 so this latent is kept clean during sampling. Works on video or audio. Typical uses: freeze audio before Concat AV so it only provides cross-attention, or freeze any latent that should not be denoised.",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Video or audio latent to freeze. Audio is 4D; video is 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "display_name": "LTXV Generated Keyframes to Guides",
+    "description": "Pin generated keyframes from an earlier stage as frozen image guides on a later canvas. They are decoded as standalone frames, resized if needed, and written with noise_mask=0 so they are not denoised again. After a temporal upscale, recorded indices are scaled from the canvas they were generated on onto this one (same moments). Use override_frame_indices to set positions explicitly. To keep generating (and denoising) keyframes at new positions, use Add Generated Keyframes instead.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "The target video latent to add the guides to, e.g. the temporally upscaled one."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "The keyframes output of LTXV Separate Generated Keyframes, which carries the pixel frame index each keyframe was generated at."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Guide strength. 1.0 is a hard pin; lower values relax it."
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Optional — pin at these pixel frames instead of the recorded (or auto-scaled) positions. Provide one index per keyframe. Leave empty to reuse recorded positions, or to scale them when the target canvas is a different length (e.g. after temporal x2)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive conditioning with the keyframes pinned as image guides."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative conditioning with the keyframes pinned as image guides."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Target video latent with the keyframes added as frozen guides."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -11350,6 +11508,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "display_name": "LTXV Separate Generated Keyframes",
+    "description": "Split the generated keyframes added by LTXV Add Generated Keyframes back out of a sampled latent, and remove them from the conditioning. Separate them before spatially upscaling the video latent. Do not run LTXV Crop Guides first — it treats generated keyframes as disposable guides and drops them.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Return the keyframes as a batch of single-frame latents. Leave off to get them as one multi-frame latent, which is what the latent upsampler and a later Add Generated Keyframes expect."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive conditioning with generated-keyframe metadata removed."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative conditioning with generated-keyframe metadata removed."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video latent with the generated keyframes stripped."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "The peeled keyframes, labeled with generated_keyframe_indices and generated_keyframe_num_frames. Feed these to a later Add Generated Keyframes to initialize new slots, or to Generated Keyframes To Guides to pin them as frozen image guides (indices are remapped if the canvas length changed)."
       }
     }
   },
@@ -16696,6 +16891,45 @@
       "camera_angle_x": {
         "name": "camera_angle_x",
         "tooltip": "Horizontal FOV in degrees. Wire a MoGeGeometryToFOV (axis='horizontal', unit='degrees') for a per-image FoV (matches upstream default)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Multi-View Conditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision with bundled NAF weights."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Horizontal FOV in degrees of the views as framed: 20 for rig renders and most multi-view generators, or MoGeGeometryToFOV on one of the views for photos."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "Square view of the object's front side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Square view of the object's left side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      },
+      "back": {
+        "name": "back",
+        "tooltip": "Square view of the object's back side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Square view of the object's right side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
       }
     },
     "outputs": {
