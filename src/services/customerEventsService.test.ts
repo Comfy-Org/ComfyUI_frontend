@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as I18n from '@/i18n'
 import {
   EventType,
   useCustomerEventsService
@@ -33,9 +34,11 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
 }))
 
-vi.mock('@/i18n', () => ({
-  d: mockI18n.d,
-  t: (key: string) => key
+// Only the date formatter is stubbed; `t` stays real so the assertions below
+// exercise the messages users actually see.
+vi.mock('@/i18n', async (importOriginal) => ({
+  ...(await importOriginal<typeof I18n>()),
+  d: mockI18n.d
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({
@@ -285,17 +288,17 @@ describe('useCustomerEventsService', () => {
 
   describe('formatEventType', () => {
     const expectedByType: Record<string, string> = {
-      credit_added: 'credits.eventTypes.creditAdded',
-      topup_completed: 'credits.eventTypes.creditAdded',
-      account_created: 'credits.eventTypes.accountCreated',
-      api_usage_completed: 'credits.eventTypes.apiUsage',
-      gpu_usage: 'credits.eventTypes.gpuUsage',
-      api_node_usage: 'credits.eventTypes.apiNodeUsage'
+      credit_added: 'Credits Added',
+      topup_completed: 'Credits Added',
+      account_created: 'Account Created',
+      api_usage_completed: 'API Usage',
+      gpu_usage: 'GPU Usage',
+      api_node_usage: 'Partner Node Usage'
     }
 
-    it('maps known legacy and unified event types to expected i18n keys', () => {
-      for (const [eventType, expectedKey] of Object.entries(expectedByType)) {
-        expect(service.formatEventType(eventType)).toBe(expectedKey)
+    it('maps known legacy and unified event types to their labels', () => {
+      for (const [eventType, expectedLabel] of Object.entries(expectedByType)) {
+        expect(service.formatEventType(eventType)).toBe(expectedLabel)
       }
     })
 
