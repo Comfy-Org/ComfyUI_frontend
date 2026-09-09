@@ -1,9 +1,6 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createTestingPinia } from '@pinia/testing'
-import type { Pinia } from 'pinia'
-import { disposePinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -13,11 +10,6 @@ const mockFetch = vi.fn()
 
 vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
-}))
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
 vi.mock(import('firebase/auth'))
@@ -34,28 +26,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/workspaceAuthStore'),
-  () => ({
-    useWorkspaceAuthStore: () => ({
-      clearWorkspaceContext: vi.fn(),
-      getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
-      getUnifiedToken: vi.fn().mockReturnValue(undefined),
-      mintAtLogin: vi.fn()
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      activeWorkspaceId: null,
-      resetForIdentityChange: vi.fn()
-    })
-  })
-)
-
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
 }))
@@ -65,12 +35,8 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 }))
 
 describe('API key authentication initialization', () => {
-  let pinia: Pinia
-
   beforeEach(() => {
     localStorage.clear()
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
     vi.stubGlobal('fetch', mockFetch)
     mockFetch.mockResolvedValue({
       ok: true,
@@ -88,10 +54,6 @@ describe('API key authentication initialization', () => {
       }
     )
     vi.mocked(firebaseAuth.onIdTokenChanged).mockReturnValue(vi.fn())
-  })
-
-  afterEach(() => {
-    disposePinia(pinia)
   })
 
   const customerResponse = (id: string) => ({

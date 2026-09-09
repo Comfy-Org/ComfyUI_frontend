@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { paymentReturnUrl } from './paymentReturnUrl'
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 

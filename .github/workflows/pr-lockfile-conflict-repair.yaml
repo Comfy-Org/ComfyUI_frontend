@@ -80,6 +80,7 @@ jobs:
         with:
           repository: ${{ matrix.pull.headRepo }}
           ref: ${{ matrix.pull.headSha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Reproduce lockfile-only conflict
@@ -206,6 +207,7 @@ jobs:
         with:
           repository: ${{ matrix.pull.headRepo }}
           ref: ${{ matrix.pull.headSha }}
+          fetch-depth: 0
           token: ${{ secrets.PR_GH_TOKEN }}
 
       - name: Apply repaired lockfile

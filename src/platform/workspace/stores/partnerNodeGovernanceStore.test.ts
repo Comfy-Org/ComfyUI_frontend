@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,20 +10,6 @@ import type {
 import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 
-const mockTeamWorkspaceStore = vi.hoisted(() => ({
-  store: null as null | {
-    activeWorkspace: null | { id: string; type: 'personal' | 'team' }
-  }
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
-  const { reactive } = await import('vue')
-  mockTeamWorkspaceStore.store = reactive({ activeWorkspace: null })
-  return {
-    useTeamWorkspaceStore: () => mockTeamWorkspaceStore.store
-  }
-})
-
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
 const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
@@ -30,12 +17,12 @@ const mockFlags = vi.hoisted(() => ({
   partnerNodeGovernanceEnabled: true
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
 vi.mock(
-  '@/platform/workspace/api/partnerNodePolicyApi',
+  import('@/platform/workspace/api/partnerNodePolicyApi'),
   async (importOriginal) =>
     ({
       ...(await importOriginal<typeof PartnerNodePolicyApi>()),
@@ -59,9 +46,7 @@ const providers: PartnerProvider[] = [
 ]
 
 function activateWorkspace(id: string, type: 'personal' | 'team' = 'team') {
-  if (!mockTeamWorkspaceStore.store)
-    throw new Error('Workspace store not ready')
-  mockTeamWorkspaceStore.store.activeWorkspace = { id, type }
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspace: { id, type } })
 }
 
 async function createLoadedStore() {
