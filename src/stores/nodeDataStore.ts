@@ -131,8 +131,8 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    state.inputs = slots.inputs
-    state.outputs = slots.outputs
+    state.inputs.splice(0, state.inputs.length, ...slots.inputs)
+    state.outputs.splice(0, state.outputs.length, ...slots.outputs)
     return true
   }
 
