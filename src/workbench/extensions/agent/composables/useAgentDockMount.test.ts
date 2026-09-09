@@ -1,5 +1,7 @@
+import { render } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -62,5 +64,25 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
+  })
+
+  it('Gate 5: never docks or fetches the chunk while isOpen is stale but the flag is off', () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const store = useAgentPanelStore()
+    store.isOpen = true
+
+    const { docked, DockedAgentPanel } = useAgentDockMount()
+    if (!DockedAgentPanel) throw new Error('Expected cloud dock component')
+    const { container } = render(
+      defineComponent({
+        components: { DockedAgentPanel },
+        setup: () => ({ docked }),
+        template: '<component :is="DockedAgentPanel" v-if="docked" />'
+      })
+    )
+
+    expect(docked.value).toBe(false)
+    expect(container).toBeEmptyDOMElement()
+    expect(loadDockedAgentPanel).not.toHaveBeenCalled()
   })
 })
