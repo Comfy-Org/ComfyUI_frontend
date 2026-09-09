@@ -303,6 +303,7 @@ const lastPanelDefaultSize = computed(
 )
 
 function saveMainSplitterLayout(sizes: number[]) {
+  if (sizes.length === 1) return
   saveSplitterSizes(mainSplitterStateKey.value, sizes)
 }
 
@@ -316,6 +317,6 @@ function saveBottomPanelLayout(sizes: number[]) {
 }
 
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${agentPanelOpen.value ? '-with-agent' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}`
+  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}${agentPanelOpen.value ? '-with-agent' : ''}${isSelectMode.value ? '-builder' : ''}-${sidebarLocation.value}-${mainPanelCount.value}`
 })
 </script>
