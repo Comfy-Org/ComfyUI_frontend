@@ -12,7 +12,7 @@ export function toError(value: unknown): Error {
   if (value === undefined) return new Error('undefined')
   try {
     const serialised = JSON.stringify(value)
-    return new Error(serialised ?? String(value))
+    return new Error(serialised)
   } catch {
     return new Error(String(value))
   }
@@ -29,9 +29,9 @@ export function getErrorMessage(value: unknown): string | undefined {
     typeof value === 'object' &&
     value !== null &&
     'message' in value &&
-    typeof (value as { message: unknown }).message === 'string'
+    typeof value.message === 'string'
   ) {
-    return (value as { message: string }).message
+    return value.message
   }
   return undefined
 }

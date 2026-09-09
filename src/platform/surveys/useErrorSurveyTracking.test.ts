@@ -4,7 +4,7 @@ import { effectScope, nextTick, ref } from 'vue'
 
 const trackFeatureUsed = vi.hoisted(() => vi.fn())
 
-vi.mock('./useSurveyFeatureTracking', () => ({
+vi.mock<unknown>(import('./useSurveyFeatureTracking'), () => ({
   useSurveyFeatureTracking: () => ({
     trackFeatureUsed,
     useCount: ref(0)
@@ -16,7 +16,7 @@ const useFakeExecutionErrorStore = defineStore('fakeExecutionError', () => {
   return { hasAnyError }
 })
 
-vi.mock('@/stores/executionErrorStore', () => ({
+vi.mock<unknown>(import('@/stores/executionErrorStore'), () => ({
   useExecutionErrorStore: () => useFakeExecutionErrorStore()
 }))
 
@@ -36,7 +36,7 @@ describe('useErrorSurveyTracking', () => {
   })
 
   afterEach(() => {
-    scope?.stop()
+    scope.stop()
   })
 
   it('counts false → true transition once', async () => {

@@ -65,7 +65,7 @@ const mockRendererFactory = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
+vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
   useGLSLRenderer: (config?: GLSLRendererConfig) =>
     mockRendererFactory.create(config)
 }))
@@ -74,7 +74,7 @@ const mockSetNodePreviewsByNodeId = vi.fn()
 const mockRevokePreviewsByLocatorId = vi.fn()
 const mockNodeOutputs = reactive<Record<string, unknown>>({})
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => ({
     setNodePreviewsByNodeId: mockSetNodePreviewsByNodeId,
     setNodePreviewsByLocatorId: vi.fn(),
@@ -84,7 +84,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   })
 }))
 
-vi.mock('@/stores/widgetValueStore', () => {
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => {
   const widgetMap = new Map<string, { value: unknown }>()
   const getWidget = vi.fn((id: string) => widgetMap.get(id))
   return {
@@ -95,20 +95,24 @@ vi.mock('@/stores/widgetValueStore', () => {
   }
 })
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      nodeIdToNodeLocatorId: (id: string | number) => String(id),
+      nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
+    })
   })
-}))
+)
 
-vi.mock('@/utils/objectUrlUtil', () => ({
+vi.mock(import('@/utils/objectUrlUtil'), () => ({
   createSharedObjectUrl: () => 'blob:test',
   releaseSharedObjectUrl: vi.fn()
 }))
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  const graph = { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } }
+  const rootGraph = { id: 'test-graph-id', _nodes: [] }
+  const graph = { id: 'test-graph-id', rootGraph }
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'GLSLShader',
@@ -126,13 +130,16 @@ function wrapNode(
   return ref(node) as MaybeRefOrGetter<LGraphNode | null>
 }
 
+function ensureImageBitmap(global: { ImageBitmap?: typeof ImageBitmap }): void {
+  global.ImageBitmap ??= class ImageBitmap {} as unknown as typeof ImageBitmap
+}
+
 describe('useGLSLPreview', () => {
   beforeEach(() => {
     mockRendererFactory.lastConfig.value = undefined
     globalThis.URL.createObjectURL = vi.fn(() => 'blob:test')
     globalThis.URL.revokeObjectURL = vi.fn()
-    globalThis.ImageBitmap ??=
-      class ImageBitmap {} as unknown as typeof globalThis.ImageBitmap
+    ensureImageBitmap(globalThis)
   })
 
   it('does not activate for non-GLSLShader nodes', () => {

@@ -26,7 +26,7 @@ const {
     routeHash: ref(''),
     routerPush: vi.fn(),
     routerReplace: vi.fn(),
-    routerHistory: { state: {} as Record<string, unknown> },
+    routerHistory: { state: {} },
     mockOpenWorkflow: vi.fn()
   }
 })
@@ -43,7 +43,7 @@ function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
 }
 
 function getRouteTargetHash(target: VueRouter.RouteLocationRaw): string {
-  return typeof target === 'string' ? target : String(target.hash ?? '')
+  return typeof target === 'string' ? target : (target.hash ?? '')
 }
 
 function applyRouteTarget(target: VueRouter.RouteLocationRaw): void {
@@ -51,7 +51,7 @@ function applyRouteTarget(target: VueRouter.RouteLocationRaw): void {
   routeHash.value = getRouteTargetHash(target)
 }
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     graph: null,
     subgraph: null,
@@ -83,27 +83,35 @@ vi.mock('@/scripts/app', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+  () => ({
+    useCanvasStore: () => ({
+      getCanvas: () => app.canvas
+    })
+  })
+)
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   findSubgraphPathById: vi.fn()
 }))
-vi.mock('@vueuse/router', () => ({ useRouteHash: () => routeHash }))
-vi.mock('vue-router', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueRouter>()),
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => routeHash }))
+vi.mock<unknown>(import('vue-router'), () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
   useRouter: () => ({
     push: routerPush,
     replace: routerReplace,
     options: { history: routerHistory }
   })
 }))
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
+  })
+)
 
 describe('useSubgraphNavigationStore', () => {
   let pinia: ReturnType<typeof createTestingPinia>

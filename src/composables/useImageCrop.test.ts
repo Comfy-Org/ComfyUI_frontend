@@ -21,21 +21,17 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...(actual as Record<string, unknown>),
-    useResizeObserver: (_target: unknown, cb: () => void) => {
-      resizeObserverCallbacks.push(cb)
-      return { stop: vi.fn() }
-    }
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  useResizeObserver: (_target: unknown, cb: () => void) => {
+    resizeObserverCallbacks.push(cb)
+    return { stop: vi.fn() }
   }
-})
+}))
 
 const mockResolveNode = vi.hoisted(() =>
   vi.fn<(id: NodeId) => LGraphNode | null>()
 )
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: (id: NodeId) => mockResolveNode(id)
 }))
 
@@ -51,21 +47,25 @@ type MockOutputStore = {
 
 const useNodeOutputStoreMock = vi.hoisted(() => vi.fn<() => MockOutputStore>())
 
-vi.mock('@/stores/nodeOutputStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
   useNodeOutputStore: () => useNodeOutputStoreMock()
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: {
-      graph: {
-        rootGraph: { id: 'test-graph' }
-      }
-    }
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/widgetValueStore', () => ({
+  () => ({
+    useCanvasStore: () => ({
+      canvas: {
+        graph: {
+          rootGraph: { id: 'test-graph' }
+        }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/widgetValueStore'), () => ({
   useWidgetValueStore: () => ({
     getNodeWidgets: vi.fn(() => [])
   })
@@ -121,18 +121,17 @@ function mountContainerLayout(
     configurable: true,
     value: height
   })
-  el.getBoundingClientRect = () =>
-    ({
-      width: rectWidth,
-      height,
-      top: 0,
-      left: 0,
-      right: rectWidth,
-      bottom: height,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  el.getBoundingClientRect = () => ({
+    width: rectWidth,
+    height,
+    top: 0,
+    left: 0,
+    right: rectWidth,
+    bottom: height,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
 }
 
 function makePointerEvent(
@@ -164,7 +163,7 @@ type CropVm = Record<string, unknown> & {
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
   /* eslint-disable testing-library/no-node-access */
-  const container = vm.$el as HTMLDivElement
+  const container = vm.$el
   const img = container.querySelector('img')
   /* eslint-enable testing-library/no-node-access */
   mountContainerLayout(container, 400, 300)
@@ -373,7 +372,7 @@ describe('useImageCrop', () => {
   it('uses scale factor 1 when natural dimensions are zero', async () => {
     const vm = await mountHarness()
     /* eslint-disable testing-library/no-node-access */
-    const container = vm.$el as HTMLDivElement
+    const container = vm.$el
     const img = container.querySelector('img')
     /* eslint-enable testing-library/no-node-access */
     if (!img) throw new Error('expected preview img')
@@ -438,7 +437,7 @@ describe('useImageCrop', () => {
   it('drags the crop box in image space and ends on pointerup', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 400, 300)
-    mountContainerLayout(vm.$el as HTMLDivElement, 400, 300)
+    mountContainerLayout(vm.$el, 400, 300)
     vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
 
     const captureEl = document.createElement('div')

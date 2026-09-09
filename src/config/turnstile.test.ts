@@ -11,9 +11,9 @@ const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
 // reference them without a temporal-dead-zone crash (which surfaces under
 // coverage instrumentation, not a plain run).
 const { mockRemoteConfig } = vi.hoisted(() => ({
-  mockRemoteConfig: { value: {} as Record<string, unknown> }
+  mockRemoteConfig: { value: {} }
 }))
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: mockRemoteConfig,
   configValueOrDefault: (
     cfg: Record<string, unknown>,

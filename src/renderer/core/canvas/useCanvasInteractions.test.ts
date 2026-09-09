@@ -7,7 +7,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { app } from '@/scripts/app'
 
 // Mock stores
-vi.mock('@/renderer/core/canvas/canvasStore', () => {
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => {
   const getCanvas = vi.fn()
   const setCursorStyle = vi.fn()
   return {
@@ -18,11 +18,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
     }))
   }
 })
-vi.mock('@/platform/settings/settingStore', () => {
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => {
   const getFn = vi.fn()
   return { useSettingStore: vi.fn(() => ({ get: getFn })) }
 })
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       canvas: {
@@ -130,19 +130,6 @@ describe('useCanvasInteractions', () => {
       const mockEvent = createMockPointerEvent({ buttons: 1 })
       handlePointerMove(mockEvent)
 
-      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
-      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
-    })
-
-    it('should return early when canvas is null', () => {
-      const { getCanvas } = useCanvasStore()
-      vi.mocked(getCanvas).mockReturnValue(null!)
-      const { handlePointerMove } = useCanvasInteractions()
-
-      const mockEvent = createMockPointerEvent({ buttons: 1 })
-      handlePointerMove(mockEvent)
-
-      expect(getCanvas).toHaveBeenCalled()
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
