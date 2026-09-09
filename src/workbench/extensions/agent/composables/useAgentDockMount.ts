@@ -20,7 +20,7 @@ export function useAgentDockMount(): AgentDockMount {
   }
   const agentPanelStore = useAgentPanelStore()
   return {
-    docked: computed(() => agentPanelStore.enabled && agentPanelStore.isOpen),
+    docked: computed(() => agentPanelStore.docked),
     DockedAgentPanel: defineAsyncComponent(
       () =>
         import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue')

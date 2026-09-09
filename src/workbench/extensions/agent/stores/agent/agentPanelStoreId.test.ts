@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import { registerViewportInset } from '@/composables/canvas/viewportInsetRegistry'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
@@ -63,9 +64,14 @@ describe('the agentPanel store id', () => {
     store.enabled = true
     store.isOpen = true
     expect(docked.value).toBe(true)
+    const unregisterInset = registerViewportInset('agent-panel-test', () =>
+      store.enabled && store.isOpen ? store.width : 0
+    )
 
     const canvas = { canvas: { width: 1600, height: 900 } } as LGraphCanvas
     const viewport = visibleCanvasViewport(canvas)
+
+    unregisterInset()
 
     expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
     expect(viewport).toEqual([0, 0, 1600 - store.width, 900])
