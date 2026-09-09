@@ -69,7 +69,8 @@ function okFetch(token = 'workspace-jwt') {
 
 function seedCache(
   storage: CredentialStorage,
-  overrides: Partial<AccountCredential> = {}
+  overrides: Partial<AccountCredential> = {},
+  target?: string
 ): AccountCredential {
   const credential: AccountCredential = {
     token: 'cached-jwt',
@@ -80,7 +81,7 @@ function seedCache(
     role: 'owner',
     ...overrides
   }
-  storage.write(JSON.stringify(credential))
+  storage.write(JSON.stringify({ ...credential, target }))
   return credential
 }
 
@@ -392,9 +393,11 @@ describe('ensureFresh', () => {
   it('serves a fresh cached credential for its own workspace without a network call', async () => {
     const fetchImpl = vi.fn<typeof fetch>()
     const { client, storage } = makeClient({ fetchImpl })
-    seedCache(storage, {
-      workspace: { id: 'ws-9', name: 'Team', type: 'team' }
-    })
+    seedCache(
+      storage,
+      { workspace: { id: 'ws-9', name: 'Team', type: 'team' } },
+      'ws-9'
+    )
 
     const result = await client.ensureFresh(testUser(), {
       workspaceId: 'ws-9'
@@ -402,6 +405,32 @@ describe('ensureFresh', () => {
 
     expect(fetchImpl).not.toHaveBeenCalled()
     expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
+  })
+
+  it('never lets a target-less read adopt a team-scoped credential, stored or in memory', async () => {
+    const fetchImpl = okFetch('personal-jwt')
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(
+      storage,
+      { workspace: { id: 'ws-9', name: 'Team', type: 'team' } },
+      'ws-9'
+    )
+
+    const stored = await client.ensureFresh(testUser())
+    expect(
+      fetchImpl,
+      'a stored team credential must not answer a personal read; the next scheduled refresh would re-mint it as personal'
+    ).toHaveBeenCalledOnce()
+    expect(stored?.status === 'ok' && stored.session.token).toBe('personal-jwt')
+
+    storage.clear()
+    const team = await client.remint(testUser(), { workspaceId: 'ws-9' })
+    expect(team?.status).toBe('ok')
+    await client.ensureFresh(testUser())
+    expect(
+      fetchImpl,
+      'the in-memory tier follows the same rule'
+    ).toHaveBeenCalledTimes(3)
   })
 
   it('never shares an in-flight mint across different workspace targets', async () => {
@@ -608,6 +637,36 @@ describe('clearStoredCredential', () => {
       client.getToken(),
       'storage is the reload cache, not the session; ending the session is invalidate() or detach'
     ).toBe('workspace-jwt')
+  })
+})
+
+describe('invalidate() and an in-flight mint', () => {
+  it('makes a caller arriving after invalidation start its own mint instead of joining the discarded one', async () => {
+    let releaseFirst!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+    identity.fire(user)
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+
+    client.invalidate()
+    const after = client.ensureFresh(user)
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    releaseFirst(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+
+    expect(
+      (await after)?.status === 'ok' && client.getToken(),
+      'the discarded scope must not be served to a caller that came after the invalidation'
+    ).toBe('post-invalidate-jwt')
   })
 })
 

@@ -124,12 +124,18 @@ describe('opt-in refresh scheduler', () => {
     expect(client.getToken()).toBe('jwt-2')
   })
 
-  it('gives up after max retries and leaves recovery to valid-on-read', async () => {
+  it('gives up after max retries, keeps the token to its expiry, then fails closed', async () => {
+    const outcomes: string[] = []
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
       .mockImplementation(async () => new Response('{}', { status: 503 }))
-    const client = makeClient({ fetchImpl })
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+      }
+    })
     const identity = manualIdentity()
     client.attachIdentity(identity.port)
 
@@ -138,12 +144,57 @@ describe('opt-in refresh scheduler', () => {
       expect(client.getToken()).toBe('jwt-1')
     })
 
-    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
-
+    // The refresh point, then the three retries (5 s, 10 s, 20 s).
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS - DEFAULT_BUFFER_MS)
+    await vi.advanceTimersByTimeAsync(35_000 + 10)
     expect(
       fetchImpl,
       'one scheduled attempt plus three capped retries, then the chain must stop'
     ).toHaveBeenCalledTimes(5)
+    expect(
+      client.getToken(),
+      'a still-valid token keeps serving while there is time on it'
+    ).toBe('jwt-1')
+
+    await vi.advanceTimersByTimeAsync(DEFAULT_BUFFER_MS)
+
+    expect(
+      client.getToken(),
+      'an expired token with a dead scheduler must never stay in circulation'
+    ).toBeUndefined()
+    expect(client.getSnapshot().phase).toBe('error')
+    expect(outcomes.at(-1)).toBe('expired')
+    expect(fetchImpl).toHaveBeenCalledTimes(5)
+  })
+
+  it('never arms a refresh tighter than one retry interval', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            token: 'short-jwt',
+            permissions: [],
+            // Already inside the buffer: a zero delay would loop the mint.
+            expires_at: new Date(Date.now() + 60_000).toISOString(),
+            workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+            role: 'owner'
+          }),
+          { status: 200 }
+        )
+    )
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('short-jwt')
+    })
+    await vi.advanceTimersByTimeAsync(4_000)
+
+    expect(fetchImpl, 'no re-mint before the floor').toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1_100)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
   it('stops scheduling on sign-out', async () => {
@@ -229,7 +280,8 @@ describe('opt-in refresh scheduler', () => {
       'retry_scheduled',
       'retry_scheduled',
       'retry_scheduled',
-      'retries_exhausted'
+      'retries_exhausted',
+      'expired'
     ])
   })
 
@@ -648,15 +700,25 @@ describe('cross-tab refresh coordination', () => {
     await vi.waitFor(() => {
       expect(client.getToken()).toBe('jwt-1')
     })
-    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 2)
+    // The refresh point plus the three retries: the chain is dead, the
+    // token still has minutes on it.
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS - DEFAULT_BUFFER_MS)
+    await vi.advanceTimersByTimeAsync(35_000 + 10)
     expect(fetchImpl).toHaveBeenCalledTimes(5)
+    expect(client.getToken()).toBe('jwt-1')
 
     tab.grantLeadership()
-    await vi.advanceTimersByTimeAsync(10)
+    // Re-armed at the floor, since the refresh point is already behind.
+    await vi.advanceTimersByTimeAsync(5_000 + 10)
 
     expect(
       client.getToken(),
       'a promoted leader with a dead retry chain must retake the schedule, not sit refreshless and adoption-deaf'
+    ).toBe('jwt-2')
+    await vi.advanceTimersByTimeAsync(DEFAULT_BUFFER_MS)
+    expect(
+      client.getToken(),
+      'the fresh credential cancels the pending clear-at-expiry of the old one'
     ).toBe('jwt-2')
   })
 
