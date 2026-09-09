@@ -636,7 +636,10 @@ export function useSubscriptionCheckout(
 
   async function showTeamToPersonalDowngrade(
     planSlug: string,
-    tierKey: CheckoutTierKey
+    tierKey: CheckoutTierKey,
+    // Forwarded so a parked downgrade releases the caller's lock on adoption;
+    // handleSubscribeClick holds none and leaves this 0.
+    mutationToken = 0
   ): Promise<boolean> {
     if (tierPlanType === 'team' || !isTeamPlan.value) return false
 
@@ -662,7 +665,8 @@ export function useSubscriptionCheckout(
         cycle: selectedBillingCycle.value,
         checkoutType: 'change'
       },
-      false
+      false,
+      mutationToken
     )
     return true
   }
@@ -961,7 +965,8 @@ export function useSubscriptionCheckout(
 
     isSubscribing.value = true
     try {
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (await showTeamToPersonalDowngrade(planSlug, tierKey, mutationToken))
+        return
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
         await refreshPreviewOnReactivationBlock(planSlug)
