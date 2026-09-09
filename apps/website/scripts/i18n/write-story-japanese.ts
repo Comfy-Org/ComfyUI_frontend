@@ -25,6 +25,7 @@ import {
   verifyStory
 } from '../../src/i18n/pipeline/adapters/story'
 import type { Story } from '../../src/i18n/pipeline/adapters/story'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
 const TARGET = 'ja'
@@ -43,14 +44,9 @@ const MACHINE_FILE = path.join(
  * wrong stories.
  */
 function readMachineLayer(): TranslationLayer {
-  let text: string
-  try {
-    text = fs.readFileSync(MACHINE_FILE, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
-    throw error
-  }
-  return JSON.parse(text) as TranslationLayer
+  // Also rejects a value that is not a string, which the `as TranslationLayer`
+  // assertion here used to wave through into an `.mdx` file typed as `string`.
+  return readTranslationLayer(MACHINE_FILE)
 }
 
 interface Planned {

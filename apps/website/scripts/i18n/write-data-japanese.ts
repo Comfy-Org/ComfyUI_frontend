@@ -28,6 +28,7 @@ import {
   planJapanese,
   verifyWrite
 } from '../../src/i18n/pipeline/adapters/data'
+import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
 const DATA_DIR = path.join(process.cwd(), 'src', 'data')
@@ -43,16 +44,14 @@ const MACHINE_FILE = path.join(
  * An absent file is fine — nothing has been translated yet. A file that exists
  * but does not parse is not: writing from a half-read layer would put the wrong
  * Japanese into hand-written source.
+ *
+ * `readTranslationLayer` also rejects a value that is not a string, which the
+ * `as TranslationLayer` assertion here used to wave through — and an assertion
+ * is exactly what would let a non-string reach `buildStory` typed as `string`
+ * and be written into a source file.
  */
 function readMachineLayer(): TranslationLayer {
-  let text: string
-  try {
-    text = fs.readFileSync(MACHINE_FILE, 'utf8')
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
-    throw error
-  }
-  return JSON.parse(text) as TranslationLayer
+  return readTranslationLayer(MACHINE_FILE)
 }
 
 interface Planned {
