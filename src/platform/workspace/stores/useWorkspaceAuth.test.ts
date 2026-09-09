@@ -17,9 +17,35 @@ const mockNotifyTokenRefreshed = vi.fn()
 const mockTrackUnifiedAuthRefresh = vi.fn()
 const mockToastAdd = vi.fn()
 const mockEnsureSessionCookie = vi.fn()
-const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
-  value: null
-}))
+/**
+ * Stands in for Firebase: assigning `value` is an auth-state event, which
+ * the fake identity port delivers to whoever attached, the way the real
+ * listener does.
+ */
+const mockCurrentUser = vi.hoisted(() => {
+  type PortUser = { uid: string; getIdToken: () => Promise<string> }
+  let current: { uid: string } | null = null
+  const listeners = new Set<(user: PortUser | null) => void>()
+  const portUser = (user: { uid: string } | null): PortUser | null =>
+    user && { ...user, getIdToken: () => mockGetIdToken() }
+  return {
+    listeners,
+    get value(): { uid: string } | null {
+      return current
+    },
+    set value(user: { uid: string } | null) {
+      current = user
+      listeners.forEach((listener) => listener(portUser(user)))
+    },
+    identity: {
+      onUserChanged(listener: (user: PortUser | null) => void) {
+        listeners.add(listener)
+        listener(portUser(current))
+        return () => listeners.delete(listener)
+      }
+    }
+  }
+})
 const mockForgetRevokedActiveWorkspace = vi.fn()
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 const mockReload = vi.fn()
@@ -36,7 +62,8 @@ vi.mock<unknown>(import('@/stores/authStore'), () => ({
     notifyTokenRefreshed: mockNotifyTokenRefreshed,
     get currentUser() {
       return mockCurrentUser.value
-    }
+    },
+    identity: mockCurrentUser.identity
   })
 }))
 
@@ -133,6 +160,7 @@ describe('useWorkspaceAuthStore', () => {
     })
     vi.useFakeTimers({ shouldAdvanceTime: false })
     mockUnifiedCloudAuthEnabled.value = false
+    mockCurrentUser.listeners.clear()
     mockCurrentUser.value = { uid: 'user-a' }
     mockEnsureSessionCookie.mockResolvedValue(undefined)
   })
@@ -2495,17 +2523,16 @@ describe('useWorkspaceAuthStore', () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-a')
       let resolveResponse: (value: unknown) => void = () => {}
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockReturnValue(
-          new Promise((resolve) => {
-            resolveResponse = resolve
-          })
-        )
+      const mockFetch = vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          resolveResponse = resolve
+        })
       )
+      vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
       const mintPromise = store.mintAtLogin()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
       store.clearWorkspaceContext()
       resolveResponse({
         ok: false,
@@ -2711,38 +2738,34 @@ describe('useWorkspaceAuthStore', () => {
       }
     )
 
-    it('surfaces a NOT_AUTHENTICATED refresh (lost Firebase token) and clears the slot', async () => {
+    it('a signed-out identity before refresh time clears the slot silently and refreshes nothing', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       const expiresInMs = 3600 * 1000
-      // Mint succeeds, then the Firebase identity is gone at refresh time.
-      mockGetIdToken
-        .mockResolvedValueOnce('firebase-token-xyz')
-        .mockResolvedValue(null)
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              ...personalTokenResponse,
-              expires_at: new Date(Date.now() + expiresInMs).toISOString()
-            })
-        })
-      )
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...personalTokenResponse,
+            expires_at: new Date(Date.now() + expiresInMs).toISOString()
+          })
+      })
+      vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
 
       await store.mintAtLogin()
+      mockCurrentUser.value = null
+      expect(
+        unifiedToken.value,
+        'the port delivering sign-out is the fail-closed path for identity, not the host teardown'
+      ).toBeNull()
+
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'workspaceAuth.errors.notAuthenticated'
-        })
-      )
-      expect(unifiedToken.value).toBeNull()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('does not toast on a successful refresh re-mint', async () => {
@@ -2950,9 +2973,12 @@ describe('useWorkspaceAuthStore', () => {
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
-    it('re-arms the retry when a swallowed mint failure resolves false (owner null mid-refresh)', async () => {
+    it('re-arms the retry when the identity token read fails transiently mid-refresh', async () => {
       mockUnifiedCloudAuthEnabled.value = true
-      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      mockGetIdToken
+        .mockResolvedValueOnce('firebase-token-xyz')
+        .mockRejectedValueOnce(new Error('Firebase re-initializing'))
+        .mockResolvedValue('firebase-token-xyz')
       const expiresInMs = 3600 * 1000
       const mockFetch = vi.fn().mockImplementation(() =>
         Promise.resolve({
@@ -2972,14 +2998,10 @@ describe('useWorkspaceAuthStore', () => {
       await store.mintAtLogin()
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
-      // Firebase is re-initializing at refresh time: requestToken throws
-      // NOT_AUTHENTICATED, which performUnifiedMint swallows to `false`.
-      mockCurrentUser.value = null
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
       expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(mockToastAdd).not.toHaveBeenCalled()
 
-      mockCurrentUser.value = { uid: 'user-a' }
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockFetch).toHaveBeenCalledTimes(2)

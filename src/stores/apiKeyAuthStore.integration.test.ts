@@ -34,8 +34,7 @@ vi.mock<unknown>(
       clearWorkspaceContext: vi.fn(),
       getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
       getUnifiedToken: vi.fn().mockReturnValue(undefined),
-      mintAtLogin: vi.fn(),
-      syncUnifiedIdentity: vi.fn()
+      mintAtLogin: vi.fn()
     })
   })
 )

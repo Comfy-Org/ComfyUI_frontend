@@ -1,9 +1,10 @@
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
+import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 
-import type { AccountUser, SessionErrorCode } from '@comfyorg/account/core'
+import type { SessionErrorCode } from '@comfyorg/account/core'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
@@ -747,30 +748,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return code === 'ACCESS_DENIED' || code === 'WORKSPACE_NOT_FOUND'
   }
 
-  function accountUserFor(user: { uid: string }): AccountUser {
-    return {
-      uid: user.uid,
-      getIdToken: async () => {
-        // Owner gone or changed mid-flight (Firebase re-initializing) is a
-        // transient condition the scheduler retries silently; a signed-in
-        // owner whose token read comes back empty is NOT_AUTHENTICATED,
-        // exactly as requestToken maps it.
-        const owner = useAuthStore().currentUser
-        if (!owner || owner.uid !== user.uid) {
-          throw new WorkspaceAuthError('Unified mint owner changed mid-flight')
-        }
-        const token = await useAuthStore().getIdToken()
-        if (!token) {
-          throw new WorkspaceAuthError(
-            t('workspaceAuth.errors.notAuthenticated'),
-            'NOT_AUTHENTICATED'
-          )
-        }
-        return token
-      }
-    }
-  }
-
   // Guard the toast on a one-shot flag reset by the next successful mint, so
   // concurrent permanent failures across the proactive + reactive paths alarm
   // the user once, not once per caller.
@@ -825,7 +802,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // falls back to per-tab refresh.
   const crossTabRefreshPort = createWebCrossTabRefreshPort()
 
-  const unifiedSessionClient = createSessionClient({
+  const unifiedSessionClient = createSessionClient<User>({
     exchangeUrl: workspaceApiUrl('/auth/token'),
     // In-memory only: a persisted JWT can outlive its server expiry, so a
     // reload re-mints instead of rehydrating.
@@ -872,32 +849,40 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     unifiedTokenOwnerUid.value = null
   })
 
-  let deliverUnifiedIdentity: ((user: AccountUser | null) => void) | undefined
+  // The package's Firebase entry, bound in authStore to the app's own Auth
+  // instance, is the session client's identity source. No ordering with the
+  // auth listener's teardown is load-bearing: invalidate() keeps the
+  // identity, and the port fails closed on an identity change by itself.
+  function ensureUnifiedIdentityAttached(): void {
+    if (!flags.unifiedCloudAuthEnabled || detachUnifiedIdentity) return
+    detachUnifiedIdentity = unifiedSessionClient.attachIdentity(
+      useAuthStore().identity,
+      { autoMint: false }
+    )
+  }
 
-  // Transitional migration adapter (ADR-AUTH-IDENTITY-0028): the Pinia
-  // authStore remains the identity authority; its auth-state listener pushes
-  // every identity diff here, and the unified entry points re-sync
-  // defensively before they mint.
-  function syncUnifiedIdentity(): void {
-    if (!flags.unifiedCloudAuthEnabled) return
-    if (detachUnifiedIdentity === undefined) {
-      detachUnifiedIdentity = unifiedSessionClient.attachIdentity(
-        {
-          onUserChanged: (callback) => {
-            deliverUnifiedIdentity = callback
-            return () => {
-              deliverUnifiedIdentity = undefined
-            }
-          }
-        },
-        { autoMint: false }
-      )
-    }
-    const user = useAuthStore().currentUser
-    const clientUser = unifiedSessionClient.getSnapshot().user
-    if ((user?.uid ?? null) !== (clientUser?.uid ?? null)) {
-      deliverUnifiedIdentity?.(user ? accountUserFor(user) : null)
-    }
+  /**
+   * The user the port has delivered, once it is the app's current user.
+   * Resolves null when nobody is signed in or when a different identity
+   * arrives first, which supersedes the caller.
+   */
+  function unifiedUser(): Promise<User | null> {
+    ensureUnifiedIdentityAttached()
+    const expectedUid = useAuthStore().currentUser?.uid ?? null
+    const matches = (user: User | null) => (user?.uid ?? null) === expectedUid
+    const current = unifiedSessionClient.getSnapshot().user
+    if (matches(current)) return Promise.resolve(current)
+    return new Promise((resolve) => {
+      const stop = unifiedSessionClient.subscribe(({ user }) => {
+        if (matches(user)) {
+          stop()
+          resolve(user)
+        } else if ((user?.uid ?? null) !== (current?.uid ?? null)) {
+          stop()
+          resolve(null)
+        }
+      })
+    })
   }
 
   function pruneExpiredUnifiedTokenContexts(now: number): void {
@@ -923,15 +908,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().ensureSessionCookie()
-    const authUser = useAuthStore().currentUser
+    const authUser = await unifiedUser()
     if (!authUser) {
       throw new WorkspaceAuthError('Workspace identity changed during switch')
     }
-    syncUnifiedIdentity()
     unifiedTarget = { workspace_id: workspaceId }
-    const result = await unifiedSessionClient.remint(accountUserFor(authUser), {
-      workspaceId
-    })
+    const result = await unifiedSessionClient.remint(authUser, { workspaceId })
     if (result?.status === 'error') {
       throw new WorkspaceAuthError(
         t(sessionErrorMessageKey(result.code)),
@@ -959,17 +941,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (getUnifiedToken()) {
       return true
     }
-    const authUser = useAuthStore().currentUser
+    const authUser = await unifiedUser()
     if (!authUser) {
       return false
     }
-    syncUnifiedIdentity()
     const target = currentUnifiedTarget() ?? personalWorkspaceTarget()
     unifiedTarget = target
-    const result = await unifiedSessionClient.ensureFresh(
-      accountUserFor(authUser),
-      { workspaceId: unifiedWorkspaceIdFor(target) }
-    )
+    const result = await unifiedSessionClient.ensureFresh(authUser, {
+      workspaceId: unifiedWorkspaceIdFor(target)
+    })
     if (result?.status === 'ok') {
       return true
     }
@@ -1006,10 +986,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return null
     }
     if (expectedToken !== currentToken) return currentToken
-    const authUser = useAuthStore().currentUser
+    const authUser = await unifiedUser()
     if (!authUser) return null
-    syncUnifiedIdentity()
-    const result = await unifiedSessionClient.remint(accountUserFor(authUser), {
+    const result = await unifiedSessionClient.remint(authUser, {
       workspaceId: unifiedWorkspaceIdFor(target),
       preserveCredentialOnTransientFailure: true
     })
@@ -1117,7 +1096,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     refreshToken,
     mintAtLogin,
     remintUnifiedOnce,
-    syncUnifiedIdentity,
     getWorkspaceAuthHeader,
     ensureWorkspaceAuthHeader,
     ensureWorkspaceToken,

@@ -123,6 +123,21 @@ describe('AUTH_ERROR_COPY', () => {
   it('keeps the English table as the en entry', () => {
     expect(AUTH_ERROR_COPY.en).toBe(AUTH_ERROR_MESSAGES)
   })
+
+  it.for(['en', 'zh-CN', 'ja'] as const)(
+    '%s sign-in failures do not reveal whether the email has an account',
+    (locale) => {
+      const copy = AUTH_ERROR_COPY[locale]
+      expect(
+        new Set([
+          copy['auth/user-not-found'],
+          copy['auth/wrong-password'],
+          copy['auth/invalid-credential']
+        ]).size,
+        'distinct unknown-email and wrong-password copy is an account enumeration oracle'
+      ).toBe(1)
+    }
+  )
 })
 
 describe('authErrorMessage', () => {

@@ -82,9 +82,9 @@ export const AUTH_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   'auth/user-disabled':
     'This account has been disabled. Please contact support.',
   'auth/user-not-found':
-    'No account found with this email. Would you like to create a new account?',
+    'Invalid login credentials. Please check your email and password.',
   'auth/wrong-password':
-    'The password you entered is incorrect. Please try again.',
+    'Invalid login credentials. Please check your email and password.',
   'auth/email-already-in-use':
     'An account with this email already exists. Try signing in instead.',
   'auth/weak-password':
@@ -133,9 +133,8 @@ export const AUTH_ERROR_COPY: Readonly<
   'zh-CN': {
     'auth/invalid-email': '请输入有效的电子邮件地址。',
     'auth/user-disabled': '此账户已被禁用。请联系客服。',
-    'auth/user-not-found':
-      '未找到使用此电子邮件的账户。您想要创建一个新账户吗？',
-    'auth/wrong-password': '您输入的密码不正确，请重试。',
+    'auth/user-not-found': '登录凭据无效。请检查您的邮箱和密码。',
+    'auth/wrong-password': '登录凭据无效。请检查您的邮箱和密码。',
     'auth/email-already-in-use': '已存在使用此电子邮件的账户。请尝试登录。',
     'auth/weak-password': '密码强度太弱。请使用至少6个字符的更强密码。',
     'auth/too-many-requests': '登录尝试次数过多。请稍等片刻再试。',
@@ -158,9 +157,9 @@ export const AUTH_ERROR_COPY: Readonly<
     'auth/user-disabled':
       'このアカウントは無効化されています。サポートまでご連絡ください。',
     'auth/user-not-found':
-      'このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？',
+      'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。',
     'auth/wrong-password':
-      '入力されたパスワードが正しくありません。もう一度お試しください。',
+      'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。',
     'auth/email-already-in-use':
       'このメールアドレスのアカウントは既に存在します。代わりにサインインをお試しください。',
     'auth/weak-password':
