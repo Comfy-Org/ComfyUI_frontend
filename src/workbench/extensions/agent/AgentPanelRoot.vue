@@ -476,6 +476,7 @@ const isBoundWorkflowActive = computed(() => {
   return (
     bound !== null &&
     active !== null &&
+    !agentNodeSelectionStore.isLoadingWorkflow &&
     boundTabFor(bound)?.path === active.path
   )
 })

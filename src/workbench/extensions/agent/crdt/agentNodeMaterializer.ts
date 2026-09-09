@@ -335,7 +335,9 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    withNamedValuesRestore(() =>
+      node.configure(withNamedWidgetValues(serialised))
+    )
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.

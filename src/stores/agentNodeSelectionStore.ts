@@ -185,6 +185,7 @@ export const useAgentNodeSelectionStore = defineStore(
     }
 
     function beginWorkflowLoad(): void {
+      restoredNodeIds.value = null
       isLoadingWorkflow.value = true
     }
 
