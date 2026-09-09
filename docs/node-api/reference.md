@@ -1,10 +1,11 @@
 # API reference
 
-This page is a navigable map of the published surface. The exact, exhaustive
-TypeScript contract is generated from the implementation:
+This page is a navigable map of the published surface. The exact, exhaustive,
+machine-readable TypeScript contract is checked in as
+[comfy-api.d.ts](./comfy-api.d.ts) and generated from the implementation:
 
 ```sh
-node scripts/node-api/gen_api_dts.mjs > comfy-api.d.ts
+node scripts/node-api/gen_api_dts.mjs > docs/node-api/comfy-api.d.ts
 ```
 
 If a member is absent from that declaration file, it is not published. The
