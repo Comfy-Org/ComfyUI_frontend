@@ -35,7 +35,14 @@ export interface OwnershipFilterOption {
  * - 'name-asc': Sort by display name A-Z
  * - 'name-desc': Sort by display name Z-A
  */
-export type AssetSortOption = 'default' | 'recent' | 'name-asc' | 'name-desc'
+export type AssetSortOption =
+  | 'default'
+  | 'recent'
+  | 'oldest'
+  | 'name-asc'
+  | 'name-desc'
+  | 'author-asc'
+  | 'author-desc'
 
 /**
  * Filter state for asset browser and filter bar
