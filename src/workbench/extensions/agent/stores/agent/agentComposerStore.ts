@@ -70,9 +70,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function takeAttachmentRequest(): AgentAttachmentRequest | undefined {
-    const [request, ...remaining] = pendingAttachmentRequests.value
+    const request = pendingAttachmentRequests.value.at(0)
     if (request === undefined) return
-    pendingAttachmentRequests.value = remaining
+    pendingAttachmentRequests.value = pendingAttachmentRequests.value.slice(1)
     return request
   }
 

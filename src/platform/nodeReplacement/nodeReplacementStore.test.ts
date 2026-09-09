@@ -9,15 +9,15 @@ import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn()
 }))
 
-vi.mock('./nodeReplacementService', () => ({
+vi.mock(import('./nodeReplacementService'), () => ({
   fetchNodeReplacements: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getServerFeature: vi.fn()
   }

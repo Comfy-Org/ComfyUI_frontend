@@ -1,12 +1,3 @@
-@keyframes agent-collapsible-down {
-  from {
-    height: 0;
-  }
-  to {
-    height: var(--reka-collapsible-content-height);
-  }
-}
-
 [data-agent-teaching-selected='true'] {
   position: relative;
   z-index: 1;
@@ -18,24 +9,6 @@
     var(--color-brand-yellow, #e8ff00) 12%,
     transparent
   );
-}
-
-@keyframes agent-collapsible-up {
-  from {
-    height: var(--reka-collapsible-content-height);
-  }
-  to {
-    height: 0;
-  }
-}
-
-@keyframes agent-shimmer {
-  from {
-    background-position: 150% center;
-  }
-  to {
-    background-position: -50% center;
-  }
 }
 
 .agent-shimmer-text {
@@ -51,7 +24,9 @@
   animation: agent-shimmer 1.8s linear infinite;
 }
 
-.disable-animations .agent-shimmer-text {
+.disable-animations
+  :where(#agent-panel-root, .agent-scope)
+  .agent-shimmer-text {
   animation: none;
   color: var(--color-muted-foreground);
   -webkit-text-fill-color: currentcolor;

@@ -107,7 +107,7 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
   })
 
-  it('stays open while the turn streams and collapses when it completes', async () => {
+  it('T-11 / PM-661 / FE-1301 streams tool calls open and folds them on completion', async () => {
     const { rerender } = render(ToolCallGroup, {
       props: {
         parts: [tool('c1', 'add_node', 'done', true)],
@@ -149,7 +149,7 @@ describe('ToolCallGroup', () => {
     expect(screen.getByText('×2')).toBeInTheDocument()
   })
 
-  it('shows an active thought expanded and its timed result collapsed', async () => {
+  it('T-12 / PM-667 / FE-1303 replaces active thinking shimmer with the completed summary', async () => {
     const { rerender } = render(ToolCallGroup, {
       props: {
         parts: [

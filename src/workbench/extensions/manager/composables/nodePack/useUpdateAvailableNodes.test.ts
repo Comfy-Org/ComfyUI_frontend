@@ -1,3 +1,4 @@
+import { render } from '@testing-library/vue'
 import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -7,28 +8,24 @@ import { useInstalledPacks } from '@/workbench/extensions/manager/composables/no
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-// Mock Vue's onMounted to execute immediately for testing
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    onMounted: (cb: () => void) => cb()
-  }
-})
-
 // Mock the dependencies
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
+
   () => ({
     useInstalledPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
 
-vi.mock('semver', () => ({
+  () => ({
+    useComfyManagerStore: vi.fn()
+  })
+)
+
+vi.mock(import('semver'), () => ({
   compare: vi.fn(),
   valid: vi.fn()
 }))
@@ -63,6 +60,19 @@ function createMockManagerStoreReturn(
   return {
     ...overrides
   } as Partial<ManagerStoreReturn> as ManagerStoreReturn
+}
+
+function mountUpdateAvailableNodes() {
+  let result: ReturnType<typeof useUpdateAvailableNodes> | undefined
+  render({
+    setup() {
+      result = useUpdateAvailableNodes()
+      return () => null
+    }
+  })
+
+  if (!result) throw new Error('Failed to mount update-available nodes')
+  return result
 }
 
 describe('useUpdateAvailableNodes', () => {
@@ -151,7 +161,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Should only include pack-1 (outdated)
       expect(updateAvailableNodePacks.value).toHaveLength(1)
@@ -166,7 +176,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
@@ -179,7 +189,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
@@ -192,7 +202,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
@@ -206,13 +216,13 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(0)
     })
 
     it('returns empty array when no installed packs exist', () => {
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toEqual([])
     })
@@ -227,7 +237,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(true)
     })
@@ -240,7 +250,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(false)
     })
@@ -248,7 +258,7 @@ describe('useUpdateAvailableNodes', () => {
 
   describe('automatic data fetching', () => {
     it('fetches installed packs automatically when none exist', () => {
-      useUpdateAvailableNodes()
+      mountUpdateAvailableNodes()
 
       expect(mockStartFetchInstalled).toHaveBeenCalledOnce()
     })
@@ -261,7 +271,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      useUpdateAvailableNodes()
+      mountUpdateAvailableNodes()
 
       expect(mockStartFetchInstalled).not.toHaveBeenCalled()
     })
@@ -274,7 +284,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      useUpdateAvailableNodes()
+      mountUpdateAvailableNodes()
 
       expect(mockStartFetchInstalled).not.toHaveBeenCalled()
     })
@@ -289,7 +299,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { isLoading } = useUpdateAvailableNodes()
+      const { isLoading } = mountUpdateAvailableNodes()
 
       expect(isLoading.value).toBe(true)
     })
@@ -303,7 +313,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { error } = useUpdateAvailableNodes()
+      const { error } = mountUpdateAvailableNodes()
 
       expect(error.value).toBe(testError)
     })
@@ -320,7 +330,7 @@ describe('useUpdateAvailableNodes', () => {
       )
 
       const { updateAvailableNodePacks, hasUpdateAvailable } =
-        useUpdateAvailableNodes()
+        mountUpdateAvailableNodes()
 
       // Initially empty
       expect(updateAvailableNodePacks.value).toEqual([])
@@ -345,7 +355,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
@@ -361,7 +371,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
@@ -377,7 +387,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { updateAvailableNodePacks } = useUpdateAvailableNodes()
+      const { updateAvailableNodePacks } = mountUpdateAvailableNodes()
 
       // Access the computed to trigger the logic
       expect(updateAvailableNodePacks.value).toBeDefined()
@@ -404,7 +414,7 @@ describe('useUpdateAvailableNodes', () => {
       )
 
       const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
-        useUpdateAvailableNodes()
+        mountUpdateAvailableNodes()
 
       // pack-1 has updates but is disabled
       expect(updateAvailableNodePacks.value).toHaveLength(1)
@@ -423,7 +433,7 @@ describe('useUpdateAvailableNodes', () => {
       )
 
       const { updateAvailableNodePacks, enabledUpdateAvailableNodePacks } =
-        useUpdateAvailableNodes()
+        mountUpdateAvailableNodes()
 
       expect(updateAvailableNodePacks.value).toHaveLength(1)
       expect(enabledUpdateAvailableNodePacks.value).toHaveLength(1)
@@ -445,7 +455,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+      const { hasDisabledUpdatePacks } = mountUpdateAvailableNodes()
 
       expect(hasDisabledUpdatePacks.value).toBe(true)
     })
@@ -458,7 +468,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+      const { hasDisabledUpdatePacks } = mountUpdateAvailableNodes()
 
       expect(hasDisabledUpdatePacks.value).toBe(false)
     })
@@ -471,7 +481,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasDisabledUpdatePacks } = useUpdateAvailableNodes()
+      const { hasDisabledUpdatePacks } = mountUpdateAvailableNodes()
 
       expect(hasDisabledUpdatePacks.value).toBe(false)
     })
@@ -488,7 +498,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(false)
     })
@@ -506,7 +516,7 @@ describe('useUpdateAvailableNodes', () => {
         })
       )
 
-      const { hasUpdateAvailable } = useUpdateAvailableNodes()
+      const { hasUpdateAvailable } = mountUpdateAvailableNodes()
 
       expect(hasUpdateAvailable.value).toBe(true)
     })

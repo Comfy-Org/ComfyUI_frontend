@@ -21,20 +21,20 @@ function createTestDialogInstance(
   }
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/stores/dialogStore', () => {
+vi.mock<unknown>(import('@/stores/dialogStore'), () => {
   const dialogStack = reactive<DialogInstance[]>([])
   return {
     useDialogStore: () => ({ dialogStack })
   }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: null
   }
@@ -192,10 +192,7 @@ describe('keybindingService - dialog gate', () => {
   it.for([
     { label: 'Ctrl+S', modifiers: { ctrlKey: true } },
     { label: 'Meta+S', modifiers: { metaKey: true } }
-  ] as {
-    label: string
-    modifiers: { ctrlKey?: boolean; metaKey?: boolean }
-  }[])(
+  ])(
     'still suppresses the browser default for $label while a dialog is open',
     async ({ modifiers }) => {
       const dialogStore = useDialogStore()

@@ -108,8 +108,10 @@ function waitForClientFrame(
   })
 }
 
-async function deliverGraphBuild(ws: WebSocketRoute): Promise<void> {
-  const subscribed = waitForClientFrame(ws, 'doc_subscribe')
+async function deliverGraphBuild(
+  ws: WebSocketRoute,
+  subscribed: ReturnType<typeof waitForClientFrame>
+): Promise<void> {
   ws.send(
     JSON.stringify({
       type: 'agent_active_tab',
@@ -246,11 +248,12 @@ test.describe('Agent canvas entry', { tag: ['@cloud', '@ui'] }, () => {
       name: enMessages.agent.compactComposer.label
     })
     const ws = await getWebSocket()
+    const subscribed = waitForClientFrame(ws, 'doc_subscribe')
     await composer.fill('Build a clear image preparation workflow.')
     await composer.press('Enter')
     await expect.poll(() => postedMessages.length).toBe(1)
 
-    await deliverGraphBuild(ws)
+    await deliverGraphBuild(ws, subscribed)
 
     await expect(page.getByText(/Choosing \d+ of \d+:/)).toBeVisible()
     await expect(page.getByText(/Find and select /)).toBeVisible()
@@ -305,12 +308,13 @@ test.describe('Agent canvas entry', { tag: ['@cloud', '@ui'] }, () => {
     const panelComposer = panel.getByRole('textbox', {
       name: /Describe ideas/
     })
+    const ws = await getWebSocket()
+    const subscribed = waitForClientFrame(ws, 'doc_subscribe')
     await panelComposer.fill('Build this workflow from the full Agent panel.')
     await panelComposer.press('Enter')
     await expect.poll(() => postedMessages.length).toBe(1)
 
-    const ws = await getWebSocket()
-    await deliverGraphBuild(ws)
+    await deliverGraphBuild(ws, subscribed)
 
     await expect(
       page.getByText('Load references', { exact: true })

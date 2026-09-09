@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,7 +21,7 @@ const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     currentUser: null,
     isAuthenticated: false,
@@ -28,7 +29,7 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', async (importOriginal) => {
+vi.mock<unknown>(import('@/stores/executionStore'), async (importOriginal) => {
   const actual = await importOriginal<typeof ExecutionStoreModule>()
   return {
     WORKFLOW_STATUS_I18N_KEYS: actual.WORKFLOW_STATUS_I18N_KEYS,
@@ -41,30 +42,37 @@ vi.mock('@/stores/executionStore', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
+vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
   usePragmaticDroppable: vi.fn()
 }))
 
-vi.mock('@/composables/useWorkflowActionsMenu', () => ({
+vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   useWorkflowActionsMenu: () => ({
     menuItems: { value: [] }
   })
 }))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    closeWorkflow: mockCloseWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      closeWorkflow: mockCloseWorkflow
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    getThumbnail: vi.fn(() => null)
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
+
+  () => ({
+    useWorkflowThumbnail: () => ({
+      getThumbnail: vi.fn(() => null)
+    })
   })
-}))
+)
 
-vi.mock('./WorkflowTabPopover.vue', () => ({
+vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
   default: {
     render: () => null,
     methods: {
@@ -106,12 +114,8 @@ type WorkflowOption = WorkflowTabProps['workflowOption']
 type Workflow = WorkflowOption['workflow']
 type WorkflowOverrides = Partial<Workflow>
 
-// ComfyWorkflow has many required fields the component never reads (file
-// IO, change tracking). Validate the fields we *do* set against the real
-// type via Partial<Workflow>, then cast — adding/renaming a read field in
-// the component will fail typecheck on the override map.
 function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
-  const workflow = {
+  const workflow = fromPartial<Workflow>({
     key: 'test-key',
     path: '/workflows/test.json',
     filename: 'test.json',
@@ -120,10 +124,10 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
     activeMode: 'graph',
     changeTracker: null,
     ...overrides
-  } satisfies WorkflowOverrides
+  })
   // markRaw keeps a stable identity through prop reactivity so the store's
   // identity-based status lookup resolves against the same object.
-  return { value: 'test-key', workflow: markRaw(workflow) as Workflow }
+  return { value: 'test-key', workflow: markRaw(workflow) }
 }
 
 function renderTab({
@@ -246,7 +250,7 @@ describe('WorkflowTab - agent activity indicators', () => {
     mockWorkflowStatus.value = new Map()
   })
 
-  it('shows the agent spinner even on the active tab', async () => {
+  it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setEditing('/workflows/test.json')
     await nextTick()

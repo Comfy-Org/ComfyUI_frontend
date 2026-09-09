@@ -69,7 +69,16 @@ function dispatch(event: AgentGraphBuildPlaybackEvent): void {
 
 function prefersReducedMotion(): boolean {
   return (
-    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    typeof globalThis.matchMedia === 'function' &&
+    globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
+function isBuildInterrupted(item?: QueuedBuild): boolean {
+  return (
+    skipRequested ||
+    item?.cancelled === true ||
+    item?.isPresentable?.() === false
   )
 }
 
@@ -144,23 +153,18 @@ async function animateSegment(
 
   let previousFrameTime = now()
   let elapsed = 0
-  while (
-    elapsed < durationMs &&
-    !skipRequested &&
-    !item.cancelled &&
-    item.isPresentable?.() !== false
-  ) {
+  while (elapsed < durationMs && !isBuildInterrupted(item)) {
     if (state.value.phase === 'paused') {
       await waitUntilResumed()
       previousFrameTime = now()
     }
-    if (skipRequested || item.cancelled) break
+    if (isBuildInterrupted(item)) break
     const frameTime = await waitForInterrupt(nextFrame())
     if (frameTime === interrupted) break
     // Pause can arrive while a requested frame is in flight. Do not advance
     // the node until playback resumes, and exclude that wall time below.
     if (state.value.phase === 'paused') continue
-    if (skipRequested || item.cancelled) break
+    if (isBuildInterrupted(item)) break
     elapsed += Math.max(0, frameTime - previousFrameTime)
     previousFrameTime = frameTime
     const progress = easeInOutCubic(Math.min(1, elapsed / durationMs))
@@ -205,9 +209,9 @@ async function animate(item: QueuedBuild): Promise<void> {
       Math.min(360, durationMs),
       (position) => updateCursor(item, position)
     )
-    if (!skipRequested && !item.cancelled)
+    if (!isBuildInterrupted(item))
       await waitForInterrupt((item.wait ?? defaultWait)(240))
-    if (!skipRequested && !item.cancelled && item.selectFromLibrary) {
+    if (!isBuildInterrupted(item) && item.selectFromLibrary) {
       const selected = await waitForInterrupt(
         item.selectFromLibrary(item.abortController.signal)
       )
@@ -220,11 +224,11 @@ async function animate(item: QueuedBuild): Promise<void> {
           (position) => updateCursor(item, position)
         )
         pickup = selected
-        if (!skipRequested && !item.cancelled)
+        if (!isBuildInterrupted(item))
           await waitForInterrupt((item.wait ?? defaultWait)(180))
       }
     }
-    if (skipRequested || item.cancelled) return
+    if (isBuildInterrupted(item)) return
     dispatch({ type: 'actionChanged', action: 'dragging' })
     await animateSegment(item, pickup, item.target, durationMs, (position) =>
       present(item, position)
@@ -249,9 +253,9 @@ async function drainQueue(): Promise<void> {
   if (draining) return
   draining = true
   try {
-    while (queue.length > 0 && !skipRequested) {
+    while (queue.length > 0 && !isBuildInterrupted()) {
       await waitUntilResumed()
-      if (skipRequested) break
+      if (isBuildInterrupted()) break
       const item = queue.shift()
       if (!item || item.cancelled) continue
       if (item.isPresentable?.() === false) {
@@ -272,7 +276,7 @@ async function drainQueue(): Promise<void> {
         item.present(null)
       }
       const gapMs = Math.max(0, item.gapMs ?? 80)
-      if (gapMs > 0 && queue.length > 0 && !skipRequested) {
+      if (gapMs > 0 && queue.length > 0 && !isBuildInterrupted()) {
         await waitForInterrupt((item.wait ?? defaultWait)(gapMs))
       }
       active = null

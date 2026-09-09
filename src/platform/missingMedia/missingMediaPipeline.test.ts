@@ -22,7 +22,7 @@ const { activeWorkflow } = vi.hoisted(() => {
 
 // The real store reaches authStore -> firebase setPersistence, which has no
 // config under vitest. Mirrors missingModelPipeline.test.ts.
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({ workflow: { activeWorkflow } })
 }))
 
@@ -110,7 +110,7 @@ describe('runMissingMediaPipeline', () => {
       pendingCandidate
     )
 
-    const hostWidget = host.widgets?.[0]
+    const hostWidget = host.widgets.at(0)
     if (!hostWidget) throw new Error('Expected promoted image host widget')
     hostWidget.value = 'user-picked-valid.png'
     resolveVerification()

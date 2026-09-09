@@ -3,6 +3,8 @@ import type * as VueModule from 'vue'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
 import type { BillingTelemetryEvent, OnboardingTourStage } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -33,7 +35,7 @@ const hoisted = vi.hoisted(() => {
   }
   const refs = {
     tier: null as unknown as Ref<string | null>,
-    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+    remoteConfig: null as unknown as Ref<RemoteConfig>
   }
 
   return {
@@ -61,30 +63,33 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     onUserResolved: hoisted.mockOnUserResolved,
     onUserLogout: hoisted.mockOnUserLogout
   })
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
+  hoisted.refs.remoteConfig = ref<RemoteConfig>({})
   return { remoteConfig: hoisted.refs.remoteConfig }
 })
 
-vi.mock('posthog-js', () => hoisted.mockPosthog)
+vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.refs.tier = ref<string | null>(null)
-  return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
-})
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { ref } = await vi.importActual<typeof VueModule>('vue')
+    hoisted.refs.tier = ref<string | null>(null)
+    return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
+  }
+)
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
@@ -100,13 +105,13 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    hoisted.refs.remoteConfig.value = null
+    hoisted.refs.remoteConfig.value = {}
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
     hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
-    } as typeof window.__CONFIG__
+    }
   })
 
   describe('initialization', () => {
@@ -401,6 +406,22 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google', share_id: 'share-1' }
+      )
+    })
+
+    it('captures link dedup drop events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLinkDedupDrop({
+        droppedLinkId: 7,
+        survivorLinkId: 3,
+        target: '12:0'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.LINK_DEDUP_DROP,
+        { droppedLinkId: 7, survivorLinkId: 3, target: '12:0' }
       )
     })
 

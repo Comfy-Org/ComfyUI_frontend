@@ -46,7 +46,7 @@
   },
   "src/composables/maskeditor/useMaskEditorLoader.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 6
     }
   },
   "src/composables/maskeditor/useMaskEditorSaver.ts": {
@@ -76,7 +76,7 @@
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
@@ -149,11 +149,6 @@
       "count": 1
     }
   },
-  "src/platform/assets/composables/useMediaAssetActions.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
       "count": 21
@@ -206,7 +201,7 @@
   },
   "src/platform/settings/settingStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/tasks/services/taskService.ts": {
@@ -270,11 +265,6 @@
     }
   },
   "src/renderer/core/canvas/canvasStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/core/layout/slots/slotIdentifier.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }
@@ -374,11 +364,6 @@
       "count": 1
     }
   },
-  "src/services/colorPaletteService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
   "src/services/gateway/registrySearchGateway.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
@@ -431,7 +416,7 @@
   },
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     }
   },
   "src/stores/userFileStore.ts": {

@@ -15,13 +15,16 @@ const mockTeamWorkspaceStore = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
-  const { reactive } = await import('vue')
-  mockTeamWorkspaceStore.store = reactive({ activeWorkspace: null })
-  return {
-    useTeamWorkspaceStore: () => mockTeamWorkspaceStore.store
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  async () => {
+    const { reactive } = await import('vue')
+    mockTeamWorkspaceStore.store = reactive({ activeWorkspace: null })
+    return {
+      useTeamWorkspaceStore: () => mockTeamWorkspaceStore.store
+    }
   }
-})
+)
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
@@ -30,21 +33,19 @@ const mockFlags = vi.hoisted(() => ({
   partnerNodeGovernanceEnabled: true
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
 vi.mock(
-  '@/platform/workspace/api/partnerNodePolicyApi',
-  async (importOriginal) => {
-    const actual = await importOriginal<typeof PartnerNodePolicyApi>()
-    return {
-      ...actual,
+  import('@/platform/workspace/api/partnerNodePolicyApi'),
+  async (importOriginal) =>
+    ({
+      ...(await importOriginal<typeof PartnerNodePolicyApi>()),
       getPartnerNodePolicy: mockGetPartnerNodePolicy,
       getPartnerProviders: mockGetPartnerProviders,
       updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
-    }
-  }
+    }) satisfies typeof PartnerNodePolicyApi
 )
 
 const providers: PartnerProvider[] = [

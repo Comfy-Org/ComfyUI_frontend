@@ -40,6 +40,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const { t } = useI18n()
 
@@ -83,6 +84,7 @@ const AgentPanelRoot = defineAsyncComponent({
 
 const agentPanelStore = useAgentPanelStore()
 const agentComposerStore = useAgentComposerStore()
+const agentRunModeStore = useAgentRunModeStore()
 const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const mounted = computed(
   () =>
@@ -91,6 +93,10 @@ const mounted = computed(
       agentComposerStore.compactSessionPhase !== 'idle' ||
       agentComposerStore.hasPendingAttachmentWork)
 )
+
+void agentRunModeStore.load().catch((error: unknown) => {
+  reportError(error, { errorType: 'agent_run_mode_load_failure' })
+})
 
 const isResizing = ref(false)
 let resizeStartX = 0

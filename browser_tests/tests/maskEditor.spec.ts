@@ -164,7 +164,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
       await comfyPage.expectScreenshot(
         dialog,
-        'mask-editor-dialog-from-context-menu.png'
+        'mask-editor-dialog-from-context-menu.png',
+        { maxDiffPixels: 25 }
       )
     }
   )

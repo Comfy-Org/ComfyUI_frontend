@@ -1,13 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, toValue, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import { toNodeId } from '@/types/nodeId'
 
 const mediaRef = ref<AssetItem[]>([])
@@ -23,50 +23,64 @@ const pendingTasksRef = ref<Array<{ jobId: string }>>([])
 
 const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
-const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
+const resolvedOutputsCacheRef = new Map<string, AugmentedResultItem[]>()
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
-  useAssetsApi: () => ({
-    media: mediaRef,
-    loading: ref(false),
-    error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
-    loadMore: vi.fn(),
-    hasMore: ref(false),
-    isLoadingMore: ref(false)
-  })
+vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
+  getAssetType: (tags?: string[]) =>
+    tags?.[0] === 'output' ? 'output' : 'input',
+  mapInputFileToAssetItem: vi.fn(),
+  mapTaskOutputToAssetItem: vi.fn(),
+  unflattenOutputAssets: vi.fn()
 }))
 
-vi.mock('@/renderer/extensions/linearMode/linearOutputStore', () => ({
-  useLinearOutputStore: () => ({
-    get pendingResolve() {
-      return pendingResolveRef.value
-    },
-    get inProgressItems() {
-      return inProgressItemsRef.value
-    },
-    get activeWorkflowInProgressItems() {
-      return activeWorkflowInProgressItemsRef.value
-    },
-    get selectedId() {
-      return selectedIdRef.value
-    },
-    resolvedOutputsCache: resolvedOutputsCacheRef,
-    selectAsLatest: selectAsLatestFn,
-    resolveIfReady: resolveIfReadyFn
-  })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return { path: activeWorkflowPathRef.value }
+vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
+  useAssetsStore: () => ({
+    outputAssets: {
+      hasMore: ref(false),
+      invalidate: vi.fn(),
+      isLoading: ref(false),
+      items: mediaRef,
+      loadMore: vi.fn(),
+      loadNew: vi.fn()
     }
   })
 }))
 
-vi.mock('@/stores/executionStore', () => ({
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/linearOutputStore'),
+  () => ({
+    useLinearOutputStore: () => ({
+      get pendingResolve() {
+        return pendingResolveRef.value
+      },
+      get inProgressItems() {
+        return inProgressItemsRef.value
+      },
+      get activeWorkflowInProgressItems() {
+        return activeWorkflowInProgressItemsRef.value
+      },
+      get selectedId() {
+        return selectedIdRef.value
+      },
+      resolvedOutputsCache: resolvedOutputsCacheRef,
+      selectAsLatest: selectAsLatestFn,
+      resolveIfReady: resolveIfReadyFn
+    })
+  })
+)
+
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({
+      get activeWorkflow() {
+        return { path: activeWorkflowPathRef.value }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/executionStore'), () => ({
   useExecutionStore: () => ({
     get jobIdToSessionWorkflowPath() {
       return jobIdToPathRef.value
@@ -77,50 +91,30 @@ vi.mock('@/stores/executionStore', () => ({
   })
 }))
 
-vi.mock('@/stores/queueStore', async (importOriginal) => {
-  return {
-    ...(await importOriginal()),
-    useQueueStore: () => ({
-      get runningTasks() {
-        return runningTasksRef.value
-      },
-      get pendingTasks() {
-        return pendingTasksRef.value
-      }
-    })
-  }
-})
+vi.mock<unknown>(import('@/stores/queueStore'), () => ({
+  useQueueStore: () => ({
+    get runningTasks() {
+      return runningTasksRef.value
+    },
+    get pendingTasks() {
+      return pendingTasksRef.value
+    }
+  })
+}))
 
 const { jobDetailResults } = vi.hoisted(() => ({
   jobDetailResults: new Map<string, unknown>()
 }))
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock<unknown>(import('@/services/jobOutputCache'), () => ({
   getJobDetail: (jobId: string) =>
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
-}))
-
-vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
-  flattenNodeOutput: ([nodeId, output]: [
-    string | number,
-    Record<string, unknown>
-  ]) => {
-    if (!output.images) return []
-    return (output.images as Array<Record<string, string>>).map(
-      (img) =>
-        new ResultItemImpl({
-          ...img,
-          nodeId: String(nodeId),
-          mediaType: 'images'
-        })
-    )
-  }
 }))
 
 function makeAsset(
   id: string,
   jobId: string,
-  opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
+  opts?: { allOutputs?: AugmentedResultItem[]; outputCount?: number }
 ): AssetItem {
   return fromPartial({
     id,
@@ -139,14 +133,17 @@ function makeAsset(
   })
 }
 
-function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
-  return new ResultItemImpl({
+function makeResult(
+  filename: string,
+  nodeId: string = '1'
+): AugmentedResultItem {
+  return {
     filename,
     subfolder: '',
     type: 'output',
     nodeId,
     mediaType: 'images'
-  })
+  }
 }
 
 describe(useOutputHistory, () => {
@@ -175,8 +172,8 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a1')
     })
 
     it('returns empty when no workflow is active', () => {
@@ -186,7 +183,7 @@ describe(useOutputHistory, () => {
 
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(0)
+      expect(toValue(outputs.items)).toHaveLength(0)
     })
 
     it('updates when active workflow changes', async () => {
@@ -199,14 +196,14 @@ describe(useOutputHistory, () => {
       activeWorkflowPathRef.value = 'workflows/a.json'
       const { outputs } = useOutputHistory()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a1')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a1')
 
       activeWorkflowPathRef.value = 'workflows/b.json'
       await nextTick()
 
-      expect(outputs.media.value).toHaveLength(1)
-      expect(outputs.media.value[0].id).toBe('a2')
+      expect(toValue(outputs.items)).toHaveLength(1)
+      expect(toValue(outputs.items)[0].id).toBe('a2')
     })
   })
 

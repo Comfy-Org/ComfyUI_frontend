@@ -5,6 +5,7 @@ import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   provide,
@@ -59,6 +60,10 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -80,11 +85,19 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
-import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
+import type {
+  TurnOrigin,
+  WorkflowTurnContext
+} from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import type { OpenTabsSnapshot } from './services/agent/agentRestClient'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
+import type {
+  DraftSnapshot,
+  OpenTabsSnapshot
+} from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import {
   agentGraphBuildPlaybackState,
@@ -99,12 +112,41 @@ import {
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
+import {
+  isCrdtDebugEnabled,
+  resolveDebugPanelEnabled
+} from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
+const CrdtDevPanel = defineAsyncComponent(
+  () => import('./crdt/CrdtDevPanel.vue')
+)
+
 const { t } = useI18n()
 const toast = useToastStore()
+const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { workspaceRole } = useWorkspaceUI()
+const { tier: subscriptionTier } = useBillingContext()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  isReady: billingCapabilitiesReady
+} = useBillingCapabilities()
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    role: workspaceRole.value,
+    tier: subscriptionTier.value,
+    // The initial false/false pair is not an authoritative sales-managed
+    // result while the shared capability source initializes in the background.
+    canTopUp: billingCapabilitiesReady.value
+      ? canTopUp.value
+      : workspaceRole.value === 'owner',
+    canSubscribeSelfServe: billingCapabilitiesReady.value
+      ? canSubscribeSelfServe.value
+      : workspaceRole.value === 'owner'
+  })
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -117,12 +159,17 @@ const rest = createAgentRestClient()
 
 const events = createAgentEventSource(api)
 
+function onPaywallAction(action: AgentPaywallAction): void {
+  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+}
+
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
 const agentComposerStore = useAgentComposerStore()
-const { dismissedSelectionSignature } = storeToRefs(agentPanelStore)
+const { dismissedSelectionSignature, enabled: agentEnabled } =
+  storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
@@ -325,6 +372,7 @@ const graphMutations = (workflowId: string) => {
         layoutStore.applyOperation({
           type: 'createNode',
           graphId: scope.rootGraphId,
+          ownerGraphId: scope.owningGraphId,
           nodeId,
           layout: {
             id: nodeId,
@@ -387,6 +435,7 @@ const graphMutations = (workflowId: string) => {
           nodeIds.map((nodeId) => ({
             type: 'deleteNode',
             graphId: scope.rootGraphId,
+            ownerGraphId: scope.owningGraphId,
             nodeId,
             source: LayoutSource.AgentRemote,
             actor: context.actor,
@@ -511,6 +560,7 @@ const {
   replace: replaceSelectionTags
 } = useCanvasSelection({
   selection: selectedNodes,
+  enabled: agentEnabled,
   isLive: () => agentPanelStore.isOpen,
   isTracking: () => agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
@@ -584,28 +634,64 @@ async function refreshCloudWorkflowIds(): Promise<void> {
   }
 }
 
-function openSavedTabsNamed(filename: string): ComfyWorkflow[] {
+function cloudWorkflowName(tab: ComfyWorkflow): string {
+  return tab.suffix === 'app.json' ? `${tab.filename}.app` : tab.filename
+}
+
+function openSavedTabsNamed(name: string): ComfyWorkflow[] {
   return workflowStore.openWorkflows.filter(
-    (tab) => !tab.isTemporary && tab.filename === filename
+    (tab) => !tab.isTemporary && cloudWorkflowName(tab) === name
   )
 }
 
 function cloudIdFor(tab: ComfyWorkflow): string | undefined {
+  const name = cloudWorkflowName(tab)
   const saved =
-    !tab.isTemporary && openSavedTabsNamed(tab.filename).length === 1
-      ? cloudIdsByName.get(tab.filename)
+    !tab.isTemporary && openSavedTabsNamed(name).length === 1
+      ? cloudIdsByName.get(name)
       : undefined
   return saved ?? bindingStore.workflowIdFor(tab.path)
 }
 
 const workflowDetached = ref(false)
 
-function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
+// Resolves the tab a turn is attributed to. `null` (the send had no origin
+// tab) resolves to nothing rather than falling back to the active tab, so
+// re-attaching during prepare() cannot pull a later tab into this turn.
+function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
+  if (origin === null) return undefined
+  return (
+    (origin === undefined
+      ? workflowStore.activeWorkflow
+      : workflowStore.openWorkflows.find(
+          (workflow) => workflow.path === origin.tabPath
+        )) ?? undefined
+  )
+}
+
+function activeWorkflowTurnContext(
+  origin?: TurnOrigin
+): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
-  const active = workflowStore.activeWorkflow
+  const active = originWorkflow(origin)
   if (!active) return undefined
-  const bound = cloudIdFor(active)
-  return bound === undefined ? undefined : { id: bound, tabPath: active.path }
+  const id = cloudIdFor(active)
+  if (id === undefined && !active.isTemporary && origin !== undefined)
+    return undefined
+  return id === undefined
+    ? { tabPath: active.path }
+    : { id, tabPath: active.path }
+}
+
+function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = originWorkflow(origin)
+  if (!active) return undefined
+  if (active.path === workflowStore.activeWorkflow?.path)
+    active.changeTracker?.prepareForSave()
+  const content = active.activeState
+  if (!content) return undefined
+  return { content }
 }
 
 const activeTab = computed<ActiveTab | null>(() => {
@@ -639,15 +725,17 @@ function onClearWorkflow(): void {
   workflowDetached.value = true
 }
 
-function openTabsSnapshot(): OpenTabsSnapshot | undefined {
+function openTabsSnapshot(origin?: TurnOrigin): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
     const workflowId = cloudIdFor(tab)
     return workflowId === undefined
       ? []
-      : [{ workflow_id: workflowId, name: tab.filename }]
+      : [{ workflow_id: workflowId, name: cloudWorkflowName(tab) }]
   })
   if (openTabs.length === 0) return undefined
-  const active = workflowStore.activeWorkflow
+  // A turn with no origin tab still reports the open tabs (they are context,
+  // not attribution) but must not name a current_tab.
+  const active = originWorkflow(origin)
   return {
     open_tabs: openTabs,
     current_tab:
@@ -659,7 +747,15 @@ function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined
 ): void {
-  if (sent !== undefined && sent.id === workflowId) {
+  if (sent === undefined) return
+  // An unbound tab adopts a workflow only when it was minted for this turn:
+  // an id that already resolves to an open tab belongs to that tab.
+  const adoptable =
+    sent.id === undefined
+      ? bindingStore.tabPathFor(workflowId) === undefined &&
+        boundTabFor(workflowId) === null
+      : sent.id === workflowId
+  if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
   }
@@ -681,7 +777,9 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
-  bindWorkflow
+  bindWorkflow,
+  answerAsk,
+  answeringAskIds
 } = useAgentSession({
   rest,
   events,
@@ -690,7 +788,8 @@ const {
     adopted: onWorkflowAdopted,
     prepare: refreshCloudWorkflowIds,
     tabs: openTabsSnapshot,
-    activeTab: enqueueActiveTab
+    activeTab: enqueueActiveTab,
+    draft: activeWorkflowDraft
   }
 })
 
@@ -708,23 +807,32 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-const { status: crdtStatus, enqueueHumanOperations } = useAgentCrdtFollower(
+const {
+  status: crdtStatus,
+  debugSnapshot: crdtDebugSnapshot,
+  enqueueHumanOperations
+} = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive
+  isBoundWorkflowActive,
+  // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
+  // right after `app.setup()`) makes the follower's graph watch fire once the
+  // root graph exists.
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
-  withLayoutActor: (actor, fn) => layoutStore.withActor(actor, fn),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null)
 })
-// Dev instrument only (slice-02 classification): never ships to users.
-const isCrdtDevPanelEnabled = import.meta.env.DEV
+const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
+  agentPanelStore.enabled,
+  isCrdtDebugEnabled()
+)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -732,7 +840,14 @@ const isCrdtDevPanelEnabled = import.meta.env.DEV
 function resumedTurnTabPath(): string | null {
   if (workflowDetached.value) return null
   const bound = boundWorkflowId.value
-  if (bound === null) return activeWorkflowTurnContext()?.tabPath ?? null
+  if (bound === null) {
+    // An id-less context means the turn has no workflow at all: attributing
+    // it to whatever tab happens to be active lights the editing spinner on
+    // that tab and markModifieds it on completion. Only a context carrying a
+    // real workflow id may be attributed.
+    const context = activeWorkflowTurnContext()
+    return context?.id !== undefined ? context.tabPath : null
+  }
   const boundPath = bindingStore.tabPathFor(bound)
   if (boundPath !== undefined) return boundPath
   const context = activeWorkflowTurnContext()
@@ -791,6 +906,13 @@ let activeTabChain: Promise<void> = Promise.resolve()
 function enqueueActiveTab(data: AgentActiveTabData): void {
   const generation = ++activeTabGeneration
   activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+}
+
+function onOpenApprovalWorkflow(
+  workflowId: string,
+  workflowName?: string
+): void {
+  enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {
@@ -971,6 +1093,18 @@ function maybeFinishCompactSession(): void {
   agentComposerStore.finishCompactSession()
 }
 
+watch(
+  () => {
+    const entry = entries.value.at(-1)
+    if (entry?.role !== 'assistant') return
+    return entry.parts.find((part) => part.type === 'runApproval')?.askId
+  },
+  (askId) => {
+    if (askId && agentComposerStore.compactSessionPhase !== 'idle')
+      agentPanelStore.open('compact_composer')
+  }
+)
+
 async function onSend(
   text: string,
   attachments: ComposerAttachment[],
@@ -985,6 +1119,7 @@ async function onSend(
   const accepted = await sendMessage(text, attachments, nodeTags)
   if (source !== 'compact') return
   if (!accepted) {
+    agentPanelStore.open('compact_composer')
     agentComposerStore.restoreCompactSubmission(text, attachments)
     return
   }
@@ -1096,8 +1231,10 @@ watch(
   }
 )
 
+watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
+
 watch(
-  [() => workflowStore.activeWorkflow?.path, () => canvasStore.currentGraph],
+  () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }
@@ -1143,7 +1280,7 @@ const attachment = useAttachment({
     const uploaded = await rest.uploadImage(file, file.name)
     // The library caches input assets; without this refresh a just-uploaded
     // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.updateInputs()
+    void assetsStore.inputAssets.loadNew()
     return { ref: uploaded.name }
   },
   maxBytes: (file) => {
@@ -1359,26 +1496,10 @@ watch(
       data-testid="agent-file-input"
       @change="onFilesPicked"
     />
-    <div
-      v-if="crdtStatus.enabled"
-      class="border-b border-border-default bg-base-background px-3 py-1 font-mono text-muted"
-      data-testid="agent-crdt-status"
-    >
-      {{
-        t('agent.crdtStatus', {
-          connection: crdtStatus.connected
-            ? t('agent.crdtConnected')
-            : t('agent.crdtDisconnected'),
-          workflowId: crdtStatus.workflowId ?? t('agent.crdtNoDocument'),
-          updates: crdtStatus.updatesApplied,
-          frame: crdtStatus.lastFrameType ?? '—'
-        })
-      }}
-    </div>
-    <CrdtDevPanel v-if="isCrdtDevPanelEnabled" :status="crdtStatus" />
     <AgentPanel
       :entries
       :editable-turn-id="editableTurnId"
+      :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
@@ -1394,6 +1515,7 @@ watch(
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
+      :paywall-presentation="paywallPresentation"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -1405,6 +1527,9 @@ watch(
       @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
+      @answer-ask="answerAsk"
+      @open-workflow="onOpenApprovalWorkflow"
+      @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
@@ -1414,7 +1539,11 @@ watch(
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
-    />
+    >
+      <template v-if="isCrdtDevPanelEnabled" #instrument>
+        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      </template>
+    </AgentPanel>
     <OnboardingCoach
       :step="coachStep"
       storage-key="Comfy.AgentPanel.onboarded"

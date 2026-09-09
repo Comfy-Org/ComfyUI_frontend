@@ -156,9 +156,9 @@ describe('widgets view', () => {
     }
 
     node.widgets ||= []
-    node.widgets!.push(widget)
+    node.widgets.push(widget)
 
-    expect(node.widgets![0]).toBe(widget)
+    expect(node.widgets[0]).toBe(widget)
     expect(widget).toBeInstanceOf(LegacyWidget)
     expect(storedOrder(node)).toEqual(['custom'])
     expect(storedValue(widget)).toBe(10)
