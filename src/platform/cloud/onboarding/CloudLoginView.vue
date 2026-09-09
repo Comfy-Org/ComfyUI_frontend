@@ -37,7 +37,7 @@
 
         <button
           type="button"
-          :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
+          :class="AUTH_LINK_BUTTON_CLASS"
           @click="switchToEmailForm"
         >
           {{ t('auth.login.useEmailInstead') }}
@@ -49,7 +49,7 @@
 
         <button
           type="button"
-          :class="CLOUD_AUTH_LINK_BUTTON_CLASS"
+          :class="AUTH_LINK_BUTTON_CLASS"
           @click="switchToSocialLogin"
         >
           {{ t('auth.login.backToSocialLogin') }}
@@ -68,7 +68,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
 import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useCloudAuthPage'
-import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
+import { AUTH_LINK_BUTTON_CLASS } from '@comfyorg/account/authClasses'
 import type { SignInData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()

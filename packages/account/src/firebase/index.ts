@@ -30,9 +30,9 @@ import {
 
 interface ActionCeiling {
   /**
-   * Ceiling on the network-shaped actions (email sign-in/sign-up, password
-   * reset). Popup sign-in stays unbounded: the user may legitimately take
-   * minutes, and the SDK raises its own cancellation errors.
+   * Optional ceiling on the network-shaped actions (email sign-in/sign-up,
+   * password reset). None by default, as the cloud app runs them; popup
+   * sign-in is never bounded, the SDK raises its own cancellation errors.
    */
   readonly actionTimeoutMs?: number
 }
@@ -47,8 +47,7 @@ export interface FirebaseIdentityAppConfig extends ActionCeiling {
 
 /**
  * A host that already holds an `Auth` (the cloud app's vuefire instance)
- * binds the entry to it: no second app, no second persistence store. Its
- * actions run unbounded unless the host asks for a ceiling.
+ * binds the entry to it: no second app, no second persistence store.
  */
 export interface FirebaseIdentityAuthConfig extends ActionCeiling {
   readonly auth: Auth
@@ -89,8 +88,6 @@ function githubProvider(): GithubAuthProvider {
   return provider
 }
 
-const DEFAULT_ACTION_TIMEOUT_MS = 15_000
-
 function withCeiling<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
@@ -126,10 +123,7 @@ function authResolver(config: FirebaseIdentityConfig): () => Auth {
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
-  const actionTimeoutMs =
-    'auth' in config
-      ? config.actionTimeoutMs
-      : (config.actionTimeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS)
+  const { actionTimeoutMs } = config
   const auth = authResolver(config)
   const bounded = <T>(run: Promise<T>): Promise<T> =>
     actionTimeoutMs === undefined ? run : withCeiling(run, actionTimeoutMs)
