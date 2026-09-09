@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { ModelStatus } from '../../config/workshop'
+import type { ModelStatus } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 

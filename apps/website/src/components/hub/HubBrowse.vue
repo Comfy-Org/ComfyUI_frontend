@@ -6,13 +6,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { UseCase, WorkshopModel } from '../../config/workshop'
+import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
   sortWorkshopModels,
   useCaseFor,
   workshopModels
-} from '../../config/workshop'
+} from '../../config/models-catalogue'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'

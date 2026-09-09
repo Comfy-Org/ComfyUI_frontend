@@ -9,7 +9,7 @@ import {
   isVideoUrl,
   validateForm
 } from './workshop-playground'
-import type { GeneratedField } from './workshop'
+import type { GeneratedField } from './models-catalogue'
 
 const generatedFields: GeneratedField[] = [
   {

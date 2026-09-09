@@ -8,8 +8,8 @@ import type {
   ModalityFilter,
   TaskInput,
   WorkshopModel
-} from '../../config/workshop'
-import { modalityOf, splitTask } from '../../config/workshop'
+} from '../../config/models-catalogue'
+import { modalityOf, splitTask } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'

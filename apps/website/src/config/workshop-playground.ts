@@ -4,7 +4,7 @@ import type {
   GeneratedField,
   Modality,
   WorkshopModelDetail
-} from './workshop'
+} from './models-catalogue'
 
 export type FieldSchema =
   | {

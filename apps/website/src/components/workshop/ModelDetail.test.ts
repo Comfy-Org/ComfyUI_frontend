@@ -8,7 +8,7 @@ import {
   useMockSession,
   EXISTING_CREDITS
 } from '../../composables/useMockSession'
-import type { WorkshopModelDetail } from '../../config/workshop'
+import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import ModelDetail from './ModelDetail.vue'
 
 const prompt = {

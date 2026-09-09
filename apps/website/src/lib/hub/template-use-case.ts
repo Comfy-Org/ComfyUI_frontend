@@ -1,5 +1,5 @@
-import type { UseCase, WorkshopModel } from '../../config/workshop'
-import { useCaseFor } from '../../config/workshop'
+import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
+import { useCaseFor } from '../../config/models-catalogue'
 import templateModelJoin from '../../data/templateModelJoin.json'
 import type { HubTemplate } from './types'
 

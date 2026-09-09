@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { workshopModels } from '../src/config/workshop'
+import { workshopModels } from '../src/config/models-catalogue'
 import type { HubTemplate } from '../src/lib/hub/types'
 import { modelNamedBy } from '../src/lib/hub/template-use-case'
 import { API_PROVIDER_MAP } from './generate-models'

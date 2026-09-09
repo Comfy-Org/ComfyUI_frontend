@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../../config/workshop'
-import { workshopModels } from '../../config/workshop'
+import type { WorkshopModel } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/models-catalogue'
 import hubTemplates from '../../data/hubTemplates.json'
 import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 import type { HubTemplate } from './types'

@@ -1,4 +1,4 @@
-import type { WorkshopModel } from './workshop'
+import type { WorkshopModel } from './models-catalogue'
 
 // Most visitors land on a model page from search or from the home page, so the
 // rest of the catalog is surfaced there. The same provider comes first: that is

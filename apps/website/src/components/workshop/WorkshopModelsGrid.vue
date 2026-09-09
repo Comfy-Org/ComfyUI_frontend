@@ -23,7 +23,7 @@ import type {
   SortOrder,
   UseCase,
   WorkshopModel
-} from '../../config/workshop'
+} from '../../config/models-catalogue'
 import {
   SORT_ORDERS,
   parseCatalogSearch,
@@ -36,7 +36,7 @@ import {
   filterWorkshopModels,
   sortWorkshopModels,
   useCaseFor
-} from '../../config/workshop'
+} from '../../config/models-catalogue'
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'

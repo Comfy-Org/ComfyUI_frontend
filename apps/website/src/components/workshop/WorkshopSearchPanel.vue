@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopModel } from '../../config/workshop'
-import { formatRuns } from '../../config/workshop'
+import type { WorkshopModel } from '../../config/models-catalogue'
+import { formatRuns } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { UseCase, WorkshopModel } from '../../config/workshop'
+import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import type { TranslationKey } from '../../i18n/translations'
 import WorkshopSections from './WorkshopSections.vue'
 

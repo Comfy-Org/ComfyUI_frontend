@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
-import WorkshopCatalog from '../../components/workshop/WorkshopCatalog.vue'
-import { workshopModels } from '../../config/workshop'
+import ModelsCatalogue from '../../components/workshop/ModelsCatalogue.vue'
+import { workshopModels } from '../../config/models-catalogue'
 import { t } from '../../i18n/translations'
 
 // Which layout the listing shows is stored in the browser, so the server cannot
@@ -16,7 +16,7 @@ import { t } from '../../i18n/translations'
   noindex
 >
   <div class="mx-auto max-w-10xl px-6 py-16 max-sm:py-10 lg:px-8 lg:py-24">
-    <WorkshopCatalog models={workshopModels} client:only="vue" />
+    <ModelsCatalogue models={workshopModels} client:only="vue" />
   </div>
   <PrototypeTweaks client:load />
 </BaseLayout>

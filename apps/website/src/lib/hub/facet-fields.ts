@@ -1,4 +1,4 @@
-import type { WorkshopModel } from '../../config/workshop'
+import type { WorkshopModel } from '../../config/models-catalogue'
 import { partnerModelFor } from './template-use-case'
 import type { HubTemplate } from './types'
 

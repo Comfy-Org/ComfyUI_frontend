@@ -1,4 +1,4 @@
-import type { WorkshopModel } from './workshop'
+import type { WorkshopModel } from './models-catalogue'
 
 // The registry lists every release as its own model: Wan, Wan 2.6, Wan 2.7 and
 // Wan 3.0 are four entries, and "Flux" appears twice. A visitor browsing the

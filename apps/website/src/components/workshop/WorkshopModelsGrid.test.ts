@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { WorkshopModel } from '../../config/workshop'
+import type { WorkshopModel } from '../../config/models-catalogue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
 const models: WorkshopModel[] = [

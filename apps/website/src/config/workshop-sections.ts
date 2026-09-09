@@ -1,4 +1,4 @@
-import type { UseCase } from './workshop'
+import type { UseCase } from './models-catalogue'
 
 // Text, 3D and audio each hold a handful of models, so the catalogue shows them
 // together as one "other formats" shelf rather than three near-empty rows.

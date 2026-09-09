@@ -1,4 +1,4 @@
-import { workshopModels } from '../config/workshop'
+import { workshopModels } from '../config/models-catalogue'
 
 export interface DiscoveryProvider {
   readonly name: string

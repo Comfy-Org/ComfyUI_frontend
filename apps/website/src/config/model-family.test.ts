@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { groupByFamily } from './model-family'
-import type { WorkshopModel } from './workshop'
+import type { WorkshopModel } from './models-catalogue'
 
 function model(
   name: string,

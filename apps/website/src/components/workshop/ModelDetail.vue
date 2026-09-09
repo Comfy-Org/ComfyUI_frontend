@@ -13,7 +13,7 @@ import {
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import type { WorkshopModelDetail } from '../../config/workshop'
+import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type {
   FieldErrors,
   FormValues,

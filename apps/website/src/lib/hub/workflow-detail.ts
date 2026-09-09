@@ -3,7 +3,7 @@ import type {
   GeneratedField,
   Modality,
   WorkshopModelDetail
-} from '../../config/workshop'
+} from '../../config/models-catalogue'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { tagDisplayName } from './tag-aliases'

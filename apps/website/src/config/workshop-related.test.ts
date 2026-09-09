@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from './workshop'
+import type { WorkshopModel } from './models-catalogue'
 import { relatedModels } from './workshop-related'
 
 function model(

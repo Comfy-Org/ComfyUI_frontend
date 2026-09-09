@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { buildSnippet } from '../../config/workshop-snippets'
+import { buildSnippet } from '../../config/models-snippets'
 import ApiTab from './ApiTab.vue'
 
 const routerId = 'kling/kling-ai'

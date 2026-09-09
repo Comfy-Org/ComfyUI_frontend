@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../../config/workshop'
+import type { WorkshopModel } from '../../config/models-catalogue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const base: WorkshopModel = {

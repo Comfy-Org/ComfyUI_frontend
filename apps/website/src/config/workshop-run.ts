@@ -1,5 +1,5 @@
 import type { FieldErrors } from './workshop-playground'
-import type { Modality, ModelStatus } from './workshop'
+import type { Modality, ModelStatus } from './models-catalogue'
 
 export const OUTPUT_TTL_MS = 24 * 60 * 60 * 1000
 

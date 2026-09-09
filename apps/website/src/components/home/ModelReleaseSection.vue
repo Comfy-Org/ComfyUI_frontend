@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getRoutes } from '../../config/routes'
-import { getWorkshopModel } from '../../config/workshop'
+import { getWorkshopModel } from '../../config/models-catalogue'
 import { modelReleaseSlides } from '../../data/modelRelease'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'

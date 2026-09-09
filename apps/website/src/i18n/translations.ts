@@ -1,6 +1,104 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
+  'workshop.meta.title': {
+    en: 'Browse Models - Comfy',
+    'zh-CN': '浏览模型 - Comfy'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run partner models and curated workflows on Comfy.',
+    'zh-CN': '在 Comfy 上浏览并运行合作伙伴模型和精选工作流。'
+  },
+  'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.hero.heading': {
+    en: 'Run the best models',
+    'zh-CN': '运行顶尖模型'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Partner models, ready to run. No install, no setup.',
+    'zh-CN': '合作伙伴模型，即开即用。无需安装配置。'
+  },
+  'workshop.search.label': {
+    en: 'Search models, providers, categories...',
+    'zh-CN': '搜索模型、提供商、分类...'
+  },
+  'workshop.search.placeholder': {
+    en: 'Search models, providers, and capabilities',
+    'zh-CN': '搜索模型、提供商和功能'
+  },
+  'workshop.provider.label': {
+    en: 'Filter by provider',
+    'zh-CN': '按提供商筛选'
+  },
+  'workshop.provider.all': {
+    en: 'All providers',
+    'zh-CN': '所有提供商'
+  },
+  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.result': {
+    en: '{count} model',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.results': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.empty': {
+    en: 'No models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的模型。'
+  },
+  'workshop.showMore': {
+    en: 'Show more models',
+    'zh-CN': '显示更多模型'
+  },
+  'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
+  'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
+  'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
+  'workshop.model.maxFiles': {
+    en: 'Select no more than {count} files.',
+    'zh-CN': '最多选择 {count} 个文件。'
+  },
+  'workshop.model.invalidJson': {
+    en: "Enter JSON that matches this model input's schema.",
+    'zh-CN': '请输入符合此模型输入架构的 JSON。'
+  },
+  'workshop.model.runNext': {
+    en: 'Run model — sign-in coming next',
+    'zh-CN': '运行模型 — 登录功能即将推出'
+  },
+  'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
+  'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.model.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
+  'workshop.model.related': {
+    en: 'More models',
+    'zh-CN': '更多模型'
+  },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
+
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
     en: 'Partner Nodes',
@@ -1539,6 +1637,10 @@ Enterprise`
   },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.creditsLabelYearly': {
+    en: 'credits per year',
+    'zh-CN': '年度积分'
+  },
   'pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
     'zh-CN': '免费开始，准备好了再升级。'
@@ -1615,9 +1717,14 @@ Enterprise`
   'pricing.plan.standard.eduYearlyPrice': { en: '$15', 'zh-CN': '$15' },
   'pricing.plan.standard.eduYearlyTotal': { en: '$180', 'zh-CN': '$180' },
   'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
+  'pricing.plan.standard.yearlyCredits': { en: '50,400', 'zh-CN': '50,400' },
   'pricing.plan.standard.estimate': {
     en: 'Generates ~380 5s videos*',
     'zh-CN': '约可生成 380 个 5 秒视频*'
+  },
+  'pricing.plan.standard.yearlyEstimate': {
+    en: 'Generates ~4,560 5s videos*',
+    'zh-CN': '约可生成 4,560 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
     en: 'SUBSCRIBE TO STANDARD',
@@ -1632,9 +1739,14 @@ Enterprise`
   'pricing.plan.creator.eduYearlyPrice': { en: '$26.25', 'zh-CN': '$26.25' },
   'pricing.plan.creator.eduYearlyTotal': { en: '$315', 'zh-CN': '$315' },
   'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
+  'pricing.plan.creator.yearlyCredits': { en: '88,800', 'zh-CN': '88,800' },
   'pricing.plan.creator.estimate': {
     en: 'Generates ~670 5s videos*',
     'zh-CN': '约可生成 670 个 5 秒视频*'
+  },
+  'pricing.plan.creator.yearlyEstimate': {
+    en: 'Generates ~8,040 5s videos*',
+    'zh-CN': '约可生成 8,040 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
     en: 'SUBSCRIBE TO CREATOR',
@@ -1649,9 +1761,14 @@ Enterprise`
   'pricing.plan.pro.eduYearlyPrice': { en: '$75', 'zh-CN': '$75' },
   'pricing.plan.pro.eduYearlyTotal': { en: '$900', 'zh-CN': '$900' },
   'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
+  'pricing.plan.pro.yearlyCredits': { en: '253,200', 'zh-CN': '253,200' },
   'pricing.plan.pro.estimate': {
     en: 'Generates ~1,915 5s videos*',
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
+  },
+  'pricing.plan.pro.yearlyEstimate': {
+    en: 'Generates ~22,980 5s videos*',
+    'zh-CN': '约可生成 22,980 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
 
@@ -8454,23 +8571,6 @@ Enterprise`
 
   // Workshop – catalog pages
   'workshop.title': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.meta.title': {
-    en: 'Browse Models - Comfy',
-    'zh-CN': '浏览模型 - Comfy'
-  },
-  'workshop.meta.description': {
-    en: 'Browse and run partner models and curated workflows on Comfy.',
-    'zh-CN': '在 Comfy 上浏览并运行合作伙伴模型和精选工作流。'
-  },
-  'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.hero.heading': {
-    en: 'Run the best models',
-    'zh-CN': '运行顶尖模型'
-  },
-  'workshop.hero.subtitle': {
-    en: 'Partner models, ready to run. No install, no setup.',
-    'zh-CN': '合作伙伴模型，即开即用。无需安装配置。'
-  },
   'workshop.task.label': {
     en: '{input} to {output}',
     'zh-CN': '{input}转{output}'
@@ -8543,10 +8643,6 @@ Enterprise`
   'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },
   'workshop.useCase.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.useCase.text': { en: 'Text', 'zh-CN': '文本' },
-  'workshop.search.label': {
-    en: 'Search models, providers, categories...',
-    'zh-CN': '搜索模型、提供商、分类...'
-  },
   'workshop.search.short': { en: 'Search models…', 'zh-CN': '搜索模型…' },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
@@ -8558,10 +8654,6 @@ Enterprise`
   'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
   'workshop.search.more': { en: '+ {n} more', 'zh-CN': '+ {n} 个' },
   'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },
-  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
-  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
-  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
-  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
   'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
   'workshop.filter.other': { en: 'Other', 'zh-CN': '其他' },
   'workshop.input.title': { en: 'Input', 'zh-CN': '输入' },
@@ -8701,10 +8793,6 @@ Enterprise`
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },
   'workshop.model.tabs.details': { en: 'Details', 'zh-CN': '详情' },
-  'workshop.model.related': {
-    en: 'More models',
-    'zh-CN': '更多模型'
-  },
   'workshop.model.relatedProvider': {
     en: 'More from {provider}',
     'zh-CN': '{provider} 的更多模型'
@@ -8712,10 +8800,6 @@ Enterprise`
   'workshop.model.relatedShort': {
     en: 'More models',
     'zh-CN': '更多模型'
-  },
-  'workshop.model.browseAll': {
-    en: 'Browse all models',
-    'zh-CN': '浏览全部模型'
   },
   'workshop.model.browseAllShort': {
     en: 'Browse all',
@@ -9293,13 +9377,9 @@ Enterprise`
     en: 'See the node reference',
     'zh-CN': '查看节点参考'
   },
-  'cloudNodesLaunch.models.oneNode': {
-    en: '1 node',
-    'zh-CN': '1 个节点'
-  },
-  'cloudNodesLaunch.models.threeNodes': {
-    en: '3 nodes',
-    'zh-CN': '3 个节点'
+  'cloudNodesLaunch.models.nodeCount': {
+    en: '{count} node | {count} nodes',
+    'zh-CN': '{count} 个节点'
   },
   'cloudNodesLaunch.models.flux2': {
     en: 'Flux 2',
@@ -9488,9 +9568,30 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
+// Returns the message plus the locale it actually came from, which is 'en'
+// whenever the requested locale has no translation for the key.
+function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   const entry = translations[key] as LocalizedText
-  return entry[locale] ?? entry.en
+  const message = entry[locale]
+  return message === undefined ? [entry.en, 'en'] : [message, locale]
+}
+
+export function t(key: TranslationKey, locale: Locale = 'en'): string {
+  return resolve(key, locale)[0]
+}
+
+export function tPlural(
+  key: TranslationKey,
+  count: number,
+  locale: Locale = 'en'
+): string {
+  const [message, messageLocale] = resolve(key, locale)
+  const forms = message.split('|')
+  const form =
+    new Intl.PluralRules(messageLocale).select(count) === 'one'
+      ? forms[0]
+      : forms[forms.length - 1]
+  return form.trim().replace('{count}', String(count))
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
