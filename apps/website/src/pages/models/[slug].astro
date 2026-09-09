@@ -62,6 +62,12 @@ const tags = model.capabilities.map((capability) => ({
   label: capability,
   search: catalogSearch({ capabilities: [capability] })
 }))
+// Three capabilities read as a summary; the rest are one count that names them
+// on hover, so a model with eight does not crowd out its own price.
+const TAGS_SHOWN = 3
+const shownTags = tags.slice(0, TAGS_SHOWN)
+const restTags = tags.slice(TAGS_SHOWN)
+const restTagCount = restTags.length
 ---
 
 <BaseLayout
@@ -113,21 +119,6 @@ const tags = model.capabilities.map((capability) => ({
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <ul
-            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
-            data-testid="model-tags"
-          >
-            {tags.map((tag) => (
-              <li>
-                <a
-                  href={`${routes.workshop}${tag.search}`}
-                  class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-                >
-                  {tag.label}
-                </a>
-              </li>
-            ))}
-          </ul>
           <p
             class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
             data-testid="model-price"
@@ -143,6 +134,34 @@ const tags = model.capabilities.map((capability) => ({
               )
             }
           </p>
+          {shownTags.length > 0 && (
+            <ul
+              class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+              data-testid="model-tags"
+            >
+              {shownTags.map((tag) => (
+                <li>
+                  <a
+                    href={`${routes.workshop}${tag.search}`}
+                    class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                  >
+                    {tag.label}
+                  </a>
+                </li>
+              ))}
+              {restTagCount > 0 && (
+                <li>
+                  <span
+                    class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas/70"
+                    title={restTags.map((tag) => tag.label).join(', ')}
+                    data-testid="model-tags-rest"
+                  >
+                    +{restTagCount}
+                  </span>
+                </li>
+              )}
+            </ul>
+          )}
         </div>
       </div>
 

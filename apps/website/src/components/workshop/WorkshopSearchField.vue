@@ -62,6 +62,13 @@ function closeOnLeave(event: FocusEvent) {
     open.value = false
 }
 
+// Naming a model is the end of the search, so the panel closes on it. The
+// provider and capability chips do not: they are picked several at a time.
+function pickModel(model: WorkshopModel) {
+  query.value = model.name
+  open.value = false
+}
+
 // The sheet applies as you tap, so its button is a way out that says what is
 // waiting behind it.
 const matches = computed(
@@ -157,7 +164,7 @@ const clearButtonClass =
         :providers
         :capabilities
         :locale
-        @pick="(model) => (query = model.name)"
+        @pick="pickModel"
         @toggle-provider="(value) => (providers = toggled(providers, value))"
         @toggle-capability="
           (value) => (capabilities = toggled(capabilities, value))
