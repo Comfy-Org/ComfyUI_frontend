@@ -21,9 +21,6 @@ import { computed, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
 import {
-  CUSTOMER_PROVISIONING_PATH,
-  customerProvisioningRequest,
-  isCustomerProvisioned,
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from '@comfyorg/account/provisioning'
@@ -55,6 +52,9 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
+type CreateCustomerPayload = NonNullable<
+  operations['createCustomer']['requestBody']
+>['content']['application/json']
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -479,7 +479,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const createCustomer = async (
-    turnstileToken?: string
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
     const sessionIdentity = currentUserIdentity()
     const authHeader = await getUserAuthHeader()
@@ -487,16 +487,24 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
+    const body: CreateCustomerPayload = {
+      ...payload,
+      signup_source: DISTRIBUTION
+    }
+
     const createCustomerRes = await fetchWithUnifiedRemint(
-      buildApiUrl(CUSTOMER_PROVISIONING_PATH),
-      customerProvisioningRequest({
-        authHeaders: authHeader,
-        signupSource: DISTRIBUTION,
-        turnstileToken
-      }),
+      buildApiUrl('/customers'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      },
       isCloud && flags.unifiedCloudAuthEnabled
     )
-    if (!isCustomerProvisioned(createCustomerRes)) {
+    if (!createCustomerRes.ok) {
       assertIdentityUnchanged(sessionIdentity)
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
@@ -648,7 +656,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   const executeAuthAction = async <T>(
     action: (auth: Auth) => Promise<T>,
-    options: { createCustomer?: boolean } = {}
+    options: {
+      createCustomer?: boolean
+      customerPayload?: Omit<CreateCustomerPayload, 'signup_source'>
+    } = {}
   ): Promise<T> => {
     loading.value = true
 
@@ -661,7 +672,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (!token) {
           throw new Error('Cannot create customer: User not authenticated')
         }
-        await createCustomer()
+        await createCustomer(options.customerPayload)
       }
 
       return result
@@ -700,7 +711,10 @@ export const useAuthStore = defineStore('auth', () => {
       signUpWithProvisioning({
         createUser: () =>
           createUserWithEmailAndPassword(authInstance, email, password),
-        provisionCustomer: () => createCustomer(turnstileToken),
+        provisionCustomer: () =>
+          createCustomer(
+            turnstileToken ? { turnstile_token: turnstileToken } : undefined
+          ),
         onRollbackFailure: (error) =>
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',

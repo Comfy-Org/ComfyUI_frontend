@@ -981,10 +981,16 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password', 'turnstile-abc')
 
-      expect(customerRequestBody()).toEqual({
-        turnstile_token: 'turnstile-abc',
-        signup_source: 'cloud'
-      })
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            turnstile_token: 'turnstile-abc',
+            signup_source: 'cloud'
+          })
+        })
+      )
     })
 
     it('omits turnstile_token when no turnstile token is provided', async () => {
@@ -1707,8 +1713,8 @@ describe('useAuthStore', () => {
       expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
-    it('sends the turnstile token alongside signup_source', async () => {
-      await store.createCustomer('token-xyz')
+    it('preserves caller payload alongside signup_source', async () => {
+      await store.createCustomer({ turnstile_token: 'token-xyz' })
 
       expect(customerRequestBody()).toEqual({
         turnstile_token: 'token-xyz',
