@@ -14,6 +14,18 @@ pull requests and in the merge queue. Pre-commit checks staged Astro files
 with ESLint and runs the website typecheck. `astro check` remains part of
 `pnpm typecheck:website` for compiler and type diagnostics.
 
+## Formatting
+
+Run `pnpm format:astro` from the repository root to format Astro files, or
+`pnpm format:astro:check` to check them. Both are included in the root format
+commands and shared CI checks. Pre-commit formats staged Astro files after
+ESLint fixes.
+
+Astro files use Prettier with the official Astro plugin; other formats continue
+to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
+and preserves whitespace around inline HTML elements. The Astro editor
+extension also reads this configuration.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board

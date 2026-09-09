@@ -17,7 +17,12 @@ import {
 } from '../../data/events'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
-import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../../utils/jsonLd'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext
+} from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,

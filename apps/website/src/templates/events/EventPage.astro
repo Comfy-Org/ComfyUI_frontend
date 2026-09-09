@@ -89,13 +89,11 @@ const breadcrumbs = [
   breadcrumbs={breadcrumbs}
   extraJsonLd={[videoJsonLd, eventJsonLd]}
 >
-  {
-    isPast ? (
-      <PastEventsSection locale={locale} />
-    ) : (
-      <UpcomingEventsSection locale={locale} client:visible />
-    )
-  }
+  {isPast ? (
+    <PastEventsSection locale={locale} />
+  ) : (
+    <UpcomingEventsSection locale={locale} client:visible />
+  )}
   <EventVideoDialog
     title={title}
     description={description}

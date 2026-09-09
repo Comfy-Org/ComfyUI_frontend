@@ -11,7 +11,7 @@ import { absoluteUrl, organizationId, pageContext } from '../utils/jsonLd'
 const { siteUrl, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 ---
 
@@ -22,7 +22,7 @@ const { siteUrl, locale } = pageContext(
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: t('breadcrumb.about', locale) },
+    { name: t('breadcrumb.about', locale) }
   ]}
 >
   <HeroSection client:load />
