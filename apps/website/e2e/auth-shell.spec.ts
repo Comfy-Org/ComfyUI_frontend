@@ -28,6 +28,25 @@ test.describe('Auth shell', () => {
         page.getByRole('group', { name: 'Featured models' })
       ).toBeVisible()
     })
+
+    test(`${path} links out exactly like the cloud shell`, async ({ page }) => {
+      await page.setViewportSize({ width: 1536, height: 864 })
+      await page.goto(path)
+
+      await expect(
+        page.getByRole('link', { name: 'ComfyOrg Logo' })
+      ).toHaveAttribute('href', '/')
+      for (const [name, href] of [
+        ['Terms of Use', 'https://comfy.org/terms-of-service/'],
+        ['Privacy Policy', 'https://comfy.org/privacy-policy/'],
+        ['here', 'https://support.comfy.org']
+      ] as const) {
+        const link = page.getByRole('link', { name })
+        await expect(link).toHaveAttribute('href', href)
+        await expect(link).toHaveAttribute('target', '_blank')
+        await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+      }
+    })
   }
 
   test('does not mount the hero video below xl', async ({ page }) => {

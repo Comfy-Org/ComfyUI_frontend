@@ -17,7 +17,9 @@ vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
   usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
 }))
 
-vi.mock('@/base/webviewDetection', () => ({ isEmbeddedWebView: () => false }))
+vi.mock('@comfyorg/account/webviewDetection', () => ({
+  isEmbeddedWebView: () => false
+}))
 vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
 
 const inChina = vi.hoisted(() => ({
@@ -39,7 +41,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock('@comfyorg/shared-frontend-utils/networkUtil', () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 

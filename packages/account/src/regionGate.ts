@@ -1,6 +1,7 @@
 import { onMounted, readonly, ref } from 'vue'
+import type { Ref } from 'vue'
 
-import { isInChina } from '@/utils/networkUtil'
+import { isInChina } from '@comfyorg/shared-frontend-utils/networkUtil'
 
 export type RegionGateStatus = 'pending' | 'blocked' | 'allowed'
 
@@ -9,7 +10,7 @@ export type RegionGateStatus = 'pending' | 'blocked' | 'allowed'
  * leaves it. Do not race this against a timeout: that decides `allowed` while a
  * real `blocked` answer is still in flight.
  */
-export function useRegionGate() {
+export function useRegionGate(): { status: Readonly<Ref<RegionGateStatus>> } {
   const status = ref<RegionGateStatus>('pending')
 
   onMounted(async () => {

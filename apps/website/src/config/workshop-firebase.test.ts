@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  isCustomerProvisioned,
   isWorkshopProvisioningError,
   provisionCustomer,
   signInWorkshopWithGoogle
@@ -18,22 +17,36 @@ vi.mock('@comfyorg/account/firebase', () => ({
   createFirebaseIdentity: () => identity
 }))
 
-describe('isCustomerProvisioned', () => {
-  it('accepts ok and treats a 409 as already-provisioned', () => {
-    expect(isCustomerProvisioned(201, true)).toBe(true)
-    expect(
-      isCustomerProvisioned(409, false),
-      'a repeat social sign-in must not fail on an existing customer'
-    ).toBe(true)
-  })
-
-  it.for([400, 401, 403, 500, 503])('rejects a %s response', (status) => {
-    expect(isCustomerProvisioned(status, false)).toBe(false)
-  })
-})
-
 describe('provisionCustomer', () => {
   const user = { getIdToken: async () => 'jwt' }
+
+  it('sends the workshop signup source with the bearer token', async () => {
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))
+
+    await provisionCustomer(user, fetchImpl)
+
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
+      string,
+      RequestInit
+    ]
+    expect(url).toMatch(/\/customers$/)
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer jwt' })
+    expect(JSON.parse(String(init.body))).toEqual({
+      signup_source: 'comfy-workshop'
+    })
+  })
+
+  it.for([400, 401, 409, 500])(
+    'fails on a %s answer instead of treating it as an existing customer',
+    async (status) => {
+      const fetchImpl = vi.fn(async () => new Response(null, { status }))
+
+      await expect(
+        provisionCustomer(user, fetchImpl),
+        'the backend answers 200 for an existing customer; a 409 is a real conflict'
+      ).rejects.toThrow(String(status))
+    }
+  )
 
   it('bounds the POST with an abort signal so a hung request cannot strand sign-in', async () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 201 }))

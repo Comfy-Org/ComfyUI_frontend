@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { requestedReturnPath, safeReturnPath } from './workshop-return'
+import {
+  isSwitchingAccount,
+  requestedReturnPath,
+  safeReturnPath
+} from './workshop-return'
 
 describe('safeReturnPath', () => {
   it('passes a same-origin absolute path through', () => {
@@ -44,5 +48,14 @@ describe('requestedReturnPath', () => {
     expect(requestedReturnPath('?returnTo=https%3A%2F%2Fevil.com')).toBe(
       '/workshop/'
     )
+  })
+})
+
+describe('isSwitchingAccount', () => {
+  it('is true only when the query carries switchAccount', () => {
+    expect(isSwitchingAccount('?switchAccount')).toBe(true)
+    expect(isSwitchingAccount('?switchAccount=1&returnTo=%2F')).toBe(true)
+    expect(isSwitchingAccount('?returnTo=%2Fworkshop%2F')).toBe(false)
+    expect(isSwitchingAccount('')).toBe(false)
   })
 })
