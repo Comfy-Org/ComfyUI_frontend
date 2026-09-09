@@ -194,6 +194,43 @@ describe('AuthSignIn', () => {
     )
   })
 
+  it('leaves once the session client publishes the credential, even before the mint promise settles', async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    // The real client publishes to subscribers first and resolves after.
+    handles.ensureFresh.mockImplementation(async () => {
+      handles.session!.value = { token: 'workspace-jwt' }
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      return { status: 'ok', session: { token: 'workspace-jwt' } }
+    })
+    render(AuthSignIn)
+
+    await clickGoogle()
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(replace).toHaveBeenCalledOnce()
+  })
+
+  it('sends a returning visitor away when the session arrives through the client, not the mint promise', async () => {
+    handles.identitySettled!.value = false
+    handles.ensureFresh.mockImplementation(async () => {
+      handles.session!.value = { token: 'workspace-jwt' }
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      return { status: 'ok', session: { token: 'workspace-jwt' } }
+    })
+    render(AuthSignIn)
+
+    handles.user!.value = { uid: 'user-1', email: 'a@b.co', displayName: null }
+    handles.identitySettled!.value = true
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(
+      screen.queryByRole('button'),
+      'the form must not paint on the way out'
+    ).toBeNull()
+  })
+
   it('returns to the requested page instead of the homepage', async () => {
     window.history.replaceState(
       {},
