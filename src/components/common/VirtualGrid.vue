@@ -1,5 +1,5 @@
 <template>
-  <slot v-if="!items.length && slots.placeholder" name="placeholder" />
+  <slot v-if="!itemsList.length && slots.placeholder" name="placeholder" />
   <div
     v-else
     ref="container"
@@ -19,7 +19,7 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T">
+<script setup lang="ts" generic="T extends { key: string }">
 import {
   useElementSize,
   useInfiniteScroll,
@@ -27,8 +27,10 @@ import {
   whenever
 } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toValue, watch } from 'vue'
 import type { CSSProperties } from 'vue'
+
+import type { PagedList } from '@/utils/pagedList'
 
 type GridState = {
   start: number
@@ -47,20 +49,20 @@ const {
   resizeDebounce = 64,
   defaultItemHeight = 200,
   defaultItemWidth = 200,
-  maxColumns = Infinity,
-  onLoadMore,
-  canLoadMore = false
+  maxColumns = Infinity
 } = defineProps<{
-  items: (T & { key: string })[]
+  items: T[] | PagedList<T>
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
   maxColumns?: number
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }>()
+
+const itemsList = computed(() =>
+  Array.isArray(items) ? items : toValue(items.items)
+)
 
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
@@ -85,7 +87,9 @@ const mergedGridStyle = computed<CSSProperties>(() => {
 
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
 const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
-const isValidGrid = computed(() => height.value && width.value && items?.length)
+const isValidGrid = computed(
+  () => height.value && width.value && itemsList.value.length
+)
 
 const state = computed<GridState>(() => {
   const fromRow = offsetRows.value - bufferRows
@@ -94,34 +98,15 @@ const state = computed<GridState>(() => {
   const fromCol = fromRow * cols.value
   const toCol = toRow * cols.value
 
-  const total = items?.length ?? 0
-  const windowSize = Math.max(toCol - fromCol, 0)
-
-  // Clamp `end` to the current item count first, then clamp `start` against
-  // that already-valid bound (not the raw `fromCol`). This guarantees
-  // 0 <= start <= end <= total even when `fromCol`/`toCol` point past a list
-  // that just shrunk (filter change) or a column count that just grew
-  // (resize/zoom) while scrolled deep into the grid. es-toolkit's
-  // clamp(value, min, max) produces nonsensical results when min > max,
-  // which is exactly what happens if `start` is clamped against the
-  // unclamped `fromCol` in those cases.
-  const end = clamp(toCol, 0, total)
-  let start = clamp(fromCol, 0, end)
-
-  // If the scroll position still points entirely past the available items
-  // (the window collapsed to empty), shift it left to show the trailing
-  // items instead of leaving the view blank. A real browser would normally
-  // clamp the scroll position itself once the spacer heights shrink, but a
-  // stale/negative spacer height can get rejected by the CSSOM and prevent
-  // that from ever happening, so we clamp the window directly here.
-  if (start === end && total > 0) {
-    start = Math.max(0, end - windowSize)
+  return {
+    start: clamp(fromCol, 0, itemsList.value.length),
+    end: clamp(toCol, fromCol, itemsList.value.length)
   }
-
-  return { start, end }
 })
 const renderedItems = computed(() =>
-  isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
+  isValidGrid.value
+    ? itemsList.value.slice(state.value.start, state.value.end)
+    : []
 )
 
 function rowsToHeight(itemsCount: number): string {
@@ -132,16 +117,22 @@ const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
 }))
 const bottomSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(items.length - state.value.end)
+  height: rowsToHeight(itemsList.value.length - state.value.end)
 }))
 
 const distance = 2 * defaultItemHeight * (1 + bufferRows)
+const infiniteScrollElement = computed(() =>
+  Array.isArray(items) ? container.value : undefined
+)
 useInfiniteScroll(
-  container,
+  infiniteScrollElement,
   async () => {
-    await onLoadMore?.()
+    if (!Array.isArray(items)) await items.loadMore()
   },
-  { canLoadMore: () => canLoadMore, distance }
+  {
+    canLoadMore: () => !Array.isArray(items) && toValue(items.hasMore),
+    distance
+  }
 )
 
 function updateItemSize(): void {
