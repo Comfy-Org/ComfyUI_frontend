@@ -53,6 +53,8 @@ export const WORKSHOP_FIREBASE_OPTIONS: FirebaseOptions = PROD
  * hostname allowlist; where it cannot, sign-up proceeds without a token and
  * the server's own policy decides.
  */
+// TODO(auth parity, E7): the cloud app overrides this live from remote config;
+// give the website a live source (PostHog flag payload) so a rotation needs no deploy.
 export const WORKSHOP_TURNSTILE_SITE_KEY = PROD
   ? '0x4AAAAAADnYZPVOpFCL_zeo'
   : '0x4AAAAAADnYY4_Q0qxHZ5a7'

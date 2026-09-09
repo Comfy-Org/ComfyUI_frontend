@@ -18,12 +18,13 @@ import {
   useWorkshopAuthFlag,
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
+import { AUTH_LINK_BUTTON_CLASS } from '@comfyorg/account/authClasses'
+
 import AuthFlagTimeout from './AuthFlagTimeout.vue'
 import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_SOLID_BUTTON_CLASS,
   AUTH_FIELD_CLASS,
-  AUTH_LINK_BUTTON_CLASS,
   AUTH_MESSAGE_SUCCESS_CLASS
 } from './authClasses'
 
