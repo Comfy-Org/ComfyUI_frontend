@@ -19,7 +19,7 @@ const state = vi.hoisted(
     }
 )
 
-vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
+vi.mock(import('@/composables/node/usePartnerNodesInGraph'), async () => {
   const { computed } = await import('vue')
   return {
     usePartnerNodesInGraph: () => ({
@@ -30,7 +30,7 @@ vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
   }
 })
 
-vi.mock('@/composables/auth/useCurrentUser', async () => {
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
   const { computed, ref } = await import('vue')
   const loggedIn = ref(false)
   return {
@@ -43,7 +43,7 @@ vi.mock('@/composables/auth/useCurrentUser', async () => {
   }
 })
 
-vi.mock('@/stores/authStore', async () => {
+vi.mock<unknown>(import('@/stores/authStore'), async () => {
   const { ref } = await import('vue')
   const initialized = ref(true)
   return {
@@ -58,7 +58,7 @@ vi.mock('@/stores/authStore', async () => {
   }
 })
 
-vi.mock('@/composables/useFeatureFlags', async () => {
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
   const { reactive } = await import('vue')
   const flags = reactive({ partnerRunGateEnabled: true })
   return {
@@ -70,7 +70,7 @@ vi.mock('@/composables/useFeatureFlags', async () => {
 })
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

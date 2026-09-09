@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 
 const loading = vi.hoisted(() => ({ value: false }))
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     get loading() {
       return loading.value
@@ -55,6 +55,7 @@ const submitButton = () =>
   screen.getByRole('button', { name: LOGIN_COPY.loginButton })
 
 beforeEach(() => {
+  vi.useRealTimers()
   loading.value = false
 })
 

@@ -8,13 +8,16 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import { useNodeBookmarkStore } from './nodeBookmarkStore'
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn()
 }))
 
-vi.mock('@/stores/nodeDefStore', async (importOriginal) => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  useNodeDefStore: () => ({ allNodeDefsByName: {} })
+  useNodeDefStore: () => ({
+    allNodeDefsByName: {},
+    getNodeDefByName: () => undefined
+  })
 }))
 
 const set = vi.fn()
@@ -47,6 +50,12 @@ describe('node bookmark folder commands', () => {
     )
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  it('omits bookmarks whose node definitions are no longer available', () => {
+    bookmarks = ['MissingNode']
+
+    expect(useNodeBookmarkStore().bookmarkedRoot.children).toEqual([])
   })
 
   it.for([

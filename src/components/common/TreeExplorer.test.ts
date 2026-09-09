@@ -51,6 +51,13 @@ async function submitRename(
 }
 
 describe('TreeExplorer', () => {
+  it('closes the label editor after renaming succeeds', async () => {
+    await submitRename(vi.fn().mockResolvedValue(true))
+
+    await nextTick()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
   it('keeps the label editor open when renaming fails', async () => {
     const handleError = vi.fn()
     const handleRename = vi.fn().mockRejectedValue(new Error('rename failed'))

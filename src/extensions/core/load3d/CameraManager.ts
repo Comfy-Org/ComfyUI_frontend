@@ -8,6 +8,23 @@ import {
   type EventManagerInterface
 } from './interfaces'
 
+function resolveIncomingCustomUp(state: CameraState): THREE.Vector3 | null {
+  if (state.useCustomUp === undefined) return null
+  const storedUp = state.customUp
+    ? new THREE.Vector3(state.customUp.x, state.customUp.y, state.customUp.z)
+    : null
+  if (storedUp && storedUp.lengthSq() > 0) return storedUp
+  if (!state.useCustomUp || !state.quaternion) return null
+  const q = new THREE.Quaternion(
+    state.quaternion.x,
+    state.quaternion.y,
+    state.quaternion.z,
+    state.quaternion.w
+  )
+  if (q.lengthSq() === 0) q.identity()
+  return new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+}
+
 export class CameraManager implements CameraManagerInterface {
   perspectiveCamera: THREE.PerspectiveCamera
   orthographicCamera: THREE.OrthographicCamera
@@ -162,6 +179,14 @@ export class CameraManager implements CameraManagerInterface {
           : (this.activeCamera as THREE.PerspectiveCamera).zoom,
       cameraType: this.getCurrentCameraType(),
       quaternion: { x, y, z, w },
+      ...(this.customUp !== null && {
+        useCustomUp: this.usingCustomUp,
+        customUp: {
+          x: this.customUp.x,
+          y: this.customUp.y,
+          z: this.customUp.z
+        }
+      }),
       fov: this.perspectiveCamera.fov,
       aspect: this.perspectiveCamera.aspect,
       near: activeCamera.near,
@@ -199,19 +224,13 @@ export class CameraManager implements CameraManagerInterface {
       this.activeCamera.updateProjectionMatrix()
     }
 
-    if (state.quaternion) {
-      const q = new THREE.Quaternion(
-        state.quaternion.x,
-        state.quaternion.y,
-        state.quaternion.z,
-        state.quaternion.w
+    const incomingUp = resolveIncomingCustomUp(state)
+    if (incomingUp) {
+      this.customUp = incomingUp
+      this.usingCustomUp = state.useCustomUp === true
+      this.activeCamera.up.copy(
+        this.usingCustomUp ? incomingUp : new THREE.Vector3(0, 1, 0)
       )
-      if (q.lengthSq() === 0) q.identity()
-      const appliedUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
-      const isFirstDerivation = this.customUp === null
-      this.customUp = appliedUp.clone()
-      if (isFirstDerivation) this.usingCustomUp = true
-      if (this.usingCustomUp) this.activeCamera.up.copy(appliedUp)
       this.eventManager.emitEvent('cameraUpStateChange', {
         hasCustomUp: true,
         usingCustomUp: this.usingCustomUp

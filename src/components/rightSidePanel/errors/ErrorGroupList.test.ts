@@ -19,16 +19,20 @@ import { toNodeId } from '@/types/nodeId'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const rootGraph = {
+    serialize: vi.fn(() => ({})),
+    getNodeById: vi.fn()
+  }
+  return {
+    app: {
+      rootGraph,
+      rootGraphOrUndefined: rootGraph
     }
   }
-}))
+})
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),
@@ -36,17 +40,17 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: vi.fn()
   }))
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: vi.fn(),
   fetchModelMetadata: vi.fn().mockResolvedValue({
     fileSize: null,
@@ -171,7 +175,7 @@ describe('ErrorGroupList selection emphasis', () => {
   beforeEach(() => {
     vi.mocked(isLGraphNode).mockReturnValue(true)
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      String(nodeId) === '1' ? SAMPLER_NODE : LOADER_NODE
+      nodeId === '1' ? SAMPLER_NODE : LOADER_NODE
     )
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       callback(0)
@@ -299,7 +303,7 @@ describe('ErrorGroupList selection emphasis', () => {
   it('preserves special characters in execution item accessible names', () => {
     const nodeDisplayName = 'A & B <C>'
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      String(nodeId) === '1'
+      nodeId === '1'
         ? createNodeFixture(
             SAMPLER_NODE.id,
             nodeDisplayName,
@@ -347,7 +351,7 @@ describe('ErrorGroupList selection emphasis', () => {
       LOADER_BOUNDS
     )
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      String(nodeId) === '2' ? subgraphLoaderNode : SAMPLER_NODE
+      nodeId === '2' ? subgraphLoaderNode : SAMPLER_NODE
     )
     const pinia = createPinia()
     seedTwoErrorGroups(pinia)

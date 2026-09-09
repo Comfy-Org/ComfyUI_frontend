@@ -11,42 +11,38 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { assetService } from '@/platform/assets/services/assetService'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: () => 0
   })
 }))
 
-vi.mock('@/stores/assetDownloadStore', () => ({
+vi.mock<unknown>(import('@/stores/assetDownloadStore'), () => ({
   useAssetDownloadStore: () => ({
     isDownloadedThisSession: () => false,
     acknowledgeAsset: vi.fn()
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: vi.fn()
   })
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     deleteAsset: vi.fn()
   }
 }))
 
-vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: vi.fn()
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useImage: () => ({ isLoading: false, error: null })
-  }
-})
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  useImage: () => ({ isLoading: false, error: null })
+}))
 
 const HASH = 'blake3:abc123def456'
 const ORIGINAL_FILENAME = 'sunset_photo.png'
@@ -178,6 +174,11 @@ describe('AssetCard', () => {
     if (typeof onConfirm !== 'function') throw new Error('Missing confirmation')
     const confirmation = onConfirm()
 
+    await vi.advanceTimersByTimeAsync(0)
+    expect(dialogOptions?.props?.promptText).toHaveProperty(
+      'value',
+      'assetBrowser.deletion.failed'
+    )
     await vi.runAllTimersAsync()
     await confirmation
     expect(assetService.deleteAsset).toHaveBeenCalledWith(asset.id)

@@ -31,19 +31,19 @@ const mockPersistUserKeybindings = vi.hoisted(() =>
 )
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: mockDownloadBlob
 }))
 
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   uploadFile: mockUploadFile
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     confirm: mockConfirm,
     prompt: mockPrompt,
@@ -51,24 +51,24 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     set: mockSettingSet,
     get: vi.fn(() => 'default')
   })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({
     add: mockToastAdd
   })
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
       fn,
@@ -79,13 +79,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/platform/keybindings/keybindingService', () => ({
+vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     persistUserKeybindings: mockPersistUserKeybindings
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     showDialog: vi.fn(),
     closeDialog: vi.fn(),
@@ -93,7 +93,7 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -464,8 +464,9 @@ describe('useKeybindingPresetService', () => {
       expect(store.savedPresetData?.newBindings).toHaveLength(1)
       expect(store.savedPresetData?.newBindings[0].commandId).toBe('new.cmd')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
-      const bindings = Object.values(store.getUserKeybindings())
-      expect(bindings[0].commandId).toBe('new.cmd')
+      expect(
+        store.getUserKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['new.cmd'])
     })
 
     it('applies unset bindings from preset', async () => {
@@ -488,9 +489,9 @@ describe('useKeybindingPresetService', () => {
       service.applyPreset(preset)
 
       expect(store.currentPresetName).toBe('vim')
-      const unset = Object.values(store.getUserUnsetKeybindings())
-      expect(unset).toHaveLength(1)
-      expect(unset[0].commandId).toBe('test.selectAll')
+      expect(
+        store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['test.selectAll'])
     })
   })
 

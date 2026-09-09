@@ -64,29 +64,37 @@ class NodeHelpService {
    * Returns undefined when the file is absent or the response is HTML.
    */
   private async tryFetchMarkdown(path: string): Promise<string | undefined> {
-    const res = await fetch(api.fileURL(path))
+    try {
+      const res = await fetch(api.fileURL(path))
 
-    if (res.status === 404) {
-      return undefined
+      if (res.status === 404) {
+        return undefined
+      }
+      if (!res.ok) {
+        reportError(
+          new Error(
+            `Failed to fetch node help (${res.status} ${res.statusText}) at ${path}`
+          ),
+          { errorType: 'node_help_fetch_failure' }
+        )
+        return undefined
+      }
+
+      const contentType = res.headers.get('content-type') ?? ''
+      const text = await res.text()
+
+      const isHtmlContentType = contentType.includes('text/html')
+
+      if (isHtmlContentType) return undefined
+
+      return text
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_help_fetch_failure',
+        context: { path }
+      })
+      throw error
     }
-    if (!res.ok) {
-      reportError(
-        new Error(
-          `Failed to fetch node help (${res.status} ${res.statusText}) at ${path}`
-        ),
-        { errorType: 'node_help_fetch_failure' }
-      )
-      return undefined
-    }
-
-    const contentType = res.headers?.get?.('content-type') ?? ''
-    const text = await res.text()
-
-    const isHtmlContentType = contentType.includes('text/html')
-
-    if (isHtmlContentType) return undefined
-
-    return text
   }
 }
 

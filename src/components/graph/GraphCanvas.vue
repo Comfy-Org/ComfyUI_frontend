@@ -179,6 +179,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -297,6 +298,17 @@ function exitToLegacyRendering(graph: LGraph | null) {
 watch(
   [shouldRenderVueNodes, () => canvasStore.currentGraph],
   ([enabled, graph], previous) => {
+    if (previous && previous[0] !== enabled) {
+      LiteGraph.vueNodesMode = enabled
+      if (graph) {
+        forEachNode(graph.rootGraph, (node) => {
+          for (const widget of node.widgets ?? []) {
+            widget.syncLiveVisibilityOptions?.()
+          }
+        })
+      }
+    }
+
     if (enabled) {
       layoutStore.clearViewGeometry()
     } else if (previous?.[0]) {
@@ -518,6 +530,7 @@ onMounted(async () => {
   workspaceStore.spinner = true
   let startupOutcome: StartupOutcome | undefined
   let urlTemplateId: string | undefined
+  let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -575,8 +588,10 @@ onMounted(async () => {
     await workflowPersistence.restoreWorkflowTabsState()
     urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
     await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    bootstrapOutcome = 'completed'
   } finally {
     workspaceStore.spinner = false
+    bootstrapTracer.complete(bootstrapOutcome)
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()

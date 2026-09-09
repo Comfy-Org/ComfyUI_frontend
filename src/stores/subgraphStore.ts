@@ -63,7 +63,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const { nodes } = this.activeState
       //Instanceof doesn't function as nodes are serialized
       function isSubgraphNode(node: ComfyNode) {
-        return node && subgraphs.some((s) => s.id === node.type)
+        return subgraphs.some((s) => s.id === node.type)
       }
       if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
       const errors: Record<SerializedNodeId, NodeError> = {}
@@ -112,7 +112,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
      */
     private extractMetadataToWorkflowExtra(): void {
       if (!this.activeState) return
-      const subgraph = this.activeState.definitions?.subgraphs?.[0]
+      const subgraph = this.activeState.definitions?.subgraphs[0]
       if (!subgraph?.extra) return
 
       const sgExtra = subgraph.extra as Record<string, unknown>
@@ -277,7 +277,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     name: string = workflow.filename
   ) {
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
-    if (!subgraphNode) throw new Error('Invalid Subgraph Blueprint')
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
     //NOTE: Types are cast to string. This is only used for input coloring on previews
@@ -290,13 +289,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const workflowExtra = workflow.initialState.extra
     const description =
       workflowExtra?.BlueprintDescription ??
-      workflow.initialState?.definitions?.subgraphs[0].description ??
+      workflow.initialState.definitions?.subgraphs[0].description ??
       'User generated subgraph blueprint'
     const search_aliases = workflowExtra?.BlueprintSearchAliases
     const subgraphDefCategory =
-      workflow.initialState.definitions?.subgraphs?.[0]?.category
+      workflow.initialState.definitions?.subgraphs[0]?.category
     const subgraphDefEssentialsCategory =
-      workflow.initialState.definitions?.subgraphs?.[0]?.essentials_category
+      workflow.initialState.definitions?.subgraphs[0]?.essentials_category
     const category = subgraphDefCategory
       ? `Subgraph Blueprints/${subgraphDefCategory}`
       : 'Subgraph Blueprints'
@@ -380,11 +379,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
   async function editBlueprint(nodeType: string): Promise<boolean> {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
-    const blueprint = subgraphCache[name]
-    if (!blueprint) {
+    if (!(name in subgraphCache)) {
       console.error(`Cannot edit missing subgraph blueprint: ${nodeType}`)
       return false
     }
+    const blueprint = subgraphCache[name]
     useWorkflowStore().attachWorkflow(blueprint)
     await useWorkflowService().openWorkflow(blueprint)
     const canvas = useCanvasStore().getCanvas()
@@ -394,20 +393,20 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
   function getBlueprint(nodeType: string): ComfyWorkflowJSON | undefined {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
-    const blueprint = subgraphCache[name]
-    if (!blueprint) {
+    if (!(name in subgraphCache)) {
       console.error(`Cannot find subgraph blueprint: ${nodeType}`)
       return
     }
+    const blueprint = subgraphCache[name]
     return structuredClone(blueprint.changeTracker.initialState)
   }
   async function deleteBlueprint(nodeType: string): Promise<boolean> {
     const name = nodeType.slice(BLUEPRINT_TYPE_PREFIX.length)
-    const blueprint = subgraphCache[name]
-    if (!blueprint) {
+    if (!(name in subgraphCache)) {
       console.error(`Cannot delete missing subgraph blueprint: ${nodeType}`)
       return false
     }
+    const blueprint = subgraphCache[name]
 
     if (isGlobalBlueprint(name)) {
       useToastStore().add({

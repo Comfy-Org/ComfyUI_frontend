@@ -4,14 +4,17 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 // Mock ShortcutsList component
-vi.mock('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue', () => ({
-  default: {
-    name: 'ShortcutsList',
-    props: ['commands', 'subcategories', 'columns'],
-    template:
-      '<div data-testid="shortcuts-list">{{ JSON.stringify(subcategories) }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'),
+  () => ({
+    default: {
+      name: 'ShortcutsList',
+      props: ['commands', 'subcategories', 'columns'],
+      template:
+        '<div data-testid="shortcuts-list">{{ JSON.stringify(subcategories) }}</div>'
+    }
+  })
+)
 
 // Mock command store
 const mockCommands: ComfyCommandImpl[] = [
@@ -42,7 +45,7 @@ const mockCommands: ComfyCommandImpl[] = [
   }
 ]
 
-vi.mock('@/stores/commandStore', () => ({
+vi.mock<unknown>(import('@/stores/commandStore'), () => ({
   useCommandStore: () => ({
     commands: mockCommands
   })
@@ -63,7 +66,7 @@ describe('EssentialsPanel', () => {
     render(EssentialsPanel)
 
     const el = screen.getByTestId('shortcuts-list')
-    const subcategories = JSON.parse(el.textContent ?? '{}')
+    const subcategories = JSON.parse(el.textContent)
 
     expect(subcategories).toHaveProperty('workflow')
     expect(subcategories).toHaveProperty('node')

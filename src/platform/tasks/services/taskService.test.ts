@@ -4,7 +4,7 @@ import { api } from '@/scripts/api'
 
 import { taskService } from './taskService'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { fetchApi: vi.fn() }
 }))
 

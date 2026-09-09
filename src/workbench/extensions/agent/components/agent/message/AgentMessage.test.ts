@@ -2,7 +2,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-
 // jsdom lacks ResizeObserver, which the asset-preview import chain references.
 vi.hoisted(() => {
   globalThis.ResizeObserver = class {
@@ -15,7 +14,10 @@ vi.hoisted(() => {
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../../services/agent/agentMessageParts'
+import type {
+  AssistantMessage,
+  RunApprovalPart
+} from '../../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
@@ -30,6 +32,53 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
     thinkingText
   }
 }
+
+function paywallMessage(): AssistantMessage {
+  return {
+    id: 'msg-paywall' as TurnId,
+    role: 'assistant',
+    parts: [{ type: 'paywall' }],
+    streaming: false,
+    thinking: false
+  }
+}
+
+describe('AgentMessage paywall reply', () => {
+  it('renders the usage-limit card as an inline assistant reply', () => {
+    render(AgentMessage, {
+      props: { message: paywallMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Out of credits')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Upgrade plan' })
+    ).toBeInTheDocument()
+  })
+
+  it('exposes distinct actions for adding credits and upgrading', async () => {
+    const user = userEvent.setup()
+    const onPaywallAction = vi.fn()
+    render(AgentMessage, {
+      props: { message: paywallMessage() },
+      attrs: { onPaywallAction },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+    await user.click(screen.getByRole('button', { name: 'Upgrade plan' }))
+
+    expect(onPaywallAction.mock.calls).toEqual([['addCredits'], ['upgrade']])
+  })
+})
 
 describe('AgentMessage thinking narration', () => {
   it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
@@ -369,4 +418,98 @@ describe('AgentMessage fallback content', () => {
 
     expect(emitted().feedback).toEqual([['up']])
   })
+})
+
+describe('AgentMessage run approval', () => {
+  const approvalMessage = (
+    approval: Partial<RunApprovalPart> = {}
+  ): AssistantMessage => ({
+    id: 'msg-approval' as TurnId,
+    role: 'assistant',
+    parts: [
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow',
+        ...approval
+      }
+    ],
+    streaming: true,
+    thinking: false
+  })
+
+  it('renders the Figma copy and emits workflow, cancel, and run actions', async () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run the workflow:')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+
+    expect(emitted().openWorkflow).toEqual([
+      ['workflow-1', 'Portrait workflow']
+    ])
+    expect(emitted().answerAsk).toEqual([
+      ['turn-1:call-1', 'cancel'],
+      ['turn-1:call-1', 'run']
+    ])
+  })
+
+  it('keeps both labels in place while disabling an in-flight answer', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage(),
+        answeringAskIds: new Set(['turn-1:call-1'])
+      },
+      global: { plugins: [i18n] }
+    })
+
+    for (const name of ['Cancel', 'Run']) {
+      const button = screen.getByRole('button', { name })
+      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-busy', 'true')
+    }
+  })
+
+  it.for([
+    {
+      approval: { workflowName: '  ' },
+      expectedLabel: 'workflow-1',
+      interactive: true
+    },
+    {
+      approval: { workflowId: undefined, workflowName: undefined },
+      expectedLabel: 'this workflow',
+      interactive: false
+    }
+  ] as const)(
+    'falls back to “$expectedLabel” when backend naming data is unavailable',
+    ({ approval, expectedLabel, interactive }) => {
+      render(AgentMessage, {
+        props: { message: approvalMessage(approval) },
+        global: { plugins: [i18n] }
+      })
+
+      if (interactive) {
+        expect(
+          screen.getByRole('button', { name: expectedLabel })
+        ).toBeInTheDocument()
+      } else {
+        expect(
+          screen.queryByRole('button', { name: expectedLabel })
+        ).not.toBeInTheDocument()
+        expect(screen.getByText(expectedLabel)).toBeInTheDocument()
+      }
+    }
+  )
 })
