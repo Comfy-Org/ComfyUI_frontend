@@ -15,7 +15,11 @@ const mocks = vi.hoisted(() => ({
     },
     close: vi.fn()
   },
+  consentScope: null as { value: string | null } | null,
   consentStore: {
+    get identity() {
+      return mocks.consentScope?.value ?? null
+    },
     accepted: true,
     load: vi.fn(() => Promise.resolve(false))
   },
@@ -62,9 +66,18 @@ vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
   useAgentPanelStore: () => mocks.agentStore
 }))
 
-vi.mock('@/workbench/extensions/agent/stores/agent/agentConsentStore', () => ({
-  useAgentConsentStore: () => mocks.consentStore
-}))
+vi.mock(
+  '@/workbench/extensions/agent/stores/agent/agentConsentStore',
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useAgentConsentStore: () => {
+        mocks.consentScope = ref('account-a/workspace-a')
+        return mocks.consentStore
+      }
+    }
+  }
+)
 
 vi.mock('@/composables/auth/useCurrentUser', async () => {
   const { computed, ref } = await import('vue')
@@ -218,6 +231,17 @@ describe('AgentPanel extension flag gate', () => {
     getResolvedUserInfoRef().value = { id: 'account-b' }
     await flush()
 
+    expect(mocks.consentStore.load).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads consent when the same user changes workspace scope', async () => {
+    mocks.flagEnabled = true
+    await loadEntryAndSetup()
+    expect(mocks.consentStore.load).toHaveBeenCalledOnce()
+    if (!mocks.consentScope)
+      throw new Error('Consent scope mock was not initialized')
+    mocks.consentScope.value = 'account-a/workspace-b'
+    await flush()
     expect(mocks.consentStore.load).toHaveBeenCalledTimes(2)
   })
 
