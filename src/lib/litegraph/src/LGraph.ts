@@ -807,7 +807,7 @@ export class LGraph
     this._nodes_executable = null
     this._groups = []
 
-    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
+    if (this.isRootGraph) this.id = createUuidv4()
     this.revision = 0
 
     this.state = createLGraphState()
