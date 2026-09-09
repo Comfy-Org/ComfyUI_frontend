@@ -5246,8 +5246,8 @@
     "showLess": "Show less",
     "consent": {
       "title": "Meet Comfy Agent",
-      "body1": "Comfy Agent can read the workflow you have open, add and edit nodes, and change widget values on your behalf. It only acts on the workflow you have open.",
-      "body2": "Running stays your decision: the agent prepares the graph and you click Run to execute it.",
+      "body1": "Comfy Agent helps you plan, build, run, and iterate on workflows. Describe what you want to create, and Comfy Agent will work as your powerful teammate.",
+      "body2": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Start, you agree to its usage.",
       "readDocs": "Read the docs",
       "reject": "Skip for now",
       "accept": "Start using Comfy Agent",
