@@ -101,6 +101,18 @@ describe('filterDirectoryEvents', () => {
     expect(filterDirectoryEvents(events, filters, 'en')).toEqual([])
   })
 
+  it('searches the English text when the locale has no translation', () => {
+    const untranslated = makeEvent({
+      id: 'untranslated',
+      title: { en: 'English Only', 'zh-CN': '' },
+      description: { en: 'Not yet translated.', 'zh-CN': '' }
+    })
+    const filters = { ...defaultDirectoryFilters(), query: 'english only' }
+    expect(
+      ids(filterDirectoryEvents([untranslated], filters, 'zh-CN'))
+    ).toEqual(['untranslated'])
+  })
+
   it('filters by category', () => {
     expect(
       ids(
@@ -374,6 +386,23 @@ describe('directoryRows', () => {
     expect(
       directoryRows(events, 'en', past).map((row) => row.event.id)
     ).toEqual(['paris', 'sf', 'virtual'])
+  })
+
+  it('falls back to English for untranslated text and media alt', () => {
+    const untranslated = makeEvent({
+      id: 'untranslated',
+      title: { en: 'English Only', 'zh-CN': '' },
+      description: { en: 'Not yet translated.', 'zh-CN': '' },
+      media: {
+        type: 'image',
+        src: 'card.avif',
+        alt: { en: 'English alt', 'zh-CN': '' }
+      }
+    })
+    const [row] = directoryRows([untranslated], 'zh-CN', past)
+    expect(row.title).toBe('English Only')
+    expect(row.description).toBe('Not yet translated.')
+    expect(row.media?.alt).toBe('English alt')
   })
 })
 

@@ -64,6 +64,37 @@ describe('EventsDirectoryCta', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
 
+  it('keeps a same-tab registration link free of target and rel', () => {
+    const row = makeRow({
+      register: {
+        href: '/launches',
+        newTab: false,
+        label: 'Register'
+      }
+    })
+    render(EventsDirectoryCta, { props: { row } })
+
+    const link = screen.getByRole('link', { name: 'Register' })
+    expect(link.getAttribute('target')).toBeNull()
+    expect(link.getAttribute('rel')).toBeNull()
+  })
+
+  it('opens an external watch link in a new tab', () => {
+    const row = makeRow({
+      upcoming: false,
+      watch: {
+        href: 'https://example.com/recap',
+        newTab: true,
+        label: 'LEARN MORE'
+      }
+    })
+    render(EventsDirectoryCta, { props: { row } })
+
+    const link = screen.getByRole('link', { name: 'LEARN MORE' })
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
   it('links a past row to its recording', () => {
     const row = makeRow({
       upcoming: false,
