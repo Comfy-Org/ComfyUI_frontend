@@ -1669,10 +1669,10 @@ export class ComfyApp {
 
   private getGraphForQueueItem(item: QueueItem): LGraph {
     if (!item.workflow) return this.rootGraph
-    if (item.detachedGraph) return item.detachedGraph
 
     const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
     if (activeWorkflow?.path === item.workflow.path) return this.rootGraph
+    if (item.detachedGraph) return item.detachedGraph
 
     item.detachedGraph ??= new LGraph(
       clone(item.workflowState) as unknown as SerialisableGraph
@@ -1687,6 +1687,8 @@ export class ComfyApp {
     item.workflowState = activeState
 
     if (!item.workflow?.changeTracker || graph === this.rootGraph) return
+    const activeWorkflow = useWorkspaceStore().workflow.activeWorkflow
+    if (activeWorkflow?.path === item.workflow.path) return
 
     item.workflow.changeTracker.activeState = activeState
     item.workflow.isModified = !ChangeTracker.graphEqual(

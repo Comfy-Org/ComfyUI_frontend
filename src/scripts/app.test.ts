@@ -897,7 +897,7 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
-    it('continues queuing the original workflow after switching tabs mid-batch', async () => {
+    it('resumes queuing the live workflow after switching away and back', async () => {
       function createMarkedGraph(name: string) {
         const graph = new LGraph()
         graph.extra.queueTestWorkflow = name
@@ -917,6 +917,10 @@ describe('ComfyApp', () => {
       const graphA = createMarkedGraph('a')
       const graphB = createMarkedGraph('b')
 
+      workflowA.changeTracker = new ChangeTracker(
+        workflowA,
+        graphA.asSerialisable() as unknown as ComfyWorkflowJSON
+      )
       Reflect.set(app, 'rootGraphInternal', graphA)
       mockWorkspaceWorkflow.activeWorkflow = workflowA
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
@@ -942,6 +946,12 @@ describe('ComfyApp', () => {
         if (vi.mocked(api.queuePrompt).mock.calls.length === 1) {
           Reflect.set(app, 'rootGraphInternal', graphB)
           mockWorkspaceWorkflow.activeWorkflow = workflowB
+        } else if (vi.mocked(api.queuePrompt).mock.calls.length === 2) {
+          graphA.extra.queueTestWorkflow = 'live-a'
+          workflowA.changeTracker!.activeState =
+            graphA.asSerialisable() as unknown as ComfyWorkflowJSON
+          Reflect.set(app, 'rootGraphInternal', graphA)
+          mockWorkspaceWorkflow.activeWorkflow = workflowA
         }
 
         return {
@@ -951,12 +961,15 @@ describe('ComfyApp', () => {
         }
       })
 
-      await app.queuePrompt(0, 2)
+      await app.queuePrompt(0, 3)
 
       const queuedWorkflowNames = vi
         .mocked(api.queuePrompt)
         .mock.calls.map(([, data]) => Object.keys(data.output)[0])
-      expect(queuedWorkflowNames).toEqual(['a', 'a'])
+      expect(queuedWorkflowNames).toEqual(['a', 'a', 'live-a'])
+      expect(workflowA.changeTracker.activeState.extra?.queueTestWorkflow).toBe(
+        'live-a'
+      )
     })
 
     it('uses the updated queued snapshot when creating a detached graph', async () => {
@@ -1054,9 +1067,18 @@ describe('ComfyApp', () => {
 
     it('runs afterQueued on the original workflow when switching tabs while the request is in flight', async () => {
       const nodeType = 'test/QueuePromptMarker'
+      const observedGraphs: LGraph[] = []
       class QueuePromptMarkerNode extends LGraphNode {
         constructor() {
           super('QueuePromptMarker', nodeType)
+          this.widgets = [
+            {
+              type: 'custom',
+              name: 'marker',
+              value: null,
+              afterQueued: () => observedGraphs.push(this.graph!)
+            } as unknown as IBaseWidget
+          ]
         }
       }
       LiteGraph.registerNodeType(nodeType, QueuePromptMarkerNode)
@@ -1090,6 +1112,15 @@ describe('ComfyApp', () => {
         Reflect.set(app, 'rootGraphInternal', graph)
         mockWorkspaceWorkflow.activeWorkflow = workflowA
         vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+        vi.mocked(executeWidgetsCallback).mockImplementation(
+          (nodes, _, options) => {
+            for (const node of nodes) {
+              for (const widget of node.widgets ?? []) {
+                widget.afterQueued?.(options)
+              }
+            }
+          }
+        )
         vi.spyOn(app, 'graphToPrompt').mockImplementation(
           async (graph = app.rootGraph) => {
             const workflowName = graph.extra.queueTestWorkflow as string
@@ -1125,11 +1156,9 @@ describe('ComfyApp', () => {
 
         await app.queuePrompt(0, 2)
 
-        const afterQueuedWorkflowNames = vi
-          .mocked(executeWidgetsCallback)
-          .mock.calls.map(
-            ([nodes]) => nodes[0]?.graph?.extra.queueTestWorkflow as string
-          )
+        const afterQueuedWorkflowNames = observedGraphs.map(
+          (graph) => graph.extra.queueTestWorkflow as string
+        )
         expect(afterQueuedWorkflowNames).toEqual(['a', 'a'])
       } finally {
         LiteGraph.unregisterNodeType(nodeType)
