@@ -361,6 +361,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (
             mutation.kind === 'reconcileNode' &&
             incumbent &&
+            Array.isArray(mutation.payload.widgets_values)
+          ) {
+            const serializable = widgetStore
+              .getNodeWidgets(scope.rootGraphId, node.state.id)
+              .filter((widget) => widget.serialize !== false)
+            node.widgets.forEach((widget, index) => {
+              widget.name = serializable[index]?.name ?? widget.name
+            })
+          }
+          if (
+            mutation.kind === 'reconcileNode' &&
+            incumbent &&
             !(
               typeof mutation.payload.title === 'string' &&
               mutation.payload.title.length > 0
@@ -652,17 +664,41 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state,
               context
             )
-            widgetStore.clearNode(
+            const names = new Set(mutation.node.widgets.map(({ name }) => name))
+            for (const widget of widgetStore.getNodeWidgets(
               scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
+              mutation.node.state.id
+            )) {
+              if (
+                widget.serialize !== false &&
+                widget.type !== 'button' &&
+                !names.has(widget.name)
+              ) {
+                widgetStore.deleteWidget(
+                  widgetId(
+                    scope.rootGraphId,
+                    mutation.node.state.id,
+                    widget.name
+                  )
+                )
+              }
+            }
           } else {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
           for (const widget of mutation.node.widgets) {
+            const id = widgetId(
+              scope.rootGraphId,
+              mutation.node.state.id,
+              widget.name
+            )
+            if (
+              mutation.kind === 'reconcileNode' &&
+              widgetStore.setValue(id, widget.value, context)
+            )
+              continue
             widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
+              id,
               {
                 name: widget.name,
                 type: widget.type,

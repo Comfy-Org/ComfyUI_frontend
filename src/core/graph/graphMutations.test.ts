@@ -312,6 +312,101 @@ describe('graphMutations', () => {
     ).toBe(42)
   })
 
+  it('preserves live widget presentation while applying authoritative values', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const id = widgetId('root', toNodeId(1), 'model.resolution')
+    const widget = store.registerWidget(
+      id,
+      {
+        name: 'model.resolution',
+        type: 'combo',
+        value: '1K',
+        label: 'resolution',
+        options: { values: ['1K', '2K'], advanced: true }
+      },
+      { isDOMWidget: true, tooltip: 'Output resolution' }
+    )
+    const render = store.getWidgetRenderState(id)
+    const visibility = store.getWidgetVisibility(id)
+    const controlId = widgetId('root', toNodeId(1), 'upload')
+    const control = store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {}
+    })
+    const onChange = vi.fn()
+    const dispose = store.onValueChange(onChange)
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode(
+        node(1, {
+          'model.resolution': '2K'
+        })
+      )
+    )
+
+    expect(store.getWidget(id)).toBe(widget)
+    expect(store.getWidget(id)).toMatchObject({
+      value: '2K',
+      type: 'combo',
+      label: 'resolution',
+      options: { values: ['1K', '2K'], advanced: true }
+    })
+    expect(store.getWidgetRenderState(id)).toBe(render)
+    expect(render).toEqual({ isDOMWidget: true, tooltip: 'Output resolution' })
+    expect(store.getWidgetVisibility(id)).toBe(visibility)
+    expect(visibility?.surfaces.vueNode).toBe('advanced')
+    expect(store.getWidget(controlId)).toBe(control)
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({
+      widgetId: id,
+      value: '2K',
+      oldValue: '1K',
+      context
+    })
+    dispose()
+  })
+
+  it('restores positional Markdown values to the existing serializable widget', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const controlId = widgetId('root', toNodeId(1), 'edit')
+    const control = store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {},
+      serialize: false
+    })
+    const textId = widgetId('root', toNodeId(1), 'text')
+    const text = store.registerWidget(
+      textId,
+      {
+        type: 'markdown',
+        value: '# Before',
+        options: {},
+        label: 'text'
+      },
+      { isDOMWidget: true }
+    )
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({
+        ...node(1),
+        widgets_values: ['# Preserved note']
+      })
+    )
+
+    expect(store.getWidget(textId)).toBe(text)
+    expect(text?.value).toBe('# Preserved note')
+    expect(text?.type).toBe('markdown')
+    expect(store.getWidgetRenderState(textId)?.isDOMWidget).toBe(true)
+    expect(store.getWidget(controlId)).toBe(control)
+    expect(store.getWidget(widgetId('root', toNodeId(1), '0'))).toBeUndefined()
+    expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([control, text])
+  })
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
