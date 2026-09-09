@@ -2324,6 +2324,31 @@ describe('Zero UUID handling in configure', () => {
     const subgraph = graph.createSubgraph(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
   })
+
+  it('keeps a subgraph registered under its own ID across clear()', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const { id } = subgraph
+
+    subgraph.clear()
+
+    expect(subgraph.id).toBe(id)
+    expect(graph.subgraphs.get(id)).toBe(subgraph)
+    expect(graph.subgraphs.has(zeroUuid)).toBe(false)
+  })
+
+  it('creates a subgraph exposing IO without warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+
+    graph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [{ id: createUuidv4(), name: 'value', type: 'INT' }]
+      })
+    )
+
+    expect(warn).not.toHaveBeenCalled()
+  })
 })
 
 describe('node layout registration', () => {
