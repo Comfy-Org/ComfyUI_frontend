@@ -1,8 +1,9 @@
 /**
  * Builds the published API's type surface as a single `.d.ts`.
  *
- * Dropped into every working copy as `v2/comfy-api.d.ts`, so an agent reads the
- * contract it is coding against instead of a prose list of capability names.
+ * Checked in at `docs/node-api/comfy-api.d.ts` and dropped into every working
+ * copy as `v2/comfy-api.d.ts`, so an agent reads the contract it is coding
+ * against instead of a prose list of capability names.
  * The prose list drifted — the doc said eleven capabilities while the code had
  * eighteen, and twelve files were punted against API that already existed.
  * Types cannot drift: they are the thing being described.

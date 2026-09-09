@@ -236,10 +236,12 @@ keyed by graph ID and node ID, and release it with the node lifecycle.
 
 ## Type contract
 
-Generate the complete declarations from the matching frontend revision:
+Use the complete declarations checked in as
+[comfy-api.d.ts](./comfy-api.d.ts). To regenerate them from the matching
+frontend revision:
 
 ```sh
-node scripts/node-api/gen_api_dts.mjs > comfy-api.d.ts
+node scripts/node-api/gen_api_dts.mjs > docs/node-api/comfy-api.d.ts
 ```
 
 If a type or member is absent from that file, it is not published. The runtime

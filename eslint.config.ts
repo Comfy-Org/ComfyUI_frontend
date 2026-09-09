@@ -172,6 +172,7 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'docs/node-api/comfy-api.d.ts',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
