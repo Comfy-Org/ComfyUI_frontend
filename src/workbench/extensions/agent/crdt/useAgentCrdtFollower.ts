@@ -15,6 +15,7 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocUpdate } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
+import { EcsFollowerAdapter, mapLocalInputSlots } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
@@ -470,7 +471,13 @@ export function useAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+    enqueueHumanOperations(operations: GraphOperation[]) {
+      const graph = getGraph()
+      sender.enqueue(
+        graph
+          ? mapLocalInputSlots(bridge.follower.doc, graph, operations)
+          : operations
+      )
+    }
   }
 }

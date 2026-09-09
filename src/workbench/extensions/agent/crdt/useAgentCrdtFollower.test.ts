@@ -22,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { GraphOperation } from './graphOperations'
+import type * as EcsFollowerModule from './ecsFollowerAdapter'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -107,7 +108,8 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
+vi.mock('./ecsFollowerAdapter', async (importOriginal) => ({
+  ...(await importOriginal<typeof EcsFollowerModule>()),
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind

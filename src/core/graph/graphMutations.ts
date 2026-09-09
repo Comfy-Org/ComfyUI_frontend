@@ -425,18 +425,29 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const originOutputs = mutation.link.originOutputs
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
-            : target.inputs
+          const targetInputs = [...target.inputs]
           if (mutation.link.originOutputs) {
             for (const [index, output] of origin.outputs.entries()) {
               if (!isPlainObject(output)) originOutputs[index] = output
             }
           }
           if (mutation.link.targetInputs) {
-            for (const [index, input] of target.inputs.entries()) {
-              if (!isPlainObject(input)) targetInputs[index] = input
+            const documentInputs = prepareInputSlots(mutation.link.targetInputs)
+            const name = documentInputs.at(topology.targetSlot)?.name
+            if (name === undefined) {
+              return `connect target slot ${topology.targetSlot} does not exist`
             }
+            for (const input of documentInputs) {
+              const index = targetInputs.findIndex(
+                (local) => local.name === input.name
+              )
+              if (index < 0) targetInputs.push(input)
+              else if (isPlainObject(targetInputs[index]))
+                targetInputs[index] = input
+            }
+            topology.targetSlot = targetInputs.findIndex(
+              (input) => input.name === name
+            )
           }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`

@@ -18,7 +18,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { nodeDef, savedNode, singleImageNode } from './__fixtures__/inputOrder'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import { EcsFollowerAdapter, mapLocalInputSlots } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 import { attachMintPortWiring } from './mintPortWiring'
@@ -100,7 +100,8 @@ async function setup(
   const wiring = attachMintPortWiring({
     isEnabled: () => true,
     isDocBound: () => true,
-    enqueue: (operations) => minted.push(...operations),
+    enqueue: (operations) =>
+      minted.push(...mapLocalInputSlots(follower.doc, graph, operations)),
     layoutChanges: () => () => {},
     localActorPrefix: 'user-',
     getGraph: () => graph

@@ -1,4 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
@@ -341,16 +342,11 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    const inputOrder = new Map(
-      serialised.inputs?.map((input, index) => [input.name, index])
-    )
+    const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
     node.configure(withNamedWidgetValues(serialised))
-    // Shared-document connections use these slot indexes in both directions.
-    node.inputs = node.inputs.toSorted(
-      (a, b) =>
-        (inputOrder.get(a.name) ?? inputOrder.size) -
-        (inputOrder.get(b.name) ?? inputOrder.size)
-    )
+    realignInputLinkSlots(graph.rootGraph, [
+      [node.id, { id: node.id, inputs: savedInputs }]
+    ])
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
