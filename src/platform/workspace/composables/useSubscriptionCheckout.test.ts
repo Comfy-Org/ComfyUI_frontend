@@ -1,7 +1,10 @@
 import { render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
+import { computed } from 'vue'
+import { billingOperation } from './billingOperationTestUtils'
+import type { BillingOperation } from './billingOperationTestUtils'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useAuthStore } from '@/stores/authStore'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -10,18 +13,12 @@ import type {
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import type { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   findPlanSlug,
   useSubscriptionCheckout
 } from './useSubscriptionCheckout'
-
-type SubscriptionActionOperation = NonNullable<
-  ReturnType<typeof useBillingOperationStore>['subscriptionActionOperation']
->
-type MockSubscriptionActionOperation = Partial<SubscriptionActionOperation> &
-  Pick<SubscriptionActionOperation, 'status' | 'workspaceId'>
 
 function makeStandardYearly(): Plan {
   return {
@@ -130,6 +127,13 @@ function makeReactivationAuthorityPreview({
   }
 }
 
+beforeEach(() => {
+  vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+    billingOperation()
+  )
+  vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(undefined)
+})
+
 describe('findPlanSlug', () => {
   it('finds an annual plan by tier key and yearly billing cycle', () => {
     expect(findPlanSlug(allPlans(), 'standard', 'yearly')).toBe(
@@ -165,25 +169,18 @@ const {
   mockPlans,
   mockResubscribe,
   mockToastAdd,
-  mockStartOperation,
-  mockGetOperation,
-  mockSubscriptionActionOperation,
   mockListSavedPaymentMethods,
   mockTrackBeginCheckout,
   mockTrackBillingEvent,
   mockShowDowngradeToPersonalDialog,
-  mockUserId,
   mockIsTeamPlan,
   mockShouldUseWorkspaceBilling,
   mockIncompleteEmbeddedPreview,
-  mockSetActiveWorkspaceIdImpl,
-  mockSetActiveWorkspaceId,
   mockPermissions,
   mockCanReactivatePlan,
   mockCapabilities,
   mockSubscription
 } = vi.hoisted(() => {
-  const nullableString = (value: string | null) => ({ value })
   return {
     mockSubscribe: vi.fn(),
     mockPreviewSubscribe: vi.fn(),
@@ -197,27 +194,13 @@ const {
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
-    mockStartOperation: vi.fn(),
-    mockGetOperation: vi.fn(),
-    mockSubscriptionActionOperation: {
-      value: undefined as MockSubscriptionActionOperation | undefined
-    },
     mockListSavedPaymentMethods: vi.fn(),
     mockTrackBeginCheckout: vi.fn(),
     mockTrackBillingEvent: vi.fn(),
     mockShowDowngradeToPersonalDialog: vi.fn(),
-    mockUserId: nullableString('user-1'),
     mockIsTeamPlan: { value: false },
     mockShouldUseWorkspaceBilling: { value: true },
     mockIncompleteEmbeddedPreview: { value: false },
-    mockSetActiveWorkspaceIdImpl: {
-      value: undefined as ((workspaceId: string) => void) | undefined
-    },
-    mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
-      (workspaceId) => {
-        mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
-      }
-    ),
     mockPermissions: {
       value: {
         canManageSubscription: true,
@@ -358,37 +341,6 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/billingOperationStore'),
-  () => ({
-    useBillingOperationStore: () => ({
-      startOperation: mockStartOperation,
-      getOperation: mockGetOperation,
-      get subscriptionActionOperation() {
-        return mockSubscriptionActionOperation.value
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  async () => {
-    const { ref } = await import('vue')
-    const activeWorkspaceId = ref('workspace-1')
-    mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
-      activeWorkspaceId.value = workspaceId
-    }
-    return {
-      useTeamWorkspaceStore: () => ({
-        get activeWorkspaceId() {
-          return activeWorkspaceId.value
-        }
-      })
-    }
-  }
-)
-
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -414,18 +366,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
-}))
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
-  AuthStoreError: class AuthStoreError extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.name = 'AuthStoreError'
-      this.status = status
-    }
-  }
 }))
 
 const i18n = createI18n({
@@ -514,14 +454,15 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockSubscribe.mockReset()
     mockPreviewSubscribe.mockReset()
     mockFetchPlans.mockReset()
     mockFetchStatus.mockReset()
-    mockStartOperation.mockReset()
+    vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockListSavedPaymentMethods.mockReset()
-    mockSubscriptionActionOperation.value = undefined
+    Object.assign(useBillingOperationStore(), {
+      subscriptionActionOperation: undefined
+    })
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
     mockPreviewSubscribe.mockResolvedValue({
@@ -530,14 +471,18 @@ describe('useSubscriptionCheckout', () => {
       is_immediate: true,
       requires_reactivation_confirmation: false
     })
-    mockStartOperation.mockResolvedValue({
-      status: 'succeeded',
-      workspaceId: 'workspace-1'
-    })
+    vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+      billingOperation({
+        status: 'succeeded',
+        workspaceId: 'workspace-1'
+      })
+    )
     mockListSavedPaymentMethods.mockResolvedValue([])
-    mockGetOperation.mockReturnValue(undefined)
+    vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+      undefined
+    )
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
-    mockUserId.value = 'user-1'
+    Object.assign(useAuthStore(), { userId: 'user-1' })
     mockIsTeamPlan.value = false
     mockOpen.mockReturnValue({})
     mockGetBillingStatus.mockResolvedValue({ billing_status: 'paid' })
@@ -552,7 +497,7 @@ describe('useSubscriptionCheckout', () => {
     vi.stubGlobal('open', mockOpen)
     mockShouldUseWorkspaceBilling.value = true
     mockIncompleteEmbeddedPreview.value = false
-    mockSetActiveWorkspaceId('workspace-1')
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -2739,12 +2684,14 @@ describe('useSubscriptionCheckout', () => {
 
   describe('handleBackToPricing', () => {
     it('surfaces a subscription operation recovered from billing status', async () => {
-      mockSubscriptionActionOperation.value = {
-        opId: 'op-recovered-3ds',
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        actionUrl: 'https://verify.example/sensitive-token'
-      }
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: {
+          opId: 'op-recovered-3ds',
+          status: 'pending',
+          workspaceId: 'workspace-1',
+          actionUrl: 'https://verify.example/sensitive-token'
+        }
+      })
 
       const checkout = await setup()
 
@@ -2755,15 +2702,17 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('surfaces recovered failed authentication and releases the confirm action', async () => {
-      mockSubscriptionActionOperation.value = {
-        opId: 'op-recovered-3ds',
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        authenticationState: 'failed_retryable',
-        errorMessage: 'Challenge was closed',
-        canRetryAuthentication: false,
-        isAuthenticating: false
-      }
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: {
+          opId: 'op-recovered-3ds',
+          status: 'pending',
+          workspaceId: 'workspace-1',
+          authenticationState: 'failed_retryable',
+          errorMessage: 'Challenge was closed',
+          canRetryAuthentication: false,
+          isAuthenticating: false
+        }
+      })
 
       const checkout = await setup()
 
@@ -2773,11 +2722,13 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('surfaces an operation that needs reconciliation', async () => {
-      mockSubscriptionActionOperation.value = {
-        opId: 'op-reconciliation',
-        status: 'reconciliation_needed',
-        workspaceId: 'workspace-1'
-      }
+      Object.assign(useBillingOperationStore(), {
+        subscriptionActionOperation: {
+          opId: 'op-reconciliation',
+          status: 'reconciliation_needed',
+          workspaceId: 'workspace-1'
+        }
+      })
 
       const checkout = await setup()
 
@@ -2816,13 +2767,19 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-pending'
       })
-      mockGetOperation.mockImplementation((opId) =>
-        opId === 'op-pending'
-          ? { status: 'pending', workspaceId: 'workspace-1' }
-          : undefined
+      vi.mocked(useBillingOperationStore().getOperation).mockImplementation(
+        (opId) =>
+          opId === 'op-pending'
+            ? billingOperation({
+                status: 'pending',
+                workspaceId: 'workspace-1'
+              })
+            : undefined
       )
-      let resolveOperation!: (operation: { status: 'failed' }) => void
-      mockStartOperation.mockImplementationOnce(
+      let resolveOperation!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveOperation = resolve
@@ -2830,12 +2787,14 @@ describe('useSubscriptionCheckout', () => {
       )
 
       const payment = checkout.handleAddCreditCard()
-      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+      await vi.waitFor(() =>
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      )
       checkout.handleBackToPricing()
 
       expect(checkout.checkoutStep.value).toBe('preview')
 
-      resolveOperation({ status: 'failed' })
+      resolveOperation(billingOperation({ status: 'failed' }))
       await payment
     })
 
@@ -2856,16 +2815,17 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-pending'
       })
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        actionUrl: 'https://verify.example/sensitive-token'
-      })
-      let resolveOperation!: (operation: {
-        status: 'succeeded'
-        workspaceId: string
-      }) => void
-      mockStartOperation.mockImplementationOnce(
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        billingOperation({
+          status: 'pending',
+          workspaceId: 'workspace-1',
+          actionUrl: 'https://verify.example/sensitive-token'
+        })
+      )
+      let resolveOperation!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveOperation = resolve
@@ -2877,15 +2837,19 @@ describe('useSubscriptionCheckout', () => {
         expect(checkout.activeCheckoutActionUrl.value).not.toBeNull()
       )
 
-      mockSetActiveWorkspaceId('workspace-2')
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
 
       expect(checkout.activeCheckoutActionUrl.value).toBeNull()
       expect(checkout.isPolling.value).toBe(false)
 
-      resolveOperation({
-        status: 'succeeded',
-        workspaceId: 'workspace-1'
-      })
+      resolveOperation(
+        billingOperation({
+          status: 'succeeded',
+          workspaceId: 'workspace-1'
+        })
+      )
       await payment
 
       expect(checkout.checkoutStep.value).not.toBe('success')
@@ -2893,7 +2857,7 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('busy continuity through checkout', () => {
-    async function startPendingCheckout(operation: Record<string, unknown>) {
+    async function startPendingCheckout(operation: Partial<BillingOperation>) {
       const checkout = await setupWithApprovedPreview()
       checkout.checkoutStep.value = 'preview'
       checkout.selectedTierKey.value = 'standard'
@@ -2901,21 +2865,22 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-busy'
       })
-      mockGetOperation.mockImplementation((opId) =>
-        opId === 'op-busy' ? operation : undefined
+      vi.mocked(useBillingOperationStore().getOperation).mockImplementation(
+        (opId) => (opId === 'op-busy' ? billingOperation(operation) : undefined)
       )
-      let resolveOperation!: (operation: {
-        status: string
-        workspaceId: string
-      }) => void
-      mockStartOperation.mockImplementationOnce(
+      let resolveOperation!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveOperation = resolve
           })
       )
       const payment = checkout.handleAddCreditCard()
-      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
+      await vi.waitFor(() =>
+        expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
+      )
       return { checkout, payment, finish: () => resolveOperation }
     }
 
@@ -2929,7 +2894,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.isPolling.value).toBe(true)
 
-      finish()({ status: 'failed', workspaceId: 'workspace-1' })
+      finish()(
+        billingOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      )
       await payment
     })
 
@@ -2943,7 +2910,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(checkout.isPolling.value).toBe(false)
 
-      finish()({ status: 'failed', workspaceId: 'workspace-1' })
+      finish()(
+        billingOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      )
       await payment
     })
 
@@ -2956,7 +2925,9 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.isPolling.value).toBe(true)
       expect(checkout.checkoutStep.value).toBe('preview')
 
-      finish()({ status: 'succeeded', workspaceId: 'workspace-1' })
+      finish()(
+        billingOperation({ status: 'succeeded', workspaceId: 'workspace-1' })
+      )
       await payment
       expect(checkout.checkoutStep.value).toBe('success')
     })
@@ -3031,7 +3002,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('skips begin_checkout when no user id is available', async () => {
-      mockUserId.value = null
+      Object.assign(useAuthStore(), { userId: null })
       const checkout = await setupWithApprovedPreview('subscribe_to_run')
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -3045,7 +3016,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
-      mockUserId.value = 'user-1'
+      Object.assign(useAuthStore(), { userId: 'user-1' })
     })
 
     it('fires begin_checkout carrying the payment intent source', async () => {
@@ -3107,7 +3078,7 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Payment popup blocked'
         })
       )
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
         expect.any(Object),
@@ -3129,7 +3100,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(openSpy).not.toHaveBeenCalled()
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
@@ -3148,15 +3119,19 @@ describe('useSubscriptionCheckout', () => {
         billing_op_id: 'op-async-1',
         payment_method_url: 'https://stripe.com/pay'
       })
-      mockStartOperation.mockResolvedValueOnce({
-        status: 'succeeded',
-        workspaceId: 'workspace-1'
-      })
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockResolvedValueOnce(
+        billingOperation({
+          status: 'succeeded',
+          workspaceId: 'workspace-1'
+        })
+      )
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
       await checkout.handleAddCreditCard()
 
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-async-1',
         'subscription',
         {
@@ -3183,11 +3158,17 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-async-2'
       })
-      mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockResolvedValueOnce(
+        billingOperation({
+          status: 'failed'
+        })
+      )
 
       await checkout.handleAddCreditCard()
 
-      expect(mockStartOperation).toHaveBeenCalledWith(
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-async-2',
         'subscription',
         {
@@ -3211,11 +3192,10 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-alipay'
       })
-      let resolveOperation!: (operation: {
-        status: 'failed'
-        workspaceId: string
-      }) => void
-      mockStartOperation.mockImplementationOnce(
+      let resolveOperation!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveOperation = resolve
@@ -3240,7 +3220,9 @@ describe('useSubscriptionCheckout', () => {
         })
       })
 
-      resolveOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      resolveOperation(
+        billingOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      )
       await payment
 
       expect(
@@ -3257,11 +3239,10 @@ describe('useSubscriptionCheckout', () => {
         status: 'pending_payment',
         billing_op_id: 'op-legacy-alipay'
       })
-      let resolveOperation!: (operation: {
-        status: 'failed'
-        workspaceId: string
-      }) => void
-      mockStartOperation.mockImplementationOnce(
+      let resolveOperation!: (operation: BillingOperation) => void
+      vi.mocked(
+        useBillingOperationStore().startOperation
+      ).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveOperation = resolve
@@ -3289,7 +3270,9 @@ describe('useSubscriptionCheckout', () => {
         })
       })
 
-      resolveOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      resolveOperation(
+        billingOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      )
       await payment
 
       expect(
@@ -4054,3 +4037,10 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn())
+}))
