@@ -37,6 +37,10 @@ const mockCurrentUser = vi.hoisted(() => {
       current = user
       listeners.forEach((listener) => listener(portUser(user)))
     },
+    /** A port event on its own, for the moments the two projections diverge. */
+    deliver(user: { uid: string } | null) {
+      listeners.forEach((listener) => listener(portUser(user)))
+    },
     identity: {
       onUserChanged(listener: (user: PortUser | null) => void) {
         listeners.add(listener)
@@ -2971,6 +2975,65 @@ describe('useWorkspaceAuthStore', () => {
         retry_count: 3
       })
       expect(unifiedToken.value).toBe('unified-token-1')
+    })
+
+    it('gives up on a login mint when the port never delivers the current user', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      mockCurrentUser.deliver(null)
+      expect(store.unifiedToken).toBeNull()
+
+      const pending = store.mintAtLogin()
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(
+        await pending,
+        'a silent port must fail the mint closed, not hang the auth gate'
+      ).toBe(false)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('exhausts the scheduled retries when the identity token read keeps failing, keeping the still-valid token', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken
+        .mockResolvedValueOnce('firebase-token-xyz')
+        .mockRejectedValue(new Error('auth/user-token-expired'))
+      const expiresInMs = 3600 * 1000
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...personalTokenResponse,
+            expires_at: new Date(Date.now() + expiresInMs).toISOString()
+          })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+      await store.mintAtLogin()
+
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+      await vi.advanceTimersByTimeAsync(5000 + 10_000 + 20_000)
+
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'retries_exhausted',
+        retry_count: 3
+      })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(
+        unifiedToken.value,
+        'a token read failure is not a revocation; the server decides that on the next 401'
+      ).toBe('unified-token-1')
     })
 
     it('re-arms the retry when the identity token read fails transiently mid-refresh', async () => {

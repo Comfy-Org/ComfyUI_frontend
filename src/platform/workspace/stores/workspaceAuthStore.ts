@@ -53,6 +53,8 @@ export type WorkspaceTokenResponse = z.infer<
 const MAX_SCHEDULED_REFRESH_RETRIES = 3
 
 const UNIFIED_REFRESH_RETRY_BASE_MS = 5000
+/** Ceiling on waiting for the identity port before a host mint gives up. */
+const UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS = 15_000
 
 const RECOVERY_COOLDOWN_MS = 5000
 
@@ -862,9 +864,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   /**
-   * The user the port has delivered, once it is the app's current user.
-   * Resolves null when nobody is signed in or when a different identity
-   * arrives first, which supersedes the caller.
+   * The user the port has delivered, once it is the app's current user
+   * (both are projections of one Auth instance; the port's user is what
+   * mints). Resolves null when nobody is signed in, when a different
+   * identity arrives first, or when the port stays silent past the
+   * ceiling, so a caller can fail closed instead of hanging.
    */
   function unifiedUser(): Promise<User | null> {
     ensureUnifiedIdentityAttached()
@@ -873,14 +877,18 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const current = unifiedSessionClient.getSnapshot().user
     if (matches(current)) return Promise.resolve(current)
     return new Promise((resolve) => {
+      const settle = (user: User | null) => {
+        clearTimeout(ceiling)
+        stop()
+        resolve(user)
+      }
+      const ceiling = setTimeout(() => {
+        console.warn('Unified identity did not settle before the ceiling')
+        settle(null)
+      }, UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS)
       const stop = unifiedSessionClient.subscribe(({ user }) => {
-        if (matches(user)) {
-          stop()
-          resolve(user)
-        } else if ((user?.uid ?? null) !== (current?.uid ?? null)) {
-          stop()
-          resolve(null)
-        }
+        if (matches(user)) settle(user)
+        else if ((user?.uid ?? null) !== (current?.uid ?? null)) settle(null)
       })
     })
   }

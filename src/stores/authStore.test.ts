@@ -348,9 +348,8 @@ describe('useAuthStore', () => {
 
       expect(
         vi.mocked(firebaseAuth.onAuthStateChanged),
-        'identity must come from Firebase itself, not be pushed from this store'
-      ).toHaveBeenCalledWith(mockAuth, expect.any(Function))
-      expect(useWorkspaceAuthStore()).not.toHaveProperty('syncUnifiedIdentity')
+        'the port registers its own observer on the same Auth instance; identity is not pushed from this store'
+      ).toHaveBeenCalledExactlyOnceWith(mockAuth, expect.any(Function))
     })
   })
 
