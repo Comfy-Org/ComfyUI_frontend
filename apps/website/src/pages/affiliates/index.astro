@@ -9,8 +9,8 @@ import HeroSection from '../../templates/affiliate/HeroSection.vue'
 import HowItWorksSection from '../../templates/affiliate/HowItWorksSection.vue'
 import { affiliateFaqs } from '../../data/affiliateFaq'
 import { t } from '../../i18n/translations'
-import type { JsonLdNode } from '../../utils/jsonLd'
-import { absoluteUrl, jsonLdId, pageContext } from '../../utils/jsonLd'
+import { absoluteUrl, pageContext } from '../../utils/jsonLd'
+import { affiliateFaqPageNode } from './_faqJsonLd'
 import { localizeHref } from '../../config/routes'
 
 const { locale, canonicalUrl, canonicalLocale } = pageContext(
@@ -22,15 +22,7 @@ const { locale, canonicalUrl, canonicalLocale } = pageContext(
 const pageTitle = t('affiliate.page.title', locale)
 const pageDescription = t('affiliate.page.description', locale)
 
-const faqPage: JsonLdNode = {
-  '@type': 'FAQPage',
-  '@id': jsonLdId(canonicalUrl, 'faq'),
-  mainEntity: affiliateFaqs.map((faq) => ({
-    '@type': 'Question',
-    name: faq.question[locale],
-    acceptedAnswer: { '@type': 'Answer', text: faq.answer[locale] },
-  })),
-}
+const faqPage = affiliateFaqPageNode(canonicalUrl, affiliateFaqs, locale)
 ---
 
 <BaseLayout

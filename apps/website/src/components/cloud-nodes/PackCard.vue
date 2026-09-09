@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
 import { localizeHref } from '../../config/routes'
 import type { GridPack } from '../../data/cloudNodes'
@@ -13,7 +15,13 @@ const { locale = DEFAULT_LOCALE, pack } = defineProps<{
 }>()
 
 // See StoryCard.vue: localizeHref knows which locales serve this route.
-const detailHref = `${localizeHref(`/cloud/supported-nodes/${pack.id}`, locale)}/`
+//
+// Computed, not a plain const: the card is rendered from a `v-for`, so one
+// instance is reused for whichever pack lands in that slot, and a value read
+// once at setup would keep the first pack's link under the second pack's name.
+const detailHref = computed(
+  () => `${localizeHref(`/cloud/supported-nodes/${pack.id}`, locale)}/`
+)
 
 function nodeCountLabel(nodeCount: number): string {
   const key =

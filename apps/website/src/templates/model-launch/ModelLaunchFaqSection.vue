@@ -6,7 +6,7 @@ import type { ModelLaunchFaqSection } from './types'
 
 import FAQSplit01 from '../../components/blocks/FAQSplit01.vue'
 import { t } from '../../i18n/translations'
-import { resolveFaqPairs } from './faqPairs'
+import { resolveFaqPairs } from '../../utils/faqPairs'
 
 const { locale = 'en', faq } = defineProps<{
   faq: ModelLaunchFaqSection

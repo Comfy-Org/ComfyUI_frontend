@@ -19,13 +19,20 @@ const hostedTutorial = filterByCategory('vfx').find(
 )
 if (!hostedTutorial) throw new Error('Expected a VFX tutorial with videoSrc')
 
+/**
+ * `LearningVideoEmbed` is deliberately NOT stubbed. It was, and the stub echoed
+ * whatever `title` it was handed — so the two locale tests below were asserting
+ * the stub's own template. The real embed could have stopped putting the title
+ * on its iframe and they would still have passed, which is the one thing they
+ * exist to catch. `VideoPlayer` stays stubbed: it is the other branch of the
+ * choice under test, not the thing being measured.
+ */
 const stubs = {
-  LearningVideoEmbed: {
-    props: ['title'],
-    template: '<div data-testid="youtube-embed">{{ title }}</div>'
-  },
   VideoPlayer: { template: '<div data-testid="hosted-video" />' }
 }
+
+/** The embed's accessible title, read from the iframe a reader would land on. */
+const embedTitle = () => document.querySelector('iframe')?.getAttribute('title')
 
 function renderWatchPage(tutorial: LearningTutorial, locale: Locale = 'en') {
   render(LearningWatchPage, {
@@ -38,7 +45,7 @@ describe('LearningWatchPage', () => {
   it('embeds the YouTube player for tutorials with a youtubeId', () => {
     renderWatchPage(youtubeTutorial)
 
-    expect(screen.getByTestId('youtube-embed')).toBeTruthy()
+    expect(document.querySelector('iframe')).toBeTruthy()
     expect(screen.queryByTestId('hosted-video')).toBeNull()
   })
 
@@ -64,7 +71,7 @@ describe('LearningWatchPage', () => {
       'ja'
     )
 
-    expect(screen.getByTestId('youtube-embed').textContent).toBe('ノードの基本')
+    expect(embedTitle()).toBe('ノードの基本')
   })
 
   it('titles the embed in English when the locale has no translation', () => {
@@ -73,8 +80,6 @@ describe('LearningWatchPage', () => {
       'ja'
     )
 
-    expect(screen.getByTestId('youtube-embed').textContent).toBe(
-      'Node graph basics'
-    )
+    expect(embedTitle()).toBe('Node graph basics')
   })
 })

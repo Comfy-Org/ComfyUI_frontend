@@ -667,8 +667,16 @@ export default defineConfig([
   // the specifier it suggests instead cannot work: `apps/website` does not
   // depend on that package and the root publishes no `exports`. Scoped to the
   // pipeline scripts, which are the only files that reach across.
+  //
+  // Named individually rather than globbed over the directory. Thirteen files
+  // live here and only these two reach across, so the wider pattern also turned
+  // off `no-unresolved` for their ordinary `../../src/...` imports — where a
+  // typo would then pass lint and fail only at run time.
   {
-    files: ['apps/website/scripts/i18n/**/*.ts'],
+    files: [
+      'apps/website/scripts/i18n/translate-pending.ts',
+      'apps/website/scripts/i18n/config.ts'
+    ],
     rules: {
       'import-x/no-unresolved': 'off',
       'import-x/no-relative-packages': 'off'
