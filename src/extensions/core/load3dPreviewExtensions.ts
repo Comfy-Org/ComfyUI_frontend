@@ -4,17 +4,18 @@ import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
-  CameraState,
   LoadFolder,
   Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
+import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -22,20 +23,17 @@ import type { ComfyExtension } from '@/types/comfy'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-type PreviewOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, Model3DInfo?]
-}>
-
 function applyResultToLoad3d(
   node: LGraphNode,
   load3d: Load3d,
-  filePath: string,
-  cameraState: CameraState | undefined,
-  modelTransform: Model3DInfo[number] | undefined,
+  reported: Model3DOutput,
   loadFolder: LoadFolder
 ): void {
-  const normalizedPath = filePath.replaceAll('\\', '/')
+  const { cameraState, modelTransform } = reported
+  const normalizedPath = reported.filePath.replaceAll('\\', '/')
+  const folder = reported.folder ?? loadFolder
   node.properties['Last Time Model File'] = normalizedPath
+  node.properties['Last Time Model Folder'] = folder
   if (cameraState) {
     const existing = node.properties['Camera Config'] as
       | CameraConfig
@@ -49,7 +47,7 @@ function applyResultToLoad3d(
   }
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh(loadFolder, normalizedPath, {
+  config.configureForSaveMesh(folder, normalizedPath, {
     silentOnNotFound: true
   })
 
@@ -69,22 +67,10 @@ function createPreview3DExtension(
 ): ComfyExtension {
   const applyPreviewOutput = (
     node: LGraphNode,
-    result: NonNullable<PreviewOutput['result']>
+    reported: Model3DOutput
   ): void => {
-    const filePath = result[0]
-    const cameraState = result[1]
-    const modelTransform = result[2]?.[0]
-    if (!filePath) return
-
     useLoad3d(node).waitForLoad3d((load3d) => {
-      applyResultToLoad3d(
-        node,
-        load3d,
-        filePath,
-        cameraState,
-        modelTransform,
-        loadFolder
-      )
+      applyResultToLoad3d(node, load3d, reported, loadFolder)
     })
   }
 
@@ -95,13 +81,13 @@ function createPreview3DExtension(
       nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
     ) {
       for (const [locatorId, output] of Object.entries(nodeOutputs)) {
-        const result = (output as PreviewOutput).result
-        if (!result?.[0]) continue
+        const reported = readModel3DOutput(output)
+        if (!reported) continue
 
         const node = getNodeByLocatorId(app.rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
 
-        applyPreviewOutput(node, result)
+        applyPreviewOutput(node, reported)
       }
     },
 
@@ -131,8 +117,14 @@ function createPreview3DExtension(
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
 
+        const lastTimeModelFolder = node.properties['Last Time Model Folder']
+        const folder =
+          lastTimeModelFolder === 'temp' || lastTimeModelFolder === 'output'
+            ? lastTimeModelFolder
+            : loadFolder
+
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
+        config.configureForSaveMesh(folder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -201,27 +193,18 @@ function createPreview3DExtension(
           }
         }
 
-        node.onExecuted = function (output: PreviewOutput) {
+        node.onExecuted = function (output: NodeExecutionOutput) {
           onExecuted?.call(this, output)
 
-          const result = output.result
-          const filePath = result?.[0]
-
-          if (!filePath) {
+          const reported = readModel3DOutput(output)
+          if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
             useToastStore().addAlert(msg)
             return
           }
 
-          applyResultToLoad3d(
-            node,
-            resolveLoad3d(),
-            filePath,
-            result?.[1],
-            result?.[2]?.[0],
-            loadFolder
-          )
+          applyResultToLoad3d(node, resolveLoad3d(), reported, loadFolder)
         }
       })
     }

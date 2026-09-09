@@ -191,6 +191,58 @@ describe('load3dPreviewExtensions module registration', () => {
       expect.objectContaining({ silentOnNotFound: true })
     )
   })
+
+  it('loads a standard 3d item and remembers the folder it names', () => {
+    const node = makePreviewNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    splatExt.onNodeOutputsUpdated!({
+      [createNodeLocatorId(null, toNodeId(4))]: {
+        '3d': [
+          { filename: 'preview_splat_1.spz', subfolder: '', type: 'temp' }
+        ],
+        camera_info: [null],
+        model_3d_info: []
+      }
+    })
+
+    expect(node.properties['Last Time Model File']).toBe('preview_splat_1.spz')
+    expect(node.properties['Last Time Model Folder']).toBe('temp')
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'temp',
+      'preview_splat_1.spz',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+  })
+
+  it('restores from the persisted folder instead of the extension default', async () => {
+    const previewNode = makePreviewNode({
+      properties: {
+        'Last Time Model File': '3d/kept.spz',
+        'Last Time Model Folder': 'output'
+      }
+    })
+    await splatExt.nodeCreated!(previewNode, app)
+    expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
+      'output',
+      '3d/kept.spz',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+
+    const saveNode = makePreviewNode({
+      comfyClass: 'SaveGaussianSplat',
+      properties: {
+        'Last Time Model File': 'preview_splat_1.spz',
+        'Last Time Model Folder': 'temp'
+      }
+    })
+    await saveSplatExt.nodeCreated!(saveNode, app)
+    expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
+      'temp',
+      'preview_splat_1.spz',
+      expect.objectContaining({ silentOnNotFound: true })
+    )
+  })
 })
 
 describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
@@ -232,7 +284,8 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     const cameraState = {
       position: { x: 1, y: 2, z: 3 },
       target: { x: 0, y: 0, z: 0 },
-      zoom: 1
+      zoom: 1,
+      cameraType: 'perspective'
     }
 
     await splatExt.nodeCreated!(node, app)
@@ -271,7 +324,11 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
       cb(load3d)
     )
     const node = makePreviewNode({ comfyClass: 'SaveGaussianSplat' })
-    const transform = { position: { x: 1, y: 2, z: 3 } }
+    const transform = {
+      position: { x: 1, y: 2, z: 3 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      scale: { x: 1, y: 1, z: 1 }
+    }
 
     await saveSplatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: ['scene.ply', undefined, [transform]] })

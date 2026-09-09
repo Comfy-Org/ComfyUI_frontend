@@ -964,6 +964,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       if (!load3d || !isAssetPreviewSupported()) return
 
       const node = nodeRef.value
+      if (node?.properties['Last Time Model Folder'] === 'temp') return
       const modelWidget = node?.widgets?.find(
         (w) => w.name === 'model_file' || w.name === 'image'
       )
