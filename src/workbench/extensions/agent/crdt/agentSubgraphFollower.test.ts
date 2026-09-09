@@ -93,6 +93,12 @@ interface FixtureOptions {
   emptyHostWidgets?: boolean
   /** Add a root-level (non-host) `promoted-widget` node with id 3. */
   rootWidgetNode?: boolean
+  /**
+   * Mutable gate for the adapter's `getScope`. While `blocked` is true the
+   * scope resolves to `null`, so `graphMutations.batch` rejects the frame
+   * (the "no active graph scope" failure the adapter must survive).
+   */
+  scope?: { blocked: boolean }
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -147,7 +153,7 @@ function startFollower(options: FixtureOptions = {}) {
   const follower = new FollowerDoc()
   const adapter = new EcsFollowerAdapter(
     createGraphMutations({
-      getScope: () => graphScopeOf(graph),
+      getScope: () => (options.scope?.blocked ? null : graphScopeOf(graph)),
       layout: { createNode: () => {}, deleteNodes: () => {} }
     })
   )
@@ -816,6 +822,46 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
 
     expect(storedHostWidgets(state)).toEqual([['value', 46]])
     expect(reportError).toHaveBeenCalledTimes(1)
+  })
+
+  it('S1o replays a promoted edit dropped by a rejected batch on the next frame', () => {
+    // `applyQueuedFrame` snapshots and clears the session's pending sets
+    // before `batch` runs. When `batch` is rejected (no graph scope) the
+    // snapshot is gone, so the only way the edit can still land is a full
+    // reconcile on the next frame. The follow-up frame touches a different
+    // node: a `changedNodeFields` hit on the host itself re-reads the whole
+    // host (widgets included) and would mask the lost edit.
+    const scope = { blocked: false }
+    const state = startFollower({ scope })
+
+    scope.blocked = true
+    const vector = Y.encodeStateVector(state.hostDoc)
+    const id = 'op-1'
+    const result = applyOps(
+      state.hostDoc,
+      [operation(id, 1, hostSetWidget(46))],
+      CATALOG
+    )
+    expect(result.outcomes).toEqual([{ op_id: id, outcome: 'applied' }])
+    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+    state.follower.applyRemoteUpdate(update)
+    expect(
+      state.adapter.applyFrame({
+        workflowId: 'workflow',
+        seq: 2,
+        update,
+        actor: 'agent:test',
+        opIds: [id]
+      })
+    ).toBe(false)
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+
+    scope.blocked = false
+    forwardRaw(state, (nodes) => nodes.get('2')!.set('title', 'Retitled'), 2)
+
+    expect(state.graph.getNodeById(toNodeId(2))?.title).toBe('Retitled')
+    expect(storedHostWidgets(state)).toEqual([['value', 46]])
+    expect(state.instance.widgets[0]?.value).toBe(46)
   })
 })
 
