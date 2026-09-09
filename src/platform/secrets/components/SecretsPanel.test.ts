@@ -22,7 +22,7 @@ const mockSecret: SecretMetadata = {
   updated_at: '2024-01-15T10:00:00Z'
 }
 
-vi.mock('@/platform/secrets/composables/useSecrets', () => ({
+vi.mock<unknown>(import('@/platform/secrets/composables/useSecrets'), () => ({
   useSecrets: () => ({
     loading: ref(false),
     secrets: ref<SecretMetadata[]>([mockSecret]),
@@ -35,17 +35,20 @@ vi.mock('@/platform/secrets/composables/useSecrets', () => ({
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
 }))
 
-vi.mock('@/components/dialog/confirm/confirmDialog')
+vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
-vi.mock('@/platform/secrets/components/SecretFormDialog.vue', () => ({
-  default: { name: 'SecretFormDialog', template: '<div />' }
-}))
+vi.mock<unknown>(
+  import('@/platform/secrets/components/SecretFormDialog.vue'),
+  () => ({
+    default: { name: 'SecretFormDialog', template: '<div />' }
+  })
+)
 
 const mockShowConfirmDialog = vi.mocked(showConfirmDialog)
 

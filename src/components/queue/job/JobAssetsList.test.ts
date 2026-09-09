@@ -4,11 +4,13 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 import type * as RekaUi from 'reka-ui'
 
 import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import JobAssetsList from './JobAssetsList.vue'
 
@@ -24,11 +26,14 @@ const hoisted = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
-  default: hoisted.jobDetailsPopoverStub
-}))
+vi.mock<unknown>(
+  import('@/components/queue/job/JobDetailsPopover.vue'),
+  () => ({
+    default: hoisted.jobDetailsPopoverStub
+  })
+)
 
-vi.mock('reka-ui', async (importOriginal) => {
+vi.mock<unknown>(import('reka-ui'), async (importOriginal) => {
   const actual = await importOriginal<typeof RekaUi>()
   const { computed, defineComponent, h, inject, provide } = await import('vue')
   const popoverOpenKey = Symbol('popoverOpen')
@@ -135,19 +140,10 @@ const AssetsListItemStub = defineComponent({
   `
 })
 
-vi.mock('vue-i18n', () => {
-  return {
-    createI18n: () => ({
-      global: {
-        t: (key: string) => key,
-        te: () => true,
-        d: (value: string) => value
-      }
-    }),
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
 })
 
 type TestPreviewOutput = {
@@ -225,6 +221,7 @@ function renderJobAssetsList({
     },
     attrs,
     global: {
+      plugins: [i18n],
       stubs: {
         teleport: true,
         AssetsListItem: AssetsListItemStub
@@ -374,7 +371,7 @@ describe('JobAssetsList', () => {
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
     await fireEvent.mouseEnter(jobRow)
 
-    await fireEvent.click(screen.getByText('menuLabels.View'))
+    await fireEvent.click(screen.getByText('View'))
     await nextTick()
 
     expect(onViewItem).toHaveBeenCalledWith(job)

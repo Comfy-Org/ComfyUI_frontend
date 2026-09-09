@@ -12,9 +12,10 @@ import {
 import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type * as SlotCalculations from '@/renderer/core/canvas/litegraph/slotCalculations'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 vi.mock(
-  '@/renderer/core/canvas/litegraph/slotCalculations',
+  import('@/renderer/core/canvas/litegraph/slotCalculations'), // eslint-disable-line import-x/no-restricted-paths
+
   async (importOriginal) => ({
     ...(await importOriginal<typeof SlotCalculations>()),
     getSlotLayoutAtPoint: vi.fn()
