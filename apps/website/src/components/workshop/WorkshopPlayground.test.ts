@@ -127,6 +127,22 @@ describe('WorkshopPlayground', () => {
     ).toBeUndefined()
   })
 
+  it('keeps a live island stashing after a sibling instance unmounts', async () => {
+    const user = userEvent.setup()
+    const first = render(WorkshopPlayground, { props: { model } })
+    const second = render(WorkshopPlayground, { props: { model } })
+    const [, secondPrompt] = screen.getAllByRole('textbox', { name: /Prompt/ })
+    await user.type(secondPrompt, 'Second fox')
+    first.unmount()
+
+    runBeforeSignInLeave()
+
+    expect(popWorkshopForm(model.slug, model.fields)).toMatchObject({
+      prompt: 'Second fox'
+    })
+    second.unmount()
+  })
+
   it('updates every snippet from the current form values', async () => {
     const user = userEvent.setup()
     render(WorkshopPlayground, { props: { model } })
