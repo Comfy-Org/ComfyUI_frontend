@@ -59,6 +59,12 @@ interface SemanticLayoutMutationPort {
 }
 
 interface GraphMutationBatch {
+  /**
+   * Whether the scoped graph already holds `nodeId` when the batch is
+   * defined. Lets a caller choose `setWidget` on a live node over a
+   * `reconcileNode` that would rebuild its slots.
+   */
+  hasNode(nodeId: NodeId): boolean
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
   setWidget(nodeId: NodeId, name: string, value: unknown): void
@@ -795,6 +801,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       if (!scope) return false
       const queued: QueuedMutation[] = []
       define({
+        hasNode(nodeId) {
+          return (
+            nodeStore.getNode(scope.rootGraphId, nodeId)?.graphId ===
+            scope.owningGraphId
+          )
+        },
         addNode(payload) {
           queued.push({ kind: 'addNode', payload })
         },

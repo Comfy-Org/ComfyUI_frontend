@@ -509,4 +509,102 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       HOST_INITIAL_VALUE
     )
   })
+
+  function storedHostWidgets(state: ReturnType<typeof startFollower>) {
+    return useWidgetValueStore()
+      .getNodeWidgets(graphScopeOf(state.graph).rootGraphId, toNodeId(1))
+      .map((w) => [w.name, w.value])
+  }
+
+  it('S1f registers the host under promoted names on initial load', () => {
+    // `addNode` reads the host's positional `__widgets_opaque`; a positional
+    // store entry ('0') would later collide with the named `setWidget` path
+    // and leave the host carrying two widgets for one promoted value.
+    const state = startFollower()
+    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
+  })
+
+  it('S1g keeps promoted names across a re-armed reconcile frame', () => {
+    const state = startFollower()
+    deliver(state, hostSetWidget(42), 1)
+    // Re-binding arms `reconcileNextFrame`, which routes every node through
+    // `reconcileNode(readSemanticNode)` — the same positional read as add.
+    state.adapter.bind('workflow', state.follower)
+    deliver(state, hostSetWidget(43), 2)
+
+    expect(storedHostWidgets(state)).toEqual([['value', 43]])
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(43)
+  })
+
+  it('S1h keeps promoted names when the host node map is replaced', () => {
+    // A wholesale node replacement is an `update` nodeAction: delete then
+    // `addNode(readSemanticNode)`, bypassing the opaque host loop entirely.
+    const state = startFollower()
+    forwardRaw(
+      state,
+      (nodes) => {
+        const previous = nodes.get('1')!.toJSON() as Record<string, unknown>
+        const replacement = new Y.Map<unknown>()
+        for (const [key, value] of Object.entries(previous)) {
+          if (key === OPAQUE_WIDGETS_KEY) continue
+          replacement.set(key, value)
+        }
+        replacement.set(OPAQUE_WIDGETS_KEY, [44])
+        nodes.set('1', replacement)
+      },
+      1
+    )
+
+    expect(storedHostWidgets(state)).toEqual([['value', 44]])
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(44)
+  })
+
+  it('S1i keeps promoted names when the host flips back to named storage', () => {
+    // Deleting `__widgets_opaque` and writing a named `widgets` map lands in
+    // the replaced-widget-storage loop, which used to run `reconcileNode` on
+    // the host and reset its live inputs.
+    const state = startFollower()
+    forwardRaw(
+      state,
+      (nodes) => {
+        const node = nodes.get('1')!
+        node.delete(OPAQUE_WIDGETS_KEY)
+        node.set('widgets', new Y.Map<unknown>([['value', 45]]))
+      },
+      1
+    )
+
+    expect(storedHostWidgets(state)).toEqual([['value', 45]])
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(45)
+  })
+
+  it('S1j leaves promoted values unchanged when the opaque array shrinks', () => {
+    // A shorter opaque array carries no value for the declared promoted name.
+    // The host keeps its current value rather than dropping the widget or
+    // resetting it: the definition, not the array length, owns the surface.
+    const state = startFollower()
+    deliver(state, hostSetWidget(46), 1)
+    forwardRaw(state, (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, []), 2)
+
+    expect(storedHostWidgets(state)).toEqual([['value', 46]])
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(46)
+  })
 })
+
+function hostSetWidget(value: number): GraphOperation {
+  return {
+    op: 'set_widget',
+    node_id: 1,
+    widget: 'value',
+    value,
+    promoted: {
+      instance_path: [1],
+      value_index: 0,
+      host_widgets_values: [HOST_INITIAL_VALUE]
+    }
+  }
+}

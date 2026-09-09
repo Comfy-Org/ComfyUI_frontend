@@ -931,6 +931,7 @@ describe('EcsFollowerAdapter integration', () => {
     const events: string[] = []
     const createTargetMutations = (workflowId: string): GraphMutations => {
       const noopBatch = {
+        hasNode: () => false,
         addNode: () => undefined,
         reconcileNode: () => undefined,
         setWidget: () => undefined,

@@ -34,7 +34,24 @@ function plain(value: unknown): unknown {
   return structuredClone(value)
 }
 
-function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Reads a node's doc entry as a semantic payload. A SubgraphNode host (a node
+ * whose type names a definition) is stored opaquely by cmp: positional widget
+ * values under `__widgets_opaque` and only the grown slots under `inputs`.
+ * Both are re-keyed from the definition so `reconcileNode` registers the
+ * host's widgets under their promoted names and keeps its full slot list;
+ * otherwise a reconcile would wipe the promoted widgets and `setWidget` by
+ * name could never find them again.
+ */
+function readSemanticNode(
+  doc: Y.Doc,
+  id: string,
+  definitions: () => SubgraphDefinitionIndex
+): SemanticNodePayload | null {
   const source = nodesMap(doc).get(id)
   if (!(source instanceof Y.Map)) return null
   const type = source.get('type')
@@ -52,6 +69,25 @@ function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
   })
   payload.id = id
   payload.type = type
+
+  const definition = definitions().get(type)
+  if (definition) {
+    const opaque = payload.widgets_values
+    if (Array.isArray(opaque)) {
+      const names = promotedWidgetNames(definition)
+      // Values past the promoted list have no host widget; drop them.
+      payload.widgets_values = Object.fromEntries(
+        opaque
+          .slice(0, names.length)
+          .map((value, index) => [names[index], value])
+      )
+    }
+    const docInputs = source.get('inputs')
+    payload.inputs = hostInputs(
+      definition,
+      docInputs instanceof Y.Array ? docInputs.toJSON() : []
+    )
+  }
   return payload as SemanticNodePayload
 }
 
@@ -316,9 +352,35 @@ export class EcsFollowerAdapter {
       link ? [] : [Number(id)]
     )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
+      // A SubgraphNode host that is already live must never be rebuilt from
+      // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
+      // host's input list in place, which drops the `widgetId` /
+      // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
+      // host with no widgets at all. Write the promoted values by name instead;
+      // `readSemanticNode` has already keyed them from the definition. A host
+      // whose stored values are not a record (malformed opaque payload) is
+      // left untouched rather than wiped.
+      const isLiveHost = (payload: SemanticNodePayload) =>
+        definitions().has(payload.type) && batch.hasNode(toNodeId(payload.id))
+      const upsertNode = (
+        payload: SemanticNodePayload,
+        mode: 'add' | 'reconcile'
+      ) => {
+        if (!isLiveHost(payload)) {
+          if (mode === 'add') batch.addNode(payload)
+          else batch.reconcileNode(payload)
+          return
+        }
+        const values = payload.widgets_values
+        if (!isRecord(values)) return
+        for (const [name, value] of Object.entries(values)) {
+          batch.setWidget(toNodeId(payload.id), name, value)
+        }
+      }
+
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(session.follower.doc, id)
+          const payload = readSemanticNode(doc, id, definitions)
           return payload ? [payload] : []
         })
         const links = [...session.links.keys()].flatMap((id) => {
@@ -329,52 +391,42 @@ export class EcsFollowerAdapter {
           nodes.map(({ id }) => toNodeId(id)),
           links.map(({ id }) => id)
         )
-        for (const payload of nodes) batch.reconcileNode(payload)
+        for (const payload of nodes) upsertNode(payload, 'reconcile')
         for (const link of links) batch.connect(link)
         return
       }
 
       batch.removeLinks(removedLinkIds)
+      // A replaced (`update`) node is deleted and re-added, except a live host,
+      // whose promoted values are rewritten in place by `upsertNode` below.
+      const payloads = new Map(
+        [...nodeActions]
+          .filter(([, action]) => action !== 'delete')
+          .map(([id]) => [id, readSemanticNode(doc, id, definitions)] as const)
+      )
       for (const [id, action] of nodeActions) {
-        if (action === 'delete' || action === 'update')
+        if (action === 'delete') {
           batch.deleteNode(toNodeId(id))
-      }
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete') continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (!payload) continue
-        batch.addNode(payload)
-      }
-      for (const id of replacedWidgetMaps) {
-        // cmp retires the named `widgets` map and writes `__widgets_opaque`
-        // in the same transaction when a host's storage flips to opaque; the
-        // opaque loop below owns that node so the host is not reconciled.
-        if (nodeActions.has(id) || replacedOpaqueWidgets.has(id)) continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (payload) batch.reconcileNode(payload)
-      }
-      for (const id of replacedOpaqueWidgets) {
-        if (nodeActions.has(id)) continue
-        const node = session.nodes.get(id)
-        if (!(node instanceof Y.Map)) continue
-        const type = node.get('type')
-        const definition =
-          typeof type === 'string' ? definitions().get(type) : undefined
-        if (!definition) {
-          const payload = readSemanticNode(session.follower.doc, id)
-          if (payload) batch.reconcileNode(payload)
           continue
         }
-        // Subgraph host: positional values map onto promoted widget names.
-        // reconcileNode would clear and re-register the host's widgets under
-        // positional names, wiping the promoted ones, so set them by name.
-        const values = plain(node.get(OPAQUE_WIDGETS_KEY))
-        if (!Array.isArray(values)) continue
-        const names = promotedWidgetNames(definition)
-        // Values past the promoted list have no host widget; drop them.
-        values.slice(0, names.length).forEach((value, index) => {
-          batch.setWidget(toNodeId(id), names[index], value)
-        })
+        const payload = payloads.get(id)
+        if (action === 'update' && !(payload && isLiveHost(payload)))
+          batch.deleteNode(toNodeId(id))
+      }
+      for (const payload of payloads.values()) {
+        if (payload) upsertNode(payload, 'add')
+      }
+      // A node whose widget storage was replaced wholesale, either the named
+      // `widgets` map or the positional `__widgets_opaque` array (cmp writes
+      // both in one transaction when a host's storage flips to opaque, and
+      // deletes the opaque array when it flips back), is re-read in full.
+      for (const id of new Set([
+        ...replacedWidgetMaps,
+        ...replacedOpaqueWidgets
+      ])) {
+        if (nodeActions.has(id)) continue
+        const payload = readSemanticNode(doc, id, definitions)
+        if (payload) upsertNode(payload, 'reconcile')
       }
       for (const [id, names] of changedWidgets) {
         if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
@@ -382,8 +434,8 @@ export class EcsFollowerAdapter {
         const widgets = node?.get('widgets')
         if (!(widgets instanceof Y.Map)) continue
         if ([...names].some((name) => !widgets.has(name))) {
-          const payload = readSemanticNode(session.follower.doc, id)
-          if (payload) batch.reconcileNode(payload)
+          const payload = readSemanticNode(doc, id, definitions)
+          if (payload) upsertNode(payload, 'reconcile')
           continue
         }
         for (const name of names) {
