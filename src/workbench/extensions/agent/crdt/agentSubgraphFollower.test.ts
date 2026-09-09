@@ -1,4 +1,9 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import {
+  OPAQUE_WIDGETS_KEY,
+  applyOps,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
@@ -80,6 +85,8 @@ interface FixtureOptions {
    * `__widgets_opaque` in one transaction.
    */
   emptyHostWidgets?: boolean
+  /** Add a root-level (non-host) `promoted-widget` node with id 3. */
+  rootWidgetNode?: boolean
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -113,6 +120,11 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   const source = LiteGraph.createNode('source')!
   source.id = toNodeId(2)
   graph.add(source)
+  if (options.rootWidgetNode) {
+    const rootWidget = LiteGraph.createNode('promoted-widget')!
+    rootWidget.id = toNodeId(3)
+    graph.add(rootWidget)
+  }
   const serialized = graph.serialize()
   const hostNode = serialized.nodes.find((n) => n.id === 1)
   if (options.stripHostInputs && hostNode) hostNode.inputs = []
@@ -178,6 +190,29 @@ function deliver(
       actor: 'agent:test',
       opIds: [id]
     })
+  ).toBe(true)
+  reconcileAgentAdapters(
+    state.graph,
+    readSubgraphDefinitions(state.follower.doc)
+  )
+}
+
+/**
+ * Forward a raw Y.Doc mutation (no cmp op) to the follower. Models doc shapes
+ * cmp's validated op path never produces, so the follower's defensive
+ * branches are exercised directly.
+ */
+function forwardRaw(
+  state: ReturnType<typeof startFollower>,
+  mutate: (nodes: ReturnType<typeof nodesMap>) => void,
+  seq: number
+) {
+  const vector = Y.encodeStateVector(state.hostDoc)
+  state.hostDoc.transact(() => mutate(nodesMap(state.hostDoc)))
+  const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
+  state.follower.applyRemoteUpdate(update)
+  expect(
+    state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
   ).toBe(true)
   reconcileAgentAdapters(
     state.graph,
@@ -400,5 +435,78 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(
       state.graph.getNodeById(toNodeId(2))?.outputs[0]?.links ?? []
     ).toEqual([])
+  })
+
+  it('S1c drops opaque host values beyond the declared promoted names', () => {
+    // The definition declares one promoted name; a longer opaque array must
+    // map positionally onto that name only, never grow the host surface.
+    const state = startFollower()
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [42, 'extra']),
+      1
+    )
+
+    const widgetId = state.instance.inputs[0]?.widgetId
+    expect(widgetId).toBeDefined()
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(42)
+    expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
+  })
+
+  it('S1d falls back to reconcileNode for an opaque write on a non-host node', () => {
+    // Node 3 is a plain root node (no subgraph definition). Converting its
+    // named `widgets` map to opaque storage must take the generic
+    // `reconcileNode` path, not the promoted-host path.
+    const state = startFollower({ rootWidgetNode: true })
+    const rootWidget = state.graph.getNodeById(toNodeId(3))!
+    expect(rootWidget).not.toBeInstanceOf(SubgraphNode)
+    expect(rootWidget.widgets?.[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        const node = nodes.get('3')!
+        node.delete('widgets')
+        node.set(OPAQUE_WIDGETS_KEY, [9])
+      },
+      1
+    )
+
+    const after = state.graph.getNodeById(toNodeId(3))!
+    expect(after).not.toBeInstanceOf(SubgraphNode)
+    // `reconcileNode` registers an array payload under positional names
+    // (`widgetEntries` in graphMutations) and clears the named entries. The
+    // store is the authoritative contract here; projecting positional values
+    // onto a plain node's litegraph widgets is the materializer's concern and
+    // out of scope for the follower (see agentNodeMaterializer.ts).
+    const stored = useWidgetValueStore()
+      .getNodeWidgets(graphScopeOf(state.graph).rootGraphId, toNodeId(3))
+      .map((w) => [w.name, w.value])
+    expect(stored).toEqual([['0', 9]])
+    // The host is untouched: the fallback must not bleed into promoted state.
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+  })
+
+  it('S1e keeps promoted host widgets when the opaque payload is malformed', () => {
+    // A non-array `__widgets_opaque` on a host must be skipped, not routed to
+    // `reconcileNode`: `widgetEntries` yields no entries for it and `commit`
+    // clears the node's widget store first, which would wipe every promoted
+    // value.
+    const state = startFollower()
+    const widgetId = state.instance.inputs[0]?.widgetId
+    expect(widgetId).toBeDefined()
+
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, 'bogus'),
+      1
+    )
+
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(
+      HOST_INITIAL_VALUE
+    )
   })
 })
