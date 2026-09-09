@@ -4,6 +4,7 @@ exports[`Workshop snippets > builds the http snippet from the current values 1`]
 "curl --request POST 'https://api.comfy.org/v2/models/bfl/flux-3' \\
   --header 'Authorization: Bearer YOUR_API_KEY' \\
   --header 'Content-Type: application/json' \\
+  --header 'Idempotency-Key: 11111111-2222-4333-8444-555555555555' \\
   --data '{
   "prompt": "A red fox",
   "enhance": true
@@ -24,7 +25,7 @@ exports[`Workshop snippets > builds the typescript snippet from the current valu
 "import { comfy } from '@comfyorg/sdk'
 
 comfy.config({ credentials: 'YOUR_API_KEY' })
-const { data } = await comfy.models.run('bfl/flux-3', {
+const { data } = await comfy.models.run("bfl/flux-3", {
   "prompt": "A red fox",
   "enhance": true
 })"

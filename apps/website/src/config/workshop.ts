@@ -1,13 +1,13 @@
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
 
 export const WORKSHOP_OUTPUTS = ['image', 'video', 'audio', '3d'] as const
+export const WORKSHOP_PAGE_SIZE = 48
 
 type WorkshopOutput = (typeof WORKSHOP_OUTPUTS)[number]
 export type WorkshopOutputFilter = WorkshopOutput | 'all'
 
 export interface WorkshopBrowseModel {
   readonly id: string
-  readonly slug: string
   readonly href: string
   readonly name: string
   readonly provider: string
@@ -30,7 +30,6 @@ function outputFor(modality: WorkshopModelEntry['modality']): WorkshopOutput {
 export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
   return {
     id: entry.id,
-    slug: entry.slug,
     href: `/workshop/models/${entry.slug}/`,
     name: entry.displayName,
     provider: entry.provider,
@@ -38,6 +37,17 @@ export function toBrowseModel(entry: WorkshopModelEntry): WorkshopBrowseModel {
     description: entry.description,
     tags: entry.tags
   }
+}
+
+/**
+ * Projects and orders the Router snapshot for the catalog page at build time.
+ */
+export function prepareWorkshopBrowseModels(
+  entries: readonly WorkshopModelEntry[]
+): WorkshopBrowseModel[] {
+  return entries
+    .map(toBrowseModel)
+    .sort((left, right) => left.id.localeCompare(right.id))
 }
 
 export interface WorkshopFilter {

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import type {
@@ -82,6 +83,7 @@ describe('WorkshopForm', () => {
   it('keeps an edit instead of re-seeding over it', async () => {
     const utils = renderForm()
     await userEvent.setup().type(screen.getByLabelText(/prompt/i), 'a cat')
+    await nextTick()
 
     // The seed must not come back and overwrite what was typed.
     expect(lastEmittedValues(utils)).toMatchObject({
@@ -93,7 +95,9 @@ describe('WorkshopForm', () => {
   it('shows the run control as not yet available', () => {
     renderForm()
 
-    const submit = screen.getByRole('button')
+    const submit = screen.getByRole('button', {
+      name: 'Run model — sign-in coming next'
+    })
     expect(submit.hasAttribute('disabled')).toBe(true)
   })
 })
