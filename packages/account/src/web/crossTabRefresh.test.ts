@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AccountCredential } from './session.js'
+import type { AccountCredential } from '../core/session.js'
 import { createWebCrossTabRefreshPort } from './crossTabRefresh.js'
 
 class FakeBroadcastChannel {

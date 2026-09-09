@@ -157,7 +157,8 @@ export interface SessionRequestOptions {
  * lease and performs the proactive refresh; the others adopt its published
  * credential and mint for themselves only when the leader goes quiet past
  * their jittered fallback. Real hosts wrap Web Locks + BroadcastChannel
- * (`createWebCrossTabRefreshPort`); tests pass fakes.
+ * (`createWebCrossTabRefreshPort` from `@comfyorg/account/web`); tests pass
+ * fakes.
  */
 export interface CrossTabRefreshPort {
   /**
@@ -194,6 +195,12 @@ export interface RefreshSchedulerOptions {
     readonly port: CrossTabRefreshPort
     /** Upper bound for the follower's random hold. Default 15s. */
     readonly followerJitterMs?: number
+    /**
+     * Fires when this tab commits a sibling's credential. Adoption is a
+     * rotation the tab did not perform itself, so a host that reacts to
+     * rotations (cookie refresh, extension hooks) needs this signal.
+     */
+    readonly onCredentialAdopted?: (credential: AccountCredential) => void
   }
   /**
    * Called with the outcome of every SCHEDULED refresh attempt (never a
@@ -747,8 +754,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   function adoptPublishedCredential(message: unknown): void {
-    // Leaders publish; only followers adopt.
-    if (isRefreshLeader) return
+    // Any tab adopts a strictly newer credential, the leader included: a
+    // leader whose own chain died recovers from a sibling's fallback mint,
+    // and the monotonic-expiry check keeps the channel from looping.
     const parsed = CachedCredentialSchema.safeParse(message)
     if (!parsed.success) return
     if (currentUser?.uid !== parsed.data.uid) return
@@ -774,6 +782,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     safeWrite(JSON.stringify({ ...next, target: credentialTarget }))
     publish()
     armScheduledRefresh(next.expiresAt, clientOptions.now?.() ?? Date.now())
+    crossTab?.onCredentialAdopted?.(next)
   }
 
   function armScheduledRefresh(expiresAt: number, now: number): void {
@@ -889,6 +898,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
     if (scheduledRetryCount >= schedulerMaxRetries) {
       if (credential !== undefined) armClearAtExpiry(credential)
+      // A leader with a dead chain must not sit on the lease: release it so
+      // a sibling can lead, and queue again as a follower so this tab can
+      // adopt what that sibling mints or be promoted back if nobody does.
+      teardownCoordination()
+      ensureCoordination()
       reportOutcome?.('retries_exhausted')
       return
     }

@@ -5,10 +5,10 @@ import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 
 import type { SessionErrorCode, SessionFailure } from '@comfyorg/account/core'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
-  createWebCrossTabRefreshPort,
   isPermanentSessionError
 } from '@comfyorg/account/core'
 
@@ -825,7 +825,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       maxRetries: MAX_SCHEDULED_REFRESH_RETRIES,
       onScheduledOutcome: handleScheduledRefreshOutcome,
       ...(crossTabRefreshPort && {
-        crossTab: { port: crossTabRefreshPort }
+        crossTab: {
+          port: crossTabRefreshPort,
+          // A sibling's rotation is still a rotation for this tab: the
+          // session cookie and the onAuthTokenRefreshed hook must see it.
+          onCredentialAdopted: () => useAuthStore().notifyTokenRefreshed()
+        }
       })
     }
   })
