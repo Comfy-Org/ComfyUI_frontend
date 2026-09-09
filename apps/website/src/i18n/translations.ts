@@ -6921,6 +6921,15 @@ Enterprise`
     en: 'BROWSE MODELS',
     'zh-CN': '浏览模型'
   },
+  'chatgptImage25.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'chatgptImage25.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'chatgptImage25.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'chatgptImage25.comparison.heading': {
     en: 'How it compares so far',
     'zh-CN': '目前的对比情况'

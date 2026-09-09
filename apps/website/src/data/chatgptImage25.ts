@@ -1,12 +1,15 @@
 import type { ModelLaunchPage } from '../templates/model-launch/types'
 
+import { externalLinks } from '../config/routes'
+
 // ChatGPT Images 2.5 (OpenAI, announced 2026-09-08) has not shipped on Comfy
-// yet, so this is an announcement page rather than a full launch page: an
-// 'overlay' hero with an eyebrow badge and a placeholder still in place of
-// real footage, and gallery/pricing/faq/closingCta trimmed down per the
-// pattern documented on ModelLaunchHero. Swap in the full config (real
-// media.comfy.org assets, a live run CTA, a gallery) once the model is wired
-// up to a partner node.
+// yet, so this duplicates the wan-3.0 launch page section-for-section (hero,
+// pricing, benchmarks, FAQ, run options, reviews) with only the hero's
+// "try it" CTA swapped for a coming-soon-appropriate one: an 'overlay' hero
+// with an eyebrow badge and a placeholder still standing in for real footage,
+// and a "get notified" CTA instead of a live run link. Swap in the real hero
+// video and CTA (and drop the placeholder) once the model is wired up to a
+// partner node.
 const chatgptImage25Links = {
   contact: 'https://comfy.org/contact',
   models: 'https://comfy.org/p/supported-models'
@@ -44,7 +47,18 @@ export const chatgptImage25Page: ModelLaunchPage = {
       href: chatgptImage25Links.models
     }
   },
-  sectionOrder: ['comparison', 'faq'],
+  pricing: {
+    defaultBillingCycle: 'monthly',
+    banner: {
+      titleKey: 'chatgptImage25.pricing.banner.title',
+      subtitleKey: 'chatgptImage25.pricing.banner.subtitle',
+      cta: {
+        labelKey: 'chatgptImage25.pricing.banner.cta',
+        href: externalLinks.cloud,
+        target: '_blank'
+      }
+    }
+  },
   // Benchmarks: the latency figure is OpenAI's own launch-day claim (cited in
   // the row), not an independent measurement. Neither Artificial Analysis nor
   // LMArena had scored ChatGPT Images 2.5 as of 2026-09-09, so that row is an
