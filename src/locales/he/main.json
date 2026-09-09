@@ -4995,7 +4995,7 @@
       "accessDenied": "אין לך גישה לסביבת עבודה זו",
       "invalidFirebaseToken": "האימות נכשל. אנא נסה להתחבר שוב.",
       "notAuthenticated": "עליך להיות מחובר כדי לגשת לסביבות עבודה",
-      "tokenExchangeFailed": "האימות מול סביבת העבודה נכשל: {error}",
+      "tokenExchangeFailed": "האימות מול סביבת העבודה נכשל",
       "workspaceNotFound": "סביבת העבודה לא נמצאה"
     },
     "initializationFailed": "לא ניתן לטעון את סביבת העבודה שלך",
