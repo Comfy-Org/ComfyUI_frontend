@@ -164,14 +164,14 @@ const facetsConfig: FacetGroupConfig[] = [
   {
     key: 'media',
     type: 'media',
-    label: t('workshop.hub.facets.media', locale),
+    label: t('workshop.filter.outputGroup', locale),
     display: 'segmented',
     allLabel: t('workshop.hub.kind.all', locale)
   },
   {
     key: 'categories',
     type: 'tag',
-    label: t('workshop.hub.facets.task', locale),
+    label: t('workshop.filter.capabilityGroup', locale),
     display: 'chips',
     allLabel: t('workshop.hub.facets.allTasks', locale)
   },
@@ -188,14 +188,6 @@ const facetsConfig: FacetGroupConfig[] = [
     label: t('workshop.hub.facets.partner', locale),
     display: 'select',
     allLabel: t('workshop.hub.facets.allPartners', locale)
-  },
-  {
-    key: 'industries',
-    type: 'industry',
-    label: t('workshop.hub.facets.industry', locale),
-    display: 'chips',
-    allLabel: t('workshop.hub.facets.allIndustries', locale),
-    limit: 8
   }
 ]
 const gridLabels: GridLabels = {
@@ -240,7 +232,6 @@ const filteredTemplates = computed(() => {
   const models = chosen('model')
   const media = chosen('media')
   const partners = chosen('partner')
-  const industries = chosen('industry')
   const query = store.searchQuery.value.trim().toLowerCase()
   return scoped.value.templates.filter(
     (tmpl) =>
@@ -250,10 +241,6 @@ const filteredTemplates = computed(() => {
       (media.length === 0 || media.includes(tmpl.mediaType)) &&
       (partners.length === 0 ||
         (tmpl.partner !== undefined && partners.includes(tmpl.partner))) &&
-      (industries.length === 0 ||
-        industries.some((industry) =>
-          (tmpl.industries as readonly string[]).includes(industry)
-        )) &&
       (query === '' ||
         tmpl.title.toLowerCase().includes(query) ||
         tmpl.models.some((m) => m.toLowerCase().includes(query)) ||

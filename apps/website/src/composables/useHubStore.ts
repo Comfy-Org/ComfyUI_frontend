@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export type FilterBadgeType = 'tag' | 'model' | 'media' | 'partner' | 'industry'
+export type FilterBadgeType = 'tag' | 'model' | 'media' | 'partner'
 
 export interface FilterBadge {
   readonly type: FilterBadgeType

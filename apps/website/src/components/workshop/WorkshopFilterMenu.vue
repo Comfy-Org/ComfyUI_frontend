@@ -93,9 +93,8 @@ const facets = computed(() => [
   }
 ])
 
-const selectedCount = computed(
-  () =>
-    capabilities.value.length + providers.value.length + modalities.value.length
+const selectedCount = computed(() =>
+  facets.value.reduce((total, entry) => total + entry.selected.value.length, 0)
 )
 
 // The menu opens on the facet that leads the row, which on a phone is the

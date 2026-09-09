@@ -18,11 +18,16 @@ const modalityOptions = [
   { value: 'video', label: 'Video', count: 3 },
   { value: 'image', label: 'Image', count: 2 }
 ]
+const useCaseOptions = [
+  { value: 'generate-images', label: 'Generate images', count: 4 },
+  { value: '3d', label: '3D', count: 2 }
+]
 
-function mountMenu() {
+function mountMenu(withUseCases = false) {
   const capabilities = ref<string[]>([])
   const providers = ref<string[]>([])
   const modalities = ref<string[]>([])
+  const useCases = ref<string[]>([])
   render(
     defineComponent({
       setup: () => () =>
@@ -30,9 +35,14 @@ function mountMenu() {
           capabilityOptions,
           providerOptions,
           modalityOptions,
+          useCaseOptions: withUseCases ? useCaseOptions : undefined,
           capabilities: capabilities.value,
           providers: providers.value,
           modalities: modalities.value,
+          useCases: useCases.value,
+          'onUpdate:useCases': (value: string[]) => {
+            useCases.value = value
+          },
           'onUpdate:capabilities': (value: string[]) => {
             capabilities.value = value
           },
@@ -45,7 +55,7 @@ function mountMenu() {
         })
     })
   )
-  return { capabilities, providers, modalities }
+  return { capabilities, providers, modalities, useCases }
 }
 
 describe('WorkshopFilterMenu', () => {
@@ -60,11 +70,11 @@ describe('WorkshopFilterMenu', () => {
     await user.click(screen.getByTestId('workshop-facet-capability'))
     await user.click(await screen.findByTestId('filter-capability-Upscale'))
     expect(capabilities.value).toEqual(['Upscale'])
+    expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
+      '1'
+    )
     expect(
-      screen.getByTestId('workshop-filter-count').textContent?.trim()
-    ).toBe('1')
-    expect(
-      screen.getByTestId('workshop-facet-capability-count').textContent?.trim()
+      screen.getByTestId('workshop-facet-capability-count').textContent.trim()
     ).toBe('1')
   })
 
@@ -80,6 +90,22 @@ describe('WorkshopFilterMenu', () => {
     expect(screen.queryByTestId('filter-provider-Kling')).toBeNull()
     await user.click(screen.getByTestId('filter-provider-Black Forest Labs'))
     expect(providers.value).toEqual(['Black Forest Labs'])
+  })
+
+  it('counts a chosen use case, so it can be cleared like any other filter', async () => {
+    const user = userEvent.setup()
+    const { useCases } = mountMenu(true)
+
+    await user.click(screen.getByTestId('workshop-filter'))
+    await user.click(await screen.findByTestId('filter-useCase-3d'))
+    expect(useCases.value).toEqual(['3d'])
+    expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
+      '1'
+    )
+
+    await user.click(screen.getByTestId('workshop-filter-clear'))
+    expect(useCases.value).toEqual([])
+    expect(screen.queryByTestId('workshop-filter-count')).toBeNull()
   })
 
   it('clears every facet at once', async () => {
