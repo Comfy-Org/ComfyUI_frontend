@@ -74,16 +74,23 @@ describe('deriveWidgetSurfaces', () => {
     )
   })
 
-  it('ignores a string surfaces option and applies legacy derivation', () => {
-    const options = { canvasOnly: true }
-    Object.defineProperty(options, 'surfaces', { value: 'hidden' })
+  it.for([
+    ['string', 'hidden'],
+    ['invalid tier', { canvas: 'shown', vueNode: 'never', panel: 'hidden' }],
+    ['partial object', { panel: 'never' }]
+  ] as const)(
+    'ignores a %s surfaces option and applies legacy derivation',
+    ([, declaredSurfaces]) => {
+      const options = { canvasOnly: true }
+      Object.defineProperty(options, 'surfaces', { value: declaredSurfaces })
 
-    expect(deriveWidgetSurfaces({ type: 'combo', options })).toEqual({
-      canvas: 'shown',
-      vueNode: 'never',
-      panel: 'never'
-    })
-  })
+      expect(deriveWidgetSurfaces({ type: 'combo', options })).toEqual({
+        canvas: 'shown',
+        vueNode: 'never',
+        panel: 'never'
+      })
+    }
+  )
 })
 
 describe('isWidgetVisibleOnSurface', () => {

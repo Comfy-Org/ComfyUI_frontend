@@ -16,9 +16,20 @@ export const WIDGET_SURFACES = ['canvas', 'vueNode', 'panel'] as const
 
 export type WidgetSurface = (typeof WIDGET_SURFACES)[number]
 
-type WidgetSurfaceTier = 'shown' | 'advanced' | 'never'
+const WIDGET_SURFACE_TIERS = ['shown', 'advanced', 'never'] as const
+
+type WidgetSurfaceTier = (typeof WIDGET_SURFACE_TIERS)[number]
 
 export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
+
+function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
+  return (
+    isPlainObject(value) &&
+    WIDGET_SURFACES.every((surface) =>
+      WIDGET_SURFACE_TIERS.some((tier) => value[surface] === tier)
+    )
+  )
+}
 
 interface WidgetSuppression {
   byExtension: boolean
@@ -82,8 +93,13 @@ export function deriveWidgetSurfaces(
     vueNode,
     panel: source.options?.hideInPanel ? 'never' : vueNode
   }
-  return isPlainObject(source.options?.surfaces)
-    ? { ...source.options.surfaces }
+  const declaredSurfaces = source.options?.surfaces
+  return isWidgetSurfaces(declaredSurfaces)
+    ? {
+        canvas: declaredSurfaces.canvas,
+        vueNode: declaredSurfaces.vueNode,
+        panel: declaredSurfaces.panel
+      }
     : surfaces
 }
 
