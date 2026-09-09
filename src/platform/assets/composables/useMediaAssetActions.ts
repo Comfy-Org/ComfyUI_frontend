@@ -64,7 +64,7 @@ function createAssetWidgetPath(asset: AssetItem): string {
  */
 function widgetValueVariants(
   name: string | undefined,
-  type: string,
+  type: string | undefined,
   subfolder?: string,
   hash?: string
 ): string[] {

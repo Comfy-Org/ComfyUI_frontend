@@ -18,7 +18,7 @@ const mockCanvasStore = vi.hoisted<{ selectedItems: Positionable[] }>(() => ({
   selectedItems: []
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   LGraphCanvas: {
     node_colors: {
       red: { bgcolor: '#ff0000' },
@@ -32,19 +32,22 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   isColorable: vi.fn(() => true)
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: null })
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: () => ({ activeWorkflow: null })
+  })
+)
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => mockCanvasStore
 }))
 
-vi.mock('@/utils/colorUtil', () => ({
+vi.mock(import('@/utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_light')
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   getItemsColorOption: vi.fn(() => null),
   isLGraphNode: vi.fn((item) => item?.type === 'LGraphNode'),
   isLGraphGroup: vi.fn((item) => item?.type === 'LGraphGroup'),

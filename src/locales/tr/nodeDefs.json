@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "comfy_kitchen aracılığıyla blok seyrek dikkat: her sorgu bloğu, anahtar bloklarının seçili bir alt kümesine tam olarak dikkat eder ve dikkat hesaplamasını azaltır. Göreli hız kazancı dizi uzunluğuyla artar; çünkü kısa diziler genellikle yoğun olarak daha hızlıdır. Etkin zamanlama dışında, dense_blocks kapsamında ve min_tokens altında model, etkin yoğun model dikkat arka ucunu kullanır.",
-    "display_name": "Blok Seyrek Dikkat",
+    "description": "Uygun model dikkat katmanlarına blok-seyrek dikkat uygular ve uzun diziler için hesaplama yükünü azaltır. Hız artışı dizi uzunluğuyla birlikte büyür; çünkü kısa dizilerde yoğun dikkat genellikle daha hızlıdır. start_percent/end_percent dışında, dense_blocks kapsamında ve min_tokens altında model, yoğun model dikkat arka ucunu kullanır. Bu geri dönüş seçeneğini belirlemek için Model Dikkat Arka Ucu düğümünü kullanın.",
+    "display_name": "Model Seyrek Dikkat",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Zamanlamanın bu noktasından sonra yoğun kullanılır."
+        "tooltip": "Seyrek dikkatin bittiği yüzde noktası. Bu noktadan sonra dikkat yeniden yoğuna döner."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Bundan kısa diziler yoğun kalır."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Yama uygulanacak model."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Tam anahtar bloklarının nasıl seçildiği. Sol-Attn: başına/bloğa uyarlanabilir eşik. top-k (SLA): her yerde sabit keep_percent, yalnızca eğitilmiş ağırlıklarla önerilir. VSA (FastVideo): FastH3-VSA'nın küp döşemesi ve kaba dalı; bunun için eğitilmiş ağırlıklar gerektirir."
+        "tooltip": "Tam belirteç düzeyinde dikkat için anahtar blokların seçilmesinde kullanılan yöntem. sol-attn: Sparsifying Online Attention, her dikkat kafası ve sorgu bloğu için eğitim gerektirmeyen uyarlanabilir bir eşik kullanır. sla: Sparse-Linear Attention, en yüksek puanlı anahtar blokların sabit bir yüzdesini korur; yalnızca bu desen için eğitilmiş model ağırlıklarıyla kullanın. vsa: Video Sparse Attention (FastVideo), 3B video küpü döşemesi ve öğrenilmiş kaba dikkat dalı kullanır; FastH3 model ağırlıklarını gerektirir."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Zamanlamanın bu noktasından önce yoğun kullanılır."
+        "tooltip": "Seyrek dikkatin başladığı yüzde noktası. Bu noktadan önce dikkat yoğun kalır."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Her dikkat şeklinin seyrek dikkat kullanıp kullanmadığını veya neden yoğun kaldığını günlüğe kaydeder."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "Blok-seyrek dikkat uygulanmış model."
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Model için yoğun dikkat uygulamasını seçer. Blok Seyrek Dikkat ile kullanıldığında, seyrek dikkat etkin olmadığında veya desteklenmediğinde bu arka uç kullanılır.",
+    "display_name": "Model Dikkat Arka Ucu",
     "inputs": {
       "attention": {
-        "name": "dikkat"
+        "name": "dikkat",
+        "tooltip": "Yoğun dikkat arka ucu. Comfy Kitchen dikkati nicemlenmiş INT8 dikkat kullanır ve yalnızca Nvidia ve AMD GPU'larda kullanılabilir."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "Yama uygulanacak model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "Seçilen dikkat arka ucuna sahip model."
       }
     }
   },

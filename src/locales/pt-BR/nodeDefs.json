@@ -771,8 +771,8 @@
     }
   },
   "BlockSparseAttention": {
-    "description": "Atenção esparsa em blocos via comfy_kitchen: cada bloco de consulta atende exatamente a um subconjunto selecionado de blocos de chave, reduzindo o custo computacional da atenção. O ganho relativo de velocidade aumenta com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas no modo denso. Fora da programação ativa, em dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção densa do modelo ativo.",
-    "display_name": "Atenção Esparsa em Blocos",
+    "description": "Aplica atenção esparsa em blocos às camadas de atenção do modelo qualificadas, reduzindo o processamento para sequências longas. O ganho de velocidade aumenta com o comprimento da sequência, pois sequências curtas geralmente são mais rápidas com atenção densa. Fora de start_percent/end_percent, com dense_blocks e abaixo de min_tokens, o modelo usa o backend de atenção densa do modelo. Use o nó Backend de Atenção do Modelo para selecionar essa alternativa.",
+    "display_name": "Atenção Esparsa em Blocos do Modelo",
     "inputs": {
       "dense_blocks": {
         "name": "dense_blocks",
@@ -780,7 +780,7 @@
       },
       "end_percent": {
         "name": "end_percent",
-        "tooltip": "Denso após este ponto da programação."
+        "tooltip": "Ponto percentual em que a atenção esparsa termina. Após esse ponto, a atenção volta a ser densa."
       },
       "extra_tokens": {
         "name": "extra_tokens",
@@ -791,11 +791,12 @@
         "tooltip": "Sequências mais curtas que isto permanecem densas."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "O modelo a ser modificado."
       },
       "selection": {
         "name": "selection",
-        "tooltip": "Como os blocos de chave exatos são escolhidos. Sol-Attn: limiar adaptativo por cabeça/bloco. top-k (SLA): keep_percent fixo em todos os lugares, recomendado apenas com pesos treinados. VSA (FastVideo): divisão em cubos e ramo grosseiro do FastH3-VSA; requer pesos treinados para isso."
+        "tooltip": "Método usado para escolher blocos de chave para atenção completa no nível de token. sol-attn: Sparsifying Online Attention usa um limiar adaptativo que não exige treinamento para cada cabeça de atenção e bloco de consulta. sla: Sparse-Linear Attention mantém uma porcentagem fixa dos blocos de chave com maior pontuação; use apenas com pesos de modelo treinados para esse padrão. vsa: Video Sparse Attention (FastVideo) usa divisão em blocos de cubos de vídeo 3D e um ramo de atenção grosseira aprendido; requer pesos de modelo FastH3."
       },
       "selection_tau": {
         "name": "tau"
@@ -806,15 +807,17 @@
       },
       "start_percent": {
         "name": "start_percent",
-        "tooltip": "Denso antes deste ponto da programação."
+        "tooltip": "Ponto percentual em que a atenção esparsa começa. Antes desse ponto, a atenção permanece densa."
       },
       "verbose": {
-        "name": "verbose"
+        "name": "verbose",
+        "tooltip": "Registra se cada formato de atenção usou atenção esparsa ou por que permaneceu densa."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": null
+        "name": "model",
+        "tooltip": "O modelo com atenção esparsa em blocos aplicada."
       }
     }
   },
@@ -13586,13 +13589,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Seleciona a implementação de atenção densa para o modelo. Quando usado com Atenção Esparsa em Blocos, este backend é usado sempre que a atenção esparsa estiver inativa ou não for compatível.",
+    "display_name": "Backend de Atenção do Modelo",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "O backend de atenção densa. A atenção Comfy Kitchen usa atenção INT8 quantizada e está disponível apenas em GPUs Nvidia e AMD."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "O modelo a ser modificado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "O modelo com o backend de atenção selecionado."
       }
     }
   },
