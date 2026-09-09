@@ -293,12 +293,9 @@ function onEnter(event: KeyboardEvent): void {
   composer.submit()
 }
 
-const primaryActionTooltip = computed(() => {
-  if (running.value) return t('agent.stopHint')
-  return composer.canSend.value
-    ? t('agent.send')
-    : t('agent.addPromptToSend', 'Add a prompt to send')
-})
+const primaryActionTooltip = computed(() =>
+  running.value ? t('agent.stopHint') : t('agent.send')
+)
 
 function onPrimaryAction(): void {
   if (running.value) emit('stop')

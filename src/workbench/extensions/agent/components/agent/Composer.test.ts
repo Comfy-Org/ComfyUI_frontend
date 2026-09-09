@@ -96,12 +96,6 @@ describe('Composer', () => {
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
 
-    await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Add a prompt to send')
-    await userEvent.unhover(send)
-
     await userEvent.type(screen.getByRole('textbox'), 'hello')
     expect(send).toBeEnabled()
 
@@ -162,13 +156,13 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
-  it('explains click or Enter on the Stop button tooltip while running', async () => {
+  it('shows the Stop ↵ tooltip while running', async () => {
     mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.hover(stop)
     expect(
       await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Click or enter ↵ to stop')
+    ).toHaveTextContent('Stop ↵')
   })
 
   it('emits stop on Enter while submitting', async () => {
