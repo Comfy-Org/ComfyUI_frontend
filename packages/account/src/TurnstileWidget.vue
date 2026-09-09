@@ -5,7 +5,7 @@
       v-if="errorMessage"
       role="alert"
       aria-live="assertive"
-      class="text-red-500"
+      :class="errorClass"
       >{{ errorMessage }}</small
     >
   </div>
@@ -23,6 +23,7 @@ const {
   theme = 'auto',
   expiredMessage,
   failedMessage,
+  errorClass,
   loader = loadTurnstile
 } = defineProps<{
   siteKey: string
@@ -31,6 +32,8 @@ const {
   expiredMessage: string
   /** Host-translated copy for a widget that failed to load or errored. */
   failedMessage: string
+  /** Host styling for the inline error line; the package ships no colors. */
+  errorClass?: string
   /** Injectable so hosts and tests control the script load. */
   loader?: () => Promise<TurnstileApi>
 }>()
@@ -48,6 +51,8 @@ const unavailable = defineModel<boolean>('unavailable', { default: false })
 const containerRef = ref<HTMLDivElement>()
 const errorMessage = ref('')
 let widgetId: string | undefined
+/** The API the loader resolved; the one that rendered the widget owns it. */
+let turnstile: TurnstileApi | undefined
 
 /** How long to wait for the widget to resolve before falling back. */
 const TURNSTILE_LOAD_TIMEOUT_MS = 9_000
@@ -75,8 +80,8 @@ const clearToken = () => {
 const reset = () => {
   clearToken()
   errorMessage.value = ''
-  if (widgetId && window.turnstile) {
-    window.turnstile.reset(widgetId)
+  if (widgetId && turnstile) {
+    turnstile.reset(widgetId)
     // A widget that renders can request a fresh challenge, so give it
     // another chance before falling back again.
     unavailable.value = false
@@ -90,7 +95,7 @@ onMounted(async () => {
   armTimeout()
 
   try {
-    const turnstile = await loader()
+    turnstile = await loader()
     if (!containerRef.value) return
 
     widgetId = turnstile.render(containerRef.value, {
@@ -105,8 +110,8 @@ onMounted(async () => {
       'expired-callback': () => {
         clearToken()
         errorMessage.value = expiredMessage
-        if (widgetId && window.turnstile) {
-          window.turnstile.reset(widgetId)
+        if (widgetId && turnstile) {
+          turnstile.reset(widgetId)
           // A solved token can expire on its own (e.g. the tab was
           // backgrounded past the token's ~300s lifetime) without the widget
           // ever erroring, so proactively request a fresh challenge and
@@ -120,7 +125,7 @@ onMounted(async () => {
         console.warn('Turnstile challenge failed')
         errorMessage.value = failedMessage
         unavailable.value = true
-        if (widgetId && window.turnstile) window.turnstile.reset(widgetId)
+        if (widgetId && turnstile) turnstile.reset(widgetId)
       }
     })
   } catch (error) {
@@ -132,8 +137,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
-  if (widgetId && window.turnstile) {
-    window.turnstile.remove(widgetId)
+  if (widgetId && turnstile) {
+    turnstile.remove(widgetId)
   }
 })
 </script>
