@@ -19,12 +19,10 @@ import TagRow from '../hub/TagRow.vue'
 const {
   model,
   locale = 'en',
-  versionCount = 1,
   providerBadge = false
 } = defineProps<{
   model: WorkshopModel
   locale?: Locale
-  versionCount?: number
   providerBadge?: boolean
 }>()
 
@@ -142,16 +140,6 @@ const pillClass =
         <span v-else class="text-sm font-bold">
           {{ providerName.charAt(0).toUpperCase() }}
         </span>
-      </span>
-
-      <span
-        v-if="versionCount > 1"
-        class="bg-page/70 text-content absolute top-4 right-4 z-10 inline-flex h-8 items-center rounded-xl px-2.5 text-2xs backdrop-blur-md"
-        data-testid="model-card-versions"
-      >
-        {{
-          t('workshop.model.versions', locale).replace('{n}', `${versionCount}`)
-        }}
       </span>
     </div>
 

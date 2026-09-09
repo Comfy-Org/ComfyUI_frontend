@@ -18,7 +18,7 @@ import {
 import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { groupByFamily } from '../../config/model-family'
+import { groupModels } from '../../config/model-family'
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -48,7 +48,7 @@ const GROUPED = OTHER_FORMAT_USE_CASES
 // nothing to keep true as the catalogue grows.
 const FEATURED_LIMIT = 6
 const featured = computed(() =>
-  groupByFamily(sortWorkshopModels(models, 'popular')).slice(0, FEATURED_LIMIT)
+  groupModels(sortWorkshopModels(models, 'popular')).slice(0, FEATURED_LIMIT)
 )
 
 const titleClass = 'flex items-baseline gap-2 text-primary-warm-white'
@@ -59,7 +59,7 @@ const seeAllClass =
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
     .map((useCase) => {
-      const matches = groupByFamily(
+      const matches = groupModels(
         sortWorkshopModels(filterWorkshopModels(models, { useCase }), sort)
       )
       return {
@@ -72,7 +72,7 @@ const sections = computed(() =>
 )
 
 const otherFormats = computed(() =>
-  groupByFamily(
+  groupModels(
     GROUPED.flatMap((useCase) =>
       sortWorkshopModels(filterWorkshopModels(models, { useCase }), sort)
     )
@@ -82,7 +82,7 @@ const otherFormats = computed(() =>
 // A model the taxonomy cannot place would otherwise be reachable only by
 // search, so it gets its own row rather than disappearing from the listing.
 const unplaced = computed(() =>
-  groupByFamily(
+  groupModels(
     sortWorkshopModels(
       models.filter((model) => useCaseFor(model) === undefined),
       sort
@@ -114,11 +114,7 @@ const unplaced = computed(() =>
           :key="family.key"
           class="w-72 shrink-0 snap-start"
         >
-          <WorkshopModelCard
-            :model="family.latest"
-            :version-count="family.versions.length"
-            :locale
-          />
+          <WorkshopModelCard :model="family.latest" :locale />
         </li>
       </CardRow>
     </section>
@@ -162,11 +158,7 @@ const unplaced = computed(() =>
           :key="family.key"
           class="w-72 shrink-0 snap-start"
         >
-          <WorkshopModelCard
-            :model="family.latest"
-            :version-count="family.versions.length"
-            :locale
-          />
+          <WorkshopModelCard :model="family.latest" :locale />
         </li>
       </CardRow>
     </section>
@@ -209,11 +201,7 @@ const unplaced = computed(() =>
           :key="family.key"
           class="w-72 shrink-0 snap-start"
         >
-          <WorkshopModelCard
-            :model="family.latest"
-            :version-count="family.versions.length"
-            :locale
-          />
+          <WorkshopModelCard :model="family.latest" :locale />
         </li>
       </CardRow>
     </section>
@@ -232,13 +220,11 @@ const unplaced = computed(() =>
           {{ unplaced.length }}
         </span>
       </h2>
-      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul
+        class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      >
         <li v-for="family in unplaced" :key="family.key">
-          <WorkshopModelCard
-            :model="family.latest"
-            :version-count="family.versions.length"
-            :locale
-          />
+          <WorkshopModelCard :model="family.latest" :locale />
         </li>
       </ul>
     </section>

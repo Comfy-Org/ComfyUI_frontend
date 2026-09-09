@@ -334,7 +334,6 @@ const filteredTemplates = computed(() => {
               v-for="family in modelFamilies.slice(0, LEAD_MODELS)"
               :key="family.key"
               :model="family.latest"
-              :version-count="family.versions.length"
               :locale
               provider-badge
               data-testid="hub-models-lead"
@@ -349,7 +348,6 @@ const filteredTemplates = computed(() => {
               <li v-for="family in modelFamilies" :key="family.key">
                 <WorkshopModelCard
                   :model="family.latest"
-                  :version-count="family.versions.length"
                   :locale
                   provider-badge
                 />
