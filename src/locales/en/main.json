@@ -2984,6 +2984,10 @@
       "title": "Subscription paused",
       "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
       "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "paymentFailedOwnerTitle": "Your payment didn't go through",
+      "paymentFailedMemberTitle": "This workspace's payment didn't go through",
+      "paymentFailedOwnerDescription": "Update your payment method to keep running workflows.",
+      "paymentFailedMemberDescription": "Ask your workspace owner to update the workspace's payment method.",
       "ownerCta": "Update payment",
       "memberCta": "Ok, got it",
       "ownerRunLabel": "Update payment to run",
@@ -3474,6 +3478,16 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "vueOnly": {
+      "Chart": "Chart",
+      "Fileupload": "File upload",
+      "Galleria": "Gallery",
+      "Compositor": "Compositor",
+      "SelectButton": "Select button",
+      "ImageCompare": "Image compare",
+      "Markdown": "Markdown",
+      "MultiSelect": "Multi-select"
+    },
     "boolean": {
       "true": "true",
       "false": "false"
@@ -5258,6 +5272,19 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "paywall": {
+      "title": "Out of credits",
+      "body": {
+        "subscribed": "This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.",
+        "subscriptionRequired": "You've run out of available credits.",
+        "member": "This workspace has used all its credits. Ask your workspace owner to add more.",
+        "salesManaged": "This workspace is billed through your Comfy account team. Contact them to add credits.",
+        "local": "You've spent your credit balance. Add credits to keep the agent running."
+      },
+      "addCredits": "Add credits",
+      "subscribe": "Subscribe",
+      "upgradePlan": "Upgrade plan"
+    }
   }
 }

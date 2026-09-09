@@ -1,15 +1,19 @@
-import { ref } from 'vue'
+import { render } from '@testing-library/vue'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string) => key
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 const mockBookmarkStore = vi.hoisted(() => ({
   isBookmarked: vi.fn(() => false),
@@ -96,6 +100,20 @@ vi.mock(import('@/composables/useErrorHandling'), () => ({}))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: vi.fn(() => mockFeatureFlags)
 }))
+
+function useWorkflowActionsMenu(
+  ...args: Parameters<typeof useWorkflowActionsMenuComposable>
+) {
+  let composable!: ReturnType<typeof useWorkflowActionsMenuComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      composable = useWorkflowActionsMenuComposable(...args)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return composable
+}
 
 type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 

@@ -1,3 +1,6 @@
+import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
@@ -6,22 +9,16 @@ const mocks = vi.hoisted(() => ({
   convertToSubgraph: vi.fn(),
   unpackSubgraph: vi.fn(),
   addSubgraphToLibrary: vi.fn(),
-  frameNodes: vi.fn(),
-  createI18nMock: vi.fn(() => ({
-    global: {
-      t: vi.fn(),
-      te: vi.fn(),
-      d: vi.fn()
-    }
-  }))
+  frameNodes: vi.fn()
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  }),
-  createI18n: mocks.createI18nMock
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
 
 vi.mock<unknown>(import('@/composables/graph/useSelectionOperations'), () => ({
   useSelectionOperations: () => ({
@@ -55,9 +52,21 @@ vi.mock<unknown>(import('@/composables/graph/useFrameNodes'), () => ({
   })
 }))
 
+function setupComposable() {
+  let composable!: ReturnType<typeof useSelectionMenuOptions>
+  const Wrapper = defineComponent({
+    setup() {
+      composable = useSelectionMenuOptions()
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return composable
+}
+
 describe('useSelectionMenuOptions - multiple nodes options', () => {
   it('returns Frame Nodes option that invokes frameNodes when called', () => {
-    const { getMultipleNodesOptions } = useSelectionMenuOptions()
+    const { getMultipleNodesOptions } = setupComposable()
     const options = getMultipleNodesOptions()
 
     const frameOption = options.find((opt) => opt.label === 'g.frameNodes')
@@ -69,7 +78,7 @@ describe('useSelectionMenuOptions - multiple nodes options', () => {
   })
 
   it('does not include a Convert to Group Node option', () => {
-    const { getMultipleNodesOptions } = useSelectionMenuOptions()
+    const { getMultipleNodesOptions } = setupComposable()
     const options = getMultipleNodesOptions()
 
     const groupNodeOption = options.find(
@@ -81,7 +90,7 @@ describe('useSelectionMenuOptions - multiple nodes options', () => {
 
 describe('useSelectionMenuOptions - subgraph options', () => {
   it('returns only convert option when no subgraphs are selected', () => {
-    const { getSubgraphOptions } = useSelectionMenuOptions()
+    const { getSubgraphOptions } = setupComposable()
     const options = getSubgraphOptions({
       hasSubgraphs: false,
       hasMultipleSelection: true
@@ -93,7 +102,7 @@ describe('useSelectionMenuOptions - subgraph options', () => {
   })
 
   it('includes convert and unpack but hides add to library when multiple items with subgraphs are selected', () => {
-    const { getSubgraphOptions } = useSelectionMenuOptions()
+    const { getSubgraphOptions } = setupComposable()
     const options = getSubgraphOptions({
       hasSubgraphs: true,
       hasMultipleSelection: true
@@ -106,7 +115,7 @@ describe('useSelectionMenuOptions - subgraph options', () => {
   })
 
   it('shows add to library and unpack when a single subgraph is selected', () => {
-    const { getSubgraphOptions } = useSelectionMenuOptions()
+    const { getSubgraphOptions } = setupComposable()
     const options = getSubgraphOptions({
       hasSubgraphs: true,
       hasMultipleSelection: false

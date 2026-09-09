@@ -27,15 +27,11 @@ const {
   }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: vi.fn(() => ({
-      canvas: mockCanvas
-    }))
-  })
-)
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
+  useCanvasStore: vi.fn(() => ({
+    canvas: mockCanvas
+  }))
+}))
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: vi.fn(() => ({

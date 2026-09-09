@@ -16,7 +16,6 @@ const { canvasInteractionsMock, nodeOutputStoreMock } = vi.hoisted(() => ({
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/useCanvasInteractions'),
-
   () => ({
     useCanvasInteractions: () => canvasInteractionsMock
   })

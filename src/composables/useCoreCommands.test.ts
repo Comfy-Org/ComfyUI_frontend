@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -22,18 +21,6 @@ vi.mock<unknown>(
     runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
   })
 )
-
-// Mock vue-i18n for useExternalLink
-const mockLocale = ref('en')
-vi.mock<unknown>(import('vue-i18n'), async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: vi.fn(() => ({
-      locale: mockLocale
-    }))
-  }
-})
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockGraphClear = vi.fn()

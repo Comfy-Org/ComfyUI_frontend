@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
-import type { Pinia } from 'pinia'
-import { getActivePinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 
 import {
   getLoad3dOutputCache,
@@ -69,14 +68,6 @@ vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key) => key)
 }))
 
-vi.mock<unknown>(import('pinia'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    getActivePinia: vi.fn(() => null)
-  }
-})
-
 const { settingGetMock } = vi.hoisted(() => ({
   settingGetMock: vi.fn()
 }))
@@ -105,7 +96,7 @@ describe('useLoad3d', () => {
 
   beforeEach(() => {
     nodeToLoad3dMap.clear()
-    vi.mocked(getActivePinia).mockReturnValue(null as unknown as Pinia)
+    setActivePinia(undefined)
     settingGetMock.mockImplementation((key: string) =>
       key === 'Comfy.Load3D.BackgroundColor' ? '282828' : undefined
     )
@@ -408,7 +399,7 @@ describe('useLoad3d', () => {
     })
 
     it('defaults background color from the Comfy.Load3D.BackgroundColor setting', () => {
-      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      setActivePinia(createPinia())
       vi.mocked(useCanvasStore).mockReturnValue(
         reactive({ appScalePercentage: 100 }) as unknown as ReturnType<
           typeof useCanvasStore
@@ -453,7 +444,7 @@ describe('useLoad3d', () => {
   describe('zoom watcher', () => {
     it('calls load3d.handleResize after debounce when canvas appScalePercentage changes', async () => {
       const canvasStore = reactive({ appScalePercentage: 100 })
-      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      setActivePinia(createPinia())
       vi.mocked(useCanvasStore).mockReturnValue(
         canvasStore as unknown as ReturnType<typeof useCanvasStore>
       )
@@ -474,7 +465,7 @@ describe('useLoad3d', () => {
 
     it('debounces rapid zoom changes into a single handleResize call', async () => {
       const canvasStore = reactive({ appScalePercentage: 100 })
-      vi.mocked(getActivePinia).mockReturnValue({} as unknown as Pinia)
+      setActivePinia(createPinia())
       vi.mocked(useCanvasStore).mockReturnValue(
         canvasStore as unknown as ReturnType<typeof useCanvasStore>
       )

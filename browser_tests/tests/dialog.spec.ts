@@ -7,6 +7,8 @@ import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
 import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -157,6 +159,25 @@ test.describe('Signin dialog', () => {
   })
 
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    await comfyPage.cloudAuth.mockFirebaseEndpoints('test@example.com')
+    await mockWorkspace(comfyPage.page, workspace('personal', 'owner'), [])
+    await mockBilling(comfyPage.page)
+    await comfyPage.page.route(
+      '**/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?*',
+      (route) =>
+        route.fulfill({
+          json: {
+            kind: 'identitytoolkit#VerifyPasswordResponse',
+            localId: 'test-user-e2e',
+            email: 'test@example.com',
+            displayName: 'E2E Test User',
+            idToken: 'mock-firebase-id-token',
+            registered: true,
+            refreshToken: 'mock-refresh-token',
+            expiresIn: '3600'
+          }
+        })
+    )
     await comfyPage.page.route('**/customers', (route) =>
       route.fulfill({
         status: 201,
@@ -171,9 +192,17 @@ test.describe('Signin dialog', () => {
     await dialog.passwordInput.fill('TestPassword123!')
     await expect(dialog.root).toBeVisible()
 
+    const billingResponses = Promise.all(
+      ['status', 'balance', 'plans'].map((endpoint) =>
+        comfyPage.page.waitForResponse(`**/api/billing/${endpoint}`)
+      )
+    )
     await dialog.signInButton.click()
     await expect(dialog.root).toBeHidden()
     expect(await dialogResult).toBe(true)
+    for (const response of await billingResponses) {
+      expect(response.ok()).toBe(true)
+    }
   })
 
   test('Sign-in dialog resolves false when closed without sign-in', async ({
@@ -229,6 +258,11 @@ test.describe('Cloud notification dialog', () => {
   test('Should display cloud notification and navigate to comfy.org on Explore', async ({
     comfyPage
   }) => {
+    await comfyPage.page
+      .context()
+      .route('https://comfy.org/cloud/**', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+      )
     const dialog = new CloudNotification(comfyPage.page)
     await dialog.open()
 
