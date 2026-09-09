@@ -90,7 +90,11 @@ export function authSignInTransition(
         ? { step: 'minting', email: event.email }
         : state
     case 'mintSucceeded':
-      return state.step === 'minting'
+      if (state.step === 'minting')
+        return { step: 'signedIn', email: state.email }
+      // A later refresh recovered the session: drop the stale failure banner.
+      return state.step === 'signedIn' &&
+        state.messageKey === 'auth.signIn.error.session'
         ? { step: 'signedIn', email: state.email }
         : state
     case 'mintFailed':

@@ -28,6 +28,7 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 const enabled = useWorkshopAuthFlag()
 const {
   user,
+  session,
   ensureFresh,
   signOut: signOutWorkshopSession
 } = useWorkshopSession()
@@ -46,7 +47,9 @@ function navigateBackIfRequested(): void {
 }
 
 async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
-  const result = await ensureFresh(currentUser)
+  const result = currentUser
+    ? await ensureFresh(currentUser)
+    : await ensureFresh()
   if (state.value.step !== 'minting') return
   if (result?.status === 'ok') {
     dispatch({ type: 'mintSucceeded' })
@@ -112,12 +115,21 @@ const stopUserWatch = watch(
       email: restored.email ?? restored.displayName ?? ''
     })
     if (before !== state.value.step && state.value.step === 'minting') {
-      void runMint(restored)
+      // No argument: `restored` is a readonly proxy, and the client already
+      // holds the raw current user.
+      void runMint()
     }
   },
   { immediate: true }
 )
 onBeforeUnmount(stopUserWatch)
+
+// A focus refresh can mint successfully after a failed attempt; the banner
+// and its Retry must not outlive the recovery.
+const stopSessionWatch = watch(session, (active) => {
+  if (active) dispatch({ type: 'mintSucceeded' })
+})
+onBeforeUnmount(stopSessionWatch)
 </script>
 
 <template>

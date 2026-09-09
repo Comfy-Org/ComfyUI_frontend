@@ -8,6 +8,8 @@ import AuthSignIn from './AuthSignIn.vue'
 const handles = vi.hoisted(() => ({
   flag: undefined as { value: boolean } | undefined,
   user: undefined as { value: unknown } | undefined,
+  session: undefined as { value: unknown } | undefined,
+  chunkFails: false,
   ensureFresh: vi.fn(),
   signOut: vi.fn(),
   google: vi.fn(),
@@ -22,20 +24,28 @@ vi.mock('../../scripts/posthog', async () => {
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock('../../config/workshop-firebase', () => ({
-  signInWorkshopWithGoogle: handles.google,
-  signInWorkshopWithGitHub: handles.github,
-  signOutWorkshop: handles.signOut,
-  isWorkshopProvisioningError: handles.isProvisioningError
-}))
+vi.mock('../../config/workshop-firebase', () => {
+  if (handles.chunkFails) {
+    throw new TypeError('Failed to fetch dynamically imported module')
+  }
+  return {
+    signInWorkshopWithGoogle: handles.google,
+    signInWorkshopWithGitHub: handles.github,
+    signOutWorkshop: handles.signOut,
+    isWorkshopProvisioningError: handles.isProvisioningError
+  }
+})
 
 vi.mock('../../config/workshop-session-state', async () => {
   const { ref } = await import('vue')
   const user = ref(null)
+  const session = ref(undefined)
   handles.user = user
+  handles.session = session
   return {
     useWorkshopSession: () => ({
       user,
+      session,
       ensureFresh: handles.ensureFresh,
       signOut: handles.signOut
     })
@@ -45,6 +55,8 @@ vi.mock('../../config/workshop-session-state', async () => {
 beforeEach(() => {
   handles.flag!.value = true
   handles.user!.value = null
+  handles.session!.value = undefined
+  handles.chunkFails = false
   handles.ensureFresh.mockReset().mockResolvedValue({
     status: 'ok',
     session: { token: 'workspace-jwt' }
@@ -163,5 +175,72 @@ describe('AuthSignIn', () => {
     expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Retry session' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
+  })
+
+  it('mints a restored visitor without handing over the readonly user proxy', async () => {
+    render(AuthSignIn)
+    handles.user!.value = {
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    }
+
+    await waitFor(() => expect(handles.ensureFresh).toHaveBeenCalledOnce())
+    expect(
+      handles.ensureFresh,
+      'the session client already holds the raw current user; a readonly proxy would drop Firebase token writes'
+    ).toHaveBeenCalledWith()
+  })
+
+  it('clears the session-failure banner once a later refresh recovers', async () => {
+    handles.google.mockResolvedValue({
+      user: { uid: 'user-1', email: 'user@example.com', displayName: null }
+    })
+    handles.ensureFresh.mockResolvedValueOnce({
+      status: 'error',
+      reason: 'network'
+    })
+    render(AuthSignIn)
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await screen.findByRole('button', { name: 'Retry session' })
+
+    handles.session!.value = { token: 'workspace-jwt' }
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Retry session' })).toBeNull()
+    )
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('leaves the buttons usable when the Firebase chunk fails to load on a click', async () => {
+    const staticFlag = handles.flag
+    handles.chunkFails = true
+    vi.resetModules()
+    const { default: FreshAuthSignIn } = await import('./AuthSignIn.vue')
+    handles.flag!.value = true
+    try {
+      render(FreshAuthSignIn)
+      const button = screen.getByRole('button', {
+        name: /continue with google/i
+      }) as HTMLButtonElement
+      await userEvent.setup().click(button)
+
+      await waitFor(() =>
+        expect(screen.getByRole('alert').textContent).toMatch(
+          /something went wrong/i
+        )
+      )
+      expect(
+        button.disabled,
+        'a failed chunk load must not strand the page in pending'
+      ).toBe(false)
+    } finally {
+      handles.chunkFails = false
+      vi.resetModules()
+      handles.flag = staticFlag
+    }
   })
 })
