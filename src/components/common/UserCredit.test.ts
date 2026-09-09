@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -19,8 +20,6 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
   signInWithEmailAndPassword: vi.fn(),
   signOut: vi.fn()
 }))
-
-vi.mock(import('pinia'))
 
 const mockBalance = vi.hoisted(() => ({
   value: {
@@ -59,7 +58,7 @@ describe('UserCredit', () => {
     return render(UserCredit, {
       props,
       global: {
-        plugins: [i18n],
+        plugins: [i18n, createPinia()],
         stubs: {
           Skeleton: { template: '<div data-testid="skeleton" />' },
           Tag: true

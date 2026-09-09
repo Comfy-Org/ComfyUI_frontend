@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -31,17 +32,25 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
   signOut: vi.fn()
 }))
 
-// Mock pinia
-vi.mock<unknown>(import('pinia'), () => ({
-  storeToRefs: vi.fn((store: Record<string, unknown>) => store)
-}))
-
-// Mock the useTeamWorkspaceStore
 vi.mock<unknown>(
   import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: vi.fn(() => mockTeamWorkspaceStore)
-  })
+  async () => {
+    const { defineStore } = await import('pinia')
+    const { computed } = await import('vue')
+
+    return {
+      useTeamWorkspaceStore: defineStore('teamWorkspace', () => ({
+        workspaceName: computed(
+          () => mockTeamWorkspaceStore.workspaceName.value
+        ),
+        initState: computed(() => mockTeamWorkspaceStore.initState.value),
+        isInPersonalWorkspace: computed(
+          () => mockTeamWorkspaceStore.isInPersonalWorkspace.value
+        ),
+        activeWorkspace: computed(() => null)
+      }))
+    }
+  }
 )
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -137,7 +146,7 @@ describe('CurrentUserButton', () => {
 
     const result = render(CurrentUserButton, {
       global: {
-        plugins: [i18n],
+        plugins: [i18n, createPinia()],
         stubs: {
           CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
           Popover: defineComponent({

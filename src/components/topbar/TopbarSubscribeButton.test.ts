@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -32,8 +33,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   }))
 }))
 
-vi.mock(import('pinia'))
-
 vi.mock(import('firebase/app'), () => ({
   initializeApp: vi.fn(),
   getApp: vi.fn()
@@ -56,7 +55,7 @@ function renderComponent() {
 
   return render(TopbarSubscribeButton, {
     global: {
-      plugins: [i18n]
+      plugins: [i18n, createPinia()]
     }
   })
 }

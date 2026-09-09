@@ -3,17 +3,19 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, fireEvent } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
   useAssetsStore: () => ({
@@ -85,6 +87,7 @@ function renderListView(
       ...props
     },
     global: {
+      plugins: [i18n],
       stubs: {
         VirtualGrid: VirtualGridStub,
         AssetsListItem: AssetsListItemStub
