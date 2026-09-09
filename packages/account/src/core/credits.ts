@@ -4,10 +4,13 @@
  * stale token is allowed. Presentation (unit conversion, chips, focus
  * triggers) stays with the host.
  */
+import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
+
 import type { AccountCredential, SessionClient } from './session.js'
 
 export type CreditsState =
   | { readonly status: 'unknown' }
+  /** Cents, as the cloud app reads it: the `_micros` fields carry cents. */
   | { readonly status: 'ok'; readonly cents: number }
   | { readonly status: 'error'; readonly unauthorized?: boolean }
 
@@ -29,18 +32,9 @@ export interface BillingClient {
 const DEFAULT_BALANCE_TIMEOUT_MS = 15_000
 
 function readBalanceCents(body: unknown): number | undefined {
-  if (typeof body !== 'object' || body === null) return undefined
-  if (
-    'effective_balance_micros' in body &&
-    typeof body.effective_balance_micros === 'number'
-  ) {
-    return body.effective_balance_micros
-  }
-  // Older responses carry only amount_micros.
-  if ('amount_micros' in body && typeof body.amount_micros === 'number') {
-    return body.amount_micros
-  }
-  return undefined
+  const parsed = zBillingBalanceResponse.safeParse(body)
+  if (!parsed.success) return undefined
+  return parsed.data.effective_balance_micros ?? parsed.data.amount_micros
 }
 
 export function createBillingClient(
