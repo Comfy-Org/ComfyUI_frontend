@@ -36,6 +36,23 @@ afterEach(() => {
 })
 
 describe('TurnstileWidget', () => {
+  it('resets and removes through the API the loader resolved, not a global', async () => {
+    const { api, options } = fakeTurnstile()
+    const { unmount } = render(TurnstileWidget, {
+      props: { ...baseProps, loader: async () => api }
+    })
+    await flush()
+
+    options()['expired-callback']?.()
+    expect(
+      api.reset,
+      'a loader that never publishes window.turnstile is a supported input; the widget must still retry'
+    ).toHaveBeenCalledWith('widget-id')
+
+    unmount()
+    expect(api.remove).toHaveBeenCalledWith('widget-id')
+  })
+
   it('renders the challenge with the given sitekey and theme', async () => {
     const { api, options } = fakeTurnstile()
     window.turnstile = api
