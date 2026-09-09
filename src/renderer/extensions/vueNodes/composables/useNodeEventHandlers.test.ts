@@ -1,46 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope } from 'vue'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeEventHandlers as createNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
-const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
-const graphNode = vi.hoisted(() => ({
-  id: 'node-1',
+
+const graphNode = createMockLGraphNode({
+  id: toNodeId('node-1'),
   selected: false,
   flags: { pinned: false }
-}))
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => {
-  const canvas: Partial<LGraphCanvas> = {
-    select: vi.fn(),
-    deselect: vi.fn(),
-    deselectAll: vi.fn()
-  }
-  const updateSelectedItems = vi.fn()
-  const currentGraph: Partial<LGraph> = {
-    getNodeById: vi.fn(() => graphNode as Partial<LGraphNode> as LGraphNode)
-  }
-  const canvasStoreInstance = {
-    canvas: canvas as LGraphCanvas,
-    currentGraph: currentGraph as LGraph,
-    updateSelectedItems,
-    selectedItems: canvasSelectedItems,
-    rootGraphId: ROOT_GRAPH_ID
-  }
-  return {
-    useCanvasStore: vi.fn(() => canvasStoreInstance)
-  }
 })
 
 vi.mock<unknown>(
@@ -64,14 +39,40 @@ vi.mock<unknown>(
   }
 )
 
+let scope: ReturnType<typeof effectScope>
+
+function useNodeEventHandlers() {
+  return scope.run(createNodeEventHandlers)!
+}
+
+afterEach(() => scope.stop())
+
+beforeEach(() => {
+  const store = useCanvasStore()
+  const graph = fromPartial<NonNullable<typeof store.currentGraph>>({
+    getNodeById: vi.fn(() => graphNode)
+  })
+  store.canvas = fromPartial({
+    graph,
+    canvas: document.createElement('canvas'),
+    select: vi.fn(),
+    deselect: vi.fn(),
+    deselectAll: vi.fn()
+  })
+  store.currentGraph = graph
+  Object.assign(store, { rootGraphId: ROOT_GRAPH_ID })
+  vi.mocked(store.updateSelectedItems).mockImplementation(() => undefined)
+  scope = effectScope()
+})
+
 describe('useNodeEventHandlers', () => {
-  const mockNode = graphNode as Partial<LGraphNode> as LGraphNode
+  const mockNode = graphNode
   const mockLayoutMutations = useLayoutMutations(LayoutSource.Vue)
 
   const testNodeId = toNodeId('node-1')
 
   beforeEach(async () => {
-    canvasSelectedItems.length = 0
+    useCanvasStore().selectedItems.length = 0
   })
 
   describe('handleNodeSelect', () => {
@@ -206,7 +207,10 @@ describe('useNodeEventHandlers', () => {
       const { canvas } = useCanvasStore()
 
       mockNode.selected = true
-      canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
+      useCanvasStore().selectedItems.push(
+        createMockLGraphNode({ id: toNodeId('node-1') }),
+        createMockLGraphNode({ id: toNodeId('node-2') })
+      )
 
       const event = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -277,7 +281,10 @@ describe('useNodeEventHandlers', () => {
       const { canvas, updateSelectedItems } = useCanvasStore()
 
       mockNode.selected = true
-      canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
+      useCanvasStore().selectedItems.push(
+        createMockLGraphNode({ id: toNodeId('node-1') }),
+        createMockLGraphNode({ id: toNodeId('node-2') })
+      )
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 
@@ -291,7 +298,9 @@ describe('useNodeEventHandlers', () => {
       const { canvas, updateSelectedItems } = useCanvasStore()
 
       mockNode.selected = true
-      canvasSelectedItems.push({ id: 'node-1' })
+      useCanvasStore().selectedItems.push(
+        createMockLGraphNode({ id: toNodeId('node-1') })
+      )
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 

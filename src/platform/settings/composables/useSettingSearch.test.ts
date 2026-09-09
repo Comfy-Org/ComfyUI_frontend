@@ -1,64 +1,49 @@
+import type * as I18nModule from '@/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { st } from '@/i18n'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-
-// Test-specific type for mock settings
-interface MockSettingParams {
-  id: string
-  name: string
-  type: string
-  defaultValue: unknown
-  category?: string[]
-  deprecated?: boolean
-}
+import type { SettingParams } from '@/platform/settings/types'
 
 // Mock dependencies
-vi.mock(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: vi.fn((_: string, fallback: string) => fallback)
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(),
-  getSettingInfo: vi.fn()
 }))
 
 describe('useSettingSearch', () => {
   let mockSettingStore: ReturnType<typeof useSettingStore>
-  let mockSettings: Record<string, MockSettingParams>
+  let mockSettings: Record<string, SettingParams>
 
   beforeEach(() => {
     // Mock settings data
     mockSettings = {
       'Category.Setting1': {
-        id: 'Category.Setting1',
+        id: 'Category.Setting1' as SettingParams['id'],
         name: 'Setting One',
         type: 'text',
         defaultValue: 'default',
         category: ['Category', 'Basic']
       },
       'Category.Setting2': {
-        id: 'Category.Setting2',
+        id: 'Category.Setting2' as SettingParams['id'],
         name: 'Setting Two',
         type: 'boolean',
         defaultValue: false,
         category: ['Category', 'Advanced']
       },
       'Category.HiddenSetting': {
-        id: 'Category.HiddenSetting',
+        id: 'Category.HiddenSetting' as SettingParams['id'],
         name: 'Hidden Setting',
         type: 'hidden',
         defaultValue: 'hidden',
         category: ['Category', 'Basic']
       },
       'Category.DeprecatedSetting': {
-        id: 'Category.DeprecatedSetting',
+        id: 'Category.DeprecatedSetting' as SettingParams['id'],
         name: 'Deprecated Setting',
         type: 'text',
         defaultValue: 'deprecated',
@@ -66,28 +51,18 @@ describe('useSettingSearch', () => {
         category: ['Category', 'Advanced']
       },
       'Other.Setting3': {
-        id: 'Other.Setting3',
+        id: 'Other.Setting3' as SettingParams['id'],
         name: 'Other Setting',
-        type: 'select',
+        type: 'combo',
+        options: ['option1', 'option2'],
         defaultValue: 'option1',
         category: ['Other', 'SubCategory']
       }
     }
 
     // Mock setting store
-    mockSettingStore = {
-      settingsById: mockSettings
-    } as ReturnType<typeof useSettingStore>
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
-
-    // Mock getSettingInfo function
-    vi.mocked(getSettingInfo).mockImplementation((setting) => {
-      const parts = setting.category || setting.id.split('.')
-      return {
-        category: parts[0] ?? 'Other',
-        subCategory: parts[1] ?? 'Other'
-      }
-    })
+    mockSettingStore = useSettingStore()
+    mockSettingStore.settingsById = mockSettings
 
     // Mock st function to return fallback value
     vi.mocked(st).mockImplementation((_: string, fallback: string) => fallback)
@@ -345,14 +320,14 @@ describe('useSettingSearch', () => {
       // Simulates the "badge" scenario: same term matches settings in
       // multiple categories (e.g. LiteGraph and Comfy)
       mockSettings['LiteGraph.BadgeSetting'] = {
-        id: 'LiteGraph.BadgeSetting',
+        id: 'LiteGraph.BadgeSetting' as SettingParams['id'],
         name: 'Node source badge mode',
         type: 'combo',
         defaultValue: 'default',
         category: ['LiteGraph', 'Node']
       }
       mockSettings['Comfy.BadgeSetting'] = {
-        id: 'Comfy.BadgeSetting',
+        id: 'Comfy.BadgeSetting' as SettingParams['id'],
         name: 'Show API node pricing badge',
         type: 'boolean',
         defaultValue: true,
@@ -388,7 +363,7 @@ describe('useSettingSearch', () => {
 
       // Add another setting to Basic subcategory
       mockSettings['Category.Setting4'] = {
-        id: 'Category.Setting4',
+        id: 'Category.Setting4' as SettingParams['id'],
         name: 'Setting Four',
         type: 'text',
         defaultValue: 'default',
@@ -496,7 +471,7 @@ describe('useSettingSearch', () => {
 
     it('handles settings with undefined category', () => {
       mockSettings['NoCategorySetting'] = {
-        id: 'NoCategorySetting',
+        id: 'NoCategorySetting' as SettingParams['id'],
         name: 'No Category',
         type: 'text',
         defaultValue: 'default'

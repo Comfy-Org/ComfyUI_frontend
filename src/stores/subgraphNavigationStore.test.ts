@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { disposePinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type * as VueRouter from 'vue-router'
@@ -11,6 +9,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
 
@@ -83,16 +82,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      getCanvas: () => app.canvas
-    })
-  })
-)
-
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   findSubgraphPathById: vi.fn()
 }))
@@ -114,11 +103,8 @@ vi.mock<unknown>(
 )
 
 describe('useSubgraphNavigationStore', () => {
-  let pinia: ReturnType<typeof createTestingPinia>
-
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     app.rootGraph.subgraphs.clear()
     app.rootGraph.id = 'current-root'
     app.canvas.graph = app.rootGraph
@@ -138,8 +124,6 @@ describe('useSubgraphNavigationStore', () => {
     })
     mockOpenWorkflow.mockReset()
   })
-
-  afterEach(() => disposePinia(pinia))
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
     const navigationStore = useSubgraphNavigationStore()
