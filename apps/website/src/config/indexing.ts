@@ -45,7 +45,7 @@ export function isNoindexPathname(pathname: string): boolean {
 export function isExcludedFromSitemap(page: string): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   return (
-    NOINDEX_PATHNAMES.has(pathname) ||
+    isNoindexPathname(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
     (!isWorkshopInBuild() && isWorkshopRoute(pathname))
   )
