@@ -467,7 +467,7 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).not.toHaveBeenCalled()
       expect(
-        subgraphNavigationMocks.endWorkflowNavigation
+        useSubgraphNavigationStore().endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
     })
 

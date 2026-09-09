@@ -157,7 +157,8 @@ const workflowService = vi.hoisted(() => ({
     const known = workflowStore.getWorkflowByPath(tab.path)
     if (known) {
       workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-      workflowStore.activeWorkflow = await known.load()
+      const loaded = await known.load()
+      if (loaded) workflowStore.activeWorkflow = loaded
     }
   })
 }))
@@ -2710,7 +2711,8 @@ describe('AgentPanelRoot workflow binding', () => {
           resolveSlowOpen = resolve
         })
         const known = workflowStore.getWorkflowByPath(slow.path)
-        if (known) workflowStore.activeWorkflow = await known.load()
+        const loaded = await known?.load()
+        if (loaded) workflowStore.activeWorkflow = loaded
       }
     )
 
