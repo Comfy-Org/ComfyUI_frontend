@@ -304,9 +304,17 @@ onMounted(() => {
   if (mode === 'signUp')
     void until(enabled).toBe(true).then(captureSignupOpened)
   initTimer = setTimeout(() => {
-    authTimedOut.value =
-      !flagSettled.value || (enabled.value && !identitySettled.value)
+    authTimedOut.value = initPending.value
   }, AUTH_INIT_TIMEOUT_MS)
+})
+
+/** Still waiting on PostHog, or on Firebase once the flag is on. */
+const initPending = computed(
+  () => !flagSettled.value || (enabled.value && !identitySettled.value)
+)
+// A late answer, whichever way it goes, ends the timeout screen.
+watch(initPending, (pending) => {
+  if (!pending) authTimedOut.value = false
 })
 </script>
 
