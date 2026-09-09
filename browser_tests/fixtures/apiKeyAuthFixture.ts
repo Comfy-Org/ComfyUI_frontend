@@ -1,12 +1,13 @@
 import type { Route } from '@playwright/test'
-import { test as base } from '@playwright/test'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 import type {
   BillingBalanceResponse,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CurrentWorkspaceResponse
+  CurrentWorkspaceResponse,
+  ListMembersResponse
 } from '@comfyorg/ingest-types'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -89,6 +90,15 @@ export const apiKeyAuthFixture = base.extend<{
       'Comfy.userId': userId
     })
 
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
+    await page.route('**/api/workspace/members{,?*}', (route) =>
+      fulfillForApiKey(route, {
+        members: [],
+        pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+      } satisfies ListMembersResponse)
+    )
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({

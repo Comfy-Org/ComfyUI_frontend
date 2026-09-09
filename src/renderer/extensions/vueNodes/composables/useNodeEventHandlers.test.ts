@@ -21,7 +21,7 @@ const graphNode = vi.hoisted(() => ({
   flags: { pinned: false }
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => {
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => {
   const canvas: Partial<LGraphCanvas> = {
     select: vi.fn(),
     deselect: vi.fn(),
@@ -43,20 +43,26 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
   }
 })
 
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: vi.fn(() => ({
-    shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
-  }))
-}))
-
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
-  const setNodeOrder = vi.fn()
-  return {
-    useLayoutMutations: vi.fn(() => ({
-      setNodeOrder
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: vi.fn(() => ({
+      shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
     }))
+  })
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/layout/operations/layoutMutations'),
+  () => {
+    const setNodeOrder = vi.fn()
+    return {
+      useLayoutMutations: vi.fn(() => ({
+        setNodeOrder
+      }))
+    }
   }
-})
+)
 
 describe('useNodeEventHandlers', () => {
   const mockNode = graphNode as Partial<LGraphNode> as LGraphNode

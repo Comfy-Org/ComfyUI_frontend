@@ -16,10 +16,10 @@ const { showDialog, toastAdd } = vi.hoisted(() => ({
   toastAdd: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog })
 }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: toastAdd })
 }))
 
