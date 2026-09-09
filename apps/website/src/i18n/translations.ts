@@ -164,21 +164,9 @@ const translations = {
     en: 'Finish signing in from the pop-up window.',
     'zh-CN': '请在弹出窗口中完成登录。'
   },
-  'auth.signIn.signedInHeading': {
-    en: 'You are signed in',
-    'zh-CN': '已登录'
-  },
-  'auth.signIn.signedInAs': {
-    en: 'Signed in as',
-    'zh-CN': '当前账户：'
-  },
   'auth.signIn.signOut': {
     en: 'Sign out',
     'zh-CN': '退出登录'
-  },
-  'auth.signIn.backToWorkshop': {
-    en: 'Back to Workshop',
-    'zh-CN': '返回 Workshop'
   },
   'auth.shell.logoAlt': {
     en: 'ComfyOrg Logo',
@@ -220,6 +208,11 @@ const translations = {
     'zh-CN': '需要帮助？',
     ja: 'ヘルプが必要ですか？'
   },
+  'auth.toast.close': {
+    en: 'Close',
+    'zh-CN': '关闭',
+    ja: '閉じる'
+  },
   'auth.hero.carouselLabel': {
     en: 'Featured models',
     'zh-CN': '精选模型',
@@ -253,6 +246,18 @@ const translations = {
   'auth.signIn.error.provisioning': {
     en: 'You are signed in, but account setup did not finish. Please try again shortly.',
     'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
+  },
+  'auth.signIn.error.session': {
+    en: 'You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.',
+    'zh-CN': '您已登录，但工作区会话无法启动。请重试，或使用其他账户重新登录。'
+  },
+  'auth.signIn.retry': {
+    en: 'Retry session',
+    'zh-CN': '重试会话'
+  },
+  'auth.signIn.starting': {
+    en: 'Starting your workspace session…',
+    'zh-CN': '正在启动工作区会话…'
   },
   'auth.timeout.title': {
     en: 'Connection Taking Too Long',

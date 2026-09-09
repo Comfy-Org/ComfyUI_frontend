@@ -2,7 +2,11 @@ import posthog from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { AUTH_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
+import type { SessionRefreshOutcome } from '@comfyorg/account/core'
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
 import type {
   AuthCompletedMetadata,
   AuthErrorMetadata
@@ -29,6 +33,8 @@ const ANALYTICS_EVENT = {
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
+  authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed,
   signUpOpened: AUTH_TELEMETRY_EVENT.signUpOpened,
   authCompleted: AUTH_TELEMETRY_EVENT.authCompleted,
   authFailed: AUTH_TELEMETRY_EVENT.authFailed
@@ -63,6 +69,12 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.mcpClientTabClicked
       properties: { client: McpClientId }
+    }
+  | {
+      name:
+        | typeof ANALYTICS_EVENT.authRefreshSucceeded
+        | typeof ANALYTICS_EVENT.authRefreshFailed
+      properties: { outcome: SessionRefreshOutcome }
     }
   | { name: typeof ANALYTICS_EVENT.signUpOpened; properties?: undefined }
   | {
@@ -167,6 +179,20 @@ export function captureMcpClientTabClick(client: McpClientId): void {
   captureEvent({
     name: ANALYTICS_EVENT.mcpClientTabClicked,
     properties: { client }
+  })
+}
+
+export function captureAuthRefreshSucceeded(): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.authRefreshSucceeded,
+    properties: { outcome: 'succeeded' }
+  })
+}
+
+export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.authRefreshFailed,
+    properties: { outcome }
   })
 }
 

@@ -28,13 +28,16 @@ describe('authSignInTransition', () => {
     ).toBe(started)
   })
 
-  it('lands on signedIn when the full attempt (popup + provisioning) succeeds', () => {
-    expect(
-      authSignInTransition(pending, {
-        type: 'signInSucceeded',
-        email: 'a@b.co'
-      })
-    ).toEqual({ step: 'signedIn', email: 'a@b.co' })
+  it('mints a workspace session after the popup succeeds', () => {
+    const minting = authSignInTransition(pending, {
+      type: 'popupSucceeded',
+      email: 'a@b.co'
+    })
+    expect(minting).toEqual({ step: 'minting', email: 'a@b.co' })
+    expect(authSignInTransition(minting, { type: 'mintSucceeded' })).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co'
+    })
   })
 
   it('keeps a mid-popup restore event from short-circuiting the attempt', () => {
@@ -60,10 +63,19 @@ describe('authSignInTransition', () => {
     })
   })
 
-  it('restores a returning visitor straight to signedIn', () => {
+  it('mints a workspace session for a returning visitor', () => {
     expect(
       authSignInTransition(idle, { type: 'userRestored', email: 'a@b.co' })
-    ).toEqual({ step: 'signedIn', email: 'a@b.co' })
+    ).toEqual({ step: 'minting', email: 'a@b.co' })
+  })
+
+  it('keeps the signed-in identity and sign-out path available when minting fails', () => {
+    const minting: AuthSignInState = { step: 'minting', email: 'a@b.co' }
+    expect(authSignInTransition(minting, { type: 'mintFailed' })).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co',
+      messageKey: 'auth.signIn.error.session'
+    })
   })
 
   it('carries the classified failure so the view can resolve the shared copy', () => {
@@ -76,6 +88,29 @@ describe('authSignInTransition', () => {
       step: 'error',
       classification: { kind: 'popup-dismissed', code: 'auth/popup-blocked' }
     })
+  })
+
+  it('clears the session-failure banner when a later refresh mints successfully', () => {
+    const failed = authSignInTransition(
+      { step: 'minting', email: 'a@b.co' },
+      { type: 'mintFailed' }
+    )
+    expect(authSignInTransition(failed, { type: 'mintSucceeded' })).toEqual({
+      step: 'signedIn',
+      email: 'a@b.co'
+    })
+  })
+
+  it('leaves a provisioning failure alone when a session mints', () => {
+    const provisioningFailed: AuthSignInState = {
+      step: 'signedIn',
+      email: 'a@b.co',
+      messageKey: 'auth.signIn.error.provisioning'
+    }
+    expect(
+      authSignInTransition(provisioningFailed, { type: 'mintSucceeded' }),
+      'a session mint says nothing about customer setup'
+    ).toBe(provisioningFailed)
   })
 
   it('returns to idle on sign-out from signedIn, but never abandons a pending attempt', () => {

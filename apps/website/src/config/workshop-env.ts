@@ -14,6 +14,10 @@ export const WORKSHOP_ROUTER_BASE_URL = PROD
   ? 'https://api.comfy.org'
   : 'https://stagingapi.comfy.org'
 
+export const WORKSHOP_CLOUD_BASE_URL = PROD
+  ? 'https://cloud.comfy.org'
+  : 'https://stagingcloud.comfy.org'
+
 // Public web-app configs, same values the platform app ships in
 // src/config/firebase.ts. Staging backends validate tokens from the dev
 // project; prod validates the prod project.

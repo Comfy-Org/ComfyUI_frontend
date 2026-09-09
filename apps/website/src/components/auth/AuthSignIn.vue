@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { until } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import {
+  AUTH_TOAST_SUMMARIES,
+  isFirebaseAuthErrorLike,
+  severityForAuthError
+} from '@comfyorg/account/firebaseAuthError'
+import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { isFirebaseAuthErrorLike } from '@comfyorg/account/firebaseAuthError'
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
@@ -15,6 +21,13 @@ import {
   authSignInTransition,
   signInErrorMessage
 } from '../../config/auth-sign-in-state'
+import { addToast } from '../../config/auth-toast-state'
+import {
+  isSwitchingAccount,
+  requestedReturnPath
+} from '../../config/workshop-return'
+import type { WorkshopSessionUser } from '../../config/workshop-session-state'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
@@ -24,6 +37,7 @@ import {
   useWorkshopAuthFlag,
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
+import { AUTH_LINK_BUTTON_CLASS, AUTH_MESSAGE_ERROR_CLASS } from './authClasses'
 import AuthFlagTimeout from './AuthFlagTimeout.vue'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{
@@ -32,12 +46,22 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-/** The cloud app's router gives auth this long to answer before its timeout view. */
-const AUTH_FLAG_TIMEOUT_MS = 16_000
+const HOME = '/'
+/** The cloud app's router gives auth this long to initialize before its timeout view. */
+const AUTH_INIT_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
 const flagSettled = useWorkshopAuthFlagSettled()
-const flagTimedOut = ref(false)
+const authTimedOut = ref(false)
+const {
+  user,
+  session,
+  settled: identitySettled,
+  ensureFresh
+} = useWorkshopSession()
+// A returning signed-in visitor leaves without ever seeing the form, as on
+// cloud where the router holds the route until auth has initialized.
+const leaving = ref(false)
 const state = ref<AuthSignInState>({ step: 'idle' })
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
@@ -46,11 +70,52 @@ const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 const inAppBrowser = ref(false)
 
 function dispatch(event: AuthSignInEvent) {
-  state.value = authSignInTransition(state.value, event)
+  const before = state.value
+  state.value = authSignInTransition(before, event)
+  // The session client publishes the credential before the mint promise
+  // resolves, so the transition, not the caller, is what leaves the page.
+  if (
+    before.step === 'minting' &&
+    state.value.step === 'signedIn' &&
+    !state.value.messageKey
+  ) {
+    leaveSignInPage()
+  }
+}
+
+/**
+ * A signed-in visitor has no business on the sign-in page, same as the cloud
+ * app's guard. `replace`, not `assign`: with the page left in history, Back
+ * would land here again and be redirected straight back out.
+ */
+function leaveSignInPage(): void {
+  window.location.replace(requestedReturnPath(window.location.search) ?? HOME)
+}
+
+function toastSignInFailure(classification: AuthErrorClassification) {
+  const severity = severityForAuthError(classification)
+  addToast({
+    severity,
+    summary: AUTH_TOAST_SUMMARIES[locale][severity],
+    detail: signInErrorMessage(classification, locale, hostname)
+  })
+}
+
+async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
+  const result = currentUser
+    ? await ensureFresh(currentUser)
+    : await ensureFresh()
+  if (state.value.step !== 'minting') return
+  if (result?.status === 'ok') {
+    dispatch({ type: 'mintSucceeded' })
+  } else {
+    leaving.value = false
+    dispatch({ type: 'mintFailed' })
+  }
 }
 
 async function signInWith(provider: AuthSignInProvider) {
-  if (state.value.step === 'pending') return
+  if (state.value.step === 'pending' || state.value.step === 'minting') return
   dispatch({ type: 'signInStarted', provider })
   let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
@@ -66,9 +131,10 @@ async function signInWith(provider: AuthSignInProvider) {
       email: credential.user.email ?? undefined
     })
     dispatch({
-      type: 'signInSucceeded',
+      type: 'popupSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
+    await runMint(credential.user)
   } catch (error) {
     captureAuthFailed({
       error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
@@ -81,61 +147,51 @@ async function signInWith(provider: AuthSignInProvider) {
       })
     } else {
       dispatch({ type: 'signInFailed', error })
+      if (state.value.step === 'error') {
+        toastSignInFailure(state.value.classification)
+      }
     }
   }
 }
 
-async function signOut() {
-  // A failed sign-out leaves the user signed in; the auth-state listener
-  // drives the transition when it actually clears. Routing it to a sign-in
-  // error would strand a signed-in user on an error screen.
-  try {
-    const { signOutWorkshop } = await loadWorkshopFirebase()
-    await signOutWorkshop()
-  } catch (error) {
-    console.error('Workshop sign-out failed', error)
-  }
+async function retryMint(): Promise<void> {
+  dispatch({ type: 'mintRetried' })
+  await runMint()
 }
 
-let stopUserListener: (() => void) | undefined
-let listenerGeneration = 0
-watch(
-  enabled,
-  async (on) => {
-    const generation = ++listenerGeneration
-    stopUserListener?.()
-    stopUserListener = undefined
-    if (!on) return
-
-    try {
-      const { onWorkshopUserChanged } = await loadWorkshopFirebase()
-      if (generation !== listenerGeneration) return
-      stopUserListener = onWorkshopUserChanged((user) => {
-        dispatch(
-          user
-            ? {
-                type: 'userRestored',
-                email: user.email ?? user.displayName ?? ''
-              }
-            : { type: 'signedOut' }
-        )
-      })
-    } catch (error) {
-      // Nothing was attempted yet, so there is no sign-in failure to show;
-      // the buttons stay usable and a click reports its own outcome.
-      if (generation === listenerGeneration) {
-        console.error('Workshop auth listener failed to load', error)
-      }
+const stopUserWatch = watch(
+  user,
+  (restored) => {
+    if (!restored) {
+      dispatch({ type: 'signedOut' })
+      return
+    }
+    if (isSwitchingAccount(window.location.search)) return
+    const before = state.value.step
+    dispatch({
+      type: 'userRestored',
+      email: restored.email ?? restored.displayName ?? ''
+    })
+    if (before !== state.value.step && state.value.step === 'minting') {
+      leaving.value = true
+      // No argument: `restored` is a readonly proxy, and the client already
+      // holds the raw current user.
+      void runMint()
     }
   },
   { immediate: true }
 )
-let flagTimer: ReturnType<typeof setTimeout> | undefined
-onBeforeUnmount(() => {
-  listenerGeneration += 1
-  stopUserListener?.()
-  clearTimeout(flagTimer)
+onBeforeUnmount(stopUserWatch)
+
+// A focus refresh can mint successfully after a failed attempt; the banner
+// and its Retry must not outlive the recovery.
+const stopSessionWatch = watch(session, (active) => {
+  if (active) dispatch({ type: 'mintSucceeded' })
 })
+onBeforeUnmount(stopSessionWatch)
+
+let initTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(initTimer))
 
 onMounted(() => {
   inAppBrowser.value = isEmbeddedWebView()
@@ -143,119 +199,116 @@ onMounted(() => {
   // moment the flag lets the page show.
   if (mode === 'signUp')
     void until(enabled).toBe(true).then(captureSignupOpened)
-  if (!flagSettled.value) {
-    flagTimer = setTimeout(() => {
-      flagTimedOut.value = !flagSettled.value
-    }, AUTH_FLAG_TIMEOUT_MS)
-  }
+  initTimer = setTimeout(() => {
+    authTimedOut.value = initPending.value
+  }, AUTH_INIT_TIMEOUT_MS)
 })
 
+/** Still waiting on PostHog, or on Firebase once the flag is on. */
+const initPending = computed(
+  () => !flagSettled.value || (enabled.value && !identitySettled.value)
+)
 // A late answer, whichever way it goes, ends the timeout screen.
-watch(flagSettled, (settled) => {
-  if (settled) flagTimedOut.value = false
+watch(initPending, (pending) => {
+  if (!pending) authTimedOut.value = false
 })
 </script>
 
 <template>
   <section
-    v-if="enabled"
+    v-if="enabled && identitySettled && !leaving"
     class="mx-auto w-full max-w-md rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
-    :aria-busy="state.step === 'pending'"
+    :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >
-    <template v-if="state.step === 'signedIn'">
-      <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
-        {{ t('auth.signIn.signedInHeading', locale) }}
-      </h1>
-      <p class="mt-3 text-sm break-all text-primary-comfy-canvas/70">
-        {{ t('auth.signIn.signedInAs', locale) }} {{ state.email }}
-      </p>
+    <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
+      {{
+        mode === 'signUp'
+          ? t('auth.signUp.heading', locale)
+          : t('auth.signIn.heading', locale)
+      }}
+    </h1>
+    <p class="mt-3 text-sm text-primary-comfy-canvas/70">
+      {{
+        mode === 'signUp'
+          ? t('auth.signUp.body', locale)
+          : t('auth.signIn.body', locale)
+      }}
+    </p>
+
+    <div class="mt-6 flex flex-col gap-3">
+      <SocialAuthButtons
+        :google-label="t('auth.signIn.google', locale)"
+        :github-label="t('auth.signIn.github', locale)"
+        button-class="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 text-sm font-semibold text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow/60"
+        @google="signInWith('google')"
+        @github="signInWith('github')"
+      />
       <p
-        v-if="state.messageKey"
+        v-if="inAppBrowser"
+        class="my-0 text-xs/5 text-primary-comfy-canvas/60"
+        data-testid="google-sso-in-app-browser-notice"
+      >
+        {{ t('auth.signIn.googleSsoInAppBrowserNotice', locale) }}
+      </p>
+    </div>
+
+    <p
+      v-if="state.step === 'pending' || state.step === 'minting'"
+      aria-live="polite"
+      class="mt-4 text-sm text-primary-comfy-canvas/55"
+    >
+      {{
+        state.step === 'pending'
+          ? t('auth.signIn.pending', locale)
+          : t('auth.signIn.starting', locale)
+      }}
+    </p>
+
+    <template v-if="state.step === 'signedIn' && state.messageKey">
+      <div
         role="alert"
-        class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-primary-comfy-canvas"
+        aria-live="assertive"
+        aria-atomic="true"
+        :class="cn('mt-4', AUTH_MESSAGE_ERROR_CLASS)"
       >
         {{ t(state.messageKey, locale) }}
-      </p>
-      <a
-        href="/workshop/"
-        class="hover:bg-primary-comfy-yellow/90 bg-primary-comfy-yellow mt-6 flex h-12 w-full items-center justify-center rounded-xl font-semibold text-primary-comfy-ink transition-colors"
-      >
-        {{ t('auth.signIn.backToWorkshop', locale) }}
-      </a>
+      </div>
       <button
+        v-if="state.messageKey === 'auth.signIn.error.session'"
         type="button"
-        class="mt-3 flex h-12 w-full items-center justify-center rounded-xl border border-primary-comfy-canvas/25 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-canvas/40"
-        @click="signOut"
+        :class="['flex', AUTH_LINK_BUTTON_CLASS]"
+        @click="retryMint"
       >
-        {{ t('auth.signIn.signOut', locale) }}
+        {{ t('auth.signIn.retry', locale) }}
       </button>
     </template>
 
-    <template v-else>
-      <h1 class="text-2xl font-semibold text-primary-comfy-canvas">
-        {{
-          mode === 'signUp'
-            ? t('auth.signUp.heading', locale)
-            : t('auth.signIn.heading', locale)
-        }}
-      </h1>
-      <p class="mt-3 text-sm text-primary-comfy-canvas/70">
-        {{
-          mode === 'signUp'
-            ? t('auth.signUp.body', locale)
-            : t('auth.signIn.body', locale)
-        }}
-      </p>
-
-      <div class="mt-6 flex flex-col gap-3">
-        <SocialAuthButtons
-          :google-label="t('auth.signIn.google', locale)"
-          :github-label="t('auth.signIn.github', locale)"
-          :disabled="state.step === 'pending'"
-          button-class="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/5 text-sm font-semibold text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow/60 disabled:cursor-not-allowed disabled:opacity-40"
-          @google="signInWith('google')"
-          @github="signInWith('github')"
-        />
-        <p
-          v-if="inAppBrowser"
-          class="my-0 text-xs/5 text-primary-comfy-canvas/60"
-          data-testid="google-sso-in-app-browser-notice"
-        >
-          {{ t('auth.signIn.googleSsoInAppBrowserNotice', locale) }}
-        </p>
-      </div>
-
-      <p
-        v-if="state.step === 'pending'"
-        aria-live="polite"
-        class="mt-4 text-sm text-primary-comfy-canvas/55"
-      >
-        {{ t('auth.signIn.pending', locale) }}
-      </p>
-
-      <p
-        v-if="state.step === 'error'"
-        role="alert"
-        class="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-primary-comfy-canvas"
-      >
-        {{ signInErrorMessage(state.classification, locale, hostname) }}
-      </p>
-
-      <p class="mt-6 text-center text-sm text-primary-comfy-canvas/55">
-        <template v-if="mode === 'signUp'">
-          {{ t('auth.signUp.haveAccount', locale) }}
-          <a href="/login/" class="text-primary-comfy-yellow hover:underline">
-            {{ t('auth.signUp.signInLink', locale) }}
-          </a>
-        </template>
-        <template v-else>
-          {{ t('auth.signIn.newHere', locale) }}
-          <a href="/signup/" class="text-primary-comfy-yellow hover:underline">
-            {{ t('auth.signIn.signUpLink', locale) }}
-          </a>
-        </template>
-      </p>
-    </template>
+    <p class="mt-6 text-center text-sm text-primary-comfy-canvas/55">
+      <template v-if="mode === 'signUp'">
+        {{ t('auth.signUp.haveAccount', locale) }}
+        <a href="/login/" class="text-primary-comfy-yellow hover:underline">
+          {{ t('auth.signUp.signInLink', locale) }}
+        </a>
+      </template>
+      <template v-else>
+        {{ t('auth.signIn.newHere', locale) }}
+        <a href="/signup/" class="text-primary-comfy-yellow hover:underline">
+          {{ t('auth.signIn.signUpLink', locale) }}
+        </a>
+      </template>
+    </p>
   </section>
-  <AuthFlagTimeout v-else-if="flagTimedOut" :locale="locale" />
+  <AuthFlagTimeout v-else-if="authTimedOut" :locale="locale" />
+  <div
+    v-else-if="enabled"
+    data-testid="auth-initializing"
+    aria-busy="true"
+    class="mx-auto flex w-full max-w-md flex-col gap-6 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
+  >
+    <div
+      v-for="n in 3"
+      :key="n"
+      class="h-10 w-full animate-pulse rounded-md bg-primary-comfy-canvas/10"
+    />
+  </div>
 </template>

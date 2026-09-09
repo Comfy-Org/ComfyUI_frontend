@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AUTH_TELEMETRY_EVENT } from '@comfyorg/account/telemetry'
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
 
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
@@ -243,10 +246,31 @@ describe('useWorkshopAuthFlag', () => {
   })
 })
 
-describe('auth funnel events', () => {
+describe('shared auth telemetry events', () => {
   beforeEach(() => {
     vi.resetModules()
     hoisted.mockCapture.mockClear()
+  })
+
+  it("reports refresh outcomes under the package's shared event names", async () => {
+    const {
+      initPostHog,
+      captureAuthRefreshSucceeded,
+      captureAuthRefreshFailed
+    } = await import('./posthog')
+    initPostHog()
+
+    captureAuthRefreshSucceeded()
+    captureAuthRefreshFailed('retry_scheduled')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      SESSION_TELEMETRY_EVENT.refreshSucceeded,
+      { outcome: 'succeeded' }
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      SESSION_TELEMETRY_EVENT.refreshFailed,
+      { outcome: 'retry_scheduled' }
+    )
   })
 
   it("reports sign-up opens and auth failures under the cloud app's event names", async () => {
