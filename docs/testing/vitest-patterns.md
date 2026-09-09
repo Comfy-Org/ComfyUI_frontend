@@ -7,26 +7,38 @@ globs:
 
 ## Setup
 
-Use `createTestingPinia` from `@pinia/testing`, not `createPinia`:
+`vitest.setup.ts` creates a fresh active testing Pinia before each test with
+`stubActions: false` and disposes the active Pinia afterward to stop store
+watchers. Use real store composables inside tests or `beforeEach`. Do not mock
+their modules or create another Pinia instance for the same defaults.
+
+Set scenario state on the store. Actions already have spies, but execute their
+implementations unless you stub them:
 
 ```typescript
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 
-describe('MyStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
-  })
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+beforeEach(() => {
+  const settings = useSettingStore()
+  settings.settingValues['Comfy.WorkflowActions.SeenItems'] = []
+  vi.mocked(settings.set).mockResolvedValue()
 })
 ```
 
-**Why `stubActions: false`?** By default, testing pinia stubs all actions. Set to `false` when testing actual store behavior.
+Stub actions only when the test needs to isolate their effects. Keep the action
+under test real. Use `vi.mocked(store.action)` to access `.mock` or configure
+return values without changing the store's types.
+
+For component tests, configure the same Pinia instance that the component uses.
+If a test needs a different action-stubbing policy or plugins, create a local
+`createTestingPinia` and pass it to the mount. Its `initialState` option patches
+stores by their store ID. See [Pinia's initial-state examples](https://pinia.vuejs.org/cookbook/testing.html#Initial-State).
+
+To list remaining store-module mock candidates, run
+`pnpm exec tsx scripts/audit-pinia-store-mocks.ts`. Modules such as `layoutStore`
+that do not use Pinia are outside this cleanup.
 
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 

@@ -1,15 +1,18 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import { useCommandStore } from '@/stores/commandStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
+
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -41,13 +44,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackUiButtonClicked: vi.fn(),
     trackHelpResourceClicked: mockTrackHelpResourceClicked
-  }))
-}))
-
-const mockExecuteCommand = vi.fn()
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: mockExecuteCommand
   }))
 }))
 
@@ -413,7 +409,9 @@ describe('ErrorNodeCard.vue', () => {
 
     await user.click(screen.getByRole('button', { name: /Get Help/ }))
 
-    expect(mockExecuteCommand).toHaveBeenCalledWith('Comfy.ContactSupport')
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.ContactSupport'
+    )
     expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',

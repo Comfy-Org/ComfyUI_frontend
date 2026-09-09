@@ -1,14 +1,16 @@
+import type * as I18nModule from '@/i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import type AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock(import('@/stores/dialogStore'))
-
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   t: (key: string, params?: Record<string, string>) => {
     if (params) {
       return `${key}:${JSON.stringify(params)}`
@@ -32,12 +34,15 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 function setupDialogMocks() {
-  const mockShowDialog = vi.fn()
-  const mockCloseDialog = vi.fn()
-  vi.mocked(useDialogStore, { partial: true }).mockReturnValue({
-    showDialog: mockShowDialog,
-    closeDialog: mockCloseDialog
-  })
+  const dialogStore = useDialogStore()
+  type BrowserProps = ComponentProps<typeof AssetBrowserModal>
+  const showDialog: (
+    options: Omit<Parameters<typeof dialogStore.showDialog>[0], 'props'> & {
+      props: BrowserProps & Required<Pick<BrowserProps, 'onSelect' | 'onClose'>>
+    }
+  ) => ReturnType<typeof dialogStore.showDialog> = dialogStore.showDialog
+  const mockShowDialog = vi.mocked(showDialog)
+  const mockCloseDialog = vi.mocked(dialogStore.closeDialog)
 
   return { mockShowDialog, mockCloseDialog }
 }

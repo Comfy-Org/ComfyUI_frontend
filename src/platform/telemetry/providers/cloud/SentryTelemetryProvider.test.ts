@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ExecutionContext, ShellLayoutMetadata } from '../../types'
@@ -44,17 +46,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        isModified: mocks.workflowIsModified
-      }
-    })
-  })
-)
-
 vi.mock(import('../../utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
 }))
@@ -69,6 +60,12 @@ const shellLayout: ShellLayoutMetadata = {
   bottom_panel_open: true,
   open_workflow_tabs: 2
 }
+
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    isModified: mocks.workflowIsModified
+  })
+})
 
 describe('SentryTelemetryProvider', () => {
   beforeEach(() => {
