@@ -2,7 +2,6 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import RelatedWorkflows from '../../../components/hub/RelatedWorkflows.vue'
 import ModelDetail from '../../../components/workshop/ModelDetail.vue'
-import PrototypeTweaks from '../../../components/workshop/PrototypeTweaks.vue'
 import { getRoutes } from '../../../config/routes'
 import { hubWorkflowUrl } from '../../../lib/hub/routes'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
@@ -266,5 +265,4 @@ const comments = [
       </div>
     </div>
   </div>
-  <PrototypeTweaks show-run-controls client:load />
 </BaseLayout>

@@ -4,7 +4,6 @@ import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelDetail from '../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../components/workshop/ModelStatus.vue'
-import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
 import SplitReveal from '../../components/workshop/SplitReveal.vue'
 import WorkshopModelCard from '../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../config/routes'
@@ -186,5 +185,4 @@ const tags = model.capabilities.map((capability) => ({
     </section>
     </div>
   </div>
-  <PrototypeTweaks show-run-controls client:load />
 </BaseLayout>

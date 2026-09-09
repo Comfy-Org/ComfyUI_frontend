@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import PrototypeTweaks from '../../components/workshop/PrototypeTweaks.vue'
 import WorkshopSignIn from '../../components/workshop/WorkshopSignIn.vue'
 import { workshopModels } from '../../config/models-catalogue'
 import { t } from '../../i18n/translations'
@@ -31,5 +30,4 @@ const visual = workshopModels.find((model) => model.thumbnailUrl)
     </div>
     <WorkshopSignIn client:load />
   </div>
-  <PrototypeTweaks client:load />
 </BaseLayout>
