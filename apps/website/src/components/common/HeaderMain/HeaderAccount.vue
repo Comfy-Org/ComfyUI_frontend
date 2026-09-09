@@ -204,7 +204,7 @@ const avatarClass =
         >
           <a :href="topUpHref" target="_blank" rel="noopener">
             <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
-            <span class="flex flex-1 items-center gap-1.5">
+            <span class="flex flex-1 items-center gap-3">
               {{ t('nav.creditsLabel', locale) }}
               <ExternalLink
                 class="size-5 text-primary-warm-gray"
@@ -260,7 +260,7 @@ const avatarClass =
               class="size-5 text-primary-warm-gray"
               aria-hidden="true"
             />
-            <span class="flex flex-1 items-center gap-1.5">
+            <span class="flex flex-1 items-center gap-3">
               {{ t('nav.workspaceSettings', locale) }}
               <ExternalLink
                 class="size-5 text-primary-warm-gray"
