@@ -11,6 +11,7 @@ import {
   AUTO_RUN_WIDGET_INPUTS,
   batchAutoRunnable,
   CLOUD_RUN_EXCLUSIONS,
+  evaluateWidgetInputs,
   planAutoRuns,
   SYNTH_PRODUCERS
 } from '@e2e/fixtures/customNode/autoRun'
@@ -307,7 +308,7 @@ async function runBatch(
 ): Promise<string> {
   const batchWithInputs = batch.map((spec) => ({
     ...spec,
-    widgetInputs: packLedgerFor(AUTO_RUN_WIDGET_INPUTS, pack)[spec.key]
+    widgetInputs: evaluateWidgetInputs(pack, spec.key)
   }))
   const { ids, allIds, nodeIdByKey, sinkIdByKey } = await page.evaluate(
     ([nodes, producers, spacingY]) => {
