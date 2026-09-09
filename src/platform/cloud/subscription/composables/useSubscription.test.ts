@@ -1,3 +1,6 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
@@ -12,25 +15,25 @@ const {
   mockGetAuthHeader,
   mockGetCheckoutAttribution,
   mockTelemetry,
-  mockUserId,
+
   mockIsCloud,
-  mockAuthStoreInitialized,
+
   mockGetBillingStatus,
-  mockActiveWorkspaceId,
+
   mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
-  mockAuthStoreInitialized: { value: true },
+
   mockGetBillingStatus: vi.fn(),
-  mockActiveWorkspaceId: { value: 'workspace-123' },
+
   mockSetWorkspaceBillingRail: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
   mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' })
+    Promise.resolve({ Authorization: 'Bearer test-token' as const })
   ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
@@ -42,7 +45,7 @@ const {
     trackMonthlySubscriptionCancelled: vi.fn(),
     trackBillingEvent: vi.fn()
   },
-  mockUserId: { value: 'user-123' },
+
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -131,7 +134,8 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   }))
 }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockIsCloud.value
   }
@@ -150,41 +154,28 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return mockActiveWorkspaceId.value
-      },
-      setWorkspaceBillingRail: mockSetWorkspaceBillingRail
-    })
-  })
-)
-
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: vi.fn(() => ({
     showSubscriptionRequiredDialog: mockShowSubscriptionRequiredDialog
   }))
 }))
 
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() => ({
-    getFirebaseAuthHeader: mockGetAuthHeader,
-    fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
-      fetch(input, init),
-    get isInitialized() {
-      return mockAuthStoreInitialized.value
-    },
-    get userId() {
-      return mockUserId.value
-    }
-  })),
-  AuthStoreError: class extends Error {}
-}))
-
 // Mock fetch
 global.fetch = vi.fn()
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
+    mockGetAuthHeader
+  )
+  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
+    (input, init) => fetch(input, init)
+  )
+
+  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
+    mockSetWorkspaceBillingRail
+  )
+})
 
 describe('useSubscription', () => {
   afterEach(() => {
@@ -202,10 +193,12 @@ describe('useSubscription', () => {
     mockLocalStorage.__reset()
     mockIsLoggedIn.value = false
     mockAccessBillingPortal.mockResolvedValue(true)
-    mockUserId.value = 'user-123'
+    Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
-    mockAuthStoreInitialized.value = true
-    mockActiveWorkspaceId.value = 'workspace-123'
+    Object.assign(useAuthStore(), { isInitialized: true })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-123'
+    })
     mockGetBillingStatus.mockResolvedValue({
       is_active: false,
       has_funds: false,
@@ -387,8 +380,10 @@ describe('useSubscription', () => {
       const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
       const previousAccountRequest = fetchStatus()
 
-      mockUserId.value = 'user-456'
-      mockActiveWorkspaceId.value = 'workspace-456'
+      Object.assign(useAuthStore(), { userId: 'user-456' })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-456'
+      })
       const currentAccountRequest = fetchStatus()
       await currentAccountRequest
 
@@ -474,7 +469,7 @@ describe('useSubscription', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            Authorization: 'Bearer test-token',
+            Authorization: 'Bearer test-token' as const,
             'Content-Type': 'application/json'
           }),
           body: JSON.stringify({
@@ -786,7 +781,7 @@ describe('useSubscription', () => {
     })
 
     it('does not clear pending attempts before auth initialization resolves', async () => {
-      mockAuthStoreInitialized.value = false
+      Object.assign(useAuthStore(), { isInitialized: false })
       mockIsLoggedIn.value = false
 
       localStorage.setItem(
@@ -1032,3 +1027,10 @@ describe('useSubscription', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))

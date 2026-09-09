@@ -1,5 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import type { TestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -80,20 +80,10 @@ function createNodeFixture(
   return node
 }
 
-const SAMPLER_NODE = createNodeFixture(
-  '1',
-  'SamplerNode',
-  ROOT_GRAPH,
-  SAMPLER_BOUNDS
-)
-const LOADER_NODE = createNodeFixture(
-  '2',
-  'LoaderNode',
-  ROOT_GRAPH,
-  LOADER_BOUNDS
-)
+let SAMPLER_NODE: LGraphNode
+let LOADER_NODE: LGraphNode
 
-function seedTwoErrorGroups(pinia: TestingPinia) {
+function seedTwoErrorGroups(pinia: Pinia) {
   const executionErrorStore = useExecutionErrorStore(pinia)
   executionErrorStore.recordNodeErrors({
     '1': {
@@ -122,7 +112,7 @@ function seedTwoErrorGroups(pinia: TestingPinia) {
   })
 }
 
-function renderList(pinia: TestingPinia) {
+function renderList(pinia: Pinia) {
   const user = userEvent.setup()
   render(ErrorGroupList, {
     global: {
@@ -137,11 +127,7 @@ function renderList(pinia: TestingPinia) {
   return { user }
 }
 
-function createPinia() {
-  return createTestingPinia({ createSpy: vi.fn, stubActions: false })
-}
-
-function createCanvasFixture(pinia: TestingPinia, graph = ROOT_GRAPH) {
+function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
   const canvasElement = document.createElement('canvas')
   canvasElement.width = 900
   canvasElement.height = 700
@@ -173,6 +159,18 @@ function isSectionExpanded(section: HTMLElement) {
 
 describe('ErrorGroupList selection emphasis', () => {
   beforeEach(() => {
+    SAMPLER_NODE = createNodeFixture(
+      '1',
+      'SamplerNode',
+      ROOT_GRAPH,
+      SAMPLER_BOUNDS
+    )
+    LOADER_NODE = createNodeFixture(
+      '2',
+      'LoaderNode',
+      ROOT_GRAPH,
+      LOADER_BOUNDS
+    )
     vi.mocked(isLGraphNode).mockReturnValue(true)
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       nodeId === '1' ? SAMPLER_NODE : LOADER_NODE
@@ -184,7 +182,7 @@ describe('ErrorGroupList selection emphasis', () => {
   })
 
   it('expands matched groups, collapses others, and restores on deselect', async () => {
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     renderList(pinia)
     const canvasStore = useCanvasStore(pinia)
@@ -208,7 +206,7 @@ describe('ErrorGroupList selection emphasis', () => {
   })
 
   it('expands only matched groups for a selection that predates mount', async () => {
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     const canvasStore = useCanvasStore(pinia)
     canvasStore.selectedItems = [SAMPLER_NODE]
@@ -226,7 +224,7 @@ describe('ErrorGroupList selection emphasis', () => {
   })
 
   it('leaves manual collapse state alone for selections without errors', async () => {
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     const { user } = renderList(pinia)
     const canvasStore = useCanvasStore(pinia)
@@ -252,7 +250,7 @@ describe('ErrorGroupList selection emphasis', () => {
   })
 
   it('always shows the strip: workflow summary by default, selection while emphasized', async () => {
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     renderList(pinia)
     const canvasStore = useCanvasStore(pinia)
@@ -277,7 +275,7 @@ describe('ErrorGroupList selection emphasis', () => {
   })
 
   it('labels a missing-only selection as an issue', async () => {
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     useMissingModelStore(pinia).setMissingModels([
       {
         nodeId: '1',
@@ -312,7 +310,7 @@ describe('ErrorGroupList selection emphasis', () => {
           )
         : LOADER_NODE
     )
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
 
     renderList(pinia)
@@ -327,7 +325,7 @@ describe('ErrorGroupList selection emphasis', () => {
   })
 
   it('locates an execution error through the real root-graph focus path', async () => {
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     const { user } = renderList(pinia)
     const canvas = createCanvasFixture(pinia, ROOT_GRAPH)
@@ -353,7 +351,7 @@ describe('ErrorGroupList selection emphasis', () => {
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
       nodeId === '2' ? subgraphLoaderNode : SAMPLER_NODE
     )
-    const pinia = createPinia()
+    const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     const { user } = renderList(pinia)
     const canvas = createCanvasFixture(pinia, ROOT_GRAPH)
