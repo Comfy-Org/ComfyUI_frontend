@@ -12,9 +12,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toGroupId } from '@/types/groupId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({})
-}))
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))

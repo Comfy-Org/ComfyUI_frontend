@@ -1,5 +1,7 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -10,18 +12,6 @@ import {
   clearCompositorLayers,
   setCompositorLayers
 } from './useCompositorLayers'
-
-const { showDialog, toastAdd } = vi.hoisted(() => ({
-  showDialog: vi.fn(),
-  toastAdd: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog })
-}))
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: toastAdd })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -48,6 +38,10 @@ function mountComposable(): ReturnType<typeof useCompositorEditor> {
   return composable
 }
 
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
 describe('useCompositorEditor', () => {
   const node = { id: toNodeId(1) } as unknown as LGraphNode
 
@@ -58,14 +52,14 @@ describe('useCompositorEditor', () => {
   it('shows a toast and keeps the dialog closed without cached layers', () => {
     mountComposable().openCompositorEditor(node)
 
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'info',
         summary: 'Layer editor',
         detail: 'Run the workflow first'
       })
     )
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
 
   it('shows a toast when layers are cached without a fingerprint', () => {
@@ -75,14 +69,14 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(toastAdd).toHaveBeenCalledWith(
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'info',
         summary: 'Layer editor',
         detail: 'Run the workflow first'
       })
     )
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
 
   it('opens the layer editor in compositor mode when layers are cached', () => {
@@ -94,8 +88,8 @@ describe('useCompositorEditor', () => {
 
     mountComposable().openCompositorEditor(node)
 
-    expect(toastAdd).not.toHaveBeenCalled()
-    expect(showDialog).toHaveBeenCalledWith(
+    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',
         props: { node, mode: 'compositor' }
