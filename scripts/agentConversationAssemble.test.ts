@@ -10,6 +10,7 @@ import type {
   SeedFixture
 } from './agentConversationAssemble'
 import { assembleConversation, zRowsDump } from './agentConversationAssemble'
+import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/agentConversation'
 
 const THREAD = 'thread-1'
@@ -213,7 +214,7 @@ describe('assembleConversation', () => {
           raw: cancelledTurn({ status: 202, body: {} }, 1_699_999_999_000)
         })
       )
-    ).toThrow('was cancelled before any frame arrived')
+    ).toThrow(/cancel_after/)
   })
 
   it('refuses a cancel that landed once agent_message_done had arrived', () => {
@@ -223,7 +224,7 @@ describe('assembleConversation', () => {
           raw: cancelledTurn({ status: 202, body: {} }, 1_700_000_000_300)
         })
       )
-    ).toThrow('was cancelled after agent_message_done')
+    ).toThrow('cancel_after must precede the final agent_message_done entry')
   })
 
   it('keeps a cancel that landed just before agent_message_done', () => {
@@ -279,11 +280,7 @@ describe('assembleConversation', () => {
     expect(
       conversation.turns[0].response.find((entry) => entry.kind === 'graph_ops')
     ).toMatchObject({ ops: [addNodeOpSemantic] })
-    expect(receipt).toMatchObject({
-      added_nodes: 1,
-      deleted_nodes: 0,
-      unexplained_draft_nodes: 0
-    })
+    expect(receipt).toMatchObject({ added_nodes: 1, deleted_nodes: 0 })
     expect(receipt.turns).toEqual([
       {
         message_id: MESSAGE,
@@ -364,7 +361,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow(/only running, success or error are known/)
+    ).toThrow(/status/)
   })
 
   it('leaves the offset out when the frames carry no receipt time', () => {
@@ -494,7 +491,7 @@ describe('assembleConversation', () => {
     expect(receipt.turns[0].frames_kept).toBe(4)
   })
 
-  it('refuses an applied add_node whose class is outside the seed catalog', () => {
+  it('refuses a widget write on an applied node outside the catalog', () => {
     expect(() =>
       assembleConversation(
         input({
@@ -509,16 +506,28 @@ describe('assembleConversation', () => {
                         ...addNodeOp,
                         class_type: 'LatentUpscaleBy',
                         node: nodePayload(10, 'LatentUpscaleBy')
+                      },
+                      {
+                        op: 'set_widget',
+                        op_id: 'op-2',
+                        node_id: 10,
+                        widget: 'scale_by',
+                        value: 2,
+                        old: null
                       }
                     ]
                   }
-                }
+                },
+                children: [
+                  { op_id: 'op-1', status: 'ok' },
+                  { op_id: 'op-2', status: 'ok' }
+                ]
               })
             ]
           })
         })
       )
-    ).toThrow('are not in the seed catalog')
+    ).toThrow('the replay rejects this recording')
   })
 
   it('refuses an applied parent row that names another workflow', () => {
@@ -586,7 +595,7 @@ describe('assembleConversation', () => {
     ).toThrow('has applied ops but a NULL result')
   })
 
-  it('refuses an echoed op kind outside the frozen op set', () => {
+  it('refuses an applied op kind outside the frozen op set', () => {
     expect(() =>
       assembleConversation(
         input({
@@ -598,13 +607,17 @@ describe('assembleConversation', () => {
                   data: {
                     ops: [addNodeOp, { op: 'reset_doc', op_id: 'op-2' }]
                   }
-                }
+                },
+                children: [
+                  { op_id: 'op-1', status: 'ok' },
+                  { op_id: 'op-2', status: 'ok' }
+                ]
               })
             ]
           })
         })
       )
-    ).toThrow('outside the frozen op set')
+    ).toThrow("received 'reset_doc'")
   })
 
   it('refuses a non-object echoed op entry', () => {
@@ -623,7 +636,7 @@ describe('assembleConversation', () => {
     ).toThrow('non-object op entry')
   })
 
-  it('refuses an applied delete_node without a node id', () => {
+  it('refuses an applied op the replay host rejects as malformed', () => {
     expect(() =>
       assembleConversation(
         input({
@@ -639,7 +652,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow('applied delete_node without node_id')
+    ).toThrow('the replay rejects this recording')
   })
 
   it('refuses an attempt label that would collide across attempts', () => {
@@ -676,19 +689,18 @@ describe('assembleConversation', () => {
     ).toThrow('not agent_message_done')
   })
 
-  it('refuses an agent frame type the replay cannot validate', () => {
-    expect(() =>
-      assembleConversation(
-        input({
-          raw: raw({
-            frames: [
-              turnFrame('agent_not_a_frame', {}, 1_700_000_000_050),
-              ...frames()
-            ]
-          })
+  it('drops and counts an agent frame type the replay does not carry', () => {
+    const { receipt } = assembleConversation(
+      input({
+        raw: raw({
+          frames: [
+            turnFrame('agent_not_a_frame', {}, 1_700_000_000_050),
+            ...frames()
+          ]
         })
-      )
-    ).toThrow('outside the replay union')
+      })
+    )
+    expect(receipt.frames_dropped).toEqual({ 'type:agent_not_a_frame': 1 })
   })
 
   it('refuses a draft that lost a seed node nothing deleted', () => {
@@ -696,7 +708,7 @@ describe('assembleConversation', () => {
       assembleConversation(
         input({ rows: rows({ draft: { nodes: [{ id: 3 }], links: [] } }) })
       )
-    ).toThrow('lacks node ids')
+    ).toThrow('holds node ids 3 but the replayed ops leave 10, 3, 4')
   })
 
   it('refuses a draft that still holds a deleted node', () => {
@@ -717,7 +729,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow('still holds node ids')
+    ).toThrow('holds node ids 10, 3, 4 but the replayed ops leave 4')
   })
 
   it('refuses a turn the backend never accepted', () => {
@@ -844,7 +856,7 @@ describe('assembleConversation', () => {
           rows: deleteThenAddRows()
         })
       )
-    ).toThrow('still holds node ids 4 that the applied ops removed')
+    ).toThrow('holds node ids 3, 4 but the replayed ops leave 3')
   })
 
   const clearRows = (draft: Array<{ id: number }>) =>
@@ -872,7 +884,7 @@ describe('assembleConversation', () => {
 
     expect(() =>
       assembleConversation(input({ rows: clearRows([{ id: 3 }, { id: 4 }]) }))
-    ).toThrow('still holds node ids 3, 4 that the applied ops removed')
+    ).toThrow('holds node ids 3, 4 but the replayed ops leave (none)')
   })
 
   it('refuses a parent row that applies the same op id twice', () => {
@@ -1115,7 +1127,7 @@ describe('assembleConversation across turns', () => {
           ]
         })
       )
-    ).toThrow('still holds node ids 4')
+    ).toThrow('holds node ids 10, 3, 4 but the replayed ops leave 10, 3')
   })
 
   it('refuses a turn that landed on another thread', () => {
@@ -1215,5 +1227,35 @@ describe('zRowsDump', () => {
     expect(() =>
       zRowsDump.parse({ ...dump({ ok: true }), source: 'sqlite' })
     ).toThrow('postgres')
+  })
+
+  it('replays every accepted capture through the real host to the draft it validated', () => {
+    const cleared = rows({
+      parents: [
+        parent({
+          result: {
+            ok: true,
+            data: {
+              ops: [{ op: 'clear', op_id: 'op-1', removed_nodes: [3, 4] }]
+            }
+          }
+        })
+      ],
+      draft: { nodes: [], links: [] }
+    })
+    for (const capture of [input(), input({ rows: cleared }), twoTurns()]) {
+      const { conversation } = assembleConversation(capture)
+      const { workflow } = conversation
+      const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
+      for (const turn of conversation.turns)
+        for (const entry of turn.response)
+          if (entry.kind === 'graph_ops') host.apply(entry.ops)
+      expect(Object.keys(host.graph().nodes).sort()).toEqual(
+        capture.rows
+          .at(-1)!
+          .draft!.nodes.map((node) => node.id)
+          .sort()
+      )
+    }
   })
 })
