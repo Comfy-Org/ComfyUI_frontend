@@ -13,6 +13,6 @@ export const useColorsWidget = (): ComfyWidgetConstructorV2 => {
     return node.addWidget('colors', spec.name, defaultValue, null, {
       serialize: true,
       canvasOnly: false
-    }) as IBaseWidget
+    })
   }
 }

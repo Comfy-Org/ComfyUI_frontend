@@ -23,22 +23,23 @@ const {
   dialogCloseMock,
   serviceSourceLoad3d,
   getLoad3dAsyncMock
-} = vi.hoisted(() => ({
-  viewerState: {
-    current: null as ReturnType<typeof buildViewerStub> | null
-  },
-  dragState: {
-    current: null as ReturnType<typeof buildDragStub> | null
-  },
-  capturedDragOptions: {
-    current: null as { onModelDrop?: (file: File) => Promise<void> } | null
-  },
-  dialogCloseMock: vi.fn(),
-  serviceSourceLoad3d: {
-    current: null as unknown
-  },
-  getLoad3dAsyncMock: vi.fn()
-}))
+} = vi.hoisted(() => {
+  const serviceSourceLoad3d: { current: unknown } = { current: null }
+  return {
+    viewerState: {
+      current: null as ReturnType<typeof buildViewerStub> | null
+    },
+    dragState: {
+      current: null as ReturnType<typeof buildDragStub> | null
+    },
+    capturedDragOptions: {
+      current: null as { onModelDrop?: (file: File) => Promise<void> } | null
+    },
+    dialogCloseMock: vi.fn(),
+    serviceSourceLoad3d,
+    getLoad3dAsyncMock: vi.fn()
+  }
+})
 
 function buildViewerStub() {
   return {
@@ -92,25 +93,25 @@ function buildDragStub() {
   }
 }
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: () => viewerState.current
 }))
 
-vi.mock('@/composables/useLoad3dDrag', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3dDrag'), () => ({
   useLoad3dDrag: (opts: { onModelDrop?: (file: File) => Promise<void> }) => {
     capturedDragOptions.current = opts
     return dragState.current
   }
 }))
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock<unknown>(import('@/services/load3dService'), () => ({
   useLoad3dService: () => ({
     getOrCreateViewerSync: () => viewerState.current,
     getLoad3dAsync: getLoad3dAsyncMock
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: dialogCloseMock })
 }))
 

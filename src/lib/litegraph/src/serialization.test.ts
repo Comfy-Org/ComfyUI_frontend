@@ -13,10 +13,11 @@ class TestNode extends LGraphNode {
   }
 }
 
-LiteGraph.registerNodeType('test/TestNode', TestNode)
-
 describe('Serialization - Circular Reference Prevention', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.registerNodeType('test/TestNode', TestNode)
+  })
 
   describe('LGraph.toJSON()', () => {
     it('should serialize without circular reference errors', () => {

@@ -2,6 +2,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 // jsdom lacks ResizeObserver, which the asset-preview import chain references.
 vi.hoisted(() => {
@@ -18,18 +19,17 @@ import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<object>()),
-    useClipboard: () => ({
-      copy: clipboard.copy,
-      copied: ref(false),
-      isSupported: ref(true),
-      text: ref('')
-    })
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  createSharedComposable: (composable: () => unknown) => composable,
+  useClipboard: () => ({
+    copy: clipboard.copy,
+    copied: ref(false),
+    isSupported: ref(true),
+    text: ref('')
+  }),
+  useDocumentVisibility: () => ref('visible'),
+  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
+}))
 
 const t = i18n.global.t
 
@@ -113,7 +113,7 @@ describe('UserMessage', () => {
     expect(screen.getByText('notes.md')).toBeInTheDocument()
   })
 
-  it('reveals the copy action on hover and copies the exact prompt', async () => {
+  it('T-23 / PM-657 / FE-1297 reveals copy on hover and copies the exact prior prompt', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })
 

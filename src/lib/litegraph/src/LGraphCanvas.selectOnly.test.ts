@@ -230,4 +230,14 @@ describe('LGraphCanvas selectOnly', () => {
 
     expect(canvas.selectedItems.size).toBe(0)
   })
+
+  it('supports deselecting through the deprecated selectNode API', () => {
+    const { canvas, firstNode } = createHarness()
+    canvas.selectNode(firstNode)
+
+    canvas.selectNode(null)
+
+    expect(canvas.selectedItems.size).toBe(0)
+    expect(firstNode.selected).toBe(false)
+  })
 })

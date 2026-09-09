@@ -40,9 +40,9 @@ export const THINKING_EVENT: AgentWsEvent = {
 export const TOOL_CALL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
+    tool_call_id: 'call-set-widget',
     tool_name: 'set_widget',
-    status: 'ok',
-    args: ['workflow', 'set-widget', 'workflow.json'],
+    status: 'success',
     duration_ms: 1300,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -70,9 +70,9 @@ export const RESUMED_THINKING_EVENT: AgentWsEvent = {
 export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
+    tool_call_id: 'call-new-tab',
     tool_name: 'new_tab',
-    status: 'ok',
-    args: [],
+    status: 'success',
     duration_ms: 500,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -82,9 +82,9 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
+    tool_call_id: 'call-resize-image-node',
     tool_name: 'resize_image_node',
-    status: 'ok',
-    args: [],
+    status: 'success',
     duration_ms: 200,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -236,6 +236,7 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
+  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   postedMessages: async ({}, use) => {
     await use([])
   },

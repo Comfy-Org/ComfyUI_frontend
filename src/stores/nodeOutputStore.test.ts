@@ -15,7 +15,7 @@ import * as litegraphUtil from '@/utils/litegraphUtil'
 
 const mockResolveNode = vi.fn()
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn(),
   resolveNode: (...args: unknown[]) => mockResolveNode(...args)
@@ -23,7 +23,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
 
 const mockGetNodeById = vi.fn()
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
     rootGraph: {
@@ -49,16 +49,19 @@ const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
 ): ExecutedWsMessage['output'] => ({ images })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-  }))
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/management/stores/workflowStore'),
+  () => ({
+    useWorkflowStore: vi.fn(() => ({
+      nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
+      nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
+    }))
+  })
+)
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {
@@ -253,6 +256,66 @@ describe('nodeOutputStore legacy entry synchronization', () => {
 
     expect(store.nodeOutputs.changed).toBeUndefined()
     expect(store.nodeOutputs.untouched).toBe(untouchedRecord)
+  })
+})
+
+describe('nodeOutputStore replaceNodeOutputImages', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('drops the previous output metadata when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setOutputFromLegacy(
+      '7',
+      fromAny({
+        images: [{ filename: 'previous.webp' }],
+        animated: [true],
+        video: [{ filename: 'previous.mp4' }]
+      })
+    )
+
+    const images = [
+      {
+        filename: 'painted.png',
+        subfolder: 'clipspace',
+        type: 'input' as const
+      }
+    ]
+    store.replaceNodeOutputImages(node, images)
+
+    expect(store.nodeOutputs['7']?.animated).toBeUndefined()
+    expect(store.nodeOutputs['7']?.video).toBeUndefined()
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+  })
+
+  it('ignores an empty replacement', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png', type: 'input' as const }]
+    const node = createMockNode({ id: 7, images })
+    store.setOutputFromLegacy('7', { images })
+
+    store.replaceNodeOutputImages(node, [])
+
+    expect(store.nodeOutputs['7']?.images).toEqual(images)
+    expect(node.images).toEqual(images)
+  })
+
+  it('removes stale previews when replacing the images', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'preview:stale'
+    ])
+
+    store.replaceNodeOutputImages(node, [
+      { filename: 'painted.png', type: 'input' }
+    ])
+
+    expect(store.getNodePreviews(node)).toBeUndefined()
+    expect(app.nodePreviewImages['7']).toBeUndefined()
   })
 })
 

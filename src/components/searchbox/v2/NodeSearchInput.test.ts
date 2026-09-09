@@ -10,13 +10,13 @@ import {
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   getLinkTypeColor: vi.fn((type: string) =>
     type === 'IMAGE' ? '#64b5f6' : undefined
   )
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: vi.fn(() => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.NodeLibrary.Bookmarks.V2') return []
@@ -30,15 +30,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
 function createFilter(
   id: string,
   value: string
-): FuseFilterWithValue<ComfyNodeDefImpl, string> {
+): FuseFilterWithValue<ComfyNodeDefImpl> {
   return {
     filterDef: {
       id,
       matches: vi.fn(() => true)
-    } as Partial<FuseFilter<ComfyNodeDefImpl, string>> as FuseFilter<
-      ComfyNodeDefImpl,
-      string
-    >,
+    } as Partial<FuseFilter<ComfyNodeDefImpl>> as FuseFilter<ComfyNodeDefImpl>,
     value
   }
 }
@@ -50,7 +47,7 @@ describe('NodeSearchInput', () => {
 
   function createRender(
     props: Partial<{
-      filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
+      filters: FuseFilterWithValue<ComfyNodeDefImpl>[]
       searchQuery: string
     }> = {}
   ) {

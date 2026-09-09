@@ -8,30 +8,39 @@ async function flushPromises() {
 }
 
 // Mock the store
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/repositories/workflowTemplatesStore'),
   () => ({
     useWorkflowTemplatesStore: vi.fn()
   })
 )
 
 // Mock the API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((path) => `mock-file-url${path}`),
     apiURL: vi.fn((path) => `mock-api-url${path}`)
   }
 }))
 
-// Mock the app
-vi.mock('@/scripts/app', () => ({
+// loadGraphData resolves to the workflow it activated; the education card
+// binds to that, so the mock returns a per-test workflow object.
+const { mockLoadedWorkflow } = vi.hoisted(
+  (): { mockLoadedWorkflow: { value: { key: string } | undefined } } => ({
+    mockLoadedWorkflow: {
+      value: { key: 'loaded-template' }
+    }
+  })
+)
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    loadGraphData: vi.fn()
+    loadGraphData: vi.fn(() => Promise.resolve(mockLoadedWorkflow.value))
   }
 }))
 
 // Mock Vue I18n
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: vi.fn((key, fallback) => fallback || key)
   }),
@@ -43,7 +52,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 // Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: vi.fn(() => ({
     closeDialog: vi.fn()
   }))
@@ -55,10 +64,33 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
+
+const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
+  vi.hoisted(() => ({
+    mockDistributionIsCloud: { value: false },
+    mockRequestCard: vi.fn(),
+    mockDismissCard: vi.fn()
+  }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionIsCloud.value
+  }
+}))
+
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/stores/partnerNodesEducationStore'),
+  () => ({
+    usePartnerNodesEducationStore: () => ({
+      requestCard: mockRequestCard,
+      dismissCard: mockDismissCard
+    })
+  })
+)
 
 // Mock fetch
 global.fetch = vi.fn()
@@ -70,10 +102,13 @@ describe('useTemplateWorkflows', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
+    mockDistributionIsCloud.value = false
+    mockLoadedWorkflow.value = { key: 'loaded-template' }
 
     mockWorkflowTemplatesStore = {
       isLoaded: false,
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+      enhancedTemplates: [],
       groupedTemplates: [
         {
           label: 'ComfyUI Examples',
@@ -320,6 +355,80 @@ describe('useTemplateWorkflows', () => {
     await flushPromises()
 
     expect(mockTrackTemplate).not.toHaveBeenCalled()
+  })
+
+  const enhancedTemplate = (isPartnerNode: boolean, name = 'template1') => {
+    type EnhancedTemplateLike =
+      MockWorkflowTemplatesStore['enhancedTemplates'][number]
+    return {
+      name,
+      sourceModule: 'default',
+      isPartnerNode
+    } as Partial<EnhancedTemplateLike> as EnhancedTemplateLike
+  }
+
+  it('requests the partner education card when a paid template loads locally', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).toHaveBeenCalledWith('loaded-template')
+  })
+
+  it('retires the card instead of requesting it when no workflow was activated', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+    mockLoadedWorkflow.value = undefined
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).not.toHaveBeenCalled()
+    expect(mockDismissCard).toHaveBeenCalled()
+  })
+
+  it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+
+    // loadGraphData resolves to the workflow it activated even if the user has
+    // since switched tabs during its asset-scan window, so the card binds to
+    // that workflow rather than whichever one is globally active now.
+    mockLoadedWorkflow.value = { key: 'template-a' }
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).toHaveBeenCalledWith('template-a')
+  })
+
+  it('does not request the education card for open-source templates', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(false))
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).not.toHaveBeenCalled()
+  })
+
+  it('retires an earlier request when an open-source template loads next', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(
+      enhancedTemplate(true),
+      enhancedTemplate(false, 'template2')
+    )
+
+    await loadWorkflowTemplate('template1', 'default')
+    expect(mockRequestCard).toHaveBeenCalledTimes(1)
+
+    // The open-source template may still contain partner nodes, so the card
+    // would otherwise linger and describe the wrong template.
+    await loadWorkflowTemplate('template2', 'default')
+    expect(mockDismissCard).toHaveBeenCalledTimes(1)
   })
 
   it('should handle errors when loading templates', async () => {

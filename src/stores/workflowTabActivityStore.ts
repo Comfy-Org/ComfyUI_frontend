@@ -37,6 +37,12 @@ export const useWorkflowTabActivityStore = defineStore(
         if (!open.has(path)) unseenModifiedPaths.value.delete(path)
     }
 
+    function clearAgentActivity(): void {
+      editingTabPath.value = null
+      creatingTab.value = false
+      unseenModifiedPaths.value.clear()
+    }
+
     return {
       editingTabPath,
       creatingTab,
@@ -45,7 +51,8 @@ export const useWorkflowTabActivityStore = defineStore(
       setCreating,
       markModified,
       markSeen,
-      pruneClosed
+      pruneClosed,
+      clearAgentActivity
     }
   }
 )

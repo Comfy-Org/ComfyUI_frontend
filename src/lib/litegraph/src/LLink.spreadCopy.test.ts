@@ -52,15 +52,18 @@ describe('plain-object copies of LLink (uncovered)', () => {
 
   it('carries topology onto a spread copy of a link', () => {
     const { graph, link } = connectedPair(toRerouteId(7))
-    const copy: Partial<LLink> = { ...graph.links[link.id] }
+    const stored = graph.links[link.id]
+    stored.type = 'FLOAT'
+    stored.parentId = toRerouteId(8)
+    const copy: Partial<LLink> = { ...stored }
 
     expect(copy.id).toBe(link.id)
-    expect(copy.type).toBe(link.type)
+    expect(copy.type).toBe('FLOAT')
     expect(copy.origin_id).toBe(link.origin_id)
     expect(copy.origin_slot).toBe(link.origin_slot)
     expect(copy.target_id).toBe(link.target_id)
     expect(copy.target_slot).toBe(link.target_slot)
-    expect(copy.parentId).toBe(link.parentId)
+    expect(copy.parentId).toBe(toRerouteId(8))
   })
 
   it('rewires Custom-Scripts consumers from copied links (#15594)', () => {

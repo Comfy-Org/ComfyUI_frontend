@@ -4,12 +4,13 @@ This guide provides an overview of testing approaches used in the ComfyUI Fronte
 
 ## Testing Documentation
 
-Documentation for unit tests is organized into four guides:
+Documentation for unit tests is organized into five guides:
 
 - [Component Testing](./component-testing.md) - How to test Vue components
 - [Unit Testing](./unit-testing.md) - How to test utility functions, composables, and other non-component code
 - [Store Testing](./store-testing.md) - How to test Pinia stores specifically
 - [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
+- [Vitest Patterns](./vitest-patterns.md) - Setup, mocking, and fake-timer patterns that apply across all of the above
 
 ## Testing Structure
 
@@ -17,7 +18,7 @@ The ComfyUI Frontend project uses **colocated tests** - test files are placed al
 
 - **Component Tests**: Located directly alongside their components (e.g., `MyComponent.test.ts` next to `MyComponent.vue`)
 - **Unit Tests**: Located alongside their source files (e.g., `myUtil.test.ts` next to `myUtil.ts`)
-- **Store Tests**: Located in `src/stores/` alongside their store files
+- **Store Tests**: Located alongside their store files. Most stores live in `src/stores/`, but domain-owned stores sit with their domain (e.g. `src/platform/settings/settingStore.ts`, `src/platform/workflow/management/stores/workflowStore.ts`)
 - **Browser Tests**: Located in the `browser_tests/` directory (see dedicated README there)
 
 ### Test File Naming
@@ -32,8 +33,8 @@ Our tests use the following frameworks and libraries:
 - [Vitest](https://vitest.dev/) - Test runner and assertion library
 - [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) - Preferred for user-centric component testing
 - [@testing-library/user-event](https://testing-library.com/docs/user-event/intro/) - Realistic user interaction simulation
-- [@vue/test-utils](https://test-utils.vuejs.org/) - Vue component testing utilities (legacy; new tests must use @testing-library/vue)
-- [Pinia](https://pinia.vuejs.org/cookbook/testing.html) - For store testing
+- [@testing-library/jest-dom](https://github.com/testing-library/jest-dom) - DOM matchers, registered globally in `vitest.setup.ts`
+- [@pinia/testing](https://pinia.vuejs.org/cookbook/testing.html) - For store testing
 
 ## Getting Started
 
