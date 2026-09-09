@@ -126,13 +126,16 @@ a different domain, use that domain.
 
 ## Authoritative contract
 
-The exact TypeScript surface is generated from `src/platform/nodeApi/`:
+The exact TypeScript surface is checked in as
+[comfy-api.d.ts](./comfy-api.d.ts). It is generated from
+`src/platform/nodeApi/`:
 
 ```sh
-node scripts/node-api/gen_api_dts.mjs > comfy-api.d.ts
+node scripts/node-api/gen_api_dts.mjs > docs/node-api/comfy-api.d.ts
 ```
 
-The generated declaration file is the compiler contract. These guides explain
-how and why to use it; [the reference](./reference.md) provides a navigable map.
-If prose and generated types ever disagree, treat the generated types and their
-implementation tests as authoritative and fix the prose.
+The checked-in declaration file is the machine-readable compiler contract, and
+its freshness test compares it byte-for-byte with the implementation. These
+guides explain how and why to use it; [the reference](./reference.md) provides a
+navigable map. If prose and generated types ever disagree, treat the generated
+types and their implementation tests as authoritative and fix the prose.
