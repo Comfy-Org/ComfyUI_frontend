@@ -1653,6 +1653,53 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('falls back to the last loaded model file when the node has no model widget', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'ComfyUI_00110.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [
+        { name: 'viewport_state', value: {} } as unknown as IWidget
+      ]
+      mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(Load3dUtils.splitFilePath).toHaveBeenCalledWith(
+        '3d/ComfyUI_00110.glb'
+      )
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'ComfyUI_00110.glb',
+        expect.any(Blob)
+      )
+    })
+
+    it('falls back to the last loaded model file when the model widget value is empty', async () => {
+      const { isAssetPreviewSupported, persistThumbnail } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+        '3d',
+        'ComfyUI_00110.glb'
+      ] as unknown as ReturnType<typeof Load3dUtils.splitFilePath>)
+      mockNode.widgets = [{ name: 'image', value: '' } as unknown as IWidget]
+      mockNode.properties['Last Time Model File'] = '3d/ComfyUI_00110.glb'
+
+      const { handler } = await getModelReadyHandler()
+      handler()
+      await new Promise((r) => setTimeout(r, 0))
+
+      expect(persistThumbnail).toHaveBeenCalledWith(
+        'ComfyUI_00110.glb',
+        expect.any(Blob)
+      )
+    })
+
     it('skips persistence when the model widget has no value', async () => {
       const { isAssetPreviewSupported, persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
