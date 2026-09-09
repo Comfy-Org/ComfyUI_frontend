@@ -3207,6 +3207,19 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.isSubscribing.value).toBe(false)
       expect(checkout.isPolling.value).toBe(false)
 
+      // Looking enabled is not enough: the prompt's button re-enters
+      // handleSubscription, so the mutation lock has to be released as well or
+      // the click is silently dropped — and a parked operation may not go
+      // terminal until the customer performs exactly this action.
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-parked',
+        payment_method_url: 'https://stripe.com/pay'
+      })
+      await checkout.handleAddCreditCard()
+
+      expect(mockSubscribe).toHaveBeenCalledTimes(2)
+
       resolveOperation({ status: 'pending' })
       await payment
     })

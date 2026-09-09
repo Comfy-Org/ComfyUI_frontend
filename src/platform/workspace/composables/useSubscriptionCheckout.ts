@@ -1346,11 +1346,16 @@ export function useSubscriptionCheckout(
       : billingOperationStore.startOperation(opId, 'subscription', metadata)
     // The submit is over once the operation is adopted: isPolling is the busy
     // state from here, and it is already true because startOperation registers
-    // synchronously above. Holding isSubscribing past this point kept the
-    // legacy dialog's loading input true until the operation went terminal,
-    // which disabled the recovery prompt's own CTA and Back for a checkout
-    // parked on the customer. Releasing it does not stop the poll.
+    // synchronously above. Holding either of these past this point kept the
+    // recovery prompt's own CTA and Back disabled for a checkout parked on the
+    // customer — and the lock made the CTA a no-op even once it looked live,
+    // because the click re-enters handleSubscription and fails the gate. For
+    // awaiting_payment_method the operation may not go terminal until the
+    // customer performs exactly that action, so waiting for the outer finally
+    // deadlocks the recovery. Releasing neither stops the poll; the outer
+    // finally still runs, and finishCheckoutMutation is idempotent.
     isSubscribing.value = false
+    finishCheckoutMutation()
     const operation = await terminalOperation
     clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
     if (
