@@ -4,13 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyExtension } from '@/types/comfy'
 
-const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
-  vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
-    mockRegisterExtension: vi.fn()
-  }))
+const {
+  mockAddAlert,
+  mockApiURL,
+  mockFetchApi,
+  mockRegisterExtension,
+  mockReportError
+} = vi.hoisted(() => ({
+  mockAddAlert: vi.fn(),
+  mockApiURL: vi.fn((url: string) => `api:${url}`),
+  mockFetchApi: vi.fn(),
+  mockRegisterExtension: vi.fn(),
+  mockReportError: vi.fn()
+}))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
@@ -54,6 +60,10 @@ vi.mock('@/composables/node/useNodePaste', () => ({
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => key
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -252,8 +262,58 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith(error)
+    expect(mockAddAlert).toHaveBeenCalledWith(error.message)
+    expect(mockReportError).toHaveBeenCalledWith(error, {
+      errorType: 'audio_upload_failure'
+    })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
+  })
+
+  it('bounds a stalled upload so the node does not stay latched', async () => {
+    vi.useFakeTimers()
+    try {
+      const AUDIOUPLOAD = await loadAudioUploadWidget()
+      const { audioWidget, node } = createAudioNode()
+      AUDIOUPLOAD(node, 'upload')
+
+      const timeoutSpy = vi
+        .spyOn(AbortSignal, 'timeout')
+        .mockImplementation((delay) => {
+          const controller = new AbortController()
+          setTimeout(
+            () =>
+              controller.abort(
+                new DOMException('signal timed out', 'TimeoutError')
+              ),
+            delay
+          )
+          return controller.signal
+        })
+
+      mockFetchApi.mockImplementationOnce(
+        (_route: string, options: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            const signal = options.signal
+            signal?.addEventListener('abort', () => {
+              reject(signal.reason)
+            })
+          })
+      )
+
+      const upload = capturedFileSelect!([createFile()])
+
+      expect(node.isUploading).toBe(true)
+      expect(timeoutSpy).toHaveBeenCalledWith(120_000)
+
+      await vi.advanceTimersByTimeAsync(120_000)
+      await upload
+
+      expect(node.isUploading).toBe(false)
+      expect(audioWidget.value).toBe('previous.mp3')
+      expect(mockAddAlert).toHaveBeenCalledWith('g.uploadTimedOut')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('returns early when no files are provided', async () => {
