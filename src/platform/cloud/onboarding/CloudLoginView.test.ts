@@ -18,7 +18,7 @@ vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
 }))
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
-vi.mock('@/base/webviewDetection', () => ({
+vi.mock('@comfyorg/account/webviewDetection', () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 

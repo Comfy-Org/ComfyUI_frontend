@@ -3,6 +3,11 @@ import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { SessionRefreshOutcome } from '@comfyorg/account/core'
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
+import type { AuthErrorMetadata } from '@comfyorg/account/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
 import type { TurnstileMode } from '@comfyorg/account/turnstile'
@@ -25,13 +30,12 @@ const ANALYTICS_EVENT = {
   cliClientTabClicked: 'website:cli_client_tab_clicked',
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
-  // Shared with the cloud app (no website: prefix) so one PostHog funnel
-  // covers auth-refresh outcomes across every surface. Spelled out rather
-  // than imported: this module ships in every page's analytics script, and
-  // the package's core entry would drag the session client along. The test
-  // pins them to SESSION_TELEMETRY_EVENT.
-  authRefreshSucceeded: 'auth.unified.refresh.succeeded',
-  authRefreshFailed: 'auth.unified.refresh.failed',
+  // Shared with the cloud app so one PostHog funnel covers auth outcomes
+  // across every surface.
+  authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  authRefreshFailed: SESSION_TELEMETRY_EVENT.refreshFailed,
+  signUpOpened: AUTH_TELEMETRY_EVENT.signUpOpened,
+  authFailed: AUTH_TELEMETRY_EVENT.authFailed,
   workshopSignupRollbackFailed: 'website:workshop_signup_rollback_failed'
 } as const
 
@@ -74,6 +78,11 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.workshopSignupRollbackFailed
       properties?: undefined
+    }
+  | { name: typeof ANALYTICS_EVENT.signUpOpened; properties?: undefined }
+  | {
+      name: typeof ANALYTICS_EVENT.authFailed
+      properties: AuthErrorMetadata
     }
 
 let initialized = false
@@ -204,4 +213,12 @@ export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {
     name: ANALYTICS_EVENT.authRefreshFailed,
     properties: { outcome }
   })
+}
+
+export function captureSignupOpened(): void {
+  captureEvent({ name: ANALYTICS_EVENT.signUpOpened })
+}
+
+export function captureAuthFailed(metadata: AuthErrorMetadata): void {
+  captureEvent({ name: ANALYTICS_EVENT.authFailed, properties: metadata })
 }

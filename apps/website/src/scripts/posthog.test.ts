@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account/core'
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
 
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
@@ -258,7 +261,7 @@ describe('useWorkshopTurnstileMode', () => {
   })
 })
 
-describe('captureAuthRefresh*', () => {
+describe('shared auth telemetry events', () => {
   beforeEach(() => {
     vi.resetModules()
     hoisted.mockCapture.mockClear()
@@ -279,11 +282,30 @@ describe('captureAuthRefresh*', () => {
       SESSION_TELEMETRY_EVENT.refreshSucceeded,
       { outcome: 'succeeded' }
     )
-    expect(
-      hoisted.mockCapture,
-      'the names are inlined here to keep the session client out of the analytics bundle; they must still match the package'
-    ).toHaveBeenCalledWith(SESSION_TELEMETRY_EVENT.refreshFailed, {
-      outcome: 'retry_scheduled'
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      SESSION_TELEMETRY_EVENT.refreshFailed,
+      { outcome: 'retry_scheduled' }
+    )
+  })
+
+  it("reports sign-up opens and auth failures under the cloud app's event names", async () => {
+    const { initPostHog, captureSignupOpened, captureAuthFailed } =
+      await import('./posthog')
+    initPostHog()
+
+    captureSignupOpened()
+    captureAuthFailed({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'google_sign_in'
     })
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.signUpOpened,
+      undefined
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.authFailed,
+      { error_code: 'auth/popup-closed-by-user', auth_action: 'google_sign_in' }
+    )
   })
 })

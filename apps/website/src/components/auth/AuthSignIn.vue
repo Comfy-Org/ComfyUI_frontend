@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import {
   AUTH_TOAST_SUMMARIES,
+  isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
 import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
   AuthSignInEvent,
@@ -18,12 +21,19 @@ import {
   signInErrorMessage
 } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
-import { requestedReturnPath } from '../../config/workshop-return'
+import {
+  isSwitchingAccount,
+  requestedReturnPath
+} from '../../config/workshop-return'
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { useWorkshopAuthFlag } from '../../scripts/posthog'
+import {
+  captureAuthFailed,
+  captureSignupOpened,
+  useWorkshopAuthFlag
+} from '../../scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'
 import {
   AUTH_BRAND_GHOST_BUTTON_CLASS,
@@ -45,6 +55,9 @@ const { user, session, ensureFresh } = useWorkshopSession()
 const state = ref<AuthSignInState>({ step: 'idle' })
 const showEmailForm = ref(false)
 const isSecureContext = ref(true)
+// Decided after mount: the server has no user agent, and a mismatch here
+// would break hydration.
+const inAppBrowser = ref(false)
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 type WorkshopFirebase = Awaited<ReturnType<typeof loadWorkshopFirebase>>
@@ -124,6 +137,10 @@ async function completeSignIn(
     })
     await runMint(credential.user)
   } catch (error) {
+    captureAuthFailed({
+      error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
+      auth_action: `${provider}_${mode === 'signUp' ? 'sign_up' : 'sign_in'}`
+    })
     if (provider === 'email' && mode === 'signUp') {
       // Turnstile tokens are single-use. Any failed attempt consumes this
       // token, so require a fresh challenge before another submission.
@@ -182,6 +199,7 @@ const stopUserWatch = watch(
       dispatch({ type: 'signedOut' })
       return
     }
+    if (isSwitchingAccount(window.location.search)) return
     const before = state.value.step
     dispatch({
       type: 'userRestored',
@@ -206,6 +224,8 @@ onBeforeUnmount(stopSessionWatch)
 
 onMounted(() => {
   isSecureContext.value = window.isSecureContext !== false
+  inAppBrowser.value = isEmbeddedWebView()
+  if (mode === 'signUp') captureSignupOpened()
 })
 </script>
 
@@ -253,7 +273,9 @@ onMounted(() => {
     <div
       v-if="!isSecureContext"
       role="alert"
-      :class="['mt-4 w-full', AUTH_MESSAGE_WARN_CLASS]"
+      aria-live="assertive"
+      aria-atomic="true"
+      :class="cn('mt-4 w-full', AUTH_MESSAGE_WARN_CLASS)"
     >
       {{ t('auth.signIn.insecureContextWarning', locale) }}
     </div>
@@ -278,6 +300,13 @@ onMounted(() => {
           @google="signInWith('google')"
           @github="signInWith('github')"
         />
+        <p
+          v-if="inAppBrowser"
+          class="my-0 text-xs/5 text-primary-comfy-canvas/60"
+          data-testid="google-sso-in-app-browser-notice"
+        >
+          {{ t('auth.signIn.googleSsoInAppBrowserNotice', locale) }}
+        </p>
 
         <button
           type="button"
@@ -325,7 +354,12 @@ onMounted(() => {
       </p>
 
       <template v-if="state.step === 'signedIn' && state.messageKey">
-        <div role="alert" :class="AUTH_MESSAGE_ERROR_CLASS">
+        <div
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+          :class="AUTH_MESSAGE_ERROR_CLASS"
+        >
           {{ t(state.messageKey, locale) }}
         </div>
         <button
