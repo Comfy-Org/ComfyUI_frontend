@@ -248,8 +248,8 @@ const translations = {
     'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
   },
   'auth.signIn.error.session': {
-    en: 'You are signed in, but your workspace session could not be started. Retry, or sign out and back in.',
-    'zh-CN': '您已登录，但工作区会话无法启动。请重试，或退出后重新登录。'
+    en: 'You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.',
+    'zh-CN': '您已登录，但工作区会话无法启动。请重试，或使用其他账户重新登录。'
   },
   'auth.signIn.retry': {
     en: 'Retry session',
