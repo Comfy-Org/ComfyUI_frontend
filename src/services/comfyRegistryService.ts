@@ -2,6 +2,7 @@ import type { AxiosError } from 'axios'
 import axios from 'axios'
 
 import { useApiRequest } from '@/composables/useApiRequest'
+import { t } from '@/i18n'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 
 const API_BASE_URL = 'https://api.comfy.org'
@@ -28,8 +29,11 @@ export const useComfyRegistryService = () => {
   ): string => {
     if (!axios.isAxiosError(err))
       return err instanceof Error
-        ? `${context}: ${err.message}`
-        : `${context}: Unknown error occurred`
+        ? t('serviceErrors.contextWithMessage', {
+            context,
+            message: err.message
+          })
+        : t('serviceErrors.unknownError', { context })
 
     const axiosError = err as AxiosError<components['schemas']['ErrorResponse']>
 
@@ -41,23 +45,39 @@ export const useComfyRegistryService = () => {
 
       switch (status) {
         case 400:
-          return `Bad request: ${data?.message || 'Invalid input'}`
+          return t('serviceErrors.badRequest', {
+            message: data?.message || t('serviceErrors.invalidInput')
+          })
         case 401:
-          return 'Unauthorized: Authentication required'
+          return t('serviceErrors.unauthorized')
         case 403:
-          return `Forbidden: ${data?.message || 'Access denied'}`
+          return t('serviceErrors.forbidden', {
+            message: data?.message || t('serviceErrors.accessDenied')
+          })
         case 404:
-          return `Not found: ${data?.message || 'Resource not found'}`
+          return t('serviceErrors.notFound', {
+            message: data?.message || t('serviceErrors.resourceNotFound')
+          })
         case 409:
-          return `Conflict: ${data?.message || 'Resource conflict'}`
+          return t('serviceErrors.conflict', {
+            message: data?.message || t('serviceErrors.resourceConflict')
+          })
         case 500:
-          return `Server error: ${data?.message || 'Internal server error'}`
+          return t('serviceErrors.serverError', {
+            message: data?.message || t('serviceErrors.internalServerError')
+          })
         default:
-          return `${context}: ${data?.message || axiosError.message}`
+          return t('serviceErrors.contextWithMessage', {
+            context,
+            message: data?.message || axiosError.message
+          })
       }
     }
 
-    return `${context}: ${axiosError.message}`
+    return t('serviceErrors.contextWithMessage', {
+      context,
+      message: axiosError.message
+    })
   }
 
   const { isLoading, error, executeRequest } = useApiRequest({
@@ -82,10 +102,10 @@ export const useComfyRegistryService = () => {
     if (!packId || !versionId) return null
 
     const endpoint = `/nodes/${packId}/versions/${versionId}/comfy-nodes`
-    const errorContext = 'Failed to get node definitions'
+    const errorContext = t('serviceErrors.context.getNodeDefs')
     const routeSpecificErrors = {
-      403: 'This pack has been banned and its definition is not available',
-      404: 'The requested node, version, or comfy node does not exist'
+      403: t('serviceErrors.route.packBannedDefinition'),
+      404: t('serviceErrors.route.nodeVersionNotFound')
     }
 
     return executeRequest(
@@ -109,7 +129,7 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = '/nodes/search'
-    const errorContext = 'Failed to perform search'
+    const errorContext = t('serviceErrors.context.search')
 
     return executeRequest(
       (client) =>
@@ -128,9 +148,9 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = `/publishers/${publisherId}`
-    const errorContext = 'Failed to get publisher'
+    const errorContext = t('serviceErrors.context.getPublisher')
     const routeSpecificErrors = {
-      404: `Publisher not found: The publisher with ID ${publisherId} does not exist`
+      404: t('serviceErrors.route.publisherNotFound', { publisherId })
     }
 
     return executeRequest(
@@ -152,10 +172,10 @@ export const useComfyRegistryService = () => {
   ) => {
     const params = includeBanned ? { include_banned: true } : undefined
     const endpoint = `/publishers/${publisherId}/nodes`
-    const errorContext = 'Failed to list packs for publisher'
+    const errorContext = t('serviceErrors.context.listPacksForPublisher')
     const routeSpecificErrors = {
-      400: 'Bad request: Invalid input data',
-      404: `Publisher not found: The publisher with ID ${publisherId} does not exist`
+      400: t('serviceErrors.route.invalidInputData'),
+      404: t('serviceErrors.route.publisherNotFound', { publisherId })
     }
 
     return executeRequest(
@@ -178,10 +198,10 @@ export const useComfyRegistryService = () => {
   ) => {
     const endpoint = `/nodes/${packId}/reviews`
     const params = { star }
-    const errorContext = 'Failed to add review'
+    const errorContext = t('serviceErrors.context.addReview')
     const routeSpecificErrors = {
-      400: 'Bad request: Invalid review',
-      404: `Pack not found: Pack with ID ${packId} does not exist`
+      400: t('serviceErrors.route.invalidReview'),
+      404: t('serviceErrors.route.packNotFound', { packId })
     }
 
     return executeRequest(
@@ -202,7 +222,7 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = '/nodes'
-    const errorContext = 'Failed to list packs'
+    const errorContext = t('serviceErrors.context.listPacks')
 
     return executeRequest(
       (client) =>
@@ -222,10 +242,10 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}/versions`
-    const errorContext = 'Failed to get pack versions'
+    const errorContext = t('serviceErrors.context.getPackVersions')
     const routeSpecificErrors = {
-      403: 'This pack has been banned and its versions are not available',
-      404: `Pack not found: Pack with ID ${packId} does not exist`
+      403: t('serviceErrors.route.packBannedVersions'),
+      404: t('serviceErrors.route.packNotFound', { packId })
     }
 
     return executeRequest(
@@ -247,10 +267,10 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}/versions/${versionId}`
-    const errorContext = 'Failed to get pack version'
+    const errorContext = t('serviceErrors.context.getPackVersion')
     const routeSpecificErrors = {
-      403: 'This pack has been banned and its versions are not available',
-      404: `Pack not found: Pack with ID ${packId} does not exist`
+      403: t('serviceErrors.route.packBannedVersions'),
+      404: t('serviceErrors.route.packNotFound', { packId })
     }
 
     return executeRequest(
@@ -270,9 +290,9 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = `/nodes/${packId}`
-    const errorContext = 'Failed to get pack'
+    const errorContext = t('serviceErrors.context.getPack')
     const routeSpecificErrors = {
-      404: `Pack not found: The pack with ID ${packId} does not exist`
+      404: t('serviceErrors.route.packByIdNotFound', { packId })
     }
 
     return executeRequest(
@@ -315,9 +335,9 @@ export const useComfyRegistryService = () => {
     if (!nodeName || nodeName === 'undefined') return null
 
     const endpoint = `/comfy-nodes/${nodeName}/node`
-    const errorContext = 'Failed to infer pack from comfy node name'
+    const errorContext = t('serviceErrors.context.inferPackFromNodeName')
     const routeSpecificErrors = {
-      404: `Comfy node not found: The node with name ${nodeName} does not exist in the registry`
+      404: t('serviceErrors.route.comfyNodeNotFound', { nodeName })
     }
 
     return executeRequest(
@@ -357,9 +377,9 @@ export const useComfyRegistryService = () => {
     signal?: AbortSignal
   ) => {
     const endpoint = '/bulk/nodes/versions'
-    const errorContext = 'Failed to get bulk node versions'
+    const errorContext = t('serviceErrors.context.getBulkNodeVersions')
     const routeSpecificErrors = {
-      400: 'Bad request: Invalid node version identifiers provided'
+      400: t('serviceErrors.route.invalidNodeVersionIdentifiers')
     }
 
     const requestBody: components['schemas']['BulkNodeVersionsRequest'] = {

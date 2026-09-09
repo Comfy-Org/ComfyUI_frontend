@@ -52,12 +52,18 @@ export const useCustomerEventsService = () => {
     routeSpecificErrors?: Record<number, string>
   ): string => {
     if (!axios.isAxiosError(err)) {
-      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
+      return t('serviceErrors.failedWithMessage', {
+        context,
+        message: err instanceof Error ? err.message : String(err)
+      })
     }
 
     const axiosError = err as AxiosError<ErrorResponse>
     if (!axiosError.response) {
-      return `${context} failed: ${axiosError.message}`
+      return t('serviceErrors.failedWithMessage', {
+        context,
+        message: axiosError.message
+      })
     }
 
     const status = axiosError.response.status
@@ -67,7 +73,7 @@ export const useCustomerEventsService = () => {
 
     return (
       axiosError.response.data?.message ??
-      `${context} failed with status ${status}`
+      t('serviceErrors.failedWithStatus', { context, status })
     )
   }
 
@@ -167,10 +173,10 @@ export const useCustomerEventsService = () => {
     page = 1,
     limit = 10
   }: CustomerEventsResponseQuery = {}): Promise<CustomerEventsResponse | null> {
-    const errorContext = 'Fetching customer events'
+    const errorContext = t('serviceErrors.context.fetchingCustomerEvents')
     const routeSpecificErrors = {
-      400: 'Invalid input, object invalid',
-      404: 'Not found'
+      400: t('serviceErrors.route.invalidInputObject'),
+      404: t('serviceErrors.route.resourceNotFoundShort')
     }
 
     const authStore = useAuthStore()
@@ -189,7 +195,7 @@ export const useCustomerEventsService = () => {
     }
     if (!authHeaders) {
       isLoading.value = false
-      error.value = 'Authentication header is missing'
+      error.value = t('serviceErrors.authHeaderMissing')
       return null
     }
 
