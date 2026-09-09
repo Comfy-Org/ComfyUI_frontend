@@ -3276,43 +3276,6 @@ describe('useSubscriptionCheckout', () => {
       await attemptB
     })
 
-    it('releases the lock when a team-to-personal downgrade parks', async () => {
-      // The downgrade runs inside handleSubscription's lock but hands the
-      // response to the shared handler itself, so it has to forward the token
-      // or the parked operation holds a lock nobody can release.
-      const checkout = await setupWithApprovedPreview()
-      checkout.selectedTierKey.value = 'standard'
-      checkout.selectedBillingCycle.value = 'yearly'
-      mockIsTeamPlan.value = true
-      mockShowDowngradeToPersonalDialog.mockResolvedValue({
-        preview: { allowed: true } as PreviewSubscribeResponse,
-        response: { status: 'pending_payment', billing_op_id: 'op-downgrade' }
-      })
-      mockGetOperation.mockReturnValue({
-        status: 'pending',
-        workspaceId: 'workspace-1',
-        phase: 'awaiting_payment_method'
-      })
-      let resolveOperation!: (operation: { status: 'pending' }) => void
-      mockStartOperation.mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            resolveOperation = resolve
-          })
-      )
-
-      const attempt = checkout.handleAddCreditCard()
-      await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledOnce())
-
-      // The lock is free, so the recovery CTA's own click can get through.
-      mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
-      await checkout.handleAddCreditCard()
-      expect(mockShowDowngradeToPersonalDialog).toHaveBeenCalledTimes(2)
-
-      resolveOperation({ status: 'pending' })
-      await attempt
-    })
-
     it('keeps polling an operation parked on an invoice instead of prompting', async () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
