@@ -20,6 +20,9 @@ export function createAgentGraphNodePresenter(
   let element: HTMLElement | null = null
   let stagedElement: HTMLElement | null = null
   let stagedVisibility = ''
+  let stagedOpacity = ''
+  let stagedInert = false
+  let observer: MutationObserver | undefined
 
   function resolveElement(): HTMLElement | null {
     if (!element?.isConnected) {
@@ -36,21 +39,43 @@ export function createAgentGraphNodePresenter(
   function restoreStagedVisibility(): void {
     if (stagedElement?.style.visibility === 'hidden')
       stagedElement.style.visibility = stagedVisibility
+    if (stagedElement?.style.opacity === '0')
+      stagedElement.style.opacity = stagedOpacity
+    if (stagedElement) stagedElement.inert = stagedInert
     stagedElement = null
     stagedVisibility = ''
+    stagedOpacity = ''
+  }
+
+  function hideStagedNode(): void {
+    if (!isCurrentGraph()) return
+    const node = resolveElement()
+    if (!node || node === stagedElement) return
+    restoreStagedVisibility()
+    stagedElement = node
+    stagedVisibility = node.style.visibility
+    stagedOpacity = node.style.opacity
+    stagedInert = node.inert
+    node.style.visibility = 'hidden'
+    // Descendants can override visibility; opacity suppresses the whole subtree.
+    node.style.opacity = '0'
+    node.inert = true
   }
 
   function prepare(): void {
     if (!isCurrentGraph()) return
-    const node = resolveElement()
-    if (!node) return
-    stagedElement = node
-    stagedVisibility = node.style.visibility
-    node.style.visibility = 'hidden'
+    hideStagedNode()
+    const container = document.querySelector('#graph-canvas-container')
+    if (!container || observer) return
+    // Remote nodes can mount after staging. Hide them before their first paint.
+    observer = new MutationObserver(hideStagedNode)
+    observer.observe(container, { childList: true, subtree: true })
   }
 
   function present(position: AgentGraphBuildPoint | null): void {
     if (position !== null && !isCurrentGraph()) return
+    observer?.disconnect()
+    observer = undefined
 
     if (position === null) {
       restoreStagedVisibility()

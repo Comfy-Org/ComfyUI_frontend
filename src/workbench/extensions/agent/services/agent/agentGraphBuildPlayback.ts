@@ -18,7 +18,8 @@ interface AgentGraphBuildRequest {
   source: AgentGraphBuildPoint
   pickup?: AgentGraphBuildPoint
   selectFromLibrary?: (
-    signal: AbortSignal
+    signal: AbortSignal,
+    ready: () => Promise<boolean>
   ) => Promise<AgentGraphBuildPoint | null>
   target: AgentGraphBuildPoint
   resolveEndpoints?: () => {
@@ -29,6 +30,7 @@ interface AgentGraphBuildRequest {
   prepare?: () => void
   present(position: AgentGraphBuildPoint | null): void
   toClient(position: AgentGraphBuildPoint): AgentGraphBuildPoint
+  fromClient?: (position: AgentGraphBuildPoint) => AgentGraphBuildPoint
   suspendConnections?: () => () => void
   durationMs?: number
   gapMs?: number
@@ -112,6 +114,11 @@ async function waitUntilResumed(): Promise<void> {
   resume = null
 }
 
+async function readyToPresent(item: QueuedBuild): Promise<boolean> {
+  await waitUntilResumed()
+  return !isBuildInterrupted(item)
+}
+
 function wake(): void {
   resume?.()
   resume = null
@@ -143,6 +150,7 @@ async function animateSegment(
   durationMs: number,
   update: (position: AgentGraphBuildPoint) => void
 ): Promise<void> {
+  if (!(await readyToPresent(item))) return
   const now = item.now ?? (() => performance.now())
   const nextFrame = item.nextFrame ?? defaultNextFrame
   update(source)
@@ -211,11 +219,18 @@ async function animate(item: QueuedBuild): Promise<void> {
     )
     if (!isBuildInterrupted(item))
       await waitForInterrupt((item.wait ?? defaultWait)(240))
-    if (!isBuildInterrupted(item) && item.selectFromLibrary) {
+    if (!(await readyToPresent(item))) return
+    if (item.selectFromLibrary) {
       const selected = await waitForInterrupt(
-        item.selectFromLibrary(item.abortController.signal)
+        item.selectFromLibrary(item.abortController.signal, () =>
+          readyToPresent(item)
+        )
       )
+      if (!(await readyToPresent(item))) return
       if (selected !== interrupted && selected) {
+        const playback = state.value
+        if (item.fromClient && playback.phase === 'playing')
+          pickup = item.fromClient({ x: playback.cursorX, y: playback.cursorY })
         await animateSegment(
           item,
           pickup,
@@ -228,7 +243,7 @@ async function animate(item: QueuedBuild): Promise<void> {
           await waitForInterrupt((item.wait ?? defaultWait)(180))
       }
     }
-    if (isBuildInterrupted(item)) return
+    if (!(await readyToPresent(item))) return
     dispatch({ type: 'actionChanged', action: 'dragging' })
     await animateSegment(item, pickup, item.target, durationMs, (position) =>
       present(item, position)
@@ -333,7 +348,7 @@ export function stageAgentGraphNodeBuild(
   const item = queue.at(-1)
   if (item?.prepare)
     queueMicrotask(() => {
-      if (!item.cancelled && item.isPresentable?.() !== false) item.prepare?.()
+      if (!isBuildInterrupted(item)) item.prepare?.()
     })
   dispatch({ type: 'staged' })
   scheduleDrain()

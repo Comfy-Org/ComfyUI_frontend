@@ -94,7 +94,7 @@ const progressLabel = computed(() => {
   <div
     v-if="progress"
     aria-hidden="true"
-    class="pointer-events-none fixed top-0 left-0 z-1100 transition-transform duration-75 ease-linear motion-reduce:hidden"
+    class="pointer-events-none fixed top-0 left-0 z-1100 motion-reduce:hidden"
     :style="{
       transform: `translate3d(${progress.cursorX}px, ${progress.cursorY}px, 0)`
     }"

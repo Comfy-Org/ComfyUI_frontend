@@ -94,6 +94,8 @@ describe('agent graph node presenter', () => {
 
     presenter.prepare()
     expect(node.style.visibility).toBe('hidden')
+    expect(node.style.opacity).toBe('0')
+    expect(node.inert).toBe(true)
 
     presenter.present({ x: 20, y: 400 })
     expect(node.style.visibility).toBe('collapse')
@@ -101,6 +103,48 @@ describe('agent graph node presenter', () => {
 
     presenter.present(null)
     expect(node.style.visibility).toBe('collapse')
+    expect(node.style.opacity).toBe('')
+    expect(node.inert).toBe(false)
+  })
+
+  it('stages asynchronously mounted nodes before revealing any descendants', async () => {
+    const container = document.createElement('div')
+    container.id = 'graph-canvas-container'
+    document.body.append(container)
+    const presenter = createAgentGraphNodePresenter('late', { x: 400, y: 80 })
+    presenter.prepare()
+
+    const node = addNode('late')
+    node.style.opacity = '0.6'
+    const widget = document.createElement('button')
+    widget.style.visibility = 'visible'
+    node.append(widget)
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+    expect(node.style.opacity).toBe('0')
+    expect(node.inert).toBe(true)
+    presenter.present({ x: 20, y: 300 })
+    expect(node.style.opacity).toBe('0.6')
+    expect(node.inert).toBe(false)
+    presenter.present(null)
+  })
+
+  it('does not hide a later mount after a queued presentation is cancelled', async () => {
+    const container = document.createElement('div')
+    container.id = 'graph-canvas-container'
+    document.body.append(container)
+    const presenter = createAgentGraphNodePresenter('cancelled', {
+      x: 400,
+      y: 80
+    })
+    presenter.prepare()
+    presenter.present(null)
+
+    const node = addNode('cancelled')
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+    expect(node.style.opacity).toBe('')
+    expect(node.style.visibility).toBe('')
+    expect(node.inert).toBe(false)
   })
 
   it('temporarily hides final-position links without overwriting a newer mode', () => {

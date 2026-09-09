@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -110,6 +110,7 @@ import {
   suspendAgentGraphConnections
 } from './services/agent/agentGraphNodePresenter'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { graphBuildCameraTarget } from './services/agent/agentGraphBuildViewport'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import {
@@ -177,6 +178,56 @@ const CREATING_TAB_MIN_DURATION_MS = 500
 const canvasStore = useCanvasStore()
 const linkStore = useLinkStore()
 const nodeDataStore = useNodeDataStore()
+const graphBuildNodes = new Map<
+  string,
+  { scope: GraphScope; nodeId: LinkTopology['originNodeId'] }
+>()
+
+function frameGraphBuildNodes(): void {
+  const canvas = app.canvas
+  if (!canvas) return
+  const layouts = [...graphBuildNodes.values()]
+    .filter(
+      ({ scope }) =>
+        canvasStore.rootGraphId === scope.rootGraphId &&
+        canvasStore.currentGraph?.id === scope.owningGraphId
+    )
+    .flatMap(({ scope, nodeId }) => {
+      const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
+      return layout ? [layout] : []
+    })
+  if (layouts.length === 0) return
+  const left = Math.min(...layouts.map(({ position }) => position.x))
+  const top =
+    Math.min(...layouts.map(({ position }) => position.y)) -
+    LiteGraph.NODE_TITLE_HEIGHT
+  const right = Math.max(
+    ...layouts.map(({ position, size }) => position.x + size.width)
+  )
+  const bottom = Math.max(
+    ...layouts.map(({ position, size }) => position.y + size.height)
+  )
+  const canvasRect = canvas.canvas.getBoundingClientRect()
+  const panelRect =
+    document.querySelector('.graph-canvas-panel')?.getBoundingClientRect() ??
+    canvasRect
+  const padding = 32
+  const bottomInset = 160
+  const target = graphBuildCameraTarget(
+    [left, top, right - left, bottom - top],
+    [
+      panelRect.left - canvasRect.left + padding,
+      panelRect.top - canvasRect.top + padding,
+      panelRect.width - padding * 2,
+      panelRect.height - padding - bottomInset
+    ],
+    canvas.ds.state
+  )
+  if (!target) return
+  canvas.ds.offset = target.offset
+  canvas.ds.scale = target.scale
+  canvas.setDirty(true, true)
+}
 
 function agentGraphBuildKey(graphId: string, nodeId: string | number): string {
   return `${graphId}:${nodeId}`
@@ -292,13 +343,18 @@ function waitForGraphBuildSearch(signal: AbortSignal): Promise<boolean> {
 async function selectGraphBuildNodeFromLibrary(
   nodeType: string,
   fallback: { x: number; y: number },
-  signal: AbortSignal
+  signal: AbortSignal,
+  ready: () => Promise<boolean>
 ): Promise<{ x: number; y: number } | null> {
-  if (signal.aborted) return null
+  if (signal.aborted || !(await ready())) return null
   sidebarTabStore.activeSidebarTabId = 'node-library'
   await nextTick()
   await graphBuildFrame()
-  if (signal.aborted) return null
+  if (signal.aborted || !(await ready())) return null
+
+  frameGraphBuildNodes()
+  await graphBuildFrame()
+  if (signal.aborted || !(await ready())) return null
 
   const input = graphBuildSearchInput()
   if (!input) return null
@@ -308,7 +364,7 @@ async function selectGraphBuildNodeFromLibrary(
   if (!(await waitForGraphBuildSearch(signal))) return null
   await nextTick()
   await graphBuildFrame()
-  if (signal.aborted) return null
+  if (signal.aborted || !(await ready())) return null
 
   const result = Array.from(
     document.querySelectorAll<HTMLElement>('[data-node-type]')
@@ -316,7 +372,7 @@ async function selectGraphBuildNodeFromLibrary(
   if (!result) return null
   result.scrollIntoView({ block: 'center' })
   await graphBuildFrame()
-  if (signal.aborted) return null
+  if (signal.aborted || !(await ready())) return null
 
   highlightedGraphBuildLibraryNode?.removeAttribute(
     'data-agent-teaching-selected'
@@ -332,20 +388,47 @@ async function selectGraphBuildNodeFromLibrary(
 
 function suspendGraphBuildPresentation(canvas: LGraphCanvas | null) {
   const previousSidebarTabId = sidebarTabStore.activeSidebarTabId
+  const previousSearchValue = graphBuildSearchInput()?.value ?? ''
   const restoreConnections = suspendAgentGraphConnections(canvas)
+  const stopPointer = useEventListener(
+    document,
+    'pointerdown',
+    interruptGraphBuild,
+    { capture: true }
+  )
+  const stopWheel = useEventListener(document, 'wheel', interruptGraphBuild, {
+    capture: true,
+    passive: true
+  })
+  const stopResize = useEventListener(window, 'resize', () => {
+    frameGraphBuildNodes()
+    skipAgentGraphBuild()
+  })
   return () => {
+    stopPointer()
+    stopWheel()
+    stopResize()
     highlightedGraphBuildLibraryNode?.removeAttribute(
       'data-agent-teaching-selected'
     )
     highlightedGraphBuildLibraryNode = null
     const input = graphBuildSearchInput()
     if (input?.value === activeGraphBuildSearch)
-      setGraphBuildSearchValue(input, '')
+      setGraphBuildSearchValue(input, previousSearchValue)
     activeGraphBuildSearch = ''
     if (sidebarTabStore.activeSidebarTabId === 'node-library')
       sidebarTabStore.activeSidebarTabId = previousSidebarTabId
     restoreConnections()
+    graphBuildNodes.clear()
   }
+}
+
+function interruptGraphBuild(event: Event): void {
+  if (
+    event.target instanceof Element &&
+    event.target.closest('#graph-canvas, .lg-node')
+  )
+    skipAgentGraphBuild()
 }
 
 const graphMutationsByWorkflow = new Map<
@@ -408,17 +491,22 @@ const graphMutations = (workflowId: string) => {
               t('agent.graphBuild.node'),
             source,
             pickup,
-            selectFromLibrary: (signal) =>
+            selectFromLibrary: (signal, ready) =>
               selectGraphBuildNodeFromLibrary(
                 nodeDataStore.getNode(scope.rootGraphId, nodeId)?.type ?? '',
                 pickup,
-                signal
+                signal,
+                ready
               ),
             target: position,
             isPresentable: isCurrentGraph,
-            prepare: presenter.prepare,
+            prepare: () => {
+              graphBuildNodes.set(buildKey, { scope, nodeId })
+              presenter.prepare()
+            },
             present: presenter.present,
             toClient: graphBuildClientPosition,
+            fromClient: (client) => graphBuildPointFromClient(client, pickup),
             suspendConnections: () =>
               suspendGraphBuildPresentation(app.canvas ?? null)
           })
@@ -427,6 +515,7 @@ const graphMutations = (workflowId: string) => {
       deleteNodes(scope, nodeIds, context) {
         const timestamp = Date.now()
         for (const nodeId of nodeIds) {
+          graphBuildNodes.delete(agentGraphBuildKey(scope.rootGraphId, nodeId))
           cancelAgentGraphNodeBuild(
             agentGraphBuildKey(scope.rootGraphId, nodeId)
           )

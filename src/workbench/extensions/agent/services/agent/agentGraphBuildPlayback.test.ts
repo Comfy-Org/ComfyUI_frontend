@@ -115,6 +115,62 @@ describe('agent graph build playback', () => {
     vi.runAllTimers()
   })
 
+  it('rebases the cursor after the library selection changes the camera', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    let cameraOffset = 0
+    const fromClient = vi.fn(({ x, y }: { x: number; y: number }) => ({
+      x: x - cameraOffset,
+      y
+    }))
+    const present = vi.fn()
+    stageAgentGraphNodeBuild({
+      key: 'camera-rebase',
+      label: 'Load Image',
+      source: { x: 400, y: 700 },
+      pickup: { x: 48, y: 160 },
+      target: { x: 620, y: 120 },
+      selectFromLibrary: async () => {
+        cameraOffset = 200
+        return { x: -20, y: 260 }
+      },
+      present,
+      fromClient,
+      toClient: ({ x, y }) => ({ x: x + cameraOffset, y }),
+      durationMs: 0,
+      gapMs: 0,
+      wait: async () => {}
+    })
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(fromClient).toHaveBeenCalledWith({ x: 48, y: 160 })
+    expect(present).toHaveBeenCalledWith({ x: -20, y: 260 })
+    expect(present).toHaveBeenCalledWith({ x: 620, y: 120 })
+  })
+
+  it('does not hide queued nodes after an immediate skip', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const prepare = vi.fn()
+    const present = vi.fn()
+    stageAgentGraphNodeBuild({
+      key: 'immediate-skip',
+      label: 'Load Image',
+      source: { x: 40, y: 500 },
+      target: { x: 620, y: 120 },
+      prepare,
+      present,
+      toClient: (position) => position
+    })
+    skipAgentGraphBuild()
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(prepare).not.toHaveBeenCalled()
+    expect(present).toHaveBeenLastCalledWith(null)
+  })
+
   it('draws a connection between output and input sockets', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('matchMedia', () => ({ matches: false }))
@@ -163,6 +219,45 @@ describe('agent graph build playback', () => {
       expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
     )
     vi.runAllTimers()
+  })
+
+  it('does not start dragging when library selection resolves during a pause', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    let resolveSelection:
+      | ((point: { x: number; y: number }) => void)
+      | undefined
+    const present = vi.fn()
+    stageAgentGraphNodeBuild({
+      key: 'paused-library',
+      label: 'Load Image',
+      source: { x: 400, y: 700 },
+      pickup: { x: 48, y: 160 },
+      target: { x: 620, y: 120 },
+      present,
+      toClient: (position) => position,
+      selectFromLibrary: () =>
+        new Promise((resolve) => {
+          resolveSelection = resolve
+        }),
+      durationMs: 0,
+      gapMs: 0,
+      wait: async () => {}
+    })
+    await vi.waitFor(() => expect(resolveSelection).toBeTypeOf('function'))
+    pauseAgentGraphBuild()
+    resolveSelection?.({ x: 180, y: 260 })
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(agentGraphBuildPlaybackState.value).toMatchObject({
+      phase: 'paused',
+      action: 'selecting'
+    })
+    expect(present).not.toHaveBeenCalled()
+    resumeAgentGraphBuild()
+    await vi.waitFor(() =>
+      expect(agentGraphBuildPlaybackState.value.phase).toBe('complete')
+    )
+    expect(present).toHaveBeenCalledWith({ x: 620, y: 120 })
   })
 
   it('bypasses presentation animation for reduced-motion users', () => {
