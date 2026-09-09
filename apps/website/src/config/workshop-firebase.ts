@@ -7,6 +7,7 @@
  * effects and wires them to the package identity.
  */
 import type { User, UserCredential } from 'firebase/auth'
+import { getAdditionalUserInfo } from 'firebase/auth'
 
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
@@ -23,6 +24,8 @@ import {
 
 // Named app: never contend with a default app another script might create.
 const WORKSHOP_APP_NAME = 'workshop'
+/** Ceiling on the provisioning POST; a hung request must not strand sign-in. */
+const PROVISIONING_TIMEOUT_MS = 15_000
 
 const identity = createFirebaseIdentity({
   options: WORKSHOP_FIREBASE_OPTIONS,
@@ -59,7 +62,8 @@ export async function provisionCustomer(
     `${WORKSHOP_ROUTER_BASE_URL}${CUSTOMER_PROVISIONING_PATH}`,
     customerProvisioningRequest({
       authHeaders: { Authorization: `Bearer ${token}` },
-      signupSource: 'comfy-workshop'
+      signupSource: 'comfy-workshop',
+      signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
     })
   )
   if (!isCustomerProvisioned(response)) {
@@ -93,6 +97,11 @@ export function signInWorkshopWithGoogle(): Promise<UserCredential> {
 
 export function signInWorkshopWithGitHub(): Promise<UserCredential> {
   return socialSignIn(identity.signInWithGitHub)
+}
+
+/** Whether the popup created the account, the way the cloud app reports it. */
+export function isNewWorkshopUser(credential: UserCredential): boolean {
+  return getAdditionalUserInfo(credential)?.isNewUser ?? false
 }
 
 export function signOutWorkshop(): Promise<void> {

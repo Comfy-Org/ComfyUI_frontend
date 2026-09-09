@@ -3,10 +3,13 @@ import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import {
+  AUTH_ERROR_COPY,
+  authErrorMessage,
   classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account/firebaseAuthError'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
@@ -28,6 +31,15 @@ import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
+
+/** The shipped auth.errors table, read through vue-i18n at resolution time. */
+const localizedAuthErrorCopy = (): AuthErrorCopy =>
+  Object.fromEntries(
+    Object.keys(AUTH_ERROR_COPY.en).map((key) => [
+      key,
+      st(`auth.errors.${key}`, t('auth.errors.generic'))
+    ])
+  )
 
 /**
  * Service for Firebase Auth actions.
@@ -63,24 +75,12 @@ export const useAuthActions = () => {
           email: 'support@comfy.org'
         })
       })
-    } else if (classification.kind === 'signup-blocked') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.signupBlocked')
-      })
-    } else if (
-      classification.kind === 'popup-dismissed' ||
-      classification.kind === 'auth'
-    ) {
+    } else if (classification.kind !== 'unknown') {
       const severity = severityForAuthError(classification)
       toastStore.add({
         severity,
         summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
-        detail: st(
-          `auth.errors.${classification.code}`,
-          t('auth.errors.generic')
-        )
+        detail: authErrorMessage(classification, localizedAuthErrorCopy())
       })
     } else if (error instanceof FirebaseError) {
       // classifyAuthError only knows auth/ codes; an app/ or installations/

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { until } from '@vueuse/core'
 import {
   AUTH_TOAST_SUMMARIES,
   isFirebaseAuthErrorLike,
@@ -30,11 +31,14 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
+  captureAuthCompleted,
   captureAuthFailed,
   captureSignupOpened,
-  useWorkshopAuthFlag
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
 import { AUTH_LINK_BUTTON_CLASS, AUTH_MESSAGE_ERROR_CLASS } from './authClasses'
+import AuthFlagTimeout from './AuthFlagTimeout.vue'
 
 const { mode = 'signIn', locale = 'en' } = defineProps<{
   /** Same flow either way for social providers; only the copy differs. */
@@ -43,9 +47,21 @@ const { mode = 'signIn', locale = 'en' } = defineProps<{
 }>()
 
 const HOME = '/'
+/** The cloud app's router gives auth this long to initialize before its timeout view. */
+const AUTH_INIT_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
-const { user, session, ensureFresh } = useWorkshopSession()
+const flagSettled = useWorkshopAuthFlagSettled()
+const authTimedOut = ref(false)
+const {
+  user,
+  session,
+  settled: identitySettled,
+  ensureFresh
+} = useWorkshopSession()
+// A returning signed-in visitor leaves without ever seeing the form, as on
+// cloud where the router holds the route until auth has initialized.
+const leaving = ref(false)
 const state = ref<AuthSignInState>({ step: 'idle' })
 const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
@@ -84,6 +100,7 @@ async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
     dispatch({ type: 'mintSucceeded' })
     leaveSignInPage()
   } else {
+    leaving.value = false
     dispatch({ type: 'mintFailed' })
   }
 }
@@ -98,6 +115,12 @@ async function signInWith(provider: AuthSignInProvider) {
       provider === 'google'
         ? await firebase.signInWorkshopWithGoogle()
         : await firebase.signInWorkshopWithGitHub()
+    captureAuthCompleted({
+      method: provider,
+      is_new_user: mode === 'signUp' || firebase.isNewWorkshopUser(credential),
+      user_id: credential.user.uid,
+      email: credential.user.email ?? undefined
+    })
     dispatch({
       type: 'popupSucceeded',
       email: credential.user.email ?? credential.user.displayName ?? ''
@@ -141,6 +164,7 @@ const stopUserWatch = watch(
       email: restored.email ?? restored.displayName ?? ''
     })
     if (before !== state.value.step && state.value.step === 'minting') {
+      leaving.value = true
       // No argument: `restored` is a readonly proxy, and the client already
       // holds the raw current user.
       void runMint()
@@ -157,15 +181,25 @@ const stopSessionWatch = watch(session, (active) => {
 })
 onBeforeUnmount(stopSessionWatch)
 
+let initTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(initTimer))
+
 onMounted(() => {
   inAppBrowser.value = isEmbeddedWebView()
-  if (mode === 'signUp') captureSignupOpened()
+  // Cloud reports the open when its sign-up page renders; here that is the
+  // moment the flag lets the page show.
+  if (mode === 'signUp')
+    void until(enabled).toBe(true).then(captureSignupOpened)
+  initTimer = setTimeout(() => {
+    authTimedOut.value =
+      !flagSettled.value || (enabled.value && !identitySettled.value)
+  }, AUTH_INIT_TIMEOUT_MS)
 })
 </script>
 
 <template>
   <section
-    v-if="enabled"
+    v-if="enabled && identitySettled && !leaving"
     class="mx-auto w-full max-w-md rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
     :aria-busy="state.step === 'pending' || state.step === 'minting'"
   >
@@ -247,4 +281,17 @@ onMounted(() => {
       </template>
     </p>
   </section>
+  <AuthFlagTimeout v-else-if="authTimedOut" :locale="locale" />
+  <div
+    v-else-if="enabled"
+    data-testid="auth-initializing"
+    aria-busy="true"
+    class="mx-auto flex w-full max-w-md flex-col gap-6 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-canvas/4 p-8"
+  >
+    <div
+      v-for="n in 3"
+      :key="n"
+      class="h-10 w-full animate-pulse rounded-md bg-primary-comfy-canvas/10"
+    />
+  </div>
 </template>

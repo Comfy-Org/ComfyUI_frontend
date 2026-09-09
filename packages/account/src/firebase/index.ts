@@ -1,34 +1,34 @@
 /**
- * The package-owned identity entry. Hosts pass Firebase configuration —
- * including the persistence choice — and get back the identity surface the
- * session core binds to plus the sign-in actions.
+ * The package-owned identity entry. Hosts either pass Firebase configuration
+ * — including the persistence choice — for an app the package initializes,
+ * or hand over the `Auth` they already hold, and get back the identity
+ * surface the session core binds to plus the sign-in actions.
  *
  * Popup, never `signInWithRedirect`: the redirect flow is broken under
  * Safari's ITP for cross-origin helper domains, which is why the cloud app
- * is popup-only too. Provider scopes and the `select_account` prompt mirror
- * the cloud app's provider setup in src/stores/authStore.ts.
+ * is popup-only too. Provider scopes and the `select_account` prompt are the
+ * cloud app's.
  *
  * This entry is the one place the package touches the Firebase SDK;
  * importGuard.test.ts holds `./core` to that boundary.
  */
 import type { FirebaseOptions } from 'firebase/app'
 import { getApps, initializeApp } from 'firebase/app'
-import type { Persistence, User, UserCredential } from 'firebase/auth'
+import type { Auth, Persistence, User, UserCredential } from 'firebase/auth'
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
   initializeAuth,
   onAuthStateChanged,
-  signInWithPopup
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut
 } from 'firebase/auth'
 
-export interface FirebaseIdentityConfig {
-  readonly options: FirebaseOptions
-  /** Named app: never contend with a default app another script creates. */
-  readonly appName?: string
-  /** Host-selected persistence; Firebase's default when omitted. */
-  readonly persistence?: Persistence
+interface ActionCeiling {
   /**
    * Ceiling on the network-shaped actions (email sign-in/sign-up, password
    * reset). Popup sign-in stays unbounded: the user may legitimately take
@@ -36,6 +36,27 @@ export interface FirebaseIdentityConfig {
    */
   readonly actionTimeoutMs?: number
 }
+
+export interface FirebaseIdentityAppConfig extends ActionCeiling {
+  readonly options: FirebaseOptions
+  /** Named app: never contend with a default app another script creates. */
+  readonly appName?: string
+  /** Host-selected persistence; Firebase's default when omitted. */
+  readonly persistence?: Persistence
+}
+
+/**
+ * A host that already holds an `Auth` (the cloud app's vuefire instance)
+ * binds the entry to it: no second app, no second persistence store. Its
+ * actions run unbounded unless the host asks for a ceiling.
+ */
+export interface FirebaseIdentityAuthConfig extends ActionCeiling {
+  readonly auth: Auth
+}
+
+export type FirebaseIdentityConfig =
+  | FirebaseIdentityAppConfig
+  | FirebaseIdentityAuthConfig
 
 export interface FirebaseIdentity {
   /**
@@ -70,7 +91,7 @@ function githubProvider(): GithubAuthProvider {
 
 const DEFAULT_ACTION_TIMEOUT_MS = 15_000
 
-function bounded<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
+function withCeiling<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error('Firebase auth action timed out')),
@@ -89,13 +110,10 @@ function bounded<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
   })
 }
 
-export function createFirebaseIdentity(
-  config: FirebaseIdentityConfig
-): FirebaseIdentity {
+function authResolver(config: FirebaseIdentityConfig): () => Auth {
+  if ('auth' in config) return () => config.auth
   const appName = config.appName ?? 'comfy-account'
-  const actionTimeoutMs = config.actionTimeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS
-
-  const auth = () => {
+  return () => {
     const existing = getApps().find((app) => app.name === appName)
     if (existing) return getAuth(existing)
     const app = initializeApp(config.options, appName)
@@ -103,32 +121,29 @@ export function createFirebaseIdentity(
       ? initializeAuth(app, { persistence: config.persistence })
       : getAuth(app)
   }
+}
+
+export function createFirebaseIdentity(
+  config: FirebaseIdentityConfig
+): FirebaseIdentity {
+  const actionTimeoutMs =
+    'auth' in config
+      ? config.actionTimeoutMs
+      : (config.actionTimeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS)
+  const auth = authResolver(config)
+  const bounded = <T>(run: Promise<T>): Promise<T> =>
+    actionTimeoutMs === undefined ? run : withCeiling(run, actionTimeoutMs)
 
   return {
     onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
-    signInWithEmail: async (email, password) => {
-      const { signInWithEmailAndPassword } = await import('firebase/auth')
-      return bounded(
-        signInWithEmailAndPassword(auth(), email, password),
-        actionTimeoutMs
-      )
-    },
-    createUserWithEmail: async (email, password) => {
-      const { createUserWithEmailAndPassword } = await import('firebase/auth')
-      return bounded(
-        createUserWithEmailAndPassword(auth(), email, password),
-        actionTimeoutMs
-      )
-    },
-    sendPasswordReset: async (email) => {
-      const { sendPasswordResetEmail } = await import('firebase/auth')
-      return bounded(sendPasswordResetEmail(auth(), email), actionTimeoutMs)
-    },
-    signOut: async () => {
-      const { signOut } = await import('firebase/auth')
-      return signOut(auth())
-    }
+    signInWithEmail: (email, password) =>
+      bounded(signInWithEmailAndPassword(auth(), email, password)),
+    createUserWithEmail: (email, password) =>
+      bounded(createUserWithEmailAndPassword(auth(), email, password)),
+    sendPasswordReset: (email) =>
+      bounded(sendPasswordResetEmail(auth(), email)),
+    signOut: () => signOut(auth())
   }
 }
