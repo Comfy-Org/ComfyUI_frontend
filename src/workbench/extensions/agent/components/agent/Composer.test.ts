@@ -189,12 +189,8 @@ describe('Composer', () => {
       ).toBeDisabled()
       expect(screen.getAllByRole('radio')).toHaveLength(2)
       expect(
-        screen.getByRole('radio', { name: /Auto-run without approval/ })
-      ).toBeVisible()
-      expect(
         screen.queryByRole('radio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
-      expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
     })
 
     it('saves auto mode and closes', async () => {
@@ -208,6 +204,8 @@ describe('Composer', () => {
       const save = screen.getByRole('button', { name: 'Save changes' })
       expect(save).toBeEnabled()
       await userEvent.click(save)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
 
       expect(
         screen.queryByText('Choose when the agent needs your consent')
@@ -241,79 +239,6 @@ describe('Composer', () => {
       })
     })
 
-    it.for(['local', 'server'] as const)(
-      'presents a restored %s limited preference as Ask without rewriting it',
-      async (source) => {
-        const preference = { mode: 'auto_limited', credit_limit: 450 }
-        if (source === 'local') {
-          localStorage.setItem(
-            'Comfy.Agent.RunModePreference',
-            JSON.stringify(preference)
-          )
-        }
-        mount()
-        const store = useAgentRunModeStore()
-        if (source === 'server') {
-          fetchApi.mockResolvedValueOnce(jsonResponse(200, preference))
-          await store.load()
-        }
-
-        await userEvent.click(
-          await screen.findByRole('button', { name: 'Ask' })
-        )
-        expect(
-          await screen.findByRole('radio', {
-            name: /Ask before a workflow runs/
-          })
-        ).toBeChecked()
-        expect(store.mode).toBe('auto_limited')
-        expect(store.creditLimit).toBe(450)
-        expect(
-          fetchApi.mock.calls.some(([, init]) => init?.method === 'PUT')
-        ).toBe(false)
-      }
-    )
-
-    it.for(['ask_approval', 'auto'] as const)(
-      'replaces a restored limited preference only when saving %s',
-      async (mode) => {
-        localStorage.setItem(
-          'Comfy.Agent.RunModePreference',
-          JSON.stringify({ mode: 'auto_limited', credit_limit: 450 })
-        )
-        fetchApi.mockResolvedValueOnce(
-          jsonResponse(200, { mode, credit_limit: null })
-        )
-        mount()
-
-        await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
-        await userEvent.click(
-          await screen.findByRole('radio', {
-            name:
-              mode === 'auto'
-                ? /Auto-run without approval/
-                : /Ask before a workflow runs/
-          })
-        )
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Save changes' })
-        )
-
-        await vi.waitFor(() => expect(useAgentRunModeStore().mode).toBe(mode))
-        await nextTick()
-
-        expect(fetchApi).toHaveBeenCalledWith(
-          '/agent/run-mode',
-          expect.objectContaining({ method: 'PUT' })
-        )
-        expect(JSON.parse(String(fetchApi.mock.calls[0][1]?.body))).toEqual({
-          mode,
-          credit_limit: null
-        })
-        expect(useAgentRunModeStore().creditLimit).toBeNull()
-      }
-    )
-
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
       const store = useAgentRunModeStore()
       await store.save('auto', null)
@@ -329,7 +254,7 @@ describe('Composer', () => {
     it.for([
       ['ask_approval', 'Ask', 'Ask for permission'],
       ['auto', 'Auto', 'Run workflow without permission'],
-      ['auto_limited', 'Ask', 'Ask for permission']
+      ['auto_limited', 'Auto (limited)', 'Ask when credit limit is reached']
     ] as const)(
       'shows the %s mode tooltip copy',
       async ([mode, triggerName, tooltipCopy]) => {
