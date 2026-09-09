@@ -45,3 +45,37 @@ export const redirects = {
   '/minimax': { status: 307, destination: '/minimax-h3/' },
   '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
 } satisfies Record<string, RedirectConfig>
+
+/**
+ * Localized redirects whose English route exists, and so will be silently
+ * dropped in favour of the i18n fallback page.
+ *
+ * Astro gives the fallback higher priority, discards the redirect, and says so
+ * only in a build WARNING while still exiting 0 — which is how three redirects
+ * became silent 404s. `redirects.test.ts` runs this over the real table.
+ *
+ * Sources are normalised before the lookup because the English routes are
+ * collected without a trailing slash: `/zh-CN/pricing/` yields `/pricing/`,
+ * which would never match `/pricing`, and the guard would miss exactly the
+ * collision it exists for. A bare prefix is the locale home, which maps to `/`.
+ */
+export function fallbackCollisions(
+  sources: readonly string[],
+  englishRoutes: ReadonlySet<string>,
+  localePrefixes: readonly string[]
+): string[] {
+  const collisions: string[] = []
+  for (const from of sources) {
+    const prefix = localePrefixes.find(
+      (candidate) => from === candidate || from.startsWith(`${candidate}/`)
+    )
+    if (prefix === undefined) continue
+
+    const remainder = from.slice(prefix.length).replace(/\/$/, '')
+    const route = remainder === '' ? '/' : remainder
+    if (englishRoutes.has(route)) {
+      collisions.push(`${from} collides with ${route}`)
+    }
+  }
+  return collisions
+}

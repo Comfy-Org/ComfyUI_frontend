@@ -24,6 +24,7 @@ import { DEFAULT_LOCALE, isLocale } from '../../../config/locales'
 import type { Locale } from '../../../config/locales'
 import type { SourceAdapter, SourceEntry } from '../types'
 import { localizeMarkdownLinks } from '../validate'
+import { quoteYamlScalar, unquoteYamlScalar } from './yamlScalar'
 
 const CUSTOMERS_DIR = join(process.cwd(), 'src', 'content', 'customers')
 
@@ -50,9 +51,13 @@ const MACHINE = /^translatedBy:\s*machine\s*$/m
 /** A top-level scalar, quoted or bare. */
 function scalar(frontmatter: string, field: string): string {
   const quoted = new RegExp(`^${field}:\\s*"((?:[^"\\\\]|\\\\.)*)"\\s*$`, 'm')
+  // Only the quoted form is unescaped. A bare scalar carries no escapes, so
+  // reversing them there would eat a literal backslash out of a path.
+  const quotedMatch = quoted.exec(frontmatter)
+  if (quotedMatch) return unquoteYamlScalar(quotedMatch[1])
+
   const bare = new RegExp(`^${field}:\\s*(.+?)\\s*$`, 'm')
-  const match = quoted.exec(frontmatter) ?? bare.exec(frontmatter)
-  return match ? match[1].replaceAll('\\"', '"') : ''
+  return bare.exec(frontmatter)?.[1] ?? ''
 }
 
 /**
@@ -74,9 +79,14 @@ export function parseStory(id: string, text: string): Story {
   const pattern = /-\s*id:\s*(\S+)\s*\n\s*label:\s*(.+)/g
   let match: RegExpExecArray | null
   while ((match = pattern.exec(frontmatter)) !== null) {
+    const label = match[2].trim()
+    const quotedLabel = /^"(.*)"$/.exec(label)
     sections.push({
       id: match[1].trim(),
-      label: match[2].trim().replace(/^"(.*)"$/, '$1')
+      // Unescaped, not just unquoted. Stripping the quotes alone left the
+      // backslashes the writer had added, so a label carrying one came back
+      // with it doubled on the next pass.
+      label: quotedLabel ? unquoteYamlScalar(quotedLabel[1]) : label
     })
   }
 
@@ -282,10 +292,6 @@ function identifiers(body: string): string[] {
   return found
 }
 
-function quote(value: string): string {
-  return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`
-}
-
 /**
  * A complete `.mdx` file for a translated story.
  *
@@ -307,9 +313,9 @@ export function buildStory(
 
   const lines = [
     '---',
-    `title: ${quote(translation.title)}`,
-    `category: ${quote(translation.category)}`,
-    `description: ${quote(translation.description)}`,
+    `title: ${quoteYamlScalar(translation.title)}`,
+    `category: ${quoteYamlScalar(translation.category)}`,
+    `description: ${quoteYamlScalar(translation.description)}`,
     carry('cover'),
     carry('readMore'),
     carry('order'),
@@ -320,7 +326,7 @@ export function buildStory(
   for (const section of english.sections) {
     lines.push(`  - id: ${section.id}`)
     lines.push(
-      `    label: ${quote(translation.sections[section.id] ?? section.label)}`
+      `    label: ${quoteYamlScalar(translation.sections[section.id] ?? section.label)}`
     )
   }
 

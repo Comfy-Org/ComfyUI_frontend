@@ -5,9 +5,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_LOCALE, LOCALE_CODES, localePrefix } from './locales'
-import { redirects } from './redirects'
+import { fallbackCollisions, redirects } from './redirects'
 
 const pagesDir = join(dirname(dirname(fileURLToPath(import.meta.url))), 'pages')
+
+/** Every locale prefix except English's, which has none. */
+const prefixes = LOCALE_CODES.filter((l) => l !== DEFAULT_LOCALE).map(
+  localePrefix
+)
 
 /** Every route the English page files serve, as a path with no trailing slash. */
 function englishRoutes(dir: string, acc = new Set<string>()): Set<string> {
@@ -54,17 +59,89 @@ describe('redirects cannot collide with the i18n fallback', () => {
   })
 
   it('declares no localized redirect whose English route exists', () => {
-    const offenders = Object.keys(redirects)
-      .map((from) => {
-        const locale = LOCALE_CODES.find(
-          (l) => l !== DEFAULT_LOCALE && from.startsWith(`${localePrefix(l)}/`)
-        )
-        if (!locale) return null
-        const route = from.slice(localePrefix(locale).length)
-        return english.has(route) ? `${from} collides with ${route}` : null
-      })
-      .filter(Boolean)
+    expect(
+      fallbackCollisions(Object.keys(redirects), english, prefixes)
+    ).toEqual([])
+  })
+})
 
-    expect(offenders).toEqual([])
+describe('fallbackCollisions', () => {
+  const english = new Set(['/', '/pricing', '/cloud/enterprise'])
+
+  it('reports a localized redirect that shadows an English route', () => {
+    expect(fallbackCollisions(['/zh-CN/pricing'], english, prefixes)).toEqual([
+      '/zh-CN/pricing collides with /pricing'
+    ])
+  })
+
+  it('says nothing about a route English does not serve', () => {
+    expect(fallbackCollisions(['/zh-CN/minimax'], english, prefixes)).toEqual(
+      []
+    )
+  })
+
+  /**
+   * English routes are collected without a trailing slash, so `/pricing/` never
+   * matched `/pricing` and the guard waved through the one shape of collision
+   * it was written to catch — the shape that turned three redirects into silent
+   * 404s.
+   */
+  it('matches a source written with a trailing slash', () => {
+    expect(fallbackCollisions(['/zh-CN/pricing/'], english, prefixes)).toEqual([
+      '/zh-CN/pricing/ collides with /pricing'
+    ])
+  })
+
+  /** The bare prefix is the locale home, which collides with `/`. */
+  it('matches the locale home', () => {
+    expect(fallbackCollisions(['/zh-CN'], english, prefixes)).toEqual([
+      '/zh-CN collides with /'
+    ])
+  })
+
+  it('ignores an unprefixed English redirect', () => {
+    expect(fallbackCollisions(['/pricing'], english, prefixes)).toEqual([])
+  })
+})
+
+/**
+ * Asserted as invariants rather than as a table of every source and
+ * destination. A table restating the config would fail on any deliberate edit
+ * while catching none of the mistakes that actually cost anything, which is
+ * what `AGENTS.md` means by a change-detector test. These two are the shapes a
+ * redirect gets wrong in ways nobody notices.
+ */
+describe('the redirect table holds together', () => {
+  const destinationOf = (entry: (typeof redirects)[keyof typeof redirects]) =>
+    typeof entry === 'string' ? entry : entry.destination
+
+  /**
+   * A destination that is also a source costs the reader two round trips, and
+   * search engines discount a chained redirect. Easy to introduce by retargeting
+   * one entry without noticing another already points at it.
+   */
+  it('sends nobody through two redirects', () => {
+    const sources = new Set(
+      Object.keys(redirects).map((s) => s.replace(/\/$/, ''))
+    )
+    const chained = Object.entries(redirects)
+      .map(([from, entry]) => [from, destinationOf(entry)] as const)
+      .filter(([, to]) => sources.has(to.replace(/\/$/, '')))
+      .map(([from, to]) => `${from} -> ${to}, which is itself a redirect`)
+
+    expect(chained).toEqual([])
+  })
+
+  /**
+   * The site serves directory URLs, so a destination without the trailing slash
+   * lands on Astro's own normalising redirect and the reader pays a second hop
+   * for a link that looked right in review.
+   */
+  it('points every destination at a directory URL', () => {
+    const bare = Object.values(redirects)
+      .map(destinationOf)
+      .filter((to) => !to.endsWith('/'))
+
+    expect(bare).toEqual([])
   })
 })

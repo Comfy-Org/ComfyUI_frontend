@@ -21,6 +21,7 @@ import { DEFAULT_LOCALE, isLocale } from '../../../config/locales'
 import type { Locale } from '../../../config/locales'
 import type { SourceAdapter, SourceEntry } from '../types'
 import { linkTargets, localizeMarkdownLinks } from '../validate'
+import { quoteYamlScalar, unquoteYamlScalar } from './yamlScalar'
 
 const FAQ_DIR = join(process.cwd(), 'src', 'content', 'faq')
 
@@ -66,7 +67,7 @@ export function parseFaqDocument(id: string, text: string): FaqDocument {
     category,
     locale,
     slug,
-    question: question[1].replaceAll('\\"', '"'),
+    question: unquoteYamlScalar(question[1]),
     body,
     frontmatter,
     machineWritten: MACHINE.test(frontmatter)
@@ -147,11 +148,9 @@ export function buildFaqDocument(
   const order = ORDER.exec(english.frontmatter)
   if (!order) throw new Error(`${english.slug}: English file has no order`)
 
-  const question = translation.question.replaceAll('"', '\\"')
-
   return [
     '---',
-    `question: "${question}"`,
+    `question: ${quoteYamlScalar(translation.question)}`,
     order[0].trim(),
     'translatedBy: machine',
     '---',

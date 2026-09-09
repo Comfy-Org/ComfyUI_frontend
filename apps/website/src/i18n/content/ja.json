@@ -1080,7 +1080,7 @@
   "faq.pricing.change-cancel-plan-refunds.question": "プランの変更やキャンセルはできますか？返金はありますか？",
   "faq.pricing.commercial-model-licenses.body": "はい。Comfyは、MiniMax H3に加え、自社ハードウェアでローカル実行するMiniMax Audio & Musicを対象としたMiniMax商用ライセンスの唯一の公式販売代理店です。ライセンスはProfessionalとEnterpriseの2つのティアで提供しています。[MiniMax商用ライセンスページ](/minimax/license)をご覧いただくか、[営業にお問い合わせ](/contact)のうえお申し込みください。",
   "faq.pricing.commercial-model-licenses.question": "MiniMax H3のようなオープンウェイトモデル向けの商用ライセンスはありますか？",
-  "faq.pricing.difference-between-plans.body": "**Standard -** ワークフローあたりの最大実行時間は30分、API経由で同時実行できるワークフローは1件です。ワークフローを構築する個人向けです。\n\n**Creator -** Standardのすべてに加え、**独自モデルのインポート**（CivitAIまたはHugging Faceから）と、API経由で最大3件のワークフロー同時実行が可能です。\n\n**Pro -** Creatorのすべてに加え、ワークフローあたりの**実行時間延長（最大1時間）**と、API経由で最大5件のワークフロー同時実行が可能です。本番環境でComfyを運用するチーム向けです。",
+  "faq.pricing.difference-between-plans.body": "**Standard -** ワークフローあたりの最大実行時間は30分、API経由で同時実行できるワークフローは1件です。ワークフローを構築する個人向けです。\n\n**Creator -** Standardのすべてに加え、**独自モデルのインポート**（CivitAIまたはHugging Faceから）と、API経由で最大3件のワークフロー同時実行が可能です。\n\n**Pro -** Creatorのすべてに加え、ワークフローあたりの**実行時間延長**（最大1時間）と、API経由で最大5件のワークフロー同時実行が可能です。本番環境でComfyを運用するチーム向けです。",
   "faq.pricing.difference-between-plans.question": "Standard、Creator、Proの違いは何ですか？",
   "faq.pricing.do-credits-roll-over.body": "プランのクレジットは各請求サイクルの終了時にリセットされ、繰り越されません。月額プランでは毎月、年額プランでは年1回リセットされます。年額プランでは、1年分のクレジットがあらかじめ付与されます。**追加購入クレジットは失効しません。** 有効期間は1年間で、プランのリセットの影響を受けません。クレジットはComfy Cloudで利用でき、Comfy Desktopでは**Partner Nodesを呼び出す場合にのみ**利用できます。Comfy Desktop自体は無料です。",
   "faq.pricing.do-credits-roll-over.question": "未使用のクレジットは繰り越されますか？",

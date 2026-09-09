@@ -13,6 +13,7 @@
  */
 import { localizeHref } from '../../config/routes'
 import type { Locale } from '../../config/locales'
+import { emphasisThatCannotClose } from './emphasis'
 import type { EnglishSource, TranslationLayer } from './types'
 
 export interface Violation {
@@ -212,6 +213,16 @@ export function collectViolations(
         'supplies its own plural forms, which tPlural would choose between ' +
           'using English rules'
       )
+    }
+
+    // A bolded Japanese clause ends in 。 or ）with the next word running
+    // straight on, and CommonMark will not let a delimiter close when it sits
+    // between punctuation and a word. Two of these reached `/ja/pricing`: one
+    // printed its asterisks on the page, the other was read as a second opening
+    // delimiter, so a paragraph meant to be plain rendered bold with the
+    // `<strong>` tags still balanced — which is why no structural check saw it.
+    for (const span of emphasisThatCannotClose(value)) {
+      add(key, 'structure', `emphasis cannot close: ${span}`)
     }
 
     const sourceLines = source.split('\n').length
