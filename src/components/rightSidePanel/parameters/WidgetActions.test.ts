@@ -38,47 +38,54 @@ const {
   mockTrackWidgetFavoriteToggled: vi.fn()
 }))
 
-vi.mock('@/core/graph/subgraph/promotionUtils', async (importOriginal) => {
-  const actual = await importOriginal<typeof PromotionUtilsModule>()
-  return {
-    ...actual,
-    promoteWidget: vi.fn(),
-    demoteWidget: vi.fn(actual.demoteWidget)
+vi.mock(
+  import('@/core/graph/subgraph/promotionUtils'),
+  async (importOriginal) => {
+    const actual = await importOriginal<typeof PromotionUtilsModule>()
+    return {
+      ...actual,
+      promoteWidget: vi.fn(),
+      demoteWidget: vi.fn(actual.demoteWidget)
+    }
   }
-})
+)
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({
     getInputSpecForWidget: mockGetInputSpecForWidget
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty: vi.fn() }
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'),
 
-vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
+  () => ({
+    useCanvasStore: () => ({
+      canvas: { setDirty: vi.fn() }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/stores/workspace/favoritedWidgetsStore'), () => ({
   useFavoritedWidgetsStore: () => ({
     isFavorited: mockIsFavorited,
     toggleFavorite: mockToggleFavorite
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
   })
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn()
   })
 }))
 
-vi.mock('@/components/button/MoreButton.vue', () => ({
+vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>
     h('div', slots.default?.({ close: () => {} }))
 }))
@@ -125,7 +132,7 @@ describe('WidgetActions', () => {
       options: {},
       y: 0,
       callback
-    } as IBaseWidget
+    }
   }
 
   function createMockNode(): LGraphNode {
@@ -356,7 +363,7 @@ describe('WidgetActions', () => {
     )
     expect(result.ok).toBe(true)
 
-    const promotedWidget = promotedInputWidgets(host)[0]
+    const promotedWidget = promotedInputWidgets(host).at(0)
     if (!promotedWidget) throw new Error('Expected a promoted widget on host')
 
     return { host, interiorNode, interiorWidget, promotedWidget }
@@ -389,7 +396,7 @@ describe('WidgetActions', () => {
     outerSubgraph.add(innerHost)
     const outerHost = createTestSubgraphNode(outerSubgraph)
 
-    const innerHostInput = innerHost.inputs[0]
+    const innerHostInput = innerHost.inputs.at(0)
     if (!innerHostInput)
       throw new Error('Expected a promoted input on inner host')
     const nestedPromotedWidget = promotedInputWidgets(innerHost).find(
@@ -405,7 +412,7 @@ describe('WidgetActions', () => {
     )
     expect(result.ok).toBe(true)
 
-    const outerPromotedWidget = promotedInputWidgets(outerHost)[0]
+    const outerPromotedWidget = promotedInputWidgets(outerHost).at(0)
     if (!outerPromotedWidget)
       throw new Error('Expected a promoted widget on outer host')
 

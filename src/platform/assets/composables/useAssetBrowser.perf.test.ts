@@ -5,13 +5,13 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import * as assetMetadataUtils from '@/platform/assets/utils/assetMetadataUtils'
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string) => key,
   d: (date: Date) => date.toLocaleDateString()
 }))

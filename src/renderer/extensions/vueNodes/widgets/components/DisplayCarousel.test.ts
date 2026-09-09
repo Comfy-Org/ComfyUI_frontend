@@ -501,8 +501,10 @@ describe('DisplayCarousel Edge Cases', () => {
   })
 
   it('filters out malformed image objects without valid src', () => {
-    const malformedImages = [{}, { randomProp: 'value' }, null, undefined]
-    createGalleriaWrapper(malformedImages as string[])
+    const malformedImages: GalleryValue = JSON.parse(
+      '[{}, {"randomProp":"value"}, null, null]'
+    )
+    createGalleriaWrapper(malformedImages)
 
     // All filtered out: null/undefined removed, then objects without src filtered
     expect(screen.queryByRole('img')).not.toBeInTheDocument()

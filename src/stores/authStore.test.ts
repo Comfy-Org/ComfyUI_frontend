@@ -1,7 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
@@ -22,9 +21,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import type * as ApiModule from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { createTestingPinia } from '@pinia/testing'
 
-// Hoisted mocks for dynamic imports
 const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
@@ -48,9 +45,12 @@ const mockTeamWorkspaceStore = vi.hoisted(() => ({
   resetForIdentityChange: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => mockTeamWorkspaceStore
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => mockTeamWorkspaceStore
+  })
+)
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
@@ -96,11 +96,11 @@ const mockAccessBillingPortalResponse = {
     Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
 
-vi.mock('vuefire', () => ({
+vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string) => key
   }),
@@ -111,32 +111,10 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('firebase/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof firebaseAuth>()
-  return {
-    ...actual,
-    signInWithEmailAndPassword: vi.fn(),
-    createUserWithEmailAndPassword: vi.fn(),
-    signOut: vi.fn(),
-    onAuthStateChanged: vi.fn(),
-    onIdTokenChanged: vi.fn(),
-    signInWithPopup: vi.fn(),
-    GoogleAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    GithubAuthProvider: class {
-      addScope = vi.fn()
-      setCustomParameters = vi.fn()
-    },
-    getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
-  }
-})
+vi.mock(import('firebase/auth'))
 
-// Mock telemetry
 const mockTrackAuth = vi.fn()
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackAuth: mockTrackAuth
   })
@@ -145,16 +123,19 @@ vi.mock('@/platform/telemetry', () => ({
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
-vi.mock('@/scripts/api', async (importOriginal) => {
+vi.mock(import('@/scripts/api'), async (importOriginal) => {
   const actual = await importOriginal<typeof ApiModule>()
   Object.assign(actual.api, { resetSocket: mockResetSocket })
   return actual
 })
 
 // Mock useDialogService
-vi.mock('@/services/dialogService')
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock(import('@/services/dialogService'))
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistributionTypes
+)
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: mockFeatureFlags
   })
@@ -163,7 +144,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
 const mockApiKeyGetApiKey = vi.fn()
-vi.mock('@/stores/apiKeyAuthStore', () => ({
+vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
     getApiKey: mockApiKeyGetApiKey,
@@ -216,6 +197,12 @@ describe('useAuthStore', () => {
         return vi.fn()
       }
     )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
+      (_auth, callback) => {
+        idTokenCallback = callback as (user: User | null) => void
+        return vi.fn()
+      }
+    )
 
     // Mock fetch responses
     mockFetch.mockImplementation((url: string) => {
@@ -247,57 +234,36 @@ describe('useAuthStore', () => {
   })
 
   describe('token refresh events', () => {
-    beforeEach(async () => {
-      vi.resetModules()
-
-      vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
-        (_auth, callback) => {
-          idTokenCallback = callback as (user: User | null) => void
-          return vi.fn()
-        }
-      )
-
-      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-        mockAuth as Partial<
-          ReturnType<typeof vuefire.useFirebaseAuth>
-        > as ReturnType<typeof vuefire.useFirebaseAuth>
-      )
-
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      const storeModule = await import('@/stores/authStore')
-      store = storeModule.useAuthStore()
-    })
-
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(mockUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(mockUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
       const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback?.(mockUser)
-      idTokenCallback?.(otherUser)
-      idTokenCallback?.(otherUser)
+      idTokenCallback(mockUser)
+      idTokenCallback(otherUser)
+      idTokenCallback(otherUser)
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
     it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
       mockFeatureFlags.unifiedCloudAuthEnabled = true
-      idTokenCallback?.(mockUser) // initial event (always skipped)
-      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      idTokenCallback(mockUser) // initial event (always skipped)
+      idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
@@ -366,7 +332,7 @@ describe('useAuthStore', () => {
       await balanceRequested
 
       // Firebase transitions directly to account B before the response lands.
-      authStateCallback({ ...mockUser, uid: 'account-b' } as User)
+      authStateCallback({ ...mockUser, uid: 'account-b' })
       resolveBalanceJson({ balance: 4242 })
 
       expect(await pending).toBeNull()
@@ -420,7 +386,7 @@ describe('useAuthStore', () => {
     })
 
     it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {
-      authStateCallback(mockUser as User)
+      authStateCallback(mockUser)
 
       await store.fetchBalance()
 
@@ -2120,7 +2086,7 @@ describe('useAuthStore', () => {
       authStateCallback(mockUser)
 
       // Stale POST resolves successfully after session reset
-      resolveCreate!({
+      resolveCreate({
         ok: true,
         statusText: 'OK',
         json: () => Promise.resolve({ id: 'stale-id' })
@@ -2141,7 +2107,7 @@ describe('useAuthStore', () => {
       ...mockUser,
       uid: 'account-b-id',
       email: 'b@example.com'
-    } as MockUser
+    }
 
     it('does not reset the socket on the initial sign-in', () => {
       // The store is created in beforeEach, which drives the initial

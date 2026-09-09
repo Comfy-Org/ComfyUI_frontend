@@ -300,12 +300,13 @@ export async function assertRoundtripTier({
       ),
       entry.pack
     )
-    const allowedValueIndices = Object.fromEntries(
-      Object.keys(rawValueIndices).map((node) => [
-        node,
-        rawValueIndices[node].split(',').map(Number)
-      ])
-    )
+    const allowedValueIndices: Partial<Record<string, number[]>> =
+      Object.fromEntries(
+        Object.keys(rawValueIndices).map((node) => [
+          node,
+          rawValueIndices[node].split(',').map(Number)
+        ])
+      )
     const rawValueKeys = packLedgerFor(
       rendererLedgerFor(
         vueNodesEnabled,
@@ -314,12 +315,13 @@ export async function assertRoundtripTier({
       ),
       entry.pack
     )
-    const allowedValueKeys = Object.fromEntries(
-      Object.keys(rawValueKeys).map((node) => [
-        node,
-        rawValueKeys[node].split(',')
-      ])
-    )
+    const allowedValueKeys: Partial<Record<string, string[]>> =
+      Object.fromEntries(
+        Object.keys(rawValueKeys).map((node) => [
+          node,
+          rawValueKeys[node].split(',')
+        ])
+      )
     const observedValueDrift = new Map<string, Set<number>>()
     const observedKeyDrift = new Map<string, Set<string>>()
     const expectedNodeLosses = packLedgerFor(
@@ -501,9 +503,7 @@ export async function assertRoundtripTier({
               const namesAfter = widgetNamesById()
               const serializedNamesAfter = serializedWidgetNamesById()
               const byId = (pass: NonNullable<typeof firstPass>) =>
-                new Map(
-                  (pass.nodes ?? []).map((node) => [String(node.id), node])
-                )
+                new Map(pass.nodes.map((node) => [String(node.id), node]))
               const beforeNodes = byId(firstPass!)
               const afterNodes = byId(secondPass)
               for (const [id, expected] of created) {
@@ -521,7 +521,7 @@ export async function assertRoundtripTier({
                 }
                 if (after.type !== before.type)
                   problems.push(
-                    `${expected.type}: type became ${String(after.type)} on ${label} reload`
+                    `${expected.type}: type became ${after.type} on ${label} reload`
                   )
                 const widgets = (restored.widgets ?? []).length
                 if (expected.widgetCount === null) {
@@ -638,7 +638,7 @@ export async function assertRoundtripTier({
                   const named = Array.isArray(values)
                     ? Object.fromEntries(
                         values.flatMap((value, index) => {
-                          const name = names[index]
+                          const name = names.at(index)
                           return name === undefined ? [] : [[name, value]]
                         })
                       )
@@ -717,7 +717,7 @@ export async function assertRoundtripTier({
                 if (!nodeType) continue
                 const mutableNames = new Set(declaredInputNames[nodeType] ?? [])
                 const mutations = (node.widgets ?? []).flatMap((widget) => {
-                  if (!SETTABLE.has(String(widget.type))) return []
+                  if (!SETTABLE.has(widget.type)) return []
                   if (!mutableNames.has(widget.name)) return []
                   if (`${nodeType}.${widget.name}` in packManaged) return []
                   const options = (
@@ -738,7 +738,7 @@ export async function assertRoundtripTier({
                       if (options?.max === undefined || up <= options.max)
                         return up
                       const down = widget.value - step
-                      if (options?.min === undefined || down >= options.min)
+                      if (options.min === undefined || down >= options.min)
                         return down
                       return undefined
                     }
@@ -764,7 +764,7 @@ export async function assertRoundtripTier({
                 })
                 for (const { target, widget } of mutations) {
                   if (!node.widgets?.includes(widget)) continue
-                  widget.value = target as typeof widget.value
+                  widget.value = target
                   widget.callback?.(widget.value)
                 }
               }
@@ -829,7 +829,7 @@ export async function assertRoundtripTier({
                       (widget) => widget.name === signal.widget
                     )?.value
                   } else if (signal.predicate === 'inputs-absent') {
-                    values[type] = node?.inputs?.map((input) => input.name)
+                    values[type] = node?.inputs.map((input) => input.name)
                   } else {
                     values[type] = node
                       ? Reflect.get(node, signal.property)

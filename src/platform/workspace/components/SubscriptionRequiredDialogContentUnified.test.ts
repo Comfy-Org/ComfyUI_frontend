@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
@@ -35,8 +35,6 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     activeCheckoutActionUrl: ref(null),
     authenticationState: ref(null),
     authenticationError: ref(null),
-    canRetryAuthentication: ref(false),
-    isAuthenticating: ref(false),
     reconciliationOperationId: ref(null),
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
@@ -50,7 +48,6 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     handleTeamSubscribe: vi.fn(),
     handleSubscriptionPayment: vi.fn(),
     handleTeamSubscriptionPayment: vi.fn(),
-    retryPaymentAuthentication: vi.fn(),
     applyPromotionCode: vi.fn(),
     invalidateQuote: mockInvalidateQuote,
     handleResubscribe: vi.fn()
@@ -116,7 +113,9 @@ function renderComponent(props: Record<string, unknown> = {}) {
             <button aria-label="Back" @click="$emit('back')">Back</button>
           </div>`
         },
-        SubscriptionTransitionPreviewWorkspace: { template: '<div />' },
+        SubscriptionTransitionPreviewWorkspace: {
+          template: '<div data-testid="transition-preview" />'
+        },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
     }
@@ -250,6 +249,25 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
+
+  it.for(['team-change', 'personal-change'])(
+    'withholds the transition confirm until its preview arrives (%s)',
+    async (previewVariant) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = previewVariant
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+      mockPreviewData.value = null
+
+      renderComponent()
+
+      expect(screen.queryByTestId('transition-preview')).toBeNull()
+
+      mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+      await nextTick()
+
+      expect(screen.getByTestId('transition-preview')).toBeTruthy()
+    }
+  )
 
   it.for([true, false])(
     'leaves the confirm step its own header and back action (embedded: %s)',

@@ -38,9 +38,7 @@ describe('AgentPanel', () => {
     mount()
 
     expect(
-      screen.getByText(
-        'The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.'
-      )
+      screen.getByText(i18n.global.t('agent.runNotice'))
     ).toBeInTheDocument()
     expect(
       screen.getByText('The AI agent can make mistakes')
@@ -51,9 +49,7 @@ describe('AgentPanel', () => {
     mount(true)
 
     expect(
-      screen.getByText(
-        'The agent can modify your workflow. Check Run permissions before allowing it to execute.'
-      )
+      screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
     ).toBeInTheDocument()
     expect(
       screen.getByText(

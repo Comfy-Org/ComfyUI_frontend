@@ -58,7 +58,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
   )
 
   const activeMissingMediaGraphIds = computed<Set<string>>(() => {
-    if (!app.rootGraph) return new Set()
     return getActiveGraphNodeIds(
       app.rootGraph,
       canvasStore.currentGraph ?? app.rootGraph,
@@ -128,11 +127,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       // Preserve candidates without a nodeId; they cannot belong to any
       // subgraph scope. The type marks nodeId as required, but defensive
       // handling matches the rest of the missing-media code.
-      if (m.nodeId == null) {
+      const nodeId: unknown = m.nodeId
+      if (nodeId == null) {
         remaining.push(m)
         continue
       }
-      if (!String(m.nodeId).startsWith(prefix)) {
+      if (!String(nodeId).startsWith(prefix)) {
         remaining.push(m)
       }
     }

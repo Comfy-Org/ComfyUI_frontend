@@ -5,15 +5,10 @@ import { useArrangeSession } from '@/composables/graph/useArrangeSession'
 
 const mockArrangeNodes = vi.fn()
 
-vi.mock('@/composables/graph/useArrangeNodes', async () => {
-  const actual = await vi.importActual<typeof ArrangeNodesModule>(
-    '@/composables/graph/useArrangeNodes'
-  )
-  return {
-    ...actual,
-    useArrangeNodes: () => ({ arrangeNodes: mockArrangeNodes })
-  }
-})
+vi.mock('@/composables/graph/useArrangeNodes', async (importOriginal) => ({
+  ...(await importOriginal<typeof ArrangeNodesModule>()),
+  useArrangeNodes: () => ({ arrangeNodes: mockArrangeNodes })
+}))
 
 describe('useArrangeSession', () => {
   let frameCallbacks: Array<FrameRequestCallback>

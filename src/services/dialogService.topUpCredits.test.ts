@@ -14,61 +14,64 @@ const state = vi.hoisted(() => ({
   initialize: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ showDialog, closeDialog })
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     type: { value: state.type }
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    // Getters, not snapshots: initialize() resolves capabilities mid-call.
-    canTopUp: {
-      get value() {
-        return state.canTopUp
-      }
-    },
-    canSubscribeSelfServe: {
-      get value() {
-        return state.canSubscribeSelfServe
-      }
-    },
-    isReady: {
-      get value() {
-        return state.isReady
-      }
-    },
-    initialize: () => state.initialize()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      // Getters, not snapshots: initialize() resolves capabilities mid-call.
+      canTopUp: {
+        get value() {
+          return state.canTopUp
+        }
+      },
+      canSubscribeSelfServe: {
+        get value() {
+          return state.canSubscribeSelfServe
+        }
+      },
+      isReady: {
+        get value() {
+          return state.isReady
+        }
+      },
+      initialize: () => state.initialize()
+    })
   })
-}))
+)
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
+vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
   useToastStore: () => ({ add: vi.fn() })
 }))
 
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: showSubscriptionDialog })
   })

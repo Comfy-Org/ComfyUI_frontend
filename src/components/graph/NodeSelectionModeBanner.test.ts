@@ -24,7 +24,7 @@ describe('NodeSelectionModeBanner', () => {
       global: { plugins: [pinia, i18n] }
     })
 
-    expect(screen.getByText('Add nodes from graph')).toBeVisible()
+    expect(screen.getByText('Mention nodes from graph')).toBeVisible()
     expect(
       screen.getByText('Select one or many nodes to add as reference')
     ).toBeVisible()

@@ -15,8 +15,8 @@ vi.mock('vue-i18n', () => ({
 const { mockInviteSubmit, mockMaxSeats, mockOccupiedSeats } = vi.hoisted(
   () => ({
     mockInviteSubmit: vi.fn(),
-    mockMaxSeats: { value: 73 as number | null },
-    mockOccupiedSeats: { value: 1 as number | null }
+    mockMaxSeats: { value: 73 },
+    mockOccupiedSeats: { value: 1 }
   })
 )
 

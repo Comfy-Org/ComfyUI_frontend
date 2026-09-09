@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -90,7 +90,6 @@ describe('attachMintPortWiring', () => {
         layoutListeners.add(listener)
         return () => layoutListeners.delete(listener)
       },
-      withLayoutActor: (_actor, fn) => fn(),
       localActorPrefix: 'user-',
       getGraph: () => graph
     })
@@ -188,22 +187,54 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
-  it('mints nothing for a setValue that did not apply', () => {
-    useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
+  it('mints a widget value written through a real widget', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
 
-    expect(minted).toEqual([])
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
   })
 
-  it('suppresses every port inside the remote scope', () => {
-    wiring.runRemoteScope(() => {
-      useLinkStore().registerLink(ROOT_SCOPE, topology(41))
-      const widgetStore = useWidgetValueStore()
-      const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
-      widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
-        typeof widgetStore.registerWidget
-      >[1])
-      widgetStore.setValue(id, 42)
-    })
+  it('mints once when a store write is mirrored through the widget shim', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+
+    useWidgetValueStore().setValue(id, 42)
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
+  it('mints nothing for a setValue that did not apply', () => {
+    useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
 
     expect(minted).toEqual([])
   })

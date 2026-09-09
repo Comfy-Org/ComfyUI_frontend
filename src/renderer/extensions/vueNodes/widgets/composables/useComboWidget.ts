@@ -33,7 +33,9 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 }
 
 // Map node types to expected media types
-const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
+const NODE_MEDIA_TYPE_MAP: Partial<
+  Record<string, 'image' | 'video' | 'audio'>
+> = {
   LoadImage: 'image',
   LoadVideo: 'video',
   LoadAudio: 'audio'
@@ -86,7 +88,7 @@ const addMultiSelectWidget = (
       }
     }
   })
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget as BaseDOMWidget)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   if (inputSpec.control_after_generate) {
