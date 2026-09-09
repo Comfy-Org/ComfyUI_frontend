@@ -100,7 +100,12 @@ test.describe('Workshop catalog', () => {
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
 
     const videos = page.getByTestId('section-generate-videos')
-    await expect(videos).toContainText('10')
+    const rowHeading = await videos
+      .getByRole('heading', { level: 2 })
+      .innerText()
+    const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
+    expect(promisedCount).toBeGreaterThan(0)
+
     await videos.getByTestId('section-generate-videos-see-all').click()
 
     await expect(sections).toHaveCount(0)
@@ -109,7 +114,7 @@ test.describe('Workshop catalog', () => {
       page
         .getByTestId('workshop-models-grid')
         .getByTestId('workshop-model-card')
-    ).toHaveCount(18)
+    ).toHaveCount(promisedCount)
 
     await page.getByTestId('section-back').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
