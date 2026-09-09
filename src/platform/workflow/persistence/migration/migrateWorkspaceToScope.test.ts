@@ -153,17 +153,15 @@ describe('migrateWorkspaceToScope', () => {
       draftPath,
       destinationScope
     )
-    const originalSetItem = Storage.prototype.setItem
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
-      this: Storage,
-      key: string,
-      value: string
-    ) {
-      if (key === destinationPayloadKey) {
-        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        if (key === destinationPayloadKey) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        }
+        realSetItem(key, value)
       }
-      originalSetItem.call(this, key, value)
-    })
+    )
 
     migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
 
