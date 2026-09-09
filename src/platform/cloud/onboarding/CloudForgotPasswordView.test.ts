@@ -9,7 +9,7 @@ import CloudForgotPasswordView from '@/platform/cloud/onboarding/CloudForgotPass
 
 const mockSendPasswordReset = vi.fn()
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     sendPasswordReset: mockSendPasswordReset
   })

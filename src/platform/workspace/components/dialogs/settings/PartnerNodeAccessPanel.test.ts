@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -51,45 +52,43 @@ const {
   }
 })
 
-vi.mock('pinia', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
-
-vi.mock('@/platform/workspace/stores/partnerNodeGovernanceStore', () => ({
-  usePartnerNodeGovernanceStore: () => ({
-    governedWorkspaceId: mockGovernedWorkspaceId,
-    policy: mockPolicy,
-    providers: mockProviders,
-    status: mockStatus,
-    isSaving: mockIsSaving,
-    isProviderEnabled: mockIsProviderEnabled,
-    loadPolicy: mockLoadPolicy,
-    setAllProvidersEnabled: mockSetAllProvidersEnabled,
-    setEnforcementEnabled: mockSetEnforcementEnabled,
-    setProviderEnabled: mockSetProviderEnabled,
-    setProvidersEnabled: mockSetProvidersEnabled
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/partnerNodeGovernanceStore'),
+  () => ({
+    usePartnerNodeGovernanceStore: () => ({
+      governedWorkspaceId: mockGovernedWorkspaceId,
+      policy: mockPolicy,
+      providers: mockProviders,
+      status: mockStatus,
+      isSaving: mockIsSaving,
+      isProviderEnabled: mockIsProviderEnabled,
+      loadPolicy: mockLoadPolicy,
+      setAllProvidersEnabled: mockSetAllProvidersEnabled,
+      setEnforcementEnabled: mockSetEnforcementEnabled,
+      setProviderEnabled: mockSetProviderEnabled,
+      setProvidersEnabled: mockSetProvidersEnabled
+    })
   })
-}))
+)
 
-vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
+vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
   useNodeDefStore: () => ({ nodeDefsByName: mockNodeDefsByName })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -112,7 +111,7 @@ function nodeDef(
 
 function renderComponent() {
   return render(PartnerNodeAccessPanel, {
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [createPinia(), i18n], directives: { tooltip: {} } }
   })
 }
 

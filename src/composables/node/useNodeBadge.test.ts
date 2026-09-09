@@ -25,10 +25,10 @@ const canvas = {
 }
 let canvasReady = true
 
-vi.mock('@/systems/badgeSystem', () => ({
+vi.mock(import('@/systems/badgeSystem'), () => ({
   installNodeBadges: mocks.installNodeBadges
 }))
-vi.mock('@/stores/extensionStore', () => ({
+vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
   useExtensionStore: () => ({
     isExtensionInstalled: () => mocks.extensionInstalled,
     registerExtension: (extension: ComfyExtension) => {
@@ -37,7 +37,7 @@ vi.mock('@/stores/extensionStore', () => ({
     }
   })
 }))
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: (key: string) =>
       key === 'Comfy.NodeBadge.ShowApiPricing'
@@ -45,17 +45,17 @@ vi.mock('@/platform/settings/settingStore', () => ({
         : badgeMode.value
   })
 }))
-vi.mock('@/composables/node/useNodePricing', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodePricing'), () => ({
   useNodePricing: () => ({ pricingRevision })
 }))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
   useCanvasStore: () => ({
     get canvas() {
       return canvasReady ? canvas : undefined
     }
   })
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get canvas() {
       return canvasReady ? canvas : undefined

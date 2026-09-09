@@ -18,7 +18,7 @@ const { models, locale = 'en' } = defineProps<{
     class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
   >
     <div
-      class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+      class="flex flex-col items-start gap-6 lg:flex-row lg:items-end lg:justify-between"
     >
       <div>
         <p

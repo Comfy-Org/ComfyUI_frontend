@@ -66,3 +66,40 @@ export async function socialSignInWithProvisioning<T>(deps: {
   await deps.provisionCustomer(credential)
   return credential
 }
+
+export const CUSTOMER_PROVISIONING_PATH = '/customers'
+
+/**
+ * The `POST /customers` request both hosts send. `signupSource` names the
+ * host for the backend's attribution; the Turnstile token rides along only
+ * on email sign-up, where the server validates it. Body and headers only: a
+ * host that wants a bound passes its own `signal`.
+ */
+export function customerProvisioningRequest(options: {
+  authHeaders: Record<string, string>
+  signupSource: string
+  turnstileToken?: string
+  signal?: AbortSignal
+}): RequestInit {
+  const { authHeaders, signupSource, turnstileToken, signal } = options
+  return {
+    method: 'POST',
+    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      signup_source: signupSource,
+      ...(turnstileToken ? { turnstile_token: turnstileToken } : {})
+    }),
+    ...(signal ? { signal } : {})
+  }
+}
+
+/**
+ * The backend answers `POST /customers` with 201 for a new record and 200
+ * when one already exists, so only an ok response means provisioned. A 409
+ * is never "already there": on this endpoint it is a business conflict or
+ * the auth middleware's missing-customer rejection, and treating it as
+ * success would sign a user in without a customer record.
+ */
+export function isCustomerProvisioned(response: { ok: boolean }): boolean {
+  return response.ok
+}

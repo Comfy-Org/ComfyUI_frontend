@@ -11,7 +11,7 @@ const { lightTheme, sharedProps, sharedReset } = vi.hoisted(() => ({
   sharedReset: vi.fn()
 }))
 
-vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
+vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
   const { defineComponent, h } = await import('vue')
   return {
     default: defineComponent({
@@ -31,15 +31,15 @@ vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
   }
 })
 
-vi.mock('@comfyorg/account/turnstileScript', () => ({
+vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
   loadTurnstile: vi.fn()
 }))
 
-vi.mock('@/config/turnstile', () => ({
+vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: () => 'site-key'
 }))
 
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
+vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
   useColorPaletteStore: () => ({
     completedActivePalette: {
       get light_theme() {

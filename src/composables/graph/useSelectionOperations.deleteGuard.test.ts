@@ -10,11 +10,11 @@ import { app } from '@/scripts/app'
  * site rather than inside litegraph, so that vendored library stays untouched;
  * the trade-off is that a new editing path has to opt in.
  */
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined as unknown }
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ prompt: vi.fn() })
 }))
 

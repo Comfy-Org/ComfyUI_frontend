@@ -8,9 +8,12 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import NodeSelectionModeBanner from './NodeSelectionModeBanner.vue'
 
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => ({ forwardEventToCanvas: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: () => ({ forwardEventToCanvas: vi.fn() })
+  })
+)
 
 describe('NodeSelectionModeBanner', () => {
   it('shows the selection instructions and exits from the CTA', async () => {
