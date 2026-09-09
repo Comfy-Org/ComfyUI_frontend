@@ -25,7 +25,7 @@ export const nodeDef: ComfyNodeDef = {
             input: { required: { ref_image: ['IMAGE', {}] } },
             prefix: 'ref_image_',
             min: 0,
-            max: 3
+            max: 4
           }
         }
       ]
@@ -54,4 +54,16 @@ export const savedNode = {
   ],
   outputs: [],
   widgets_values: ['', 640, 480, 24, 'match']
+} satisfies ISerialisedNode
+
+export const singleImageNode = {
+  ...savedNode,
+  inputs: savedNode.inputs
+    .filter(
+      ({ name }) =>
+        !['ref_images.ref_image_1', 'ref_images.ref_image_2'].includes(name)
+    )
+    .map((input) =>
+      input.name === 'ref_images.ref_image_0' ? { ...input, link: null } : input
+    )
 } satisfies ISerialisedNode
