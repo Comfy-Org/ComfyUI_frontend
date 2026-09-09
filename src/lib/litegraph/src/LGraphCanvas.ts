@@ -3971,15 +3971,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // space
         const held = this._spaceKeyHeld
         this._spaceKeyHeld = null
-        this.read_only = held?.readOnly ?? false
-        this.dragging_canvas =
-          (held?.draggingCanvas ?? false) && this.pointer.isDown
-        if (
-          this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
-        ) {
-          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
-          this._autoPan?.start()
+        if (held) {
+          this.read_only = held.readOnly
+          this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
+          if (
+            this.pointer.isDown &&
+            (this.isDragging || this.linkConnector.isConnecting)
+          ) {
+            this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+            this._autoPan?.start()
+          }
         }
       }
 

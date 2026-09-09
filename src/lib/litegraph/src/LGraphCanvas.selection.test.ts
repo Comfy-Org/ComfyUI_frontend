@@ -11,23 +11,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    queryLinkSegmentAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getNodeLayout: vi.fn(),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn(),
-    applyOperation: vi.fn(),
-    allocateZIndex: vi.fn(() => 0),
-    readNodeRect: vi.fn(() => false),
-    contentSizeOf: vi.fn(),
-    getGroupLayout: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 type Modifiers = Partial<
   Pick<MouseEventInit, 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>
@@ -109,6 +93,7 @@ function marquee(
   } as CanvasPointerEvent
   if (canvas.liveSelection) {
     canvas['handleLiveSelect'](event, dragRect, initialSelection)
+    canvas['finalizeLiveSelect']()
   } else {
     canvas['_handleMultiSelect'](event, dragRect)
   }
@@ -322,13 +307,12 @@ describe('LGraphCanvas selection', () => {
       expect(selectedTitles(canvas)).toEqual(classic)
     })
 
-    it.fails('classic marquee requests a redraw', () => {
-      canvas.liveSelection = false
-      const setDirty = vi.spyOn(canvas, 'setDirty')
+    it.fails('live marquee reports one change', () => {
+      canvas.liveSelection = true
 
       marquee(canvas, [250, 0], [450, 400], {})
 
-      expect(setDirty).toHaveBeenCalled()
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -374,5 +358,13 @@ describe('LGraphCanvas selection', () => {
         expect(canvas.read_only).toBe(readOnly)
       }
     )
+
+    it('ignores a release without a matching press', () => {
+      canvas.read_only = true
+
+      canvas.processKey(keyEvent('keyup', ' '))
+
+      expect(canvas.read_only).toBe(true)
+    })
   })
 })
