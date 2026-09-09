@@ -673,6 +673,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   const crossTab = clientOptions.refreshScheduler?.crossTab
   const followerJitterMs = crossTab?.followerJitterMs ?? 15_000
   let scheduledTimer: ReturnType<typeof setTimeout> | undefined
+  /**
+   * The hard fail-close for a credential whose refresh chain died. Its own
+   * timer on purpose: re-arming the refresh (a retry, a promotion) must not
+   * cancel it; only a committed credential or a teardown does.
+   */
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined
   let scheduledRetryCount = 0
   /** Without coordination every tab is its own leader. */
   let isRefreshLeader = crossTab === undefined
@@ -692,6 +698,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (scheduledTimer !== undefined) {
       clearTimeout(scheduledTimer)
       scheduledTimer = undefined
+    }
+  }
+
+  function clearExpiry(): void {
+    if (expiryTimer !== undefined) {
+      clearTimeout(expiryTimer)
+      expiryTimer = undefined
     }
   }
 
@@ -777,6 +790,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     // Adoption is a commit: it supersedes any in-flight mint of this tab's
     // own, exactly like a newer mint would.
     mintSequence += 1
+    clearExpiry()
     credential = next
     failure = undefined
     safeWrite(JSON.stringify({ ...next, target: credentialTarget }))
@@ -820,11 +834,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   function armClearAtExpiry(expiring: AccountCredential): void {
     const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
     const now = clientOptions.now?.() ?? Date.now()
-    stopScheduledRefresh()
-    scheduledTimer = setTimeout(
+    clearExpiry()
+    expiryTimer = setTimeout(
       () => {
-        scheduledTimer = undefined
+        expiryTimer = undefined
         if (credential !== expiring) return
+        stopScheduledRefresh()
         credential = undefined
         credentialTarget = undefined
         const expired: SessionFailure = {
@@ -876,6 +891,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     )
       return
     if (result.status === 'ok') {
+      clearExpiry()
       credential = result.session
       failure = undefined
       publish()
@@ -962,6 +978,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return undefined
     }
     if (result.status === 'ok') {
+      clearExpiry()
       credential = result.session
       credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
@@ -993,6 +1010,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         identityEpoch += 1
         stopScheduledRefresh()
         teardownCoordination()
+        clearExpiry()
         currentUser = next
         credential = undefined
         credentialTarget = undefined
@@ -1015,6 +1033,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         unsubscribe()
         stopScheduledRefresh()
         teardownCoordination()
+        clearExpiry()
         currentUser = null
         credential = undefined
         credentialTarget = undefined
@@ -1043,6 +1062,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       invalidationEpoch += 1
       stopScheduledRefresh()
       teardownCoordination()
+      clearExpiry()
       // A mint still running belongs to the scope being discarded; a caller
       // arriving after this must start its own rather than join it.
       inFlight = undefined
