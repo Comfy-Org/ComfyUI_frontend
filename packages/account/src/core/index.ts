@@ -1,8 +1,11 @@
 export type {
   AccountCredential,
   AccountUser,
+  AttachIdentityOptions,
   CredentialStorage,
+  CrossTabRefreshPort,
   IdentityPort,
+  RefreshSchedulerOptions,
   SessionClient,
   SessionClientOptions,
   SessionErrorCode,

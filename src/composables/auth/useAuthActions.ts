@@ -44,7 +44,7 @@ const localizedAuthErrorCopy = (): AuthErrorCopy => ({
     ])
   ),
   generic: t('auth.errors.generic'),
-  signupBlocked: t('auth.errors.signupBlocked')
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
 })
 
 /**
@@ -71,21 +71,22 @@ export const useAuthActions = () => {
   const reportError = (error: unknown) => {
     const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
+    const severity = severityForAuthError(classification)
+    const summary = t(severity === 'warn' ? 'g.warning' : 'g.error')
     if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
       toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
+        severity,
+        summary,
         detail: t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
       })
     } else if (classification.kind !== 'unknown') {
-      const severity = severityForAuthError(classification)
       toastStore.add({
         severity,
-        summary: t(severity === 'warn' ? 'g.warning' : 'g.error'),
+        summary,
         detail: authErrorMessage(classification, localizedAuthErrorCopy())
       })
     } else if (error instanceof FirebaseError) {

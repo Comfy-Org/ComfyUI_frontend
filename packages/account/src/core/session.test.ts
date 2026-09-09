@@ -69,7 +69,8 @@ function okFetch(token = 'workspace-jwt') {
 
 function seedCache(
   storage: CredentialStorage,
-  overrides: Partial<AccountCredential> = {}
+  overrides: Partial<AccountCredential> = {},
+  target?: string
 ): AccountCredential {
   const credential: AccountCredential = {
     token: 'cached-jwt',
@@ -80,7 +81,7 @@ function seedCache(
     role: 'owner',
     ...overrides
   }
-  storage.write(JSON.stringify(credential))
+  storage.write(JSON.stringify({ ...credential, target }))
   return credential
 }
 
@@ -355,6 +356,183 @@ describe('ensureFresh', () => {
     ).toBe('uid-2')
   })
 
+  it('threads workspace_id into the mint body when a workspace is requested', async () => {
+    const fetchImpl = okFetch()
+    const { client } = makeClient({ fetchImpl })
+
+    await client.ensureFresh(testUser(), { workspaceId: 'ws-9' })
+
+    const [, init] = fetchImpl.mock.calls[0]
+    expect(
+      init?.body,
+      'the workspace mint body must match requestToken: workspace_id or empty'
+    ).toBe(JSON.stringify({ workspace_id: 'ws-9' }))
+  })
+
+  it('never serves a cached personal credential for an explicit workspace request', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        200,
+        mintBody({ workspace: { id: 'ws-9', name: 'Team', type: 'team' } })
+      )
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(storage)
+
+    const result = await client.ensureFresh(testUser(), {
+      workspaceId: 'ws-9'
+    })
+
+    expect(
+      fetchImpl,
+      'a personal credential authorizes the wrong workspace'
+    ).toHaveBeenCalledOnce()
+    expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
+  })
+
+  it('serves a fresh cached credential for its own workspace without a network call', async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(
+      storage,
+      { workspace: { id: 'ws-9', name: 'Team', type: 'team' } },
+      'ws-9'
+    )
+
+    const result = await client.ensureFresh(testUser(), {
+      workspaceId: 'ws-9'
+    })
+
+    expect(fetchImpl).not.toHaveBeenCalled()
+    expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
+  })
+
+  it('never lets a target-less read adopt a team-scoped credential, stored or in memory', async () => {
+    const fetchImpl = okFetch('personal-jwt')
+    const { client, storage } = makeClient({ fetchImpl })
+    seedCache(
+      storage,
+      { workspace: { id: 'ws-9', name: 'Team', type: 'team' } },
+      'ws-9'
+    )
+
+    const stored = await client.ensureFresh(testUser())
+    expect(
+      fetchImpl,
+      'a stored team credential must not answer a personal read; the next scheduled refresh would re-mint it as personal'
+    ).toHaveBeenCalledOnce()
+    expect(stored?.status === 'ok' && stored.session.token).toBe('personal-jwt')
+
+    storage.clear()
+    const team = await client.remint(testUser(), { workspaceId: 'ws-9' })
+    expect(team?.status).toBe('ok')
+    await client.ensureFresh(testUser())
+    expect(
+      fetchImpl,
+      'the in-memory tier follows the same rule'
+    ).toHaveBeenCalledTimes(3)
+  })
+
+  it('never shares an in-flight mint across different workspace targets', async () => {
+    let releaseFirst!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(
+          200,
+          mintBody({ workspace: { id: 'ws-9', name: 'Team', type: 'team' } })
+        )
+      )
+    const { client } = makeClient({ fetchImpl })
+    const user = testUser()
+
+    const personal = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const team = client.ensureFresh(user, { workspaceId: 'ws-9' })
+    releaseFirst(jsonResponse(200, mintBody()))
+    const [, teamResult] = await Promise.all([personal, team])
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(
+      teamResult?.status === 'ok' && teamResult.session.workspace.id,
+      'a workspace mint joining a personal mint would hand back the wrong scope'
+    ).toBe('ws-9')
+  })
+
+  it('never lets a slower personal mint commit over a completed workspace switch', async () => {
+    let releasePersonal!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releasePersonal = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(
+          200,
+          mintBody({
+            token: 'team-jwt',
+            workspace: { id: 'ws-9', name: 'Team', type: 'team' }
+          })
+        )
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+
+    const personal = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const team = await client.remint(user, { workspaceId: 'ws-9' })
+    expect(team?.status === 'ok' && team.session.token).toBe('team-jwt')
+
+    releasePersonal(jsonResponse(200, mintBody({ token: 'personal-jwt' })))
+    const superseded = await personal
+
+    expect(
+      client.getToken(),
+      'a slower personal mint resolving after a workspace switch must not silently revert it'
+    ).toBe('team-jwt')
+    expect(
+      superseded,
+      'a superseded mint resolves undefined, like one outlived by an identity change'
+    ).toBeUndefined()
+  })
+
+  it('a superseded same-target caller receives the newer committed session', async () => {
+    let releaseSlow!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseSlow = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'newer-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+    identity.fire(user)
+
+    const slow = client.ensureFresh(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const fast = await client.remint(user, {})
+    expect(fast?.status === 'ok' && fast.session.token).toBe('newer-jwt')
+
+    releaseSlow(jsonResponse(200, mintBody({ token: 'slow-jwt' })))
+    const superseded = await slow
+
+    expect(
+      superseded?.status === 'ok' && superseded.session.token,
+      'the caller asked for a session this target already has; losing the mint race is not a failure'
+    ).toBe('newer-jwt')
+    expect(client.getToken()).toBe('newer-jwt')
+  })
+
   it('resolves an expired-cache read with the NEW token when the mint lands after the call', async () => {
     let release!: (response: Response) => void
     const fetchImpl = vi.fn<typeof fetch>(
@@ -462,6 +640,36 @@ describe('clearStoredCredential', () => {
   })
 })
 
+describe('invalidate() and an in-flight mint', () => {
+  it('makes a caller arriving after invalidation start its own mint instead of joining the discarded one', async () => {
+    let releaseFirst!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseFirst = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+    identity.fire(user)
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+
+    client.invalidate()
+    const after = client.ensureFresh(user)
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    releaseFirst(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+
+    expect(
+      (await after)?.status === 'ok' && client.getToken(),
+      'the discarded scope must not be served to a caller that came after the invalidation'
+    ).toBe('post-invalidate-jwt')
+  })
+})
+
 describe('storage outage', () => {
   it('serves the published credential when storage cannot be read, instead of re-minting on every read', async () => {
     const fetchImpl = okFetch()
@@ -545,6 +753,235 @@ describe('isPermanentSessionError', () => {
       expect(isPermanentSessionError(code)).toBe(permanent)
     }
   )
+})
+
+describe('identity token failures', () => {
+  it('maps a NOT_AUTHENTICATED-coded identity failure to the production code', async () => {
+    const { client } = makeClient({ fetchImpl: vi.fn<typeof fetch>() })
+    const user: AccountUser = {
+      uid: 'uid-1',
+      getIdToken: async () => {
+        throw Object.assign(new Error('no identity'), {
+          code: 'NOT_AUTHENTICATED'
+        })
+      }
+    }
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result).toEqual({ status: 'error', code: 'NOT_AUTHENTICATED' })
+  })
+
+  it('keeps an uncoded identity failure in the transient bucket', async () => {
+    const { client } = makeClient({ fetchImpl: vi.fn<typeof fetch>() })
+    const user: AccountUser = {
+      uid: 'uid-1',
+      getIdToken: async () => {
+        throw new Error('identity provider re-initializing')
+      }
+    }
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result).toEqual({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+  })
+})
+
+describe('attachIdentity without auto-mint', () => {
+  it('sets the user and publishes, but leaves minting to the host', async () => {
+    const fetchImpl = okFetch('host-driven-jwt')
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+
+    identity.fire(user)
+    expect(
+      user.getIdToken,
+      'a host that mints explicitly must not get a second mint per identity event'
+    ).not.toHaveBeenCalled()
+    expect(client.getSnapshot().phase).toBe('minting')
+
+    const result = await client.ensureFresh(user, {})
+
+    expect(result?.status).toBe('ok')
+    expect(client.getSnapshot().phase).toBe('authenticated')
+    expect(client.getToken()).toBe('host-driven-jwt')
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+})
+
+describe('host-driven invalidation', () => {
+  it('drops the credential and blocks in-flight commits while keeping the identity attached', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (release = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const inFlight = client.remint(user, {})
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2))
+    client.invalidate()
+
+    expect(
+      client.getToken(),
+      'a host failing closed must never serve the previous scope mid-switch'
+    ).toBeUndefined()
+    release(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    expect(await inFlight).toBeUndefined()
+    expect(client.getToken()).toBeUndefined()
+
+    const after = await client.remint(user, {})
+    expect(
+      after?.status === 'ok' && after.session.token,
+      'the attachment survives invalidation, so a targeted re-mint commits normally'
+    ).toBe('post-invalidate-jwt')
+  })
+
+  it('invalidate() clears the credential cache, not only memory', async () => {
+    const { client, storage } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    expect(storage.raw()).not.toBeNull()
+
+    client.invalidate()
+
+    expect(
+      storage.raw(),
+      'ensureCore reads storage before memory, so a revoked credential left cached is served straight back'
+    ).toBeNull()
+  })
+
+  it('keeps the identity after invalidation, so a host scope change never strands the port', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'post-invalidate-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    client.invalidate()
+
+    const snapshot = client.getSnapshot()
+    expect(snapshot.phase).toBe('minting')
+    expect(
+      snapshot.user?.uid,
+      'a real port never re-delivers an unchanged user, so nulling it here would leave the client signed-out for good'
+    ).toBe(user.uid)
+    expect(client.getToken()).toBeUndefined()
+
+    const after = await client.ensureFresh()
+    expect(
+      after?.status === 'ok' && after.session.token,
+      'an implicit-user mint after invalidation must commit for the still attached user'
+    ).toBe('post-invalidate-jwt')
+    expect(client.getToken()).toBe('post-invalidate-jwt')
+  })
+
+  it('a mint outliving invalidation must not write the credential cache', async () => {
+    let release!: (response: Response) => void
+    const fetchImpl = vi.fn<typeof fetch>(
+      () => new Promise<Response>((resolve) => (release = resolve))
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+
+    client.invalidate()
+    release(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    // Let the released mint settle its whole chain before asserting absence.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(client.getToken()).toBeUndefined()
+    expect(
+      storage.raw(),
+      'a storage-backed host would resurrect the invalidated credential on the next reload'
+    ).toBeNull()
+  })
+})
+
+describe('transient-failure credential preservation', () => {
+  it('keeps a live credential when an opt-in remint fails transiently', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(200, mintBody()))
+      .mockImplementationOnce(async () => jsonResponse(503, {}))
+      .mockImplementationOnce(async () => jsonResponse(401, {}))
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const user = testUser()
+
+    identity.fire(user)
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+
+    const transient = await client.remint(user, {
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(transient?.status).toBe('error')
+    expect(
+      client.getToken(),
+      'a transient re-mint failure must not destroy a still-valid credential'
+    ).toBe('workspace-jwt')
+
+    const permanent = await client.remint(user, {
+      preserveCredentialOnTransientFailure: true
+    })
+    expect(permanent?.status).toBe('error')
+    expect(
+      client.getToken(),
+      'preservation is transient-only; a permanent failure still commits'
+    ).toBeUndefined()
+  })
+})
+
+describe('re-mint observability', () => {
+  it('publishes a fresh authenticated snapshot on every re-mint', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, mintBody({ token: `jwt-${(minted += 1)}` }))
+    )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    const seenTokens: string[] = []
+    client.subscribe((snapshot) => {
+      if (snapshot.phase === 'authenticated') {
+        seenTokens.push(snapshot.session.token)
+      }
+    })
+
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('jwt-1'))
+    await client.remint()
+
+    expect(
+      seenTokens,
+      'a host hook rotating cookies on re-mint needs a guaranteed snapshot per new token'
+    ).toEqual(['jwt-1', 'jwt-2'])
+  })
 })
 
 describe('sign-in state ownership', () => {

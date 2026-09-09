@@ -4995,7 +4995,7 @@
       "accessDenied": "Vous n’avez pas accès à cet espace de travail",
       "invalidFirebaseToken": "Échec de l’authentification. Veuillez vous reconnecter.",
       "notAuthenticated": "Vous devez être connecté pour accéder aux espaces de travail",
-      "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail : {error}",
+      "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail",
       "workspaceNotFound": "Espace de travail introuvable"
     },
     "initializationFailed": "Impossible de charger votre espace de travail",

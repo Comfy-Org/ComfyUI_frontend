@@ -41,6 +41,12 @@ const { mockResetSocket } = vi.hoisted(() => ({
   mockResetSocket: vi.fn()
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 const mockTeamWorkspaceStore = vi.hoisted(() => ({
   activeWorkspaceId: null as string | null,
   resetForIdentityChange: vi.fn()
@@ -177,13 +183,16 @@ describe('useAuthStore', () => {
       > as ReturnType<typeof vuefire.useFirebaseAuth>
     )
 
-    // Mock onAuthStateChanged to capture the callback and simulate initial auth state
+    // Every observer registered on the Auth instance (the store's listener
+    // and the package port) gets each auth-state event, as Firebase does.
+    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateCallback = (user) =>
+      authStateObservers.forEach((observer) => observer(user))
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        // Call the callback with our mock user
-        ;(callback as (user: User | null) => void)(mockUser)
-        // Return an unsubscribe function
+        const observer = callback as (user: User | null) => void
+        authStateObservers.push(observer)
+        observer(mockUser)
         return vi.fn()
       }
     )
@@ -327,6 +336,44 @@ describe('useAuthStore', () => {
 
       expect(await pending).toBeNull()
       expect(store.balance).toBeNull()
+    })
+  })
+
+  describe('password reset', () => {
+    it('reports an unknown email as sent, so the reset form cannot be used to enumerate accounts', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
+        code: 'auth/user-not-found',
+        message: 'Firebase: Error (auth/user-not-found).'
+      })
+
+      await expect(
+        store.sendPasswordReset('ghost@example.com')
+      ).resolves.toBeUndefined()
+    })
+
+    it('still surfaces every other reset failure', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
+        code: 'auth/network-request-failed',
+        message: 'Firebase: Error (auth/network-request-failed).'
+      })
+
+      await expect(
+        store.sendPasswordReset('user@example.com')
+      ).rejects.toMatchObject({ code: 'auth/network-request-failed' })
+    })
+  })
+
+  describe('unified identity source', () => {
+    it('the session client listens to the same Auth instance through the package port', async () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
+
+      await useWorkspaceAuthStore().mintAtLogin()
+
+      expect(
+        vi.mocked(firebaseAuth.onAuthStateChanged),
+        'the port registers its own observer on the same Auth instance; identity is not pushed from this store'
+      ).toHaveBeenCalledExactlyOnceWith(mockAuth, expect.any(Function))
     })
   })
 
@@ -980,6 +1027,34 @@ describe('useAuthStore', () => {
 
       // The just-created user is deleted so the email is freed for retry.
       expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports an orphaning rollback failure to telemetry', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockUser.delete.mockRejectedValue(new Error('delete down'))
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      expect(mockUser.delete).toHaveBeenCalledTimes(2)
+      expect(
+        mockReportError,
+        'a silently orphaned account bricks every retry with email-already-in-use and nobody learns'
+      ).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'auth_signup_rollback_failed'
+      })
     })
 
     it('does not delete the user on a successful registration', async () => {
