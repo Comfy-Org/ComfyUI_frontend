@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Coins, Copy, Play } from '@lucide/vue'
+import { ArrowUpRight, Coins, Copy, Play } from '@lucide/vue'
 import { useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
@@ -126,14 +126,6 @@ const workspace = computed(() =>
 // at click time, so a plain anchor is enough and no popup can be blocked.
 const topUpHref = computed(() => platformTopUpHref(workspace.value))
 
-// "Out of credits" and "Not enough credits" are different situations and the
-// gate should not blur them: one is an empty wallet, the other is a wallet that
-// cannot cover this particular run.
-const noCreditsTitleKey = computed<TranslationKey>(() =>
-  credits.value > 0
-    ? 'workshop.error.lowCreditsTitle'
-    : 'workshop.error.noCreditsTitle'
-)
 const noCreditsBody = computed(() => {
   if (topUpRail.value === 'platform')
     return t('workshop.error.noCreditsPlatform', locale).replace(
@@ -417,7 +409,7 @@ function useInCode() {
           <template v-else-if="gate === 'noCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
               <p class="text-sm font-bold text-primary-warm-white">
-                {{ t(noCreditsTitleKey, locale) }}
+                {{ t('workshop.error.creditsTitle', locale) }}
               </p>
               <p class="text-xs text-primary-warm-gray">{{ noCreditsBody }}</p>
             </div>
@@ -429,10 +421,11 @@ function useInCode() {
               rel="noopener"
               size="lg"
               class="w-full px-5"
+              :append-icon="ArrowUpRight"
               data-testid="run-button"
               data-gate="noCredits"
             >
-              {{ t('workshop.run.buyCreditsPlatform', locale) }}
+              {{ t('workshop.run.buyCredits', locale) }}
             </Button>
             <Button
               v-else
@@ -454,7 +447,7 @@ function useInCode() {
           <template v-else-if="gate === 'memberNoCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
               <p class="text-sm font-bold text-primary-warm-white">
-                {{ t('workshop.error.memberNoCreditsTitle', locale) }}
+                {{ t('workshop.error.creditsTitle', locale) }}
               </p>
               <p class="text-xs text-primary-warm-gray">
                 {{

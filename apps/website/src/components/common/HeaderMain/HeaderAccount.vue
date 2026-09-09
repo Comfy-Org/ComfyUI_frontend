@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { ArrowLeftRight, Check, Coins, LogOut, Settings } from '@lucide/vue'
+import {
+  ArrowLeftRight,
+  ArrowUpRight,
+  Check,
+  Coins,
+  LogOut,
+  Settings
+} from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -197,8 +204,12 @@ const avatarClass =
         >
           <a :href="topUpHref" target="_blank" rel="noopener">
             <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
-            <span class="flex-1">
-              {{ t('nav.creditsLabelPlatform', locale) }}
+            <span class="flex flex-1 items-center gap-1.5">
+              {{ t('nav.creditsLabel', locale) }}
+              <ArrowUpRight
+                class="size-3.5 text-primary-warm-gray"
+                aria-hidden="true"
+              />
             </span>
             <span
               :class="

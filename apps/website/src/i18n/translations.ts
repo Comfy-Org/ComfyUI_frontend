@@ -8371,7 +8371,6 @@ Enterprise`
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
   'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
-  'nav.creditsLabelPlatform': { en: 'Add credits ↗', 'zh-CN': '添加积分 ↗' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
   'nav.workspaceSettings': {
@@ -8826,10 +8825,6 @@ Enterprise`
     en: 'Add credits',
     'zh-CN': '添加积分'
   },
-  'workshop.run.buyCreditsPlatform': {
-    en: 'Add credits ↗',
-    'zh-CN': '添加积分 ↗'
-  },
   'workshop.run.run': { en: 'Run', 'zh-CN': '运行' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
@@ -8893,11 +8888,7 @@ Enterprise`
     en: 'Your workspace policy blocks this provider.',
     'zh-CN': '你的工作区策略禁止了该提供方。'
   },
-  'workshop.error.noCreditsTitle': {
-    en: 'Out of credits',
-    'zh-CN': '积分已用完'
-  },
-  'workshop.error.lowCreditsTitle': {
+  'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'
   },
@@ -8927,10 +8918,6 @@ Enterprise`
     en: 'You have {credits} credits and this run needs {n}. Your inputs stay here while you buy.',
     'zh-CN':
       '你有 {credits} 积分，本次运行需要 {n}。购买时你的输入会保留在这里。'
-  },
-  'workshop.error.memberNoCreditsTitle': {
-    en: 'Out of credits',
-    'zh-CN': '积分已用完'
   },
   'workshop.error.memberNoCredits': {
     en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',
