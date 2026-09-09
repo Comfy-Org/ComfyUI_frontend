@@ -88,11 +88,14 @@ describe('link visibility mutations', () => {
     await loadLocale('fr')
     i18n.global.locale.value = 'fr'
     try {
+      useLinkPresentationStore().patch(scope, link.id, {
+        label: 'Existing name'
+      })
       promptRenameLinkBadge(host, scope, link.id, event)
 
       expect(host.prompt).toHaveBeenCalledWith(
         'Renommer',
-        '',
+        'Existing name',
         expect.any(Function),
         event
       )
@@ -103,6 +106,17 @@ describe('link visibility mutations', () => {
       expect(
         useLinkPresentationStore().getPresentation(scope, link.id)?.label
       ).toBe('Checkpoint')
+
+      useLinkPresentationStore().patch(scope, link.id, { label: undefined })
+      host.prompt.mockClear()
+      promptRenameLinkBadge(host, scope, link.id, event)
+
+      expect(host.prompt).toHaveBeenCalledWith(
+        'Renommer',
+        '',
+        expect.any(Function),
+        event
+      )
     } finally {
       i18n.global.locale.value = originalLocale
     }

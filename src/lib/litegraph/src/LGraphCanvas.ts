@@ -4,6 +4,7 @@ import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { st } from '@/i18n'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -6257,7 +6258,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               ? getSlotPosition(start_node, outputId, false)
               : start_node.getOutputPos(outputId)
 
-        const output = start_node.outputs.at(outputId)
+        const output =
+          outputId === -1 ? undefined : start_node.outputs[outputId]
         if (!output) continue
 
         renderConnection(link, startPos, endPos, output.dir, input.dir)
@@ -6787,7 +6789,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return LGraphCanvas.getBoundaryNodes(this.selected_nodes)
   }
 
-  showLinkMenu(segment: LinkSegment, e: CanvasPointerEvent): boolean {
+  showLinkMenu(
+    segment: LinkSegment,
+    e: CanvasPointerEvent,
+    presentationLink?: LLink
+  ): boolean {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
@@ -6811,17 +6817,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const link =
       segment instanceof LLink && graph.getLink(segment.id) === segment
         ? segment
-        : undefined
+        : presentationLink
     const graphScope = graphScopeOf(graph)
     const hidden = link
       ? useLinkPresentationStore().getPresentation(graphScope, link.id)?.hidden
       : false
-    const visibilityOptions: (string | null)[] = !link
-      ? []
-      : hidden
-        ? ['Rename', 'Show Link', null]
-        : ['Hide Link', null]
-    const options: (string | null)[] = [
+    const menuItem = (value: string): IContextMenuValue<string> => ({
+      content: st(`contextMenu.${value}`, value),
+      value
+    })
+    const visibilityOptions: (IContextMenuValue<string> | string | null)[] =
+      !link
+        ? []
+        : hidden
+          ? [menuItem('Rename'), menuItem('Show Link'), null]
+          : [menuItem('Hide Link'), null]
+    const options: (IContextMenuValue<string> | string | null)[] = [
       ...visibilityOptions,
       'Add Node',
       ...(hidden ? [] : ['Add Reroute']),
@@ -6839,13 +6850,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     function inner_clicked(
       this: LGraphCanvas,
-      v: string,
+      v: string | IContextMenuValue<string>,
       _options: unknown,
       clickEvent: MouseEvent
     ) {
       if (!graph) throw new NullGraphError()
 
-      switch (v) {
+      switch (typeof v === 'string' ? v : v.value) {
         case 'Add Node':
           LGraphCanvas.onMenuAdd(null, null, clickEvent, menu, (node) => {
             if (
@@ -8882,7 +8893,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, link, group } = getCanvasContextMenuTarget(
+      const { reroute, linkSegment, link, group } = getCanvasContextMenuTarget(
         this,
         event.canvasX,
         event.canvasY
@@ -8901,7 +8912,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         )
       }
       if (link) {
-        this.showLinkMenu(link, event)
+        this.showLinkMenu(linkSegment ?? link, event, link)
         return
       }
       if (group) {

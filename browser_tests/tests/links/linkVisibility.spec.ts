@@ -127,6 +127,50 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
 
     await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
   })
+
+  test('renames a hidden badge and persists the label after reload', async ({
+    comfyPage
+  }) => {
+    await hideLinkViaMenu(comfyPage, await firstLinkMidpoint(comfyPage))
+
+    const badgeCenter = await graphPointToClient(
+      comfyPage,
+      await firstBadgeCenter(comfyPage)
+    )
+    await comfyPage.page.mouse.dblclick(badgeCenter.x, badgeCenter.y, {
+      delay: 5
+    })
+
+    const prompt = comfyPage.page.locator('.graphdialog')
+    await expect(prompt).toBeVisible()
+    const promptInput = prompt.locator('input.value')
+    await expect(promptInput).toHaveValue('')
+    await promptInput.fill('Renamed badge')
+    await promptInput.press('Enter')
+    await expect(prompt).toBeHidden()
+
+    const linkId = await comfyPage.page.evaluate(() => {
+      const link = window.app!.graph.links.values().next().value
+      return link ? String(link.id) : undefined
+    })
+    if (!linkId) throw new Error('Hidden badge link was not found')
+
+    await expect
+      .poll(async () => {
+        const workflow = await comfyPage.workflow.getExportedWorkflow()
+        return workflow.extra?.linkPresentation?.[linkId]?.label
+      })
+      .toBe('Renamed badge')
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await expect
+      .poll(async () => {
+        const workflow = await comfyPage.workflow.getExportedWorkflow()
+        return workflow.extra?.linkPresentation?.[linkId]?.label
+      })
+      .toBe('Renamed badge')
+  })
 })
 
 test.describe(
