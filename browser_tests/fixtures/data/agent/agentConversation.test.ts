@@ -8,6 +8,7 @@ import {
   zAgentConversation,
   zRecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
+import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const recorded = {
@@ -77,7 +78,7 @@ describe('zAgentConversation', () => {
           }
         ]
       })
-    ).toThrow('a turn ends with its agent_message_done event')
+    ).toThrow('exactly one agent_message_done event, as its last entry')
   })
 
   it('refuses a recorded label without backend provenance', () => {
@@ -85,6 +86,24 @@ describe('zAgentConversation', () => {
     expect(() => zAgentConversation.parse({ ...recorded, source })).toThrow(
       'recorded responses require backend capture provenance'
     )
+  })
+
+  it('refuses a turn with two completion events', () => {
+    const done = {
+      kind: 'event',
+      event: { type: 'agent_message_done', data: {} }
+    }
+    const tab = {
+      kind: 'event',
+      event: {
+        type: 'agent_active_tab',
+        data: { workflow_id: recorded.workflow.id, name: 'Captured workflow' }
+      }
+    }
+    const turn = { ...recorded.turns[0], response: [tab, done, tab, done] }
+    expect(() =>
+      zAgentConversation.parse({ ...recorded, turns: [turn] })
+    ).toThrow('exactly one agent_message_done')
   })
 })
 
@@ -128,22 +147,124 @@ describe('committed recordings', () => {
     process.cwd(),
     'browser_tests/fixtures/data/agent/conversations'
   )
+  const files = readdirSync(dir).filter((file) => file.endsWith('.json'))
+  const load = (file: string): unknown =>
+    JSON.parse(readFileSync(join(dir, file), 'utf8'))
 
   it('every recording parses against the production event union', () => {
-    const files = readdirSync(dir).filter((file) => file.endsWith('.json'))
     expect(files.length).toBeGreaterThan(0)
     for (const file of files) {
-      const raw = JSON.parse(readFileSync(join(dir, file), 'utf8'))
+      const raw = load(file)
       const conversation = zAgentConversation.parse(raw)
       expect(() => assertOpsApply(conversation), file).not.toThrow()
       expect({ file, workflow: conversation.workflow }).toEqual({
         file,
-        workflow: raw.workflow
+        workflow: (raw as { workflow: unknown }).workflow
       })
       const frames = conversation.turns
         .flatMap((turn) => turn.response)
         .filter((entry) => entry.kind === 'event')
       expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
     }
+  })
+
+  it('every recording has explicit visible expectations for each turn', () => {
+    const turns = Object.fromEntries(
+      files.map((file) => [
+        file.slice(0, -'.json'.length),
+        zAgentConversation.parse(load(file)).turns.length
+      ])
+    )
+    expect(
+      Object.fromEntries(
+        Object.entries(RECORDED_EXPECTATIONS).map(([caseId, expected]) => [
+          caseId,
+          expected?.length ?? 0
+        ])
+      )
+    ).toEqual(turns)
+  })
+
+  it('the cancelled recording stops with text still to render', () => {
+    const conversation = zAgentConversation.parse(
+      load('agent-rec-cancelled-turn.json')
+    )
+    const [turn] = conversation.turns
+    expect(turn.cancel_after).toBeDefined()
+    expect(
+      turn.response.some(
+        (entry) =>
+          entry.kind === 'event' &&
+          entry.event.type === 'agent_message_delta' &&
+          entry.event.data.delta.length > 0
+      )
+    ).toBe(true)
+  })
+
+  // The fields the applier reads for each recorded op variant; deleting any
+  // one of them refuses the recording. Fields the applier tolerates missing
+  // (add_node class_type and pos, which the node payload carries; delete_node
+  // removed_links, which the document derives; set_widget old) are not in
+  // this table because their absence leaves the document unchanged.
+  const readFields: Record<string, string[]> = {
+    add_node: ['node', 'node_id'],
+    set_widget: ['node_id', 'value', 'widget'],
+    connect: [
+      'from_node',
+      'from_slot',
+      'link_id',
+      'link_type',
+      'to_node',
+      'to_slot'
+    ],
+    delete_node: ['node_id']
+  }
+
+  it('refuses every recorded op variant missing a field the applier reads', () => {
+    const seen = new Set<string>()
+    for (const file of files) {
+      const raw = load(file) as {
+        turns: Array<{
+          response: Array<{
+            kind: string
+            ops?: Array<Record<string, unknown>>
+          }>
+        }>
+      }
+      raw.turns.forEach((turn, turnIndex) =>
+        turn.response.forEach((entry, entryIndex) =>
+          entry.ops?.forEach((op, opIndex) => {
+            const variant = String(op.op)
+            seen.add(variant)
+            for (const field of readFields[variant] ?? []) {
+              const altered = structuredClone(raw)
+              delete altered.turns[turnIndex].response[entryIndex].ops![
+                opIndex
+              ][field]
+              expect(
+                () => assertOpsApply(zAgentConversation.parse(altered)),
+                `${file} ${variant} without ${field}`
+              ).toThrow()
+            }
+          })
+        )
+      )
+    }
+    expect([...seen].sort()).toEqual(Object.keys(readFields).sort())
+  })
+
+  it('refuses a set_widget whose value never reaches the document', () => {
+    const raw = load('agent-rec-set-widget-existing.json') as {
+      turns: Array<{
+        response: Array<{ kind: string; ops?: Array<Record<string, unknown>> }>
+      }>
+    }
+    const write = raw.turns[0].response
+      .flatMap((entry) => entry.ops ?? [])
+      .find((op) => op.op === 'set_widget')!
+    delete write.value
+    expect(() => assertOpsApply(zAgentConversation.parse(raw))).toThrow(
+      /carries no value at projection\.nodes\[\d+\]\.widgets_values\[\d+\]/
+    )
   })
 })
