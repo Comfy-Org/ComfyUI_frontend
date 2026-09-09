@@ -281,7 +281,7 @@
       </Button>
 
       <UnifiedStripePaymentSelector
-        v-if="captureMode && quoteReady"
+        v-if="captureMode && quoteReady && !parkedCheckoutRecovery"
         :key="`${previewData?.quote_id}:${previewData?.quote_version}`"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"

@@ -208,16 +208,19 @@ export function useSubscriptionCheckout(
   )
   // Busy from submit until the checkout presents a terminal step. A pending
   // operation only releases the confirm action while it is parked on the
-  // customer (a challenge to complete, a failed attempt to retry); the
-  // in-page challenge this tab drives keeps it busy, and a succeeded
-  // operation stays busy for the beat between settlement and the success
-  // step taking over — that beat reopened the pay button mid-checkout.
+  // customer (a challenge to complete, a failed attempt to retry, a checkout
+  // still awaiting a card); the in-page challenge this tab drives keeps it
+  // busy, and a succeeded operation stays busy for the beat between settlement
+  // and the success step taking over — that beat reopened the pay button
+  // mid-checkout. A parked checkout keeps polling either way: releasing the
+  // action is about who is being waited on, not whether we are still watching.
   const isPolling = computed(() => {
     const operation = activeCheckoutOperation.value
     if (!operation) return false
     if (operation.status === 'succeeded') return true
     if (operation.status !== 'pending') return false
     if (operation.isAuthenticating) return true
+    if (operation.phase === 'awaiting_payment_method') return false
     return (
       operation.authenticationState !== 'failed_retryable' &&
       operation.authenticationState !== 'requires_action'

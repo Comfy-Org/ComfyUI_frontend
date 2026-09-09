@@ -3146,6 +3146,29 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('releases the busy state so the recovery prompt can be acted on', async () => {
+      const checkout = await setupWithApprovedPreview()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-parked'
+      })
+      mockGetOperation.mockReturnValue({
+        status: 'pending',
+        workspaceId: 'workspace-1',
+        phase: 'awaiting_payment_method'
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
+      // The parents fold isPolling into the preview's isLoading, which locks
+      // the prompt's own button and Back. A checkout waiting on the customer
+      // must not read as busy, even though we keep polling it.
+      expect(checkout.isPolling.value).toBe(false)
+    })
+
     it('keeps polling an operation parked on an invoice instead of prompting', async () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'

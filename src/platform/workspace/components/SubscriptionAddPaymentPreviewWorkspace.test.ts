@@ -364,16 +364,24 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
-  it('hides the capture-mode payment action during parked-checkout recovery', () => {
+  it('hides the capture-mode payment surface during parked-checkout recovery', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
         parkedCheckoutRecovery: true,
-        usePaymentElement: true
+        usePaymentElement: true,
+        // A ready quote, so the selector is absent because recovery hides it
+        // rather than because there is nothing to price.
+        previewData: {
+          ...previewFixture('MONTHLY', 50_000),
+          quote_id: 'quote_parked',
+          quote_version: 1
+        }
       },
       global: globalOptions
     })
 
+    expect(screen.queryByTestId('payment-selector')).toBeNull()
     expect(
       screen.queryByRole('button', {
         name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
