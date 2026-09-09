@@ -16,7 +16,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { nodeDef, savedNode } from './__fixtures__/inputOrder'
+import { nodeDef, savedNode, singleImageNode } from './__fixtures__/inputOrder'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -54,24 +54,38 @@ const source = {
   }))
 } satisfies ISerialisedNode
 
-async function setup() {
+async function setup(
+  seed: typeof savedNode | typeof singleImageNode = savedNode
+) {
   LiteGraph.registerNodeType('ReferenceSources', LGraphNode)
   await useLitegraphService().registerNodeDef(nodeDef.name, nodeDef)
   const graph = new LGraph()
+  const previousGraph = app.rootGraph
   Reflect.set(app, 'rootGraph', graph)
   const minted: GraphOperation[] = []
   let sequence = 0
   const host = mint(
     {
-      nodes: structuredClone([source, savedNode]),
-      links: connections.map(({ id, slot, type }, originSlot) => [
-        id,
-        1,
-        originSlot,
-        2,
-        slot,
-        type
-      ])
+      nodes: structuredClone([
+        {
+          ...source,
+          outputs: source.outputs.map((output, index) => ({
+            ...output,
+            links: seed.inputs.some(
+              (input) => input.link === connections[index].id
+            )
+              ? output.links
+              : []
+          }))
+        },
+        seed
+      ]),
+      links: connections.flatMap(({ id, name, type }, originSlot) => {
+        const slot = seed.inputs.findIndex(
+          (input) => input.name === name && input.link === id
+        )
+        return slot < 0 ? [] : [[id, 1, originSlot, 2, slot, type]]
+      })
     },
     catalog
   )
@@ -97,6 +111,7 @@ async function setup() {
     adapter.destroy()
     follower.destroy()
     host.destroy()
+    Reflect.set(app, 'rootGraph', previousGraph)
   })
 
   function deliver() {
@@ -129,10 +144,14 @@ async function setup() {
   }
 
   function targets() {
-    return connections.map(({ id }) => {
-      const link = graph.getLink(toLinkId(id))!
-      return graph.getNodeById(link.target_id)?.inputs[link.target_slot]?.name
-    })
+    return connections
+      .filter(({ id }) => seed.inputs.some((input) => input.link === id))
+      .map(({ id }) => {
+        const link = graph.getLink(toLinkId(id))
+        return link
+          ? graph.getNodeById(link.target_id)?.inputs[link.target_slot]?.name
+          : undefined
+      })
   }
 
   return { graph, host, follower, wiring, minted, deliver, apply, targets }
@@ -166,46 +185,79 @@ it('preserves named input targets and serialization without changing the shared 
   expect(targets()).toEqual(connections.map(({ name }) => name))
 })
 
-it('keeps every named target when a later agent connect replaces one resolution wire', async () => {
-  const { graph, minted, deliver, apply, targets } = await setup()
+function growImages(graph: LGraph) {
+  const from = graph.getNodeById(toNodeId(1))!
+  const to = graph.getNodeById(toNodeId(2))!
+  const widthSlot = to.findInputSlot('width')
+  expect(
+    from.connect(4, to, to.findInputSlot('ref_images.ref_image_0'))
+  ).toBeTruthy()
+  expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
+  expect(to.findInputSlot('width')).not.toBe(widthSlot)
+  return { from, to }
+}
+
+it('preserves named targets when an agent reconnect follows growth that moves width', async () => {
+  const { graph, minted, deliver, apply, targets } =
+    await setup(singleImageNode)
   deliver()
+  const names = targets()
+  const { to } = growImages(graph)
+  apply(minted)
+  minted.length = 0
+  deliver()
+  const documentSlot = singleImageNode.inputs.findIndex(
+    ({ name }) => name === 'width'
+  )
+  expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
+  expect(to.findInputSlot('width')).not.toBe(documentSlot)
+
   apply([
     {
       op: 'connect',
-      link_id: 276,
+      link_id: 900,
       from_node: 1,
       from_slot: 1,
       to_node: 2,
-      to_slot: 4,
+      to_slot: documentSlot,
       link_type: 'INT'
     }
   ])
   deliver()
 
-  expect(targets()).toEqual(connections.map(({ name }) => name))
-  expect(graph.getLink(toLinkId(276))?.origin_slot).toBe(1)
+  expect(to.getInputLink(to.findInputSlot('width'))?.id).toBe(900)
+  expect(graph.getLink(toLinkId(276))).toBeUndefined()
+  expect(targets().slice(1)).toEqual(names.slice(1))
+  expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
   expect(minted).toEqual([])
 })
 
-it('mints a local reconnect using the shared input index and keeps it after the agent echo', async () => {
-  const { graph, minted, deliver, apply } = await setup()
+it('mints the document index after growth moves width and preserves the reconnect on echo', async () => {
+  const { graph, minted, deliver, apply } = await setup(singleImageNode)
   deliver()
-  const from = graph.getNodeById(toNodeId(1))!
-  const to = graph.getNodeById(toNodeId(2))!
-  const link = from.connect(1, to, to.findInputSlot('width'))
-  expect(link).toBeTruthy()
-  expect(minted).toEqual([
-    expect.objectContaining({
-      op: 'connect',
-      from_slot: 1,
-      to_slot: 4
-    })
-  ])
-
+  const { from, to } = growImages(graph)
   apply(minted)
   minted.length = 0
   deliver()
-  expect(graph.getNodeById(toNodeId(2))?.getInputLink(4)?.id).toBe(link?.id)
-  expect(graph.getNodeById(toNodeId(2))?.inputs[4]?.name).toBe('width')
+  const documentSlot = singleImageNode.inputs.findIndex(
+    ({ name }) => name === 'width'
+  )
+  expect(to.findInputSlot('width')).not.toBe(documentSlot)
+  expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
+
+  const link = from.connect(1, to, to.findInputSlot('width'))
+  expect(link).toBeTruthy()
+  expect(minted).toEqual([
+    expect.objectContaining({ op: 'connect', to_slot: documentSlot })
+  ])
+  apply(minted)
+  minted.length = 0
+  deliver()
+  expect(to.getInputLink(to.findInputSlot('width'))?.id).toBe(link?.id)
+  const saved = graph.serialize().nodes.find(({ id }) => String(id) === '2')!
+  expect(saved.inputs?.find(({ name }) => name === 'width')?.link).toBe(
+    link?.id
+  )
+  expect(to.findInputSlot('ref_images.ref_image_1')).toBeGreaterThanOrEqual(0)
   expect(minted).toEqual([])
 })
