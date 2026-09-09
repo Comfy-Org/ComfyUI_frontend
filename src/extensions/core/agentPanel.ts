@@ -92,9 +92,11 @@ export function registerAgentPanelExtension(): void {
           })
         })
       }
-      watch(() => resolvedUserInfo.value?.id, loadConsentIfEligible, {
-        immediate: true
-      })
+      watch(
+        [() => resolvedUserInfo.value?.id, () => consentStore.identity],
+        loadConsentIfEligible,
+        { immediate: true }
+      )
       return setupFlagGate(loadConsentIfEligible)
     }
   })
