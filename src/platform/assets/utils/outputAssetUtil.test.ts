@@ -190,6 +190,25 @@ describe('resolveOutputAssetItems', () => {
     expect(results[0].id).toBe('asset-a')
   })
 
+  it('synthesizes an item id when the output carries an empty asset id', async () => {
+    const output = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      assetId: ''
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-1',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results[0].id).toBe(`job-1-${getOutputKey(output)}`)
+  })
+
   it('maps outputs and excludes a composite output key', async () => {
     const outputA = createOutput({
       filename: 'a.png',

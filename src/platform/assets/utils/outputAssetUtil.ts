@@ -71,7 +71,7 @@ function mapOutputsToAssetItems({
     seenOutputKeys.add(outputKey)
 
     items.push({
-      id: output.assetId ?? `${jobId}-${outputKey}`,
+      id: output.assetId || `${jobId}-${outputKey}`,
       name: output.filename,
       display_name: output.display_name,
       size: 0,
