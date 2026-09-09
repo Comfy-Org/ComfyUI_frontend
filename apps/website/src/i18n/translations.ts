@@ -8363,7 +8363,7 @@ Enterprise`
     'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {
-    en: 'Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
+    en: 'Builds is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
     'zh-CN':
       'Builder 可用于自助打包和测试自己的环境。托管构建增加了团队共享和企业治理。'
   },
