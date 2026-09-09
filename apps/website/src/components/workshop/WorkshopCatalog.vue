@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronRight, Search } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
@@ -8,21 +9,27 @@ import type {
 } from '../../config/workshop'
 import {
   WORKSHOP_OUTPUTS,
+  WORKSHOP_PAGE_SIZE,
   countWorkshopOutputs,
   filterWorkshopModels
 } from '../../config/workshop'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  locale = 'en',
+  detailRoutesAvailable = false
+} = defineProps<{
   models: readonly WorkshopBrowseModel[]
   locale?: Locale
+  detailRoutesAvailable?: boolean
 }>()
 
 const query = ref('')
 const output = ref<WorkshopOutputFilter>('all')
 const provider = ref('all')
-const visibleLimit = ref(48)
+const visibleLimit = ref(WORKSHOP_PAGE_SIZE)
 
 const counts = computed(() => countWorkshopOutputs(models))
 const providers = computed(() =>
@@ -40,7 +47,7 @@ const displayedModels = computed(() =>
 )
 
 watch([query, output, provider], () => {
-  visibleLimit.value = 48
+  visibleLimit.value = WORKSHOP_PAGE_SIZE
 })
 
 const outputLabelKeys: Record<WorkshopOutputFilter, TranslationKey> = {
@@ -125,10 +132,10 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
 
   <p class="mb-5 text-sm text-primary-comfy-canvas/60" aria-live="polite">
     {{
-      t('workshop.results', locale).replace(
-        '{count}',
-        String(visibleModels.length)
-      )
+      t(
+        visibleModels.length === 1 ? 'workshop.result' : 'workshop.results',
+        locale
+      ).replace('{count}', String(visibleModels.length))
     }}
   </p>
 
@@ -136,11 +143,18 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
     v-if="visibleModels.length > 0"
     class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
   >
-    <a
+    <component
+      :is="detailRoutesAvailable ? 'a' : 'article'"
       v-for="model in displayedModels"
       :key="model.id"
-      :href="model.href"
-      class="group hover:border-primary-comfy-yellow/60 flex min-h-56 flex-col rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6 transition hover:-translate-y-0.5 hover:bg-primary-comfy-canvas/8"
+      :href="detailRoutesAvailable ? model.href : undefined"
+      class="flex min-h-56 flex-col rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6"
+      :class="
+        cn(
+          detailRoutesAvailable &&
+            'group hover:border-primary-comfy-yellow/60 transition hover:-translate-y-0.5 hover:bg-primary-comfy-canvas/8'
+        )
+      "
     >
       <p class="text-primary-comfy-yellow text-xs tracking-wider uppercase">
         {{ model.provider }}
@@ -162,18 +176,19 @@ const outputOptions: readonly WorkshopOutputFilter[] = [
           </span>
         </div>
         <ChevronRight
+          v-if="detailRoutesAvailable"
           aria-hidden="true"
           class="group-hover:text-primary-comfy-yellow size-5 shrink-0 text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1"
         />
       </div>
-    </a>
+    </component>
   </div>
 
   <button
     v-if="displayedModels.length < visibleModels.length"
     type="button"
     class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow mx-auto mt-8 block rounded-full border border-primary-comfy-canvas/15 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors"
-    @click="visibleLimit += 48"
+    @click="visibleLimit += WORKSHOP_PAGE_SIZE"
   >
     {{ t('workshop.showMore', locale) }}
   </button>

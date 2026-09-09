@@ -215,18 +215,22 @@ export function unauthorizedDomainMessage(
     .replace('{email}', values.email)
 }
 
+/** One locale's auth error table: Firebase codes plus `generic` and `signupBlocked`. */
+export type AuthErrorCopy = Readonly<Record<string, string>>
+
 /**
- * The detail copy for a classified failure, the way useAuthActions resolves
- * it: a code the table knows gets its own line, anything else the generic
- * line, a blocked sign-up its named copy. Unauthorized domains need the
- * host's domain and support address, so hosts call
- * `unauthorizedDomainMessage` for that kind.
+ * The detail copy for a classified failure: a code the table knows gets its
+ * own line, anything else the generic line, a blocked sign-up its named
+ * copy. Hosts pass a shipped locale or their own table (the cloud app hands
+ * in its vue-i18n strings). Unauthorized domains need the host's domain and
+ * support address, so hosts call `unauthorizedDomainMessage` for that kind.
  */
 export function authErrorMessage(
   classification: AuthErrorClassification,
-  locale: AuthCopyLocale = 'en'
+  copySource: AuthCopyLocale | AuthErrorCopy = 'en'
 ): string {
-  const copy = AUTH_ERROR_COPY[locale]
+  const copy =
+    typeof copySource === 'string' ? AUTH_ERROR_COPY[copySource] : copySource
   switch (classification.kind) {
     case 'signup-blocked':
       return copy.signupBlocked

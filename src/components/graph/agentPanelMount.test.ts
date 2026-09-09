@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import LiteGraphCanvasSplitterOverlay from '../LiteGraphCanvasSplitterOverlay.vue'
 
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { ref } = await import('vue')
   return {
     useAppMode: () => ({
@@ -21,7 +21,7 @@ vi.mock('@/composables/useAppMode', async () => {
 
 // The overlay's workspace stores reach Firebase auth and app bootstrap in
 // their real setups; the structure under test only needs these fields.
-vi.mock('@/platform/settings/settingStore', () => ({
+vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) =>
       key === 'Comfy.Sidebar.Location' ? 'left' : undefined
@@ -30,7 +30,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/stores/workspaceStore', async () => {
+vi.mock<unknown>(import('@/stores/workspaceStore'), async () => {
   const { defineStore } = await import('pinia')
   const { ref } = await import('vue')
   return {
@@ -40,7 +40,7 @@ vi.mock('@/stores/workspaceStore', async () => {
   }
 })
 
-vi.mock('@/stores/workspace/rightSidePanelStore', async () => {
+vi.mock<unknown>(import('@/stores/workspace/rightSidePanelStore'), async () => {
   const { defineStore } = await import('pinia')
   const { ref } = await import('vue')
   return {
@@ -50,7 +50,7 @@ vi.mock('@/stores/workspace/rightSidePanelStore', async () => {
   }
 })
 
-vi.mock('@/stores/workspace/sidebarTabStore', async () => {
+vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), async () => {
   const { defineStore } = await import('pinia')
   const { ref } = await import('vue')
   return {
@@ -61,7 +61,7 @@ vi.mock('@/stores/workspace/sidebarTabStore', async () => {
   }
 })
 
-vi.mock('@/stores/workspace/bottomPanelStore', async () => {
+vi.mock<unknown>(import('@/stores/workspace/bottomPanelStore'), async () => {
   const { defineStore } = await import('pinia')
   const { ref } = await import('vue')
   return {

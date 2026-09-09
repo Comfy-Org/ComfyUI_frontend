@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
+import { workshopModelSchema } from '../content/workshop-models.schema'
 import type { WorkshopBrowseModel } from './workshop'
 import {
   FEATURED_WORKSHOP_MODEL_IDS,
@@ -13,17 +15,15 @@ import {
 const CATALOG = join(import.meta.dirname, '../content/workshop-models.json')
 
 function catalogIds(): Set<string> {
-  return new Set(
-    (JSON.parse(readFileSync(CATALOG, 'utf8')) as { id: string }[]).map(
-      (entry) => entry.id
-    )
-  )
+  const catalog = z
+    .array(workshopModelSchema)
+    .parse(JSON.parse(readFileSync(CATALOG, 'utf8')))
+  return new Set(catalog.map((entry) => entry.id))
 }
 
 function model(id: string): WorkshopBrowseModel {
   return {
     id,
-    slug: id.replace('/', '--'),
     href: `/workshop/models/${id.replace('/', '--')}/`,
     name: id,
     provider: id.split('/')[0],
@@ -55,6 +55,8 @@ describe('featured Workshop models', () => {
     const resolved = featuredWorkshopModels(withoutFirst)
 
     expect(resolved).toHaveLength(FEATURED_WORKSHOP_MODEL_IDS.length - 1)
-    expect(resolved.every((entry) => entry !== undefined)).toBe(true)
+    expect(resolved.map((entry) => entry.id)).toEqual(
+      FEATURED_WORKSHOP_MODEL_IDS.slice(1)
+    )
   })
 })

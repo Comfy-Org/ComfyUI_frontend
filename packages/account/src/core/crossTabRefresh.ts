@@ -14,10 +14,9 @@ export function createWebCrossTabRefreshPort():
   // has a BroadcastChannel but a null navigator.locks), and either gap must
   // resolve to undefined.
   if (typeof BroadcastChannel === 'undefined') return undefined
-  if (typeof navigator === 'undefined' || !navigator.locks) {
-    return undefined
-  }
-  const locks = navigator.locks
+  if (typeof navigator === 'undefined') return undefined
+  const locks = (navigator as Partial<Navigator>).locks
+  if (!locks) return undefined
   // One refcounted channel per subscribed key, shared by subscribe and
   // publish. A channel never delivers a message back to itself, so
   // publishing on the subscription channel keeps a tab from hearing its own
@@ -30,17 +29,18 @@ export function createWebCrossTabRefreshPort():
     requestLeadership(key, onAcquired) {
       const controller = new AbortController()
       let disposed = false
+      const isDisposed = () => disposed
       let releaseHeld: (() => void) | undefined
       void locks
         .request(key, { signal: controller.signal }, () => {
           // A grant can win the race against our own abandon; returning
           // without holding releases the lock straight to the next tab.
-          if (disposed) return
+          if (isDisposed()) return
           onAcquired()
           // onAcquired may dispose synchronously, and neither abort() (a
           // no-op on a granted lock) nor releaseHeld (not wired yet) can
           // observe that — re-check before committing to the hold.
-          if (disposed) return
+          if (isDisposed()) return
           // Hold the lock until released; the browser releases it for us
           // when the tab dies, which is what promotes the next tab.
           return new Promise<void>((resolve) => {

@@ -17,7 +17,6 @@ export type {
 } from './session.js'
 export {
   SESSION_ERROR_MESSAGES,
-  SESSION_SUCCESS_MESSAGES,
   SESSION_TELEMETRY_EVENT,
   createSessionClient,
   isCredentialFresh,
@@ -30,3 +29,10 @@ export type {
 } from './credits.js'
 export { createBillingClient } from './credits.js'
 export { createWebCrossTabRefreshPort } from './crossTabRefresh.js'
+export type { CustomerRecoveryDeps } from './customerRecovery.js'
+export {
+  MISSING_CUSTOMER_MESSAGE,
+  fetchWithCustomerRecovery,
+  isCustomerEndpoint,
+  isMissingCustomerResponse
+} from './customerRecovery.js'

@@ -14,6 +14,10 @@
     "./firebaseAuthError": "./src/firebaseAuthError.ts",
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
+    "./regionGate": "./src/regionGate.ts",
+    "./telemetry": "./src/telemetry.ts",
+    "./webviewDetection": "./src/webviewDetection.ts",
+    "./PasswordRules.vue": "./src/PasswordRules.vue",
     "./SocialAuthButtons.vue": "./src/SocialAuthButtons.vue",
     "./TurnstileWidget.vue": "./src/TurnstileWidget.vue"
   },
@@ -24,6 +28,7 @@
   "dependencies": {
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

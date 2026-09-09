@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Añade fotogramas clave de detallado a un latente de vídeo. Cada fotograma clave es un fotograma latente de tokens cuya posición RoPE abarca un único fotograma de píxeles; se someten a eliminación de ruido con el vídeo y no forman parte de la salida decodificada. Se colocan en una posición cada interval_frames fotogramas de píxeles, omitiendo los fotogramas I2V, las guías existentes y los fotogramas clave de detallado que ya estén en el condicionamiento. Los fotogramas clave conectados solo aportan contenido y se vuelven a colocar en este lienzo, salvo que se establezca frame_indices. Extráigalos de nuevo con LTXV Separate Generated Keyframes. Requiere un checkpoint entrenado para fotogramas clave generados (uno que incluya keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Añadir fotogramas clave generados",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Índices opcionales de fotogramas de píxeles. Déjelo vacío para colocar según interval_frames en el lienzo actual. Cuando se establece, esta lista determina la colocación (los fotogramas clave conectados se emparejan en orden). Se permite el último fotograma; el fotograma 0 no (ya es un token independiente)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Intervalo de fotogramas de píxeles para la colocación automática. El valor predeterminado, 24, equivale aproximadamente a un fotograma clave por segundo a 24 fps. Se omiten los píxeles ocupados. Se ignora cuando se establece frame_indices."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Contenido opcional con el que inicializar los nuevos fotogramas clave. Conecte fotogramas clave de un Separate anterior (con el mismo tamaño espacial), o un latente de vídeo simple para copiar el fotograma más cercano en cada nueva posición (por ejemplo, tras un escalado temporal). Estos también se someten a eliminación de ruido; no se fijan como guías. Los índices registrados en un latente de fotogramas clave se ignoran salvo que se establezca frame_indices. Solo tiene efecto cuando el muestreo comienza por debajo de sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo 5D simple para generar fotogramas clave junto a él. Agréguelos antes de Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Condicionamiento negativo al que se adjuntan los fotogramas clave."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Condicionamiento positivo al que se adjuntan los fotogramas clave."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Solo se usa para leer los factores de escala del latente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Condicionamiento positivo con atención de fotogramas clave generados adjunta."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Condicionamiento negativo con atención de fotogramas clave generados adjunta."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo con fotogramas clave generados añadidos en T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9752,6 +9800,55 @@
       },
       "2": {
         "name": "latente",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "Fija un latente ya codificado como guía, para cuando la guía procede de una etapa anterior en lugar de una imagen. Tiene el mismo efecto que LTXV Add Guide sin el ciclo de decodificación/codificación VAE. Una guía espacialmente más pequeña que el objetivo (una referencia IC-LoRA o de detallado) se dilata sobre una cuadrícula dispersa, y sus posiciones finales RoPE se amplían en la misma proporción para que cubra el lienzo objetivo en lugar de dirigirse solo a su esquina superior izquierda.",
+    "display_name": "LTXV Añadir guía latente",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional en el espacio de píxeles. Controla la influencia del condicionamiento por región mediante autoatención y se multiplica por strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Latente de guía. Su tamaño espacial debe dividir el del objetivo por el mismo número entero en ambos ejes; con el mismo tamaño se fija tal cual, y con la mitad de tamaño se trata como una referencia IC-LoRA x2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo objetivo al que se fija la guía."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Índice del fotograma latente en el que comienza la guía, contado en fotogramas latentes en lugar de fotogramas de píxeles. Los valores negativos colocan la guía en fotogramas anteriores al inicio del latente, no se cuentan hacia atrás desde su final."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Limitado a 1.0. Una guía dilatada marca sus posiciones de relleno con una máscara de eliminación de ruido negativa para que el modelo las descarte; por encima de 1.0, las posiciones conservadas también pasarían a ser negativas y se descartaría toda la guía. Amplifique por encima de 1.0 con attention_mask en su lugar."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Establece noise_mask en 0 para que este latente se mantenga limpio durante el muestreo. Funciona con vídeo o audio. Usos habituales: congelar el audio antes de Concat AV para que solo proporcione atención cruzada, o congelar cualquier latente que no deba eliminarse el ruido.",
+    "display_name": "LTXV Congelar latente",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo o audio que se va a congelar. El audio es 4D; el vídeo es 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fija los fotogramas clave generados de una etapa anterior como guías de imagen congeladas en un lienzo posterior. Se decodifican como fotogramas independientes, se redimensionan si es necesario y se escriben con noise_mask=0 para que no se les elimine el ruido de nuevo. Tras un escalado temporal, los índices registrados se escalan desde el lienzo en el que se generaron hasta este (los mismos momentos). Usa override_frame_indices para establecer posiciones explícitamente. Para seguir generando (y eliminando el ruido de) fotogramas clave en nuevas posiciones, usa Add Generated Keyframes en su lugar.",
+    "display_name": "LTXV Fotogramas clave generados a guías",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "La salida de fotogramas clave de LTXV Separate Generated Keyframes, que contiene el índice del fotograma en píxeles en el que se generó cada fotograma clave."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "El latente de vídeo de destino al que se añadirán las guías; por ejemplo, el escalado temporalmente."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Opcional: fija en estos fotogramas de píxeles en lugar de en las posiciones registradas (o escaladas automáticamente). Proporciona un índice por cada fotograma clave. Déjalo vacío para reutilizar las posiciones registradas o escalarlas cuando el lienzo de destino tenga una longitud distinta (p. ej., tras un x2 temporal)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Intensidad de la guía. 1.0 es una fijación rígida; los valores inferiores la suavizan."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Acondicionamiento positivo con los fotogramas clave fijados como guías de imagen."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Acondicionamiento negativo con los fotogramas clave fijados como guías de imagen."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo de destino con los fotogramas clave añadidos como guías congeladas."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "latente_audio",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Separa de nuevo los fotogramas clave generados añadidos por LTXV Add Generated Keyframes de un latente muestreado y elimínalos del condicionamiento. Sepáralos antes de escalar espacialmente el latente de vídeo. No ejecutes primero LTXV Crop Guides: trata los fotogramas clave generados como guías descartables y los elimina.",
+    "display_name": "LTXV Separar fotogramas clave generados",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Devuelve los fotogramas clave como un lote de latentes de un solo fotograma. Déjalo desactivado para obtenerlos como un único latente de varios fotogramas, que es lo que esperan el escalador de latentes y un posterior Add Generated Keyframes."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Acondicionamiento positivo con los metadatos de fotogramas clave generados eliminados."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Acondicionamiento negativo con los metadatos de fotogramas clave generados eliminados."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo sin los fotogramas clave generados."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Los fotogramas clave extraídos, etiquetados con generated_keyframe_indices y generated_keyframe_num_frames. Introdúcelos en un posterior Add Generated Keyframes para inicializar nuevas ranuras, o en Generated Keyframes To Guides para fijarlos como guías de imagen congeladas (los índices se reasignan si cambió la longitud del lienzo)."
       }
     }
   },
@@ -16696,6 +16891,45 @@
       "image": {
         "name": "imagen",
         "tooltip": "Imagen preprocesada de ImageCropToMask (pad_factor=1.1 para Pixal3D)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Acondicionamiento multivista",
+    "inputs": {
+      "back": {
+        "name": "trasera",
+        "tooltip": "Vista cuadrada de la parte trasera del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision DINOv3 ViT-L/16 con pesos NAF incluidos."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FOV horizontal en grados de las vistas según el encuadre: 20 para renders de rig y la mayoría de los generadores multivista, o MoGeGeometryToFOV en una de las vistas para fotos."
+      },
+      "front": {
+        "name": "frontal",
+        "tooltip": "Vista cuadrada de la parte frontal del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
+      },
+      "left": {
+        "name": "izquierda",
+        "tooltip": "Vista cuadrada del lado izquierdo del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
+      },
+      "right": {
+        "name": "derecha",
+        "tooltip": "Vista cuadrada del lado derecho del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
       }
     },
     "outputs": {

@@ -1,14 +1,18 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
-import { useRegionGate } from '@/composables/auth/useRegionGate'
+import { useRegionGate } from './regionGate'
 
 const detection = vi.hoisted(() => ({
-  outcome: Promise.resolve(false)
+  outcome: Promise.resolve(false),
+  probes: 0
 }))
-vi.mock('@/utils/networkUtil', () => ({
-  isInChina: () => detection.outcome
+vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+  isInChina: () => {
+    detection.probes += 1
+    return detection.outcome
+  }
 }))
 
 const GateHost = defineComponent({
@@ -22,6 +26,7 @@ const currentStatus = () => screen.getByRole('status').textContent
 
 beforeEach(() => {
   detection.outcome = Promise.resolve(false)
+  detection.probes = 0
 })
 
 describe('useRegionGate', () => {
@@ -67,5 +72,30 @@ describe('useRegionGate', () => {
     vi.useRealTimers()
 
     await waitFor(() => expect(currentStatus()).toBe('blocked'))
+  })
+
+  it('probes only once the host enables the gate, and only once', async () => {
+    const enabled = ref(false)
+    const Host = defineComponent({
+      setup() {
+        const { status } = useRegionGate(enabled)
+        return () => h('output', status.value)
+      }
+    })
+    render(Host)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      detection.probes,
+      'a page the host does not show must not reach the geo edge'
+    ).toBe(0)
+    expect(currentStatus()).toBe('pending')
+
+    enabled.value = true
+    await waitFor(() => expect(currentStatus()).toBe('allowed'))
+    enabled.value = false
+    enabled.value = true
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(detection.probes).toBe(1)
   })
 })

@@ -12,8 +12,6 @@ import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  // One pass over the collection: every page needs the whole set anyway to
-  // pick its related models, and Astro calls this once per build.
   const models = (await getCollection('workshopModels')).map((entry) =>
     toDetailModel(entry.data)
   )
@@ -34,7 +32,6 @@ const { model, related } = Astro.props
 <BaseLayout
   title={`${model.displayName} · Workshop - Comfy`}
   description={model.description}
-  noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
     <nav aria-label="Breadcrumb" class="mb-8 text-sm text-primary-comfy-canvas/55">
@@ -47,7 +44,12 @@ const { model, related } = Astro.props
       </span>
     </nav>
 
-    <header class="mb-12 max-w-4xl">
+    {/*
+      A div, not a header. `markdown-twin.ts` drops HEADER along with the
+      site chrome, so wrapping the hero in one leaves every model's llms.txt
+      entry with a title and nothing else. The h1 still carries the heading.
+    */}
+    <div class="mb-12 max-w-4xl">
       <p class="text-sm tracking-widest text-primary-comfy-yellow uppercase">
         {model.provider}
       </p>
@@ -66,7 +68,7 @@ const { model, related } = Astro.props
           ))
         }
       </ul>
-    </header>
+    </div>
 
     <WorkshopPlayground model={model} client:load />
 

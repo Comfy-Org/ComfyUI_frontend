@@ -3,6 +3,10 @@ import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
 import {
+  getAgreedLinkPresentation,
+  transferLinkPresentation
+} from '@/core/graph/transferLinkPresentation'
+import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
@@ -1850,8 +1854,10 @@ export class LGraph
    * Registers a link in the root-wide identity store.
    */
   _addLink(link: LLink): boolean {
-    if (!registerLinkTopology(this, link)) return false
+    if (this.links.get(link.id) !== link && !registerLinkTopology(this, link))
+      return false
     observeLinkId(this.state, link.id)
+    this.getNodeById(link.target_id)?.updateComputedDisabled()
     return true
   }
 
@@ -1863,6 +1869,7 @@ export class LGraph
     if (!link) return false
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
+    this.getNodeById(link.target_id)?.updateComputedDisabled()
     return true
   }
 
@@ -2152,6 +2159,14 @@ export class LGraph
     } = getBoundaryLinks(this, items)
     const { nodes, reroutes, groups } = splitPositionables(items)
 
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const presentations = new Map(
+      [...internalLinks, ...boundaryInputLinks, ...boundaryOutputLinks].map(
+        (link) => [link.id, presentationStore.getPresentation(scope, link.id)]
+      )
+    )
+
     const boundingRect = createBounds(items)
     if (!boundingRect)
       throw new Error('Failed to create bounding rect for subgraph')
@@ -2178,6 +2193,19 @@ export class LGraph
       links,
       externalReroutes
     )
+    const outputPresentations = outputs.map(({ linkIds = [] }) =>
+      getAgreedLinkPresentation(
+        linkIds.map((id) => presentations.get(toLinkId(id)))
+      )
+    )
+
+    for (const link of links) {
+      const presentation =
+        link.target_id === SUBGRAPH_OUTPUT_ID
+          ? outputPresentations[link.target_slot]
+          : presentations.get(toLinkId(link.id))
+      Object.assign(link, presentation)
+    }
 
     // Prepare subgraph data
     const data = {
@@ -2289,6 +2317,12 @@ export class LGraph
       const [firstResolved, ...others] = connections
       const { output, outputNode, link, subgraphInput } = firstResolved
 
+      const presentation = getAgreedLinkPresentation(
+        connections.map(({ link: groupedLink }) =>
+          presentations.get(groupedLink.id)
+        )
+      )
+
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
@@ -2297,11 +2331,12 @@ export class LGraph
           targetSlot: i - 1
         })
         if (subgraphInput instanceof SubgraphInput) {
-          subgraphInput.connect(
+          const boundaryLink = subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
             subgraphNode,
             link.parentId
           )
+          transferLinkPresentation(scope, presentation, boundaryLink?.id)
         } else {
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
@@ -2321,7 +2356,13 @@ export class LGraph
       }
 
       const input = subgraphNode.inputs[i - 1]
-      outputNode.connectSlots(output, subgraphNode, input, link.parentId)
+      const boundaryLink = outputNode.connectSlots(
+        output,
+        subgraphNode,
+        input,
+        link.parentId
+      )
+      transferLinkPresentation(scope, presentation, boundaryLink?.id)
     }
 
     // Group matching links
@@ -2336,10 +2377,15 @@ export class LGraph
         // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
           if (subgraphOutput instanceof SubgraphOutput) {
-            subgraphOutput.connect(
+            const boundaryLink = subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
               subgraphNode,
               link.parentId
+            )
+            transferLinkPresentation(
+              scope,
+              presentations.get(link.id),
+              boundaryLink?.id
             )
           } else {
             throw new TypeError('Subgraph input node is not a SubgraphInput')
@@ -2356,7 +2402,17 @@ export class LGraph
         }
 
         const output = subgraphNode.outputs[i - 1]
-        subgraphNode.connectSlots(output, inputNode, input, link.parentId)
+        const boundaryLink = subgraphNode.connectSlots(
+          output,
+          inputNode,
+          input,
+          link.parentId
+        )
+        transferLinkPresentation(
+          scope,
+          presentations.get(link.id),
+          boundaryLink?.id
+        )
       }
     }
 
@@ -2462,7 +2518,10 @@ export class LGraph
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
-    const newLinks: {
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const subgraphScope = graphScopeOf(subgraphNode.subgraph)
+    const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
       tid: NodeId
@@ -2471,8 +2530,12 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
-    }[] = []
+    })[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
+      const presentation = presentationStore.getPresentation(
+        subgraphScope,
+        link.id
+      )
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? inputLink(this, subgraphNode.id, link.origin_slot)
@@ -2495,6 +2558,10 @@ export class LGraph
           subgraphNode.id,
           link.target_slot
         )) {
+          const outerPresentation = presentationStore.getPresentation(
+            scope,
+            sublink.id
+          )
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2503,7 +2570,8 @@ export class LGraph
             id: link.id,
             iparent: link.parentId,
             eparent: sublink.parentId,
-            externalFirst: true
+            externalFirst: true,
+            ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
         }
@@ -2517,6 +2585,12 @@ export class LGraph
         console.error('Missing Link ID when unpacking')
         continue
       }
+      const outerPresentation = outerLink
+        ? presentationStore.getPresentation(scope, outerLink.id)
+        : undefined
+      const restoredPresentation = outerLink
+        ? getAgreedLinkPresentation([presentation, outerPresentation])
+        : presentation
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2525,7 +2599,8 @@ export class LGraph
         id: link.id,
         iparent: link.parentId,
         eparent: externalParentId,
-        externalFirst: false
+        externalFirst: false,
+        ...restoredPresentation
       })
     }
     this.remove(subgraphNode)
@@ -2594,6 +2669,7 @@ export class LGraph
         console.error('Failed to create link')
         continue
       }
+      transferLinkPresentation(scope, newLink, created.id)
       //This is a little unwieldy since Map.has isn't a type guard
       const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)
@@ -3181,6 +3257,8 @@ export class LGraph
         LGraph.autoExposePreviewNodes?.(node)
       }
 
+      for (const node of this._nodes) node.updateComputedDisabled()
+
       this.onConfigure?.(extensionConfigureView(this, data))
       this.incrementVersion()
 
@@ -3525,19 +3603,6 @@ export class Subgraph
   ): void {
     this.inputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
     this.outputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
-  }
-
-  /**
-   * Clones the subgraph, creating an identical copy with a new ID.
-   * @returns A new subgraph with the same configuration, but a new ID.
-   */
-  clone(keepId: boolean = false): Subgraph {
-    const exported = this.asSerialisable()
-    if (!keepId) exported.id = createUuidv4()
-
-    const subgraph = new Subgraph(this.rootGraph, exported)
-    subgraph.configure(exported)
-    return subgraph
   }
 
   override asSerialisable(): ExportedSubgraph &

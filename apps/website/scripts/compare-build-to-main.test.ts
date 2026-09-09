@@ -40,18 +40,31 @@ describe('build comparison', () => {
 
   it.for([
     [
+      'asset extension',
       '<link href="/_website/app.abcdef.css">',
       '<link href="/_website/app.ghijkl.js">'
     ],
     [
+      'timestamp',
       '<time>2026-09-04T20:01:55.880Z</time>',
       '<time>2026-09-05T20:01:55.880Z</time>'
     ],
-    ['<div uid="first">old</div>', '<div uid="second">old</div>'],
-    ['<p>old</p>', '<p>new</p>']
-  ])('rejects meaningful differences: %s', async ([base, candidate]) => {
+    [
+      'non-Astro uid',
+      '<div uid="first">old</div>',
+      '<div uid="second">old</div>'
+    ],
+    ['page content', '<p>old</p>', '<p>new</p>']
+  ])('rejects meaningful differences: %s', async ([, base, candidate]) => {
     await pages(base, candidate)
     expect(compare).toThrow()
+  })
+
+  it('allows and reports a candidate-only page', async () => {
+    await pages('same', 'same')
+    await writeFile(join(dir, 'candidate/added.html'), 'added')
+
+    expect(compare()).toContain('added                1')
   })
 
   it('rejects missing directories and empty builds', () => {
