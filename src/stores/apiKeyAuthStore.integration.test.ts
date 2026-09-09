@@ -1,8 +1,7 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createTestingPinia } from '@pinia/testing'
 import type { Pinia } from 'pinia'
-import { disposePinia, setActivePinia } from 'pinia'
+import { createPinia, disposePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
@@ -13,11 +12,6 @@ const mockFetch = vi.fn()
 
 vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
-}))
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
 }))
 
 vi.mock(import('firebase/auth'))
@@ -69,7 +63,7 @@ describe('API key authentication initialization', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    pinia = createTestingPinia({ stubActions: false })
+    pinia = createPinia()
     setActivePinia(pinia)
     vi.stubGlobal('fetch', mockFetch)
     mockFetch.mockResolvedValue({

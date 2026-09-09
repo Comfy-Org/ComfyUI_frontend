@@ -1,7 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import { i18n } from '@/i18n'
+import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -88,23 +91,26 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: vi.fn((key: string) => {
-      if (key === 'g.error') return 'Error'
-      if (key === 'shareWorkflow.loadFailed') {
-        return 'Failed to load shared workflow'
+const apps: App<Element>[] = []
+
+function useSharedWorkflowUrlLoader() {
+  let result: ReturnType<typeof createSharedWorkflowUrlLoader> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createSharedWorkflowUrlLoader()
+        return () => null
       }
-      if (key === 'openSharedWorkflow.dialogTitle') {
-        return 'Open shared workflow'
-      }
-      if (key === 'openSharedWorkflow.importFailed') {
-        return 'Failed to import workflow assets'
-      }
-      return key
     })
-  })
-}))
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Shared workflow URL loader was not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockCloseDialog = vi.hoisted(() => vi.fn())

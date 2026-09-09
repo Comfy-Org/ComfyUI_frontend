@@ -1,10 +1,12 @@
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
+import { createPinia, setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { i18n } from '@/i18n'
 import {
   capturePreservedQuery,
   clearPreservedQuery
@@ -100,17 +102,6 @@ vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  })
-}))
-
 vi.mock(import('firebase/auth'))
 
 const mockTrackAuth = vi.fn()
@@ -170,6 +161,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
@@ -364,7 +356,7 @@ describe('useAuthStore', () => {
 
       await expect(store.fetchBalance()).rejects.toMatchObject({
         name: 'AuthStoreError',
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
       expect(mockFetch).not.toHaveBeenCalled()
     })
@@ -453,7 +445,7 @@ describe('useAuthStore', () => {
 
       await expect(store.accessBillingPortal()).rejects.toMatchObject({
         name: 'AuthStoreError',
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
       expect(mockFetch).not.toHaveBeenCalled()
     })
@@ -522,7 +514,7 @@ describe('useAuthStore', () => {
       resolveCreate(mockCreateCustomerResponse)
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
       expect(billingCallCount).toBe(1)
     })
@@ -550,7 +542,7 @@ describe('useAuthStore', () => {
       resolveCreate(mockCreateCustomerResponse)
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
       expect(
         mockFetch.mock.calls.some(([url]) =>
@@ -587,7 +579,7 @@ describe('useAuthStore', () => {
       })
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -625,7 +617,7 @@ describe('useAuthStore', () => {
       })
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -653,7 +645,7 @@ describe('useAuthStore', () => {
 
       await expect(request).rejects.toMatchObject({
         name: 'AuthStoreError',
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -686,7 +678,7 @@ describe('useAuthStore', () => {
       resolvePortalBody({ billing_portal_url: 'https://stripe.test/portal' })
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -725,7 +717,7 @@ describe('useAuthStore', () => {
       resolveCreditBody({ checkout_url: 'https://stripe.test/checkout' })
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -797,7 +789,7 @@ describe('useAuthStore', () => {
       resolveCredit(accountAFailureResponse)
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -821,7 +813,7 @@ describe('useAuthStore', () => {
       resolveBilling(accountAFailureResponse)
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
 
@@ -845,7 +837,7 @@ describe('useAuthStore', () => {
       resolveCreate(accountAFailureResponse)
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
   })
@@ -1154,7 +1146,7 @@ describe('useAuthStore', () => {
       const dialogService = useDialogService()
 
       expect(dialogService.showErrorDialog).toHaveBeenCalledWith(authError, {
-        title: 'errorDialog.defaultTitle',
+        title: i18n.global.t('errorDialog.defaultTitle'),
         reportType: 'authenticationError'
       })
       expect(token).toBeUndefined()
@@ -1633,7 +1625,7 @@ describe('useAuthStore', () => {
 
       await expect(store.getAuthHeaderOrThrow()).rejects.toMatchObject({
         name: 'AuthStoreError',
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
   })
@@ -1649,7 +1641,7 @@ describe('useAuthStore', () => {
 
       await expect(store.getFirebaseAuthHeaderOrThrow()).rejects.toMatchObject({
         name: 'AuthStoreError',
-        message: 'toastMessages.userNotAuthenticated'
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
     })
   })

@@ -1,5 +1,6 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
+import { createPinia, setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
@@ -74,11 +75,6 @@ vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
 }))
 
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-  createI18n: () => ({ global: { t: (key: string) => key } })
-}))
-
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -122,6 +118,7 @@ describe('auth token priority chain', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     mockDistributionTypes.isCloud = true
     mockFeatureFlags.unifiedCloudAuthEnabled = false
     mockUnifiedToken = null

@@ -1,7 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { render } from '@testing-library/vue'
+import { createPinia, setActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import {
   getSettingInfo,
@@ -9,7 +11,7 @@ import {
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 
-import { useSettingUI } from './useSettingUI'
+import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 
 const env = vi.hoisted(() => {
   const state = {
@@ -35,10 +37,6 @@ const env = vi.hoisted(() => {
   })
   return { state, fakeRef }
 })
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (_: string, fallback: string) => fallback })
-}))
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
@@ -106,6 +104,28 @@ interface MockSettingParams {
   category?: string[]
 }
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+let pinia: Pinia
+
+function useSettingUI(
+  ...options: Parameters<typeof useSettingUIComposable>
+): ReturnType<typeof useSettingUIComposable> {
+  let result!: ReturnType<typeof useSettingUIComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSettingUIComposable(...options)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [pinia, i18n] } })
+  return result
+}
+
 describe('useSettingUI', () => {
   const mockSettings: Record<string, MockSettingParams> = {
     'Comfy.Locale': {
@@ -129,7 +149,8 @@ describe('useSettingUI', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
+    pinia = createPinia()
+    setActivePinia(pinia)
 
     Object.assign(env.state, {
       isCloud: false,

@@ -1,6 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { i18n } from '@/i18n'
+import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 
 async function flushPromises() {
@@ -39,17 +42,26 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-// Mock Vue I18n
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: vi.fn((key, fallback) => fallback || key)
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  })
-}))
+const apps: App<Element>[] = []
+
+function useTemplateWorkflows() {
+  let result: ReturnType<typeof createTemplateWorkflows> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createTemplateWorkflows()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Template workflows were not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 // Mock the dialog store
 vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
