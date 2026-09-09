@@ -66,10 +66,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * otherwise a reconcile would wipe the promoted widgets and `setWidget` by
  * name could never find them again.
  */
+/**
+ * Doc/live drift (an opaque widget array of the wrong length, a link onto an
+ * undeclared promoted slot) persists in the doc, so every later frame that
+ * re-reads the same entry would report it again. Report each distinct drift
+ * once per target session; the set lives as long as the session does.
+ */
+function reportOnce(
+  reported: Set<string>,
+  key: string,
+  error: Error,
+  options: Parameters<typeof reportError>[1]
+): void {
+  if (reported.has(key)) return
+  reported.add(key)
+  reportError(error, options)
+}
+
 function readSemanticNode(
   doc: Y.Doc,
   id: string,
-  definitions: () => SubgraphDefinitionIndex
+  definitions: () => SubgraphDefinitionIndex,
+  reported: Set<string>
 ): SemanticNodePayload | null {
   const source = nodesMap(doc).get(id)
   if (!(source instanceof Y.Map)) return null
@@ -105,7 +123,9 @@ function readSemanticNode(
         // would land values on the wrong promoted widget; keep the live
         // values and surface the drift instead.
         delete payload.widgets_values
-        reportError(
+        reportOnce(
+          reported,
+          `widgets:${id}:${names.length}:${opaque.length}`,
           new Error(
             `Subgraph host ${id} (${type}) carries ${opaque.length} opaque widget values but its definition promotes ${names.length}`
           ),
@@ -145,6 +165,7 @@ function readSemanticNode(
 function hostTarget(
   doc: Y.Doc,
   definitions: SubgraphDefinitionIndex,
+  reported: Set<string>,
   targetId: string,
   docSlot: number
 ): Pick<SemanticLinkPayload, 'targetSlot' | 'targetInputs'> | null {
@@ -159,7 +180,9 @@ function hostTarget(
   if (slot < 0) {
     // The doc keeps the link while the live graph drops it, so surface the
     // drift instead of leaving the two silently diverged.
-    reportError(
+    reportOnce(
+      reported,
+      `slot:${targetId}:${docSlot}:${name ?? ''}`,
       new Error(
         `Subgraph host ${targetId} (${type}) link targets doc slot ${docSlot} (${
           name == null ? 'unnamed' : `'${name}'`
@@ -181,7 +204,8 @@ function hostTarget(
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
-  definitions: SubgraphDefinitionIndex
+  definitions: SubgraphDefinitionIndex,
+  reported: Set<string>
 ): SemanticLinkPayload | null {
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
@@ -199,7 +223,13 @@ function readSemanticLink(
     return null
   }
   const targetNodeId = String(tuple[3])
-  const target = hostTarget(doc, definitions, targetNodeId, targetSlot)
+  const target = hostTarget(
+    doc,
+    definitions,
+    reported,
+    targetNodeId,
+    targetSlot
+  )
   if (!target) return null
   return {
     id: linkId,
@@ -258,6 +288,8 @@ interface TargetSession {
   /** Nodes whose scalar fields (title, mode, flags, ...) changed in place. */
   readonly changedNodeFields: Set<string>
   readonly changedLinks: Set<string>
+  /** Drift keys already surfaced via `reportError` for this session. */
+  readonly reportedErrors: Set<string>
   readonly frameQueue: DocUpdate[]
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
@@ -350,6 +382,7 @@ export class EcsFollowerAdapter {
       replacedOpaqueWidgets: new Set<string>(),
       changedNodeFields: new Set<string>(),
       changedLinks: new Set<string>(),
+      reportedErrors: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
@@ -387,7 +420,12 @@ export class EcsFollowerAdapter {
     )
     if (replacedNodeIds.size > 0) {
       session.links.forEach((_raw, id) => {
-        const link = readSemanticLink(doc, id, definitions())
+        const link = readSemanticLink(
+          doc,
+          id,
+          definitions(),
+          session.reportedErrors
+        )
         if (
           link &&
           (replacedNodeIds.has(String(link.originNodeId)) ||
@@ -404,7 +442,9 @@ export class EcsFollowerAdapter {
     const changedLinks = new Map(
       [...changedLinkIds].map((id) => [
         id,
-        session.links.has(id) ? readSemanticLink(doc, id, definitions()) : null
+        session.links.has(id)
+          ? readSemanticLink(doc, id, definitions(), session.reportedErrors)
+          : null
       ])
     )
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
@@ -441,11 +481,21 @@ export class EcsFollowerAdapter {
 
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(doc, id, definitions)
+          const payload = readSemanticNode(
+            doc,
+            id,
+            definitions,
+            session.reportedErrors
+          )
           return payload ? [payload] : []
         })
         const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(doc, id, definitions())
+          const link = readSemanticLink(
+            doc,
+            id,
+            definitions(),
+            session.reportedErrors
+          )
           return link ? [link] : []
         })
         batch.removeMissing(
@@ -463,7 +513,13 @@ export class EcsFollowerAdapter {
       const payloads = new Map(
         [...nodeActions]
           .filter(([, action]) => action !== 'delete')
-          .map(([id]) => [id, readSemanticNode(doc, id, definitions)] as const)
+          .map(
+            ([id]) =>
+              [
+                id,
+                readSemanticNode(doc, id, definitions, session.reportedErrors)
+              ] as const
+          )
       )
       for (const [id, action] of nodeActions) {
         if (action === 'delete') {
@@ -486,7 +542,12 @@ export class EcsFollowerAdapter {
         ...replacedOpaqueWidgets
       ])) {
         if (nodeActions.has(id)) continue
-        const payload = readSemanticNode(doc, id, definitions)
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
         if (payload) upsertNode(payload, 'reconcile')
       }
       // A node whose scalar fields were edited by key (title, mode, flags,
@@ -499,7 +560,12 @@ export class EcsFollowerAdapter {
           replacedOpaqueWidgets.has(id)
         )
           continue
-        const payload = readSemanticNode(doc, id, definitions)
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
         if (payload) upsertNode(payload, 'reconcile')
       }
       for (const [id, names] of changedWidgets) {
@@ -508,7 +574,12 @@ export class EcsFollowerAdapter {
         const widgets = node?.get('widgets')
         if (!(widgets instanceof Y.Map)) continue
         if ([...names].some((name) => !widgets.has(name))) {
-          const payload = readSemanticNode(doc, id, definitions)
+          const payload = readSemanticNode(
+            doc,
+            id,
+            definitions,
+            session.reportedErrors
+          )
           if (payload) upsertNode(payload, 'reconcile')
           continue
         }
