@@ -33,14 +33,17 @@ export default function lintStaged(stagedFiles: string[]) {
 }
 
 function lintCommands(codeFiles: string[], styleFiles: string[]) {
-  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
+  // apps/* have their own lint configs; the root lint scripts skip them too
+  const lintableCodeFiles = codeFiles.filter((f) => !f.startsWith('apps/'))
+
+  if (new Set([...lintableCodeFiles, ...styleFiles]).size > 10) {
     return ['pnpm lint']
   }
 
   return [
     ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
     ...commandsWithFiles(
-      codeFiles,
+      lintableCodeFiles,
       'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
       'pnpm exec eslint --cache --fix --no-warn-ignored'
     )

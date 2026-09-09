@@ -67,7 +67,10 @@ import { getCategoryMetadata } from './bundle-categories.js'
 const currDir = path.resolve('temp/size')
 const prevDir = path.resolve('temp/size-prev')
 
-run()
+run().catch((err) => {
+  console.error('Error generating bundle size report:', err)
+  process.exitCode = 1
+})
 
 /**
  * Main entry for generating the size report
