@@ -39,12 +39,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+      REF: ${{ inputs.ref }}
+      DIST_TAG: ${{ inputs.dist_tag }}
     steps:
       - name: Validate inputs
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.version }}"
+          if [[ ! "$DIST_TAG" =~ ^[a-z][a-z0-9-]{0,63}$ ]]; then
+            echo "::error::Invalid npm distribution tag" >&2
+            exit 1
+          fi
           SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
           if [[ ! "$VERSION" =~ $SEMVER_REGEX ]]; then
             echo "::error title=Invalid version::Version '$VERSION' must follow semantic versioning (x.y.z[-suffix][+build])" >&2
@@ -56,8 +63,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          REF="${{ inputs.ref }}"
-          VERSION="${{ inputs.version }}"
           if [ -n "$REF" ]; then
             if ! git check-ref-format --allow-onelevel "$REF"; then
               echo "::error title=Invalid ref::Ref '$REF' fails git check-ref-format validation." >&2
@@ -98,15 +103,15 @@ jobs:
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
           TYPES_PKG_VERSION=$(node -p "require('./dist/package.json').version")
-          if [ "$PKG_VERSION" != "${{ inputs.version }}" ]; then
-            echo "Error: package.json version $PKG_VERSION does not match input ${{ inputs.version }}" >&2
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "Error: package.json version $PKG_VERSION does not match input $VERSION" >&2
             exit 1
           fi
-          if [ "$TYPES_PKG_VERSION" != "${{ inputs.version }}" ]; then
-            echo "Error: dist/package.json version $TYPES_PKG_VERSION does not match input ${{ inputs.version }}" >&2
+          if [ "$TYPES_PKG_VERSION" != "$VERSION" ]; then
+            echo "Error: dist/package.json version $TYPES_PKG_VERSION does not match input $VERSION" >&2
             exit 1
           fi
-          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if version already on npm
         id: check_npm
@@ -131,7 +136,7 @@ jobs:
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
-        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}" --no-git-checks
+        run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks
         working-directory: dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
