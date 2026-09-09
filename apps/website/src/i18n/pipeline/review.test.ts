@@ -503,3 +503,48 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('Japanese')
   })
 })
+
+describe('batch grouping follows the page, not the namespace', () => {
+  const layer = (keys: string[]) =>
+    Object.fromEntries(keys.map((key) => [key, 'x']))
+
+  /**
+   * `faq.<category>.<slug>.<field>` used to collapse to `faq`, so a pricing
+   * answer and an enterprise answer shared a request while the prompt told the
+   * model they were read together. A terminology difference between two pages
+   * nobody sees side by side is not a defect, and at `major` it prunes correct
+   * copy.
+   */
+  it('separates FAQ categories, which are different pages', () => {
+    const keys = [
+      'faq.pricing.credits.body',
+      'faq.pricing.refunds.body',
+      'faq.enterprise.byok.body'
+    ]
+
+    const batches = planBatches(keys, layer(keys), layer(keys))
+
+    expect(batches).toHaveLength(2)
+    expect(batches).toContainEqual([
+      'faq.pricing.credits.body',
+      'faq.pricing.refunds.body'
+    ])
+    expect(batches).toContainEqual(['faq.enterprise.byok.body'])
+  })
+
+  /**
+   * Comparing keys within a page is the point of batching, so a shallow
+   * namespace must not fragment into a request per key.
+   */
+  it('keeps a flat namespace together', () => {
+    const keys = ['nav.home', 'nav.download', 'nav.pricing']
+
+    expect(planBatches(keys, layer(keys), layer(keys))).toEqual([keys])
+  })
+
+  it('keeps one story together across its fields', () => {
+    const keys = ['story.moment-factory.title', 'story.moment-factory.category']
+
+    expect(planBatches(keys, layer(keys), layer(keys))).toEqual([keys])
+  })
+})

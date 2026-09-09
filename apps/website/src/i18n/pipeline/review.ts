@@ -248,6 +248,26 @@ export const DEFAULT_BATCH_LIMITS: BatchLimits = { maxChars: 6000, maxKeys: 25 }
  * reads side by side is not a defect, and inviting findings about it would spend
  * the budget on noise.
  */
+/**
+ * The prefix identifying the copy a reader sees together.
+ *
+ * The first segment alone was too coarse for the structured namespaces. FAQ
+ * keys are `faq.<category>.<slug>.<field>`, so every answer on every FAQ page
+ * shared one `faq` group, and the model was told they "belong to the same page
+ * or section" when a pricing answer and an enterprise answer do not. A
+ * terminology difference between two pages nobody reads side by side is not a
+ * defect, and at `major` it prunes correct copy.
+ *
+ * Two segments, but never the whole key: `nav.home` has to stay grouped with
+ * `nav.download` rather than becoming a batch of one. Cross-key comparison
+ * inside a page is the point — it is what caught a plan name written in katakana
+ * in one key and Latin script in the CTA beside it.
+ */
+function readableUnit(key: string): string {
+  const segments = key.split('.')
+  return segments.slice(0, Math.min(2, segments.length - 1)).join('.')
+}
+
 export function planBatches(
   keys: readonly string[],
   english: EnglishSource,
@@ -256,7 +276,7 @@ export function planBatches(
 ): string[][] {
   const byNamespace = new Map<string, string[]>()
   for (const key of keys) {
-    const namespace = key.split('.')[0]
+    const namespace = readableUnit(key)
     const group = byNamespace.get(namespace)
     if (group) group.push(key)
     else byNamespace.set(namespace, [key])

@@ -4,6 +4,7 @@ import {
   DEFAULT_LOCALE,
   LOCALE_CODES,
   LOCALES,
+  isLocale,
   isPageIndexable,
   localeHasRoute,
   localePrefix
@@ -96,5 +97,29 @@ describe('localeHasRoute', () => {
     expect(localeHasRoute('ja', '/pricing')).toBe(true)
     expect(localeHasRoute('ja', '/cli')).toBe(false)
     expect(localeHasRoute('ja', '/mcp')).toBe(false)
+  })
+})
+
+describe('isLocale', () => {
+  it('accepts every configured locale', () => {
+    for (const code of LOCALE_CODES) expect(isLocale(code)).toBe(true)
+  })
+
+  it('rejects a code that is not configured', () => {
+    expect(isLocale('fr')).toBe(false)
+    expect(isLocale(undefined)).toBe(false)
+  })
+
+  /**
+   * The defect this pins. `in` also finds inherited names, so
+   * `isLocale('toString')` was true and narrowed the value to `Locale` — after
+   * which every lookup keyed on it (prefix, hreflang, og locale) came back
+   * undefined instead of falling to `DEFAULT_LOCALE`. Nothing here exercised
+   * `isLocale`, so a change back to `in` would have passed.
+   */
+  it('rejects an inherited property name', () => {
+    expect(isLocale('toString')).toBe(false)
+    expect(isLocale('constructor')).toBe(false)
+    expect(isLocale('hasOwnProperty')).toBe(false)
   })
 })

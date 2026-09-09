@@ -19,6 +19,26 @@ import { sitemapAlternates } from '../lib/hreflang'
  * markdown twins do: after a fallback, the filesystem is the only place that
  * knows what was really produced.
  */
+/**
+ * The built paths that could still need a sitemap entry.
+ *
+ * Split out so the caller can narrow the set before reading any file:
+ * deciding whether a path is a redirect stub means opening its `index.html`,
+ * and the i18n fallback produces hundreds of pages that these two checks
+ * discard anyway. Exported rather than inlined twice, so the list that gets
+ * read and the list that gets filtered cannot drift apart.
+ */
+export function sitemapCandidates(
+  builtPaths: readonly string[],
+  existingLocs: ReadonlySet<string>,
+  origin: string
+): string[] {
+  return builtPaths.filter((path) => {
+    const url = `${origin}${path}`
+    return !existingLocs.has(url) && !isExcludedFromSitemap(url)
+  })
+}
+
 export function missingSitemapEntries(
   builtPaths: string[],
   existingLocs: ReadonlySet<string>,
@@ -27,10 +47,8 @@ export function missingSitemapEntries(
 ): string[] {
   const entries: string[] = []
 
-  for (const path of builtPaths) {
+  for (const path of sitemapCandidates(builtPaths, existingLocs, origin)) {
     const url = `${origin}${path}`
-    if (existingLocs.has(url)) continue
-    if (isExcludedFromSitemap(url)) continue
     // A redirect stub is a meta-refresh, not a page. Listing one advertises a
     // cluster the stub itself does not carry, which `check:hreflang` rejects.
     if (redirectStubs.has(path)) continue
@@ -99,11 +117,14 @@ export function localizedSitemap(site: string): AstroIntegration {
         )
         const origin = new URL(site).origin
         const pages = await builtPages(root)
+        // Only the candidates are read from disk. Passing every built page here
+        // opened an `index.html` for each one, and both checks inside
+        // `sitemapCandidates` discard most of them unread.
         const entries = missingSitemapEntries(
           pages,
           existing,
           origin,
-          await redirectStubs(root, pages)
+          await redirectStubs(root, sitemapCandidates(pages, existing, origin))
         )
 
         if (entries.length === 0) {

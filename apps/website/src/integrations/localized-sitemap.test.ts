@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { missingSitemapEntries } from './localized-sitemap'
+import { missingSitemapEntries, sitemapCandidates } from './localized-sitemap'
 
 const ORIGIN = 'https://comfy.org'
 
@@ -73,5 +73,45 @@ describe('missingSitemapEntries', () => {
 
     expect(entry).toContain(`hreflang="zh-CN" href="${ORIGIN}/zh-CN/pricing/"`)
     expect(entry).toContain(`hreflang="en" href="${ORIGIN}/pricing/"`)
+  })
+})
+
+describe('sitemapCandidates', () => {
+  const origin = 'https://comfy.org'
+
+  /**
+   * The set this returns is what gets read from disk: deciding whether a path
+   * is a redirect stub means opening its `index.html`. Passing every built page
+   * to that check read hundreds of files whose content was then discarded
+   * unread, and the count grows with every locale added.
+   */
+  it('drops paths the sitemap already lists', () => {
+    const listed = new Set([`${origin}/zh-CN/about/`])
+
+    expect(
+      sitemapCandidates(['/zh-CN/about/', '/zh-CN/cloud/'], listed, origin)
+    ).toEqual(['/zh-CN/cloud/'])
+  })
+
+  it('drops paths excluded from the sitemap', () => {
+    const kept = sitemapCandidates(
+      ['/zh-CN/cloud/', '/zh-CN/terms-of-service/'],
+      new Set(),
+      origin
+    )
+
+    expect(kept).toContain('/zh-CN/cloud/')
+    expect(kept).not.toContain('/zh-CN/terms-of-service/')
+  })
+
+  it('is the same set the entry builder walks', () => {
+    const paths = ['/zh-CN/cloud/', '/zh-CN/about/']
+    const listed = new Set([`${origin}/zh-CN/about/`])
+
+    // Every candidate that is not a redirect stub becomes an entry, so the two
+    // cannot disagree about which paths matter.
+    expect(missingSitemapEntries(paths, listed, origin).length).toBe(
+      sitemapCandidates(paths, listed, origin).length
+    )
   })
 })

@@ -10,6 +10,7 @@
  * A resolved dictionary answers every key, so the browser needs no fallback and
  * no other locale.
  */
+import { DEFAULT_LOCALE } from '../../config/locales'
 import type { Locale } from '../../config/locales'
 import { resolveValue } from './resolve'
 import type { SourceEntry, TranslationLayer } from './types'
@@ -30,7 +31,7 @@ export function buildResolvedDictionary(
     // English is the source, so it never consults the machine layer, which
     // would otherwise let generated text shadow the original.
     dictionary[entry.key] =
-      locale === 'en'
+      locale === DEFAULT_LOCALE
         ? entry.english
         : resolveValue(
             entry.english,
