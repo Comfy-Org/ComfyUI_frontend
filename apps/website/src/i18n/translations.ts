@@ -8546,6 +8546,11 @@ Enterprise`
   'workshop.search.short': { en: 'Search models…', 'zh-CN': '搜索模型…' },
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
+  'workshop.search.close': { en: 'Close search', 'zh-CN': '关闭搜索' },
+  'workshop.search.show': {
+    en: 'Show {n} models',
+    'zh-CN': '显示 {n} 个模型'
+  },
   'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
   'workshop.search.more': { en: '+ {n} more', 'zh-CN': '+ {n} 个' },
   'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },

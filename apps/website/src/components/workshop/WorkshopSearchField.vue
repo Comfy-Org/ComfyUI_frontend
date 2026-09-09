@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
-import { nextTick, ref, useTemplateRef, watchEffect } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/workshop'
+import { filterWorkshopModels } from '../../config/workshop'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
@@ -61,13 +62,32 @@ function closeOnLeave(event: FocusEvent) {
     open.value = false
 }
 
+// The sheet applies as you tap, so its button is a way out that says what is
+// waiting behind it.
+const matches = computed(
+  () =>
+    filterWorkshopModels(models, {
+      query: query.value,
+      providers: providers.value,
+      capabilities: capabilities.value
+    }).length
+)
+
+function clearSheet() {
+  query.value = ''
+  providers.value = []
+  capabilities.value = []
+}
+
 const toggled = (list: readonly string[], value: string) =>
   list.includes(value)
     ? list.filter((entry) => entry !== value)
     : [...list, value]
 
+// iOS zooms the page into any field it considers too small to read, which
+// leaves the sheet's own controls off screen, so on a phone the text is 16px.
 const fieldClass =
-  'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 [&::-webkit-search-cancel-button]:hidden'
+  'bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 h-11 w-full rounded-2xl pr-10 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 max-sm:text-base [&::-webkit-search-cancel-button]:hidden'
 
 const leadingIconClass =
   'pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-primary-warm-gray'
@@ -172,11 +192,12 @@ const clearButtonClass =
           </div>
           <button
             type="button"
-            class="shrink-0 cursor-pointer text-sm text-primary-warm-gray hover:text-primary-warm-white"
+            :aria-label="t('workshop.search.close', locale)"
+            class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
             data-testid="workshop-search-sheet-close"
             @click="sheetOpen = false"
           >
-            {{ t('workshop.search.done', locale) }}
+            <X class="size-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -198,6 +219,28 @@ const clearButtonClass =
             (value) => (capabilities = toggled(capabilities, value))
           "
         />
+
+        <div
+          class="flex items-center gap-3 border-t border-transparency-white-t8 p-3"
+        >
+          <button
+            v-if="query || providers.length || capabilities.length"
+            type="button"
+            class="shrink-0 cursor-pointer px-2 text-sm text-primary-warm-gray hover:text-primary-warm-white"
+            data-testid="workshop-search-sheet-clear"
+            @click="clearSheet"
+          >
+            {{ t('workshop.filter.clearAll', locale) }}
+          </button>
+          <button
+            type="button"
+            class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
+            data-testid="workshop-search-sheet-apply"
+            @click="sheetOpen = false"
+          >
+            {{ t('workshop.search.show', locale).replace('{n}', `${matches}`) }}
+          </button>
+        </div>
       </div>
     </Teleport>
   </div>
