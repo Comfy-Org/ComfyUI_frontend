@@ -98,8 +98,7 @@ export const formatCreditsFromUsd = ({
  * than the amount it stands for. Engines without Intl NumberFormat V3 ignore
  * `roundingMode` and round to nearest instead.
  *
- * Always English, matching the exact figure the pricing surfaces print beside
- * the abbreviation.
+ * Formatted in English regardless of the active locale.
  */
 export const formatCreditsCompact = (credits: number): string =>
   new Intl.NumberFormat('en-US', {
