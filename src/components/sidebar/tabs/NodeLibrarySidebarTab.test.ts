@@ -43,11 +43,11 @@ const {
   }
 })
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
 }))
 
-vi.mock('@/services/nodeOrganizationService', () => ({
+vi.mock<unknown>(import('@/services/nodeOrganizationService'), () => ({
   DEFAULT_GROUPING_ID: 'group',
   DEFAULT_SORTING_ID: 'sort',
   nodeOrganizationService: {
@@ -59,14 +59,14 @@ vi.mock('@/services/nodeOrganizationService', () => ({
   }
 }))
 
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
     expandNode: vi.fn(),
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   default: {
     name: 'TreeExplorer',
     template: '<div data-testid="tree-explorer" />',
@@ -77,19 +77,22 @@ vi.mock('@/components/common/TreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchInput',
-    template: '<input data-testid="search-input" />',
-    props: ['modelValue', 'placeholder'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/ui/search-input/SearchInput.vue'),
+  () => ({
+    default: {
+      name: 'SearchInput',
+      template: '<input data-testid="search-input" />',
+      props: ['modelValue', 'placeholder'],
+      setup() {
+        return { focus: vi.fn() }
+      },
+      expose: ['focus']
+    }
+  })
+)
 
-vi.mock('./nodeLibrary/NodeBookmarkTreeExplorer.vue', () => ({
+vi.mock<unknown>(import('./nodeLibrary/NodeBookmarkTreeExplorer.vue'), () => ({
   default: {
     name: 'NodeBookmarkTreeExplorer',
     template: '<div />',
@@ -97,14 +100,14 @@ vi.mock('./nodeLibrary/NodeBookmarkTreeExplorer.vue', () => ({
   }
 }))
 
-vi.mock('./SidebarTabTemplate.vue', () => ({
+vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
     name: 'SidebarTabTemplate',
     template: '<div><slot name="header" /><slot name="body" /></div>'
   }
 }))
 
-vi.mock('@/components/common/SearchFilterChip.vue', () => ({
+vi.mock<unknown>(import('@/components/common/SearchFilterChip.vue'), () => ({
   default: {
     name: 'SearchFilterChip',
     template:
@@ -113,7 +116,7 @@ vi.mock('@/components/common/SearchFilterChip.vue', () => ({
   }
 }))
 
-vi.mock('@/components/searchbox/NodeSearchFilter.vue', () => ({
+vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   default: {
     name: 'NodeSearchFilter',
     template:
@@ -121,13 +124,16 @@ vi.mock('@/components/searchbox/NodeSearchFilter.vue', () => ({
   }
 }))
 
-vi.mock('primevue/popover', () => ({
-  default: {
-    name: 'Popover',
-    template: '<div><slot /></div>',
-    methods: { toggle: vi.fn(), hide: vi.fn() }
-  }
-}))
+vi.mock<unknown>(
+  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    default: {
+      name: 'Popover',
+      template: '<div><slot /></div>',
+      methods: { toggle: vi.fn(), hide: vi.fn() }
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

@@ -16,7 +16,7 @@ const i18n = createI18n({
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     shouldUseWidgetAssetPicker: vi.fn(() => true),
     isWidgetAssetPickerEnabled: vi.fn(() => true)

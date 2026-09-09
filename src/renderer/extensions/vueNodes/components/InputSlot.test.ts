@@ -14,18 +14,21 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import InputSlot from './InputSlot.vue'
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
 }))
 
-vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
-  useSlotLinkDragUIState: () => ({
-    state: { active: false, compatible: new Map() }
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/links/slotLinkDragUIState'),
+  () => ({
+    useSlotLinkDragUIState: () => ({
+      state: { active: false, compatible: new Map() }
+    })
   })
-}))
+)
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction',
+  import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
   () => ({
     useSlotLinkInteraction: () => ({
       onClick: vi.fn(),
@@ -35,7 +38,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/slots/slotIdentifier'), () => ({
   getSlotKey: () => 'mock-key'
 }))
 

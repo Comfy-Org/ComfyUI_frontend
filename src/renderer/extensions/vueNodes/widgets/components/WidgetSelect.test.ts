@@ -19,7 +19,7 @@ const i18n = createI18n({
 const mockShouldUseWidgetAssetPicker = vi.hoisted(() => vi.fn(() => false))
 const mockIsWidgetAssetPickerEnabled = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     shouldUseWidgetAssetPicker: mockShouldUseWidgetAssetPicker,
     isWidgetAssetPickerEnabled: mockIsWidgetAssetPickerEnabled

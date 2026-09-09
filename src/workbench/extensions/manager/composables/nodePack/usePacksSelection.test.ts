@@ -8,11 +8,14 @@ const { mockIsPackInstalled } = vi.hoisted(() => ({
   mockIsPackInstalled: vi.fn<(packName: string | undefined) => boolean>()
 }))
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
+  () => ({
+    useComfyManagerStore: () => ({
+      isPackInstalled: mockIsPackInstalled
+    })
   })
-}))
+)
 
 type NodePack = components['schemas']['Node']
 

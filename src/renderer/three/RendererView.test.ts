@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RendererView } from './RendererView'
 
-vi.mock('three', async (importOriginal) => {
+vi.mock<unknown>(import('three'), async (importOriginal) => {
   const actual = await importOriginal<typeof THREE>()
   class WebGLRenderer {
     domElement = document.createElement('canvas')
