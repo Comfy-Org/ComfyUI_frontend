@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { MockInstance } from 'vitest'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
@@ -70,7 +68,6 @@ function failPayloadWrites(failTimes = Infinity): MockInstance {
 
 describe('workflowDraftStoreV2', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()
     resetStorageAvailable()
