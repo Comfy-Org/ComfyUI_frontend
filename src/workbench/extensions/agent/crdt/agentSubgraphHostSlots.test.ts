@@ -158,7 +158,7 @@ describe('agentSubgraphHostSlots', () => {
   })
 
   it('returns no slots for a definition without inputs', () => {
-    const def = { ...definition(), inputs: undefined } as ExportedSubgraph
+    const def: ExportedSubgraph = { ...definition(), inputs: undefined }
     expect(hostInputs(def, [])).toEqual([])
     expect(promotedWidgetNames(def)).toEqual([])
   })
