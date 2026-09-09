@@ -22,6 +22,8 @@ import {
   promotedWidgetNames
 } from './agentSubgraphHostSlots'
 import type { SubgraphDefinitionIndex } from './agentSubgraphHostSlots'
+import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { GraphOperation } from './graphOperations'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
@@ -268,6 +270,36 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
   ) as SemanticLinkPayload[TKey extends 'inputs'
     ? 'targetInputs'
     : 'originOutputs']
+}
+
+export function mapLocalInputSlots(
+  doc: Y.Doc,
+  graph: Pick<MaterializableGraph, '_nodes_by_id'>,
+  operations: GraphOperation[]
+): GraphOperation[] {
+  return operations.flatMap((operation): GraphOperation[] => {
+    if (operation.op !== 'connect' || operation.grow != null) return [operation]
+    const nodeId = String(operation.to_node)
+    // A local add_node can still be awaiting its first document echo.
+    if (!nodesMap(doc).has(nodeId)) return [operation]
+    const name = graph._nodes_by_id[toNodeId(nodeId)]?.inputs.at(
+      operation.to_slot
+    )?.name
+    const slot =
+      name === undefined
+        ? -1
+        : (readNodeSlots(doc, nodeId, 'inputs') ?? []).findIndex(
+            (input) => input.name === name
+          )
+    if (slot < 0) {
+      console.error(
+        '[agent-crdt] connect input is absent from the bound document; the local graph diverges',
+        operation.link_id
+      )
+      return []
+    }
+    return [{ ...operation, to_slot: slot }]
+  })
 }
 
 function frameContext(update: DocUpdate): RemoteMutationContext {
