@@ -2,12 +2,12 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
-import { useRegionGate } from '@/composables/auth/useRegionGate'
+import { useRegionGate } from './regionGate'
 
 const detection = vi.hoisted(() => ({
   outcome: Promise.resolve(false)
 }))
-vi.mock('@/utils/networkUtil', () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
   isInChina: () => detection.outcome
 }))
 

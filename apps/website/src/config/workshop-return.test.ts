@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
 import {
+  isSwitchingAccount,
   popWorkshopForm,
   requestedReturnPath,
   safeReturnPath,
@@ -191,5 +192,14 @@ describe('requestedReturnPath', () => {
     expect(requestedReturnPath('?returnTo=https%3A%2F%2Fevil.com')).toBe(
       '/workshop/'
     )
+  })
+})
+
+describe('isSwitchingAccount', () => {
+  it('is true only when the query carries switchAccount', () => {
+    expect(isSwitchingAccount('?switchAccount')).toBe(true)
+    expect(isSwitchingAccount('?switchAccount=1&returnTo=%2F')).toBe(true)
+    expect(isSwitchingAccount('?returnTo=%2Fworkshop%2F')).toBe(false)
+    expect(isSwitchingAccount('')).toBe(false)
   })
 })
