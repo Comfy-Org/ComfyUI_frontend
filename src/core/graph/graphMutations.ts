@@ -1,3 +1,5 @@
+import { isPlainObject } from 'es-toolkit'
+
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -426,6 +428,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const targetInputs = mutation.link.targetInputs
             ? prepareInputSlots(mutation.link.targetInputs)
             : target.inputs
+          if (mutation.link.originOutputs) {
+            for (const [index, output] of origin.outputs.entries()) {
+              if (!isPlainObject(output)) originOutputs[index] = output
+            }
+          }
+          if (mutation.link.targetInputs) {
+            for (const [index, input] of target.inputs.entries()) {
+              if (!isPlainObject(input)) targetInputs[index] = input
+            }
+          }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
@@ -566,7 +578,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (origin?.outputs[topology.originSlot]) {
       const slots = slotsFor(origin)
       slots.outputs = slots.outputs.map((output, index) =>
-        index === topology.originSlot
+        index === topology.originSlot && isPlainObject(output)
           ? {
               ...output,
               links: output.links?.filter((id) => id !== topology.id) ?? null
@@ -579,7 +591,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (target?.inputs[topology.targetSlot]?.link === topology.id) {
       const slots = slotsFor(target)
       slots.inputs = slots.inputs.map((input, index) =>
-        index === topology.targetSlot ? { ...input, link: null } : input
+        index === topology.targetSlot && isPlainObject(input)
+          ? { ...input, link: null }
+          : input
       )
     }
 
