@@ -1,33 +1,21 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import WorkshopSignIn from '../../components/workshop/WorkshopSignIn.vue'
-import { workshopModels } from '../../config/models-catalogue'
+import AuthSignIn from '../../components/auth/AuthSignIn.vue'
 import { t } from '../../i18n/translations'
+import AuthLayout from '../../layouts/AuthLayout.astro'
+import { pageContext } from '../../utils/jsonLd'
 
-const visual = workshopModels.find((model) => model.thumbnailUrl)
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
 ---
 
-<BaseLayout
-  title={t('workshop.signIn.meta.title')}
-  description={t('workshop.meta.description')}
-  noindex
-  minimal
+<AuthLayout
+  title={t('auth.signIn.meta.title', locale)}
+  description={t('auth.signIn.meta.description', locale)}
+  {locale}
+  showTermsNotice
 >
-  <div
-    class="mx-auto grid min-h-[calc(100svh-6.5rem)] max-w-7xl items-center gap-8 px-6 pb-16 lg:grid-cols-2 lg:px-8"
-  >
-    <div class="hidden overflow-hidden rounded-4xl lg:block">
-      {
-        visual?.thumbnailUrl && (
-          <img
-            src={visual.thumbnailUrl}
-            alt={visual.name}
-            class="h-full max-h-[70svh] w-full rounded-4xl object-cover"
-            loading="lazy"
-          />
-        )
-      }
-    </div>
-    <WorkshopSignIn client:load />
-  </div>
-</BaseLayout>
+  <AuthSignIn {locale} client:load />
+</AuthLayout>

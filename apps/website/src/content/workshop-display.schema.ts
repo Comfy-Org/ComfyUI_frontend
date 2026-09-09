@@ -7,7 +7,7 @@ import { z } from 'astro/zod'
  */
 const mediaKindSchema = z.enum(['image', 'video', 'audio'])
 
-const WORKSHOP_USE_CASES = [
+export const WORKSHOP_USE_CASES = [
   'generate-images',
   'edit-images',
   'animate-images',
@@ -69,6 +69,13 @@ export const workshopDisplaySchema = z.object({
     .default({}),
 
   examples: z.array(exampleSchema).default([]),
+
+  /**
+   * Router field names intentionally hidden under the Advanced disclosure.
+   * This is editorial presentation metadata, not part of the provider request
+   * schema, so it lives beside the other display choices in this overlay.
+   */
+  advancedFields: z.array(z.string().min(1)).default([]),
 
   pricing: z
     .object({ creditsPerRun: z.number().nonnegative() })

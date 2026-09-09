@@ -5,6 +5,7 @@ import {
   defaultValues,
   exampleValues,
   examplesForModel,
+  groupPlaygroundFields,
   schemaForModel,
   isVideoUrl,
   validateForm
@@ -53,6 +54,52 @@ describe('schemaForModel', () => {
   it('falls back to a modality schema otherwise', () => {
     const schema = schemaForModel({ fields: [], modality: 'video' })
     expect(schema.map((f) => f.name)).toContain('duration')
+  })
+})
+
+describe('groupPlaygroundFields', () => {
+  it('uses explicit Advanced metadata instead of field position', () => {
+    const schema = schemaForModel({
+      fields: [
+        generatedFields[0],
+        { ...generatedFields[1], advanced: true },
+        { ...generatedFields[2], advanced: false },
+        generatedFields[3]
+      ],
+      modality: 'video'
+    })
+
+    const groups = groupPlaygroundFields(schema)
+    expect(groups.primary.map((field) => field.name)).toEqual([
+      'prompt',
+      'audio',
+      'image'
+    ])
+    expect(groups.advanced.map((field) => field.name)).toEqual(['mode'])
+  })
+
+  it('keeps the positional fallback for legacy fields', () => {
+    const settings: GeneratedField[] = Array.from(
+      { length: 4 },
+      (_, index) => ({
+        kind: 'number',
+        name: `setting_${index}`,
+        label: `Setting ${index}`,
+        min: 0,
+        max: 10,
+        step: 1,
+        default: 0
+      })
+    )
+    const groups = groupPlaygroundFields(
+      schemaForModel({
+        fields: [generatedFields[0], ...settings],
+        modality: 'image'
+      })
+    )
+
+    expect(groups.settings).toHaveLength(3)
+    expect(groups.advanced.map((field) => field.name)).toEqual(['setting_3'])
   })
 })
 

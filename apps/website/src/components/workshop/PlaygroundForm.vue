@@ -7,6 +7,7 @@ import type {
   FieldSchema,
   FormValues
 } from '../../config/workshop-playground'
+import { groupPlaygroundFields } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import PlaygroundField from './PlaygroundField.vue'
@@ -25,32 +26,10 @@ const {
 
 const values = defineModel<FormValues>({ required: true })
 
-// Prompts and uploads stay on top, then a few settings, and the long tail folds
-// away so the form and its Run button fit a laptop screen. The catalogue lists
-// each release as its own model, so the node's own model picker would be a
-// second, contradictory way to choose one: it is drawn only where hiding it
-// would leave the visitor an empty panel.
-const SETTINGS_SHOWN = 3
-
-const groups = computed(() => {
-  const withoutPicker = schema.filter((field) => field.name !== 'model')
-  const shown = withoutPicker.length > 0 ? withoutPicker : schema
-  const lastPrimary = shown.reduce(
-    (last, field, index) =>
-      field.kind === 'text' || field.kind === 'file' ? index : last,
-    -1
-  )
-  const rest = shown.slice(lastPrimary + 1)
-  const knobs = rest.filter((field) => field.kind !== 'toggle')
-  return {
-    primary: shown.slice(0, lastPrimary + 1),
-    settings: knobs.slice(0, SETTINGS_SHOWN),
-    advanced: [
-      ...knobs.slice(SETTINGS_SHOWN),
-      ...rest.filter((field) => field.kind === 'toggle')
-    ]
-  }
-})
+// The packed display overlay records which model-specific knobs belong under
+// Advanced. A legacy positional fallback lives in the helper for workflow
+// fixtures that do not carry that metadata yet.
+const groups = computed(() => groupPlaygroundFields(schema))
 </script>
 
 <template>

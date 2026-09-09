@@ -9,6 +9,8 @@ import type {
 export type FieldSchema =
   | {
       readonly kind: 'text'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -18,6 +20,8 @@ export type FieldSchema =
     }
   | {
       readonly kind: 'select'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -26,6 +30,8 @@ export type FieldSchema =
     }
   | {
       readonly kind: 'number'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -36,6 +42,8 @@ export type FieldSchema =
     }
   | {
       readonly kind: 'toggle'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -43,6 +51,8 @@ export type FieldSchema =
     }
   | {
       readonly kind: 'file'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -71,6 +81,52 @@ export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
+export interface PlaygroundFieldGroups {
+  readonly primary: readonly FieldSchema[]
+  readonly settings: readonly FieldSchema[]
+  readonly advanced: readonly FieldSchema[]
+}
+
+const SETTINGS_SHOWN = 3
+
+/**
+ * Explicit overlay metadata wins. The positional fallback keeps legacy
+ * generated fixtures and workflow pages working until they carry metadata.
+ */
+export function groupPlaygroundFields(
+  schema: readonly FieldSchema[]
+): PlaygroundFieldGroups {
+  const withoutPicker = schema.filter((field) => field.name !== 'model')
+  const shown = withoutPicker.length > 0 ? withoutPicker : schema
+  const hasExplicitGroups = shown.some((field) => field.advanced !== undefined)
+  const standard = hasExplicitGroups
+    ? shown.filter((field) => field.advanced !== true)
+    : shown
+  const lastPrimary = standard.reduce(
+    (last, field, index) =>
+      field.kind === 'text' || field.kind === 'file' ? index : last,
+    -1
+  )
+  const rest = standard.slice(lastPrimary + 1)
+  const knobs = rest.filter((field) => field.kind !== 'toggle')
+  return {
+    primary: standard.slice(0, lastPrimary + 1),
+    settings: hasExplicitGroups ? knobs : knobs.slice(0, SETTINGS_SHOWN),
+    advanced: hasExplicitGroups
+      ? shown
+          .filter((field) => field.advanced === true)
+          .sort(
+            (a, b) =>
+              (a.advancedIndex ?? Number.MAX_SAFE_INTEGER) -
+              (b.advancedIndex ?? Number.MAX_SAFE_INTEGER)
+          )
+      : [
+          ...knobs.slice(SETTINGS_SHOWN),
+          ...rest.filter((field) => field.kind === 'toggle')
+        ]
+  }
+}
+
 const ACCEPT: Record<'image' | 'video' | 'audio', readonly string[]> = {
   image: ['image/png', 'image/jpeg', 'image/webp'],
   video: ['video/mp4', 'video/webm', 'video/quicktime'],
@@ -78,12 +134,22 @@ const ACCEPT: Record<'image' | 'video' | 'audio', readonly string[]> = {
 }
 
 function fromGenerated(field: GeneratedField): FieldSchema {
+  const presentation =
+    field.advanced === undefined
+      ? {}
+      : {
+          advanced: field.advanced,
+          ...(field.advancedIndex === undefined
+            ? {}
+            : { advancedIndex: field.advancedIndex })
+        }
   switch (field.kind) {
     case 'text':
       return {
         kind: 'text',
         name: field.name,
         label: field.label,
+        ...presentation,
         ...(field.hint ? { hint: field.hint } : {}),
         required: field.required,
         multiline: field.multiline
@@ -93,6 +159,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'number',
         name: field.name,
         label: field.label,
+        ...presentation,
         ...(field.hint ? { hint: field.hint } : {}),
         min: field.min,
         max: field.max,
@@ -104,6 +171,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'select',
         name: field.name,
         label: field.label,
+        ...presentation,
         ...(field.hint ? { hint: field.hint } : {}),
         options: field.options,
         defaultValue: field.default
@@ -113,6 +181,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'toggle',
         name: field.name,
         label: field.label,
+        ...presentation,
         ...(field.hint ? { hint: field.hint } : {}),
         defaultValue: field.default
       }
@@ -121,6 +190,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'file',
         name: field.name,
         label: field.label,
+        ...presentation,
         ...(field.hint ? { hint: field.hint } : {}),
         accept: ACCEPT[field.accept],
         maxBytes: MAX_UPLOAD_BYTES,

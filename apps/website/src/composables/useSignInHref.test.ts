@@ -33,8 +33,6 @@ describe('useSignInHref', () => {
       })
     )
     await nextTick()
-    expect(href.value).toBe(
-      '/models/sign-in?return=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
-    )
+    expect(href.value).toBe('/login/?returnTo=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi')
   })
 })

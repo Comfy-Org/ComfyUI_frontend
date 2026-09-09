@@ -1,0 +1,295 @@
+import { realpathSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+import { workshopDisplaySchema } from '../src/content/workshop-display.schema'
+import type { WorkshopDisplayEntry } from '../src/content/workshop-display.schema'
+import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
+import { workshopModelSchema } from '../src/content/workshop-models.schema'
+
+/**
+ * The display overlay, packed the same way as the catalog: one JSON array,
+ * one model per line, written by a script and read only by Zod and
+ * `getCollection()`. See `generate-workshop-catalog.ts` for why.
+ */
+const OVERLAY = resolve(
+  import.meta.dirname,
+  '../src/content/workshop-display.json'
+)
+
+/** The catalog this overlay must line up with. */
+const CATALOG = resolve(
+  import.meta.dirname,
+  '../src/content/workshop-models.json'
+)
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+type PresentationKind = 'primary' | 'setting' | 'toggle'
+
+function hasPrimitiveOptions(schema: Record<string, unknown>): boolean {
+  if (
+    Array.isArray(schema.enum) &&
+    schema.enum.some(
+      (value) =>
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+    )
+  ) {
+    return true
+  }
+  return (
+    Array.isArray(schema.anyOf) &&
+    schema.anyOf.some(
+      (variant) => isRecord(variant) && hasPrimitiveOptions(variant)
+    )
+  )
+}
+
+/**
+ * Preserve the prototype's current disclosure choices in explicit data.
+ * The generated list is an initial editorial default: content can supply an
+ * `advancedFields` list in a future drop to override it per model.
+ */
+export function deriveAdvancedFields(
+  model: WorkshopModelEntry
+): readonly string[] {
+  const properties = isRecord(model.parameters.properties)
+    ? model.parameters.properties
+    : {}
+  const fields: Array<{
+    readonly name: string
+    readonly kind: PresentationKind
+  }> = Object.entries(properties).flatMap(([name, schema]) => {
+    if (
+      name === 'model' ||
+      name === 'medias' ||
+      name === 'dispatch_mode' ||
+      !isRecord(schema)
+    ) {
+      return []
+    }
+    const kind: PresentationKind = hasPrimitiveOptions(schema)
+      ? 'setting'
+      : schema.type === 'boolean'
+        ? 'toggle'
+        : schema.type === 'number' || schema.type === 'integer'
+          ? 'setting'
+          : 'primary'
+    return [{ name, kind }]
+  })
+
+  fields.push(
+    ...model.roles.map((role) => ({
+      name: `media_${role.role}`,
+      kind: 'primary' as const
+    }))
+  )
+
+  const lastPrimary = fields.reduce(
+    (last, field, index) => (field.kind === 'primary' ? index : last),
+    -1
+  )
+  const rest = fields.slice(lastPrimary + 1)
+  const settings = rest.filter((field) => field.kind === 'setting')
+  return [
+    ...settings.slice(3).map((field) => field.name),
+    ...rest
+      .filter((field) => field.kind === 'toggle')
+      .map((field) => field.name)
+  ]
+}
+
+/**
+ * The content side delivers one object keyed by model id, with its own copy of
+ * some catalog fields under underscore names. The collection wants that key as
+ * a field, so this is where the two shapes meet.
+ */
+const IMAGE_EDIT_TAGS = new Set([
+  'edit',
+  'editing',
+  'image-edit',
+  'image-to-image',
+  'image-to-svg',
+  'inpaint',
+  'outpaint',
+  'upscale',
+  'restore',
+  'image-enhance'
+])
+const IMAGE_GENERATE_TAGS = new Set(['text-to-image', 'text-to-svg'])
+const VIDEO_ANIMATE_TAGS = new Set([
+  'image-to-video',
+  'first-last-frame',
+  'start-end-frame',
+  'reference-to-video',
+  'subject-to-video',
+  'talking-image'
+])
+const VIDEO_GENERATE_TAGS = new Set(['text-to-video'])
+const VIDEO_EDIT_TAGS = new Set([
+  'video-edit',
+  'video-to-video',
+  'video-enhance',
+  'continuation',
+  'video-extend'
+])
+
+function hasAny(
+  values: ReadonlySet<string>,
+  tags: ReadonlySet<string>
+): boolean {
+  return [...values].some((value) => tags.has(value))
+}
+
+function isImageRole(role: string): boolean {
+  return role.includes('image') || role === 'mask' || role.startsWith('view_')
+}
+
+export function deriveWorkshopUseCases(
+  model: WorkshopModelEntry
+): WorkshopDisplayEntry['useCases'] {
+  if (model.modality === 'audio' || model.modality === 'music') return ['audio']
+  if (model.modality === '3d') return ['3d']
+
+  const tags = new Set(model.tags)
+  const requiredRoles = model.roles
+    .filter((role) => role.required)
+    .map((role) => role.role)
+
+  if (model.modality === 'image' || model.modality === 'svg') {
+    const useCases: Array<'generate-images' | 'edit-images'> = []
+    if (hasAny(IMAGE_GENERATE_TAGS, tags)) useCases.push('generate-images')
+    if (hasAny(IMAGE_EDIT_TAGS, tags) || requiredRoles.some(isImageRole)) {
+      useCases.push('edit-images')
+    }
+    return useCases.length > 0 ? useCases : ['generate-images']
+  }
+
+  const useCases: Array<'animate-images' | 'generate-videos' | 'edit-videos'> =
+    []
+  if (hasAny(VIDEO_ANIMATE_TAGS, tags)) useCases.push('animate-images')
+  if (hasAny(VIDEO_GENERATE_TAGS, tags)) useCases.push('generate-videos')
+  if (
+    hasAny(VIDEO_EDIT_TAGS, tags) ||
+    requiredRoles.some((role) => role.includes('video'))
+  ) {
+    useCases.push('edit-videos')
+  }
+  if (useCases.length > 0) return useCases
+  if (requiredRoles.some(isImageRole)) return ['animate-images']
+  return ['generate-videos']
+}
+
+function project(
+  modelId: string,
+  value: unknown,
+  catalogModel: WorkshopModelEntry
+): unknown {
+  if (!isRecord(value)) return value
+  return {
+    id: modelId,
+    media: value.media ?? {},
+    // Delivered as `null` rather than omitted when a model has no example.
+    examples: value.examples ?? [],
+    advancedFields: value.advancedFields ?? deriveAdvancedFields(catalogModel),
+    pricing: value.pricing ?? null,
+    status: value.status ?? 'active',
+    useCases: deriveWorkshopUseCases(catalogModel),
+    license: value.license ?? null,
+    mediaConfidence: value._mediaConfidence,
+    needsReview: value._needsReview
+  }
+}
+
+export function buildWorkshopDisplay(
+  input: unknown,
+  catalog: ReadonlyMap<string, WorkshopModelEntry>
+): WorkshopDisplayEntry[] {
+  if (!isRecord(input)) {
+    throw new Error('Display overlay is not an object keyed by model id')
+  }
+
+  const overlay = Object.entries(input).map(([modelId, value]) => {
+    const catalogModel = catalog.get(modelId)
+    if (!catalogModel) {
+      throw new Error(
+        `Display overlay names model absent from catalog: ${modelId}`
+      )
+    }
+    const parsed = workshopDisplaySchema.safeParse(
+      project(modelId, value, catalogModel)
+    )
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]
+      throw new Error(
+        `Invalid display entry for ${modelId}: ${issue.path.join('.')} ${issue.message}`
+      )
+    }
+    return parsed.data
+  })
+
+  // An example is meant to be loaded into the form and its output shown
+  // beside it, paired by index. More examples than samples would leave an
+  // example with no output; the reverse is fine and common — 7 models have a
+  // sample with nothing to prefill.
+  for (const entry of overlay) {
+    const samples = entry.media.samples?.length ?? 0
+    if (entry.examples.length > samples) {
+      throw new Error(
+        `${entry.id} has ${entry.examples.length} example(s) but only ${samples} sample(s); they pair by index`
+      )
+    }
+  }
+
+  // Sorted by model id, not by locale, so the committed file does not churn
+  // with the generator host's locale.
+  return overlay.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+}
+
+async function catalogModels(): Promise<Map<string, WorkshopModelEntry>> {
+  const raw = JSON.parse(await readFile(CATALOG, 'utf8')) as unknown
+  if (!Array.isArray(raw)) throw new Error('Catalog is not an array')
+  const models = raw.map((model, index) => {
+    const parsed = workshopModelSchema.safeParse(model)
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]
+      throw new Error(
+        `Invalid catalog entry at index ${index}: ${issue.path.join('.')} ${issue.message}`
+      )
+    }
+    return parsed.data
+  })
+  return new Map(models.map((model) => [model.id, model]))
+}
+
+async function main(): Promise<void> {
+  const dropPath = process.argv[2]
+  if (!dropPath) {
+    throw new Error(
+      'Usage: pnpm generate:workshop-display /path/to/workshop-display.json'
+    )
+  }
+
+  const drop = JSON.parse(await readFile(resolve(dropPath), 'utf8')) as unknown
+  const overlay = buildWorkshopDisplay(drop, await catalogModels())
+
+  const next = `[\n${overlay.map((entry) => JSON.stringify(entry)).join(',\n')}\n]\n`
+  const previous = await readFile(OVERLAY, 'utf8').catch(() => undefined)
+  if (previous !== next) await writeFile(OVERLAY, next)
+
+  const withThumb = overlay.filter((e) => e.media.thumbnail).length
+  const withExample = overlay.filter((e) => e.examples.length > 0).length
+  process.stdout.write(
+    `workshop-display: ${overlay.length} entries, ${withThumb} thumbnails, ${withExample} examples\n`
+  )
+}
+
+// Run only when invoked directly, so the builder above stays importable by the
+// tests without the script writing anything.
+if (realpathSync(process.argv[1]) === realpathSync(import.meta.filename)) {
+  await main()
+}

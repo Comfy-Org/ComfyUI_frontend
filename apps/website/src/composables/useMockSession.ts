@@ -36,7 +36,7 @@ export const WORKSPACES = [
   { name: 'Client demos', plan: 'FREE' }
 ] as const
 
-export const PERSONAL_WORKSPACE = WORKSPACES[0].name
+const PERSONAL_WORKSPACE = WORKSPACES[0].name
 const TEAM_WORKSPACE = WORKSPACES[1].name
 
 const BASE_ACCOUNT = {

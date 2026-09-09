@@ -218,6 +218,7 @@ async function mockPasswordReset(page: Page) {
 }
 
 async function openEmailForm(page: Page) {
+  await page.waitForFunction(() => !document.querySelector('astro-island[ssr]'))
   await page.getByRole('button', { name: 'Use email instead' }).click()
 }
 
@@ -339,6 +340,9 @@ test.describe('Live forgot-password', () => {
   test('confirms the send and returns to login', async ({ page }) => {
     await mockPasswordReset(page)
     await page.goto('/forgot-password/')
+    await page.waitForFunction(
+      () => !document.querySelector('astro-island[ssr]')
+    )
 
     await page.getByLabel('Email').fill(WORKSHOP_EMAIL)
     await page.getByRole('button', { name: 'Send reset link' }).click()

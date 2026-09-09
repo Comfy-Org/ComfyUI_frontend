@@ -27,7 +27,7 @@ const EMBED_HOSTS = new Set([
   'demo.arcade.software'
 ])
 const MEDIA_PATTERN =
-  /^https:\/\/((media|comfy-hub-assets)\.comfy\.org|raw\.githubusercontent\.com)\/.*\.(webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(\?.*)?$/i
+  /^https:\/\/((media|comfy-hub-assets)\.comfy\.org|raw\.githubusercontent\.com|cdn\.jsdelivr\.net)\/.*\.(webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(\?.*)?$/i
 const NODE_IMAGE_HOSTS = new Set([
   'avatars.githubusercontent.com',
   'raw.githubusercontent.com'

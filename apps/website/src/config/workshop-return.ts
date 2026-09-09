@@ -6,7 +6,7 @@ import type {
   WorkshopFormValues
 } from './workshop-detail'
 
-const WORKSHOP_HOME = '/workshop/'
+const WORKSHOP_HOME = '/models/'
 
 /**
  * Where a visitor may be sent back to after sign-in or a purchase: a

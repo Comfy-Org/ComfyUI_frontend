@@ -20,6 +20,8 @@ export type WorkshopTask = `${TaskInput}-to-${Exclude<ModalityFilter, 'all'>}`
 export type GeneratedField =
   | {
       readonly kind: 'text'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -29,6 +31,8 @@ export type GeneratedField =
     }
   | {
       readonly kind: 'number'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -39,6 +43,8 @@ export type GeneratedField =
     }
   | {
       readonly kind: 'select'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -47,6 +53,8 @@ export type GeneratedField =
     }
   | {
       readonly kind: 'toggle'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -54,6 +62,8 @@ export type GeneratedField =
     }
   | {
       readonly kind: 'file'
+      readonly advanced?: boolean
+      readonly advancedIndex?: number
       readonly name: string
       readonly label: string
       readonly hint?: string
@@ -151,6 +161,9 @@ function isGeneratedField(value: unknown): value is GeneratedField {
   if (!isRecord(value) || !isString(value.name) || !isString(value.label))
     return false
   if (value.hint !== undefined && !isString(value.hint)) return false
+  if (value.advanced !== undefined && !isBoolean(value.advanced)) return false
+  if (value.advancedIndex !== undefined && !isFiniteNumber(value.advancedIndex))
+    return false
   switch (value.kind) {
     case 'text':
       return (

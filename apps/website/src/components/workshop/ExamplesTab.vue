@@ -93,6 +93,7 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
             <audio
               v-else-if="example.mediaKind === 'audio'"
               :src="example.outputUrl"
+              :aria-label="example.title"
               class="size-full px-3"
               controls
               preload="metadata"

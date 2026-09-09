@@ -40,7 +40,7 @@ describe('WorkshopSignIn', () => {
 
   it('signs an existing account in through a provider and returns', async () => {
     const user = userEvent.setup()
-    const api = mountSignIn('?return=/models/kling-o3/')
+    const api = mountSignIn('?returnTo=/models/kling-o3/')
 
     await user.click(screen.getByTestId('sign-in-github'))
     expect(credits(api)).toBe(EXISTING_CREDITS)
@@ -49,7 +49,7 @@ describe('WorkshopSignIn', () => {
 
   it('creates an empty account from sign-up mode and falls back to the catalog', async () => {
     const user = userEvent.setup()
-    const api = mountSignIn('?return=https://evil.example')
+    const api = mountSignIn('?returnTo=https://evil.example')
 
     await user.click(screen.getByTestId('sign-in-switch-signup'))
     expect(screen.getByTestId('workshop-sign-in').dataset.mode).toBe('signUp')

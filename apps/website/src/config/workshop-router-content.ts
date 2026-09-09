@@ -152,7 +152,10 @@ function acceptFor(role: string): 'image' | 'video' | 'audio' {
   return 'image'
 }
 
-function fieldsFor(model: WorkshopModelEntry): GeneratedField[] {
+function fieldsFor(
+  model: WorkshopModelEntry,
+  advancedFieldNames: readonly string[]
+): GeneratedField[] {
   const properties = isRecord(model.parameters.properties)
     ? model.parameters.properties
     : {}
@@ -168,7 +171,7 @@ function fieldsFor(model: WorkshopModelEntry): GeneratedField[] {
     }
     return [fieldFor(name, schema, required.has(name))]
   })
-  return [
+  const generated = [
     ...fields,
     ...model.roles.map(
       (role): GeneratedField => ({
@@ -180,6 +183,21 @@ function fieldsFor(model: WorkshopModelEntry): GeneratedField[] {
       })
     )
   ]
+  const names = new Set(generated.map((field) => field.name))
+  const stale = advancedFieldNames.filter((name) => !names.has(name))
+  if (stale.length > 0) {
+    throw new Error(
+      `Workshop display entry ${model.id} names unknown advanced field(s): ${stale.join(', ')}`
+    )
+  }
+  const advanced = new Set(advancedFieldNames)
+  return generated.map((field) => ({
+    ...field,
+    advanced: advanced.has(field.name),
+    ...(advanced.has(field.name)
+      ? { advancedIndex: advancedFieldNames.indexOf(field.name) }
+      : {})
+  }))
 }
 
 function defaultValues(
@@ -297,7 +315,7 @@ const records = catalog.map((entry) => {
   const overlay = displayById.get(entry.id)
   if (!overlay)
     throw new Error(`Missing Workshop display entry for ${entry.id}`)
-  const fields = fieldsFor(entry)
+  const fields = fieldsFor(entry, overlay.advancedFields)
   const examples = examplesFor(entry, overlay)
   const modality = modalityFor(entry)
   const thumbnail = overlay.media.thumbnail

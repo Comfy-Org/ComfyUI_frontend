@@ -9380,6 +9380,10 @@ Enterprise`
     en: 'Model temporarily unavailable',
     'zh-CN': '模型暂时不可用'
   },
+  'workshop.run.previewUnavailable': {
+    en: 'Running models is not connected in this preview',
+    'zh-CN': '此预览尚未连接模型运行功能'
+  },
   'workshop.run.videoHint': {
     en: 'Video runs can take up to 10 minutes and run without a queue.',
     'zh-CN': '视频生成最长可能需要 10 分钟，且不排队。'

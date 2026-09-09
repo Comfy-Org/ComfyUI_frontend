@@ -41,7 +41,7 @@ describe('getRoutes workshop', () => {
   it('keeps the workshop routes locale-invariant', () => {
     for (const locale of ['en', 'zh-CN', 'ja'] as const) {
       expect(getRoutes(locale).workshop).toBe('/models')
-      expect(getRoutes(locale).workshopSignIn).toBe('/models/sign-in')
+      expect(getRoutes(locale).workshopSignIn).toBe('/login/')
     }
   })
 

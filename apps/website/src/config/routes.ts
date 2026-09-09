@@ -48,7 +48,7 @@ const baseRoutes = {
   // The catalogue answers to /models now. The keys keep their old names while
   // the pull requests stacked on this branch are still open against them.
   workshop: '/models',
-  workshopSignIn: '/models/sign-in'
+  workshopSignIn: '/login/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
