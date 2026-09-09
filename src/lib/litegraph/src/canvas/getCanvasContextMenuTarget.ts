@@ -2,6 +2,7 @@ import type { LGraphCanvas } from '../LGraphCanvas'
 import type { LGraphGroup } from '../LGraphGroup'
 import { LLink } from '../LLink'
 import { Reroute } from '../Reroute'
+import type { LinkSegment } from '../interfaces'
 import { LinkRenderType } from '../types/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -12,6 +13,7 @@ import { queryRenderedLinkSegmentsAtPoint } from './queryRenderedLinkSegmentsAtP
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
+  linkSegment?: LinkSegment
   link?: LLink
   group?: LGraphGroup
 }
@@ -20,7 +22,7 @@ function queryVisibleLinkAtPoint(
   canvas: LGraphCanvas,
   x: number,
   y: number
-): LLink | undefined {
+): { segment: LinkSegment; link?: LLink } | undefined {
   const { graph } = canvas
   if (!graph) return
   const scope = graphScopeOf(graph)
@@ -30,13 +32,13 @@ function queryVisibleLinkAtPoint(
 
   for (const segment of queryRenderedLinkSegmentsAtPoint(canvas, x, y)) {
     if (segment instanceof LLink) {
-      if (!isHidden(segment)) return segment
+      if (!isHidden(segment)) return { segment, link: segment }
       continue
     }
     if (segment instanceof Reroute) {
       for (const linkId of segment.linkIds) {
         const link = graph.getLink(linkId)
-        if (link && !isHidden(link)) return link
+        if (link && !isHidden(link)) return { segment, link }
       }
     }
   }
@@ -53,6 +55,7 @@ export function getCanvasContextMenuTarget(
   const scope = graphScopeOf(graph)
 
   let reroute: Reroute | undefined
+  let linkSegment: LinkSegment | undefined
   let link: LLink | undefined
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     reroute = findRerouteAtPoint(
@@ -73,10 +76,12 @@ export function getCanvasContextMenuTarget(
       ) {
         link = badgeLink
       } else {
-        link = queryVisibleLinkAtPoint(canvas, x, y)
+        const hit = queryVisibleLinkAtPoint(canvas, x, y)
+        linkSegment = hit?.segment
+        link = hit?.link
       }
     }
   }
 
-  return { reroute, link, group: graph.getGroupOnPos(x, y) }
+  return { reroute, linkSegment, link, group: graph.getGroupOnPos(x, y) }
 }

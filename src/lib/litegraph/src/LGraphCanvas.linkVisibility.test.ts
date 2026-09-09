@@ -86,7 +86,7 @@ describe('LGraphCanvas link visibility interactions', () => {
     canvas.showLinkMenu(link, event)
 
     expect(menuValues).toEqual([
-      'Hide Link',
+      { content: 'Hide Link', value: 'Hide Link' },
       null,
       'Add Node',
       'Add Reroute',
@@ -94,7 +94,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       'Delete',
       null
     ])
-    void menuOptions.callback?.('Hide Link')
+    void menuOptions.callback?.({ content: 'Hide Link', value: 'Hide Link' })
     expect(
       useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
         ?.hidden
@@ -103,15 +103,15 @@ describe('LGraphCanvas link visibility interactions', () => {
     canvas.showLinkMenu(link, event)
 
     expect(menuValues).toEqual([
-      'Rename',
-      'Show Link',
+      { content: 'Rename', value: 'Rename' },
+      { content: 'Show Link', value: 'Show Link' },
       null,
       'Add Node',
       null,
       'Delete',
       null
     ])
-    void menuOptions.callback?.('Show Link')
+    void menuOptions.callback?.({ content: 'Show Link', value: 'Show Link' })
     expect(
       useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
         ?.hidden
@@ -176,7 +176,7 @@ describe('LGraphCanvas link visibility interactions', () => {
 
     canvas.processContextMenu(undefined, event)
 
-    expect(showLinkMenu).toHaveBeenCalledWith(link, event)
+    expect(showLinkMenu).toHaveBeenCalledWith(link, event, link)
   })
 
   it('opens the visible link menu from a shared reroute segment', () => {
@@ -202,7 +202,7 @@ describe('LGraphCanvas link visibility interactions', () => {
 
     canvas.processContextMenu(undefined, event)
 
-    expect(showLinkMenu).toHaveBeenCalledWith(visibleLink, event)
+    expect(showLinkMenu).toHaveBeenCalledWith(reroute, event, visibleLink)
   })
 
   it.for(['layout', 'path'])(
