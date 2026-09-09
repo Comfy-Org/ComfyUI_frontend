@@ -38,7 +38,9 @@ const CachedCredentialSchema = CredentialResponseSchema.omit({
   expires_at: true
 }).extend({
   expiresAt: z.number(),
-  uid: z.string()
+  uid: z.string(),
+  /** The workspace target the credential was minted for; absent = personal. */
+  target: z.string().optional()
 })
 
 export interface AccountCredential {
@@ -99,6 +101,8 @@ export type SessionRefreshOutcome =
   | 'retry_scheduled'
   | 'retries_exhausted'
   | 'permanent_failure'
+  /** The credential reached its expiry after retries ran out; the client failed closed. */
+  | 'expired'
 
 export type SessionResult =
   | { readonly status: 'ok'; readonly session: AccountCredential }
@@ -219,8 +223,9 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
   /**
    * The valid-on-read entry point: resolves with a session that has more
    * than `freshMarginMs` of validity, minting inside the call when the
-   * cache cannot promise that. Resolves undefined when nobody is signed in
-   * or when the identity changed while the mint was in flight.
+   * cache cannot promise that. Resolves undefined when nobody is signed in,
+   * when the identity changed while the mint was in flight, or when a
+   * concurrent mint for a different target superseded this call.
    *
    * Concurrent callers for one user share one in-flight mint, which runs
    * with the first caller's `timeoutMs`; a later caller's own `signal`
@@ -377,7 +382,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
-  function readCached(uid: string): AccountCredential | undefined {
+  function readCached(
+    uid: string
+  ): { credential: AccountCredential; target: string | undefined } | undefined {
     const raw = safeRead()
     if (raw === null) return undefined
     let parsed: unknown
@@ -389,12 +396,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const result = CachedCredentialSchema.safeParse(parsed)
     if (!result.success || result.data.uid !== uid) return undefined
     return {
-      token: result.data.token,
-      expiresAt: result.data.expiresAt,
-      uid: result.data.uid,
-      workspace: result.data.workspace,
-      role: result.data.role,
-      permissions: result.data.permissions
+      credential: {
+        token: result.data.token,
+        expiresAt: result.data.expiresAt,
+        uid: result.data.uid,
+        workspace: result.data.workspace,
+        role: result.data.role,
+        permissions: result.data.permissions
+      },
+      target: result.data.target
     }
   }
 
@@ -524,6 +534,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         safeWrite(
           JSON.stringify({
             ...session,
+            target: workspaceId,
             expires_at: parseResult.data.expires_at
           })
         )
@@ -583,15 +594,17 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const target = options.workspaceId ?? clientOptions.workspaceId
     // Storage first (it survives a reload), then the published credential:
     // a host whose storage is blocked or full must not pay a full exchange
-    // on every read.
+    // on every read. Only a credential minted for this exact target counts:
+    // a target-less read must never adopt a team-scoped session, or the
+    // next scheduled refresh would quietly re-mint it as personal.
+    const stored = readCached(user.uid)
     const cached =
-      readCached(user.uid) ??
-      (credential?.uid === user.uid ? credential : undefined)
-    if (
-      cached &&
-      isCredentialFresh(cached, now, freshMarginMs) &&
-      (target === undefined || cached.workspace.id === target)
-    ) {
+      stored !== undefined && stored.target === target
+        ? stored.credential
+        : credential?.uid === user.uid && credentialTarget === target
+          ? credential
+          : undefined
+    if (cached && isCredentialFresh(cached, now, freshMarginMs)) {
       return {
         mintId: mintSequence,
         response: Promise.resolve({ status: 'ok', session: cached })
@@ -623,17 +636,44 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
-  function armScheduledRefresh(expiresAt: number): void {
+  function armScheduledRefresh(expiresAt: number, now: number): void {
     if (!clientOptions.refreshScheduler) return
     stopScheduledRefresh()
     scheduledRetryCount = 0
-    const now = clientOptions.now?.() ?? Date.now()
+    // Never tighter than one retry interval: a token already inside the
+    // buffer (a host buffer at or above the TTL, a skewed clock) would
+    // otherwise re-mint in a loop with no backoff.
     scheduledTimer = setTimeout(
       () => {
         scheduledTimer = undefined
         void runScheduledRefresh()
       },
-      Math.max(0, expiresAt - schedulerBufferMs - now)
+      Math.max(schedulerRetryBaseMs, expiresAt - schedulerBufferMs - now)
+    )
+  }
+
+  /**
+   * Retries are spent and the credential still has time on it: keep serving
+   * it until its expiry instant, then fail closed and tell the host, as the
+   * cloud store's clear-at-expiry does. A dead scheduler must never leave an
+   * expired token in circulation.
+   */
+  function armClearAtExpiry(expiring: AccountCredential): void {
+    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
+    const now = clientOptions.now?.() ?? Date.now()
+    stopScheduledRefresh()
+    scheduledTimer = setTimeout(
+      () => {
+        scheduledTimer = undefined
+        if (credential !== expiring) return
+        credential = undefined
+        credentialTarget = undefined
+        failure = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+        safeClear()
+        publish()
+        reportOutcome?.('expired')
+      },
+      Math.max(0, expiring.expiresAt - now)
     )
   }
 
@@ -641,9 +681,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * The scheduled re-mint mirrors the cloud store's refresh semantics: a
    * transient failure keeps the still-valid credential and retries with
    * doubling backoff; a permanent failure commits the error; exhausted
-   * retries leave recovery to the next valid-on-read call. Every commit
-   * runs publish() before reporting its outcome — host outcome handlers
-   * read state the publish just wrote.
+   * retries keep the credential until it expires, then fail closed. Every
+   * commit runs publish() before reporting its outcome — host outcome
+   * handlers read state the publish just wrote.
    */
   async function runScheduledRefresh(): Promise<void> {
     const user = currentUser
@@ -676,12 +716,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       credential = result.session
       failure = undefined
       publish()
-      armScheduledRefresh(result.session.expiresAt)
+      armScheduledRefresh(
+        result.session.expiresAt,
+        clientOptions.now?.() ?? Date.now()
+      )
       reportOutcome?.('succeeded')
       return
     }
     if (isPermanentSessionError(result.code)) {
       credential = undefined
+      credentialTarget = undefined
       failure = result
       safeClear()
       publish()
@@ -689,6 +733,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return
     }
     if (scheduledRetryCount >= schedulerMaxRetries) {
+      if (credential !== undefined) armClearAtExpiry(credential)
       reportOutcome?.('retries_exhausted')
       return
     }
@@ -751,7 +796,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       credential = result.session
       credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
-      armScheduledRefresh(result.session.expiresAt)
+      armScheduledRefresh(
+        result.session.expiresAt,
+        options.now?.() ?? clientOptions.now?.() ?? Date.now()
+      )
     } else if (
       options.preserveCredentialOnTransientFailure === true &&
       credential !== undefined &&
@@ -822,6 +870,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     invalidate() {
       invalidationEpoch += 1
       stopScheduledRefresh()
+      // A mint still running belongs to the scope being discarded; a caller
+      // arriving after this must start its own rather than join it.
+      inFlight = undefined
+      inFlightUid = undefined
+      inFlightTarget = undefined
+      inFlightForced = false
       credential = undefined
       credentialTarget = undefined
       failure = undefined
