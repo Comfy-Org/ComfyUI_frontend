@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { externalLinks } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
 import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
-import { popWorkshopForm } from '../../config/workshop-return'
+import {
+  onBeforeSignInLeave,
+  popWorkshopForm,
+  stashWorkshopForm
+} from '../../config/workshop-return'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
@@ -31,6 +35,11 @@ onMounted(() => {
   const restored = popWorkshopForm(model.slug, model.fields)
   if (restored) values.value = { ...values.value, ...restored }
 })
+onUnmounted(
+  onBeforeSignInLeave(() =>
+    stashWorkshopForm(model.slug, model.fields, values.value)
+  )
+)
 const language = ref<WorkshopSnippetLanguage>('typescript')
 // `legacy: true` on purpose. Without it `isSupported` is just the Clipboard
 // API check, so on an insecure origin — a LAN-IP or staging preview, where

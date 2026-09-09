@@ -6,7 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
-import { stashWorkshopForm } from '../../config/workshop-return'
+import {
+  popWorkshopForm,
+  runBeforeSignInLeave,
+  stashWorkshopForm
+} from '../../config/workshop-return'
 import WorkshopPlayground from './WorkshopPlayground.vue'
 
 const model: WorkshopDetailModel = {
@@ -101,6 +105,26 @@ describe('WorkshopPlayground', () => {
       name: /Steps/
     }) as HTMLInputElement
     await waitFor(() => expect(steps.value).toBe(''))
+  })
+
+  it('stashes the current values when the sign-in navigation fires', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(WorkshopPlayground, { props: { model } })
+    await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
+
+    runBeforeSignInLeave()
+
+    expect(
+      popWorkshopForm(model.slug, model.fields),
+      'without a save on the way out there is never anything to restore on the way back'
+    ).toMatchObject({ prompt: 'Red fox' })
+
+    unmount()
+    runBeforeSignInLeave()
+    expect(
+      popWorkshopForm(model.slug, model.fields),
+      'an unmounted island must not keep writing stale values'
+    ).toBeUndefined()
   })
 
   it('updates every snippet from the current form values', async () => {
