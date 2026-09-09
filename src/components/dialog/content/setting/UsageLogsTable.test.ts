@@ -24,7 +24,7 @@ const mockCustomerEventsService = vi.hoisted(() => ({
   isLoading: { value: false }
 }))
 
-vi.mock('@/services/customerEventsService', () => ({
+vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
   useCustomerEventsService: () => mockCustomerEventsService,
   EventType: {
     CREDIT_ADDED: 'credit_added',
@@ -37,38 +37,41 @@ vi.mock('@/services/customerEventsService', () => ({
 const mockTelemetry = vi.hoisted(() => ({
   trackApiCreditTopupSucceeded: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mockTelemetry
 }))
 
 const mockPendingTopup = vi.hoisted(() => ({
   isPendingTopupCompleted: vi.fn().mockReturnValue(true)
 }))
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => mockPendingTopup
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: false
 }))
-vi.mock('@/composables/billing/useBillingRouting', async () => {
-  const { ref } = await import('vue')
-  const shouldUseWorkspaceBilling = ref(false)
-  Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
-    get: () => shouldUseWorkspaceBilling.value,
-    set: (value: boolean) => {
-      shouldUseWorkspaceBilling.value = value
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingRouting'),
+  async () => {
+    const { ref } = await import('vue')
+    const shouldUseWorkspaceBilling = ref(false)
+    Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
+      get: () => shouldUseWorkspaceBilling.value,
+      set: (value: boolean) => {
+        shouldUseWorkspaceBilling.value = value
+      }
+    })
+    return {
+      useBillingRouting: () => ({ shouldUseWorkspaceBilling })
     }
-  })
-  return {
-    useBillingRouting: () => ({ shouldUseWorkspaceBilling })
   }
-})
+)
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingEvents: vi.fn()
 }))
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi
 }))
 

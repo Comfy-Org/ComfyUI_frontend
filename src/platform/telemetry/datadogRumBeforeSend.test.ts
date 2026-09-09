@@ -48,6 +48,16 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops the console echo of an error reportError already sent', () => {
+    const event = createErrorEvent(
+      '[Reported error]: canvas_layout_listener_failed Error: listener failed',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('keeps the reported copy of an assertion failure', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',

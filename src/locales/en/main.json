@@ -2889,17 +2889,21 @@
     "creditsUsed": "{used} used",
     "creditsLeftOfTotal": "{remaining} left of {total}",
     "monthlyUsageProgress": "{used} of {total} monthly credits used",
+    "yearlyUsageProgress": "{used} of {total} yearly credits used",
     "additionalCreditsInfo": "About additional credits",
     "additionalCredits": "Additional credits",
     "additionalCreditsInUse": "In use",
     "usedAfterMonthly": "Used after monthly runs out",
+    "usedAfterYearly": "Used after yearly runs out",
     "monthlyCreditsUsedUpTitle": "Monthly credits are used up. Refills {date}",
+    "yearlyCreditsUsedUpTitle": "Yearly credits are used up. Refills {date}",
     "monthlyCreditsUsedUpTitleNoDate": "Monthly credits are used up",
+    "yearlyCreditsUsedUpTitleNoDate": "Yearly credits are used up",
     "monthlyCreditsUsedUpDescription": "You're now spending additional credits.",
     "outOfCreditsTitle": "You're out of credits. Credits refill {date}",
     "outOfCreditsTitleNoDate": "You're out of credits",
     "outOfCreditsDescription": "Add more credits to continue generating.",
-    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after monthly credits run out. Each expires one year after purchase.",
+    "additionalCreditsTooltip": "Credits you add on top of your plan. Used after your plan credits run out. Each expires one year after purchase.",
     "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
@@ -3022,11 +3026,12 @@
     "personalHeaderAction": "To add teammates, subscribe to the team plan.",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
+    "yearlyCredits": "credits per year",
     "videoEstimate": "Generates ~{count} 5s videos*",
     "saveYearlyUpTo": "Save up to 20%",
     "teamPlan": {
       "name": "Team Plan",
-      "tagline": "Choose your own monthly credit subscription. Get a larger discount with a larger credit subscription.",
+      "tagline": "Choose your own credit subscription. Get a larger discount with a larger credit subscription.",
       "detailsTitle": "Details",
       "perkInviteMembers": "Invite team members",
       "perkConcurrentRuns": "Members can run workflows concurrently",
@@ -3063,6 +3068,7 @@
     "subscribeTo": "Subscribe to {plan}",
     "monthlyCreditsLabel": "Monthly credits",
     "monthlyCreditsPerMemberLabel": "Monthly credits / member",
+    "yearlyCreditsPerMemberLabel": "Yearly credits / member",
     "maxMembersLabel": "Max. members",
     "yearlyCreditsLabel": "Total yearly credits",
     "memberCount": "{count} member | {count} members",
@@ -5274,6 +5280,19 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "paywall": {
+      "title": "Out of credits",
+      "body": {
+        "subscribed": "This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.",
+        "subscriptionRequired": "You've run out of available credits.",
+        "member": "This workspace has used all its credits. Ask your workspace owner to add more.",
+        "salesManaged": "This workspace is billed through your Comfy account team. Contact them to add credits.",
+        "local": "You've spent your credit balance. Add credits to keep the agent running."
+      },
+      "addCredits": "Add credits",
+      "subscribe": "Subscribe",
+      "upgradePlan": "Upgrade plan"
+    }
   }
 }
