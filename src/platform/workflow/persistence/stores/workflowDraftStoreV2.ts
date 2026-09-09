@@ -24,12 +24,12 @@ import {
   upsertEntry
 } from '../base/draftCacheV2'
 import { hashPath } from '../base/hashUtil'
-import { getWorkspaceId } from '../base/storageKeys'
 import {
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
   getPayloadKeys,
+  getStorageScope,
   isStorageAvailable,
   markStorageUnavailable,
   readIndex,
@@ -54,18 +54,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
 
   /**
-   * Gets the current workspace ID fresh (not cached).
-   * This ensures operations use the correct workspace after switches.
-   */
-  function currentWorkspaceId(): string {
-    return getWorkspaceId()
-  }
-
-  /**
    * Loads the index from localStorage or creates empty.
    */
   function loadIndex(): DraftIndexV2 {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return createEmptyIndex()
 
     const cached = getCachedIndex(workspaceId)
     if (cached) return cached
@@ -97,7 +90,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Persists the current index to localStorage.
    */
   function persistIndex(index: DraftIndexV2): boolean {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return false
     indexCacheByWorkspace.value[workspaceId] = index
     return writeIndex(workspaceId, index)
   }
@@ -107,9 +101,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Primes index cache, writes payload, then persists updated index.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
-    if (!isStorageAvailable()) return false
+    const workspaceId = getStorageScope()
+    if (!workspaceId || !isStorageAvailable()) return false
 
-    const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
 
@@ -163,7 +157,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     data: string,
     meta: DraftMeta
   ): boolean {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return false
     const draftKey = hashPath(path)
 
     let currentIndex = loadIndex()
@@ -259,7 +254,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Removes a draft.
    */
   function removeDraft(path: string): void {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return
     const index = loadIndex()
     const { index: newIndex, removedKey } = removeEntry(index, path)
 
@@ -273,7 +269,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Moves a draft from one path to another (rename).
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
 
@@ -304,7 +301,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     isTemporary: boolean
     updatedAt: number
   } | null {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return null
     const index = loadIndex()
     const entry = getEntryByPath(index, path)
     if (!entry) return null
@@ -418,7 +416,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Resets the store (clears in-memory cache for current workspace).
    */
   function reset(): void {
-    const workspaceId = currentWorkspaceId()
+    const workspaceId = getStorageScope()
+    if (!workspaceId) return
     delete indexCacheByWorkspace.value[workspaceId]
   }
 
