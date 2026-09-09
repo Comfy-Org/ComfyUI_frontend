@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n, loadLocale } from '@/i18n'
 import type {
   CanvasPointerEvent,
   IContextMenuOptions,
@@ -140,7 +141,7 @@ describe('LGraphCanvas link visibility interactions', () => {
     ])
   })
 
-  it('opens the seeded rename prompt from the hidden-link menu', () => {
+  it('opens the localized seeded rename prompt from the hidden-link menu', async () => {
     useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
       hidden: true,
       label: 'Checkpoint'
@@ -148,21 +149,28 @@ describe('LGraphCanvas link visibility interactions', () => {
     const prompt = vi
       .spyOn(canvas, 'prompt')
       .mockReturnValue(document.createElement('div'))
+    const originalLocale = i18n.global.locale.value
 
-    canvas.showLinkMenu(link, event)
-    void menuOptions.callback?.('Rename')
+    await loadLocale('fr')
+    i18n.global.locale.value = 'fr'
+    try {
+      canvas.showLinkMenu(link, event)
+      void menuOptions.callback?.({ content: 'Renommer', value: 'Rename' })
 
-    expect(prompt).toHaveBeenCalledWith(
-      'Rename',
-      'Checkpoint',
-      expect.any(Function),
-      event
-    )
-    prompt.mock.calls[0][2]('Backbone')
-    expect(
-      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
-        ?.label
-    ).toBe('Backbone')
+      expect(prompt).toHaveBeenCalledWith(
+        'Renommer',
+        'Checkpoint',
+        expect.any(Function),
+        event
+      )
+      prompt.mock.calls[0][2]('Backbone')
+      expect(
+        useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+          ?.label
+      ).toBe('Backbone')
+    } finally {
+      i18n.global.locale.value = originalLocale
+    }
   })
 
   it('routes a visible curve right-click to the link menu', () => {
