@@ -1,12 +1,8 @@
 /**
- * The cloud onboarding pages' shared treatments (constants/authClasses.ts in
- * the app), plus the PrimeVue Aura dark rules their components inherit there
- * and have to be spelled out here.
+ * The PrimeVue Aura dark rules the cloud onboarding pages inherit from their
+ * components and this host has to spell out; the shared treatments come from
+ * @comfyorg/account/authClasses.
  */
-
-/** Buttons styled as links: they toggle or retry, they do not navigate. */
-export const AUTH_LINK_BUTTON_CLASS =
-  'mt-2 cursor-pointer self-center border-none bg-transparent p-0 font-[inherit] text-base text-primary-comfy-canvas underline transition-all duration-300 hover:text-white sm:text-lg'
 
 /** PrimeVue Message, severity error, Aura dark. */
 export const AUTH_MESSAGE_ERROR_CLASS =
