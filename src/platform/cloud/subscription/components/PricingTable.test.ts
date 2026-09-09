@@ -1,8 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useAuthStore } from '@/stores/authStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
@@ -30,9 +31,9 @@ const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
 const mockTrackBillingEvent = vi.fn()
-const mockUserId = ref<string | undefined>('user-123')
+
 const mockGetAuthHeader = vi.fn(() =>
-  Promise.resolve({ Authorization: 'Bearer test-token' })
+  Promise.resolve({ Authorization: 'Bearer test-token' as const })
 )
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 const mockLocalStorage = vi.hoisted(() => {
@@ -114,23 +115,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () =>
-    reactive({
-      getFirebaseAuthHeader: mockGetAuthHeader,
-      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
-        fetch(input, init),
-      userId: computed(() => mockUserId.value)
-    }),
-  AuthStoreError: class extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.status = status
-    }
-  }
-}))
-
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
@@ -145,7 +129,8 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: true
 }))
 
@@ -211,7 +196,7 @@ function renderComponent() {
       // verify checkout-failure telemetry; without an app-level errorHandler,
       // Vue's dev-mode default handler re-throws it as an unhandled rejection.
       config: { errorHandler: () => {} },
-      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      plugins: [i18n],
       components: {
         Button
       },
@@ -242,12 +227,22 @@ function renderComponent() {
 
 const onChooseTeamWorkspace = vi.fn()
 
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
+    mockGetAuthHeader
+  )
+  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
+    (input, init) => fetch(input, init)
+  )
+})
+
 describe('PricingTable', () => {
   beforeEach(() => {
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
-    mockUserId.value = 'user-123'
+    Object.assign(useAuthStore(), { userId: 'user-123' })
     mockAccessBillingPortal.mockResolvedValue(true)
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
@@ -364,12 +359,12 @@ describe('PricingTable', () => {
     it('should use the latest userId value when it changes after mount', async () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
-      mockUserId.value = 'user-early'
+      Object.assign(useAuthStore(), { userId: 'user-early' })
 
       renderComponent()
       await flushPromises()
 
-      mockUserId.value = 'user-late'
+      Object.assign(useAuthStore(), { userId: 'user-late' })
 
       const creatorButton = screen
         .getAllByRole('button')
@@ -567,3 +562,10 @@ describe('PricingTable', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))
