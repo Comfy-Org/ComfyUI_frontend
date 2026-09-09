@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { X } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -72,6 +71,11 @@ const capabilities = ref<string[]>([])
 const narrowed = computed(
   () => providers.value.length + capabilities.value.length > 0
 )
+
+function clearSearchFilters() {
+  providers.value = []
+  capabilities.value = []
+}
 
 const matchesModel = (model: WorkshopModel) =>
   (providers.value.length === 0 ||
@@ -288,20 +292,6 @@ const filteredTemplates = computed(() => {
       </aside>
 
       <div class="min-w-0">
-        <div v-if="providers.length" class="mb-6 flex flex-wrap gap-2">
-          <button
-            v-for="name in providers"
-            :key="name"
-            type="button"
-            class="text-page bg-brand hover:bg-brand/90 inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
-            data-testid="hub-provider-chip"
-            @click="providers = providers.filter((entry) => entry !== name)"
-          >
-            {{ name }}
-            <X class="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
-
         <WorkflowGrid
           :templates="filteredTemplates"
           :facet-templates="templates"
@@ -309,6 +299,8 @@ const filteredTemplates = computed(() => {
           :toolbar-labels="toolbarLabels"
           :labels="gridLabels"
           :href-for="hrefFor"
+          :extra-filters="providers.length + capabilities.length"
+          @clear-extra="clearSearchFilters"
         >
           <template #search>
             <WorkshopSearchField

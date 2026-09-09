@@ -59,9 +59,7 @@ describe('HubBrowse', () => {
       .find((entry) => entry.textContent.includes('Kling'))!
     await user.click(chip)
 
-    expect(screen.getByTestId('hub-provider-chip').textContent).toContain(
-      'Kling'
-    )
+    expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
     const cards = screen.getAllByTestId('hub-card')
     expect(cards.length).toBeGreaterThan(0)
     expect(cards.length).toBeLessThan(30)

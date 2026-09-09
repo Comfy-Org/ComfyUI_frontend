@@ -62,12 +62,23 @@ export interface ToolbarLabels {
   readonly showResults: string
 }
 
-const { templates, facetsConfig, labels, resultCount } = defineProps<{
+const {
+  templates,
+  facetsConfig,
+  labels,
+  resultCount,
+  extraFilters = 0
+} = defineProps<{
   templates: readonly FacetTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   labels: ToolbarLabels
   resultCount: number
+  /** Narrowing chosen elsewhere, such as the search panel, so the filter
+   * button still says how much is on. */
+  extraFilters?: number
 }>()
+
+const emit = defineEmits<{ clearExtra: [] }>()
 
 const store = useHubStore()
 const facetInput = computed(() => templates)
@@ -116,9 +127,16 @@ onClickOutside(panel, () => (filterOpen.value = false), {
 const facetSearch = ref<Record<string, string>>({})
 const expanded = ref<Record<string, boolean>>({})
 
-const totalActiveFilters = computed(() =>
-  facetsConfig.reduce((sum, cfg) => sum + activeCountForType(cfg.type), 0)
+const totalActiveFilters = computed(
+  () =>
+    facetsConfig.reduce((sum, cfg) => sum + activeCountForType(cfg.type), 0) +
+    extraFilters
 )
+
+function clearAll() {
+  store.clearBadges()
+  emit('clearExtra')
+}
 
 const groups = computed(() =>
   facetsConfig.map((cfg) => ({
@@ -626,7 +644,7 @@ function phoneToggle(value: string) {
             type="button"
             class="text-content-secondary hover:text-content shrink-0 cursor-pointer rounded-lg text-base whitespace-nowrap transition-colors max-sm:text-sm"
             data-testid="hub-filter-clear"
-            @click="store.clearBadges()"
+            @click="clearAll"
           >
             {{ labels.clearAll }}
           </button>

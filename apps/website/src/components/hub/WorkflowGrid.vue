@@ -24,16 +24,20 @@ const {
   toolbarLabels,
   labels,
   hrefFor,
+  extraFilters = 0,
   locale = 'en'
 } = defineProps<{
   templates: readonly HubTemplate[]
   facetTemplates: readonly HubTemplate[]
   facetsConfig: readonly FacetGroupConfig[]
   toolbarLabels: ToolbarLabels
+  extraFilters?: number
   labels: GridLabels
   hrefFor: (template: HubTemplate) => string
   locale?: Locale
 }>()
+
+const emit = defineEmits<{ clearExtra: [] }>()
 
 const PAGE = 30
 
@@ -91,6 +95,8 @@ const showingText = computed(() =>
         :facets-config="facetsConfig"
         :labels="toolbarLabels"
         :result-count="sortedTemplates.length"
+        :extra-filters="extraFilters"
+        @clear-extra="emit('clearExtra')"
       >
         <template #search><slot name="search" /></template>
       </BrowseToolbar>
