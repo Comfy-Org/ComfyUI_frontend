@@ -6,7 +6,6 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -132,12 +131,21 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ userId: 'user-1' })
-}))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import { useAuthStore } from '@/stores/authStore'
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn(async () => {}),
+  onAuthStateChanged: vi.fn(() => () => {}),
+  onIdTokenChanged: vi.fn(() => () => {})
+}))
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+})
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -209,7 +217,6 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
