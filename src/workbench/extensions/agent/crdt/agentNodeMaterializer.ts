@@ -341,7 +341,15 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
+    const inputOrder = new Map(
+      serialised.inputs?.map((input, index) => [input.name, index])
+    )
     node.configure(withNamedWidgetValues(serialised))
+    node.inputs = node.inputs.toSorted(
+      (a, b) =>
+        (inputOrder.get(a.name) ?? inputOrder.size) -
+        (inputOrder.get(b.name) ?? inputOrder.size)
+    )
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
