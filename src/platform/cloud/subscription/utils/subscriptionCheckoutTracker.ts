@@ -38,7 +38,8 @@ const VALID_PAYMENT_INTENT_SOURCES = {
   invite_member_upsell: true,
   upload_model_upgrade: true,
   team_upgrade_resume: true,
-  free_tier_quota: true
+  free_tier_quota: true,
+  credits_tile_upgrade: true
 } satisfies Record<PaymentIntentSource, true>
 
 export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =

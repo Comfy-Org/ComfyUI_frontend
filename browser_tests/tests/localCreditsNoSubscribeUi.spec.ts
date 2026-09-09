@@ -42,7 +42,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     const topUpDialog = new TopUpCreditsDialog(page)
 
     // 1. Profile popover: an unsubscribed local user gets "Add credits", never
-    //    "Upgrade to add credits" — subscribing is a Cloud-only concept.
+    //    the upgrade CTA, since subscribing is a Cloud-only concept.
     await page.getByTestId(TestIds.user.currentUserButton).click()
     let popover = page.getByTestId(TestIds.user.currentUserPopover)
     await expect(popover).toBeVisible()
@@ -69,8 +69,9 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await expect(
       planCreditsContent.getByRole('button', { name: 'Activity', exact: true })
     ).toBeVisible()
+    // Test id, not copy: a rename would defuse this guard while leaving it green.
     await expect(
-      planCreditsContent.getByText('Upgrade to add credits')
+      planCreditsContent.getByTestId('upgrade-for-more-credits-button')
     ).toHaveCount(0)
     await expect(
       planCreditsContent.getByRole('button', { name: 'Manage subscription' })

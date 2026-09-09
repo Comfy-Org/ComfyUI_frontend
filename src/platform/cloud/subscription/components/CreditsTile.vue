@@ -196,18 +196,26 @@
               'bg-interface-menu-component-surface-selected text-text-primary'
           )
         "
+        data-testid="add-credits-button"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
       </Button>
       <Button
         v-else
-        variant="subscribe"
+        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
-        class="w-full font-normal"
+        :class="
+          cn(
+            'w-full font-normal',
+            !isOutOfCredits &&
+              'bg-interface-menu-component-surface-selected text-text-primary'
+          )
+        "
+        data-testid="upgrade-for-more-credits-button"
         @click="handleUpgradeToAddCredits"
       >
-        {{ $t('subscription.upgradeToAddCredits') }}
+        {{ $t('subscription.subscribeForMore') }}
       </Button>
     </div>
   </div>
@@ -514,7 +522,7 @@ function handleAddCredits() {
 }
 
 function handleUpgradeToAddCredits() {
-  showPricingTable({ reason: 'upgrade_to_add_credits' })
+  showPricingTable({ reason: 'credits_tile_upgrade' })
 }
 
 async function handleWindowFocus() {

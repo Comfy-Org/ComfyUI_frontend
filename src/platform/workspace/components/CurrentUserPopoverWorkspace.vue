@@ -104,7 +104,17 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="canTopUp"
+        v-if="showsUpgradeInsteadOfTopUp"
+        variant="secondary"
+        size="sm"
+        class="text-base-foreground"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.subscribeForMore') }}
+      </Button>
+      <Button
+        v-else-if="canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -112,15 +122,6 @@
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
-      </Button>
-      <Button
-        v-else-if="canSubscribeSelfServe"
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -320,11 +321,21 @@ const dialogService = useDialogService()
 const {
   billingStatus,
   canAccessSubscriptionFeatures,
+  isFreeTier,
   subscription,
   balance,
   isLoading,
   fetchBalance
 } = useBillingContext()
+
+// Upgrade replaces Add credits when there is nothing to top up, and also on
+// an active free tier, where DES-534 wants the one contextual upgrade action.
+const showsUpgradeInsteadOfTopUp = computed(
+  () =>
+    canSubscribeSelfServe.value &&
+    (!canTopUp.value ||
+      (canAccessSubscriptionFeatures.value && isFreeTier.value))
+)
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()

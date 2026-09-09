@@ -9,6 +9,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 import type { operations } from '@/types/comfyRegistryTypes'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -72,89 +73,95 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-const test = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockRemoteConfig)
+// Free tier: the popover swaps Add credits for the single Upgrade action.
+const mockFreeTierBillingStatus: BillingStatusResponse = {
+  ...mockBillingStatus,
+  subscription_status: 'active',
+  subscription_tier: 'FREE',
+  has_funds: false,
+  cancel_at: undefined
+}
+
+function extendWithBilling(billingStatus: BillingStatusResponse) {
+  return comfyPageFixture.extend({
+    page: async ({ page }, use) => {
+      await page.route('**/api/features', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockRemoteConfig)
+        })
+      )
+
+      await page.route('**/api/workspaces', async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.fallback()
+          return
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockListWorkspacesResponse)
+        })
       })
-    )
 
-    await page.route('**/api/workspaces', async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.fallback()
-        return
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockListWorkspacesResponse)
-      })
-    })
+      await page.route('**/api/auth/token', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockTokenResponse)
+        })
+      )
 
-    await page.route('**/api/auth/token', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockTokenResponse)
-      })
-    )
+      await page.route('**/api/auth/session', (route) =>
+        route.fulfill({ status: 204 })
+      )
 
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
+      await page.route('**/customers/balance', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockBalance)
+        })
+      )
 
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
+      // The popover sources its data from the workspace billing endpoints.
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(billingStatus)
+        })
+      )
 
-    // The popover sources its data from the workspace billing endpoints.
-    await page.route('**/api/billing/capabilities', (route) => {
-      if (route.request().method() !== 'GET') return route.fallback()
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          createWorkspaceBillingCapabilities(
-            mockListWorkspacesResponse.workspaces[0]
+      await page.route('**/api/billing/capabilities', (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(
+            createWorkspaceBillingCapabilities(
+              mockListWorkspacesResponse.workspaces[0]
+            )
           )
-        )
+        })
       })
-    })
 
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBillingStatus)
-      })
-    )
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ plans: [] })
+        })
+      )
 
-    await page.route('**/api/billing/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
+      await use(page)
+    }
+  })
+}
 
-    await page.route('**/api/billing/plans', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ plans: [] })
-      })
-    )
-
-    await use(page)
-  }
-})
+const test = extendWithBilling(mockBillingStatus)
+const freeTierTest = extendWithBilling(mockFreeTierBillingStatus)
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
   test('keeps both action buttons inside the popover when cancelled but active', async ({
@@ -221,3 +228,33 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     }
   )
 })
+
+freeTierTest.describe(
+  'Current user popover credits row — free tier',
+  { tag: '@cloud' },
+  () => {
+    freeTierTest(
+      'workspace popover shows the single contextual Upgrade action',
+      async ({ comfyPage }) => {
+        const page = comfyPage.page
+
+        await comfyPage.toast.closeToasts()
+        await page.getByTestId(TestIds.user.currentUserButton).click()
+
+        const popover = page.getByTestId(TestIds.user.currentUserPopover)
+        await expect(popover).toBeVisible()
+        // Both popovers share these test ids, so pin the workspace one first.
+        await expect(
+          popover.getByTestId('workspace-switcher-trigger')
+        ).toBeVisible()
+
+        const upgrade = popover.getByTestId(
+          TestIds.user.upgradeToAddCreditsButton
+        )
+        await expect(upgrade).toBeVisible()
+        await expect(upgrade).toHaveText('Upgrade')
+        await expect(popover.getByTestId('add-credits-button')).toBeHidden()
+      }
+    )
+  }
+)
