@@ -297,7 +297,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(emitted().applyPromotionCode?.at(-1)).toEqual(['SAVE20'])
   })
 
-  it('opens the promo field pre-filled when the quote already carries a code', () => {
+  it('renders the applied code as a chip with no editable field', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
@@ -310,13 +310,15 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       global: globalOptions
     })
 
+    expect(screen.getByText('SAVE20')).toBeTruthy()
     expect(
-      screen.getByPlaceholderText('subscription.preview.promoCodePlaceholder')
-    ).toHaveValue('SAVE20')
+      screen.queryByPlaceholderText('subscription.preview.promoCodePlaceholder')
+    ).toBeNull()
     expect(screen.queryByText('subscription.preview.addPromoCode')).toBeNull()
+    expect(screen.queryByText('subscription.preview.applyPromoCode')).toBeNull()
   })
 
-  it('offers Remove for the client-applied code and clears through an empty apply', async () => {
+  it('clears the applied code through the chip remove control', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
@@ -329,36 +331,75 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       global: globalOptions
     })
 
-    expect(screen.queryByText('subscription.preview.applyPromoCode')).toBeNull()
-
     await userEvent.click(
-      screen.getByText('subscription.preview.removePromoCode')
+      screen.getByLabelText('subscription.preview.removePromoCode')
     )
     expect(emitted().applyPromotionCode?.at(-1)).toEqual([''])
   })
 
-  it('flips Remove back to Apply once the applied code is edited', async () => {
+  it('ledgers the subtotal and promotion discounts, never the plan discount', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
         previewData: {
-          ...previewFixture('MONTHLY', 3500),
-          promotion_code: 'SAVE20'
+          ...previewFixture('ANNUAL', 33_600),
+          amount_due_cents: 26_880,
+          promotion_code: 'SAVE20',
+          discounts: [
+            {
+              kind: 'plan',
+              code: 'annual_commitment',
+              amount_off_cents: 8_400
+            },
+            {
+              kind: 'promotion',
+              code: 'SAVE20',
+              name: '20% off first year',
+              amount_off_cents: 6_720
+            }
+          ]
         },
         quoteIsCurrent: true
       },
       global: globalOptions
     })
 
-    await userEvent.type(
-      screen.getByPlaceholderText('subscription.preview.promoCodePlaceholder'),
-      'X'
-    )
-
-    expect(screen.getByText('subscription.preview.applyPromoCode')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.subtotal')).toBeTruthy()
     expect(
-      screen.queryByText('subscription.preview.removePromoCode')
-    ).toBeNull()
+      screen.getByText('subscription.preview.promoLedgerLabel')
+    ).toBeTruthy()
+    expect(screen.queryByText('subscription.preview.discount.plan')).toBeNull()
+  })
+
+  it('shows no ledger without a promotion discount', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: {
+          ...previewFixture('ANNUAL', 33_600),
+          discounts: [
+            { kind: 'plan', code: 'annual_commitment', amount_off_cents: 8_400 }
+          ]
+        },
+        quoteIsCurrent: true
+      },
+      global: globalOptions
+    })
+
+    expect(screen.queryByText('subscription.preview.subtotal')).toBeNull()
+  })
+
+  it('slashes the monthly list price beside a discounted yearly price', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: previewFixture('ANNUAL', 33_600),
+        quoteIsCurrent: true
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$35')).toBeTruthy()
   })
 
   it('offers Add new payment method from the saved-method picker', async () => {
