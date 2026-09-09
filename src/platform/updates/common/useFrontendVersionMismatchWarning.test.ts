@@ -6,14 +6,14 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 
-vi.mock('@/config', () => ({
+vi.mock(import('@/config'), () => ({
   default: {
     app_title: 'ComfyUI',
     app_version: '1.0.0'
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     ui: {
       settings: {
@@ -23,14 +23,14 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(() => Promise.resolve({})),
     storeSetting: vi.fn(() => Promise.resolve(undefined))
   }
 }))
 
-vi.mock('vue-i18n', () => ({
+vi.mock<unknown>(import('vue-i18n'), () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, string | number> | unknown) => {
       if (key === 'g.versionMismatchWarning')

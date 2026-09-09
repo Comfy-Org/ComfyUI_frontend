@@ -24,7 +24,7 @@ describe('reportAssertFailure', () => {
       expect.objectContaining({
         message: '[Assertion failed]: graph must exist'
       }),
-      { errorType: 'invariant_assert' }
+      { errorType: 'invariant_assert', logToConsole: false }
     )
   })
 

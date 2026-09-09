@@ -10,13 +10,16 @@ const { mockSetMemberCreditLimit, mockCloseDialog } = vi.hoisted(() => ({
   mockCloseDialog: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    setMemberCreditLimit: mockSetMemberCreditLimit
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      setMemberCreditLimit: mockSetMemberCreditLimit
+    })
   })
-}))
+)
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
 }))
 
