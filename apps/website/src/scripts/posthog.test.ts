@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as PostHogModule from 'posthog-js'
+
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
@@ -14,14 +16,23 @@ const hoisted = vi.hoisted(() => ({
   mockGetFeatureFlag: vi.fn()
 }))
 
-vi.mock('posthog-js', () => ({
-  default: {
-    init: hoisted.mockInit,
-    capture: hoisted.mockCapture,
-    onFeatureFlags: hoisted.mockOnFeatureFlags,
-    isFeatureEnabled: hoisted.mockIsFeatureEnabled,
-    getFeatureFlag: hoisted.mockGetFeatureFlag
-  }
+type PostHogMock = Pick<
+  typeof PostHogModule.default,
+  'init' | 'capture' | 'onFeatureFlags' | 'isFeatureEnabled' | 'getFeatureFlag'
+>
+
+const postHogMock = {
+  init: hoisted.mockInit,
+  capture: hoisted.mockCapture,
+  onFeatureFlags: hoisted.mockOnFeatureFlags,
+  isFeatureEnabled: hoisted.mockIsFeatureEnabled,
+  getFeatureFlag: hoisted.mockGetFeatureFlag
+} satisfies PostHogMock
+
+// The real default export carries 130+ members, so only the boundary handoff
+// is asserted; the shape itself is checked against PostHogMock above.
+vi.mock(import('posthog-js'), () => ({
+  default: postHogMock as unknown as typeof PostHogModule.default
 }))
 
 /** Fire the callback PostHog registered with onFeatureFlags. */
