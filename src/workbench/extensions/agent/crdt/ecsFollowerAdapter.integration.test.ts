@@ -428,7 +428,7 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
-  it.fails('retries a failed frame before draining reentrant frames', () => {
+  it('retries a failed frame before draining reentrant frames', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     let scopeAvailable = false

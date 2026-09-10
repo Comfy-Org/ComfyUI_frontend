@@ -34,6 +34,12 @@ export type FrameProjectionResult =
       reason: 'rejected' | 'exception' | 'blocked'
     }
 
+type QueuedFrameOutcome =
+  /** `reconciledThrough` is 0 unless the frame reconciled the whole document. */
+  | { outcome: 'projected'; reconciledThrough: number }
+  | { outcome: 'rejected' }
+  | { outcome: 'exception' }
+
 const PROJECTION_RETRY_MAX_ATTEMPTS = 3
 
 function plain(value: unknown): unknown {
@@ -205,7 +211,7 @@ export class EcsFollowerAdapter {
         const pending = session.frameQueue.shift()
         if (!pending) continue
         const result = this.applyQueuedFrame(session, pending)
-        if (result === 'rejected') {
+        if (result.outcome === 'rejected') {
           pending.attempts += 1
           if (pending.attempts < PROJECTION_RETRY_MAX_ATTEMPTS) {
             session.frameQueue.unshift(pending)
@@ -222,7 +228,7 @@ export class EcsFollowerAdapter {
             reason: 'rejected'
           }
         }
-        if (result === 'exception') {
+        if (result.outcome === 'exception') {
           this.blockProjection(session)
           return {
             status: 'failed',
@@ -230,12 +236,28 @@ export class EcsFollowerAdapter {
             reason: 'exception'
           }
         }
-        projectedSequence = pending.update.seq
+        this.consumeReconciled(session, result.reconciledThrough)
+        projectedSequence = Math.max(
+          pending.update.seq,
+          result.reconciledThrough
+        )
       }
     } finally {
       session.applying = false
     }
     return { status: 'projected', sequence: projectedSequence }
+  }
+
+  /**
+   * An authoritative reconcile projects the document as it stands, and every
+   * queued frame was merged into that document before it was queued. Replaying
+   * those frames afterwards re-adds nodes the reconcile already committed,
+   * which the real mutation batch rejects as duplicate registrations. Consume
+   * them instead, and report their newest sequence as projected.
+   */
+  private consumeReconciled(session: TargetSession, through: number): void {
+    while ((session.frameQueue[0]?.update.seq ?? Infinity) <= through)
+      session.frameQueue.shift()
   }
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
@@ -313,7 +335,7 @@ export class EcsFollowerAdapter {
   private applyQueuedFrame(
     session: TargetSession,
     pending: PendingProjection
-  ): 'projected' | 'rejected' | 'exception' {
+  ): QueuedFrameOutcome {
     const {
       update,
       nodeActions,
@@ -344,11 +366,13 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
+    let reconciledThrough = 0
     try {
       const committed = session.mutations.batch(
         frameContext(update),
         (batch) => {
           if (reconcile) {
+            reconciledThrough = session.frameQueue.at(-1)?.update.seq ?? 0
             const nodes = [...session.nodes.keys()].flatMap((id) => {
               const payload = readSemanticNode(session.follower.doc, id)
               return payload ? [payload] : []
@@ -401,12 +425,14 @@ export class EcsFollowerAdapter {
           }
         }
       )
-      return committed ? 'projected' : 'rejected'
+      return committed
+        ? { outcome: 'projected', reconciledThrough }
+        : { outcome: 'rejected' }
     } catch (error) {
       reportError(error, {
         errorType: 'agent_crdt_projection_failure'
       })
-      return 'exception'
+      return { outcome: 'exception' }
     }
   }
 
