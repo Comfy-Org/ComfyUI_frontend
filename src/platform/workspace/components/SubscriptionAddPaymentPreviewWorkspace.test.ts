@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type {
   PreviewSubscribeResponse,
@@ -44,16 +45,24 @@ function previewFixture(
   }
 }
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-    n: (value: number) => value.toLocaleString('en-US'),
-    locale: { value: 'en' }
-  })
-}))
+// Real vue-i18n plugin (not a module mock), so the components render under
+// the same plugin contract as production. Only the renewal message is
+// supplied: the renewal assertions verify real interpolated output while
+// every other key still renders as itself.
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      subscription: {
+        preview: { renewsAt: 'Renews at {amount} on {date}. Cancel anytime.' }
+      }
+    }
+  }
+})
 
 const globalOptions = {
-  mocks: { $t: (key: string) => key },
+  plugins: [i18n],
   stubs: {
     'i18n-t': { template: '<span />' },
     Button: {

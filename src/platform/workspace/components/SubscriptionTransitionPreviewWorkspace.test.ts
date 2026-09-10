@@ -19,10 +19,18 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Only the renewal message is supplied, so the renewal assertions verify real
+// interpolated output while every other key still renders as itself.
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: {
+    en: {
+      subscription: {
+        preview: { renewsAt: 'Renews at {amount} on {date}. Cancel anytime.' }
+      }
+    }
+  }
 })
 
 const globalOptions = {
@@ -102,6 +110,11 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
     expect(screen.getByText('$318.50')).toBeTruthy()
+    // The user-visible renewal sentence derives from renewal_amount_cents
+    // (the annual plan's 33_600) and renewal_at, quote-currency formatted.
+    expect(
+      screen.getByText('Renews at $336.00 on Jun 28, 2027. Cancel anytime.')
+    ).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.confirmUpgradeCta')
     ).toBeTruthy()

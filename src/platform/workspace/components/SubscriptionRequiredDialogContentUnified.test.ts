@@ -4,7 +4,48 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
+
+// The complete production contract (quote identity included): the payment
+// preview refuses to mount the payment element on a quote without
+// `quote_id`/`quote_version`, so a partial stub could pass while production
+// renders no payment element.
+function makePreview(
+  overrides: Partial<PreviewSubscribeResponse> = {}
+): PreviewSubscribeResponse {
+  return {
+    allowed: true,
+    transition_type: 'new_subscription',
+    effective_at: '2026-06-19T00:00:00Z',
+    is_immediate: true,
+    cost_today_cents: 129_500,
+    cost_next_period_cents: 129_500,
+    credits_today_cents: 0,
+    credits_next_period_cents: 0,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: 129_500,
+    currency: 'usd',
+    renewal_amount_cents: 129_500,
+    renewal_at: '2027-06-19T00:00:00Z',
+    new_plan: {
+      slug: 'team-yearly',
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      price_cents: 129_500,
+      credits_cents: 0,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 129_500,
+        total_credits_cents: 0
+      },
+      period_end: '2027-06-19T00:00:00Z'
+    },
+    ...overrides
+  }
+}
 
 const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
@@ -12,7 +53,7 @@ const mockInvalidateQuote = vi.fn()
 const mockIsInPersonalWorkspace = ref(false)
 const mockCheckoutStep = ref('pricing')
 const mockPreviewVariant = ref<string | null>(null)
-const mockPreviewData = ref<Record<string, unknown> | null>(null)
+const mockPreviewData = ref<PreviewSubscribeResponse | null>(null)
 const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
 
@@ -131,7 +172,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'team-new'
     mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
-    mockPreviewData.value = { amount_due_cents: 129_500, currency: 'usd' }
+    mockPreviewData.value = makePreview()
 
     renderComponent()
 
@@ -140,10 +181,26 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     )
   })
 
+  // The preview steps render their own inline back button, so a dialog-level
+  // back would double the control (two `g.back` tab stops on one screen).
+  it('renders no dialog-level back control on the preview step', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-change'
+    mockPreviewData.value = makePreview({ transition_type: 'upgrade' })
+
+    renderComponent()
+
+    expect(screen.queryByLabelText('Back')).toBeNull()
+  })
+
   it('preserves the quote when the payment method changes', async () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'personal-new'
-    mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+    mockPreviewData.value = makePreview({
+      cost_today_cents: 1600,
+      cost_next_period_cents: 1600,
+      amount_due_cents: 1600
+    })
     renderComponent()
 
     await userEvent.click(screen.getByTestId('saved-method-btn'))
