@@ -67,7 +67,9 @@ function makeResult(
 }
 
 beforeEach(() => {
-  useAssetsStore().outputAssets.hasMore = false
+  vi.spyOn(useAssetsStore().outputAssets, 'hasMore', 'get').mockReturnValue(
+    false
+  )
   vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(false)
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
@@ -79,7 +81,7 @@ beforeEach(() => {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    useAssetsStore().outputAssets.items = []
+    Object.assign(useAssetsStore().outputAssets, { items: [] })
     useLinearOutputStore().pendingResolve = new Set()
     useLinearOutputStore().inProgressItems = []
     Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
@@ -101,10 +103,9 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      useAssetsStore().outputAssets.items = [
-        makeAsset('a1', 'job-1'),
-        makeAsset('a2', 'job-2')
-      ]
+      Object.assign(useAssetsStore().outputAssets, {
+        items: [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
+      })
 
       const { outputs } = useOutputHistory()
 
@@ -117,7 +118,9 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
+      Object.assign(useAssetsStore().outputAssets, {
+        items: [makeAsset('a1', 'job-1')]
+      })
 
       const { outputs } = useOutputHistory()
 
@@ -129,10 +132,9 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      useAssetsStore().outputAssets.items = [
-        makeAsset('a1', 'job-1'),
-        makeAsset('a2', 'job-2')
-      ]
+      Object.assign(useAssetsStore().outputAssets, {
+        items: [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
+      })
 
       useWorkflowStore().activeWorkflow = fromPartial({
         path: 'workflows/a.json'
@@ -301,7 +303,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      useAssetsStore().outputAssets.items = [asset]
+      Object.assign(useAssetsStore().outputAssets, { items: [asset] })
       useLinearOutputStore().selectedId = null
 
       useOutputHistory()
@@ -327,7 +329,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      useAssetsStore().outputAssets.items = [asset]
+      Object.assign(useAssetsStore().outputAssets, { items: [asset] })
       useLinearOutputStore().selectedId = 'history:existing:0'
 
       useOutputHistory()
@@ -342,7 +344,7 @@ describe(useOutputHistory, () => {
 
     it('skips jobs with no matching asset in media', async () => {
       useLinearOutputStore().pendingResolve = new Set(['job-missing'])
-      useAssetsStore().outputAssets.items = []
+      Object.assign(useAssetsStore().outputAssets, { items: [] })
 
       useOutputHistory()
       await nextTick()
@@ -356,7 +358,9 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
+      Object.assign(useAssetsStore().outputAssets, {
+        items: [makeAsset('a1', 'job-1')]
+      })
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
