@@ -77,15 +77,10 @@ export type Locale = keyof typeof LOCALES
 /** Declaration order, which is also the order clusters and switchers list. */
 export const LOCALE_CODES = Object.keys(LOCALES) as Locale[]
 
-/** Non-default locales, i.e. the ones that carry a URL prefix. */
-export const LOCALIZED_CODES = LOCALE_CODES.filter(
-  (code) => code !== DEFAULT_LOCALE
-)
-
 /** Every URL prefix that identifies a locale, default excluded. */
-export const LOCALE_PREFIXES = LOCALIZED_CODES.map(
-  (code) => LOCALES[code].prefix
-)
+export const LOCALE_PREFIXES = LOCALE_CODES.filter(
+  (code) => code !== DEFAULT_LOCALE
+).map((code) => LOCALES[code].prefix)
 
 export function localePrefix(locale: Locale): string {
   return LOCALES[locale].prefix
