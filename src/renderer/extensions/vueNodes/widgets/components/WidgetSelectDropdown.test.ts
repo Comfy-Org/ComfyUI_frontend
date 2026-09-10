@@ -3,7 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -53,17 +53,14 @@ vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
 
-const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
-  () => {
+const { mockItemsRef, mockSelectedSetRef } = vi.hoisted(() => {
     // oxlint-disable-next-line typescript/no-require-imports
     const { ref } = require('vue')
     return {
       mockItemsRef: ref([]) as Ref<FormDropdownItem[]>,
-      mockSelectedSetRef: ref(new Set()) as Ref<Set<string>>,
-      mockFilterSelectedRef: ref('all') as Ref<string>
+      mockSelectedSetRef: ref(new Set()) as Ref<Set<string>>
     }
-  }
-)
+})
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'),
@@ -73,16 +70,12 @@ vi.mock(
     return {
       useWidgetSelectItems: () => ({
         dropdownItems: computed(() => mockItemsRef.value),
-        displayItems: computed(() => mockItemsRef.value),
-        filterSelected: mockFilterSelectedRef,
         filterOptions: computed(() => [
           { name: 'All', value: 'all' },
           { name: 'Inputs', value: 'inputs' }
         ]),
-        ownershipSelected: ref('all'),
         showOwnershipFilter: computed(() => false),
         ownershipOptions: computed(() => []),
-        baseModelSelected: ref(new Set<string>()),
         showBaseModelFilter: computed(() => false),
         baseModelOptions: computed(() => []),
         selectedSet: computed(() => mockSelectedSetRef.value)
@@ -119,7 +112,6 @@ describe('WidgetSelectDropdown', () => {
     mockAssetsData.items = []
     mockItemsRef.value = []
     mockSelectedSetRef.value = new Set()
-    mockFilterSelectedRef.value = 'all'
   })
 
   function renderComponent(
@@ -131,9 +123,6 @@ describe('WidgetSelectDropdown', () => {
       props: {
         widget,
         modelValue,
-        assetKind: 'image',
-        allowUpload: true,
-        uploadFolder: 'input',
         ...extraProps
       },
       global: {
@@ -165,7 +154,8 @@ describe('WidgetSelectDropdown', () => {
       value: undefined,
       name: 'test_image',
       type: 'combo',
-      options: { values: [] }
+      options: { values: [] },
+      spec: { type: 'COMBO', name: 'test_image', image_upload: true }
     })
     renderComponent(widget, undefined)
 
@@ -196,7 +186,6 @@ describe('WidgetSelectDropdown', () => {
       }
     })
     renderComponent(widget, 'model_a.safetensors', {
-      assetKind: 'model',
       isAssetMode: true,
       nodeType: 'CheckpointLoaderSimple'
     })

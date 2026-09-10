@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
@@ -61,6 +62,10 @@ function makeResolvedOutput(
   })
 }
 
+const filterSelected = ref('all')
+const ownershipSelected = ref<OwnershipOption>('all')
+const baseModelSelected = ref<Set<string>>(new Set())
+
 function createDefaultOptions(
   overrides: Partial<UseWidgetSelectItemsOptions> = {}
 ): UseWidgetSelectItemsOptions {
@@ -73,6 +78,9 @@ function createDefaultOptions(
     outputMediaAssets: mockMediaAssets,
     assetData: null,
     isAssetMode: () => false,
+    filterSelected,
+    ownershipSelected,
+    baseModelSelected,
     ...overrides
   }
 }
@@ -127,6 +135,9 @@ describe('useWidgetSelectItems', () => {
   beforeEach(() => {
     mockMediaAssets = createMockMediaAssets()
     mockAssetsData.items = []
+    filterSelected.value = 'all'
+    ownershipSelected.value = 'all'
+    baseModelSelected.value = new Set()
   })
 
   describe('dropdownItems', () => {
@@ -165,7 +176,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('does not include fallback when filter is inputs', async () => {
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref('template_image.png')
@@ -181,7 +192,7 @@ describe('useWidgetSelectItems', () => {
     })
 
     it('does not include fallback when filter is outputs', async () => {
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref('template_image.png')
@@ -246,7 +257,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined),
@@ -283,36 +294,6 @@ describe('useWidgetSelectItems', () => {
         preview_url,
         tags: []
       })
-
-    it('excludes missing items from cloud dropdown', () => {
-      mockAssetsData.items = [
-        createTestAsset(
-          'asset-1',
-          'existing_model.safetensors',
-          'https://example.com/preview.jpg'
-        )
-      ]
-
-      const assetData = {
-        category: computed(() => 'checkpoints'),
-        assets: computed(() => mockAssetsData.items),
-        isLoading: computed(() => false),
-        error: computed(() => null)
-      }
-
-      const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          values: () => [],
-          modelValue: ref('missing_model.safetensors'),
-          assetKind: () => 'model',
-          isAssetMode: () => true,
-          assetData
-        })
-      )
-
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('existing_model.safetensors')
-    })
 
     it('shows only available cloud assets', () => {
       mockAssetsData.items = [
@@ -352,7 +333,7 @@ describe('useWidgetSelectItems', () => {
       ])
     })
 
-    it('returns empty dropdown when no cloud assets', () => {
+    it('surfaces the missing current value when no cloud assets', () => {
       const assetData = {
         category: computed(() => 'checkpoints'),
         assets: computed(() => [] as AssetItem[]),
@@ -370,10 +351,11 @@ describe('useWidgetSelectItems', () => {
         })
       )
 
-      expect(dropdownItems.value).toHaveLength(0)
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('missing.safetensors')
     })
 
-    it('includes missing cloud asset in displayItems', () => {
+    it('includes missing cloud asset in dropdownItems', () => {
       mockAssetsData.items = [
         createTestAsset(
           'asset-1',
@@ -389,7 +371,7 @@ describe('useWidgetSelectItems', () => {
         error: computed(() => null)
       }
 
-      const { displayItems, selectedSet } = useWidgetSelectItems(
+      const { dropdownItems, selectedSet } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref('missing_model.safetensors'),
@@ -399,9 +381,11 @@ describe('useWidgetSelectItems', () => {
         })
       )
 
-      expect(displayItems.value).toHaveLength(2)
-      expect(displayItems.value[0].name).toBe('missing_model.safetensors')
-      expect(displayItems.value[0].id).toBe('missing-missing_model.safetensors')
+      expect(dropdownItems.value).toHaveLength(2)
+      expect(dropdownItems.value[0].name).toBe('missing_model.safetensors')
+      expect(dropdownItems.value[0].id).toBe(
+        'missing-missing_model.safetensors'
+      )
       expect(selectedSet.value.has('missing-missing_model.safetensors')).toBe(
         true
       )
@@ -461,7 +445,7 @@ describe('useWidgetSelectItems', () => {
         )
       ])
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref('output_001.png')
@@ -485,7 +469,7 @@ describe('useWidgetSelectItems', () => {
         makeMultiOutputAsset('job-2', 'single.png', '3', 1)
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref('single.png')
@@ -518,7 +502,7 @@ describe('useWidgetSelectItems', () => {
         ]
       })
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -574,7 +558,7 @@ describe('useWidgetSelectItems', () => {
         makeResolvedOutput('c-2', 'out2.png')
       ])
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -600,7 +584,7 @@ describe('useWidgetSelectItems', () => {
       ]
       mockResolveOutputAssetItems.mockRejectedValue(new Error('network error'))
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -649,7 +633,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -677,7 +661,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -706,7 +690,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -742,7 +726,7 @@ describe('useWidgetSelectItems', () => {
         }
       )
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -830,7 +814,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined),
@@ -859,7 +843,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined),
@@ -888,7 +872,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined),
@@ -918,7 +902,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
@@ -947,7 +931,7 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+      const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           values: () => [],
           modelValue: ref(undefined)
