@@ -196,6 +196,28 @@ describe('UnifiedStripePaymentSelector', () => {
       expect(stripeMocks.createConfirmationToken).not.toHaveBeenCalled()
     })
 
+    it('suppresses a submit rejection that resolves after unmount', async () => {
+      const user = userEvent.setup()
+      let rejectSubmit: (reason: unknown) => void = () => {}
+      stripeMocks.submit.mockReturnValue(
+        new Promise((_resolve, reject) => {
+          rejectSubmit = reject
+        })
+      )
+      const { unmount } = renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      await user.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+      unmount()
+      mockCaptureCheckoutJourneyEvent.mockClear()
+      rejectSubmit(new Error('late'))
+      await Promise.resolve()
+
+      expect(mockCaptureCheckoutJourneyEvent).not.toHaveBeenCalled()
+    })
+
     it('does not leak an element event after unmount', async () => {
       const { unmount } = renderSelector()
       await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())

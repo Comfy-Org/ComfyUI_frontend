@@ -239,12 +239,17 @@ export function clearCheckoutJourney(): void {
   }
 }
 
+let fallbackJourneyIdCounter = 0
+
 function createJourneyId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
 
-  return `journey-${Date.now()}`
+  // Monotonic suffix so journeys created within the same millisecond stay
+  // distinct when randomUUID is unavailable.
+  fallbackJourneyIdCounter += 1
+  return `journey-${Date.now()}-${fallbackJourneyIdCounter}`
 }
 
 /**
@@ -297,7 +302,10 @@ function saveCheckoutJourney(record: CheckoutJourneyRecord): void {
 }
 
 function loadCheckoutJourney(): CheckoutJourneyRecord | null {
-  const record = readPersistedJourney() ?? inMemoryJourney
+  // The mirror is the source of truth within a session: it holds the latest
+  // write even when persistence failed, so a stale persisted record can never
+  // shadow it. Persisted storage is only consulted to rehydrate after reload.
+  const record = inMemoryJourney ?? readPersistedJourney()
   if (!record) {
     return null
   }
@@ -307,6 +315,7 @@ function loadCheckoutJourney(): CheckoutJourneyRecord | null {
     return null
   }
 
+  inMemoryJourney = record
   return record
 }
 
