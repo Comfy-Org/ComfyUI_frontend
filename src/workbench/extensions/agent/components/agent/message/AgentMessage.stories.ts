@@ -105,7 +105,7 @@ export const CompletedSummary: Story = {
 }
 
 export const FailedCall: Story = {
-  name: 'DES-778 A failed call opens the summary',
+  name: 'DES-778 Failed call with an error reply',
   args: {
     message: message(
       [
