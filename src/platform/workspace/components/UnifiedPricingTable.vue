@@ -902,10 +902,7 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
 function isScheduledDestination(tierKey: CheckoutTierKey): boolean {
   const slug = scheduledPlanChange.scheduledChange.value?.plan_slug
   if (!slug) return false
-  return (
-    getApiPlanForTier(tierKey, 'monthly')?.slug === slug ||
-    getApiPlanForTier(tierKey, 'yearly')?.slug === slug
-  )
+  return getApiPlanForTier(tierKey, currentBillingCycle.value)?.slug === slug
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {

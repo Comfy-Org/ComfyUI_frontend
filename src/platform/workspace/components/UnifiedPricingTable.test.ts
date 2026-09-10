@@ -295,16 +295,23 @@ describe('UnifiedPricingTable scheduled plan change', () => {
     ]
   })
 
-  it('shows the destination and current plan while disabling plan actions', () => {
-    renderComponent()
+  it('shows a scheduled monthly destination only on the monthly cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle()
+
+    expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Change to Pro Yearly' })
+    ).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await nextTick()
 
     expect(
       screen.getByRole('button', { name: 'Scheduled for Oct 1, 2026' })
     ).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
-    expect(
-      screen.getByRole('button', { name: 'Change to Pro Yearly' })
-    ).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Current Plan' })).toBeNull()
   })
 
   it('replaces the footnote with a link-less status notice', () => {
