@@ -331,6 +331,47 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
   })
 
+  it('lands on the unreachable state when the element mount throws', async () => {
+    stripeMocks.mount.mockImplementation(() => {
+      throw new Error('mount exploded')
+    })
+
+    renderSelector()
+
+    expect(
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+    expect(stripeMocks.destroy).toHaveBeenCalledTimes(1)
+    expect(
+      screen.queryByRole('button', { name: 'Pay and subscribe' })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'stripe_provider_unreachable'
+    })
+  })
+
+  it('drops the method-specific note when the provider fails after selection', async () => {
+    renderSelector()
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+
+    const changeHandler = stripeMocks.on.mock.calls.find(
+      ([event]) => event === 'change'
+    )?.[1]
+    changeHandler({ value: { type: 'alipay' } })
+    expect(await screen.findByText('Alipay renewal note')).toBeTruthy()
+
+    const loaderrorHandler = stripeMocks.on.mock.calls.find(
+      ([event]) => event === 'loaderror'
+    )?.[1]
+    loaderrorHandler({ error: { type: 'api_connection_error' } })
+
+    expect(
+      await screen.findByText("We can't take payments right now")
+    ).toBeTruthy()
+    expect(screen.queryByText('Alipay renewal note')).toBeNull()
+  })
+
   it('updates Stripe Elements when the quote changes', async () => {
     const { rerender } = renderSelector()
     await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))

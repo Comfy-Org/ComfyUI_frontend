@@ -270,6 +270,7 @@ function markConfigurationFailed() {
   paymentElement?.destroy()
   paymentElement = undefined
   stripeElements.value = undefined
+  selectedMethodType.value = ''
   configurationError.value = t('subscription.preview.stripeUnavailable')
 }
 
@@ -277,6 +278,7 @@ function markProviderUnreachable() {
   paymentElement?.destroy()
   paymentElement = undefined
   stripeElements.value = undefined
+  selectedMethodType.value = ''
   providerUnreachable.value = true
 }
 
