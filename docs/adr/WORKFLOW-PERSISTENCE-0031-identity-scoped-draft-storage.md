@@ -60,7 +60,9 @@ order of effects, not a chain of watchers reacting to each other.
 `resolveStorageScope(userId, workspaceId)` in
 `src/platform/workflow/persistence/base/storageKeys.ts` is the single source of
 the storage scope. Non-cloud builds resolve to `personal`. Cloud builds resolve
-to `${userId}:${workspaceId}` when a user is known and `null` otherwise. Draft
+to `${userId}:${workspaceId}` when both a user and a workspace are known and
+`null` otherwise; a missing `Comfy.Workspace.Current` entry is not defaulted to
+`personal`, because a cloud tab with no workspace has no owner yet. Draft
 payloads, the draft index and the tab restore pointers (`lastActivePath`,
 `lastOpenPaths`) are all keyed by the resolved scope, never by the bare
 workspace id.
@@ -85,13 +87,17 @@ different user.
 ### Identity swaps are fenced
 
 `useWorkflowPersistenceV2.ts` tracks the last resolved user id. When
-`onUserResolved` fires with a different id, or `onUserLogout` fires, it calls
+`onUserResolved` fires with an id other than the tracked one (including the
+first resolution from no user), or `onUserLogout` fires, it calls
 `fenceIdentityChange()`: cancel the debounced save, enter the transitioning
 state, and drop the `lastSavedJsonByPath` cache so the first write under the
-new scope is not suppressed by a hash computed under the old one. The fence is
+new scope is not suppressed by a hash computed under the old one. A repeat
+resolution of the same user (token refresh) does not fence. The fence is
 released only once the workspace store has concluded initialisation (`ready`
 with an active workspace, or `error`), because the scope is not resolvable
-before that.
+before that. Until the next `onUserResolved`, a logout fence stays in place;
+a tab that observes another tab's logout therefore stays read-only rather than
+writing under an identity that no longer exists.
 
 ### Logout wipes one scope, from the command
 
@@ -110,8 +116,14 @@ becoming `null` cannot know which scope to clear.
 `migrateWorkspaceToScope(workspaceId, scope)` copies the workspace-keyed index,
 payloads and restore pointers to the scoped keys the first time a scope is
 resolved that has no index. The destination index is written last so a partial
-copy is never observed as complete; on failure the copied payloads are removed.
-The source keys are removed after a successful copy.
+copy is never observed as complete. On failure every destination artifact the
+copy produced (payloads, restore pointers, index) is removed and the source is
+left intact, so a retry starts from the same state. On success the source
+payloads, index and restore pointers are removed. If the source index still
+exists but the destination index is already present, an earlier run committed
+and was interrupted before its source cleanup; the migration only finishes that
+cleanup and does not copy again, so the committed destination is never
+overwritten by stale source data.
 
 The first user to sign in on a browser therefore claims any pre-existing
 workspace-keyed drafts. This is accepted: before this change those drafts were
@@ -136,6 +148,18 @@ is a data loss for the common single-user case.
   close the data-loss gaps.
 - `useNewUserService.ts` reads the literal key `DraftIndex.v2:personal`. It is
   correct for non-cloud builds and is not part of the cloud identity problem.
+- Two tabs of the same user in the same workspace share one scope. Logging out
+  in one tab wipes that scope, so unsaved drafts in the other tab are removed
+  while it is still open; that tab is fenced and cannot write them back. This
+  is the pre-existing multi-tab behaviour of the logout wipe, now narrowed to
+  one scope. A per-tab claim on the scope (a lease keyed by tab id, released on
+  `pagehide`) would let the wipe skip scopes another live tab still holds; it
+  needs a cross-tab protocol and belongs with the reducer work above. Owner:
+  the workflow persistence maintainers.
+- A tab fenced by another tab's logout stays fenced until its own auth state
+  resolves a user again. It does not re-open on its own because it cannot
+  know whether the departing scope is still valid. Surfacing this to the user
+  (read-only indicator, prompt to sign in) is UI work outside this ADR.
 
 ## Alternatives considered
 
