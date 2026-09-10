@@ -550,10 +550,7 @@ export const useModelStore = defineStore('models', () => {
     () =>
       flags.assetsEnabled &&
       reloadModels().catch((error) => {
-        console.error(
-          'Failed to reload the model library after a capability change',
-          error
-        )
+        reportError(error, { errorType: 'model_library_capability_reload' })
       })
   )
 
