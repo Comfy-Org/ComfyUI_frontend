@@ -13,7 +13,7 @@ describe('getBillingWebUrl', () => {
     expect(getBillingWebUrl()?.href).toBe('http://localhost:5174/')
   })
 
-  it.each([
+  it.for([
     'http://billing.example.com',
     'https://user:password@billing.example.com',
     'not a URL'

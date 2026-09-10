@@ -138,7 +138,7 @@
         v-if="showSubscribeAction && !isPersonalWorkspace"
         variant="primary"
         size="sm"
-        @click="handleOpenPlansAndPricing"
+        @click="handleOpenSubscriptionAction"
       >
         {{
           isCancelled
@@ -398,6 +398,11 @@ const handleOpenPlansAndPricing = () => {
   } else {
     subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   }
+  emit('close')
+}
+
+const handleOpenSubscriptionAction = () => {
+  subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   emit('close')
 }
 

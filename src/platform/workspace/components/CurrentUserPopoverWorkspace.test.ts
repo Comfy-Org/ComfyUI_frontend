@@ -12,27 +12,37 @@ import enMessages from '@/locales/en/main.json'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
-const state = vi.hoisted(() => ({
-  isCloud: true,
-  billingStatus: 'paid',
-  canAccessSubscriptionFeatures: true,
-  isCancelled: false,
-  planSlug: 'pro-monthly' as string | null,
-  canTopUp: false,
-  canSubscribeSelfServe: false,
-  canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
-  canReactivate: false,
-  canReactivatePlan: false,
-  canOpenPricingSurface: false,
-  shouldUseWorkspaceBilling: true,
-  hostedBillingWebEnabled: false,
-  billingWebUrl: new URL('http://localhost:5174'),
-  showCreateWorkspaceDialog: vi.fn(),
-  showTopUpCreditsDialog: vi.fn(),
-  showPricingTable: vi.fn(),
-  showSettingsDialog: vi.fn()
-}))
+const state = vi.hoisted(() => {
+  function initialPlanSlug(): string | null {
+    return 'pro-monthly'
+  }
+
+  function initialBillingWebUrl(): URL | null {
+    return new URL('http://localhost:5174')
+  }
+
+  return {
+    isCloud: true,
+    billingStatus: 'paid',
+    canAccessSubscriptionFeatures: true,
+    isCancelled: false,
+    planSlug: initialPlanSlug(),
+    canTopUp: false,
+    canSubscribeSelfServe: false,
+    canManageSubscription: false,
+    canManageSubscriptionLifecycle: false,
+    canReactivate: false,
+    canReactivatePlan: false,
+    canOpenPricingSurface: false,
+    shouldUseWorkspaceBilling: true,
+    hostedBillingWebEnabled: false,
+    billingWebUrl: initialBillingWebUrl(),
+    showCreateWorkspaceDialog: vi.fn(),
+    showTopUpCreditsDialog: vi.fn(),
+    showPricingTable: vi.fn(),
+    showSettingsDialog: vi.fn()
+  }
+})
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -346,6 +356,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).not.toHaveBeenCalled()
   })
 
+  it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    state.billingWebUrl = null
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
+  })
+
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()
     state.canSubscribeSelfServe = true
@@ -577,6 +603,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()

@@ -31,6 +31,14 @@ pnpm --filter @comfyorg/billing-web build
 ```
 
 `pnpm dev:cloud:billing-web` runs the Cloud frontend on port 5173 and this app
-on port 5174. The command supplies `VITE_BILLING_WEB_URL` to the Cloud frontend,
-which enables the hosted-billing feature flag by default in development. A
-server or local feature-flag override can still disable it.
+on port 5174. The command supplies `VITE_BILLING_WEB_URL` to the Cloud frontend.
+The hosted entry remains disabled until the server flag is enabled or a
+developer opts in from the browser console:
+
+```javascript
+localStorage.setItem('ff:hosted_billing_web_enabled', 'true')
+```
+
+Reload the Cloud frontend after changing the override. Existing Subscribe,
+Resubscribe, and embedded-checkout actions remain in the core frontend until
+the hosted app reaches feature parity.
