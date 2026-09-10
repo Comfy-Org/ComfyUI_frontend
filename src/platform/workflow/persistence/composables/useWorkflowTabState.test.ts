@@ -37,6 +37,7 @@ describe('useWorkflowTabState', () => {
     })
 
     it('saves and retrieves active path', async () => {
+      setCurrentWorkspace('ws-1')
       const { getActivePath, setActivePath } = await loadTabState('user-a')
 
       setActivePath('workflows/test.json')
@@ -84,6 +85,7 @@ describe('useWorkflowTabState', () => {
     })
 
     it('saves and retrieves open paths', async () => {
+      setCurrentWorkspace('ws-1')
       const { getOpenPaths, setOpenPaths } = await loadTabState('user-a')
 
       const paths = ['workflows/a.json', 'workflows/b.json']

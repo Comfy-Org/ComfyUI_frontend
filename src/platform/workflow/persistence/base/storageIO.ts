@@ -10,7 +10,11 @@ import type {
   DraftPayloadV2,
   OpenPathsPointer
 } from './draftTypes'
-import { StorageKeys, getWorkspaceId, resolveStorageScope } from './storageKeys'
+import {
+  StorageKeys,
+  readWorkspaceId,
+  resolveStorageScope
+} from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
 type StorageWriteGate = 'open' | 'deferred' | 'closed'
@@ -40,7 +44,7 @@ export function setStorageIdentity(userId: string | null): void {
 }
 
 export function getStorageScope(): string | null {
-  return resolveStorageScope(storageIdentity, getWorkspaceId())
+  return resolveStorageScope(storageIdentity, readWorkspaceId())
 }
 
 export function getStorageWriteGate(): StorageWriteGate {

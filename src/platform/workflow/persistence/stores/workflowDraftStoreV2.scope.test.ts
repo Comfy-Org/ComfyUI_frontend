@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+
 import { hashPath } from '../base/hashUtil'
 import { readIndex, setStorageIdentity } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
@@ -18,6 +20,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const PATH = 'workflows/test.json'
 const META = { name: 'test', isTemporary: false }
+
+function setPersonalWorkspace() {
+  sessionStorage.setItem(
+    WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+    JSON.stringify({ type: 'personal' })
+  )
+}
 
 describe('workflowDraftStoreV2 storage scope', () => {
   beforeEach(() => {
@@ -49,6 +58,7 @@ describe('workflowDraftStoreV2 storage scope', () => {
   })
 
   it('keys drafts by the resolved user scope, not the bare workspace', () => {
+    setPersonalWorkspace()
     setStorageIdentity('user-a')
     const store = useWorkflowDraftStoreV2()
 
@@ -62,6 +72,7 @@ describe('workflowDraftStoreV2 storage scope', () => {
   })
 
   it('serves each user their own drafts after identity changes', () => {
+    setPersonalWorkspace()
     setStorageIdentity('user-a')
     const store = useWorkflowDraftStoreV2()
     store.saveDraft(PATH, '{"owner":"a"}', META)

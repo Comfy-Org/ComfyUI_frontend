@@ -4,41 +4,51 @@ import { isCloud } from '@/platform/distribution/types'
 import { hashPath } from './hashUtil'
 
 /**
- * Gets the current workspace ID from sessionStorage.
- * Returns 'personal' for personal workspace or when no workspace is set.
+ * Reads the current workspace ID from sessionStorage.
+ * Returns 'personal' outside cloud or for the personal workspace, and null
+ * while the cloud workspace is unresolved.
  *
  * NOTE: This is called fresh each time rather than cached at module load,
  * because the workspace auth store may not have set sessionStorage yet
  * when this module is first imported.
  */
-export function getWorkspaceId(): string {
+export function readWorkspaceId(): string | null {
   if (!isCloud) return 'personal'
 
   try {
     const json = sessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
-    if (!json) return 'personal'
+    if (!json) return null
 
     const workspace = JSON.parse(json)
-    if (workspace.type === 'personal' || !workspace.id) return 'personal'
-    return workspace.id
+    if (workspace.type === 'personal') return 'personal'
+    return typeof workspace.id === 'string' && workspace.id
+      ? workspace.id
+      : null
   } catch {
-    return 'personal'
+    return null
   }
+}
+
+/**
+ * Gets the current workspace ID, falling back to 'personal' when unresolved.
+ */
+export function getWorkspaceId(): string {
+  return readWorkspaceId() ?? 'personal'
 }
 
 /**
  * Resolves the localStorage scope for workflow drafts.
  * Cloud drafts belong to one user in one workspace, so the scope is
- * `${userId}:${workspaceId}` and unresolvable until the user is known.
+ * `${userId}:${workspaceId}` and unresolvable until both are known.
  */
 export function resolveStorageScope(
   userId: string | null,
-  workspaceId: string
+  workspaceId: string | null
 ): string | null {
   if (!isCloud) return 'personal'
-  return userId ? `${userId}:${workspaceId}` : null
+  return userId && workspaceId ? `${userId}:${workspaceId}` : null
 }
 
 /**
