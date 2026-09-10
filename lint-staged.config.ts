@@ -54,6 +54,9 @@ function typecheckCommands(fileNames: string[]) {
 
   return [
     'pnpm typecheck',
+    ...(fileNames.some((fileName) => fileName.startsWith('apps/billing-web/'))
+      ? ['pnpm typecheck:billing-web']
+      : []),
     ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
       ? ['pnpm typecheck:browser']
       : []),

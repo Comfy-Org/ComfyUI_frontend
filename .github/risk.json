@@ -94,6 +94,11 @@
       "tier": "R3",
       "why": "billing / credits \u2014 money moves. Scoped to the application source tree: an unscoped **/ token glob matched the marketing site, e2e specs, PNG snapshots, stories, locale files and docs on filename characters alone Churnkey is the cancellation/retention vendor flow and workspaceApi carries credit limits, credit stops and billing_rail; neither has a money token in its path, so even the scoped globs above cannot see them. workspaceApi.ts is listed exactly rather than as workspaceApi* \u2014 its sibling workspaceApiUrl.ts is a 7-line URL builder, and sweeping it in would reintroduce the over-grading #15415 just removed.",
       "paths": [
+        "apps/billing-web/src/App.vue",
+        "apps/billing-web/src/**/*.vue",
+        "apps/billing-web/src/i18n.ts",
+        "apps/billing-web/src/main.ts",
+        "apps/billing-web/src/router.ts",
         "src/**/billing/**",
         "src/**/pricing/**",
         "src/**/credit/**",
