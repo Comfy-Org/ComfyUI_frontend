@@ -23,7 +23,8 @@ function trySend(send: () => boolean): boolean {
     return send()
   } catch (error) {
     reportError(error, {
-      errorType: 'agent_doc_frame_send_swallowed',
+      errorType: 'failure_sending_agent_doc_frame',
+      logToConsole: false,
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',

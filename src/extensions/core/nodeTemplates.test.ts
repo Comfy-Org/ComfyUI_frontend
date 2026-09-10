@@ -1,12 +1,25 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyExtension } from '@/types/comfy'
 
-const { getUserData, registerExtension, reportErrorMock } = vi.hoisted(() => ({
-  getUserData: vi.fn(),
-  registerExtension: vi.fn(),
-  reportErrorMock: vi.fn()
-}))
+const {
+  getUserData,
+  registeredExtensions,
+  registerExtension,
+  reportErrorMock
+} = vi.hoisted(() => {
+  const registeredExtensions: ComfyExtension[] = []
+  return {
+    getUserData: vi.fn(),
+    registeredExtensions,
+    registerExtension: vi.fn((extension: ComfyExtension) => {
+      registeredExtensions.push(extension)
+    }),
+    reportErrorMock: vi.fn()
+  }
+})
 
 vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
 
@@ -37,28 +50,34 @@ vi.mock('@/scripts/ui', () => ({
   $el: (tag: string) => document.createElement(tag)
 }))
 
-let resolveResponse!: (response: {
-  status: number
-  json: () => Promise<never>
-}) => void
-getUserData.mockReturnValue(
-  new Promise((resolve) => {
-    resolveResponse = resolve
+function createDeferred<T>() {
+  let resolve: (value: T) => void = () => {
+    throw new Error('Deferred promise was not initialized')
+  }
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise
   })
-)
+  return { promise, resolve }
+}
+
+const response = createDeferred<{
+  status: number
+  json: () => Promise<unknown>
+}>()
+getUserData.mockReturnValue(response.promise)
 
 await import('./nodeTemplates')
 
 it('reports invalid persisted node templates before falling back to empty', async () => {
   const error = new Error('invalid template JSON')
-  resolveResponse({
+  response.resolve({
     status: 200,
     json: () => Promise.reject(error)
   })
 
   await vi.waitFor(() => {
     expect(reportError).toHaveBeenCalledWith(error, {
-      errorType: 'extensions_node_templates_load_swallowed',
+      errorType: 'failure_loading_node_templates',
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'extensions',
@@ -68,4 +87,21 @@ it('reports invalid persisted node templates before falling back to empty', asyn
       level: 'error'
     })
   })
+
+  const extension = registeredExtensions.find(
+    ({ name }) => name === 'Comfy.NodeTemplates'
+  )
+  if (!extension?.getCanvasMenuItems) {
+    throw new Error('Comfy.NodeTemplates extension was not registered')
+  }
+  expect(extension.getCanvasMenuItems(fromAny({}))).toEqual([
+    null,
+    expect.objectContaining({ content: 'Save Selected as Template' }),
+    {
+      content: 'Node Templates',
+      submenu: {
+        options: [null, expect.objectContaining({ content: 'Manage' })]
+      }
+    }
+  ])
 })

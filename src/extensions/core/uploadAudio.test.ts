@@ -13,25 +13,30 @@ const {
   mockMediaRecorderStop,
   mockRegisterExtension,
   mockReportError,
-  mockStopAllTracks
-} = vi.hoisted(() => ({
-  mockApiURL: vi.fn((url: string) => `api:${url}`),
-  mockFetchApi: vi.fn(),
-  mockMediaRecorderConstruct: vi.fn(),
-  mockMediaRecorderStart: vi.fn(),
-  mockMediaRecorderStop: vi.fn(),
-  mockRegisterExtension: vi.fn(),
-  mockReportError: vi.fn(),
-  mockStopAllTracks: vi.fn()
-}))
+  mockStopAllTracks,
+  registeredExtensions
+} = vi.hoisted(() => {
+  const registeredExtensions: ComfyExtension[] = []
+  return {
+    mockApiURL: vi.fn((url: string) => `api:${url}`),
+    mockFetchApi: vi.fn(),
+    mockMediaRecorderConstruct: vi.fn(),
+    mockMediaRecorderStart: vi.fn(),
+    mockMediaRecorderStop: vi.fn(),
+    mockRegisterExtension: vi.fn((extension: ComfyExtension) => {
+      registeredExtensions.push(extension)
+    }),
+    mockReportError: vi.fn(),
+    mockStopAllTracks: vi.fn(),
+    registeredExtensions
+  }
+})
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
   | ((files: File[]) => Promise<File[] | never[]>)
   | undefined
 let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
-
-type AudioUploadWidget = (node: LGraphNode, inputName: string) => unknown
 
 vi.mock('extendable-media-recorder', () => ({
   MediaRecorder: class MockMediaRecorder {
@@ -113,6 +118,21 @@ vi.mock('@/services/audioService', () => ({
   useAudioService: () => ({ stopAllTracks: mockStopAllTracks })
 }))
 
+await import('./uploadAudio')
+
+async function getCustomWidget(extensionName: string, widgetName: string) {
+  const extension = registeredExtensions.find(
+    ({ name }) => name === extensionName
+  )
+  if (!extension?.getCustomWidgets) {
+    throw new Error(`${extensionName} extension was not registered`)
+  }
+  const widgets = await extension.getCustomWidgets(fromAny({}))
+  const widget = widgets[widgetName]
+  if (!widget) throw new Error(`${widgetName} widget was not registered`)
+  return widget
+}
+
 function createFile(name = 'clip.mp3'): File {
   return new File(['audio'], name, { type: 'audio/mpeg' })
 }
@@ -157,16 +177,9 @@ function createAudioNode() {
 }
 
 async function loadAudioUploadWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.UploadAudio')
-  if (!extension)
-    throw new Error('Comfy.UploadAudio extension was not registered')
-  const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioUploadWidget>).AUDIOUPLOAD
+  const widget = await getCustomWidget('Comfy.UploadAudio', 'AUDIOUPLOAD')
+  return (node: LGraphNode, inputName: string) =>
+    widget(node, inputName, fromAny({}), fromAny({}))
 }
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
@@ -288,19 +301,10 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   })
 })
 
-type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
-
 async function loadAudioUIWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.AudioWidget')
-  if (!extension)
-    throw new Error('Comfy.AudioWidget extension was not registered')
-  const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
+  const widget = await getCustomWidget('Comfy.AudioWidget', 'AUDIO_UI')
+  return (node: LGraphNode, inputName: string) =>
+    widget(node, inputName, fromAny({}), fromAny({}))
 }
 
 describe('Comfy.AudioWidget AUDIO_UI widget', () => {
@@ -308,7 +312,7 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
     const AUDIO_UI = await loadAudioUIWidget()
     const domWidget = {
       serialize: true,
-      options: {} as Record<string, unknown>
+      options: { serialize: true }
     }
     const node = fromAny<LGraphNode, unknown>({
       addDOMWidget: vi.fn(() => domWidget),
@@ -322,23 +326,14 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
   })
 })
 
-type AudioRecordWidget = (node: LGraphNode, inputName: string) => unknown
-
 async function loadAudioRecordWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.RecordAudio')
-  if (!extension)
-    throw new Error('Comfy.RecordAudio extension was not registered')
-  const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioRecordWidget>).AUDIO_RECORD
+  const widget = await getCustomWidget('Comfy.RecordAudio', 'AUDIO_RECORD')
+  return (node: LGraphNode, inputName: string) =>
+    widget(node, inputName, fromAny({}), fromAny({}))
 }
 
 const RECORDER_FAILURE_REPORT = {
-  errorType: 'extensions_audio_recorder_start_failed',
+  errorType: 'failure_starting_audio_recorder',
   tags: {
     failure_kind: 'caught_unexpected',
     feature_area: 'assets',
@@ -352,7 +347,7 @@ async function pressRecord() {
   const AUDIO_RECORD = await loadAudioRecordWidget()
   const audioUIWidget = {
     element: document.createElement('audio'),
-    options: {} as Record<string, unknown>
+    options: { canvasOnly: true }
   }
   const recordWidget = { label: '', type: '' }
   let record: (() => Promise<void>) | undefined
@@ -365,12 +360,27 @@ async function pressRecord() {
   })
   AUDIO_RECORD(node, 'record')
 
-  await record!()
+  if (!record) throw new Error('Record callback was not registered')
+  await record()
 
   return recordWidget
 }
 
 describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
+  it('starts recording without reporting a failure', async () => {
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({}) }
+    })
+
+    const recordWidget = await pressRecord()
+
+    expect(mockMediaRecorderConstruct).toHaveBeenCalledTimes(1)
+    expect(mockMediaRecorderStart).toHaveBeenCalledTimes(1)
+    expect(recordWidget.label).toBe('g.stopRecording')
+    expect(mockReportError).not.toHaveBeenCalled()
+    expect(mockAddAlert).not.toHaveBeenCalledWith('g.recordingFailedToStart')
+  })
+
   it('reports a recorder start failure after the microphone was granted', async () => {
     const accessError = new Error('recorder start failed')
     mockMediaRecorderStart.mockImplementationOnce(() => {

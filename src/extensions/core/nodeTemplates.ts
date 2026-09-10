@@ -103,7 +103,7 @@ class ManageTemplates extends ComfyDialog {
         templates = await res.json()
       } catch (error) {
         reportError(error, {
-          errorType: 'extensions_node_templates_load_swallowed',
+          errorType: 'failure_loading_node_templates',
           tags: {
             failure_kind: 'caught_unexpected',
             feature_area: 'extensions',

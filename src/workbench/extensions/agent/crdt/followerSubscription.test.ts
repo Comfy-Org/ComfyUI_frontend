@@ -292,7 +292,8 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     expect(transport.listenerCount).toBe(0)
     expect(bridge.subscribedWorkflowId).toBeNull()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_doc_frame_send_swallowed',
+      errorType: 'failure_sending_agent_doc_frame',
+      logToConsole: false,
       tags: {
         failure_kind: 'caught_unexpected',
         feature_area: 'agent',
