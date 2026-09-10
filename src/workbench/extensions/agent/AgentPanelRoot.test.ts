@@ -34,6 +34,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { isDropEventHandled } from '@/utils/eventUtils'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -598,11 +599,11 @@ describe('AgentPanelRoot session notices', () => {
 // marker the panel tests for, so the payload is hand-built.
 // Returns whether the panel claimed the event, which is what the graph loader
 // checks before opening a dropped workflow.
-function dispatchDrag(
+function dispatchDragEvent(
   target: Element,
   type: 'dragenter' | 'dragleave' | 'dragover' | 'drop',
   data: { files?: File[]; types?: string[]; getData?: (t: string) => string }
-): boolean {
+): DragEvent {
   const event = new Event(type, { bubbles: true, cancelable: true })
   Object.defineProperty(event, 'dataTransfer', {
     value: {
@@ -612,7 +613,15 @@ function dispatchDrag(
     }
   })
   target.dispatchEvent(event)
-  return event.defaultPrevented
+  return event as DragEvent
+}
+
+function dispatchDrag(
+  target: Element,
+  type: 'dragenter' | 'dragleave' | 'dragover' | 'drop',
+  data: { files?: File[]; types?: string[]; getData?: (t: string) => string }
+): boolean {
+  return dispatchDragEvent(target, type, data).defaultPrevented
 }
 
 function fileOfSize(name: string, size: number, type: string): File {
@@ -1253,7 +1262,9 @@ describe('AgentPanelRoot attach flow', () => {
           })
       }
 
-      expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
+      const firstDrop = dispatchDragEvent(target, 'drop', dragData)
+      expect(firstDrop.defaultPrevented).toBe(true)
+      expect(isDropEventHandled(firstDrop)).toBe(true)
       expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
       expect(await screen.findByText(filename)).toBeInTheDocument()
       expect(screen.getAllByText(filename)).toHaveLength(1)
@@ -1338,7 +1349,9 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.queryByText('flow.json')).not.toBeInTheDocument()
 
     const asset = new File(['x'], 'cat.png', { type: 'image/png' })
-    expect(dispatchDrag(target, 'drop', { files: [asset] })).toBe(true)
+    const assetDrop = dispatchDragEvent(target, 'drop', { files: [asset] })
+    expect(assetDrop.defaultPrevented).toBe(true)
+    expect(isDropEventHandled(assetDrop)).toBe(true)
     expect(await screen.findByText('cat.png')).toBeInTheDocument()
   })
 
