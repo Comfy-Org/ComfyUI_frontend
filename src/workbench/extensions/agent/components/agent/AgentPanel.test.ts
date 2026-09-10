@@ -44,10 +44,14 @@ const chatHistoryStub = defineComponent({
   `
 })
 
+type AddAttachmentArgs = [attachment: ComposerAttachment]
+type UpdateAttachmentArgs = [id: string, patch: Partial<ComposerAttachment>]
+type RemoveAttachmentArgs = [id: string]
+
 const attachmentCalls = {
-  add: [] as unknown[][],
-  update: [] as unknown[][],
-  remove: [] as unknown[][]
+  add: [] as AddAttachmentArgs[],
+  update: [] as UpdateAttachmentArgs[],
+  remove: [] as RemoveAttachmentArgs[]
 }
 
 const attachment: ComposerAttachment = {
@@ -104,13 +108,13 @@ const eventComposerStub = defineComponent({
     expose({
       insert: () => {},
       replaceDraft: () => {},
-      addAttachment: (...args: unknown[]) => {
+      addAttachment: (...args: AddAttachmentArgs) => {
         attachmentCalls.add.push(args)
       },
-      updateAttachment: (...args: unknown[]) => {
+      updateAttachment: (...args: UpdateAttachmentArgs) => {
         attachmentCalls.update.push(args)
       },
-      removeAttachment: (...args: unknown[]) => {
+      removeAttachment: (...args: RemoveAttachmentArgs) => {
         attachmentCalls.remove.push(args)
       }
     })
