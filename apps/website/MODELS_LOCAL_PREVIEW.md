@@ -8,7 +8,7 @@ claim deployment success. The live API-key smoke check below returned 402.
 ## Auth base
 
 The combined preview now builds on `maanil/auth-stack-combined` (#17283),
-commit `5cfd7b8765b71477aa8a62158c96e906720f2328`, rather than the older
+commit `f97c308495537bc864ab10a6abfc5023a40dcd6d`, rather than the older
 `throwaway/christian-closure-2026-09-09` snapshot. This is committed auth work,
 not a claim that its PR is merged or review-approved. The account package is
 unchanged from that base; Models uses its current `@comfyorg/account/session`
@@ -33,6 +33,12 @@ keeps the incoming release section at the bottom. The shared account package
 matches Maanil's latest base, including the module-local identity brand,
 workspace-target checks and preference for a fresh live credential over storage.
 Rob's packed content is unchanged by this sync.
+
+Preview refresh against `f97c308495`: 524 focused auth, session, balance,
+content/use-case and input-presentation tests pass. Website typecheck reports
+zero errors/warnings and seven existing hints. The shared account package and
+upstream identity test fixture match the auth base exactly. This is not a fresh
+full-suite, browser-generation or deployment result.
 
 ## Run locally
 
@@ -94,11 +100,12 @@ phase/balance logging was removed before publishing; no token or account
 identifier was logged. Payment CTA improvements and the model button's
 pending/error-state distinction remain deferred, not part of the balance fix.
 
-At auth-base head `5cfd7b8765`, GitHub's website unit job has four failures in
-`workshop-account.test.ts`: its pre-reset fake identity has a different
-module-local brand from the reloaded client. This preview carries the small test
-fixture fix described above; it must also reach the auth PR before its tests can
-pass. A successful local sign-in does not certify that broader PR as merge-ready.
+The four `workshop-account.test.ts` failures at auth-base head `5cfd7b8765`
+were fixed directly on #17283 in `248a308d00`. Its pre-reset fake identity had a
+different module-local brand from the reloaded client. Both branches now carry
+the test-fixture correction; it changes no production auth behavior. The latest
+base also includes Maanil's flag-interruption and sign-up retry fixes. A
+successful local sign-in does not certify that broader PR as merge-ready.
 
 Read-only preflights from `http://localhost:4321` found:
 
@@ -114,6 +121,13 @@ Read-only preflights from `http://localhost:4321` found:
 Recheck the live response and actual browser behavior after a backend fix. An
 already-restored session does not exercise new sign-in's provisioning request.
 Do not bypass provisioning or change backend families to hide this failure.
+
+Production website-origin CORS changes are proposed in
+[cloud #8885](https://github.com/Comfy-Org/cloud/pull/8885): explicit ingest
+origins for comfy.org, www and this preview, plus explicit Router preflight
+methods/headers. This is not deployed yet. After rollout, rebuild the preview
+with `PUBLIC_WORKSHOP_CLOUD_ENV=prod` before testing production sign-in there;
+the `workshop` label alone does not select production backends.
 
 The paused local API-key/E2E draft is preserved separately in stash
 `4aa0ef4673cd237f2c388a1161c39b4c12f1a2d7`; it is not included in the auth sync

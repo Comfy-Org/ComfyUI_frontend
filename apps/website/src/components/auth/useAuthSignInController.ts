@@ -205,20 +205,31 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     dispatch({ type: 'signInStarted', provider })
     const attempt = signInGeneration
     const live = () => attempt === signInGeneration && enabled.value
+    // Flag flip mid-attempt: drop the attempt so the reducer leaves `pending`.
+    const abandon = () => dispatch({ type: 'signInAbandoned' })
     let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
     try {
       firebase = await loadWorkshopFirebase()
       // The rollout flag turning off (or flickering) mid-flight must halt the
       // in-flight auth, not merely hide the UI: no sign-in, provisioning,
       // telemetry, or session.
-      if (!live()) return
+      if (!live()) {
+        abandon()
+        return
+      }
       const credential = await authenticate(firebase)
-      if (!live()) return
+      if (!live()) {
+        abandon()
+        return
+      }
       // Email sign-up provisions atomically inside (its rollback needs it);
       // every other path provisions here so a disable during the popup stops it.
       if (!(provider === 'email' && mode === 'signUp')) {
         await firebase.provisionWorkshopCustomer(credential)
-        if (!live()) return
+        if (!live()) {
+          abandon()
+          return
+        }
       }
       captureAuthCompleted({
         method: provider,
@@ -233,15 +244,19 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       })
       await runMint(credential.user)
     } catch (error) {
+      // Single-use token: any attempt consumes it, so refresh before the next.
+      if (provider === 'email' && mode === 'signUp') {
+        resetTurnstile()
+      }
+      // An invalidated attempt's rejection is not this attempt's failure.
+      if (!live()) {
+        abandon()
+        return
+      }
       captureAuthFailed({
         error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
         auth_action: `${provider}_${mode === 'signUp' ? 'sign_up' : 'sign_in'}`
       })
-      if (provider === 'email' && mode === 'signUp') {
-        // Turnstile tokens are single-use. Any failed attempt consumes this
-        // token, so require a fresh challenge before another submission.
-        resetTurnstile()
-      }
       if (firebase?.isWorkshopProvisioningError(error)) {
         dispatch({
           type: 'provisioningFailed',
