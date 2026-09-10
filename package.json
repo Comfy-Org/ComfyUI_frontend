@@ -8,7 +8,7 @@
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
   "imports": {
-    "#agent-theme": "./src/workbench/extensions/agent/theme.css"
+    "#agent-theme": "./src/workbench/extensions/agent/agentTheme.css"
   },
   "scripts": {
     "adr:check": "tsx scripts/check-adrs.ts",

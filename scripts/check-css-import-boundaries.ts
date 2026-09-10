@@ -1,15 +1,8 @@
 import { readFileSync } from 'node:fs'
-import { normalize, posix, resolve } from 'node:path'
+import { posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { globSync } from 'glob'
-
-export type CssBoundaryViolation = {
-  directive: 'import' | 'source'
-  filename: string
-  lineNumber: number
-  reference: string
-}
 
 const ownerRoot = (filename: string): string | undefined => {
   const match = /^(?:apps|packages|src)\/[^/]+/.exec(filename)
@@ -19,8 +12,8 @@ const ownerRoot = (filename: string): string | undefined => {
 export const findCrossBoundaryCssReferences = (
   filename: string,
   contents: string
-): CssBoundaryViolation[] => {
-  const normalizedFilename = normalize(filename).split('\\').join('/')
+) => {
+  const normalizedFilename = filename.split('\\').join('/')
   const sourceOwner = ownerRoot(normalizedFilename)
   if (!sourceOwner) return []
 
@@ -28,7 +21,7 @@ export const findCrossBoundaryCssReferences = (
     comment.replace(/[^\n]/g, ' ')
   )
   const directivePattern =
-    /^[\t ]*@(import|source)[\t ]+(?:url\([\t ]*)?(['"])([^'"]+)\2/gm
+    /^[\t ]*@(import|source)[\t ]+(?:not[\t ]+)?(?:url\([\t ]*)?(['"])([^'"]+)\2/gm
 
   return [...uncommented.matchAll(directivePattern)].flatMap((match) => {
     const directive = match[1]

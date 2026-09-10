@@ -32,7 +32,7 @@ describe('findCrossBoundaryCssReferences', () => {
     expect(
       findCrossBoundaryCssReferences(
         'apps/website/src/styles/global.css',
-        "\n@source '../../node_modules/@comfyorg/account/src';"
+        "\n@source not '../../node_modules/@comfyorg/account/src';"
       )
     ).toEqual([
       {
