@@ -11011,7 +11011,8 @@
     "display_name": "بارگذاری ۳بعدی (پیشرفته)",
     "inputs": {
       "height": {
-        "name": "ارتفاع"
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "عرض"
+        "name": "عرض",
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       }
     },
     "outputs": {
       "0": {
         "name": "مدل ۳بعدی",
-        "tooltip": null
+        "tooltip": "فایل مدل 3D بارگذاری‌شده (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "اطلاعات مدل ۳بعدی",
-        "tooltip": null
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهانی با محور Y رو به بالا)."
       },
       "2": {
         "name": "اطلاعات دوربین",
-        "tooltip": null
+        "tooltip": "اطلاعات دوربین نمای دید: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "3": {
         "name": "عرض",
-        "tooltip": null
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       },
       "4": {
         "name": "ارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "تولید تصویر از طریق سرویس GPT Image شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image ۲",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "تولید یا ویرایش تصاویر از طریق OpenRouter با مدل‌های MAI-Image-2.6 مایکروسافت: تبدیل متن به تصویر، یا ویرایش هدایت‌شده با تصویر با حداکثر پنج تصویر مرجع، در هفت نسبت ابعاد با وضوح 1K یا 1.5K.",
+    "display_name": "تصویر OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل تصویر OpenRouter که برای تولید تصویر استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "پیش‌نمایش سه‌بعدی (پیشرفته)",
     "inputs": {
       "camera_info": {
-        "name": "اطلاعات دوربین"
+        "name": "اطلاعات دوربین",
+        "tooltip": "اطلاعات دوربین نمای دید: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "height": {
-        "name": "ارتفاع"
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       },
       "model_3d": {
         "name": "مدل ۳بعدی",
@@ -17404,29 +17438,30 @@
         "name": "وضعیت نمای دید"
       },
       "width": {
-        "name": "عرض"
+        "name": "عرض",
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       }
     },
     "outputs": {
       "0": {
         "name": "فایل مدل",
-        "tooltip": null
+        "tooltip": "فایل مدل 3D (glb/obj/stl/etc.) از یک node 3D بالادستی."
       },
       "1": {
         "name": "اطلاعات دوربین",
-        "tooltip": null
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهانی با محور Y رو به بالا)."
       },
       "2": {
         "name": "اطلاعات مدل سه‌بعدی",
-        "tooltip": null
+        "tooltip": "اطلاعات دوربین نمای دید: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "3": {
         "name": "عرض",
-        "tooltip": null
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       },
       "4": {
         "name": "ارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "ذخیره سه‌بعدی (پیشرفته)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "اطلاعات دوربین نمای دید: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "فایل مدل سه‌بعدی از یک node سه‌بعدی بالادستی."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهانی با محور Y رو به بالا)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "فایل مدل 3D (glb/obj/stl/etc.) از یک node 3D بالادستی."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "جای‌گذاری هر مدل در صحنه: موقعیت، چرخش و مقیاس (فضای جهانی با محور Y رو به بالا)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "اطلاعات دوربین نمای دید: موقعیت، هدف نگاه، بزرگ‌نمایی و نوع."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "عرض رندر نمای دید بر حسب پیکسل."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ارتفاع رندر نمای دید بر حسب پیکسل."
       }
     }
   },
