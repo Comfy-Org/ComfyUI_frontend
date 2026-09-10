@@ -14,7 +14,6 @@ import { computed, effectScope, ref, watch } from 'vue'
 
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
-import { useWorkshopAuthFlag } from '../scripts/posthog'
 import { workshopBalanceReader } from './workshop-account'
 import type { BalanceState as ReadState } from './workshop-balance'
 import { useWorkshopSession } from './workshop-session-state'
@@ -86,14 +85,14 @@ function start(): void {
   // This detached scope gives the module singleton its own lifetime instead
   // of binding its watchers to whichever component calls this first.
   const lifecycle = effectScope(true)
-  const enabled = useWorkshopAuthFlag()
+  const { settled } = useWorkshopSession()
   lifecycle.run(() => {
     watch(
-      enabled,
-      (on) => {
+      settled,
+      (isSettled) => {
         stopActive?.()
         stopActive = undefined
-        if (on) begin()
+        if (isSettled) begin()
         else workshopBalanceReader.reset()
       },
       { immediate: true }
