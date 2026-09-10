@@ -210,16 +210,18 @@ describe('SubgraphConversion', () => {
       const graph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(graph))
 
-      const sources = Array.from({ length: 3 }, () =>
-        createTestNode(graph, [], ['number'])
-      )
+      const sources = [
+        createTestNode(graph, [], ['number']),
+        createTestNode(graph, [], ['number', 'number']),
+        createTestNode(graph, [], ['number', 'number', 'number'])
+      ]
       const target = createTestNode(
         graph,
         ['number', 'number', 'number'],
         [],
         'dynamic target'
       )
-      sources.forEach((source, index) => source.connect(0, target, index))
+      sources.forEach((source, index) => source.connect(index, target, index))
 
       const { subgraph, node: subgraphNode } = graph.convertToSubgraph(
         new Set<Positionable>([target, ...sources])
@@ -249,10 +251,12 @@ describe('SubgraphConversion', () => {
       )
       assert(unpackedTarget)
       expect(
-        ['input_0', 'input_1', 'input_2'].map((name) =>
-          unpackedTarget.getInputLink(unpackedTarget.findInputSlot(name))
+        ['input_0', 'input_1', 'input_2'].map(
+          (name) =>
+            unpackedTarget.getInputLink(unpackedTarget.findInputSlot(name))
+              ?.origin_slot
         )
-      ).toEqual([expect.anything(), expect.anything(), expect.anything()])
+      ).toEqual([0, 1, 2])
       expect(
         unpackedTarget.getInputLink(
           unpackedTarget.findInputSlot('inserted_dynamic_input')
@@ -307,10 +311,12 @@ describe('SubgraphConversion', () => {
       )
       assert(unpackedTarget)
       expect(
-        ['input_0', 'input_1', 'input_2'].map((name) =>
-          unpackedTarget.getInputLink(unpackedTarget.findInputSlot(name))
+        ['input_0', 'input_1', 'input_2'].map(
+          (name) =>
+            unpackedTarget.getInputLink(unpackedTarget.findInputSlot(name))
+              ?.origin_slot
         )
-      ).toEqual([expect.anything(), expect.anything(), expect.anything()])
+      ).toEqual([0, 1, 2])
       expect(
         unpackedTarget.getInputLink(
           unpackedTarget.findInputSlot('inserted_dynamic_input')

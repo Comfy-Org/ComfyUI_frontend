@@ -7,6 +7,7 @@
     {
       "id": 18,
       "type": "LoadImage",
+      "title": "Image 1 source",
       "pos": [40, 120],
       "size": [282.796875, 346],
       "flags": {},
@@ -37,6 +38,7 @@
     {
       "id": 19,
       "type": "LoadImage",
+      "title": "Image 2 source",
       "pos": [360, 120],
       "size": [282.796875, 346],
       "flags": {},
@@ -67,6 +69,7 @@
     {
       "id": 20,
       "type": "LoadImage",
+      "title": "Image 3 source",
       "pos": [680, 120],
       "size": [282.796875, 346],
       "flags": {},
