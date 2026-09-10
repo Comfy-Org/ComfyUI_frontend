@@ -36,6 +36,7 @@ const MAX_SECTION_CHARS = 60_000
 export const MAX_CRDT_EVENT_LOG_EXPORT_BYTES = 60_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
+const CIRCULAR_REDACTED = '[circular]'
 const SOURCE_TIMEOUT_MS = 5_000
 
 /**
@@ -247,7 +248,7 @@ export function redactEventPayloads(
 ): readonly DevEvent[]
 export function redactEventPayloads(value: unknown): unknown
 export function redactEventPayloads(value: unknown): unknown {
-  return redactPayloadTree(value, 0)
+  return redactPayloadTree(value, 0, [])
 }
 
 /**
@@ -270,21 +271,40 @@ const CONTENT_KEYS: ReadonlySet<string> = new Set([
  * Runs before `devEventReplacer`, so anything it rebuilds is what the
  * replacer sees. Binary views stay intact for the replacer to summarize
  * (`Object.entries(new Uint8Array(4))` would otherwise flatten them into
- * index-keyed records), and the depth cap turns a cyclic detail into a marker
- * instead of a `RangeError` that `copyLog` would swallow.
+ * index-keyed records).
+ *
+ * Cycles are cut at the first revisit of an ANCESTOR, matching
+ * {@link devEventReplacer}: a depth cap alone bounds recursion depth but not
+ * total work, so a detail whose k object-valued keys each point back at the
+ * root is re-expanded down every path — k=4 costs 89 million calls and hangs
+ * the tab for seconds before the cap finally stops it. Tracking the ancestor
+ * chain rather than everything visited keeps a doc snapshot that legally
+ * references one object from two sibling positions fully expanded.
  */
-function redactPayloadTree(value: unknown, depth: number): unknown {
+function redactPayloadTree(
+  value: unknown,
+  depth: number,
+  ancestors: unknown[]
+): unknown {
   if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
-  if (Array.isArray(value)) {
-    return value.map((item) => redactPayloadTree(item, depth + 1))
-  }
   if (!isRecord(value) || isBinary(value)) return value
-  return Object.fromEntries(
-    Object.entries(value).map(([key, nested]) => [
-      key,
-      CONTENT_KEYS.has(key) ? REDACTED : redactPayloadTree(nested, depth + 1)
-    ])
-  )
+  if (ancestors.includes(value)) return CIRCULAR_REDACTED
+  ancestors.push(value)
+  try {
+    if (Array.isArray(value)) {
+      return value.map((item) => redactPayloadTree(item, depth + 1, ancestors))
+    }
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => [
+        key,
+        CONTENT_KEYS.has(key)
+          ? REDACTED
+          : redactPayloadTree(nested, depth + 1, ancestors)
+      ])
+    )
+  } finally {
+    ancestors.pop()
+  }
 }
 
 function isBinary(value: object): boolean {

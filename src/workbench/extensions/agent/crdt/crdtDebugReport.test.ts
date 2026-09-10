@@ -368,8 +368,44 @@ describe('collectCrdtDebugReport', () => {
       ]
     })
 
-    expect(report).toContain('redacted at depth limit')
+    expect(report).toContain('[circular]')
     expect(report).not.toContain('unserializable')
+  })
+
+  it('cuts a wide cycle at the first revisit instead of re-expanding it', async () => {
+    const detail: Record<string, unknown> = {}
+    for (const key of ['a', 'b', 'c', 'd']) detail[key] = detail
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        { seq: 1, at: 0, kind: 'doc_gap', scope: 'doc', level: 'warn', detail }
+      ]
+    })
+
+    expect(report).toContain('[circular]')
+    expect(report).not.toContain('redacted at depth limit')
+  })
+
+  it('keeps a repeated sibling reference expanded rather than calling it cyclic', async () => {
+    const shared = { widget: 'seed' }
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [
+        {
+          seq: 1,
+          at: 0,
+          kind: 'doc_update',
+          scope: 'doc',
+          level: 'info',
+          detail: { left: shared, right: shared }
+        }
+      ]
+    })
+
+    expect(report).not.toContain('[circular]')
+    expect([...report.matchAll(/"widget": "seed"/g)]).toHaveLength(2)
   })
 
   it('redacts a credential nested under an innocuous key', async () => {
