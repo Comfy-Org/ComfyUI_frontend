@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
 import {
   forgetAgentSessionMemory,
   hasAgentSessionMemoryFor
@@ -42,6 +43,9 @@ export function registerAgentIdentityStateTracker(): () => void {
 
         forgetAgentSessionMemory()
         useAgentWorkflowTabBindingStore().clear()
+        useAgentChatHistoryStore().replaceAll([])
+        localStorage.removeItem('Comfy.Agent.ChatTitles')
+        localStorage.removeItem('Comfy.Agent.DeletedThreads')
       },
       { immediate: true }
     )
