@@ -374,35 +374,41 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  // A cancellation or card change made in the portal tab never pushes back to
-  // this one — status has no focus refetch and capability reads are paced —
-  // so the next return to the app re-reads everything the portal could have
-  // changed.
-  let portalReturnRefresh: (() => void) | null = null
+  // A cancellation or card change made in the portal tab or window never
+  // pushes back to this one — status has no return refetch and capability
+  // reads are paced — so the next return to the app re-reads everything the
+  // portal could have changed.
+  let stopPortalReturnRefresh: (() => void) | null = null
   function refreshOnPortalReturn() {
-    if (portalReturnRefresh) {
-      document.removeEventListener('visibilitychange', portalReturnRefresh)
-    }
-    const onReturn = () => {
-      if (document.visibilityState !== 'visible') return
+    stopPortalReturnRefresh?.()
+
+    const stopListening = () => {
       document.removeEventListener('visibilitychange', onReturn)
-      portalReturnRefresh = null
+      window.removeEventListener('focus', onReturn)
+      stopPortalReturnRefresh = null
+    }
+    const onReturn = (event: Event) => {
+      if (
+        event.type === 'visibilitychange' &&
+        document.visibilityState !== 'visible'
+      ) {
+        return
+      }
+      stopListening()
       void Promise.allSettled([
         fetchStatus(),
         fetchBalance(),
         useBillingCapabilities().refresh()
       ])
     }
-    portalReturnRefresh = onReturn
+    stopPortalReturnRefresh = stopListening
     document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
   }
 
   if (getCurrentScope()) {
     onScopeDispose(() => {
-      if (portalReturnRefresh) {
-        document.removeEventListener('visibilitychange', portalReturnRefresh)
-        portalReturnRefresh = null
-      }
+      stopPortalReturnRefresh?.()
     })
   }
 
@@ -413,8 +419,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
       if (response.url) {
-        window.open(response.url, '_blank')
-        refreshOnPortalReturn()
+        const portalWindow = window.open(response.url, '_blank')
+        if (portalWindow) refreshOnPortalReturn()
       }
     } catch (err) {
       error.value =
