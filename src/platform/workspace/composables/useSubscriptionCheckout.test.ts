@@ -362,13 +362,15 @@ vi.mock<unknown>(
 
 const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
+const mockCaptureCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent,
     trackResubscribeClicked: mockTrackResubscribeClicked,
     trackBeginCheckout: mockTrackBeginCheckout,
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
+    captureCheckoutJourneyEvent: mockCaptureCheckoutJourneyEvent
   })
 }))
 
@@ -520,7 +522,74 @@ describe('useSubscriptionCheckout', () => {
     }
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
+    mockCaptureCheckoutJourneyEvent.mockClear()
     sessionStorage.clear()
+  })
+
+  describe('checkout journey instrumentation', () => {
+    function journeyPhases() {
+      return mockCaptureCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event.phase
+      )
+    }
+
+    it('emits entered, submitted, and operation_linked across a subscribe', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-1'
+      })
+      await checkout.handleConfirmTransition()
+
+      const phases = journeyPhases()
+      expect(phases).toContain('entered')
+      expect(phases).toContain('preview_ready')
+      expect(phases.indexOf('entered')).toBeLessThan(
+        phases.indexOf('submitted')
+      )
+      expect(phases.indexOf('submitted')).toBeLessThan(
+        phases.indexOf('operation_linked')
+      )
+
+      const opLinked = mockCaptureCheckoutJourneyEvent.mock.calls
+        .map(([event]) => event)
+        .find((event) => event.phase === 'operation_linked')
+      expect(opLinked).toMatchObject({
+        billing_op_id: 'op-1',
+        assignment_status: 'unavailable'
+      })
+    })
+
+    it('does not re-enter when the same journey resumes', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      const entered = journeyPhases().filter((phase) => phase === 'entered')
+      expect(entered).toHaveLength(1)
+    })
+
+    it('records a correlated preview failure with no operation id', async () => {
+      await submitRejectedPreview('PREVIEW_FAILED')
+
+      const phases = journeyPhases()
+      expect(phases).toContain('entered')
+      expect(phases).toContain('preview_failed')
+      expect(phases).not.toContain('operation_linked')
+    })
   })
 
   describe('handleSubscribeClick', () => {
