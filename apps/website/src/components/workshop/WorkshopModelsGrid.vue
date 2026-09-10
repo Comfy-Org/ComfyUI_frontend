@@ -475,14 +475,11 @@ const menuItemClass =
 
         <button
           type="button"
-          class="group hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mt-12 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3"
+          class="group hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3 max-sm:w-full"
           data-testid="browse-all-end"
           @click="browseAll = true"
         >
           {{ t('workshop.sections.browseAll', locale) }}
-          <span class="text-primary-warm-gray tabular-nums">
-            {{ visible.length }}
-          </span>
           <ChevronRight
             class="size-4 transition-transform group-hover:translate-x-0.5"
             aria-hidden="true"
