@@ -50,6 +50,7 @@ import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
+import type { DocumentId } from '@/types/documentId'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -161,11 +162,12 @@ const canvasStore = useCanvasStore()
 const graphDocumentStore = useGraphDocumentStore()
 const graphMutationsByWorkflow = new Map<
   string,
-  ReturnType<typeof createGraphMutations>
+  {
+    documentId: DocumentId | null
+    mutations: ReturnType<typeof createGraphMutations>
+  }
 >()
 const graphMutations = (workflowId: string) => {
-  const existing = graphMutationsByWorkflow.get(workflowId)
-  if (existing) return existing
   // Document identity is early-bound (ADR-0024): the registry entry is
   // created when the target is first addressed, not at commit time. Commit
   // scope resolution then records/refreshes the entry's scope, so a target
@@ -173,6 +175,11 @@ const graphMutations = (workflowId: string) => {
   const documentId =
     graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
     graphDocumentStore.createDocument({ workflowId })
+  // The registry may map this workflow onto a replacement document after the
+  // previous one closed; a handler that captured the closed document resolves
+  // no scope and silently drops every later update.
+  const existing = graphMutationsByWorkflow.get(workflowId)
+  if (existing && existing.documentId === documentId) return existing.mutations
   const mutations = createGraphMutations({
     getScope() {
       const registered = documentId
@@ -230,7 +237,7 @@ const graphMutations = (workflowId: string) => {
       }
     }
   })
-  graphMutationsByWorkflow.set(workflowId, mutations)
+  graphMutationsByWorkflow.set(workflowId, { documentId, mutations })
   return mutations
 }
 const { focusNodeInstance } = useFocusNode()
