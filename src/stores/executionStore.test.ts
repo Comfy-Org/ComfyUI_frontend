@@ -1,3 +1,6 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -6,30 +9,22 @@ import { api } from '@/scripts/api'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
-  mockNodeIdToNodeLocatorId,
-  mockNodeLocatorIdToNodeExecutionId,
-  mockExecutionIdToCurrentId,
-  mockActiveWorkflow,
-  mockOpenWorkflows,
   mockShowTextPreview,
   mockTrackExecutionError,
   mockTrackExecutionOutcome,
   mockTrackExecutionSuccess,
   mockTrackSharedWorkflowRun
 } = await vi.hoisted(async () => {
-  const { shallowRef } = await import('vue')
   return {
-    mockNodeIdToNodeLocatorId: vi.fn(),
-    mockNodeLocatorIdToNodeExecutionId: vi.fn(),
-    mockExecutionIdToCurrentId: vi.fn(),
-    mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
-    mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
     mockTrackExecutionOutcome: vi.fn(),
@@ -47,7 +42,7 @@ const defaultWorkflowExecutionIntent = {
   trigger_source: 'unknown'
 } as const
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => mockAppModeState
 }))
 
@@ -58,27 +53,11 @@ beforeEach(() => {
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
-    executionIdToCurrentId: mockExecutionIdToCurrentId,
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
-    },
-    get openWorkflows() {
-      return mockOpenWorkflows.value
-    },
-    isOpen: (workflow: { path?: string }) =>
-      mockOpenWorkflows.value.some((w) => w.path === workflow.path)
-  }))
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
     trackExecutionOutcome: mockTrackExecutionOutcome,
@@ -92,7 +71,7 @@ declare global {
   interface Window {}
 }
 
-vi.mock('@/composables/node/useNodeProgressText', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeProgressText'), () => ({
   useNodeProgressText: () => ({
     showTextPreview: mockShowTextPreview
   })
@@ -104,7 +83,7 @@ vi.mock('@/composables/node/useNodeProgressText', () => ({
  */
 type EventHandler = (...args: unknown[]) => void
 const apiEventHandlers = new Map<string, EventHandler>()
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn((event: string, handler: EventHandler) => {
       apiEventHandlers.set(event, handler)
@@ -123,20 +102,8 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    revokePreviewsByExecutionId: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/jobPreviewStore', () => ({
-  useJobPreviewStore: () => ({
-    clearPreview: vi.fn()
-  })
-}))
-
 // Mock the app import with proper implementation
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
     getNodeById: vi.fn(),
     nodes: [] // Add nodes array for workflowStore iteration
@@ -152,18 +119,19 @@ vi.mock('@/scripts/app', () => {
 })
 
 beforeEach(() => {
-  mockActiveWorkflow.value = null
-  mockOpenWorkflows.value = []
+  useWorkflowStore().activeWorkflow = null
+  Object.assign(useWorkflowStore(), { openWorkflows: [] })
+  vi.mocked(useWorkflowStore().isOpen).mockImplementation((workflow) =>
+    useWorkflowStore().openWorkflows.some((open) => open.path === workflow.path)
+  )
 })
 
 function createQueuedWorkflow(path: string = 'workflows/test.json') {
-  return {
+  return fromPartial<LoadedComfyWorkflow>({
     activeState: { id: 'workflow-id' },
     initialState: { id: 'workflow-id' },
     path
-  } as Parameters<
-    ReturnType<typeof useExecutionStore>['storeJob']
-  >[0]['workflow']
+  })
 }
 
 function createPromptNode(title: string, classType: string) {
@@ -241,12 +209,19 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         toNodeId(456)
       )
-      const mockExecutionId = '123:456'
-      mockNodeLocatorIdToNodeExecutionId.mockReturnValue(mockExecutionId)
+      const mockExecutionId = createNodeExecutionId([
+        toNodeId(123),
+        toNodeId(456)
+      ])
+      vi.mocked(
+        useWorkflowStore().nodeLocatorIdToNodeExecutionId
+      ).mockReturnValue(mockExecutionId)
 
       const result = store.nodeLocatorIdToExecutionId(locatorId)
 
-      expect(mockNodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(locatorId)
+      expect(
+        vi.mocked(useWorkflowStore().nodeLocatorIdToNodeExecutionId)
+      ).toHaveBeenCalledWith(locatorId)
       expect(result).toBe(mockExecutionId)
     })
 
@@ -255,7 +230,9 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         'unknown-subgraph-id',
         toNodeId(456)
       )
-      mockNodeLocatorIdToNodeExecutionId.mockReturnValue(null)
+      vi.mocked(
+        useWorkflowStore().nodeLocatorIdToNodeExecutionId
+      ).mockReturnValue(null)
 
       const result = store.nodeLocatorIdToExecutionId(locatorId)
 
@@ -616,7 +593,7 @@ describe('useExecutionStore - workflowStatus', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
-    mockOpenWorkflows.value = [workflowA, workflowB]
+    Object.assign(useWorkflowStore(), { openWorkflows: [workflowA, workflowB] })
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -878,7 +855,7 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionSuccess('job-a')
     fireExecutionSuccess('job-b')
 
-    mockOpenWorkflows.value = [workflowB]
+    Object.assign(useWorkflowStore(), { openWorkflows: [workflowB] })
     await nextTick()
 
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
@@ -891,7 +868,7 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBe('running')
 
     // Close the tab while the job is still running.
-    mockOpenWorkflows.value = [workflowB]
+    Object.assign(useWorkflowStore(), { openWorkflows: [workflowB] })
     await nextTick()
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
 
@@ -1069,7 +1046,7 @@ describe('useExecutionStore - background workflow error routing', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
-    mockOpenWorkflows.value = [workflowA, workflowB]
+    Object.assign(useWorkflowStore(), { openWorkflows: [workflowA, workflowB] })
     store = useExecutionStore()
     errorStore = useExecutionErrorStore()
     store.bindExecutionEvents()
@@ -1210,7 +1187,9 @@ describe('useExecutionStore - background workflow error routing', () => {
 
   it('buffers a mapped job with an ambiguous path until storeJob', () => {
     const duplicateWorkflow = makeWorkflow('/workflows/c.json', graphBId)
-    mockOpenWorkflows.value = [workflowA, workflowB, duplicateWorkflow]
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [workflowA, workflowB, duplicateWorkflow]
+    })
     store.registerJobWorkflowIdMapping('job-ambiguous', graphBId)
 
     fireExecutionError('job-ambiguous')
@@ -1331,13 +1310,17 @@ describe('useExecutionStore - progress_text startup guard', () => {
     useCanvasStore().canvas = {
       graph: { getNodeById: vi.fn() }
     } as unknown as LGraphCanvas
-    mockExecutionIdToCurrentId.mockReturnValue(undefined)
+    vi.mocked(useWorkflowStore().executionIdToCurrentId).mockReturnValue(
+      undefined
+    )
 
     expect(() =>
       fireProgressText({ nodeId: toNodeId('1:2'), text: 'warming up' })
     ).not.toThrow()
 
-    expect(mockExecutionIdToCurrentId).toHaveBeenCalledWith('1:2')
+    expect(
+      vi.mocked(useWorkflowStore().executionIdToCurrentId)
+    ).toHaveBeenCalledWith('1:2')
     expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })
@@ -2264,10 +2247,10 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   function storeVisibleJob(jobId: string) {
     const workflow = createQueuedWorkflow()
-    mockActiveWorkflow.value = workflow
-    mockOpenWorkflows.value = [workflow]
+    useWorkflowStore().activeWorkflow = workflow
+    Object.assign(useWorkflowStore(), { openWorkflows: [workflow] })
     useExecutionErrorStore().setActiveGraph(
-      workflow.activeState!.id!,
+      workflow.activeState.id!,
       workflow.path
     )
     store.storeJob({

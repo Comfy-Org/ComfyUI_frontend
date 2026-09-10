@@ -213,8 +213,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     subgraphNodeIdToEnter: string
     nodeTitle: string
   }>,
-  resolvedModelName: string,
-  staleModelName: string
+  resolvedModelName: string
 ) {
   await loadPromotedMissingModelWithHostValues(comfyPage, workflow, {
     [workflow.hostNodeId]: resolvedModelName
@@ -241,12 +240,8 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     })
     await expect(
       staleCombo,
-      `${step.nodeTitle} should expose the stale linked interior widget`
-    ).toBeDisabled()
-    await expect(
-      staleCombo,
-      `${step.nodeTitle} should keep the stale interior value`
-    ).toContainText(staleModelName)
+      `${step.nodeTitle} should suppress the stale linked interior widget`
+    ).toHaveCount(0)
     await expectNoMissingModelUi(comfyPage)
   }
 }

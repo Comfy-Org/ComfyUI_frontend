@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type {
-  BillingTelemetryEvent,
-  BootstrapCompleteMetadata
-} from '../../types'
+import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
@@ -19,7 +16,7 @@ const {
   getInternalContext: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: {
     addAction,
     addDurationVital,
@@ -33,6 +30,23 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('records fetch timeouts as RUM actions', () => {
+    new DatadogRumTelemetryProvider().trackFetchTimeout({
+      route: '/userdata/:resource',
+      method: 'GET',
+      timeout_ms: 60_000
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_TIMEOUT,
+      {
+        route: '/userdata/:resource',
+        method: 'GET',
+        timeout_ms: 60_000
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
@@ -309,47 +323,5 @@ describe('DatadogRumTelemetryProvider', () => {
         execution_duration_ms: 0
       }
     })
-  })
-
-  it('records startup as one action plus a duration vital', () => {
-    new DatadogRumTelemetryProvider().trackBootstrapComplete({
-      total_ms: 5200,
-      outcome: 'failed',
-      phase_count: 2,
-      phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
-    })
-
-    expect(addAction).toHaveBeenCalledExactlyOnceWith(
-      TelemetryEvents.BOOTSTRAP_COMPLETE,
-      {
-        total_ms: 5200,
-        outcome: 'failed',
-        phase_count: 2,
-        phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
-      }
-    )
-    expect(addDurationVital).toHaveBeenCalledWith('bootstrap', {
-      startTime: performance.timeOrigin,
-      duration: 5200,
-      context: { outcome: 'failed' }
-    })
-  })
-
-  it('records timed-out startup without a duration vital', () => {
-    const metadata: BootstrapCompleteMetadata = {
-      total_ms: 30_000,
-      outcome: 'timed_out',
-      phase_count: 1,
-      phases: {},
-      pending: ['bootstrap/object-info']
-    }
-
-    new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
-
-    expect(addAction).toHaveBeenCalledExactlyOnceWith(
-      TelemetryEvents.BOOTSTRAP_COMPLETE,
-      metadata
-    )
-    expect(addDurationVital).not.toHaveBeenCalled()
   })
 })

@@ -1,3 +1,7 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -7,7 +11,7 @@ import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/use
 const query = vi.hoisted(() => ({ value: {} as Record<string, string> }))
 const replace = vi.hoisted(() => vi.fn())
 const push = vi.hoisted(() => vi.fn())
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ replace, push }),
   useRoute: () => ({ query: query.value })
 }))
@@ -15,13 +19,8 @@ vi.mock('vue-router', () => ({
 const resumeOAuthIfNeeded = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ kind: 'no-oauth' })
 )
-vi.mock('@/platform/cloud/oauth/useOAuthPostLoginRedirect', () => ({
+vi.mock(import('@/platform/cloud/oauth/useOAuthPostLoginRedirect'), () => ({
   useOAuthPostLoginRedirect: () => ({ resumeOAuthIfNeeded })
-}))
-
-const toasts = vi.hoisted(() => ({ add: vi.fn() }))
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => toasts
 }))
 
 const DEFAULT_REDIRECT = { name: 'cloud-user-check' }
@@ -70,7 +69,7 @@ describe('usePostAuthRedirect', () => {
 
     await onAuthSuccess()
 
-    expect(toasts.add).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'success',
         summary: 'Login Completed'
@@ -140,7 +139,7 @@ describe('usePostAuthRedirect', () => {
     await onAuthSuccess()
 
     expect(
-      toasts.add,
+      useToastStore().add,
       'authError only renders in email-form mode, so a Google/GitHub user would see the failure nowhere at all'
     ).toHaveBeenCalledWith(
       expect.objectContaining({

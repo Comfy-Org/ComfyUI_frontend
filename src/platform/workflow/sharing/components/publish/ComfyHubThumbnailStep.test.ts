@@ -1,18 +1,40 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({ t: (key: string) => key })
-  }
-})
+import { createI18n } from 'vue-i18n'
 
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 import ComfyHubThumbnailStep from './ComfyHubThumbnailStep.vue'
+
+function createTestI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        g: { clear: 'Clear' },
+        comfyHubPublish: {
+          selectAThumbnail: 'Select a thumbnail',
+          thumbnailImage: 'Image',
+          thumbnailVideo: 'Video',
+          thumbnailImageComparison: 'Image comparison',
+          uploadThumbnail: 'Upload an image',
+          uploadVideo: 'Upload a video',
+          uploadComparison: 'Upload before and after',
+          thumbnailPreview: 'Thumbnail preview',
+          videoPreview: 'Video thumbnail preview',
+          uploadPromptClickToBrowse: 'Click to browse or',
+          uploadPromptDropImage: 'drop an image here',
+          uploadPromptDropVideo: 'drop a video here',
+          uploadComparisonBeforePrompt: 'Before',
+          uploadComparisonAfterPrompt: 'After',
+          uploadThumbnailHint: '1:1 preferred, 1080p max'
+        }
+      }
+    }
+  })
+}
 
 function renderStep(
   props: Record<string, unknown> = {},
@@ -21,7 +43,7 @@ function renderStep(
   return render(ComfyHubThumbnailStep, {
     props: { thumbnailType: 'image' as ThumbnailType, ...props, ...callbacks },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [createTestI18n()],
       stubs: {
         ToggleGroup: {
           template:
@@ -61,9 +83,7 @@ describe('ComfyHubThumbnailStep', () => {
     // The image must not leak into the video tab as a preview; the upload
     // prompt stays visible instead.
     expect(screen.queryByRole('img')).toBeNull()
-    expect(
-      screen.getByText('comfyHubPublish.uploadPromptClickToBrowse')
-    ).toBeTruthy()
+    expect(screen.getByText('Click to browse or')).toBeTruthy()
   })
 
   it('keeps the existing thumbnail URL when the type changes', async () => {

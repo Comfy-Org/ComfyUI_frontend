@@ -1,27 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-const { mockIsPackInstalled } = vi.hoisted(() => ({
-  mockIsPackInstalled: vi.fn<(packName: string | undefined) => boolean>()
-}))
-
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
-  })
-}))
-
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: vi.fn((key) => key)
-    })
-  }
+let mockIsPackInstalled: ReturnType<
+  typeof useComfyManagerStore
+>['isPackInstalled']
+beforeEach(() => {
+  mockIsPackInstalled = useComfyManagerStore().isPackInstalled
 })
 
 type NodePack = components['schemas']['Node']
