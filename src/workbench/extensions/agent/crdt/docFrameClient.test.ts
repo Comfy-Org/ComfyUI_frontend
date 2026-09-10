@@ -260,7 +260,7 @@ describe('doc frame client', () => {
     })
   })
 
-  it('omits seq zero from successful subscription acknowledgements', () => {
+  it('omits seq zero from a successful subscription acknowledgement', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_subscribed',
@@ -270,7 +270,9 @@ describe('doc frame client', () => {
       type: 'doc_subscribed',
       data: { workflowId: 'wf-1', ok: true }
     })
+  })
 
+  it('keeps seq zero on a doc update', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_update',
