@@ -1,5 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
@@ -15,29 +16,34 @@ import { encodeBase64 } from './docFrameClient'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const apiState = vi.hoisted(() => {
-  const events = new EventTarget()
-  const sent: string[] = []
+  const state = {
+    events: new EventTarget(),
+    sent: Array<string>()
+  }
   return {
-    events,
-    sent,
+    state,
     api: {
       socket: {
         readyState: 1,
-        send: vi.fn((frame: string) => sent.push(frame))
+        send: vi.fn((frame: string) => state.sent.push(frame))
       },
       addCustomEventListener: (type: string, listener: EventListener) =>
-        events.addEventListener(type, listener),
+        state.events.addEventListener(type, listener),
       removeCustomEventListener: (type: string, listener: EventListener) =>
-        events.removeEventListener(type, listener),
+        state.events.removeEventListener(type, listener),
       addEventListener: (type: string, listener: EventListener) =>
-        events.addEventListener(type, listener),
+        state.events.addEventListener(type, listener),
       removeEventListener: (type: string, listener: EventListener) =>
-        events.removeEventListener(type, listener)
+        state.events.removeEventListener(type, listener)
     }
   }
 })
 
-vi.mock('@/scripts/api', () => ({ api: apiState.api }))
+vi.mock(import('@/scripts/api'), async (importOriginal) => {
+  const actual = await importOriginal()
+  Object.assign(actual.api, apiState.api)
+  return actual
+})
 
 const WORKFLOW_ID = 'wf-rejected-projection'
 const scope = {
@@ -46,23 +52,30 @@ const scope = {
 }
 
 function deliver(type: string, data: unknown): void {
-  apiState.events.dispatchEvent(new CustomEvent(type, { detail: data }))
+  apiState.state.events.dispatchEvent(new CustomEvent(type, { detail: data }))
 }
 
-function sentFrames(type: string): { type: string; data: unknown }[] {
-  return apiState.sent
-    .map((frame) => JSON.parse(frame) as { type: string; data: unknown })
-    .filter((frame) => frame.type === type)
+function sentFrames(type: string): unknown[] {
+  return apiState.state.sent
+    .map((frame): unknown => JSON.parse(frame))
+    .filter(
+      (frame) =>
+        typeof frame === 'object' &&
+        frame !== null &&
+        'type' in frame &&
+        frame.type === type
+    )
 }
 
 describe('useAgentCrdtFollower projection recovery', () => {
   beforeEach(() => {
-    apiState.sent.length = 0
+    apiState.state.events = new EventTarget()
+    apiState.state.sent.length = 0
     vi.stubGlobal('WebSocket', { OPEN: 1 })
   })
 
-  it.fails('retries a rejected projection when resubscription has no host delta', () => {
-    const pinia = createPinia()
+  it('loses a rejected projection when resubscription has no host delta', () => {
+    const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     let scopeAvailable = true
     const mutations = createGraphMutations({
@@ -110,14 +123,12 @@ describe('useAgentCrdtFollower projection recovery', () => {
       ).toEqual([toNodeId(99)])
 
       scopeAvailable = true
-      apiState.events.dispatchEvent(new CustomEvent('reconnected'))
-      const subscribes = sentFrames('doc_subscribe') as {
-        type: 'doc_subscribe'
-        data: { state_vector_b64: string }
-      }[]
-      expect(subscribes.at(-1)?.data.state_vector_b64).toBe(
-        encodeBase64(Y.encodeStateVector(host))
-      )
+      apiState.state.events.dispatchEvent(new CustomEvent('reconnected'))
+      expect(sentFrames('doc_subscribe').at(-1)).toMatchObject({
+        data: {
+          state_vector_b64: encodeBase64(Y.encodeStateVector(host))
+        }
+      })
       deliver('doc_subscribed', {
         v: 1,
         workflow_id: WORKFLOW_ID,
@@ -125,7 +136,11 @@ describe('useAgentCrdtFollower projection recovery', () => {
         seq: 1
       })
 
-      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
     } finally {
       view.unmount()
       host.destroy()

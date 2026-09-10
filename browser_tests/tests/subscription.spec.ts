@@ -9,6 +9,7 @@ import {
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
 
+// oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
 // Installs subscription mocks AFTER comfyPage.setup() and reloads the page
 // so `addInitScript` (which sets `window.__CONFIG__.subscription_required`)
 // applies before module-level reads in `ComfyRunButton/index.ts` evaluate.

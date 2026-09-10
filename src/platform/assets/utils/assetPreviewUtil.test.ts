@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import type { ComfyApp } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   findOutputAsset,
@@ -17,8 +19,9 @@ const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
 const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
     fetchApi: mockFetchApi,
     apiURL: mockApiURL,
     api_base: '',
@@ -26,18 +29,12 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetAPIEnabled: mockIsAssetAPIEnabled,
     uploadAssetFromBase64: mockUploadAssetFromBase64,
     updateAsset: mockUpdateAsset
   }
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    outputAssets: { invalidate: mockInvalidateOutputAssets }
-  })
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
@@ -82,6 +79,12 @@ const localAssetWithPreview = {
   preview_id: '3df94ee8-preview',
   preview_url: '/api/view?type=output&filename=preview.png'
 }
+
+beforeEach(() => {
+  vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
+    mockInvalidateOutputAssets
+  )
+})
 
 describe('isAssetPreviewSupported', () => {
   it('returns true when asset API is enabled (cloud)', () => {
@@ -315,4 +318,9 @@ describe('persistThumbnail', () => {
 
     expect(mockInvalidateOutputAssets).not.toHaveBeenCalled()
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

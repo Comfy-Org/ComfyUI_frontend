@@ -1,20 +1,20 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-const { load3dState, resolveNodeMock, settingGetMock } = vi.hoisted(() => ({
+const { load3dState, resolveNodeMock } = vi.hoisted(() => ({
   load3dState: {
     current: null as ReturnType<typeof buildLoad3dStub> | null
   },
-  resolveNodeMock: vi.fn(),
-  settingGetMock: vi.fn()
+  resolveNodeMock: vi.fn()
 }))
 
 function buildLoad3dStub() {
@@ -61,15 +61,11 @@ function buildLoad3dStub() {
   }
 }
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => load3dState.current
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: settingGetMock })
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   resolveNode: resolveNodeMock
 }))
 
@@ -99,11 +95,8 @@ function renderLoad3D(options: RenderOptions = {}) {
   }
   load3dState.current = stub
 
-  settingGetMock.mockImplementation((key: string) =>
-    key === 'Comfy.Load3D.3DViewerEnable'
-      ? (options.enable3DViewer ?? false)
-      : undefined
-  )
+  useSettingStore().settingValues['Comfy.Load3D.3DViewerEnable'] =
+    options.enable3DViewer ?? false
 
   return {
     ...render(Load3D, {

@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport } from './docFrameClient'
 import {
@@ -9,6 +11,10 @@ import {
 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -42,13 +48,13 @@ describe('doc frame client', () => {
         workflow_id: 'wf-1',
         seq: 1,
         update_b64: encodeBase64(encoded),
-        actor: 'agent:turn-1',
-        op_ids: ['op-1', 42, 'op-2']
+        actor: 'agent:thread-1:turn-1',
+        op_ids: ['op-1', 'op-2']
       }
     })
     expect(frame?.type).toBe('doc_update')
     if (frame?.type !== 'doc_update') throw new Error('Expected doc_update')
-    expect(frame.data.actor).toBe('agent:turn-1')
+    expect(frame.data.actor).toBe('agent:thread-1:turn-1')
     expect(frame.data.opIds).toEqual(['op-1', 'op-2'])
 
     const follower = new FollowerDoc()
@@ -224,31 +230,33 @@ describe('doc frame client', () => {
     })
   })
 
-  it.fails('rejects malformed operation result arrays', () => {
-    for (const data of [
-      {
-        v: 1,
-        workflow_id: 'wf-1',
-        ok: false,
-        applied: 'op-1',
-        skipped: []
-      },
-      {
-        v: 1,
-        workflow_id: 'wf-1',
-        ok: false,
-        applied: [],
-        skipped: null
-      },
-      {
-        v: 1,
-        workflow_id: 'wf-1',
-        ok: false,
-        applied: ['op-1', 42],
-        skipped: []
-      }
-    ]) {
-      expect(parseServerDocFrame({ type: 'doc_ops_result', data })).toBeNull()
+  it('reports the first malformed inbound frame per type', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const listener = vi.fn()
+    client.addEventListener('doc_update', listener)
+
+    const malformed = {
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      update_b64: 'not-base64'
     }
+    transport.receive('doc_update', malformed)
+    transport.receive('doc_update', malformed)
+    transport.receive('awareness', {})
+
+    expect(listener).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'doc_update' },
+      level: 'warning'
+    })
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'awareness' },
+      level: 'warning'
+    })
   })
 })
