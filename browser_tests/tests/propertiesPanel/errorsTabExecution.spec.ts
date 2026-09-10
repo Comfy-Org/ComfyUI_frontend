@@ -1,10 +1,13 @@
 import { mergeTests } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import {
+  openErrorsTab,
+  queueWorkflowAndOpenExecutionErrors
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -21,24 +24,10 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await comfyPage.setup()
   })
 
-  async function openExecutionErrorTab(comfyPage: ComfyPage) {
-    await comfyPage.workflow.loadWorkflow('nodes/execution_error')
-    await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-
-    const errorOverlay = comfyPage.page.getByTestId(
-      TestIds.dialogs.errorOverlay
-    )
-    await expect(errorOverlay).toBeVisible()
-    await errorOverlay
-      .getByTestId(TestIds.dialogs.errorOverlaySeeErrors)
-      .click()
-    await expect(errorOverlay).toBeHidden()
-  }
-
   test('Should show Find on GitHub and Copy buttons in error card', async ({
     comfyPage
   }) => {
-    await openExecutionErrorTab(comfyPage)
+    await queueWorkflowAndOpenExecutionErrors(comfyPage)
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorCardFindOnGithub)
@@ -51,13 +40,70 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
   test('Should show runtime error log in the execution error group', async ({
     comfyPage
   }) => {
-    await openExecutionErrorTab(comfyPage)
+    await queueWorkflowAndOpenExecutionErrors(comfyPage)
 
     const runtimePanel = comfyPage.page.getByTestId(
       TestIds.dialogs.runtimeErrorPanel
     )
     await expect(runtimePanel).toBeVisible()
     await expect(runtimePanel).toContainText('Error log')
+  })
+
+  test('Should keep an execution error on the workflow that produced it', async ({
+    comfyPage
+  }) => {
+    await queueWorkflowAndOpenExecutionErrors(comfyPage)
+
+    const runtimePanel = comfyPage.page.getByTestId(
+      TestIds.dialogs.runtimeErrorPanel
+    )
+    const queueButtonIcon = comfyPage.page.getByTestId(
+      TestIds.topbar.queueButtonIcon
+    )
+    await expect(runtimePanel).toBeVisible()
+    await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--triangle-alert\]/)
+
+    await comfyPage.menu.workflowsTab.open()
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+    await expect(runtimePanel).toBeHidden()
+    await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--play\]/)
+
+    await comfyPage.menu.workflowsTab.switchToWorkflow('execution_error')
+    await openErrorsTab(comfyPage)
+
+    await expect(runtimePanel).toBeVisible()
+    await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--triangle-alert\]/)
+  })
+
+  test('Should keep an execution error after the workflow is renamed', async ({
+    comfyPage
+  }) => {
+    await queueWorkflowAndOpenExecutionErrors(comfyPage)
+
+    const runtimePanel = comfyPage.page.getByTestId(
+      TestIds.dialogs.runtimeErrorPanel
+    )
+    await expect(runtimePanel).toBeVisible()
+
+    await comfyPage.menu.topbar.saveWorkflowAs('execution-error-before-rename')
+
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    await workflowsTab.renameWorkflow(
+      workflowsTab.getOpenedItem('execution-error-before-rename'),
+      'execution-error-after-rename'
+    )
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toContain('execution-error-after-rename')
+
+    await openErrorsTab(comfyPage)
+
+    await expect(runtimePanel).toBeVisible()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.topbar.queueButtonIcon)
+    ).toHaveClass(/icon-\[lucide--triangle-alert\]/)
   })
 })
 
