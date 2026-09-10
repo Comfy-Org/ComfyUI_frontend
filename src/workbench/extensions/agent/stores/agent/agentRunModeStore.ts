@@ -89,6 +89,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   let saveRevision = 0
   let appliedSaveRevision = 0
   let loadRevision = 0
+  let resetEpoch = 0
 
   function apply(nextPreference: AgentRunModePreference): void {
     preference.value = nextPreference
@@ -118,6 +119,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   function reset(): void {
     loadRevision++
     saveRevision++
+    resetEpoch++
     apply(DEFAULT_PREFERENCE)
   }
 
@@ -130,8 +132,9 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       credit_limit: nextLimit
     })
     const revision = ++saveRevision
+    const epoch = resetEpoch
     const applySaved = (savedPreference: AgentRunModePreference) => {
-      if (revision <= appliedSaveRevision) return
+      if (epoch !== resetEpoch || revision <= appliedSaveRevision) return
       appliedSaveRevision = revision
       apply(savedPreference)
     }
