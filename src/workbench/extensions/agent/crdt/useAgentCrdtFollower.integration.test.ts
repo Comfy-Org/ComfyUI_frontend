@@ -5,7 +5,10 @@ import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
-import { createTestWidgetNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import {
+  createTestNode,
+  createTestWidgetNode
+} from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -169,6 +172,59 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       expect(live.widgets![0].value).toBe('remote value')
     }
   )
+
+  it('replaces the live class when the first document changes a node type', async () => {
+    const { graph, workflowId } = mountFollower()
+    const widgetConstructor = graph.value._nodes[0].constructor
+    workflowId.value = null
+    await nextTick()
+
+    const target = new LGraph()
+    const stale = createTestNode(target, ['number'], ['number'], 'Old type')
+    stale.onRemoved = vi.fn()
+    graph.value = target
+    await nextTick()
+    workflowId.value = 'wf-b'
+    await nextTick()
+    expect(target._nodes).toEqual([stale])
+
+    const host = snapshot('wf-b', {
+      nodes: [
+        {
+          ...stale.serialize(),
+          type: 'test/widgetNode',
+          title: 'Replacement widget',
+          widgets_values: ['host value']
+        }
+      ],
+      links: []
+    })
+
+    const live = target.getNodeById(stale.id)!
+    expect(live).not.toBe(stale)
+    expect(live.constructor).toBe(widgetConstructor)
+    expect(live.title).toBe('Replacement widget')
+    expect(live.widgets![0]).toMatchObject({
+      name: 'text_widget',
+      type: 'text',
+      value: 'host value'
+    })
+    expect(target._nodes).toEqual([live])
+    expect(stale.graph).toBeNull()
+    expect(stale.onRemoved).toHaveBeenCalledOnce()
+
+    const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
+    if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
+    widgets.set('text_widget', 'later value')
+    deliver(
+      docUpdateFrame({
+        workflow_id: 'wf-b',
+        seq: 2,
+        update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
+      })
+    )
+    expect(live.widgets![0].value).toBe('later value')
+  })
 
   it('clears live nodes immediately on an explicit document reset', () => {
     const { graph } = mountFollower()

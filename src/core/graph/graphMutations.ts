@@ -393,7 +393,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 widget.name = serializable[index]?.name ?? widget.name
               })
             }
-            if (typeof title !== 'string' || !title)
+            if (
+              incumbent.type === node.state.type &&
+              (typeof title !== 'string' || !title)
+            )
               node.state.title = incumbent.title
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
@@ -673,9 +676,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
             const sameType = existing.type === state.type
-            if (sameType) state.inputs = reconcileInputSlots(existing, state)
-            nodeStore.updateNode(scope, state.id, state, context)
-            if (!sameType) {
+            if (sameType) {
+              state.inputs = reconcileInputSlots(existing, state)
+              nodeStore.updateNode(scope, state.id, state, context)
+            } else {
+              nodeStore.deleteNode(scope, existing, context)
+              nodeStore.registerNode(scope, state, context)
               widgetStore.clearNode(scope.rootGraphId, state.id, context)
             }
             const names = new Set([

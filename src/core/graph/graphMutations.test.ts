@@ -388,6 +388,7 @@ describe('graphMutations', () => {
   it('rebuilds widget state when reconciliation changes the node type', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
+    const incumbent = useNodeDataStore().getNode('root', toNodeId(1))
     const store = useWidgetValueStore()
     const seedId = widgetId('root', toNodeId(1), 'seed')
     const seed = store.registerWidget(
@@ -414,13 +415,16 @@ describe('graphMutations', () => {
       serialize: false
     })
 
+    const { title: _title, ...payload } = node(1, { seed: 7 })
     expect(
       graph.batch(context, (batch) =>
-        batch.reconcileNode({ ...node(1, { seed: 7 }), type: 'Type2' })
+        batch.reconcileNode({ ...payload, type: 'Type2' })
       )
     ).toBe(true)
 
-    expect(useNodeDataStore().getNode('root', toNodeId(1))?.type).toBe('Type2')
+    const state = useNodeDataStore().getNode('root', toNodeId(1))
+    expect(state).not.toBe(incumbent)
+    expect(state).toMatchObject({ type: 'Type2', title: 'Type2' })
     const replacement = store.getWidget(seedId)
     expect(replacement).not.toBe(seed)
     expect(replacement).toMatchObject({
