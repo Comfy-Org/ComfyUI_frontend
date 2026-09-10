@@ -1,6 +1,22 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.featuredModels.label': {
+    en: 'Featured models',
+    'zh-CN': '精选模型'
+  },
+  'home.featuredModels.textToVideo': {
+    en: 'Text to Video',
+    'zh-CN': '文本生成视频'
+  },
+  'home.featuredModels.imageToVideo': {
+    en: 'Image to Video',
+    'zh-CN': '图像生成视频'
+  },
+  'home.featuredModels.exploreMore': {
+    en: 'EXPLORE MORE MODELS',
+    'zh-CN': '探索更多模型'
+  },
   'home.workshop.heading': {
     en: 'Run any model, from one place',
     'zh-CN': '在同一个地方运行任何模型'
