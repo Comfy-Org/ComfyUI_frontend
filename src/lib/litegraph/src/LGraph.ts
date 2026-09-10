@@ -2548,7 +2548,21 @@ export class LGraph
       eparent?: RerouteId
       externalFirst: boolean
       targetSlotName?: string
-    }[] = []
+      targetSlotNameOccurrence?: number
+    })[] = []
+    const getTargetSlotReference = (
+      targetNode: LGraphNode | null | undefined,
+      targetSlotIndex: number
+    ) => {
+      const targetSlot = targetNode?.inputs[targetSlotIndex]
+      if (!targetNode || !targetSlot) return {}
+      return {
+        targetSlotName: targetSlot.name,
+        targetSlotNameOccurrence: targetNode.inputs
+          .slice(0, targetSlotIndex)
+          .filter((input) => input.name === targetSlot.name).length
+      }
+    }
     for (const [, link] of subgraphNode.subgraph.links) {
       const presentation = presentationStore.getPresentation(
         subgraphScope,
@@ -2600,6 +2614,10 @@ export class LGraph
             scope,
             sublink.id
           )
+          const targetSlotReference = getTargetSlotReference(
+            this.getNodeById(sublink.target_id),
+            sublink.target_slot
+          )
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2609,10 +2627,8 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            ...getAgreedLinkPresentation([presentation, outerPresentation]),
-            targetSlotName: this.getNodeById(sublink.target_id)?.inputs[
-              sublink.target_slot
-            ]?.name
+            ...targetSlotReference,
+            ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
         }
@@ -2632,6 +2648,10 @@ export class LGraph
       const restoredPresentation = outerLink
         ? getAgreedLinkPresentation([presentation, outerPresentation])
         : presentation
+      const targetSlotReference = getTargetSlotReference(
+        subgraphNode.subgraph.getNodeById(link.target_id),
+        link.target_slot
+      )
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2641,9 +2661,8 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        ...restoredPresentation,
-        targetSlotName: subgraphNode.subgraph.getNodeById(link.target_id)
-          ?.inputs[link.target_slot]?.name
+        ...targetSlotReference,
+        ...restoredPresentation
       })
     }
     this.remove(subgraphNode)
@@ -2670,6 +2689,19 @@ export class LGraph
       return true
     })
 
+    const resolveTargetSlot = (
+      targetNode: LGraphNode,
+      newLink: (typeof newLinks)[number]
+    ) => {
+      if (newLink.targetSlotName === undefined) return newLink.tslot
+      const targetSlotNameOccurrence = newLink.targetSlotNameOccurrence ?? 0
+      let occurrence = 0
+      return targetNode.inputs.findIndex((input) => {
+        if (input.name !== newLink.targetSlotName) return false
+        return occurrence++ === targetSlotNameOccurrence
+      })
+    }
+
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of dedupedNewLinks) {
       let created: LLink | null | undefined
@@ -2681,10 +2713,7 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
-        const targetSlot =
-          newLink.targetSlotName === undefined
-            ? newLink.tslot
-            : tnode.findInputSlot(newLink.targetSlotName)
+        const targetSlot = resolveTargetSlot(tnode, newLink)
         created =
           targetSlot === -1
             ? null
@@ -2713,11 +2742,11 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(
-          newLink.oslot,
-          targetNode,
-          newLink.targetSlotName ?? newLink.tslot
-        )
+        const targetSlot = resolveTargetSlot(targetNode, newLink)
+        created =
+          targetSlot === -1
+            ? null
+            : originNode.connect(newLink.oslot, targetNode, targetSlot)
       }
       if (!created) {
         console.error('Failed to create link')

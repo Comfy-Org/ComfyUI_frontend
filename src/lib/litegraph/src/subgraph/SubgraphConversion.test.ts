@@ -259,6 +259,38 @@ describe('SubgraphConversion', () => {
         )
       ).toBeNull()
     })
+    it('preserves links to duplicate-named inputs', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const sources = Array.from({ length: 2 }, (_, index) =>
+        createTestNode(graph, [], ['number'], `source ${index}`)
+      )
+      const target = createTestNode(
+        graph,
+        ['number', 'number'],
+        [],
+        'duplicate target'
+      )
+      target.inputs[0].name = 'duplicate'
+      target.inputs[1].name = 'duplicate'
+      sources.forEach((source, index) => source.connect(0, target, index))
+      const { node: subgraphNode } = graph.convertToSubgraph(
+        new Set<Positionable>([target, ...sources])
+      )
+
+      graph.unpackSubgraph(subgraphNode)
+
+      const unpackedTarget = graph.nodes.find(
+        (node) => node.title === 'duplicate target'
+      )
+      assert(unpackedTarget)
+      expect(
+        unpackedTarget.inputs.map((_, index) => {
+          const link = unpackedTarget.getInputLink(index)
+          return link && graph.getNodeById(link.origin_id)?.title
+        })
+      ).toEqual(['source 0', 'source 1'])
+    })
     it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
       const graph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(graph))
