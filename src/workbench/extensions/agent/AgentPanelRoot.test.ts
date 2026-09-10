@@ -2501,6 +2501,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await sendFromComposer('attached turn')
+    expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
     ws.emit('agent_message_done', {
       message_id: 'm-1',
       thread_id: 'th-1'
@@ -2511,6 +2512,9 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.dontWorkInWorkflow')
       })
     )
+    expect(
+      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
+    ).not.toHaveLength(0)
 
     panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })

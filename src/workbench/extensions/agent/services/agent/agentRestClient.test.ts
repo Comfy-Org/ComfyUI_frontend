@@ -258,6 +258,17 @@ describe('success response parsing', () => {
 
     await expect(makeClient().listThreads()).rejects.toThrow()
   })
+
+  it('rejects incomplete pagination from the agent service', async () => {
+    respond(
+      jsonResponse(200, {
+        threads: [],
+        pagination: { has_more: false }
+      })
+    )
+
+    await expect(makeClient().listThreads()).rejects.toThrow()
+  })
 })
 
 describe('error mapping', () => {
