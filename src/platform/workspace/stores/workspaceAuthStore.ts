@@ -3,6 +3,7 @@ import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
 import type {
   SessionErrorCode,
@@ -17,6 +18,7 @@ import {
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   TOKEN_REFRESH_BUFFER_MS,
@@ -396,6 +398,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     })
 
     if (!response.ok) {
+      const { message } = await parseErrorResponse(response)
+
       if (response.status === 401) {
         throw new WorkspaceAuthError(
           t('workspaceAuth.errors.invalidFirebaseToken'),
@@ -416,7 +420,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
 
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed'),
+        t('workspaceAuth.errors.tokenExchangeFailed', { error: message }),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -426,7 +430,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     if (!parseResult.success) {
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed'),
+        t('workspaceAuth.errors.tokenExchangeFailed', {
+          error: fromZodError(parseResult.error).message
+        }),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -436,7 +442,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     if (isNaN(expiresAt)) {
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed'),
+        t('workspaceAuth.errors.tokenExchangeFailed', {
+          error: 'Invalid expiry timestamp'
+        }),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
