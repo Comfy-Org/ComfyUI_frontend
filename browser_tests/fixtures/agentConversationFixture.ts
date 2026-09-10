@@ -49,8 +49,10 @@ const COMPOSER_LABEL = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 }).global.t('agent.placeholder')
-const GROUP_LABEL = /^Ran (\d+) tool calls?/
+// Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
+const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
+const THINKING_GLYPH = '[class*="lucide--brain"]'
 
 interface RecordedLink {
   fromNode: string
@@ -67,7 +69,7 @@ interface RecordedWidgetValue {
 
 interface PanelCounts {
   streams: number
-  groups: number
+  summaries: number
 }
 
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
@@ -128,7 +130,7 @@ class AgentConversationHarness {
 
   private readonly host: HostDoc
   private readonly streams: Locator
-  private readonly groups: Locator
+  private readonly summaries: Locator
   private readonly seedIds: Set<string>
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
@@ -162,7 +164,7 @@ class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
-    this.groups = this.panel.getByRole('button', { name: GROUP_LABEL })
+    this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
   }
 
@@ -254,7 +256,7 @@ class AgentConversationHarness {
   private async panelCounts(): Promise<PanelCounts> {
     return {
       streams: await this.streams.count(),
-      groups: await this.groups.count()
+      summaries: await this.summaries.count()
     }
   }
 
@@ -349,8 +351,8 @@ class AgentConversationHarness {
   }
 
   // What this turn put on the panel, against the recording's explicit
-  // expectations: the complete assistant text, and every tool call group in
-  // order with the rows a user reads once it is open.
+  // expectations: the complete assistant text, and the tool call rows in order
+  // as a user reads them once the turn's work summary is open.
   private async expectTurnRendered(
     turn: number,
     before: PanelCounts
@@ -366,28 +368,29 @@ class AgentConversationHarness {
       )
       .toBe(text)
 
-    await expect(this.groups).toHaveCount(
-      before.groups + expected.groups.length
+    // A finished turn folds its tool calls into one closed summary; the
+    // thinking rows it lists between them are not part of the recording.
+    const rows = expected.groups.flat()
+    await expect(this.summaries).toHaveCount(
+      before.summaries + (rows.length > 0 ? 1 : 0)
     )
-    for (const [index, rows] of expected.groups.entries()) {
-      const group = this.groups.nth(before.groups + index)
-      const failed = rows.some((row) => row.failed)
-      const calls = rows.reduce((sum, row) => sum + row.count, 0)
-      await expect(group).toHaveText(new RegExp(`^Ran ${calls} tool call`))
-      // A group stays open exactly where a call failed.
-      await expect(group).toHaveAttribute('aria-expanded', String(failed))
-      if (!failed) await group.click()
-      const items = group.locator('..').getByRole('listitem')
-      await expect(items).toHaveCount(rows.length)
-      for (const [at, row] of rows.entries()) {
-        const item = items.nth(at)
-        await expect(item.locator('span').nth(1)).toHaveText(row.label)
-        const glyph = item.locator('span').first()
-        if (row.failed) await expect(glyph).toHaveClass(FAILED_GLYPH)
-        else await expect(glyph).not.toHaveClass(FAILED_GLYPH)
-        if (row.count > 1) await expect(item).toContainText(`×${row.count}`)
-        else await expect(item).not.toContainText('×')
-      }
+    if (rows.length === 0) return
+    const summary = this.summaries.nth(before.summaries)
+    await expect(summary).toHaveAttribute('aria-expanded', 'false')
+    await summary.click()
+    const items = summary
+      .locator('..')
+      .getByRole('listitem')
+      .filter({ hasNot: this.page.locator(THINKING_GLYPH) })
+    await expect(items).toHaveCount(rows.length)
+    for (const [at, row] of rows.entries()) {
+      const item = items.nth(at)
+      await expect(item.getByText(row.label, { exact: true })).toBeVisible()
+      const glyph = item.locator('span').first()
+      if (row.failed) await expect(glyph).toHaveClass(FAILED_GLYPH)
+      else await expect(glyph).not.toHaveClass(FAILED_GLYPH)
+      if (row.count > 1) await expect(item).toContainText(`×${row.count}`)
+      else await expect(item).not.toContainText('×')
     }
   }
 

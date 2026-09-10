@@ -41,10 +41,14 @@ const mockRemoteConfigState = vi.hoisted(() => ({
 const mockRemoteConfigErrorStatus = vi.hoisted(() => ({
   value: null as number | null
 }))
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfigState: mockRemoteConfigState,
-  remoteConfigErrorStatus: mockRemoteConfigErrorStatus
-}))
+vi.mock<unknown>(
+  import('@/platform/remoteConfig/remoteConfig'),
+  async (importOriginal) => ({
+    ...(await (importOriginal as () => Promise<object>)()),
+    remoteConfigState: mockRemoteConfigState,
+    remoteConfigErrorStatus: mockRemoteConfigErrorStatus
+  })
+)
 
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
