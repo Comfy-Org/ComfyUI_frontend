@@ -803,7 +803,7 @@ export class LGraph
     this._nodes_executable = null
     this._groups = []
 
-    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
+    if (this.isRootGraph) this.id = createUuidv4()
     this.revision = 0
 
     this.state = createLGraphState()
@@ -3400,6 +3400,14 @@ export class Subgraph
     }
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
+  }
+
+  /** Clones and registers the subgraph under a new ID. */
+  // fallow-ignore-next-line unused-class-member
+  clone(): Subgraph {
+    const exported = this.asSerialisable()
+    exported.id = createUuidv4()
+    return this.rootGraph.createSubgraph(structuredClone(exported))
   }
 
   getIoNodeOnPos(

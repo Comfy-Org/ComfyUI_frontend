@@ -20,6 +20,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { isWidgetHidden } from '@/types/widgetVisibility'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 function createTestWidget(
   node: LGraphNode,
@@ -74,6 +75,20 @@ describe('BaseWidget store integration', () => {
     node = new LGraphNode('TestNode')
     node.id = toNodeId(1)
     graph.add(node)
+  })
+
+  it('draws only the label for a connection-suppressed row', () => {
+    const widget = createTestWidget(node, {
+      label: 'Input label',
+      value: 73
+    })
+    const ctx = createMockCanvasRenderingContext2D()
+
+    widget.drawSuppressedRowLabel(ctx, { width: 200 })
+
+    expect(vi.mocked(ctx.fillText).mock.calls.map(([text]) => text)).toEqual([
+      'Input label'
+    ])
   })
 
   it('preserves name in keys, spread copies, and JSON', () => {

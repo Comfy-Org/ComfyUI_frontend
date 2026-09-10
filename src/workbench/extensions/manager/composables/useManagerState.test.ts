@@ -1,7 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import {
@@ -39,21 +39,7 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: vi.fn()
-  }))
-}))
-
-const { toastAddMock } = vi.hoisted(() => ({
-  toastAddMock: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: vi.fn(() => ({
-    add: toastAddMock
-  }))
-}))
+let toastAddMock: ReturnType<typeof useToastStore>['add']
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
@@ -109,15 +95,8 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    // Create a fresh testing pinia and activate it for each test
-    setActivePinia(
-      createTestingPinia({
-        stubActions: false,
-        createSpy: vi.fn
-      })
-    )
-
-    // Initialize stores
+    toastAddMock = useToastStore().add
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 
     // Reset all mocks

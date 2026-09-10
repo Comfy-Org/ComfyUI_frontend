@@ -1,6 +1,19 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
   'workshop.meta.title': {
     en: 'Comfy Workshop',
     'zh-CN': 'Comfy Workshop'
@@ -72,6 +85,13 @@ const translations = {
   'workshop.model.runNext': {
     en: 'Run model — sign-in coming next',
     'zh-CN': '运行模型 — 登录功能即将推出'
+  },
+  'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
+  'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.model.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
   },
   'workshop.model.related': { en: 'Related models', 'zh-CN': '相关模型' },
   'workshop.model.browseAll': {
@@ -3718,20 +3738,20 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: LTX 2.5',
-    'zh-CN': '全新发布：LTX 2.5'
+    en: 'NEW RELEASE: MINIMAX H3',
+    'zh-CN': '全新发布：MiniMax H3'
   },
   'nav.featuredProductsAlt': {
-    en: 'LTX 2.5 feature image',
-    'zh-CN': 'LTX 2.5 精选图片'
+    en: 'MiniMax H3 feature image',
+    'zh-CN': 'MiniMax H3 精选图片'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the LTX 2.5 release',
-    'zh-CN': '探索 LTX 2.5 版本'
+    en: 'Explore the MiniMax H3 release',
+    'zh-CN': '探索 MiniMax H3 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -7953,8 +7973,8 @@ Enterprise`
     'zh-CN': '企业版：托管构建'
   },
   'platform.products.models.title': {
-    en: 'Models API',
-    'zh-CN': 'Models API'
+    en: 'Comfy Router',
+    'zh-CN': 'Comfy Router'
   },
   'platform.products.models.description': {
     en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
@@ -8160,26 +8180,6 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.lookingForElse.heading': {
-    en: 'Looking for something else?',
-    'zh-CN': '在找别的方案？'
-  },
-  'pricing.lookingForElse.community.title': {
-    en: 'Community Edition',
-    'zh-CN': '社区版'
-  },
-  'pricing.lookingForElse.community.description': {
-    en: 'A standard, self-hosted version of ComfyUI is available on GitHub.',
-    'zh-CN': '标准的自托管版 ComfyUI 已在 GitHub 上提供。'
-  },
-  'pricing.lookingForElse.community.github': {
-    en: 'View on GitHub',
-    'zh-CN': '前往 GitHub'
-  },
-  'pricing.lookingForElse.community.docs': {
-    en: 'Self-hosting docs',
-    'zh-CN': '自托管文档'
-  },
   'pricing.resourceCosts.note': {
     en: 'Applies to the Comfy API on the Developer Platform.',
     'zh-CN': '仅适用于开发者平台上的 Comfy API。'
@@ -8283,9 +8283,9 @@ Enterprise`
     'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
-    en: 'Models API usage shows per-output prices on each model card and draws from the same credit pool.',
+    en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
     'zh-CN':
-      'Models API 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
+      'Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
   },
   'platform.faq.betaBanner': {
     en: 'Limited beta: builds can take up to 3 hours and may fail. You get a direct support line while we harden the pipeline.',

@@ -11011,7 +11011,8 @@
     "display_name": "Cargar 3D (Avanzado)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D cargado (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Genera imágenes a través del endpoint GPT Image de OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "tamaño"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Genera o edita imágenes mediante OpenRouter con los modelos MAI-Image-2.6 de Microsoft: de texto a imagen o edición guiada por imágenes con hasta cinco imágenes de referencia, en siete relaciones de aspecto a 1K o 1.5K.",
+    "display_name": "Imagen de OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo de imagen de OpenRouter utilizado para generar la imagen."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "Vista previa 3D (Avanzado)",
     "inputs": {
       "camera_info": {
-        "name": "info_cámara"
+        "name": "info_cámara",
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "height": {
-        "name": "alto"
+        "name": "alto",
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "ancho"
+        "name": "ancho",
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "archivo_modelo",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D (glb/obj/stl/etc.) de un nodo 3D anterior."
       },
       "1": {
         "name": "info_cámara",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "info_modelo_3d",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "3": {
         "name": "ancho",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       },
       "4": {
         "name": "alto",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "Guardar 3D (Avanzado)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Archivo de modelo 3D de un nodo 3D ascendente."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D (glb/obj/stl/etc.) de un nodo 3D anterior."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       }
     }
   },

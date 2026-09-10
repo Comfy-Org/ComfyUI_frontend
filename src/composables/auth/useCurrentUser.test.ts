@@ -1,38 +1,30 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAuthStore } from '@/stores/authStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from './useCurrentUser'
 
-const mockAuthState = {
-  currentUser: null as { uid: string } | null,
-  loading: false,
-  tokenRefreshTrigger: 0
-}
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => mockAuthState
-}))
+vi.mock(import('firebase/auth'))
 
-const mockApiKeyState = {
-  isAuthenticated: false,
-  currentUser: null as { id: string; email?: string; name?: string } | null
-}
-vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
-  useApiKeyAuthStore: () => mockApiKeyState
-}))
+let mockAuthState: ReturnType<typeof useAuthStore>
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
+let mockApiKeyState: ReturnType<typeof useApiKeyAuthStore>
 
 describe('useCurrentUser', () => {
   beforeEach(() => {
+    mockAuthState = useAuthStore()
+    mockApiKeyState = useApiKeyAuthStore()
     mockAuthState.currentUser = null
-    mockApiKeyState.isAuthenticated = false
+    Object.assign(mockApiKeyState, { isAuthenticated: false })
     mockApiKeyState.currentUser = null
   })
 
   it('treats a key-only session as an API-key login', () => {
-    mockApiKeyState.isAuthenticated = true
-    mockApiKeyState.currentUser = { id: 'key-user' }
+    Object.assign(mockApiKeyState, { isAuthenticated: true })
+    mockApiKeyState.currentUser = fromPartial<
+      NonNullable<typeof mockApiKeyState.currentUser>
+    >({ id: 'key-user' })
 
     const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
 
@@ -42,9 +34,13 @@ describe('useCurrentUser', () => {
   })
 
   it('gives the Firebase session precedence over a stored API key', () => {
-    mockAuthState.currentUser = { uid: 'firebase-user' }
-    mockApiKeyState.isAuthenticated = true
-    mockApiKeyState.currentUser = { id: 'key-user' }
+    mockAuthState.currentUser = fromPartial<
+      NonNullable<typeof mockAuthState.currentUser>
+    >({ uid: 'firebase-user' })
+    Object.assign(mockApiKeyState, { isAuthenticated: true })
+    mockApiKeyState.currentUser = fromPartial<
+      NonNullable<typeof mockApiKeyState.currentUser>
+    >({ id: 'key-user' })
 
     const { isApiKeyLogin, isLoggedIn, resolvedUserInfo } = useCurrentUser()
 
