@@ -622,6 +622,16 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
+      it('falls back to the stock cancelled treatment on an unreadable end date', () => {
+        mockEndDate.value = 'not-a-date'
+        renderComponent()
+
+        expect(screen.getByText('Canceled')).toBeInTheDocument()
+        expect(
+          screen.getByTestId('subscription-state-card')
+        ).toBeInTheDocument()
+      })
+
       it('restores the normal presentation when the end date clears between polls', async () => {
         const iso = endInDays(10)
         renderComponent()

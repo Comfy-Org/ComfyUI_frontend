@@ -626,10 +626,13 @@ const isEnterprisePlan = computed(
 // deriveBillingBanner; decision on FE-2035) — often set months ahead. Only
 // its presence moves the plan onto the quiet path: no amber card or Canceled
 // badge at any point, and no "Ends on" line until the notice window.
-// Cancelled with no end date falls back to the stock treatment.
-const hasScheduledEnterpriseEnd = computed(
-  () => isEnterprisePlan.value && Boolean(subscription.value?.endDate)
-)
+// Cancelled with no end date — or an unreadable one — falls back to the
+// stock treatment.
+const hasScheduledEnterpriseEnd = computed(() => {
+  const endDate = subscription.value?.endDate
+  if (!isEnterprisePlan.value || !endDate) return false
+  return !Number.isNaN(Date.parse(endDate))
+})
 
 // Coarse shared clock so the notice window opens mid-session too.
 const now = useTimestamp({ interval: 60_000 })
