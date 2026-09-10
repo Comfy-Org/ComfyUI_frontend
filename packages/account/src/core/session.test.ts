@@ -478,7 +478,7 @@ describe('ensureFresh', () => {
           })
         )
       )
-    const { client } = makeClient({ fetchImpl })
+    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port, { autoMint: false })
     const user = testUser()
@@ -496,6 +496,10 @@ describe('ensureFresh', () => {
       client.getToken(),
       'a slower personal mint resolving after a workspace switch must not silently revert it'
     ).toBe('team-jwt')
+    expect(
+      JSON.parse(storage.raw() ?? 'null'),
+      'storage must hold the winning team credential; a reload served the stale personal one before'
+    ).toMatchObject({ token: 'team-jwt', target: 'ws-9' })
     expect(
       superseded,
       'a superseded mint resolves undefined, like one outlived by an identity change'
