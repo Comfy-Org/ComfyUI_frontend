@@ -147,23 +147,23 @@ export function useSelectionToolboxPosition(
     }
   })
 
-  // Watch for selection changes
+  const handleSelectionMembershipChange = () => {
+    if (!moreOptionsRestorePending.value && !moreOptionsSelectionSignature)
+      return
+
+    moreOptionsRestorePending.value = false
+    moreOptionsWasOpenBeforeDrag = false
+    moreOptionsSelectionSignature = moreOptionsOpen.value
+      ? buildSelectionSignature(canvasStore)
+      : null
+  }
+
   watch(
-    () => canvasStore.getCanvas().state.selectionChanged,
-    (changed) => {
-      if (changed) {
-        if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
-          moreOptionsRestorePending.value = false
-          moreOptionsWasOpenBeforeDrag = false
-          if (!moreOptionsOpen.value) {
-            moreOptionsSelectionSignature = null
-          } else {
-            moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-          }
-        }
-        updateSelectionBounds()
-        canvasStore.getCanvas().state.selectionChanged = false
-      }
+    [() => canvasStore.selectedItems, () => layoutStore.layoutVersion],
+    ([selectedItems], [previousSelectedItems]) => {
+      if (selectedItems !== previousSelectedItems)
+        handleSelectionMembershipChange()
+      updateSelectionBounds()
     },
     { immediate: true }
   )

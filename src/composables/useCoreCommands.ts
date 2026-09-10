@@ -140,7 +140,6 @@ export function useCoreCommands(): ComfyCommand[] {
     selectedNodes.forEach((node) => {
       node.pos = positionUpdater(node.pos, gridSize)
     })
-    app.canvas.state.selectionChanged = true
     app.canvas.setDirty(true, true)
   }
 

@@ -235,12 +235,6 @@ interface LGraphCanvasState {
   /** If `true`, pointer move events will set the canvas cursor style. */
   shouldSetCursor: boolean
 
-  /**
-   * Dirty flag indicating that {@link selectedItems} has changed.
-   * Downstream consumers may reset to false once actioned.
-   */
-  selectionChanged: boolean
-
   /** ID of node currently in ghost placement mode (semi-transparent, following cursor). */
   ghostNodeId: SerializedNodeId | null
 }
@@ -359,7 +353,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     selectOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
-    selectionChanged: false,
     ghostNodeId: null
   }
 
@@ -1916,7 +1909,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     for (const item of this.selectedItems) item.selected = undefined
     this.selected_group = null
     this.#applySelection({ type: 'selection.clear' })
-    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
 
     this.visible_nodes = []
@@ -3840,7 +3832,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         newValue: false
       })
 
-      this.state.selectionChanged = true
       this.onSelectionChange?.(this.selected_nodes)
     }
 
@@ -4700,7 +4691,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   #setSelected(item: Positionable, selected: boolean): void {
     item.selected = selected
-    this.state.selectionChanged = true
     this.#applySelection({
       type: selected ? 'selection.add' : 'selection.remove',
       keys: [selectableKeyOf(item)]
@@ -4828,10 +4818,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.setDirty(true)
     this.current_node = null
 
-    if (selected.size !== this.selectedItems.size) {
-      this.state.selectionChanged = true
+    if (selected.size !== this.selectedItems.size)
       this.onSelectionChange?.(this.selected_nodes)
-    }
   }
 
   /** @deprecated See {@link LGraphCanvas.deselectAll} */
@@ -4869,7 +4857,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.#applySelection({ type: 'selection.clear' })
     this.current_node = null
 
-    this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
     this.setDirty(true)
     graph.afterChange()
