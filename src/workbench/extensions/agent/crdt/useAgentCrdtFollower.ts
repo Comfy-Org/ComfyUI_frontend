@@ -596,6 +596,11 @@ export function useAgentCrdtFollower(
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
+    // The seq space restarts with the new lineage, so a recovery armed against
+    // the old one can never be confirmed against a comparable version. Neither
+    // is a doc_reset itself a reconnect success: drop it without a report.
+    clearReconnectTracking()
+    confirmedVersion = null
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -636,6 +641,7 @@ export function useAgentCrdtFollower(
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
+    clearReconnectTracking()
     const detail =
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)

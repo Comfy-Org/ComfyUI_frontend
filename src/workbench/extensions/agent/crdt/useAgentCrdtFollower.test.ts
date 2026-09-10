@@ -602,6 +602,51 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('TEL-10: a lineage break drops the reconnect bookkeeping instead of carrying it into the new doc', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 0 })
+
+    // The new lineage restarts at seq 1; without dropping the bookkeeping its
+    // frames would be counted as the old doc's catch-up.
+    dispatchFrame('doc_subscribed', { ok: true, seq: 1 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 1,
+      update: new Uint8Array(8)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('TEL-10: a schema error drops the pending report instead of leaving it to a later frame', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1' })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(8)
+    })
+
+    // Nothing was projected, so the recovery never completed.
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('reports retry exhaustion exactly once with normalized metadata', () => {
     vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
     vi.setSystemTime(1_000)
