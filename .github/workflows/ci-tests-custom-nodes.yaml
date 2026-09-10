@@ -70,6 +70,7 @@ env:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
@@ -84,6 +85,9 @@ jobs:
       - name: Detect relevant changes
         id: changes
         uses: ./.github/actions/changes-filter
+        with:
+          # Inert until this workflow's pull_request/merge_group triggers return.
+          evaluate-candidate: 'true'
 
   # Each job is intentionally one worker: the auto-run tier needs exclusive
   # access to its backend's queue. Parallelism comes from the shard matrix
@@ -456,13 +460,16 @@ jobs:
           case "$SHOULD_RUN" in
             true) ;;
             false)
-              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              case "$EVENT_NAME" in
+                pull_request | merge_group) ;;
+                *) echo "::error::change detection returned false for $EVENT_NAME"; exit 1 ;;
+              esac
               ;;
             *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
           esac
           if [ "$SHOULD_RUN" = false ]; then
             [ "$E2E_RESULT" = skipped ] || { echo "::error::irrelevant-change matrix ended with $E2E_RESULT"; exit 1; }
-            echo 'custom-node matrix not applicable to this pull request'
+            echo 'custom-node matrix not applicable to this candidate'
             exit 0
           fi
           [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }

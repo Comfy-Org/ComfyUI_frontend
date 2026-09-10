@@ -1,10 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import type * as VueUse from '@vueuse/core'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, shallowRef } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
@@ -93,8 +95,10 @@ const mockIntervalResume = vi.fn()
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
-vi.mock<unknown>(import('@vueuse/core'), () => {
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
+  const { ref } = await import('vue')
   return {
+    ...(await importOriginal<typeof VueUse>()),
     useDocumentVisibility: vi.fn(() => ref('visible')),
     useRafFn: vi.fn((callback, options) => {
       const id = rafCallbackId++
@@ -217,35 +221,6 @@ const setupMocks = () => {
 
 setupMocks()
 
-const defaultCanvasStore: {
-  canvas: MockCanvas | null
-  getCanvas: () => MockCanvas | null
-} = {
-  canvas: moduleMockCanvas,
-  getCanvas: () => defaultCanvasStore.canvas
-}
-
-const defaultSettingStore = {
-  get: vi.fn().mockReturnValue(true),
-  set: vi.fn().mockResolvedValue(undefined)
-}
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: vi.fn(() => defaultCanvasStore)
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => defaultSettingStore)
-}))
-
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: vi.fn(() => ({
-    completedActivePalette: {
-      light_theme: false
-    }
-  }))
-}))
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
@@ -257,24 +232,11 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
-      graph: moduleMockGraph
+      get graph() {
+        return moduleMockGraph
+      }
     }
   }
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: vi.fn(() => ({
-      activeSubgraph: null
-    }))
-  })
-)
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeLocationProgressStates: {}
-  }))
 }))
 
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
@@ -299,7 +261,6 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     registerMockLink(1, 'node2')
 
     mockContext2D = createMockCanvas2DContext()
@@ -388,10 +349,18 @@ describe('useMinimap', () => {
       setDirty: vi.fn()
     }
 
-    defaultCanvasStore.canvas = moduleMockCanvas
+    const element = document.createElement('canvas')
+    element.width = 1000
+    element.height = 800
+    Object.defineProperties(element, {
+      clientWidth: { value: 1000, writable: true },
+      clientHeight: { value: 800, writable: true }
+    })
+    moduleMockCanvas.canvas = element
+    useCanvasStore().canvas = moduleMockCanvas as unknown as LGraphCanvas
 
-    defaultSettingStore.get = vi.fn().mockReturnValue(true)
-    defaultSettingStore.set = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useSettingStore().get).mockReturnValue(true)
+    vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
 
     Object.defineProperty(window, 'devicePixelRatio', {
       writable: true,
@@ -405,8 +374,8 @@ describe('useMinimap', () => {
 
   describe('initialization', () => {
     it('should initialize with default values', () => {
-      const originalCanvas = defaultCanvasStore.canvas
-      defaultCanvasStore.canvas = null
+      const originalCanvas = useCanvasStore().canvas
+      useCanvasStore().canvas = null
 
       const minimap = useMinimap()
 
@@ -415,7 +384,7 @@ describe('useMinimap', () => {
       expect(minimap.visible.value).toBe(true)
       expect(minimap.initialized.value).toBe(false)
 
-      defaultCanvasStore.canvas = originalCanvas
+      useCanvasStore().canvas = originalCanvas
     })
 
     it('should initialize minimap when canvas is available', async () => {
@@ -424,7 +393,7 @@ describe('useMinimap', () => {
       await minimap.init()
 
       expect(minimap.initialized.value).toBe(true)
-      expect(defaultSettingStore.get).toHaveBeenCalledWith(
+      expect(vi.mocked(useSettingStore().get)).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible'
       )
       expect(api.addEventListener).toHaveBeenCalledWith(
@@ -438,8 +407,8 @@ describe('useMinimap', () => {
     })
 
     it('should not initialize without canvas and graph', async () => {
-      const originalCanvas = defaultCanvasStore.canvas
-      defaultCanvasStore.canvas = null
+      const originalCanvas = useCanvasStore().canvas
+      useCanvasStore().canvas = null
 
       const minimap = useMinimap()
       await minimap.init()
@@ -447,7 +416,7 @@ describe('useMinimap', () => {
       expect(minimap.initialized.value).toBe(false)
       expect(api.addEventListener).not.toHaveBeenCalled()
 
-      defaultCanvasStore.canvas = originalCanvas
+      useCanvasStore().canvas = originalCanvas
     })
 
     it('should setup event listeners on graph', async () => {
@@ -461,7 +430,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle visibility from settings', async () => {
-      defaultSettingStore.get.mockReturnValue(false)
+      vi.mocked(useSettingStore().get).mockReturnValue(false)
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
@@ -521,7 +490,7 @@ describe('useMinimap', () => {
       await minimap.toggle()
 
       expect(minimap.visible.value).toBe(!initialVisibility)
-      expect(defaultSettingStore.set).toHaveBeenCalledWith(
+      expect(useSettingStore().set).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible',
         !initialVisibility
       )
@@ -529,7 +498,7 @@ describe('useMinimap', () => {
       await minimap.toggle()
 
       expect(minimap.visible.value).toBe(initialVisibility)
-      expect(defaultSettingStore.set).toHaveBeenCalledWith(
+      expect(useSettingStore().set).toHaveBeenCalledWith(
         'Comfy.Minimap.Visible',
         initialVisibility
       )
@@ -587,8 +556,8 @@ describe('useMinimap', () => {
       if (!renderingOccurred) {
         console.log('Minimap visible:', minimap.visible.value)
         console.log('Minimap initialized:', minimap.initialized.value)
-        console.log('Canvas exists:', !!defaultCanvasStore.canvas)
-        console.log('Graph exists:', !!defaultCanvasStore.canvas?.graph)
+        console.log('Canvas exists:', !!useCanvasStore().canvas)
+        console.log('Graph exists:', !!useCanvasStore().canvas?.graph)
         console.log(
           'clearRect calls:',
           vi.mocked(mockContext2D.clearRect).mock.calls.length

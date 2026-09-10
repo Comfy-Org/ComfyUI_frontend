@@ -1,22 +1,30 @@
-import { render } from '@testing-library/vue'
-import { fromAny } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { widgetId } from '@/types/widgetId'
-import WidgetItem from './WidgetItem.vue'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
-const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn(),
+import WidgetItem from './WidgetItem.vue'
+
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+})
+
+const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
@@ -25,34 +33,11 @@ const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      canvas: { setDirty: vi.fn() }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/workspace/favoritedWidgetsStore'), () => ({
-  useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
-  })
-}))
-
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
 
   () => ({
-    getComponent: () => StubWidgetComponent,
+    getComponent: vi.fn(() => StubWidgetComponent),
     shouldExpand: () => false
   })
 )
@@ -129,6 +114,60 @@ function getStubWidget(container: Element) {
 }
 
 describe('WidgetItem', () => {
+  describe('button actions', () => {
+    beforeEach(() => {
+      vi.mocked(getComponent).mockReturnValue(WidgetButton)
+    })
+
+    it.for(['button', 'BUTTON'])(
+      'invokes a %s callback with the original widget and node context',
+      async (type) => {
+        const user = userEvent.setup()
+        const callback = vi.fn(function (this: IBaseWidget) {
+          this.label = 'Restored'
+        })
+        const widget = createMockWidget({
+          type,
+          name: 'Restore selected',
+          value: undefined,
+          options: {},
+          callback
+        })
+        const node = createMockNode()
+        renderWidgetItem(widget, node)
+
+        await user.click(screen.getByRole('button', { name: widget.name }))
+
+        expect(callback).toHaveBeenCalledExactlyOnceWith(
+          undefined,
+          useCanvasStore().canvas,
+          node
+        )
+        expect(widget.label).toBe('Restored')
+      }
+    )
+
+    it('does not invoke a disabled button callback', async () => {
+      const user = userEvent.setup()
+      const callback = vi.fn()
+      const widget = createMockWidget({
+        type: 'button',
+        name: 'Restore selected',
+        value: undefined,
+        options: {},
+        disabled: true,
+        callback
+      })
+      renderWidgetItem(widget)
+
+      const button = screen.getByRole('button', { name: widget.name })
+      expect(button).toBeDisabled()
+      await user.click(button)
+
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
+
   describe('widget state rendering', () => {
     it('passes options from a regular widget to the widget component', () => {
       const widget = createMockWidget({

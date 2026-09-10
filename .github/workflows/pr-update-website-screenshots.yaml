@@ -80,11 +80,10 @@ jobs:
           ref: ${{ steps.pr-info.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
-      - name: Install pnpm
-        run: corepack enable && corepack prepare
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       - name: Build website
         env:

@@ -1580,7 +1580,6 @@
     "Show Settings Dialog": "Show Settings Dialog",
     "Set Subgraph Description": "Set Subgraph Description",
     "Set Subgraph Search Aliases": "Set Subgraph Search Aliases",
-    "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
     "Toggle App Mode": "Toggle App Mode",
@@ -3095,6 +3094,8 @@
     },
     "preview": {
       "completeVerification": "Complete verification",
+      "completePayment": "Complete your payment",
+      "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
       "startingToday": "Starts today",
@@ -5196,7 +5197,7 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, {'@'} to reference,\nmention nodes from graph or drag in assets",
+    "placeholder": "Describe ideas, {'@'} to reference workflows, drag in media asset and files, or\nmention nodes",
     "suggestedPrompts": [
       "Generate a yellow duck with a hockey mask",
       "List my saved workflows",

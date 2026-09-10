@@ -1,3 +1,5 @@
+import { useDialogStore } from '@/stores/dialogStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +16,7 @@ const mocks = await vi.hoisted(async () => {
   return {
     nudgeArmed: ref(false),
     tourWasCompleted: ref(true),
-    openDialogs: ref<string[]>([]),
+
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
     }),
@@ -28,14 +30,6 @@ vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
     nudgeArmed: mocks.nudgeArmed,
     tourWasCompleted: mocks.tourWasCompleted,
     dismissNudge: mocks.dismissNudge
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    get dialogStack() {
-      return mocks.openDialogs.value
-    }
   })
 }))
 
@@ -70,7 +64,7 @@ describe('FirstRunTourNudge', () => {
   beforeEach(() => {
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
-    mocks.openDialogs.value = []
+    useDialogStore().dialogStack = []
   })
 
   it('shows a nudge that came due before it mounted', async () => {
@@ -97,7 +91,7 @@ describe('FirstRunTourNudge', () => {
 
   it('waits out a dialog that is already open', async () => {
     mocks.nudgeArmed.value = true
-    mocks.openDialogs.value = ['some-dialog']
+    useDialogStore().dialogStack = [fromPartial({ key: 'some-dialog' })]
     renderNudge()
 
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
@@ -106,7 +100,7 @@ describe('FirstRunTourNudge', () => {
       'the nudge sits below the modal stack, so under a dialog it is invisible'
     ).toBeNull()
 
-    mocks.openDialogs.value = []
+    useDialogStore().dialogStack = []
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
     expect(
@@ -120,7 +114,7 @@ describe('FirstRunTourNudge', () => {
     renderNudge()
 
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS - 500)
-    mocks.openDialogs.value = ['some-dialog']
+    useDialogStore().dialogStack = [fromPartial({ key: 'some-dialog' })]
     await vi.advanceTimersByTimeAsync(500 + APPEAR_DELAY_MS)
 
     expect(
@@ -138,9 +132,9 @@ describe('FirstRunTourNudge', () => {
     renderNudge()
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
-    mocks.openDialogs.value = ['some-dialog']
+    useDialogStore().dialogStack = [fromPartial({ key: 'some-dialog' })]
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
-    mocks.openDialogs.value = []
+    useDialogStore().dialogStack = []
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
     const shown = mocks.trackOnboardingTour.mock.calls.filter(
