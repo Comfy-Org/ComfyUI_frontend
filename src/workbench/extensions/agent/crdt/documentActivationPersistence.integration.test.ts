@@ -18,11 +18,19 @@ import type { DetachedTargetSession } from '@/core/graph/document/detachedTarget
 import { serializeDocumentScope } from '@/core/graph/document/documentSerializer'
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import type { DocumentId } from '@/types/documentId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 
+import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { createTargetFrameApplyPort } from './targetFrameProjection'
 
 const catalog: WidgetCatalog = {
@@ -126,7 +134,12 @@ describe('document activation persistence (ADR-0024 seam)', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('serializes byte-identically across Base/ECS/Nodes-2.0 activation cycles and save/reload', async () => {
+  // Projection determinism over retained session state: the reload here
+  // replays the session's committed Yjs update, so both sides of the equality
+  // are projections of the same CRDT. It cannot see a loss that happens
+  // between the stores and saved workflow JSON — that is the production round
+  // trip below.
+  it('serializes byte-identically across Base/ECS/Nodes-2.0 activation cycles and detached-session replay', async () => {
     const scope = scopeFor('root')
     const mutations = mutationsFor(scope)
     const host = mint(workflowJson, catalog)
@@ -178,8 +191,8 @@ describe('document activation persistence (ADR-0024 seam)', () => {
       ).status
     ).toBe('committed')
 
+    expect(savedBytes).toEqual(baseline)
     expect(serializeDocumentScope(reloadScope)).toEqual(savedBytes)
-    expect(serializeDocumentScope(reloadScope)).toEqual(baseline)
 
     session.destroy()
     reloadSession.destroy()
@@ -257,6 +270,75 @@ describe('document activation persistence (ADR-0024 seam)', () => {
     }
 
     committed.destroy()
+    session.destroy()
+    host.destroy()
+  })
+
+  it('round-trips minted incarnations through live materialization and saved workflow JSON', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const host = mint(workflowJson, catalog)
+    const session = createDetachedTargetSession('wf')
+    commitHostState(session, 'wf', host, mutationsFor(scope))
+
+    reconcileAgentAdapters(graph)
+
+    const minted = Object.fromEntries(
+      ['1', '2'].map((id) => [
+        id,
+        nodesMap(host).get(id)?.get(NODE_INCARNATION_KEY)
+      ])
+    )
+    expect(Object.values(minted)).toEqual([
+      expect.any(String),
+      expect.any(String)
+    ])
+
+    const savedJson = JSON.stringify(graph.asSerialisable({ sortNodes: true }))
+    const saved = JSON.parse(savedJson) as SerialisableGraph
+    expect(
+      saved.nodes?.map(({ id, node_incarnation }) => [
+        String(id),
+        node_incarnation
+      ])
+    ).toEqual(Object.entries(minted))
+
+    const reloaded = new LGraph()
+    reloaded.configure(JSON.parse(savedJson) as SerialisableGraph)
+
+    for (const [id, incarnation] of Object.entries(minted)) {
+      const node = reloaded.getNodeById(toNodeId(id))
+      expect(node?._state.nodeIncarnation).toBe(incarnation)
+      expect(node?.serialize().node_incarnation).toBe(incarnation)
+    }
+
+    session.destroy()
+    host.destroy()
+  })
+
+  it('leaves a pre-incarnation document without one rather than inventing a lifetime', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const host = mint(workflowJson, catalog)
+    const session = createDetachedTargetSession('wf')
+    commitHostState(session, 'wf', host, mutationsFor(scope))
+    reconcileAgentAdapters(graph)
+
+    const legacy = JSON.parse(
+      JSON.stringify(graph.asSerialisable({ sortNodes: true }))
+    ) as SerialisableGraph
+    for (const node of legacy.nodes ?? []) delete node.node_incarnation
+
+    const reloaded = new LGraph()
+    reloaded.configure(legacy)
+
+    for (const id of ['1', '2']) {
+      const node = reloaded.getNodeById(toNodeId(id))
+      expect(node).toBeTruthy()
+      expect(node?._state.nodeIncarnation).toBeUndefined()
+      expect(node?.serialize()).not.toHaveProperty('node_incarnation')
+    }
+
     session.destroy()
     host.destroy()
   })
