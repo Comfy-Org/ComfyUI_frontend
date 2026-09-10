@@ -104,6 +104,9 @@ test('my test', async ({ comfyPage }) => {
 Follow [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
 Nested `test.use` replaces the parent's settings object. Include inherited
 overrides and install startup-dependent mocks before `comfyPage` boots.
+Always use `@vue-nodes` for Vue-node tests. Never manually set
+`Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()`; the fixture
+handles renderer selection and initial readiness.
 
 ### Mandatory Test Structure
 

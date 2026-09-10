@@ -29,6 +29,6 @@ test.beforeEach(async ({ comfyPage }) => {
 
 ## Conventions
 
-- Tests requiring VueNodes rendering use the `@vue-nodes` tag, or set `test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })` and retain `comfyPage.vueNodes.waitForNodes()` in `beforeEach`.
+- Tests requiring VueNodes rendering must use the `@vue-nodes` tag. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()`; the fixture handles both.
 - Verify node state changes via user-facing indicators (text labels like "Bypassed"/"Muted", pin indicator test IDs) rather than internal properties.
 - Color changes are verified via `page.evaluate` accessing node properties, per the guidance in `docs/guidance/playwright.md`.

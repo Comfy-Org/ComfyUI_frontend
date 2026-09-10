@@ -55,7 +55,7 @@ Reference docs (read if you need full context):
 
 ### Convention Violations (Minor)
 
-11. **Missing project-routing tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@vue-nodes`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
+11. **Missing required tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Vue-node tests must use `@vue-nodes`, which enables the renderer and waits for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()` in tests. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
 
 12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `browser_tests/README.md` → Type safety for acceptable patterns.
 

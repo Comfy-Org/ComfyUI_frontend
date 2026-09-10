@@ -394,7 +394,7 @@ Check for existing helpers before writing new ones — most needs are covered:
 - **ComfyPage** — main fixture; delegates to helper objects:
   `comfyPage.workflow.loadWorkflow()`, `comfyPage.settings.setSetting()`,
   `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`,
-  `comfyPage.canvasOps.resetView()`, `comfyPage.vueNodes.waitForNodes()`.
+  `comfyPage.canvasOps.resetView()`.
 - **Component page objects** — `fixtures/components/` (e.g. `Actionbar`,
   `ContextMenu`, `Templates`).
 - **Helper classes** — `fixtures/helpers/` (e.g. `CanvasHelper`,
@@ -484,17 +484,10 @@ Choose based on **what you're testing**:
 | Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based; use coordinates/refs   |
 | Both in one test                               | Pick primary, minimize switching | Mixing both is a smell               |
 
-The `@vue-nodes` tag enables Vue Nodes before boot and waits for them to render.
-For suites that configure the renderer without that tag, seed the setting and
-keep an explicit readiness check:
-
-```typescript
-test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
-
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.vueNodes.waitForNodes()
-})
-```
+Always add `{ tag: '@vue-nodes' }` to the test or `test.describe` when it needs
+Vue Nodes. The fixture enables the renderer before boot and waits for the nodes.
+Never manually set `Comfy.VueNodes.Enabled`, including through `initialSettings`,
+or call `comfyPage.vueNodes.waitForNodes()` in tests.
 
 Vue Node state is expressed via CSS classes:
 
@@ -560,9 +553,12 @@ reference pattern.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
-`@node`, `@widget`, `@vue-nodes`, `@subgraph`, `@ui`. Apply them so a test is
+`@node`, `@widget`, `@subgraph`, `@ui`. Apply them so a test is
 findable by its area; add a project-routing tag whenever the test must run in
 that project.
+
+`@vue-nodes` controls fixture setup, not just filtering. It is required for
+Vue-node tests and owns renderer selection and initial readiness.
 
 ```typescript
 test.describe('Feature', { tag: ['@screenshot', '@canvas'] }, () => {
@@ -658,12 +654,12 @@ The browser context is test-scoped, and initial setup clears localStorage and
 sessionStorage. Tests do not need settings resets in `afterEach`.
 
 Nested `test.use` calls **replace**, not merge, the parent's `initialSettings`
-object. Include every suite-specific override needed by a nested scope. Do not
-contradict `@vue-nodes` with a false renderer override; its readiness check still
-expects Vue nodes.
+object. Include every suite-specific override needed by a nested scope. Use
+`@vue-nodes` for renderer selection; never put `Comfy.VueNodes.Enabled` in
+`initialSettings`.
 
-Keep runtime `setSetting` calls when a live change, persistence, or renderer
-transition is the behavior under test. A same-test reload retains those changes.
+Keep runtime `setSetting` calls when a live change or persistence is the behavior
+under test. A same-test reload retains those changes.
 Preserve readiness checks and install any mocks needed by startup settings before
 the `comfyPage` fixture boots.
 
@@ -853,7 +849,7 @@ node state.
 | **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`                              | ≥2000 ms; prefer default (5000 ms)                                       |
 | **Immediate count()**                 | `const n = await loc.count(); expect(n).toBe(3)`                  | `await expect(loc).toHaveCount(3)`                                       |
 | **Immediate evaluate after mutation** | `setSetting(); expect(await evaluate()).toBe(x)`                  | `await expect.poll(() => evaluate()).toBe(x)`                            |
-| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`                 | `waitForNodes()` or poll state first                                     |
+| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`                 | Assert the expected node state with a retrying assertion first           |
 | **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match                         | `getNodeRefById(id)` or guard `toHaveLength(1)`                          |
 
 ### Local noise (not automatic CI root causes)

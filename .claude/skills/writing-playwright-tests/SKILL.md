@@ -32,16 +32,10 @@ Choose based on **what you're testing**, not personal preference:
 | Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based, use coordinates/references |
 | Both in same test                              | Pick primary, minimize switching | Avoid confusion                          |
 
-The `@vue-nodes` tag enables Vue Nodes and waits for them during fixture setup.
-Without that tag, configure startup and retain an explicit readiness check:
-
-```typescript
-test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
-
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.vueNodes.waitForNodes()
-})
-```
+Always add `{ tag: '@vue-nodes' }` to the test or `test.describe` when it needs
+Vue Nodes. The fixture enables the renderer before boot and waits for the nodes.
+Never manually set `Comfy.VueNodes.Enabled`, including through `initialSettings`,
+or call `comfyPage.vueNodes.waitForNodes()` in tests.
 
 **Vue Node state uses CSS classes:**
 
