@@ -54,15 +54,20 @@ describe('Composer', () => {
   it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
     mount()
 
-    expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
+    const text = screen.getByText(
+      'Describe ideas, @ to reference workflows, drag in media asset and files, or'
+    )
+    expect(text).toBeVisible()
     const addNodes = screen.getByRole('button', {
-      name: 'mention nodes from graph,'
+      name: 'mention nodes'
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
       '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
     )
-    expect(screen.getByText('or drag in assets')).toBeVisible()
+    expect(
+      text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 
   it('hides the empty-composer hint once typing begins', async () => {
@@ -72,16 +77,14 @@ describe('Composer', () => {
     await userEvent.type(box, 'hello')
 
     expect((box as HTMLTextAreaElement).value).toBe('hello')
-    expect(
-      screen.queryByRole('button', { name: 'mention nodes from graph,' })
-    ).toBeNull()
+    expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
   })
 
   it('enters graph selection mode from the empty-composer hint', async () => {
     const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
     const hintButton = screen.getByRole('button', {
-      name: 'mention nodes from graph,'
+      name: 'mention nodes'
     })
 
     await userEvent.tab()
