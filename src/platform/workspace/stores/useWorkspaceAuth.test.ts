@@ -1178,6 +1178,44 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
+    it('re-mints a workspace token that lacks the requested remaining validity', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'expiring-token',
+              expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+            })
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: 'fresh-token',
+              expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+            })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      const token = await store.ensureWorkspaceToken(
+        'workspace-123',
+        15 * 60 * 1000
+      )
+
+      expect(token).toBe('fresh-token')
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
     it('does not restore a stale local selection after another switch completes', async () => {
       mockDistributionTypes.isCloud = false
       Object.assign(useTeamWorkspaceStore(), {

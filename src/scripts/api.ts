@@ -134,6 +134,13 @@ interface QueuePromptRequestBody {
 }
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+const API_NODE_CREDENTIAL_KEY_PREFIX = 'Comfy.ApiNode.CredentialKey:'
+
+interface ApiNodeCredentialCapability {
+  version: 1
+  endpoint: string
+  websocket_auth_message: string
+}
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
@@ -480,6 +487,22 @@ export class ComfyApi extends EventTarget {
    * The API key for the comfy org account if the user logged in via API key.
    */
   apiKey?: string
+  /**
+   * Per-WebSocket secret used to update the local API-node credential
+   * registry and bind prompts to this client. Never sent in URLs or prompt
+   * bodies.
+   */
+  private credentialKey?: string
+  private preparedCredentialClientId?: string
+  private preparedCredentialKey?: string
+  private syncedCredentialToken?: string | null
+  private credentialSyncInFlight?: {
+    clientId: string
+    credentialKey: string
+    token: string | null
+    promise: Promise<boolean>
+  }
+  private credentialSyncGeneration = 0
 
   constructor() {
     super()
@@ -502,6 +525,150 @@ export class ComfyApi extends EventTarget {
 
   fileURL(route: string): string {
     return this.api_base + route
+  }
+
+  private getStoredCredentialKey(clientId: string): string | undefined {
+    try {
+      return (
+        sessionStorage.getItem(
+          `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`
+        ) ?? undefined
+      )
+    } catch {
+      return undefined
+    }
+  }
+
+  private storeCredentialKey(clientId: string, credentialKey: string): void {
+    try {
+      sessionStorage.setItem(
+        `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`,
+        credentialKey
+      )
+    } catch {
+      console.warn('Failed to persist local API-node credential session')
+    }
+  }
+
+  private clearCredentialKey(clientId?: string): void {
+    if (clientId) {
+      try {
+        sessionStorage.removeItem(
+          `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`
+        )
+      } catch {
+        // sessionStorage can be unavailable in privacy-restricted contexts.
+      }
+    }
+    this.credentialKey = undefined
+    this.preparedCredentialClientId = undefined
+    this.preparedCredentialKey = undefined
+    this.syncedCredentialToken = undefined
+    this.credentialSyncInFlight = undefined
+    this.credentialSyncGeneration++
+  }
+
+  private getApiNodeCredentialCapability():
+    | ApiNodeCredentialCapability
+    | undefined {
+    const capability = this.getServerFeature<unknown>('comfy_api_credentials')
+    if (
+      typeof capability !== 'object' ||
+      capability === null ||
+      !('version' in capability) ||
+      capability.version !== 1 ||
+      !('endpoint' in capability) ||
+      typeof capability.endpoint !== 'string' ||
+      !capability.endpoint.startsWith('/api/') ||
+      !('websocket_auth_message' in capability) ||
+      typeof capability.websocket_auth_message !== 'string'
+    ) {
+      return undefined
+    }
+    return capability as ApiNodeCredentialCapability
+  }
+
+  /**
+   * Pushes the latest effective bearer token into a capable local ComfyUI.
+   * Returns false for older servers and transient failures so prompt
+   * submission can safely fall back to its credential snapshot.
+   */
+  async syncApiNodeCredential(token: string | null): Promise<boolean> {
+    const capability = this.getApiNodeCredentialCapability()
+    const clientId = this.clientId
+    const credentialKey = this.credentialKey
+    if (!capability || !clientId || !credentialKey) {
+      this.preparedCredentialClientId = undefined
+      this.preparedCredentialKey = undefined
+      this.syncedCredentialToken = undefined
+      return false
+    }
+
+    if (
+      this.preparedCredentialClientId === clientId &&
+      this.preparedCredentialKey === credentialKey &&
+      this.syncedCredentialToken === token
+    ) {
+      return true
+    }
+
+    const inFlight = this.credentialSyncInFlight
+    if (
+      inFlight?.clientId === clientId &&
+      inFlight.credentialKey === credentialKey &&
+      inFlight.token === token
+    ) {
+      return inFlight.promise
+    }
+
+    const syncGeneration = ++this.credentialSyncGeneration
+    const promise = (async () => {
+      try {
+        const response = await this.fetchApi(capability.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Comfy-Client-Id': clientId,
+            'X-Comfy-Credential-Key': credentialKey
+          },
+          body: JSON.stringify({ auth_token_comfy_org: token }),
+          timeoutMs: 5000
+        })
+        if (
+          !response.ok ||
+          syncGeneration !== this.credentialSyncGeneration ||
+          clientId !== this.clientId ||
+          credentialKey !== this.credentialKey
+        ) {
+          if (syncGeneration === this.credentialSyncGeneration) {
+            this.preparedCredentialClientId = undefined
+            this.preparedCredentialKey = undefined
+            this.syncedCredentialToken = undefined
+          }
+          return false
+        }
+        this.preparedCredentialClientId = clientId
+        this.preparedCredentialKey = credentialKey
+        this.syncedCredentialToken = token
+        return true
+      } catch {
+        if (syncGeneration === this.credentialSyncGeneration) {
+          this.preparedCredentialClientId = undefined
+          this.preparedCredentialKey = undefined
+          this.syncedCredentialToken = undefined
+        }
+        return false
+      }
+    })()
+    const pending = { clientId, credentialKey, token, promise }
+    this.credentialSyncInFlight = pending
+    try {
+      return await promise
+    } finally {
+      if (this.credentialSyncInFlight === pending) {
+        this.credentialSyncInFlight = undefined
+      }
+    }
   }
 
   /**
@@ -788,7 +955,10 @@ export class ComfyApi extends EventTarget {
     const generation = ++this.socketGeneration
 
     let opened = false
-    let existingSession = window.name
+    const existingSession = window.name
+    const reconnectCredentialKey = existingSession
+      ? this.getStoredCredentialKey(existingSession)
+      : undefined
 
     // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
@@ -833,7 +1003,19 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('open', () => {
       opened = true
 
-      // Send feature flags as the first message
+      // A protected client id must prove ownership before the backend enters
+      // its normal message loop. Old backends never issue a credential key, so
+      // they continue to receive feature_flags as the first message.
+      if (reconnectCredentialKey) {
+        socket.send(
+          JSON.stringify({
+            type: 'credential_auth',
+            data: { credential_key: reconnectCredentialKey }
+          })
+        )
+      }
+
+      // Start normal feature negotiation after any reconnect authentication.
       socket.send(
         JSON.stringify({
           type: 'feature_flags',
@@ -980,6 +1162,10 @@ export class ComfyApi extends EventTarget {
                 this.clientId = clientId
                 window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
+                if (msg.data.credential_key) {
+                  this.credentialKey = msg.data.credential_key
+                  this.storeCredentialKey(clientId, msg.data.credential_key)
+                }
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
@@ -1047,6 +1233,7 @@ export class ComfyApi extends EventTarget {
    */
   async resetSocket(): Promise<void> {
     const previous = this.socket
+    const previousClientId = this.clientId ?? window.name
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
@@ -1054,6 +1241,7 @@ export class ComfyApi extends EventTarget {
     // from window.name (mirrored in session storage), not this.clientId, so the
     // next connect must not inherit the prior account's id.
     this.clientId = undefined
+    this.clearCredentialKey(previousClientId || undefined)
     window.name = ''
     sessionStorage.removeItem('clientId')
     if (previous && previous.readyState !== WebSocket.CLOSED) {
@@ -1173,10 +1361,23 @@ export class ComfyApi extends EventTarget {
       body.number = number
     }
 
+    const preparedCredentialKey = this.preparedCredentialKey
+    const credentialHeaders: Record<string, string> =
+      this.authToken &&
+      this.preparedCredentialClientId === body.client_id &&
+      preparedCredentialKey !== undefined &&
+      preparedCredentialKey === this.credentialKey
+        ? {
+            'X-Comfy-Client-Id': body.client_id,
+            'X-Comfy-Credential-Key': preparedCredentialKey
+          }
+        : {}
+
     const res = await this.fetchApi('/prompt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...credentialHeaders
       },
       body: JSON.stringify(body)
     })

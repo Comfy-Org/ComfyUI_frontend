@@ -39,8 +39,9 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
   }
 }))
 
-const { mockResetSocket } = vi.hoisted(() => ({
-  mockResetSocket: vi.fn()
+const { mockResetSocket, mockSyncApiNodeCredential } = vi.hoisted(() => ({
+  mockResetSocket: vi.fn(),
+  mockSyncApiNodeCredential: vi.fn().mockResolvedValue(false)
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -105,7 +106,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 // a real WebSocket.
 vi.mock(import('@/scripts/api'), async (importOriginal) => {
   const actual = await importOriginal<typeof ApiModule>()
-  Object.assign(actual.api, { resetSocket: mockResetSocket })
+  Object.assign(actual.api, {
+    resetSocket: mockResetSocket,
+    syncApiNodeCredential: mockSyncApiNodeCredential
+  })
   return actual
 })
 
@@ -141,6 +145,9 @@ describe('useAuthStore', () => {
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
+    mockSyncApiNodeCredential.mockResolvedValue(false)
+    mockResetSocket.mockResolvedValue(undefined)
+    mockDistributionTypes.isCloud = true
     mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
@@ -211,6 +218,15 @@ describe('useAuthStore', () => {
     it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
       idTokenCallback(mockUser)
       idTokenCallback(mockUser)
+      expect(store.tokenRefreshTrigger).toBe(1)
+    })
+
+    it('increments tokenRefreshTrigger for local Firebase token rotation', () => {
+      mockDistributionTypes.isCloud = false
+
+      idTokenCallback(mockUser)
+      idTokenCallback(mockUser)
+
       expect(store.tokenRefreshTrigger).toBe(1)
     })
 
@@ -2127,12 +2143,14 @@ describe('useAuthStore', () => {
       expect(mockResetSocket).not.toHaveBeenCalled()
     })
 
-    it('reconnects the socket on a direct A -> B account switch', () => {
+    it('clears local credentials and reconnects on a direct A -> B account switch', async () => {
       mockResetSocket.mockClear()
+      mockSyncApiNodeCredential.mockClear()
 
       authStateCallback(accountB)
 
-      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+      expect(mockSyncApiNodeCredential).toHaveBeenCalledWith(null)
+      await vi.waitFor(() => expect(mockResetSocket).toHaveBeenCalledTimes(1))
     })
 
     it('discards a remote config response from the previous account', async () => {
@@ -2184,12 +2202,14 @@ describe('useAuthStore', () => {
       expect(mockResetSocket).not.toHaveBeenCalled()
     })
 
-    it('reconnects the socket on sign-out', () => {
+    it('clears local credentials and reconnects on sign-out', async () => {
       mockResetSocket.mockClear()
+      mockSyncApiNodeCredential.mockClear()
 
       authStateCallback(null)
 
-      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+      expect(mockSyncApiNodeCredential).toHaveBeenCalledWith(null)
+      await vi.waitFor(() => expect(mockResetSocket).toHaveBeenCalledTimes(1))
     })
 
     it('does not reconnect when transitioning from signed-out to signed-in', () => {

@@ -35,6 +35,7 @@ import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -151,11 +152,16 @@ export const useAuthStore = defineStore('auth', () => {
       invalidateRemoteConfig()
     }
 
-    // A direct account switch (A -> B, or sign-out) must re-handshake the
-    // realtime socket so a tab stops receiving the previous account's live
-    // events. The initial connect is owned by api.init(), so only react once an
-    // identity has been recorded (`identityChanged` is false on first sign-in).
-    if (isCloud && identityChanged) {
+    // A direct account switch (A -> B, or sign-out) must clear the previous
+    // local API-node credential before re-handshaking the realtime socket.
+    // Cloud also needs the reset so a tab stops receiving the previous
+    // account's live events. The initial connect is owned by api.init(), so
+    // only react once an identity has been recorded.
+    if (identityChanged) {
+      // Start the authenticated clear while the old socket credential is still
+      // available, then invalidate that session immediately. This prevents the
+      // new account's token watcher from writing into the old client's slot.
+      void api.syncApiNodeCredential(null)
       void api.resetSocket()
     }
 
@@ -183,7 +189,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Listen for token refresh events
   onIdTokenChanged(auth, (user) => {
-    if (user && isCloud) {
+    if (user) {
       // Skip initial token change
       if (lastTokenUserId.value !== user.uid) {
         lastTokenUserId.value = user.uid
@@ -192,7 +198,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Under unified_cloud_auth the Cloud-JWT refresh lifecycle drives session
       // cookie rotation (workspaceAuthStore.refreshUnified → notifyTokenRefreshed),
       // so gate this Firebase-driven bump off to avoid a double rotation.
-      if (!flags.unifiedCloudAuthEnabled) {
+      if (!isCloud || !flags.unifiedCloudAuthEnabled) {
         tokenRefreshTrigger.value++
       }
     }
@@ -393,8 +399,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (!isCloud && currentUser.value && !activeWorkspaceId) return undefined
     if (!activeWorkspaceId) return (await getIdToken()) ?? undefined
     return (
-      (await useWorkspaceAuthStore().ensureWorkspaceToken(activeWorkspaceId)) ??
-      undefined
+      (await useWorkspaceAuthStore().ensureWorkspaceToken(
+        activeWorkspaceId,
+        TOKEN_REFRESH_BUFFER_MS
+      )) ?? undefined
     )
   }
 
