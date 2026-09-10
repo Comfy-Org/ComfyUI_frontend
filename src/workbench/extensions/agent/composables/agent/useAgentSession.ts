@@ -331,6 +331,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         'pre_acceptance',
         'error_overlay',
         {
+          retryable: isRetryableRequestFailure(error, false),
           turnAccepted: stashedTurn
         }
       )

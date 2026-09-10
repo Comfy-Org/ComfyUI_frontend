@@ -2502,6 +2502,26 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
+  it('derives history-load retryability from the status, as request_failed does', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('access denied', 403, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
   it('does not track a 404 thread-not-found history load as an error', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async () => {
