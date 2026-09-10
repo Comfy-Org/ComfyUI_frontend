@@ -92,7 +92,9 @@ export function reduceReconnect(
         ),
         replayed_bytes: 0,
         from_version: state.fromVersion,
-        to_version: 0
+        // An ack without a seq says nothing about where the doc now is;
+        // reporting 0 would read as a version that moved backwards.
+        to_version: state.fromVersion
       }
       if (event.ackSeq === null) return idle(report)
       const ackSeq = event.ackSeq

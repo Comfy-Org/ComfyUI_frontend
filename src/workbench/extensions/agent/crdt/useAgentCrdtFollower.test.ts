@@ -548,6 +548,26 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('TEL-10: an ack without a seq reports the baseline rather than a version that moved backwards', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 0,
+      from_version: 41,
+      to_version: 41
+    })
+    unmount()
+  })
+
   it('reports retry exhaustion exactly once with normalized metadata', () => {
     vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
     vi.setSystemTime(1_000)
