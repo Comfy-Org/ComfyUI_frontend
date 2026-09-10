@@ -4,8 +4,10 @@
  * Workshop auth flag becomes true; a release-shape page does not download
  * or initialize it.
  *
- * `settled` mirrors the client's own flag: false until Firebase has
- * delivered the restored user (or none) at least once.
+ * One `SessionSnapshot` ref is the single source of truth; the views below
+ * derive from it, so the illegal combinations a set of parallel refs could
+ * hold cannot occur. `phase === 'pending'` is "Firebase has not answered
+ * yet", distinct from a signed-out `null`.
  *
  * The identity listener and focus refresh keep displayed state warm. A
  * caller that needs a token must still await `ensureFresh()` immediately
@@ -13,13 +15,10 @@
  * these warm-ups.
  */
 import type { User } from 'firebase/auth'
-import { computed, effectScope, readonly, ref, watch } from 'vue'
+import { computed, effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
-import type {
-  AccountCredential,
-  SessionFailure
-} from '@comfyorg/account/session'
+import type { SessionSnapshot } from '@comfyorg/account/session'
 
 import { useWorkshopAuthFlag } from '../scripts/posthog'
 import {
@@ -32,10 +31,13 @@ export type {
   AccountUser as WorkshopSessionUser
 } from '@comfyorg/account/session'
 
-const user = ref<User | null>(null)
-const session = ref<AccountCredential | undefined>(undefined)
-const sessionFailure = ref<SessionFailure | undefined>(undefined)
-const settled = ref(false)
+const PENDING: SessionSnapshot<User> = {
+  phase: 'pending',
+  user: null,
+  session: undefined
+}
+
+const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
 let started = false
 let lifecycle: EffectScope | undefined
 let generation = 0
@@ -59,19 +61,14 @@ async function begin(expectedGeneration: number): Promise<void> {
   const firebase = await import('./workshop-firebase')
   if (generation !== expectedGeneration) return
 
-  stopSnapshot = workshopSessionClient.subscribe((snapshot) => {
-    user.value = snapshot.user
-    settled.value = snapshot.settled
-    session.value =
-      snapshot.phase === 'authenticated' ? snapshot.session : undefined
-    sessionFailure.value =
-      snapshot.phase === 'error' ? snapshot.failure : undefined
+  stopSnapshot = workshopSessionClient.subscribe((next) => {
+    snapshot.value = next
   })
   detachIdentity = workshopSessionClient.attachIdentity(
     firebase.workshopIdentity
   )
-  // Auth-refresh telemetry now starts and stops with this lifecycle instead of
-  // at module load; credits/billing stay a separate consumer.
+  // Auth-refresh telemetry starts and stops with this lifecycle; credits and
+  // billing stay a separate consumer.
   stopTelemetry = subscribeAuthRefreshTelemetry()
 
   const onFocus = () => void workshopSessionClient.ensureFresh()
@@ -92,11 +89,8 @@ function start(): void {
       (on, wasOn) => {
         const expectedGeneration = ++generation
         stopListeners()
-        settled.value = false
+        snapshot.value = PENDING
         if (!on) {
-          user.value = null
-          session.value = undefined
-          sessionFailure.value = undefined
           // The flag starts false on every cold load until PostHog answers;
           // only a real on->off transition means the credential must go.
           if (wasOn) workshopSessionClient.clearStoredCredential()
@@ -126,13 +120,19 @@ async function signOut(): Promise<void> {
 export function useWorkshopSession() {
   start()
   return {
-    user: readonly(user),
-    session: readonly(session),
-    // Lets consumers tell "mint legitimately in flight" from "the last
-    // mint failed" instead of error-styling ordinary latency.
-    sessionFailure: readonly(sessionFailure),
-    settled: readonly(settled),
-    signedIn: computed(() => session.value !== undefined),
+    user: computed(() => snapshot.value.user),
+    session: computed(() =>
+      snapshot.value.phase === 'authenticated'
+        ? snapshot.value.session
+        : undefined
+    ),
+    // Lets consumers tell "mint legitimately in flight" from "the last mint
+    // failed" instead of error-styling ordinary latency.
+    sessionFailure: computed(() =>
+      snapshot.value.phase === 'error' ? snapshot.value.failure : undefined
+    ),
+    settled: computed(() => snapshot.value.phase !== 'pending'),
+    signedIn: computed(() => snapshot.value.phase === 'authenticated'),
     ensureFresh: workshopSessionClient.ensureFresh,
     remint: workshopSessionClient.remint,
     signOut

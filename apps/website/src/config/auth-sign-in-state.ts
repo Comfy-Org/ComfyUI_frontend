@@ -21,7 +21,11 @@ export type AuthSignInProvider = 'google' | 'github' | 'email'
 export type AuthSignInState =
   | { readonly step: 'idle' }
   | { readonly step: 'pending'; readonly provider: AuthSignInProvider }
-  | { readonly step: 'minting'; readonly email: string }
+  | {
+      readonly step: 'minting'
+      readonly email: string
+      readonly origin: 'interactive' | 'restored'
+    }
   | {
       readonly step: 'error'
       readonly classification: AuthErrorClassification
@@ -30,6 +34,7 @@ export type AuthSignInState =
       readonly step: 'signedIn'
       readonly email: string
       readonly messageKey?: TranslationKey
+      readonly origin?: 'interactive' | 'restored'
     }
 
 export type AuthSignInEvent =
@@ -74,7 +79,7 @@ export function authSignInTransition(
         ? state
         : { step: 'pending', provider: event.provider }
     case 'credentialSucceeded':
-      return { step: 'minting', email: event.email }
+      return { step: 'minting', email: event.email, origin: 'interactive' }
     case 'signInFailed':
       return { step: 'error', classification: classifyAuthError(event.error) }
     case 'provisioningFailed':
@@ -87,28 +92,29 @@ export function authSignInTransition(
       // Firebase's restore listener also fires mid-popup; the in-flight
       // attempt owns the outcome then (provisioning may still fail).
       return state.step === 'idle' || state.step === 'error'
-        ? { step: 'minting', email: event.email }
+        ? { step: 'minting', email: event.email, origin: 'restored' }
         : state
     case 'mintSucceeded':
       if (state.step === 'minting')
-        return { step: 'signedIn', email: state.email }
+        return { step: 'signedIn', email: state.email, origin: state.origin }
       // A later refresh recovered the session: drop the stale failure banner.
       return state.step === 'signedIn' &&
         state.messageKey === 'auth.signIn.error.session'
-        ? { step: 'signedIn', email: state.email }
+        ? { step: 'signedIn', email: state.email, origin: state.origin }
         : state
     case 'mintFailed':
       return state.step === 'minting'
         ? {
             step: 'signedIn',
             email: state.email,
-            messageKey: 'auth.signIn.error.session'
+            messageKey: 'auth.signIn.error.session',
+            origin: state.origin
           }
         : state
     case 'mintRetried':
       return state.step === 'signedIn' &&
         state.messageKey === 'auth.signIn.error.session'
-        ? { step: 'minting', email: state.email }
+        ? { step: 'minting', email: state.email, origin: 'interactive' }
         : state
     case 'signedOut':
       return state.step === 'pending' || state.step === 'minting'

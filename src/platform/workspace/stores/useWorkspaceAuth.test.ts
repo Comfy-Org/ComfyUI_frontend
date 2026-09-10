@@ -74,7 +74,13 @@ vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
 }))
 
 vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
+  t: (key: string, params?: unknown) => {
+    const error =
+      params && typeof params === 'object' && 'error' in params
+        ? (params as { error?: string }).error
+        : undefined
+    return error ? `${key}: ${error}` : key
+  }
 }))
 
 /** Ref-backed like the real remote-config flag, so the store's watcher sees a rollback. */
@@ -685,6 +691,9 @@ describe('useWorkspaceAuthStore', () => {
       expect(error.value).toBeInstanceOf(WorkspaceAuthError)
       expect((error.value as WorkspaceAuthError).code).toBe(
         'TOKEN_EXCHANGE_FAILED'
+      )
+      expect((error.value as WorkspaceAuthError).message).toContain(
+        'Server error'
       )
     })
 
@@ -2095,6 +2104,70 @@ describe('useWorkspaceAuthStore', () => {
       expect(workspaceToken.value).toBeNull()
     })
 
+    it('retires a saved legacy token when a unified mint enters the rail', async () => {
+      const futureExpiry = Date.now() + 3600 * 1000
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify(mockWorkspaceWithRole)
+      )
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'legacy-team-token')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        futureExpiry.toString()
+      )
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.OWNER_UID, 'user-a')
+      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { workspaceToken, unifiedToken } = storeToRefs(store)
+      store.initializeFromSession()
+      expect(workspaceToken.value).toBe('legacy-team-token')
+
+      await store.mintAtLogin()
+
+      expect(unifiedToken.value).toBe('unified-token-1')
+      expect(
+        workspaceToken.value,
+        'a flag rollback must not resurrect the stale legacy token'
+      ).toBeNull()
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+    })
+
+    it('attaches and mints the current target when the flag flips on', async () => {
+      mockUnifiedCloudAuthEnabled.value = false
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      mockUnifiedCloudAuthEnabled.value = true
+      await vi.waitFor(() => {
+        expect(unifiedToken.value).toBe('unified-token-1')
+      })
+
+      expect(
+        mockFetch,
+        'a remote rollout must mint before consumers switch rails, or the session goes headerless'
+      ).toHaveBeenCalledTimes(1)
+    })
+
     it('does not re-mint when unifiedToken is already populated', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
@@ -2450,7 +2523,7 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      await store.switchWorkspace('workspace-a')
+      await store.switchWorkspace('workspace-123')
 
       await expect(store.switchWorkspace('workspace-b')).rejects.toThrow()
       expect(store.getUnifiedToken()).toBeUndefined()
@@ -3325,29 +3398,35 @@ describe('useWorkspaceAuthStore', () => {
         'firebase-token-xyz'
       )
       const expiresInMs = 3600 * 1000
-      const okResponse = (token: string) => ({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            ...mockTokenResponse,
-            token,
-            expires_at: new Date(Date.now() + expiresInMs).toISOString()
-          })
-      })
+      const okResponse = (token: string, init: RequestInit | undefined) => {
+        const workspaceId =
+          (JSON.parse(String(init?.body ?? '{}')) as { workspace_id?: string })
+            .workspace_id ?? mockWorkspace.id
+        return {
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token,
+              workspace: { ...mockWorkspace, id: workspaceId },
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
+            })
+        }
+      }
       let releaseStaleRefresh = () => {}
       const staleRefreshGate = new Promise<void>((resolve) => {
         releaseStaleRefresh = resolve
       })
       const mockFetch = vi
         .fn()
-        .mockImplementationOnce(() =>
-          Promise.resolve(okResponse('workspace-token-a'))
+        .mockImplementationOnce((_url, init) =>
+          Promise.resolve(okResponse('workspace-token-a', init))
         )
-        .mockImplementationOnce(() =>
-          staleRefreshGate.then(() => okResponse('stale-refresh-token'))
+        .mockImplementationOnce((_url, init) =>
+          staleRefreshGate.then(() => okResponse('stale-refresh-token', init))
         )
-        .mockImplementation(() =>
-          Promise.resolve(okResponse('workspace-token-b'))
+        .mockImplementation((_url, init) =>
+          Promise.resolve(okResponse('workspace-token-b', init))
         )
       vi.stubGlobal('fetch', mockFetch)
 

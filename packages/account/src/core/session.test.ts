@@ -407,8 +407,39 @@ describe('ensureFresh', () => {
     expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
   })
 
+  it('rejects an explicit empty workspaceId instead of minting personal', async () => {
+    const fetchImpl = okFetch()
+    const { client } = makeClient({ fetchImpl })
+
+    const result = await client.ensureFresh(testUser(), { workspaceId: '' })
+
+    expect(result).toMatchObject({
+      status: 'error',
+      code: 'WORKSPACE_NOT_FOUND'
+    })
+    expect(
+      fetchImpl,
+      'an empty target must never reach the exchange as a personal mint'
+    ).not.toHaveBeenCalled()
+  })
+
   it('never lets a target-less read adopt a team-scoped credential, stored or in memory', async () => {
-    const fetchImpl = okFetch('personal-jwt')
+    // Mirror the exchange: an explicit target echoes that workspace, a
+    // target-less mint resolves personal.
+    const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as {
+        workspace_id?: string
+      }
+      return body.workspace_id === 'ws-9'
+        ? jsonResponse(
+            200,
+            mintBody({
+              token: 'team-jwt',
+              workspace: { id: 'ws-9', name: 'Team', type: 'team' }
+            })
+          )
+        : jsonResponse(200, mintBody({ token: 'personal-jwt' }))
+    })
     const { client, storage } = makeClient({ fetchImpl })
     seedCache(
       storage,
@@ -431,6 +462,25 @@ describe('ensureFresh', () => {
       fetchImpl,
       'the in-memory tier follows the same rule'
     ).toHaveBeenCalledTimes(3)
+  })
+
+  it('fails closed when the exchange returns a different workspace than requested', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        200,
+        mintBody({ workspace: { id: 'ws-other', name: 'Other', type: 'team' } })
+      )
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+
+    const result = await client.remint(testUser(), { workspaceId: 'ws-9' })
+
+    expect(result).toMatchObject({ status: 'error', code: 'ACCESS_DENIED' })
+    expect(client.getToken()).toBeUndefined()
+    expect(
+      storage.raw(),
+      'a wrong-scope success must not become durable'
+    ).toBeNull()
   })
 
   it('never shares an in-flight mint across different workspace targets', async () => {
@@ -624,6 +674,41 @@ describe('remint', () => {
     releaseForced(jsonResponse(200, mintBody({ token: 'forced-jwt' })))
     expect(await joinedForced).toEqual(await forced)
   })
+
+  it('does not republish or persist an older mint that lost to a forced remint', async () => {
+    let releaseOrdinary!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOrdinary = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'forced-jwt' }))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const forcedResult = await client.remint()
+    expect(forcedResult?.status === 'ok' && forcedResult.session.token).toBe(
+      'forced-jwt'
+    )
+    expect(client.getToken()).toBe('forced-jwt')
+
+    releaseOrdinary(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the older ordinary mint lost the race and must not republish its stale token'
+    ).toBe('forced-jwt')
+    expect(
+      JSON.parse(storage.read() ?? '{}').token,
+      'nor persist it over the winning remint'
+    ).toBe('forced-jwt')
+  })
 })
 
 describe('clearStoredCredential', () => {
@@ -671,6 +756,40 @@ describe('invalidate() and an in-flight mint', () => {
       (await after)?.status === 'ok' && client.getToken(),
       'the discarded scope must not be served to a caller that came after the invalidation'
     ).toBe('post-invalidate-jwt')
+  })
+
+  it('makes a same-uid re-auth mint afresh instead of adopting the in-flight mint', async () => {
+    let releaseOld!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOld = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'new-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() =>
+      expect(
+        fetchImpl,
+        'a same-uid re-auth must mint for itself, never adopt the prior in-flight mint'
+      ).toHaveBeenCalledTimes(2)
+    )
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    releaseOld(jsonResponse(200, mintBody({ token: 'old-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the pre-re-auth mint is from the prior identity event and must never win'
+    ).toBe('new-jwt')
   })
 })
 
@@ -730,6 +849,28 @@ describe('stale storage', () => {
       fetchImpl,
       'a readable-but-stale record must not shadow the live credential and re-mint on every read'
     ).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the live credential when a fresh but older stored record would otherwise shadow it', async () => {
+    const storage = memoryStorage()
+    const fetchImpl = okFetch('new-jwt')
+    const { client } = makeClient({ fetchImpl, storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    seedCache(storage, {
+      token: 'old-jwt',
+      expiresAt: Date.now() + 30 * 60 * 1000
+    })
+    await client.ensureFresh()
+
+    expect(
+      client.getToken(),
+      'a fresh-but-older stored write must not downgrade the live, newer credential'
+    ).toBe('new-jwt')
+    expect(JSON.parse(storage.read() ?? '{}').token).toBe('new-jwt')
   })
 })
 
@@ -834,25 +975,22 @@ describe('identity brand', () => {
     ).toThrow('attachIdentity needs the identity')
   })
 
-  it('reports settled only once the port has delivered, and not after detach', async () => {
+  it('stays pending until the port delivers, signs out on null, and re-pends after detach', async () => {
     const { client } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
-    expect(client.getSnapshot().settled).toBe(false)
+    expect(client.getSnapshot().phase).toBe('pending')
 
     const detach = client.attachIdentity(identity.port)
     expect(
-      client.getSnapshot().settled,
+      client.getSnapshot().phase,
       'attached is not delivered; Firebase has not answered yet'
-    ).toBe(false)
+    ).toBe('pending')
 
     identity.fire(null)
-    expect(client.getSnapshot()).toMatchObject({
-      phase: 'signed-out',
-      settled: true
-    })
+    expect(client.getSnapshot().phase).toBe('signed-out')
 
     detach()
-    expect(client.getSnapshot().settled).toBe(false)
+    expect(client.getSnapshot().phase).toBe('pending')
   })
 })
 
@@ -1199,7 +1337,7 @@ describe('sign-in state ownership', () => {
     detach()
 
     expect(client.getToken()).toBeUndefined()
-    expect(client.getSnapshot().phase).toBe('signed-out')
+    expect(client.getSnapshot().phase).toBe('pending')
   })
 
   it('invalidates an explicit-user mint that resolves after external sign-out', async () => {
@@ -1252,7 +1390,7 @@ describe('sign-in state ownership', () => {
     expect(
       client.getSnapshot().phase,
       'the snapshot user belongs to the identity port, which has not fired yet'
-    ).toBe('signed-out')
+    ).toBe('pending')
     expect(client.getToken()).toBeUndefined()
 
     identity.fire(user)
@@ -1296,7 +1434,7 @@ describe('sign-in state ownership', () => {
     detach()
     identity.fire(testUser())
 
-    expect(client.getSnapshot().phase).toBe('signed-out')
+    expect(client.getSnapshot().phase).toBe('pending')
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })

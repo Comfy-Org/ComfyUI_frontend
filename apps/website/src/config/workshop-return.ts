@@ -70,11 +70,12 @@ export function stashWorkshopForm(
       .filter(([name]) => keep.has(name))
       .map(([name, value]) => [name, value === undefined ? null : value])
   )
+  const key = `${FORM_KEY_PREFIX}${slug}`
   try {
-    globalThis.sessionStorage.setItem(
-      `${FORM_KEY_PREFIX}${slug}`,
-      JSON.stringify(kept)
-    )
+    // Drop any prior stash first: a failed replacement must not leave a stale
+    // payload for a later restore to submit as the current form.
+    globalThis.sessionStorage.removeItem(key)
+    globalThis.sessionStorage.setItem(key, JSON.stringify(kept))
   } catch {
     // Quota or disabled storage: the round trip loses the form, nothing else.
   }

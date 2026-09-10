@@ -63,6 +63,22 @@ afterEach(() => {
   FakeBroadcastChannel.all.length = 0
 })
 
+describe('createWebCrossTabRefreshPort availability', () => {
+  it('resolves undefined when the BroadcastChannel constructor throws', () => {
+    class ThrowingBroadcastChannel {
+      constructor() {
+        throw new DOMException('blocked', 'SecurityError')
+      }
+    }
+    vi.stubGlobal('BroadcastChannel', ThrowingBroadcastChannel)
+
+    expect(
+      createWebCrossTabRefreshPort(),
+      'a present-but-unusable BroadcastChannel must fall back to per-tab, not hand out a port that throws mid-commit'
+    ).toBeUndefined()
+  })
+})
+
 describe('createWebCrossTabRefreshPort leadership hold', () => {
   it('releasing from inside the grant callback still releases the lock', async () => {
     let holdSettled = false

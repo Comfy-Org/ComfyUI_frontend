@@ -6,10 +6,9 @@ const h = vi.hoisted(() => {
     flag: undefined as { value: boolean } | undefined,
     listeners: new Set<(snapshot: unknown) => void>(),
     snapshot: {
-      phase: 'signed-out',
+      phase: 'pending',
       user: null,
-      session: undefined,
-      settled: false
+      session: undefined
     } as unknown,
     attachIdentity: vi.fn(() => () => undefined),
     publish(next: unknown) {
@@ -78,8 +77,7 @@ describe('useWorkshopSession settled', () => {
     h.publish({
       phase: 'signed-out',
       user: null,
-      session: undefined,
-      settled: true
+      session: undefined
     })
     expect(s.settled.value).toBe(true)
 

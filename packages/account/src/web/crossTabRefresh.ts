@@ -26,6 +26,15 @@ export function createWebCrossTabRefreshPort():
   if (typeof navigator === 'undefined') return undefined
   const locks = (navigator as Partial<Navigator>).locks
   if (!locks) return undefined
+  // A present BroadcastChannel can still throw on construction (policy,
+  // sandbox, privacy mode, partial impl); probe once so the port is either
+  // fully usable or absent, never interrupted mid-commit.
+  try {
+    const probe = new BroadcastChannel('@comfyorg/account cross-tab probe')
+    probe.close()
+  } catch {
+    return undefined
+  }
   // One refcounted channel per subscribed key, shared by subscribe and
   // publish. A channel never delivers a message back to itself, so
   // publishing on the subscription channel keeps a tab from hearing its own

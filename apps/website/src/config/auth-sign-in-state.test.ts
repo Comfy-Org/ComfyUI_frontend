@@ -33,10 +33,15 @@ describe('authSignInTransition', () => {
       type: 'credentialSucceeded',
       email: 'a@b.co'
     })
-    expect(minting).toEqual({ step: 'minting', email: 'a@b.co' })
+    expect(minting).toEqual({
+      step: 'minting',
+      email: 'a@b.co',
+      origin: 'interactive'
+    })
     expect(authSignInTransition(minting, { type: 'mintSucceeded' })).toEqual({
       step: 'signedIn',
-      email: 'a@b.co'
+      email: 'a@b.co',
+      origin: 'interactive'
     })
   })
 
@@ -66,15 +71,20 @@ describe('authSignInTransition', () => {
   it('mints a workspace session for a returning visitor', () => {
     expect(
       authSignInTransition(idle, { type: 'userRestored', email: 'a@b.co' })
-    ).toEqual({ step: 'minting', email: 'a@b.co' })
+    ).toEqual({ step: 'minting', email: 'a@b.co', origin: 'restored' })
   })
 
   it('keeps the signed-in identity and sign-out path available when minting fails', () => {
-    const minting: AuthSignInState = { step: 'minting', email: 'a@b.co' }
+    const minting: AuthSignInState = {
+      step: 'minting',
+      email: 'a@b.co',
+      origin: 'interactive'
+    }
     expect(authSignInTransition(minting, { type: 'mintFailed' })).toEqual({
       step: 'signedIn',
       email: 'a@b.co',
-      messageKey: 'auth.signIn.error.session'
+      messageKey: 'auth.signIn.error.session',
+      origin: 'interactive'
     })
   })
 
@@ -92,12 +102,13 @@ describe('authSignInTransition', () => {
 
   it('clears the session-failure banner when a later refresh mints successfully', () => {
     const failed = authSignInTransition(
-      { step: 'minting', email: 'a@b.co' },
+      { step: 'minting', email: 'a@b.co', origin: 'interactive' },
       { type: 'mintFailed' }
     )
     expect(authSignInTransition(failed, { type: 'mintSucceeded' })).toEqual({
       step: 'signedIn',
-      email: 'a@b.co'
+      email: 'a@b.co',
+      origin: 'interactive'
     })
   })
 
