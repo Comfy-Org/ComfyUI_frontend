@@ -75,6 +75,19 @@
     },
     "notHelpful": "לא מועיל",
     "openWorkflowTab": "פתיחת {name}",
+    "paywall": {
+      "addCredits": "הוספת קרדיטים",
+      "body": {
+        "local": "יתרת הקרדיטים שלך נוצלה. הוסיפו קרדיטים כדי לשמור על פעולת הסוכן.",
+        "member": "סביבת העבודה הזו ניצלה את כל הקרדיטים שלה. יש לבקש מבעלי סביבת העבודה להוסיף קרדיטים.",
+        "salesManaged": "החיוב עבור סביבת עבודה זו מתבצע דרך צוות חשבון ה־Comfy שלך. יש ליצור איתם קשר כדי להוסיף קרדיטים.",
+        "subscribed": "סביבת העבודה הזו ניצלה את הקרדיטים החודשיים ואת יתרת התוספות שלה. הוסיפו קרדיטים כדי לשמור על פעולת הסוכן.",
+        "subscriptionRequired": "נגמרו הקרדיטים הזמינים."
+      },
+      "subscribe": "מינוי",
+      "title": "אין קרדיטים",
+      "upgradePlan": "שדרוג התוכנית"
+    },
     "placeholder": "תארו רעיונות, השתמשו ב-{'@'} להפניה,\nאזכרו צמתים מהגרף או גררו נכסים פנימה",
     "ranToolCalls": "בוצעה {count} קריאת כלי | בוצעו {count} קריאות כלי",
     "ranToolCallsTimed": "בוצעה {count} קריאת כלי במשך {seconds} שניות | בוצעו {count} קריאות כלי במשך {seconds} שניות",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "עריכת פקדי תת-הגרף",
     "Exit Subgraph": "יציאה מתת-הגרף",
     "Experimental: Browse Model Assets": "ניסיוני: עיון בנכסי מודלים",
-    "Experimental: Enable AssetAPI": "ניסיוני: הפעלת AssetAPI",
     "Experimental: Enable Nodes 2_0": "ניסיוני: הפעלת Nodes 2.0",
     "Export": "ייצוא",
     "Export (API)": "ייצוא (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "קרדיטים נוספים",
     "additionalCreditsInUse": "בשימוש",
     "additionalCreditsInfo": "אודות קרדיטים נוספים",
-    "additionalCreditsTooltip": "קרדיטים שאתה מוסיף מעבר לתוכנית שלך. מנוצלים לאחר סיום הקרדיטים החודשיים. כל קרדיט פג תוקף שנה לאחר הרכישה.",
+    "additionalCreditsTooltip": "קרדיטים שנוספו מעבר לתוכנית שלך. נעשה בהם שימוש לאחר שנגמרים הקרדיטים בתוכנית שלך. תוקפו של כל אחד מהם פג שנה לאחר הרכישה.",
     "benefits": {
       "benefit1": "קרדיטים חודשיים לצמתי שותפים — טען כשצריך",
       "benefit1FreeTier": "יותר קרדיטים חודשיים, טען בכל עת",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
       "changePaymentMethod": "שנה",
       "commitment": "התחייבות",
+      "completePayment": "השלמת התשלום",
       "completeVerification": "השלם אימות",
       "confirm": "אישור",
       "confirmChange": "אשר שינוי",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "הסתרת תכונות",
       "newMonthlySubscription": "מנוי חודשי חדש",
       "nextPaymentDue": "התשלום הבא ב-{date}. ניתן לבטל בכל עת.",
+      "parkedCheckoutDetail": "תהליך התשלום הקודם שלך עדיין ממתין לאמצעי תשלום. יש להשלים את התשלום כדי להפעיל תוכנית זו.",
       "payAndSubscribe": "שלם והירשם",
       "paymentMethod": "אמצעי תשלום",
       "paymentPopupBlocked": "לא ניתן היה לפתוח את דף התשלום — אפשר חלונות קופצים ונסה שוב.",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "ניהול פרויקטים ונכסים",
       "perkRolePermissions": "הרשאות מבוססות תפקיד",
       "perkSharedPool": "מאגר קרדיטים משותף לכל החברים",
-      "tagline": "בחר את מנוי הקרדיטים החודשי שלך. קבל הנחה גדולה יותר עם מנוי קרדיטים גדול יותר.",
+      "tagline": "בחרו את מינוי הקרדיטים שלכם. קבלו הנחה גדולה יותר עם מינוי קרדיטים גדול יותר.",
       "unavailable": "תוכנית הצוות אינה זמינה כרגע."
     },
     "teamPlanIncludes": "התוכנית שלך כוללת את כל מה שיש ב-{plan}, בנוסף:",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "USD / חודש / חבר",
     "usdPerYear": "USD / שנה",
     "usedAfterMonthly": "נוצל לאחר סיום החודשי",
+    "usedAfterYearly": "בשימוש לאחר ניצול הקרדיטים השנתיים",
     "videoEstimate": "יוצר כ~{count} סרטונים של 5 שניות*",
     "videoEstimateExplanation": "הערכות אלו מבוססות על תבנית Wan 2.2 Image-to-Video עם הגדרות ברירת המחדל (5 שניות, 16fps, 640x640, דגימה ב-4 צעדים).",
     "videoEstimateHelp": "פרטים נוספים על תבנית זו",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "מה כלול:",
     "workspaceNotSubscribed": "סביבת עבודה זו אינה במנוי",
     "yearly": "שנתי",
+    "yearlyCredits": "קרדיטים לשנה",
     "yearlyCreditsLabel": "סך הקרדיטים השנתיים",
+    "yearlyCreditsPerMemberLabel": "קרדיטים שנתיים / חבר",
+    "yearlyCreditsUsedUpTitle": "הקרדיטים השנתיים נוצלו. יתמלאו מחדש ב־{date}",
+    "yearlyCreditsUsedUpTitleNoDate": "הקרדיטים השנתיים נוצלו",
+    "yearlyUsageProgress": "{used} מתוך {total} קרדיטים שנתיים נוצלו",
     "yourPlanIncludes": "המסלול שלך כולל:"
   },
   "tabMenu": {

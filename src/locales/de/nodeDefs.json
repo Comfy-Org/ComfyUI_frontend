@@ -11011,7 +11011,8 @@
     "display_name": "3D laden (Erweitert)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Geladene 3D-Modell-Datei (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Rotation und Skalierung (Weltkoordinatenraum mit Y-oben)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport-Kamerainformationen: Position, Zielpunkt, Zoom und Typ."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Generiert Bilder über den GPT-Image-Endpoint von OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Generieren oder bearbeiten Sie Bilder über OpenRouter mit Microsofts MAI-Image-2.6-Modellen: Text-zu-Bild oder bildgeführte Bearbeitung mit bis zu fünf Referenzbildern, in sieben Seitenverhältnissen bei 1K oder 1.5K.",
+    "display_name": "OpenRouter Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Das OpenRouter-Bildmodell, das zur Bildgenerierung verwendet wird."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "3D-Vorschau (Erweitert)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport-Kamerainformationen: Position, Zielpunkt, Zoom und Typ."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D-Modell-Datei (glb/obj/stl/etc.) von einem vorgelagerten 3D-Node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Rotation und Skalierung (Weltkoordinatenraum mit Y-oben)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport-Kamerainformationen: Position, Zielpunkt, Zoom und Typ."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "3D speichern (Erweitert)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport-Kamerainformationen: Position, Zielpunkt, Zoom und Typ."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "3D-Modelldatei von einem vorgeschalteten 3D-Node."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Rotation und Skalierung (Weltkoordinatenraum mit Y-oben)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D-Modell-Datei (glb/obj/stl/etc.) von einem vorgelagerten 3D-Node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Platzierung jedes Modells in der Szene: Position, Rotation und Skalierung (Weltkoordinatenraum mit Y-oben)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport-Kamerainformationen: Position, Zielpunkt, Zoom und Typ."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Renderbreite des Viewports in Pixeln."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Renderhöhe des Viewports in Pixeln."
       }
     }
   },

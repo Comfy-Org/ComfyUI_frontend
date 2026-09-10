@@ -6,7 +6,7 @@ import { nextTick } from 'vue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import LiveTerminal from './LiveTerminal.vue'
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn()
 }))
 
@@ -30,10 +30,7 @@ class VisibleIntersectionObserver {
 const LINES = ['$ comfy up', '✔ Done']
 
 function transcript(): string {
-  return (
-    screen.getByRole('img', { name: 'Demo' }).textContent?.replace('▋', '') ??
-    ''
-  )
+  return screen.getByRole('img', { name: 'Demo' }).textContent.replace('▋', '')
 }
 
 async function advance(ms: number): Promise<void> {
