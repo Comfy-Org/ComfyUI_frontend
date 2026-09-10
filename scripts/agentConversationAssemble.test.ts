@@ -778,6 +778,26 @@ describe('assembleConversation', () => {
     )
   })
 
+  it('accepts a draft whose object widget value orders its keys differently', () => {
+    const write = {
+      ...setSteps(0),
+      value: { x: 0, y: 0, width: 512, height: 512 }
+    }
+    const { op_id: _id, ...semantic } = write
+    const draft = projected([semantic as GraphOperation])
+    const sampler = draft.nodes.find((node) => String(node.id) === '4')!
+    sampler.widgets_values = [{ height: 512, width: 512, y: 0, x: 0 }]
+    const { receipt } = assembleConversation(
+      input({
+        rows: rows({
+          parents: [parent({ result: { ok: true, data: { ops: [write] } } })],
+          draft
+        })
+      })
+    )
+    expect(receipt).toMatchObject({ draft_nodes: 2, added_nodes: 0 })
+  })
+
   it('refuses a draft that keeps the node ids but not the link', () => {
     expect(() =>
       assembleConversation(
