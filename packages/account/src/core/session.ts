@@ -24,6 +24,8 @@ import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 import type { AccountIdentity } from './identity.js'
 import { isAccountIdentity } from './identity.js'
 
+export type { AccountIdentity } from './identity.js'
+
 export interface AccountUser {
   readonly uid: string
   getIdToken: () => Promise<string>
@@ -556,6 +558,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         }
       }
 
+      // A 200 that cannot be used is an exchange failure, not a session: an
+      // empty token, or an expiry already inside the fresh margin, would
+      // publish an authenticated snapshot ensureFresh promised never to.
+      if (parseResult.data.token === '') {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
       const session: AccountCredential = {
         token: parseResult.data.token,
         expiresAt,
@@ -563,6 +575,18 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         workspace: parseResult.data.workspace,
         role: parseResult.data.role,
         permissions: parseResult.data.permissions
+      }
+      // A token already dead on arrival can never authorize anything, and
+      // would publish an authenticated snapshot that the next read discards.
+      // A short-but-future expiry is left to the scheduler / valid-on-read
+      // path, which is built to refresh it.
+      const mintNow = options.now?.() ?? clientOptions.now?.() ?? Date.now()
+      if (expiresAt <= mintNow) {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
       }
       // Storage is written only by a commit that won: a mint that lost
       // the sequence race or outlived a sign-out must not leave its
@@ -582,6 +606,18 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   interface MintHandle {
     readonly mintId: number
     readonly response: Promise<SessionResult>
+  }
+
+  /**
+   * A sign-out or a different user makes the running mint unjoinable: it
+   * was started with the previous identity's token, and a caller arriving
+   * after the event must mint for itself.
+   */
+  function abandonInFlight(): void {
+    inFlight = undefined
+    inFlightUid = undefined
+    inFlightTarget = undefined
+    inFlightForced = false
   }
 
   function sharedMint(
@@ -813,6 +849,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
     const startEpoch = identityEpoch
     const startInvalidation = invalidationEpoch
+    const startedSignedOut = currentUser === null
     const { mintId, response } = core(user, options)
     // A caller that joined an in-flight mint still gets its own signal
     // honored: the shared mint runs on, this caller stops waiting for it.
@@ -842,9 +879,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       }
       return undefined
     }
-    if (
+    if (identityEpoch !== startEpoch) {
+      // The one mint allowed to cross an identity event: an explicit-user
+      // mint started while signed out, for the user the port then
+      // delivered (the popup path). Everything else was minted for an
+      // identity that is gone, even when the uid matches again.
+      const popupSettled =
+        requestedUser !== undefined &&
+        startedSignedOut &&
+        currentUser?.uid === user.uid
+      if (!popupSettled) return undefined
+    } else if (
       currentUser?.uid !== user.uid &&
-      (identityEpoch !== startEpoch || !requestedUser || currentUser !== null)
+      (!requestedUser || currentUser !== null)
     ) {
       return undefined
     }
@@ -887,6 +934,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         stopScheduledRefresh()
         clearExpiry()
         identitySettled = true
+        if (!next || next.uid !== currentUser?.uid) abandonInFlight()
         currentUser = next
         credential = undefined
         credentialTarget = undefined
