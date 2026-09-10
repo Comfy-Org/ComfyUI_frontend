@@ -1,7 +1,9 @@
+import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AxiosResponse } from 'axios'
 import { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -10,59 +12,21 @@ import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/scripts/api'), async (importOriginal) => {
+  const actual = await importOriginal()
+  Object.assign(actual.api, {
     init: vi.fn().mockResolvedValue(undefined),
     getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
     getCustomNodesI18n: vi.fn().mockResolvedValue({}),
     getUserConfig: vi.fn().mockResolvedValue({})
-  }
-}))
-
-vi.mock(import('@/i18n'), () => ({
-  mergeCustomNodesI18n: vi.fn()
-}))
-
-const mockIsSettingsReady = ref(false)
-const mockSettingLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-const mockWorkflowLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    load: mockSettingLoad,
-    get isReady() {
-      return mockIsSettingsReady.value
-    },
-    isLoading: ref(false),
-    error: ref(undefined)
-  }))
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: vi.fn(() => ({
-      loadWorkflows: mockWorkflowLoad,
-      syncWorkflows: vi.fn().mockResolvedValue(undefined)
-    }))
   })
-)
+  return actual
+})
 
-const mockNeedsLogin = ref(false)
-vi.mock<unknown>(import('@/stores/userStore'), () => ({
-  useUserStore: vi.fn(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    needsLogin: mockNeedsLogin
-  }))
-}))
-
-const mockIsAuthInitialized = ref(false)
-const mockIsAuthAuthenticated = ref(false)
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() => ({
-    isInitialized: mockIsAuthInitialized,
-    isAuthenticated: mockIsAuthAuthenticated
-  }))
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  mergeCustomNodesI18n: vi.fn()
 }))
 
 const mockDistributionTypes = vi.hoisted(() => ({
@@ -87,16 +51,18 @@ function requestFailure(status: number) {
 
 describe('bootstrapStore', () => {
   beforeEach(() => {
-    mockIsSettingsReady.value = false
-    mockIsAuthInitialized.value = false
-    mockIsAuthAuthenticated.value = false
-    mockNeedsLogin.value = false
+    useSettingStore().isReady = false
+    useAuthStore().isInitialized = false
+    Object.assign(useAuthStore(), { isAuthenticated: false })
+    Object.assign(useUserStore(), { needsLogin: false })
     mockDistributionTypes.isCloud = false
-    mockSettingLoad.mockImplementation(() => {
-      mockIsSettingsReady.value = true
+    vi.mocked(useSettingStore().load).mockImplementation(() => {
+      useSettingStore().isReady = true
       return Promise.resolve()
     })
-    mockWorkflowLoad.mockResolvedValue(undefined)
+    vi.mocked(useWorkflowStore().loadWorkflows).mockResolvedValue(undefined)
+    vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
+    vi.mocked(useUserStore().initialize).mockResolvedValue(undefined)
   })
 
   it('initializes with all flags false', () => {
@@ -118,8 +84,12 @@ describe('bootstrapStore', () => {
   })
 
   it('records both store phases when their loads reject', async () => {
-    mockSettingLoad.mockRejectedValueOnce(new Error('settings failed'))
-    mockWorkflowLoad.mockRejectedValueOnce(new Error('workflows failed'))
+    vi.mocked(useSettingStore().load).mockRejectedValueOnce(
+      new Error('settings failed')
+    )
+    vi.mocked(useWorkflowStore().loadWorkflows).mockRejectedValueOnce(
+      new Error('workflows failed')
+    )
     const milestone = vi.spyOn(bootstrapTracer, 'milestone')
     const previousPhaseCount = bootstrapTracer.summary().length
     const store = useBootstrapStore()
@@ -182,7 +152,7 @@ describe('bootstrapStore', () => {
       // Firebase resolves with no user (signed-out) — bootstrap must unblock.
       // Previously it also waited for isAuthenticated, which made every
       // signed-out load wait 35s and fire a false Sentry timeout.
-      mockIsAuthInitialized.value = true
+      useAuthStore().isInitialized = true
       await bootstrapPromise
 
       await vi.waitFor(() => {
@@ -203,7 +173,7 @@ describe('bootstrapStore', () => {
         expect(settingStore.isReady).toBe(false)
 
         // Firebase resolves during the retry backoff.
-        mockIsAuthInitialized.value = true
+        useAuthStore().isInitialized = true
         await vi.advanceTimersByTimeAsync(3_001)
         await bootstrapPromise
 

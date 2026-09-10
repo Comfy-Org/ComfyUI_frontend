@@ -1,3 +1,5 @@
+import type * as I18nModule from '@/i18n'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -30,7 +32,10 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
+  t: (key: string) => key
+}))
 
 vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
@@ -42,20 +47,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return mocks.activeWorkspaceId
-      },
-      get activeWorkspaceBillingRail() {
-        return mocks.billingRail
-      }
-    })
-  })
-)
-
 import { launchCancellationFlow } from './launchCancellationFlow'
 
 function session(
@@ -63,6 +54,23 @@ function session(
 ): ChurnkeySession {
   return { show }
 }
+
+beforeEach(() => {
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceId',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.activeWorkspaceId
+  })
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceBillingRail',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.billingRail
+  })
+})
 
 describe('launchCancellationFlow', () => {
   beforeEach(() => {

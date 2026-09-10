@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type * as VueUseCore from '@vueuse/core'
@@ -8,8 +7,39 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
+import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const apiMock = vi.hoisted(() => new EventTarget())
+beforeEach(() => {
+  vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
+    undefined
+  )
+  vi.mocked(useExecutionStore().bindExecutionEvents).mockImplementation(
+    () => {}
+  )
+  vi.mocked(useExecutionStore().unbindExecutionEvents).mockImplementation(
+    () => {}
+  )
+  vi.mocked(useMenuItemStore().registerCoreMenuCommands).mockImplementation(
+    () => {}
+  )
+  vi.mocked(
+    useBottomPanelStore().registerCoreBottomPanelTabs
+  ).mockResolvedValue(undefined)
+  vi.mocked(useSidebarTabStore().registerCoreSidebarTabs).mockImplementation(
+    () => {}
+  )
+})
+
+const apiMock = vi.hoisted(() =>
+  Object.assign(new EventTarget(), {
+    getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
+    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] }))
+  })
+)
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -21,6 +51,12 @@ const distribution = vi.hoisted(
 )
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn(async () => {}),
+  onAuthStateChanged: vi.fn(() => () => {}),
+  onIdTokenChanged: vi.fn(() => () => {})
+}))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -74,9 +110,7 @@ vi.mock(import('@/i18n'), async (importOriginal) => {
   return { ...actual, loadLocale: vi.fn().mockResolvedValue(undefined) }
 })
 vi.mock(import('@/platform/distribution/types'), () => distribution)
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: vi.fn(() => undefined), set: vi.fn() })
-}))
+
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => undefined
 }))
@@ -86,22 +120,7 @@ vi.mock(
     useFrontendVersionMismatchWarning: vi.fn()
   })
 )
-vi.mock<unknown>(
-  import('@/platform/updates/common/versionCompatibilityStore'),
-  () => ({
-    useVersionCompatibilityStore: () => ({
-      initialize: vi.fn().mockResolvedValue(undefined)
-    })
-  })
-)
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), async () => {
-  const { defineStore } = await import('pinia')
-  return {
-    useCanvasStore: defineStore('canvas-test-stub', () => ({
-      linearMode: ref(false)
-    }))
-  }
-})
+
 vi.mock(import('@/services/autoQueueService'), () => ({
   setupAutoQueueHandler: vi.fn()
 }))
@@ -111,65 +130,7 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
     keybindHandler: vi.fn()
   })
 }))
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({ isBuilderMode: ref(false) })
-}))
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({ updateHistory: vi.fn() })
-}))
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ registerCommands: vi.fn() })
-}))
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: () => ({
-    bindExecutionEvents: vi.fn(),
-    unbindExecutionEvents: vi.fn(),
-    activeJobId: null,
-    clearActiveJobIfStale: vi.fn()
-  })
-}))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ isAuthenticated: false })
-}))
-vi.mock<unknown>(import('@/stores/menuItemStore'), () => ({
-  useMenuItemStore: () => ({ registerCoreMenuCommands: vi.fn() })
-}))
-vi.mock<unknown>(import('@/stores/modelStore'), () => ({
-  useModelStore: () => ({})
-}))
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({}),
-  useNodeFrequencyStore: () => ({})
-}))
-vi.mock<unknown>(import('@/stores/queueStore'), () => ({
-  useQueueStore: () => ({
-    update: vi.fn(),
-    runningTasks: [],
-    pendingTasks: [],
-    tasks: [],
-    maxHistoryItems: 64
-  }),
-  useQueuePendingTaskCountStore: () => ({ update: vi.fn() })
-}))
-vi.mock<unknown>(import('@/stores/serverConfigStore'), () => ({
-  useServerConfigStore: () => ({})
-}))
-vi.mock<unknown>(import('@/stores/workspace/bottomPanelStore'), () => ({
-  useBottomPanelStore: () => ({
-    registerCoreBottomPanelTabs: vi.fn().mockResolvedValue(undefined)
-  })
-}))
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: { light_theme: true, colors: { comfy_base: {} } }
-  })
-}))
-vi.mock<unknown>(import('@/stores/workspace/sidebarTabStore'), () => ({
-  useSidebarTabStore: () => ({
-    registerCoreSidebarTabs: vi.fn(),
-    activeSidebarTabId: null
-  })
-}))
+
 vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => ({
     changeTheme: vi.fn(),

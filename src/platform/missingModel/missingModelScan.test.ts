@@ -1,5 +1,8 @@
+import type * as I18nModule from '@/i18n'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
@@ -256,6 +259,17 @@ function makeNestedPromotedModelGraph({
 }
 
 const noAssetSupport = () => false
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+    mockUpdateModelsForNodeType
+  )
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(mockGetAssets)
+})
 
 describe('isModelFileName', () => {
   it('should return true for common model extensions', () => {
@@ -1730,20 +1744,8 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    updateModelsForNodeType: mockUpdateModelsForNodeType,
-    getAssets: mockGetAssets
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
-vi.mock(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: (_key: string, fallback: string) => fallback
 }))
 

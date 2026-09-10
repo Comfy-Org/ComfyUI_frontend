@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
@@ -48,7 +47,6 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
 describe('Composer', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    setActivePinia(createPinia())
   })
 
   it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {

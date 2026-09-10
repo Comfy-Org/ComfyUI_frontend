@@ -40,12 +40,6 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({
-    registerCommand: vi.fn()
-  })
-}))
-
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
