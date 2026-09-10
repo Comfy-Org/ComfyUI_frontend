@@ -421,6 +421,15 @@ export class SubgraphHelper {
     return addedId
   }
 
+  async unpackViaContextMenu(nodeTitle: string): Promise<void> {
+    const node = this.comfyPage.vueNodes.getNodeByTitle(nodeTitle)
+    const fixture = await this.comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
+    await this.comfyPage.contextMenu.openForVueNode(fixture.header)
+    await this.comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
+    await expect(node).toHaveCount(0)
+    await this.comfyPage.nextFrame()
+  }
+
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
     const targetNodeId = parseNodeId(nodeId)
     if (!targetNodeId) {

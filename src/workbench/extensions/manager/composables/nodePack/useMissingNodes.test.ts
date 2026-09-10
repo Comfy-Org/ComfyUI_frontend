@@ -58,14 +58,12 @@ describe('useMissingNodes', () => {
   ]
 
   const mockStartFetchWorkflowPacks = vi.fn()
-  let mockIsPackInstalled: ReturnType<
-    typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackInstalled']>
-  >
 
   beforeEach(() => {
-    mockIsPackInstalled = vi.mocked(useComfyManagerStore().isPackInstalled)
     // Default setup: pack-3 is installed, others are not
-    mockIsPackInstalled.mockImplementation((id) => id === 'pack-3')
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+      (id) => id === 'pack-3'
+    )
 
     mockUseWorkflowPacks.mockReturnValue({
       workflowPacks: ref([]),
@@ -119,7 +117,7 @@ describe('useMissingNodes', () => {
       })
 
       // Mock all packs as installed
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       const { missingNodePacks } = useMissingNodes()
 
@@ -138,7 +136,7 @@ describe('useMissingNodes', () => {
       })
 
       // Mock no packs as installed
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { missingNodePacks } = useMissingNodes()
 
