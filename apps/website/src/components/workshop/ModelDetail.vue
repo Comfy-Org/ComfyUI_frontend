@@ -28,6 +28,7 @@ import { IDLE, transition } from '../../config/workshop-run'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
+import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -165,6 +166,7 @@ const isRunning = computed(() => runState.value.status === 'running')
 const requestId = ref<string | null>(null)
 let controller: AbortController | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
+const uploadUrl = createWorkshopUrlUploader()
 
 const now = useTimestamp({ interval: 1000 })
 
@@ -213,21 +215,34 @@ async function run() {
   controller = active
   requestId.value = null
   runState.value = transition(runState.value, { type: 'start', at: Date.now() })
-  try {
-    const body = await prepareWorkshopRouterInput(
-      model.execution,
-      values.value,
-      active.signal
-    )
+  async function freshCredential() {
     const credential = await ensureFresh(undefined, { signal: active.signal })
     active.signal.throwIfAborted()
     if (
       credential?.status !== 'ok' ||
       credential.session.uid !== startedFor.uid ||
       credential.session.workspace.id !== startedFor.workspace.id
-    ) {
+    )
       throw new WorkshopRouterError('unavailable')
-    }
+    return credential.session
+  }
+  try {
+    const body = await prepareWorkshopRouterInput(
+      model.execution,
+      values.value,
+      active.signal,
+      undefined,
+      async (file, signal) => {
+        const credential = await freshCredential()
+        return uploadUrl(
+          file,
+          credential.token,
+          JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+          signal
+        )
+      }
+    )
+    const credential = await freshCredential()
     const fingerprint = JSON.stringify([
       startedFor.uid,
       startedFor.workspace.id,
@@ -240,7 +255,7 @@ async function run() {
     const result = await runWorkshopRouter({
       contract: model.execution,
       body,
-      token: credential.session.token,
+      token: credential.token,
       idempotencyKey: pendingRequest.key,
       signal: active.signal
     })

@@ -219,17 +219,18 @@ work; schema acceptance does not certify them.
 - Original upload coverage: `bfl/flux-2-pro`, `bfl/flux-2-max`, `bfl/flux-kontext-pro`,
   `bfl/flux-kontext-max`, `bfl/flux-pro-1.1`, `bfl/flux-pro-1.1-ultra`.
 - `wavespeed/seedvr2:image` and `wavespeed/ultimate-image-upscaler:image` are
-  explicitly tagged `imageSource: "url"`. Their authored schemas require URLs.
-  Show a URL field and preview, with no upload button or invented hosting service.
+  explicitly tagged `imageSource: "url"` and `urlUpload: "image"`. Their authored
+  schemas require URLs. Show a URL field plus the existing file picker. Selected
+  files use the temporary-storage transport below; pasted URLs pass through.
   The curated `http-image-url` format is validated both in the form and by the
   request builder, including whole-body input. It rejects local paths, blob/data
   URLs, missing hosts, credentials and unescaped whitespace/backslashes.
 - Preview failure is an inline notice, not proof that a model request would fail:
   remote hosts can restrict browser previews. No external URL availability or
   paid model success is claimed by the local fixture-based browser checks.
-- The creator adapters add upload widgets to 16 more visible models (22 total).
-  Other models may require public URLs. Do not infer encoding from a field name
-  or imply that every image-capable model has an upload/hosting service.
+- The earlier Base64 pass added creator upload widgets to 16 more visible models
+  (22 total). URL-upload coverage is counted separately below. Do not infer
+  encoding from field names or imply that every media mode is implemented.
 - Non-image files (FBX, other 3D assets, audio, video, or unknown formats) use a
   compact file card with type/extension, filename, size and replace/remove actions.
   Only image MIME types use the image preview. A non-image `previewUrl` is never
@@ -245,6 +246,58 @@ URL values in generated requests, and 390px/1280px layouts. No paid Run clicks.
 Non-image cards are additionally checked in an isolated component fixture using
 the site's built CSS, including FBX → image replacement. No fixture route or
 mock-data panel is added to the website.
+
+### Temporary URL uploads (September 10)
+
+`urlUpload` in the curated input definitions explicitly selects `image`, `video`,
+`audio`, `image-or-video`, or unrestricted `file`. It is separate from native
+Base64/data-URL bindings. The packed contracts currently expose 43 such inputs
+on 31 models: 27 image, 6 video, 2 audio, 2 image/video and 6 general-file inputs.
+The native Router snapshot remains unchanged. Regenerate the packed contracts
+with `pnpm --filter @comfyorg/website generate:workshop-router-contracts`.
+
+- A URL field accepts either its existing string value or an actual selected
+  `File`; changing source replaces the old value. The selected file stays local
+  until Run. API-tab rendering never reads private bytes or starts uploads.
+- Run validates inputs and obtains a fresh same-user/workspace credential, POSTs
+  filename and MIME to `/customers/storage`, PUTs raw bytes to `upload_url`, and
+  substitutes `download_url` before the existing template/callback composes and
+  validates the native Router body. Use the configured Router environment.
+- Storage PUTs omit cookies and Comfy authorization and refuse redirects. Only
+  HTTPS storage URLs without embedded credentials are accepted. UUID-prefixed
+  filenames prevent distinct same-named images overwriting one another.
+- Successful uploads are cached by actual File identity and account/workspace
+  scope for at most 23 hours (the backend signs downloads for 24 hours). Failed
+  or cancelled uploads are not cached. Retrying unchanged Run inputs therefore
+  reuses the composed body and idempotency key while the URL is valid.
+- File MIME/count/25 MiB limits apply before upload; the 10 MiB serialized Router
+  body cap still applies after composition. Upload failure is localized inline
+  and blocks paid generation. Sign-out/workspace changes abort pending work.
+- Multiple Qwen reference inputs become ordered native image entries; Base64
+  arrays and first/last-frame mappings remain unchanged. This does not add every
+  optional provider media mode or override provider-specific limits.
+- Python/TypeScript examples use the same storage handshake for URL files and
+  local Base64 encoding for Base64 files. cURL continues to omit local files and
+  marks the request incomplete. For script retries, reuse the prepared URLs and
+  key; rerunning upload setup creates different request URLs. Signed URLs and
+  keys must not be logged, checked in, or put into the content pack.
+
+**Live verification is blocked, not certified.** On September 10, both
+`api-nodes-prod` and `api-nodes-staging` returned HTTP 200 without any
+`Access-Control-Allow-*` headers for PUT preflights from `https://comfy.org`,
+the PR #17263 preview, and `http://localhost:4321`. HTTP 200 alone is not a
+successful CORS preflight. A storage owner must configure allowed browser
+origins/methods (`PUT`, plus `GET`/`HEAD` for previews) and `Content-Type`, then
+verify a real signed upload and download in a browser. No bucket configuration
+was changed. The browser connection and `COMFY_KEY` were unavailable in this
+session, so neither real storage uploads nor paid provider calls were exercised.
+
+Focused regression coverage lives in `workshop-url-upload.test.ts`,
+`workshop-url-input.test.ts`, `PlaygroundField.test.ts`, `ModelDetail.test.ts`,
+`ApiTab.test.ts`, and `models-snippets.test.ts`. The generated Python/TypeScript
+examples are executed with real local fixture bytes against stubbed endpoints,
+including distinct ordered uploads, no auth forwarding, mixed URL/Base64 bodies,
+and upload failure preventing generation. This does not replace live CORS tests.
 
 ## Shared placement
 

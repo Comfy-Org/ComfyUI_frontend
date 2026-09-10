@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -196,4 +196,120 @@ describe('local files in snippets', () => {
       type: 'image-edit'
     })
   })
+
+  it.for(['python', 'typescript'] as const)(
+    '%s uploads distinct URL files, keeps Base64 separate and stops before generation on a failed upload',
+    (language) => {
+      const directory = mkdtempSync(join(tmpdir(), 'models-url-snippets-'))
+      temporaryDirectories.push(directory)
+      const references: SnippetFile[] = [
+        {
+          token: 'https://upload.invalid/first',
+          name: 'first.png',
+          mimeType: 'image/png',
+          encoding: 'url'
+        },
+        {
+          token: 'https://upload.invalid/second',
+          name: 'second.jpg',
+          mimeType: 'image/jpeg',
+          encoding: 'url'
+        },
+        {
+          token: 'BASE64_TOKEN',
+          name: 'third.png',
+          mimeType: 'image/png',
+          encoding: 'base64'
+        }
+      ]
+      writeFileSync(join(directory, 'first.png'), bytes[0])
+      writeFileSync(join(directory, 'second.jpg'), bytes[1])
+      writeFileSync(join(directory, 'third.png'), bytes[0])
+      const request = {
+        images: [references[0].token, references[1].token],
+        nested: { data: references[2].token },
+        prompt: body.prompt
+      }
+      const snippet = buildSnippet(language, id, request, key, references)
+      const capture =
+        language === 'python'
+          ? [
+              'import json, sys, types, os',
+              'grants, uploads = [], []',
+              'def post(url, **kwargs):',
+              '    if url.endswith("/customers/storage"):',
+              '        assert kwargs["headers"]["Authorization"] == "Bearer test-key"',
+              '        assert kwargs["allow_redirects"] is False',
+              '        grants.append(kwargs["json"])',
+              '        i = len(grants)',
+              '        return types.SimpleNamespace(status_code=200, json=lambda: {"upload_url": "https://storage.example/upload/"+str(i), "download_url": "https://storage.example/download/"+str(i)})',
+              '    print(json.dumps({"body": kwargs["json"], "key": kwargs["headers"]["Idempotency-Key"], "grants": grants, "uploads": uploads}))',
+              '    raise SystemExit(0)',
+              'def put(url, **kwargs):',
+              '    assert "Authorization" not in kwargs["headers"]',
+              '    assert kwargs["allow_redirects"] is False',
+              '    uploads.append({"url": url, "bytes": list(kwargs["data"].read()), "type": kwargs["headers"]["Content-Type"]})',
+              '    return types.SimpleNamespace(status_code=403 if os.environ.get("FAIL_UPLOAD") else 200)',
+              'sys.modules["requests"] = types.SimpleNamespace(post=post, put=put)',
+              ''
+            ].join('\n')
+          : [
+              'const grants = [], uploads = []; console.log = () => {}',
+              'globalThis.fetch = async (url, init) => {',
+              '  if (url.endsWith("/customers/storage")) {',
+              '    if (init.headers.Authorization !== "Bearer test-key" || init.redirect !== "error") throw new Error("Invalid grant headers")',
+              '    grants.push(JSON.parse(init.body))',
+              '    return Response.json({ upload_url: `https://storage.example/upload/${grants.length}`, download_url: `https://storage.example/download/${grants.length}` })',
+              '  }',
+              '  if (init.method === "PUT") {',
+              '    if (init.headers.Authorization || init.credentials !== "omit" || init.redirect !== "error") throw new Error("Leaked credential")',
+              '    uploads.push({url, bytes: [...init.body], type: init.headers["Content-Type"]})',
+              '    return new Response(null, {status: process.env.FAIL_UPLOAD ? 403 : 200})',
+              '  }',
+              '  process.stdout.write(JSON.stringify({body: JSON.parse(init.body), key: init.headers["Idempotency-Key"], grants, uploads}))',
+              '  return Response.json({})',
+              '}',
+              ''
+            ].join('\n')
+      const program = language === 'python' ? 'python3' : process.execPath
+      const args =
+        language === 'python' ? ['-'] : ['--input-type=module-typescript', '-']
+      const options = {
+        cwd: directory,
+        input: capture + snippet,
+        encoding: 'utf8' as const,
+        env: { COMFY_API_KEY: 'test-key', PATH: process.env.PATH }
+      }
+      const result = JSON.parse(execFileSync(program, args, options))
+      expect(result.body).toEqual({
+        ...request,
+        images: [
+          'https://storage.example/download/1',
+          'https://storage.example/download/2'
+        ],
+        nested: { data: bytes[0].toString('base64') }
+      })
+      expect(result.key).toBe(key)
+      expect(result.uploads).toEqual([
+        {
+          url: 'https://storage.example/upload/1',
+          bytes: [...bytes[0]],
+          type: 'image/png'
+        },
+        {
+          url: 'https://storage.example/upload/2',
+          bytes: [...bytes[1]],
+          type: 'image/jpeg'
+        }
+      ])
+      expect(result.grants[0].file_name).not.toBe(result.grants[1].file_name)
+      const failed = spawnSync(program, args, {
+        ...options,
+        env: { ...options.env, FAIL_UPLOAD: '1' }
+      })
+      expect(failed.status).not.toBe(0)
+      expect(failed.stdout).toBe('')
+      expect(failed.stderr).toContain('Upload failed')
+    }
+  )
 })

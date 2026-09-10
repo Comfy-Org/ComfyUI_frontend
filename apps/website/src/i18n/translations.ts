@@ -9393,6 +9393,10 @@ Enterprise`
     en: 'File is over 25 MB',
     'zh-CN': '文件超过 25 MB'
   },
+  'workshop.form.uploadFailed': {
+    en: 'Upload failed. Try again or paste a reachable URL.',
+    'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
+  },
   'workshop.form.requestTooLarge': {
     en: 'The combined images and prompt exceed Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
     'zh-CN':

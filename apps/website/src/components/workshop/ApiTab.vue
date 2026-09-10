@@ -38,7 +38,27 @@ const request = ref<{
   key: string
   curlKey: string
 }>()
-const fileReferences = new WeakMap<File, SnippetFile>()
+const fileReferences = new WeakMap<
+  File,
+  Partial<Record<'base64' | 'url', SnippetFile>>
+>()
+
+function referenceFor(file: File, encoding: 'base64' | 'url'): SnippetFile {
+  const references = fileReferences.get(file) ?? {}
+  let reference = references[encoding]
+  if (!reference) {
+    const id = workshopIdempotencyKey()
+    reference = {
+      token: encoding === 'url' ? `https://upload.invalid/${id}` : btoa(id),
+      name: file.name,
+      mimeType: file.type,
+      encoding
+    }
+    references[encoding] = reference
+    fileReferences.set(file, references)
+  }
+  return reference
+}
 const unavailable = ref(false)
 let previous: { fingerprint: string; key: string; curlKey: string } | undefined
 watch(
@@ -56,15 +76,13 @@ watch(
         controller.signal,
         (file, signal) => {
           signal.throwIfAborted()
-          let reference = fileReferences.get(file)
-          if (!reference) {
-            reference = {
-              token: btoa(workshopIdempotencyKey()),
-              name: file.name,
-              mimeType: file.type
-            }
-            fileReferences.set(file, reference)
-          }
+          const reference = referenceFor(file, 'base64')
+          if (!files.includes(reference)) files.push(reference)
+          return Promise.resolve(reference.token)
+        },
+        (file, signal) => {
+          signal.throwIfAborted()
+          const reference = referenceFor(file, 'url')
           if (!files.includes(reference)) files.push(reference)
           return Promise.resolve(reference.token)
         }

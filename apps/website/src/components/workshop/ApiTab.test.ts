@@ -18,6 +18,38 @@ function pythonKey(text: string): string {
 }
 
 describe('ApiTab', () => {
+  it('generates URL-upload examples without uploading or reading private files while browsing tabs', async () => {
+    const user = userEvent.setup()
+    const file = new File(['private'], 'photo.png', { type: 'image/png' })
+    const network = vi.fn()
+    const read = vi.spyOn(file, 'arrayBuffer')
+    vi.stubGlobal('fetch', network)
+    render(ApiTab, {
+      props: {
+        contract: workshopContract('wavespeed/seedvr2'),
+        values: {
+          image: { file, name: file.name, type: file.type, size: file.size }
+        }
+      }
+    })
+    const snippet = await screen.findByTestId('snippet')
+    expect(snippet.textContent).toContain(
+      'upload_file("photo.png", "image/png")'
+    )
+    expect(snippet.textContent).toContain('/customers/storage')
+    expect(snippet.textContent).toContain('"image": input_1')
+    expect(snippet.textContent).not.toContain('https://upload.invalid/')
+    await user.click(screen.getByTestId('snippet-typescript'))
+    expect(snippet.textContent).toContain(
+      'await uploadFile("photo.png", "image/png")'
+    )
+    await user.click(screen.getByTestId('snippet-curl'))
+    expect(snippet.textContent).not.toContain('"image":')
+    expect(snippet.textContent).not.toContain('/customers/storage')
+    expect(snippet.textContent).toContain('This request may be incomplete')
+    expect(network).not.toHaveBeenCalled()
+    expect(read).not.toHaveBeenCalled()
+  })
   it('uses one validated request and retry key across language tabs', async () => {
     const user = userEvent.setup()
     const network = vi.fn()

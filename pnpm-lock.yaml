@@ -938,6 +938,9 @@ importers:
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:../../packages/object-info-parser
+      '@comfyorg/registry-types':
+        specifier: workspace:*
+        version: link:../../packages/registry-types
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../../packages/shared-frontend-utils

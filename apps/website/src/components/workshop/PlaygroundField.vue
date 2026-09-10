@@ -11,7 +11,7 @@ import type {
   FieldValue,
   FormValues
 } from '../../config/workshop-playground'
-import { validateForm } from '../../config/workshop-playground'
+import { urlUploadField, validateForm } from '../../config/workshop-playground'
 import { isHttpImageSource } from '../../config/workshop-image-source'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -39,6 +39,7 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   badType: 'workshop.form.badType',
   outOfRange: 'workshop.form.outOfRange',
   badOption: 'workshop.form.badOption',
+  uploadFailed: 'workshop.form.uploadFailed',
   rejected: 'workshop.form.rejected'
 }
 
@@ -114,6 +115,10 @@ const imageUrl = computed(() => {
   const value = stringValue()
   if (!isHttpImageSource(value)) return undefined
   return value
+})
+const uploadField = computed(() => {
+  const upload = urlUploadField(field)
+  return upload ? { ...upload, name: `${field.name}-upload` } : undefined
 })
 
 function set(value: FieldValue) {
@@ -253,10 +258,14 @@ function booleanValue(fallback = false): boolean {
     <input
       v-else-if="field.kind === 'text'"
       :id="`field-${field.name}`"
-      :type="field.presentation?.imageSource === 'url' ? 'url' : 'text'"
+      :type="
+        uploadField || field.presentation?.imageSource === 'url'
+          ? 'url'
+          : 'text'
+      "
       :value="stringValue()"
       :placeholder="
-        field.presentation?.imageSource === 'url'
+        uploadField || field.presentation?.imageSource === 'url'
           ? 'https://…'
           : field.placeholder
       "
@@ -420,6 +429,15 @@ function booleanValue(fallback = false): boolean {
       :src="imageUrl"
       :name="field.label"
       :locale
+    />
+    <FileSourceInput
+      v-if="uploadField"
+      v-model="selectedFiles"
+      :field="uploadField"
+      :locale
+      :disabled
+      :invalid="invalid()"
+      :described-by="describedBy"
     />
 
     <datalist

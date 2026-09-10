@@ -65,17 +65,23 @@ export function createCreatorFields(
     }
   }
 
-  function url(name: string, label: string, isRequired = false, image = false) {
+  function url(
+    name: string,
+    label: string,
+    isRequired = false,
+    media: NonNullable<WorkshopInputDefinition['urlUpload']> = 'image'
+  ) {
     add(
       name,
       { type: 'string', format: 'uri', pattern: '^https?://' },
       {
         label,
-        help: 'Use a public URL.',
+        help: '',
         advanced: false,
         control: 'text-box',
         required: isRequired,
-        ...(image ? { imageSource: 'url' } : {})
+        urlUpload: media,
+        ...(media === 'image' ? { imageSource: 'url' } : {})
       }
     )
   }

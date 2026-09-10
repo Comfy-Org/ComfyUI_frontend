@@ -16,7 +16,10 @@ export const workshopInputDefinitionSchema = z.object({
   ]),
   defaultSource: z.enum(['router', 'curated']).optional(),
   unit: z.enum(['seconds', 'pixels', 'fps']).optional(),
-  imageSource: z.literal('url').optional()
+  imageSource: z.literal('url').optional(),
+  urlUpload: z
+    .enum(['image', 'video', 'audio', 'image-or-video', 'file'])
+    .optional()
 })
 
 export type WorkshopInputDefinition = z.infer<

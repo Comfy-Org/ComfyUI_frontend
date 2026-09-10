@@ -108,6 +108,51 @@ describe('PlaygroundField', () => {
     expect(screen.getByRole('alert').textContent).toContain('required')
   })
 
+  it('lets an upload-capable URL field switch between a URL and a local file without stale values', async () => {
+    const user = userEvent.setup()
+    const values = mountField({
+      kind: 'text',
+      name: 'image',
+      label: 'Source image',
+      required: true,
+      multiline: false,
+      inputSchema: { type: 'string', format: 'http-image-url' },
+      presentation: {
+        label: 'Source image',
+        help: '',
+        hidden: false,
+        advanced: false,
+        control: 'text-box',
+        imageSource: 'url',
+        urlUpload: 'image'
+      }
+    })
+    const url = screen.getByRole('textbox', { name: 'Source image' })
+    await user.type(url, 'https://example.com/first.png')
+    const file = new File(['bytes'], 'local.png', { type: 'image/png' })
+    await user.upload(
+      screen.getByLabelText('Source image', { selector: 'input[type="file"]' }),
+      file
+    )
+    expect(values.value.image).toMatchObject({ name: 'local.png', file })
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Replace local.png' })
+    ).toBeTruthy()
+    await user.type(url, 'https://example.com/second.png')
+    expect(values.value.image).toBe('https://example.com/second.png')
+    expect(
+      screen.queryByRole('button', { name: 'Replace local.png' })
+    ).toBeNull()
+    await user.upload(
+      screen.getByLabelText('Source image', { selector: 'input[type="file"]' }),
+      file
+    )
+    await user.click(screen.getByRole('button', { name: 'Remove local.png' }))
+    expect(values.value.image).toBeUndefined()
+    expect(screen.getByRole('alert').textContent).toContain('required')
+  })
+
   it('shows specialist guidance inline without a help popup', () => {
     const hint =
       'Reuse a seed with the same inputs to make results more repeatable.'

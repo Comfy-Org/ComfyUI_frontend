@@ -247,7 +247,6 @@
       "names": [
         "image",
         "Image",
-        "image_url",
         "input_image",
         "image_ref",
         "reference_image_uri",
@@ -266,7 +265,6 @@
     {
       "names": [
         "video",
-        "video_url",
         "input_video",
         "videoUri",
         "video_list",
@@ -276,6 +274,23 @@
       "help": "Provide the video to transform, extend, or use as a reference.",
       "advanced": false,
       "control": "text-box"
+    },
+    {
+      "names": ["image_url"],
+      "label": "Reference image",
+      "help": "",
+      "advanced": false,
+      "control": "text-box",
+      "imageSource": "url",
+      "urlUpload": "image"
+    },
+    {
+      "names": ["video_url"],
+      "label": "Input video",
+      "help": "",
+      "advanced": false,
+      "control": "text-box",
+      "urlUpload": "video"
     },
     {
       "names": ["mask", "static_mask", "dynamic_masks", "mask_type"],
@@ -820,6 +835,7 @@
       },
       "alpha_uri": {
         "label": "Alpha matte",
+        "urlUpload": "image",
         "help": "Provide a matte URI when Transparency mode is custom or select.",
         "advanced": false,
         "control": "text-box"
@@ -832,10 +848,12 @@
       },
       "reference_image_uri": {
         "label": "Style reference",
+        "urlUpload": "image",
         "help": "Provide a reference image URI to guide the style; Prompt can be left empty."
       },
       "source_uri": {
         "label": "Source image or video",
+        "urlUpload": "image-or-video",
         "help": "Provide the image or video to transform as a URL, upload URI or data URI."
       }
     },
@@ -1126,6 +1144,7 @@
     "bria/video-edit-replace-background": {
       "background_url": {
         "label": "Background image or video",
+        "urlUpload": "image-or-video",
         "help": "Provide a background URL with the same aspect ratio as the input video.",
         "advanced": false,
         "control": "text-box"
@@ -2942,15 +2961,17 @@
     "wavespeed/seedvr2": {
       "image": {
         "label": "Image to upscale",
-        "help": "Paste a public image URL.",
-        "imageSource": "url"
+        "help": "",
+        "imageSource": "url",
+        "urlUpload": "image"
       }
     },
     "wavespeed/ultimate-image-upscaler": {
       "image": {
         "label": "Image to upscale",
-        "help": "Paste a public image URL.",
-        "imageSource": "url"
+        "help": "",
+        "imageSource": "url",
+        "urlUpload": "image"
       }
     },
     "xai/grok-imagine-image": {

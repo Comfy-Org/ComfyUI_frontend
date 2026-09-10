@@ -106,10 +106,42 @@ export type FieldErrorCode =
   | 'badType'
   | 'outOfRange'
   | 'badOption'
+  | 'uploadFailed'
   | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+
+const URL_UPLOAD_ACCEPT = {
+  image: ['image/png', 'image/jpeg', 'image/webp'],
+  video: ['video/mp4', 'video/webm', 'video/quicktime'],
+  audio: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4'],
+  'image-or-video': [
+    'image/png',
+    'image/jpeg',
+    'image/webp',
+    'video/mp4',
+    'video/webm',
+    'video/quicktime'
+  ],
+  file: []
+}
+
+export function urlUploadField(
+  field: FieldSchema
+): Extract<FieldSchema, { kind: 'file' }> | undefined {
+  const media = field.presentation?.urlUpload
+  if (!media || field.kind !== 'text' || field.valueType === 'json')
+    return undefined
+  return {
+    kind: 'file',
+    name: field.name,
+    label: field.label,
+    required: field.required,
+    accept: URL_UPLOAD_ACCEPT[media],
+    maxBytes: MAX_UPLOAD_BYTES
+  }
+}
 
 export interface PlaygroundFieldGroups {
   readonly primary: readonly FieldSchema[]
@@ -350,8 +382,10 @@ export function validateForm(
   values: FormValues
 ): FieldErrors {
   const errors: Record<string, FieldErrorCode> = {}
-  for (const field of schema) {
-    const value = values[field.name]
+  for (const source of schema) {
+    const value = values[source.name]
+    const field =
+      (typeof value === 'object' ? urlUploadField(source) : undefined) ?? source
     if (value === undefined || value === '') {
       if (field.required) errors[field.name] = 'required'
       continue

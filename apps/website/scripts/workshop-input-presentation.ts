@@ -208,7 +208,8 @@ export function curateWorkshopInputs(
       control: controlFor(name, effective, rule.control),
       ...(defaultSource ? { defaultSource } : {}),
       ...(rule.unit ? { unit: rule.unit } : {}),
-      ...(rule.imageSource ? { imageSource: rule.imageSource } : {})
+      ...(rule.imageSource ? { imageSource: rule.imageSource } : {}),
+      ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {})
     })
     return [name, effective] as const
   })

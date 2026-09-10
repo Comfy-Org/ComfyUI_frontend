@@ -1,4 +1,5 @@
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import { uploadSnippet } from './workshop-upload-snippets'
 
 export type SnippetLanguage = 'python' | 'typescript' | 'curl'
 
@@ -12,6 +13,7 @@ export interface SnippetFile {
   readonly token: string
   readonly name: string
   readonly mimeType: string
+  readonly encoding?: 'base64' | 'url'
 }
 
 function fileReference(value: unknown, files: readonly SnippetFile[]) {
@@ -110,6 +112,7 @@ export function buildSnippet(
   const key = JSON.stringify(idempotencyKey)
   if (!idempotencyKey) throw new Error('Missing idempotency key')
   const paths = filePaths(files)
+  const hasUploads = files.some((file) => file.encoding === 'url')
   if (language === 'python') {
     return [
       ...(files.length ? ['import base64', 'from pathlib import Path'] : []),
@@ -117,14 +120,24 @@ export function buildSnippet(
       'import os',
       'import requests',
       '',
+      ...(hasUploads ? uploadSnippet('python') : []),
       ...(files.length
         ? [
             '# Set these paths to your local input files.',
             ...paths.map(
               (path, index) =>
-                `input_${index + 1} = base64.b64encode(Path(${JSON.stringify(path)}).read_bytes()).decode("ascii")`
+                `input_${index + 1} = ${
+                  files[index].encoding === 'url'
+                    ? `upload_file(${JSON.stringify(path)}, ${JSON.stringify(files[index].mimeType || 'application/octet-stream')})`
+                    : `base64.b64encode(Path(${JSON.stringify(path)}).read_bytes()).decode("ascii")`
+                }`
             ),
             ''
+          ]
+        : []),
+      ...(hasUploads
+        ? [
+            '# For retries, reuse these prepared inputs and the same key; do not rerun uploads.'
           ]
         : []),
       `response = requests.post(${JSON.stringify(endpoint)},`,
@@ -146,19 +159,30 @@ export function buildSnippet(
   if (language === 'typescript') {
     return [
       ...(files.length
+        ? ['import { readFile } from "node:fs/promises"', '']
+        : []),
+      'const apiKey = process.env.COMFY_API_KEY',
+      'if (!apiKey) throw new Error("Set COMFY_API_KEY")',
+      ...(hasUploads ? uploadSnippet('typescript') : []),
+      ...(files.length
         ? [
-            'import { readFile } from "node:fs/promises"',
-            '',
             '// Set these paths to your local input files.',
             ...paths.map(
               (path, index) =>
-                `const input_${index + 1} = (await readFile(${JSON.stringify(path)})).toString("base64")`
+                `const input_${index + 1} = ${
+                  files[index].encoding === 'url'
+                    ? `await uploadFile(${JSON.stringify(path)}, ${JSON.stringify(files[index].mimeType || 'application/octet-stream')})`
+                    : `(await readFile(${JSON.stringify(path)})).toString("base64")`
+                }`
             ),
             ''
           ]
         : []),
-      'const apiKey = process.env.COMFY_API_KEY',
-      'if (!apiKey) throw new Error("Set COMFY_API_KEY")',
+      ...(hasUploads
+        ? [
+            '// For retries, reuse these prepared inputs and the same key; do not rerun uploads.'
+          ]
+        : []),
       `const response = await fetch(${JSON.stringify(endpoint)}, {`,
       '  method: "POST",',
       '  headers: {',

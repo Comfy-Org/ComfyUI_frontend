@@ -18,6 +18,8 @@ import {
 import { WorkshopRouterError } from './workshop-router-errors'
 import { workshopFileBase64 } from './workshop-file-encoding'
 import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
+import type { WorkshopUrlEncoder } from './workshop-url-input'
+import { resolveWorkshopUrlInputs } from './workshop-url-input'
 
 const MAX_REQUEST_BYTES = 10 * 1024 * 1024
 const ACCEPT: Record<WorkshopMediaBinding['accept'], readonly string[]> = {
@@ -64,7 +66,8 @@ export async function prepareWorkshopRouterInput(
   contract: WorkshopContract | undefined,
   values: FormValues,
   signal: AbortSignal,
-  encodeFile = workshopFileBase64
+  encodeFile = workshopFileBase64,
+  uploadFile?: WorkshopUrlEncoder
 ): Promise<Record<string, unknown>> {
   if (!contract) throw new WorkshopRouterError('unavailable')
   signal.throwIfAborted()
@@ -105,12 +108,10 @@ export async function prepareWorkshopRouterInput(
     serializeRouterInput(nativeBody)
     return nativeBody
   }
+  const schema = schemaForModel({ fields: [], form: formForContract(contract) })
+  values = await resolveWorkshopUrlInputs(schema, values, signal, uploadFile)
   if (contract.creator) {
-    const fields = schemaForModel({
-      fields: [],
-      form: formForContract(contract)
-    })
-    const errors = validateForm(fields, values)
+    const errors = validateForm(schema, values)
     if (Object.keys(errors).length)
       throw new WorkshopRouterError('validation', null, errors)
     const body = {

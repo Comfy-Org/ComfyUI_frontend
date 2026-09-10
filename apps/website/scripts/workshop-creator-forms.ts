@@ -114,9 +114,9 @@ export function creatorFormFor(
       break
     case 'qwen-image':
       prompt('input/messages/[]/content/[]/text')
-      url('image_url', 'Reference image', false, true)
-      url('image_url_2', 'Reference image 2', false, true)
-      url('image_url_3', 'Reference image 3', false, true)
+      url('image_url', 'Reference image')
+      url('image_url_2', 'Reference image 2')
+      url('image_url_3', 'Reference image 3')
       settings(
         'parameters',
         ['n', 'negative_prompt', 'prompt_extend', 'seed', 'size', 'watermark'],
@@ -127,8 +127,8 @@ export function creatorFormFor(
     case 'bria-edit':
       addRoot(['instruction', 'structured_instruction', 'mask'])
       prompt('instruction')
-      url('image_url', 'Image', true, true)
-      url('mask_url', 'Mask image', false, true)
+      url('image_url', 'Image', true)
+      url('mask_url', 'Mask image')
       request = { kind: 'callback', callback: 'bria-edit', options: {} }
       break
     case 'bria-expand':
@@ -183,7 +183,7 @@ export function creatorFormFor(
         required: true,
         advanced: false
       })
-      url('file_url', '3D file URL', true)
+      url('file_url', '3D file', true, 'file')
       if (id === 'tencent/hunyuan-3d-texture-edit') {
         file('image', 'Reference texture', 1, false, [
           'image/jpeg',
@@ -205,7 +205,7 @@ export function creatorFormFor(
     }
     case 'meshy-source':
       addRoot(['model_url', 'input_task_id'])
-      url('model_url', '3D model URL')
+      url('model_url', '3D model', false, 'file')
       add('input_task_id', schemaAt(source, 'input_task_id'), {
         label: 'Existing task ID',
         help: 'Use a completed task instead of a model URL.',
@@ -222,13 +222,13 @@ export function creatorFormFor(
       break
     case 'kling-avatar':
       addRoot(['image', 'audio_id', 'sound_file'])
-      url('image_url', 'Portrait image', true, true)
-      url('audio_url', 'Audio URL', true)
+      url('image_url', 'Portrait image', true)
+      url('audio_url', 'Audio', true, 'audio')
       request = { kind: 'callback', callback: 'kling-avatar', options: {} }
       break
     case 'kling-lip-sync':
-      url('video_url', 'Video URL', true)
-      url('audio_url', 'Audio URL', true)
+      url('video_url', 'Video', true, 'video')
+      url('audio_url', 'Audio', true, 'audio')
       request = { kind: 'callback', callback: 'kling-lip-sync', options: {} }
       break
     case 'veo':
@@ -294,7 +294,7 @@ export function creatorFormFor(
     case 'bfl-video':
       addRoot()
       required.add('prompt')
-      url('start_video', 'Source video URL')
+      url('start_video', 'Source video', false, 'video')
       file('images', 'Keyframe images', 10)
       rules.images = {
         help: 'Choose image-to-video mode. More than two images needs a fixed duration.'
@@ -303,7 +303,7 @@ export function creatorFormFor(
       break
     case 'grok-video':
       addRoot()
-      url('image_url', 'First frame image', false, true)
+      url('image_url', 'First frame image')
       request = { kind: 'callback', callback: 'grok-video', options: {} }
       break
     case 'flat':

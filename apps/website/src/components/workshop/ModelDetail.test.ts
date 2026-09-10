@@ -171,6 +171,110 @@ describe('ModelDetail', () => {
       .mockResolvedValue({ status: 'ok', session: credential })
   })
 
+  it('reuses uploaded URLs and the retry key after a failed paid request', async () => {
+    auth.session.value = credential
+    const uploads = vi.fn<typeof fetch>(async (_, init) =>
+      init?.method === 'POST'
+        ? Response.json({
+            upload_url: 'https://storage.example/upload',
+            download_url: 'https://storage.example/image.png'
+          })
+        : new Response(null, { status: 200 })
+    )
+    vi.stubGlobal('fetch', uploads)
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('provider')
+    )
+    const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
+    if (!model) throw new Error('Missing Wavespeed model')
+    mountDetail({ model })
+    const file = new File(['image'], 'image.png', { type: 'image/png' })
+    await user().upload(
+      screen.getByLabelText('Image to upscale', {
+        selector: 'input[type="file"]'
+      }),
+      file
+    )
+    expect(uploads).not.toHaveBeenCalled()
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('failed')
+    )
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(2))
+    const [first, second] = vi.mocked(runWorkshopRouter).mock.calls
+    expect(first[0].body).toMatchObject({
+      image: 'https://storage.example/image.png'
+    })
+    expect(second[0].body).toEqual(first[0].body)
+    expect(second[0].idempotencyKey).toBe(first[0].idempotencyKey)
+    expect(uploads).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows an upload error and never calls paid generation if storage fails', async () => {
+    auth.session.value = credential
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
+    )
+    const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
+    if (!model) throw new Error('Missing Wavespeed model')
+    mountDetail({ model })
+    await user().upload(
+      screen.getByLabelText('Image to upscale', {
+        selector: 'input[type="file"]'
+      }),
+      new File(['image'], 'image.png', { type: 'image/png' })
+    )
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('error-image').textContent).toContain(
+        'Upload failed'
+      )
+    )
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+  })
+
+  it('aborts pending storage uploads on sign-out and ignores a late upload completion', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<Response>()
+    let uploadSignal: AbortSignal | null | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (_, init) => {
+        uploadSignal = init?.signal
+        return pending.promise
+      })
+    )
+    const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
+    if (!model) throw new Error('Missing Wavespeed model')
+    mountDetail({ model })
+    await user().upload(
+      screen.getByLabelText('Image to upscale', {
+        selector: 'input[type="file"]'
+      }),
+      new File(['image'], 'image.png', { type: 'image/png' })
+    )
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(uploadSignal).toBeDefined())
+    auth.session.value = undefined
+    await nextTick()
+    expect(uploadSignal?.aborted).toBe(true)
+    pending.resolve(
+      Response.json({
+        upload_url: 'https://storage.example/upload',
+        download_url: 'https://storage.example/image.png'
+      })
+    )
+    await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('cancelled')
+  })
+
   it.for([
     {
       signedIn: false,

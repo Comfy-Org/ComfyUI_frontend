@@ -91,12 +91,11 @@ export function wanCreatorRequest(
     url(
       'image_url',
       options.mode === 'reference' ? 'Reference image' : 'Source image',
-      true,
       true
     )
   if (['reference-video', 'edit'].includes(String(options.mode)))
-    url('video_url', 'Source video URL', true)
-  if (options.mode === 'edit') url('image_url', 'Reference image', false, true)
+    url('video_url', 'Source video', true, 'video')
+  if (options.mode === 'edit') url('image_url', 'Reference image')
   return {
     kind: 'callback',
     callback: 'wan-media',
