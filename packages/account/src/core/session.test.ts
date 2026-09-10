@@ -834,25 +834,22 @@ describe('identity brand', () => {
     ).toThrow('attachIdentity needs the identity')
   })
 
-  it('reports settled only once the port has delivered, and not after detach', async () => {
+  it('stays pending until the port delivers, signs out on null, and re-pends after detach', async () => {
     const { client } = makeClient({ fetchImpl: okFetch() })
     const identity = manualIdentity()
-    expect(client.getSnapshot().settled).toBe(false)
+    expect(client.getSnapshot().phase).toBe('pending')
 
     const detach = client.attachIdentity(identity.port)
     expect(
-      client.getSnapshot().settled,
+      client.getSnapshot().phase,
       'attached is not delivered; Firebase has not answered yet'
-    ).toBe(false)
+    ).toBe('pending')
 
     identity.fire(null)
-    expect(client.getSnapshot()).toMatchObject({
-      phase: 'signed-out',
-      settled: true
-    })
+    expect(client.getSnapshot().phase).toBe('signed-out')
 
     detach()
-    expect(client.getSnapshot().settled).toBe(false)
+    expect(client.getSnapshot().phase).toBe('pending')
   })
 })
 
@@ -1199,7 +1196,7 @@ describe('sign-in state ownership', () => {
     detach()
 
     expect(client.getToken()).toBeUndefined()
-    expect(client.getSnapshot().phase).toBe('signed-out')
+    expect(client.getSnapshot().phase).toBe('pending')
   })
 
   it('invalidates an explicit-user mint that resolves after external sign-out', async () => {
@@ -1252,7 +1249,7 @@ describe('sign-in state ownership', () => {
     expect(
       client.getSnapshot().phase,
       'the snapshot user belongs to the identity port, which has not fired yet'
-    ).toBe('signed-out')
+    ).toBe('pending')
     expect(client.getToken()).toBeUndefined()
 
     identity.fire(user)
@@ -1296,7 +1293,7 @@ describe('sign-in state ownership', () => {
     detach()
     identity.fire(testUser())
 
-    expect(client.getSnapshot().phase).toBe('signed-out')
+    expect(client.getSnapshot().phase).toBe('pending')
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })
