@@ -133,6 +133,18 @@ describe('exportAgentConversation', () => {
     ).toThrow('does not belong to capture thread-1/message-1')
   })
 
+  it('refuses a capture that repeats a tool call id', () => {
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        tool_calls: [
+          { ...capture.tool_calls[0], applied_op_ids: [] },
+          capture.tool_calls[0]
+        ]
+      })
+    ).toThrow('repeats tool call tool-1')
+  })
+
   it('inserts the accepted batch once when a call reports two terminal frames', () => {
     const conversation = exportAgentConversation({
       ...capture,

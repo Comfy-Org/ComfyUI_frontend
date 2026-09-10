@@ -107,9 +107,15 @@ function belongsToTurn(field: unknown, expected: string): boolean {
  */
 export function exportAgentConversation(input: unknown) {
   const capture = zBackendCapture.parse(input)
-  const toolCalls = new Map(
-    capture.tool_calls.map((toolCall) => [toolCall.tool_call_id, toolCall])
-  )
+  const toolCalls = new Map<string, z.infer<typeof zToolCall>>()
+  for (const toolCall of capture.tool_calls) {
+    if (toolCalls.has(toolCall.tool_call_id)) {
+      throw new Error(
+        `capture repeats tool call ${toolCall.tool_call_id}; collapsing the rows would drop an accepted-op batch`
+      )
+    }
+    toolCalls.set(toolCall.tool_call_id, toolCall)
+  }
   const emittedToolCalls = new Set<string>()
   const response: Array<
     | { kind: 'event'; event: z.infer<typeof zRecordedWsEvent> }
