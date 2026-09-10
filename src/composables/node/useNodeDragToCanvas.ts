@@ -48,7 +48,7 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
-            operation: 'render',
+            operation: 'configure',
             outcome: 'failed'
           },
           context: {
@@ -104,7 +104,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
         tags: {
           failure_kind: 'bad_state',
           feature_area: 'nodes',
-          operation: 'render',
+          operation: 'add',
           outcome: 'failed'
         },
         context: {
