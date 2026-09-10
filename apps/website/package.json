@@ -12,6 +12,7 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:functional": "playwright test --project desktop --project mobile",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
     "test:visual": "playwright test --project visual",
     "test:visual:update": "playwright test --project visual --update-snapshots",
