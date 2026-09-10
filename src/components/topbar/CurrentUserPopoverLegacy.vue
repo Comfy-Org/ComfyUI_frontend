@@ -79,16 +79,19 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
-      <Button
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
-        class="mr-auto"
-        :aria-label="$t('credits.unified.tooltip')"
-        data-testid="credits-info-button"
+      <Tooltip
+        :config="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
       >
-        <i class="icon-[lucide--circle-help]" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="mr-auto"
+          :aria-label="$t('credits.unified.tooltip')"
+          data-testid="credits-info-button"
+        >
+          <i class="icon-[lucide--circle-help]" />
+        </Button>
+      </Tooltip>
       <Button
         v-if="showAddCredits"
         variant="secondary"

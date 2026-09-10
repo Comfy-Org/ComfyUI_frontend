@@ -11,24 +11,26 @@
     </button>
   </Tooltip>
 
-  <button
-    v-if="hasCustomUp"
-    v-tooltip.bottom="tip(upActionLabel)"
-    :class="actionClass(false)"
-    type="button"
-    :aria-label="compact ? upActionLabel : undefined"
-    @click="toggleUp"
-  >
-    <i
-      :class="
-        cn(
-          useCustomUp ? 'icon-[lucide--compass]' : 'icon-[lucide--rotate-ccw]',
-          'size-4'
-        )
-      "
-    />
-    <span v-if="!compact">{{ upLabel }}</span>
-  </button>
+  <Tooltip v-if="hasCustomUp" :config="tip(upActionLabel)" side="bottom">
+    <button
+      :class="actionClass(false)"
+      type="button"
+      :aria-label="compact ? upActionLabel : undefined"
+      @click="toggleUp"
+    >
+      <i
+        :class="
+          cn(
+            useCustomUp
+              ? 'icon-[lucide--compass]'
+              : 'icon-[lucide--rotate-ccw]',
+            'size-4'
+          )
+        "
+      />
+      <span v-if="!compact">{{ upLabel }}</span>
+    </button>
+  </Tooltip>
 
   <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
