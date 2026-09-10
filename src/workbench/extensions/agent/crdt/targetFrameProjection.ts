@@ -108,6 +108,21 @@ function readSemanticLink(doc: Y.Doc, id: string): SemanticLinkPayload | null {
   }
 }
 
+/**
+ * Numeric keys ascend numerically; anything else follows them in code-unit
+ * order. `Number(key)` alone yields `NaN` for a non-numeric key, and a
+ * comparator returning `NaN` leaves the order implementation-defined.
+ */
+function compareLinkKeys(left: string, right: string): number {
+  const integerPattern = /^-?\d+$/
+  const leftSeq = integerPattern.test(left) ? Number(left) : null
+  const rightSeq = integerPattern.test(right) ? Number(right) : null
+  if (leftSeq !== null && rightSeq !== null) return leftSeq - rightSeq
+  if (leftSeq !== null) return -1
+  if (rightSeq !== null) return 1
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
 function frameContext(frame: TargetFrame): RemoteMutationContext {
   const opIds = frame.opIds?.filter((id) => id.length > 0)
   return {
@@ -133,9 +148,7 @@ export function createTargetFrameApplyPort(
       const nodeIds = [...nodesMap(stagedDoc).keys()].sort((left, right) =>
         compareNodeIds(toNodeId(left), toNodeId(right))
       )
-      const linkIds = [...linksMap(stagedDoc).keys()].sort(
-        (left, right) => Number(left) - Number(right)
-      )
+      const linkIds = [...linksMap(stagedDoc).keys()].sort(compareLinkKeys)
       return mutations.batch(frameContext(frame), (batch) => {
         batch.clearSemanticGraph()
         for (const id of nodeIds) {

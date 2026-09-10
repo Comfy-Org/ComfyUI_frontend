@@ -47,6 +47,21 @@ function setNode(doc: Y.Doc, id: string, fields: Record<string, unknown>) {
 }
 
 describe('createTargetFrameApplyPort', () => {
+  it('orders non-numeric link keys deterministically after the numeric ones', () => {
+    const doc = new Y.Doc()
+    setNode(doc, '1', { type: 'Source' })
+    setNode(doc, '2', { type: 'Sink' })
+    const linkIdByKey = { '10': 10, '2': 2, zz: 700, '1': 1, ab: 800 }
+    for (const [key, linkId] of Object.entries(linkIdByKey))
+      linksMap(doc).set(key, [linkId, '1', 0, '2', 0, 'IMAGE'])
+
+    const { mutations, links } = recordingMutations()
+    createTargetFrameApplyPort(mutations).apply(frame, doc)
+
+    expect(links.map(({ id }) => id)).toEqual([1, 2, 10, 800, 700])
+    doc.destroy()
+  })
+
   it('drops a slot array holding non-record entries instead of forwarding it', () => {
     const doc = new Y.Doc()
     const source = setNode(doc, '1', { type: 'Source' })
