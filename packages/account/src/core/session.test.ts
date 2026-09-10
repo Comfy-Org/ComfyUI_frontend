@@ -748,6 +748,80 @@ describe('exchange response contract', () => {
   })
 })
 
+describe('exchange boundary rejections', () => {
+  it('refuses a 200 whose token is empty', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(200, mintBody({ token: '' }))
+      )
+    })
+
+    const result = await client.ensureFresh(testUser())
+
+    expect(result).toMatchObject({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED'
+    })
+    expect(client.getToken()).toBeUndefined()
+  })
+
+  it('refuses a 200 whose expiry is already in the past', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(
+          200,
+          mintBody({ expires_at: new Date(Date.now() - 60_000).toISOString() })
+        )
+      )
+    })
+
+    const result = await client.ensureFresh(testUser())
+
+    expect(
+      result,
+      'a token dead on arrival can never authorize anything'
+    ).toMatchObject({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+    expect(client.getToken()).toBeUndefined()
+  })
+})
+
+describe('identity epoch commits', () => {
+  it('never commits a mint that crossed a sign-out, even for the same uid signing back in', async () => {
+    let releaseOld!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOld = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'new-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    identity.fire(null)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() =>
+      expect(
+        fetchImpl,
+        'a sign-in after a sign-out must mint for itself, never join the pre-sign-out request'
+      ).toHaveBeenCalledTimes(2)
+    )
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    releaseOld(jsonResponse(200, mintBody({ token: 'old-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the old fetch was minted from the signed-out identity and must never become the new session'
+    ).toBe('new-jwt')
+  })
+})
+
 describe('identity brand', () => {
   it('refuses a port that did not come from the package entry or the testing seam', () => {
     const { client } = makeClient({ fetchImpl: okFetch() })

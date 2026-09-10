@@ -3,6 +3,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
 import { storeToRefs } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -76,17 +77,36 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
-
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get unifiedCloudAuthEnabled() {
-        return mockUnifiedCloudAuthEnabled.value
-      }
+/** Ref-backed like the real remote-config flag, so the store's watcher sees a rollback. */
+const mockUnifiedCloudAuthEnabled = vi.hoisted(() => {
+  let flag: { value: boolean } | undefined
+  return {
+    bind(target: { value: boolean }) {
+      flag = target
+    },
+    get value(): boolean {
+      return flag?.value ?? false
+    },
+    set value(next: boolean) {
+      if (flag) flag.value = next
     }
-  })
-}))
+  }
+})
+
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
+  const { ref } = await import('vue')
+  const flag = ref(false)
+  mockUnifiedCloudAuthEnabled.bind(flag)
+  return {
+    useFeatureFlags: () => ({
+      flags: {
+        get unifiedCloudAuthEnabled() {
+          return flag.value
+        }
+      }
+    })
+  }
+})
 
 const mockWorkspace = {
   id: 'workspace-123',
@@ -2805,6 +2825,44 @@ describe('useWorkspaceAuthStore', () => {
       mockFetch.mockClear()
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
       expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('turning the flag OFF detaches the identity, clears the slot, and stops refreshing', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const expiresInMs = 3600 * 1000
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...personalTokenResponse,
+            expires_at: new Date(Date.now() + expiresInMs).toISOString()
+          })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+      await store.mintAtLogin()
+      expect(unifiedToken.value).toBe('unified-token-1')
+      expect(portListeners.size).toBe(1)
+
+      mockUnifiedCloudAuthEnabled.value = false
+      await nextTick()
+
+      expect(unifiedToken.value, 'the slot must empty on rollback').toBeNull()
+      expect(
+        portListeners.size,
+        'the port must be detached, not left listening for the legacy rail'
+      ).toBe(0)
+      await vi.advanceTimersByTimeAsync(expiresInMs)
+      expect(
+        mockFetch,
+        'no scheduled refresh may run for a disabled feature'
+      ).toHaveBeenCalledTimes(1)
+      expect(useAuthStore().notifyTokenRefreshed).not.toHaveBeenCalled()
     })
 
     it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
