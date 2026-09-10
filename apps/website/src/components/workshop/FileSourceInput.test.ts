@@ -59,7 +59,7 @@ describe('file source selection', () => {
     { name: 'voice.wav', type: 'audio/wav', label: 'WAV' },
     { name: 'attachment', type: '', label: 'File' }
   ])(
-    'represents $name as a file card with size and replacement/removal controls',
+    'previews $name appropriately and preserves replacement/removal controls',
     async ({ name, type, label }) => {
       const user = userEvent.setup()
       const values = mountInput(false, { ...field, accept: [] })
@@ -68,8 +68,15 @@ describe('file source selection', () => {
         screen.getByLabelText('Images', { selector: 'input' }),
         file
       )
-      expect(screen.getByText(label)).toBeTruthy()
-      expect(screen.getByText('2 KB')).toBeTruthy()
+      if (type.startsWith('video/') || type.startsWith('audio/')) {
+        const preview = screen.getByLabelText(name)
+        expect(preview).toBeInstanceOf(HTMLMediaElement)
+        expect(preview).toHaveProperty('controls', true)
+        expect(preview.getAttribute('src')).toMatch(/^blob:/)
+      } else {
+        expect(screen.getByText(label)).toBeTruthy()
+        expect(screen.getByText('2 KB')).toBeTruthy()
+      }
       expect(screen.queryByRole('img')).toBeNull()
       expect(values.value).toMatchObject([{ file }])
       expect(screen.getByText('Choose files or drop them here')).toBeTruthy()

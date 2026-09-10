@@ -13,7 +13,7 @@ describe('canonical model display names', () => {
     }
   })
 
-  it('preserves the content team names when a model has an explicit override', () => {
+  it('preserves editorial names and distinguishes a native alias’s selected mode', () => {
     expect(
       getRouterWorkshopModelDetail('vertexai--gemini-3-pro-image')?.name
     ).toBe('Nano Banana Pro')
@@ -21,6 +21,6 @@ describe('canonical model display names', () => {
       getRouterWorkshopModelDetail(
         'byteplus--dreamina-seedance-2-0-fast-260128'
       )?.name
-    ).toBe('Seedance 2.0 Fast')
+    ).toBe('Seedance 2.0 Fast Text-to-Video')
   })
 })

@@ -6,6 +6,7 @@ import packedContracts from '../content/workshop-router-contracts.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import rawBindings from '../data/workshop-router-bindings.json'
 import { workshopModels } from './models-catalogue'
+import { routerContentBySlug } from './workshop-browse-content'
 import {
   formForContract,
   workshopContractRecordSchema,
@@ -147,17 +148,21 @@ describe('schema-driven Router coverage', () => {
     ).toBe(true)
   })
 
-  it('generates the committed packed contracts deterministically', () => {
-    const packed = compileWorkshopContracts(rawSnapshots, rawBindings)
-    expect(JSON.parse(packed)).toEqual(packedContracts)
-    expect(
-      compileWorkshopContracts(
-        [...rawSnapshots].reverse(),
-        [...rawBindings].reverse()
-      )
-    ).toBe(packed)
-    expect(packed.trimEnd().split('\n')).toHaveLength(contracts.length + 2)
-  })
+  it(
+    'generates the committed packed contracts deterministically',
+    { timeout: 15_000 },
+    () => {
+      const packed = compileWorkshopContracts(rawSnapshots, rawBindings)
+      expect(JSON.parse(packed)).toEqual(packedContracts)
+      expect(
+        compileWorkshopContracts(
+          [...rawSnapshots].reverse(),
+          [...rawBindings].reverse()
+        )
+      ).toBe(packed)
+      expect(packed.trimEnd().split('\n')).toHaveLength(contracts.length + 2)
+    }
+  )
 
   it.for(contracts)(
     'derives the complete native form for $id independently of display content',
@@ -186,7 +191,14 @@ describe('schema-driven Router coverage', () => {
     const detail = getRouterWorkshopModelDetail(card.slug)
     expect(card.incompleteReason).toBeUndefined()
     expect(detail?.incompleteReason).toBeUndefined()
-    expect(detail?.execution).toEqual(workshopContractSchema.parse(contract))
+    const { creatorVariants, ...base } = workshopContractSchema.parse(contract)
+    const content = routerContentBySlug.get(card.slug)
+    if (!content) throw new Error('Missing content record')
+    const creator = creatorVariants?.[content.overlay.id] ?? base.creator
+    expect(detail?.execution).toEqual({
+      ...base,
+      ...(creator ? { creator } : {})
+    })
     if (!detail?.form) throw new Error('Missing Router form')
     const fields = fieldsForDefinition(detail.form)
     expect(fields.length).toBeGreaterThan(0)

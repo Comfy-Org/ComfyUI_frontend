@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import labelsJson from '../data/workshop-thumbnail-labels.json'
+import routerIndex from '../content/workshop-router-index.json'
 import type { WorkshopModel } from './models-catalogue'
 import { routerWorkshopModels } from './workshop-browse-content'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
@@ -68,7 +69,7 @@ describe('shared thumbnail labels', () => {
     ).toEqual([undefined, undefined])
   })
 
-  it('gives every currently shared thumbnail a short, distinct label', () => {
+  it('labels different Router models sharing artwork without labeling repeated use-case variants', () => {
     const groups = new Map<string, WorkshopModel[]>()
     for (const entry of routerWorkshopModels) {
       if (!entry.thumbnail) continue
@@ -76,8 +77,11 @@ describe('shared thumbnail labels', () => {
       groups.set(key, [...(groups.get(key) ?? []), entry])
     }
     for (const group of groups.values()) {
-      if (group.length === 1) {
-        expect(group[0].thumbnailLabel).toBeUndefined()
+      const distinct = [
+        ...new Map(group.map((model) => [model.routerId, model])).values()
+      ]
+      if (distinct.length === 1) {
+        for (const model of group) expect(model.thumbnailLabel).toBeUndefined()
         continue
       }
       for (const entry of group) {
@@ -85,10 +89,10 @@ describe('shared thumbnail labels', () => {
       }
       expect(
         new Set(group.map((entry) => entry.thumbnailLabel?.toLowerCase())).size
-      ).toBe(group.length)
+      ).toBe(distinct.length)
     }
     for (const id of Object.keys(labelsJson)) {
-      expect(routerWorkshopModels.map((entry) => entry.routerId)).toContain(id)
+      expect(routerIndex.map((entry) => entry.id)).toContain(id)
     }
   })
 })

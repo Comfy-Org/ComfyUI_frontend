@@ -54,11 +54,11 @@ describe('HubBrowse', () => {
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
 
     await user.click(screen.getByTestId('workshop-search'))
-    const chip = screen
-      .getAllByTestId('workshop-search-provider')
-      .find((entry) => entry.textContent.includes('Kling'))!
+    await user.click(screen.getByTestId('workshop-search-provider-more'))
+    const chip = screen.getByRole('button', { name: /^Kling\s+\d+$/ })
     await user.click(chip)
 
+    expect(chip.getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
     const cards = screen.getAllByTestId('hub-card')
     expect(cards.length).toBeGreaterThan(0)
