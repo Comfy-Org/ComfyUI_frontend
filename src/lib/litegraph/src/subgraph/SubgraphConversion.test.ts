@@ -4,12 +4,17 @@ import {
   describe,
   expect,
   it,
-  onTestFinished
+  onTestFinished,
+  vi
 } from 'vitest'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  Positionable,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestNode,
   createTestWidgetNode
@@ -31,6 +36,20 @@ import {
 beforeEach(() => {
   resetSubgraphFixtureState()
 })
+
+function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
+  const before = JSON.stringify(graph.serialize())
+  const nodeCount = graph.nodes.length
+  const beforeChange = vi.spyOn(graph, 'beforeChange')
+  const afterChange = vi.spyOn(graph, 'afterChange')
+
+  expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
+  expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
+  expect(graph.nodes.length).toBe(nodeCount)
+  expect(JSON.stringify(graph.serialize())).toBe(before)
+  expect(beforeChange).not.toHaveBeenCalled()
+  expect(afterChange).not.toHaveBeenCalled()
+}
 
 describe('SubgraphConversion', () => {
   describe('Convert to Subgraph store integrity', () => {
@@ -248,17 +267,8 @@ describe('SubgraphConversion', () => {
       const innerLink = innerNode1.connect(0, innerNode2, 0)
       assert(innerLink)
 
-      // Simulate a corrupt workflow: link points at a node that is not in the subgraph.
       innerLink.target_id = toNodeId(9999)
-
-      const before = JSON.stringify(graph.serialize())
-      const nodeCount = graph.nodes.length
-
-      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
-
-      expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
-      expect(graph.nodes.length).toBe(nodeCount)
-      expect(JSON.stringify(graph.serialize())).toBe(before)
+      expectUnpackRejected(graph, subgraphNode)
     })
     it('Should leave the graph untouched when a subgraph link has an invalid origin slot', () => {
       const subgraph = createTestSubgraph()
@@ -271,17 +281,8 @@ describe('SubgraphConversion', () => {
       const innerLink = innerNode1.connect(0, innerNode2, 0)
       assert(innerLink)
 
-      // Node IDs are valid, but the slot index does not exist on the origin node.
       innerLink.origin_slot = 9999
-
-      const before = JSON.stringify(graph.serialize())
-      const nodeCount = graph.nodes.length
-
-      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
-
-      expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
-      expect(graph.nodes.length).toBe(nodeCount)
-      expect(JSON.stringify(graph.serialize())).toBe(before)
+      expectUnpackRejected(graph, subgraphNode)
     })
     it('Should leave the graph untouched when a subgraph link has an invalid target slot', () => {
       const subgraph = createTestSubgraph()
@@ -294,17 +295,42 @@ describe('SubgraphConversion', () => {
       const innerLink = innerNode1.connect(0, innerNode2, 0)
       assert(innerLink)
 
-      // Node IDs are valid, but the slot index does not exist on the target node.
       innerLink.target_slot = 9999
+      expectUnpackRejected(graph, subgraphNode)
+    })
+    it('Should leave the graph untouched when a subgraph input link has an invalid boundary slot', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
 
-      const before = JSON.stringify(graph.serialize())
-      const nodeCount = graph.nodes.length
+      const innerNode = createTestNode(subgraph, ['number'])
+      const innerLink = subgraph.inputNode.slots[0].connect(
+        innerNode.inputs[0],
+        innerNode
+      )
+      assert(innerLink)
+      innerLink.origin_slot = 9999
+      expectUnpackRejected(graph, subgraphNode)
+    })
+    it('Should leave the graph untouched when a subgraph output link has an invalid boundary slot', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
 
-      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
-
-      expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
-      expect(graph.nodes.length).toBe(nodeCount)
-      expect(JSON.stringify(graph.serialize())).toBe(before)
+      const innerNode = createTestNode(subgraph, [], ['number'])
+      const innerLink = subgraph.outputNode.slots[0].connect(
+        innerNode.outputs[0],
+        innerNode
+      )
+      assert(innerLink)
+      innerLink.target_slot = 9999
+      expectUnpackRejected(graph, subgraphNode)
     })
     it('Should report success when unpacking an intact subgraph', () => {
       const subgraph = createTestSubgraph()
