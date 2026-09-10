@@ -68,8 +68,8 @@ describe('UserMessage', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  // Uy's FE-1323 call: sent uploads reuse the reply asset grid, so media
-  // attachments route through ReplyAssetGroup with the same DES-530 behavior.
+  // Sent uploads reuse the reply asset grid, so media
+  // attachments route through ReplyAssetGroup with the same behavior.
   it('routes media attachments into the reply asset grid', () => {
     renderMessage({
       text: 'use these',
@@ -113,7 +113,7 @@ describe('UserMessage', () => {
     expect(screen.getByText('notes.md')).toBeInTheDocument()
   })
 
-  it('T-23 / PM-657 / FE-1297 reveals copy on hover and copies the exact prior prompt', async () => {
+  it('reveals copy on hover and copies the exact prior prompt', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })
 

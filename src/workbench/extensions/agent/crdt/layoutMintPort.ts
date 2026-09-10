@@ -1,8 +1,8 @@
 /**
  * Layout-store mint port over the injected change feed (both applyOperation
  * entries funnel through it). Provenance rides each operation's source and
- * actor, so deferred delivery still carries it; remote applies never re-mint
- * (KA-6). Teardown clears are inert
+ * actor, so deferred delivery still carries it; remote applies never re-mint.
+ * Teardown clears are inert
  * outside runIntentionalClear, whose capture is the authoritative pre-clear
  * node set; delete_node consumes the link port's severance capture.
  */

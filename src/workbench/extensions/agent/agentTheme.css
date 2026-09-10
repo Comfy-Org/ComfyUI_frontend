@@ -9,7 +9,7 @@
   --color-agent-border-strong: var(--color-border-default);
   --color-agent-accent: var(--color-primary-background);
   /* accent-fg: text on the always-blue accent stays white in both themes; no host
-     on-primary token flips correctly here. Design-review item for FE-1187. */
+     on-primary token flips correctly here. */
   --color-agent-accent-fg: #ffffff;
   --color-agent-danger: var(--color-destructive-background);
   --color-agent-success: var(--color-success-background);

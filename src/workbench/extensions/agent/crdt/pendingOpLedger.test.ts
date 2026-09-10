@@ -1,8 +1,8 @@
 /**
- * Pending-op ledger (s3-opt-1 / CRDT-RM-3). The behaviour under test: a pure
+ * Pending-op ledger. The behaviour under test: a pure
  * op_id-keyed state machine that enqueues exactly once, transitions each
  * batch member per-outcome on `doc_ops_result` (never whole-batch rollback),
- * preserves applied entries until their authoritative effect (KA-9), and
+ * preserves applied entries until their authoritative effect, and
  * hands entries out only through explicit reconciliation calls.
  */
 import { describe, expect, it } from 'vitest'
@@ -153,7 +153,7 @@ describe('reconcileOpsResult', () => {
     expect(summary.skipped).toEqual(['op-2'])
     expect(ledger.get('op-2')?.state).toBe('skipped')
     // A fully duplicate batch never re-broadcasts, so the skipped entry stays
-    // until explicit reconciliation (s3-opt-2 policy) — clearOnEffect for a
+    // until explicit reconciliation — clearOnEffect for a
     // frame that never comes must not be the only exit.
     expect(ledger.entries('skipped')).toHaveLength(1)
   })
@@ -257,7 +257,7 @@ describe('reconcileOpsResult', () => {
   })
 })
 
-describe('clearOnEffect (KA-9)', () => {
+describe('clearOnEffect', () => {
   it('preserves applied entries until the effect, then removes exactly those', () => {
     const ledger = createPendingOpLedger<string>()
     flownBatch(ledger, ['op-1', 'op-2', 'op-3'])

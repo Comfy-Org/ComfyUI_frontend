@@ -49,8 +49,8 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const activeId = ref<string | null>(null)
   const now = useTimestamp({ interval: 60_000 })
 
-  // The server owns thread titles but has no rename or delete endpoint yet
-  // (BE-3130), so renames live in a local overlay applied over the server
+  // The server owns thread titles but has no rename or delete endpoint yet, so
+  // renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
   const customTitles = useLocalStorage<Partial<Record<string, string>>>(
     'Comfy.Agent.ChatTitles',

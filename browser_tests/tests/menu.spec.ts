@@ -265,7 +265,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
       await comfyPage.setup()
       await expect
         .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))

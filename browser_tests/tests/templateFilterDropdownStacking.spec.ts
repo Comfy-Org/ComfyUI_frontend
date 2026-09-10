@@ -29,7 +29,7 @@ test.describe('Template filter dropdown stacking', () => {
     await templateApi.mock()
     // The template index is fetched during app startup, so the routes have to be
     // in place before the app loads or the store keeps its unmocked contents.
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 

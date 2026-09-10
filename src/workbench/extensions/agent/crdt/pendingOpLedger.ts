@@ -1,9 +1,9 @@
 /**
- * Pending-op ledger (s3-opt-1 / CRDT-RM-3): the pure state machine behind the
+ * Pending-op ledger: the pure state machine behind the
  * follower's optimistic overlay. It registers locally minted semantic ops by
  * their immutable `op_id` and tracks each one through send and outcome, so a
- * later presentation layer (s3-opt-5) can render pending shadows and the
- * send-path integration (s3-opt-6) can drive retry/revert policy.
+ * presentation layer can render pending shadows and the send path can drive
+ * retry/revert policy.
  *
  * Contract boundaries this module deliberately encodes:
  *
@@ -15,14 +15,14 @@
  *   failure, and still broadcasts. `reconcileOpsResult` therefore transitions
  *   each batch member per-outcome — applied / skipped / failed / unprocessed —
  *   and removes NOTHING. There is intentionally no rollback-the-batch API.
- * - Per KEEP-ALIVE #9, an applied entry is preserved until its matching
- *   authoritative EFFECT (`doc_update`, correlated by op id once DQ-9/enact-2
- *   lands), not until the ack. `clearOnEffect` is the only outcome-driven
+ * - An applied entry is preserved until its matching
+ *   authoritative EFFECT (`doc_update`, correlated by op id), not until the
+ *   ack. `clearOnEffect` is the only outcome-driven
  *   removal path.
  * - `skipped[]` means the op id already existed host-side before this call; a
  *   fully duplicate batch produces no new broadcast, so a skipped entry may
  *   never see an effect frame. The ledger keeps it visible in the `skipped`
- *   state and leaves the authoritative catch-up policy to s3-opt-2, which
+ *   state and leaves the authoritative catch-up policy to the host, which
  *   removes it explicitly via `take`.
  * - The ledger never touches Yjs or the canvas: it stores an opaque `shadow`
  *   payload for the presentation layer and nothing else. No timers, no
@@ -39,7 +39,7 @@ export type PendingOpState =
   | 'applied'
   /** Host reported the op id as already present; no new effect will come. */
   | 'skipped'
-  /** Host rejected this exact op; shadow revert/retry policy is s3-opt-2/6. */
+  /** Host rejected this exact op; the shadow may be reverted or retried. */
   | 'failed'
   /** Batch member after the failed op; the host never processed it. */
   | 'unprocessed'
@@ -92,7 +92,7 @@ export interface PendingOpLedger<TShadow = unknown> {
   enqueue(opId: string, shadow: TShadow): boolean
   /**
    * Mark ids as sent. Valid from `queued` (first send) and from `inflight`,
-   * `failed`, or `unprocessed` (a retry with the SAME id, per s3-opt-6
+   * `failed`, or `unprocessed` (a retry with the SAME id
    * policy). Returns the ids that did not transition (unknown, or in a state
    * that must not fly again: `applied`/`skipped`).
    */

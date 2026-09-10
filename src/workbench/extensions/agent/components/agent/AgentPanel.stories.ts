@@ -36,5 +36,5 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const PanelSpacing: Story = {
-  name: 'T-26 / PM-670 / FE-1324 Panel spacing'
+  name: 'Panel spacing'
 }

@@ -34,7 +34,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
 
 // VHS_VAEDecodeBatched.per_batch / VHS_VAEEncodeBatched.per_batch no longer
 // drift on save/reload; the ComfyUI-VideoHelperSuite entry was removed here
-// (see ROUNDTRIP_VALUE_ALLOWLIST in allNodesRoundtripTier.ts) — qax-19/valuedrift-1.
+// (see ROUNDTRIP_VALUE_ALLOWLIST in allNodesRoundtripTier.ts).
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH: Record<
   string,
   Record<string, string>

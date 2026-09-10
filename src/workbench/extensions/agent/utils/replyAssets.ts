@@ -60,8 +60,8 @@ function scanInline(tokens: InlineToken[] | undefined): InlineScan | null {
   return scan.assets.length ? scan : null
 }
 
-// A lone image LINK keeps FE-1328's link contract; image syntax, non-image
-// singles, and any multiple become the DES-530 asset treatment.
+// A lone image link stays inline; image syntax, non-image singles, and any
+// multiple use the asset-grid treatment.
 function selectAssets(scan: InlineScan): ReplyAsset[] | null {
   const { assets, sawImageSyntax } = scan
   if (assets.length > 1 || sawImageSyntax) return assets

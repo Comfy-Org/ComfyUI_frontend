@@ -571,7 +571,7 @@ export interface UiButtonClickMetadata {
 }
 
 /**
- * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * In-App Agent message rating metadata. `vote` is null when the user retracts a
  * prior thumb, which the eval pipeline records as a retraction rather than dropping.
  */
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
@@ -1117,7 +1117,7 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
-  // In-App Agent message rating (PM-98)
+  // In-App Agent message rating
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void

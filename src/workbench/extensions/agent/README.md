@@ -1,4 +1,4 @@
-# In-App Agent panel (FE-1187)
+# In-App Agent panel
 
 The In-App Agent panel is a manager-pattern workbench extension. The panel lives
 entirely in this subtree and renders in a flag-gated right dock registered by

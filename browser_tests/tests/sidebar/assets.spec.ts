@@ -155,7 +155,7 @@ const JOB_GAMMA_DETAIL: JobDetail = {
 test.describe('Assets sidebar - empty states', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockEmptyState()
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -196,7 +196,7 @@ test.describe('Assets sidebar - tab navigation', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -246,7 +246,7 @@ test.describe('Assets sidebar - grid view display', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -308,7 +308,7 @@ test.describe('Assets sidebar - view mode', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -418,7 +418,7 @@ test.describe('Assets sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -476,7 +476,7 @@ test.describe('Assets sidebar - selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -553,7 +553,7 @@ test.describe('Assets sidebar - context menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -748,7 +748,7 @@ test.describe('Assets sidebar - bulk actions', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -950,7 +950,7 @@ test.describe('Assets sidebar - pagination', () => {
   }) => {
     const manyJobs = createMockJobs(250)
     await comfyPage.assets.mockOutputHistory(manyJobs)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
 
     // Queue polling also calls /jobs, so wait for completed history only.
@@ -1004,7 +1004,7 @@ test.describe('Assets sidebar - settings menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -1148,7 +1148,7 @@ test.describe('Assets sidebar - media type filter', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
     await comfyPage.assets.mockInputFiles([])
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, migration tracked in #16859; not fixed in this pass
     await comfyPage.setup()
   })
 

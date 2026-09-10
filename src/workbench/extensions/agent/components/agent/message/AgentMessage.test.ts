@@ -81,7 +81,7 @@ describe('AgentMessage paywall reply', () => {
 })
 
 describe('AgentMessage thinking narration', () => {
-  it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
+  it('renders complete asset URLs as hyperlinks', () => {
     const message: AssistantMessage = {
       ...createAssistantMessage('msg-link' as TurnId),
       streaming: false,
@@ -103,7 +103,7 @@ describe('AgentMessage thinking narration', () => {
     ).toHaveAttribute('href', 'https://assets.example/result.png')
   })
 
-  it('T-32 / PM-663 / FE-1292 opens the Markdown copy action menu', async () => {
+  it('opens the Markdown copy action menu', async () => {
     const message: AssistantMessage = {
       ...createAssistantMessage('msg-actions' as TurnId),
       streaming: false,

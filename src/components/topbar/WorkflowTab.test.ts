@@ -211,7 +211,7 @@ describe('WorkflowTab - agent activity indicators', () => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 
-  it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
+  it('renders the active workflow tab loading state', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setEditing('/workflows/test.json')
     await nextTick()

@@ -18,7 +18,7 @@ const { assets } = defineProps<{ assets: ReplyAsset[] }>()
 
 const { t } = useI18n()
 
-/* Three rows of the four-column grid, per DES-530. */
+/* Three rows of the four-column grid. */
 const COLLAPSED_COUNT = 12
 
 const visual = computed(() => assets.filter((asset) => asset.kind !== 'audio'))

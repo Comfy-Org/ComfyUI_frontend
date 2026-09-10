@@ -39,7 +39,7 @@ async function expectCanvasOnRootGraph(page: Page) {
 }
 
 test.describe(
-  'Subgraph hash validation (FE-559)',
+  'Subgraph hash validation and root-graph recovery',
   { tag: ['@subgraph'] },
   () => {
     test('redirects URL and canvas to root for a non-existent subgraph hash', async ({

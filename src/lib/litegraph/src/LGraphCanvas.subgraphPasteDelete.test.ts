@@ -21,9 +21,8 @@ import {
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 /**
- * QA-4 (invariant I4, no ambiguous ownership across graphs): copy/paste a
- * subgraph instance that carries a promoted widget and a rerouted external
- * link, then delete the two instances in **both** orders.
+ * Copy/paste a subgraph instance that carries a promoted widget and a rerouted
+ * external link, then delete the two instances in **both** orders.
  *
  * Order-dependence is the bug class. A cleanup path that works when the copy
  * goes first and corrupts the survivor when the original goes first is

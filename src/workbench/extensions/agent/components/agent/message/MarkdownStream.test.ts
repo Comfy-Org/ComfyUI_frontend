@@ -58,8 +58,7 @@ describe('MarkdownStream', () => {
     )
   })
 
-  // FE-1326 superseded the FE-1328 list rendering for multiple assets: the
-  // DES-530 per-count clickable grid replaces the list of links.
+  // Multiple assets use a per-count clickable grid instead of a link list.
   it('groups multiple asset links into the clickable preview grid', () => {
     const contactUrl = 'https://cloud.comfy.org/api/view?filename=contact.png'
     const fluxUrl = 'https://cloud.comfy.org/api/view?filename=flux.png'
