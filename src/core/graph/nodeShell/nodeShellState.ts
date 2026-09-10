@@ -35,18 +35,29 @@ export type InputSlotViewFactory = (
 ) => INodeInputSlot[]
 
 /**
+ * Output-side counterpart of {@link InputSlotViewFactory} — e.g.
+ * {@link createOutputSlotView}. Injected for the same import-cycle reason.
+ */
+export type OutputSlotViewFactory = (
+  node: LGraphNode,
+  outputs: INodeOutputSlot[]
+) => INodeOutputSlot[]
+
+/**
  * Builds the shell state a node carries from construction until it adopts the
  * {@link useNodeDataStore} proxy in {@link registerNodeState}.
  *
- * `inputs` is wrapped by `createInputSlotView` here — the one place that
- * builds a node's slot arrays — so every `NodeState` producer, not just
- * {@link LGraphNode}'s constructor, gets plain input-slot writes rehydrated
- * into `NodeInputSlot` instances. Callers pass their own view factory (see
- * {@link InputSlotViewFactory}) to avoid a static import cycle.
+ * `inputs` and `outputs` are wrapped by the slot views here — the one place
+ * that builds a node's slot arrays — so every `NodeState` producer, not just
+ * {@link LGraphNode}'s constructor, gets plain slot writes rehydrated into
+ * `NodeInputSlot` / `NodeOutputSlot` instances. Callers pass their own view
+ * factories (see {@link InputSlotViewFactory} and
+ * {@link OutputSlotViewFactory}) to avoid a static import cycle.
  */
 export function createNodeShellState(
   node: LGraphNode,
   createInputSlotView: InputSlotViewFactory,
+  createOutputSlotView: OutputSlotViewFactory,
   title: string,
   type: string | undefined,
   titleMode: TitleMode | undefined
@@ -57,7 +68,7 @@ export function createNodeShellState(
     id: UNASSIGNED_NODE_ID,
     inputs: createInputSlotView(node, shallowReactive<INodeInputSlot[]>([])),
     mode: LGraphEventMode.ALWAYS,
-    outputs: shallowReactive<INodeOutputSlot[]>([]),
+    outputs: createOutputSlotView(node, shallowReactive<INodeOutputSlot[]>([])),
     properties: {},
     title: title || 'Unnamed',
     type: type ?? '',

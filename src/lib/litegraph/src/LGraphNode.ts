@@ -68,6 +68,7 @@ import {
 } from './node/slotLinks'
 import {
   createInputSlotView,
+  createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
@@ -1048,6 +1049,7 @@ export class LGraphNode
     this._state = createNodeShellState(
       this,
       createInputSlotView,
+      createOutputSlotView,
       title,
       type,
       this.title_mode
