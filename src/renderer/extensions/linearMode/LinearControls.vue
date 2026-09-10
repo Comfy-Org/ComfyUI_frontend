@@ -34,6 +34,9 @@ const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { canRunWorkflows, showsSubscribeToRunPrompt } = useBillingContext()
+const showsCloudSubscribePrompt = computed(
+  () => isCloud && showsSubscribeToRunPrompt.value
+)
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -181,7 +184,7 @@ function replayAppModeTour() {
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
           <SubscribeToRunButton
-            v-if="isCloud && showsSubscribeToRunPrompt"
+            v-if="showsCloudSubscribePrompt"
             class="mt-4 w-full"
           />
           <div v-else class="mt-4 flex">
@@ -248,7 +251,7 @@ function replayAppModeTour() {
             class="h-7 min-w-40"
           />
           <SubscribeToRunButton
-            v-if="isCloud && showsSubscribeToRunPrompt"
+            v-if="showsCloudSubscribePrompt"
             class="mt-4 w-full"
           />
           <Button
