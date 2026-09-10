@@ -1,24 +1,14 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as VueModule from 'vue'
 import { nextTick } from 'vue'
+import { useAuthStore } from '@/stores/authStore'
 
-type MockAuthStore = {
-  isInitialized: boolean
-  currentUser: { uid: string } | null
-}
-
-const hoisted = vi.hoisted(() => ({
-  authStore: null as unknown as MockAuthStore
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
 }))
-
-vi.mock<unknown>(import('@/stores/authStore'), async () => {
-  const { reactive } = await vi.importActual<typeof VueModule>('vue')
-  hoisted.authStore = reactive<MockAuthStore>({
-    isInitialized: false,
-    currentUser: null
-  })
-  return { useAuthStore: () => hoisted.authStore }
-})
 
 import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
 
@@ -43,8 +33,8 @@ function startSync(): void {
 
 describe('host user ID sync', () => {
   beforeEach(() => {
-    hoisted.authStore.isInitialized = false
-    hoisted.authStore.currentUser = null
+    useAuthStore().isInitialized = false
+    useAuthStore().currentUser = null
   })
 
   afterEach(() => {
@@ -61,12 +51,12 @@ describe('host user ID sync', () => {
       status: 'pending'
     })
 
-    hoisted.authStore.currentUser = { uid: 'firebase-user-a' }
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
     await nextTick()
 
     expect(reportFirebaseAuthState).toHaveBeenCalledOnce()
 
-    hoisted.authStore.isInitialized = true
+    useAuthStore().isInitialized = true
     await nextTick()
 
     expect(reportFirebaseAuthState).toHaveBeenLastCalledWith({
@@ -77,8 +67,8 @@ describe('host user ID sync', () => {
 
   it('reports a restored Firebase session immediately', () => {
     const { reportFirebaseAuthState } = installTelemetryBridge()
-    hoisted.authStore.currentUser = { uid: 'firebase-user-a' }
-    hoisted.authStore.isInitialized = true
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
+    useAuthStore().isInitialized = true
 
     startSync()
 
@@ -90,7 +80,7 @@ describe('host user ID sync', () => {
 
   it('reports an initially signed-out Firebase session', () => {
     const { reportFirebaseAuthState } = installTelemetryBridge()
-    hoisted.authStore.isInitialized = true
+    useAuthStore().isInitialized = true
 
     startSync()
 
@@ -106,7 +96,7 @@ describe('host user ID sync', () => {
 
     expect(reportFirebaseAuthState).toHaveBeenCalledOnce()
 
-    hoisted.authStore.isInitialized = true
+    useAuthStore().isInitialized = true
     await nextTick()
 
     expect(reportFirebaseAuthState).toHaveBeenLastCalledWith({
@@ -116,11 +106,11 @@ describe('host user ID sync', () => {
 
   it('reports account switches, logout, and subsequent login', async () => {
     const { reportFirebaseAuthState } = installTelemetryBridge()
-    hoisted.authStore.currentUser = { uid: 'firebase-user-a' }
-    hoisted.authStore.isInitialized = true
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
+    useAuthStore().isInitialized = true
     startSync()
 
-    hoisted.authStore.currentUser = { uid: 'firebase-user-b' }
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-b' })
     await nextTick()
 
     expect(reportFirebaseAuthState).toHaveBeenLastCalledWith({
@@ -128,14 +118,14 @@ describe('host user ID sync', () => {
       userId: 'firebase-user-b'
     })
 
-    hoisted.authStore.currentUser = null
+    useAuthStore().currentUser = null
     await nextTick()
 
     expect(reportFirebaseAuthState).toHaveBeenLastCalledWith({
       status: 'signed_out'
     })
 
-    hoisted.authStore.currentUser = { uid: 'firebase-user-c' }
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-c' })
     await nextTick()
 
     expect(reportFirebaseAuthState.mock.calls).toEqual([
@@ -149,11 +139,11 @@ describe('host user ID sync', () => {
 
   it('does not report again when Firebase replaces the user object with the same UID', async () => {
     const { reportFirebaseAuthState } = installTelemetryBridge()
-    hoisted.authStore.currentUser = { uid: 'firebase-user-a' }
-    hoisted.authStore.isInitialized = true
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
+    useAuthStore().isInitialized = true
     startSync()
 
-    hoisted.authStore.currentUser = { uid: 'firebase-user-a' }
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
     await nextTick()
 
     expect(reportFirebaseAuthState.mock.calls).toEqual([
@@ -170,8 +160,8 @@ describe('host user ID sync', () => {
 
     expect(() => startSync()).not.toThrow()
 
-    hoisted.authStore.currentUser = { uid: 'firebase-user-a' }
-    hoisted.authStore.isInitialized = true
+    useAuthStore().currentUser = fromPartial({ uid: 'firebase-user-a' })
+    useAuthStore().isInitialized = true
     await nextTick()
 
     expect(reportFirebaseAuthState).toHaveBeenLastCalledWith({

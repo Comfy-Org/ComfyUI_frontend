@@ -1,15 +1,10 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { computed, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
-const mockStore = vi.hoisted(() => ({
-  activeWorkspace: null as WorkspaceWithRole | null,
-  isCurrentUserOriginalOwner: false,
-  originalOwnerId: null as string | null,
-  ensureMembersLoaded: vi.fn()
-}))
-const mockIsCloud = ref(true)
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanReactivate = ref(false)
 const mockCanSubscribeSelfServe = ref(true)
@@ -18,30 +13,6 @@ const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockBillingControlEnabled = vi.hoisted(() => ({ value: false }))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspace() {
-        return mockStore.activeWorkspace
-      },
-      get isInPersonalWorkspace() {
-        return mockStore.activeWorkspace?.type === 'personal'
-      },
-      get isWorkspaceSubscribed() {
-        return false
-      },
-      get isCurrentUserOriginalOwner() {
-        return mockStore.isCurrentUserOriginalOwner
-      },
-      get originalOwnerId() {
-        return mockStore.originalOwnerId
-      },
-      ensureMembersLoaded: mockStore.ensureMembersLoaded
-    })
-  })
-)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -125,10 +96,9 @@ async function loadComposable() {
 }
 
 function resetStore() {
-  mockStore.activeWorkspace = null
-  mockStore.isCurrentUserOriginalOwner = false
-  mockStore.originalOwnerId = null
-  mockStore.ensureMembersLoaded.mockReset()
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspace: null })
+  Object.assign(useTeamWorkspaceStore(), { isCurrentUserOriginalOwner: false })
+  Object.assign(useTeamWorkspaceStore(), { originalOwnerId: null })
   mockIsActiveSubscription.value = false
   mockIsCancelled.value = false
   mockIsTeamPlan.value = false
@@ -139,6 +109,12 @@ function resetStore() {
   mockCanSubscribeSelfServe.value = true
   mockSnapshotAuthoritative.value = true
 }
+
+beforeEach(() => {
+  vi.mocked(useTeamWorkspaceStore().ensureMembersLoaded).mockResolvedValue(
+    undefined
+  )
+})
 
 describe('useWorkspaceUI', () => {
   beforeEach(() => {
@@ -171,7 +147,9 @@ describe('useWorkspaceUI', () => {
 
   describe('personal workspace', () => {
     beforeEach(() => {
-      mockStore.activeWorkspace = personalWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalWorkspace
+      })
     })
 
     it('grants billing access with personal workspace visibility', async () => {
@@ -190,7 +168,9 @@ describe('useWorkspaceUI', () => {
     })
 
     it('gives a Team-plan member only member actions', async () => {
-      mockStore.activeWorkspace = personalMemberWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalMemberWorkspace
+      })
       mockIsTeamPlan.value = true
       const ui = await loadComposable()
 
@@ -210,7 +190,9 @@ describe('useWorkspaceUI', () => {
     })
 
     it('withholds leave from a Personal-plan member', async () => {
-      mockStore.activeWorkspace = personalMemberWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalMemberWorkspace
+      })
       const ui = await loadComposable()
 
       expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
@@ -227,7 +209,9 @@ describe('useWorkspaceUI', () => {
 
     it('lets a promoted owner leave while using a Team plan', async () => {
       mockIsTeamPlan.value = true
-      mockStore.originalOwnerId = 'original-owner'
+      Object.assign(useTeamWorkspaceStore(), {
+        originalOwnerId: 'original-owner'
+      })
       const ui = await loadComposable()
 
       expect(ui.permissions.value.canLeaveWorkspace).toBe(true)
@@ -236,8 +220,12 @@ describe('useWorkspaceUI', () => {
 
     it('keeps the original creator from leaving while using a Team plan', async () => {
       mockIsTeamPlan.value = true
-      mockStore.originalOwnerId = 'current-user'
-      mockStore.isCurrentUserOriginalOwner = true
+      Object.assign(useTeamWorkspaceStore(), {
+        originalOwnerId: 'current-user'
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        isCurrentUserOriginalOwner: true
+      })
       const ui = await loadComposable()
 
       expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
@@ -271,7 +259,9 @@ describe('useWorkspaceUI', () => {
 
   describe('team workspace as owner', () => {
     beforeEach(() => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
     })
 
     it('grants full management permissions', async () => {
@@ -323,7 +313,9 @@ describe('useWorkspaceUI', () => {
 
   describe('team workspace as member', () => {
     beforeEach(() => {
-      mockStore.activeWorkspace = teamMemberWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamMemberWorkspace
+      })
       mockIsTeamPlan.value = true
     })
 
@@ -368,7 +360,9 @@ describe('useWorkspaceUI', () => {
 
   describe('original-owner permissions', () => {
     it('uses the canonical store signal for personal workspaces', async () => {
-      mockStore.activeWorkspace = personalWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalWorkspace
+      })
       const ui = await loadComposable()
 
       expect(ui.isOriginalOwner.value).toBe(false)
@@ -376,9 +370,15 @@ describe('useWorkspaceUI', () => {
     })
 
     it('allows an original owner to downgrade', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = true
-      mockStore.originalOwnerId = 'current-user'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        isCurrentUserOriginalOwner: true
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        originalOwnerId: 'current-user'
+      })
       mockIsTeamPlan.value = true
       const ui = await loadComposable()
 
@@ -388,7 +388,9 @@ describe('useWorkspaceUI', () => {
     })
 
     it('allows an additional workspace owner to leave before creator identity resolves', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
       mockIsTeamPlan.value = true
       const ui = await loadComposable()
 
@@ -398,8 +400,12 @@ describe('useWorkspaceUI', () => {
 
   describe('subscription lifecycle', () => {
     it('grants lifecycle and downgrade to the original owner', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = true
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        isCurrentUserOriginalOwner: true
+      })
       mockIsTeamPlan.value = true
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -408,8 +414,12 @@ describe('useWorkspaceUI', () => {
     })
 
     it('withholds downgrade from an original owner on a Personal plan', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = true
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        isCurrentUserOriginalOwner: true
+      })
       const ui = await loadComposable()
 
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -417,9 +427,15 @@ describe('useWorkspaceUI', () => {
     })
 
     it('grants lifecycle but withholds downgrade from a promoted owner', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.isCurrentUserOriginalOwner = false
-      mockStore.originalOwnerId = 'original-owner'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        isCurrentUserOriginalOwner: false
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        originalOwnerId: 'original-owner'
+      })
       mockIsTeamPlan.value = true
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -429,7 +445,9 @@ describe('useWorkspaceUI', () => {
     })
 
     it('withholds lifecycle from members', async () => {
-      mockStore.activeWorkspace = teamMemberWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamMemberWorkspace
+      })
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
       expect(ui.permissions.value.canDowngradeToPersonal).toBe(false)
@@ -438,27 +456,35 @@ describe('useWorkspaceUI', () => {
 
   describe('original-owner data loading', () => {
     it('loads members for a team owner', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
       await loadComposable()
-      expect(mockStore.ensureMembersLoaded).toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().ensureMembersLoaded).toHaveBeenCalled()
     })
 
     it('loads members for a personal owner', async () => {
-      mockStore.activeWorkspace = personalWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalWorkspace
+      })
       await loadComposable()
-      expect(mockStore.ensureMembersLoaded).toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().ensureMembersLoaded).toHaveBeenCalled()
     })
 
     it('does not load members for a member', async () => {
-      mockStore.activeWorkspace = personalMemberWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalMemberWorkspace
+      })
       await loadComposable()
-      expect(mockStore.ensureMembersLoaded).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().ensureMembersLoaded).not.toHaveBeenCalled()
     })
   })
 
   describe('cancelled Team plan', () => {
     it('uses plan identity instead of workspace type', async () => {
-      mockStore.activeWorkspace = personalWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalWorkspace
+      })
       mockIsTeamPlan.value = true
       mockIsCancelled.value = true
       const ui = await loadComposable()
@@ -468,7 +494,9 @@ describe('useWorkspaceUI', () => {
     })
 
     it('ignores a cancelled non-Team plan in a team workspace', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
       mockIsTeamPlan.value = false
       mockIsCancelled.value = true
       const ui = await loadComposable()
@@ -480,7 +508,9 @@ describe('useWorkspaceUI', () => {
 
   describe('shared instance', () => {
     it('returns the same composable state for multiple callers within a test', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamOwnerWorkspace
+      })
       const first = await loadComposable()
       const second = await loadComposable()
 
@@ -490,7 +520,9 @@ describe('useWorkspaceUI', () => {
   })
   describe('canReactivatePlan', () => {
     beforeEach(() => {
-      mockStore.activeWorkspace = personalWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalWorkspace
+      })
     })
 
     it('uses the server capability on the consolidated rail', async () => {
@@ -527,7 +559,9 @@ describe('useWorkspaceUI', () => {
 
   describe('canOpenPricingSurface', () => {
     beforeEach(() => {
-      mockStore.activeWorkspace = personalWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: personalWorkspace
+      })
     })
 
     it('closes the catalog when the server resolves a sales-managed plan', async () => {
@@ -573,7 +607,9 @@ describe('useWorkspaceUI', () => {
     })
 
     it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
-      mockStore.activeWorkspace = teamMemberWorkspace
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: teamMemberWorkspace
+      })
       mockSnapshotAuthoritative.value = false
       mockCanSubscribeSelfServe.value = false
 
@@ -583,3 +619,10 @@ describe('useWorkspaceUI', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn())
+}))
