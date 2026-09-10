@@ -201,7 +201,7 @@ describe('useBillingPlans', () => {
         expect.objectContaining({
           tags: expect.objectContaining({ outcome: 'failed' }),
           context: expect.objectContaining({ has_cached_plans: false }),
-          level: 'error'
+          level: 'warning'
         })
       )
     })

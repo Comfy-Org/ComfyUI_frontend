@@ -45,7 +45,7 @@ export function useBillingPlans() {
             has_team_credit_stops:
               (teamCreditStops.value?.stops.length ?? 0) > 0
           },
-          level: hasCachedPlans ? 'warning' : 'error'
+          level: 'warning'
         })
       })
       .finally(() => {
