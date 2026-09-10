@@ -13,7 +13,7 @@ export async function waitForAnimations(locator: Locator) {
     await Promise.all(
       element
         .getAnimations({ subtree: true })
-        .map((animation) => animation.finished)
+        .map((animation) => animation.finished.catch(() => undefined))
     )
   })
 }
