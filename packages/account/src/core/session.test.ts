@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { createTestIdentity } from '../testing.js'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
-  IdentityPort,
   SessionClientOptions,
   SessionErrorCode
 } from './session.js'
@@ -88,12 +88,12 @@ function seedCache(
 function manualIdentity() {
   let deliver: ((user: AccountUser | null) => void) | undefined
   const unsubscribe = vi.fn()
-  const port: IdentityPort = {
+  const port = createTestIdentity<AccountUser>({
     onUserChanged: (callback) => {
       deliver = callback
       return unsubscribe
     }
-  }
+  })
   return {
     port,
     fire: (user: AccountUser | null) => deliver?.(user),
@@ -698,6 +698,83 @@ describe('storage outage', () => {
       fetchImpl,
       'a storage outage must degrade persistence only, never request volume'
     ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('stale storage', () => {
+  it('serves the fresh in-memory credential when the stored record is stale because its write failed', async () => {
+    const storage = memoryStorage()
+    seedCache(storage, { token: 'stale-jwt', expiresAt: Date.now() - 1 })
+    const failingWrites: CredentialStorage = {
+      read: storage.read,
+      write: () => {
+        throw new Error('quota')
+      },
+      clear: storage.clear
+    }
+    const fetchImpl = okFetch('fresh-jwt')
+    const { client } = makeClient({ fetchImpl, storage: failingWrites })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(client.getToken()).toBe('fresh-jwt'))
+
+    await client.ensureFresh()
+    await client.ensureFresh()
+
+    expect(
+      fetchImpl,
+      'a readable-but-stale record must not shadow the live credential and re-mint on every read'
+    ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('exchange response contract', () => {
+  it('rejects an expires_at outside the generated RFC 3339 form as an exchange failure', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, mintBody({ expires_at: '2026-09-10T12:00:00+05:30' }))
+    )
+    const { client } = makeClient({ fetchImpl })
+
+    expect(await client.ensureFresh(testUser())).toEqual({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED',
+      httpStatus: 200
+    })
+  })
+})
+
+describe('identity brand', () => {
+  it('refuses a port that did not come from the package entry or the testing seam', () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+
+    expect(() =>
+      client.attachIdentity(
+        // @ts-expect-error an unbranded port is not an AccountIdentity
+        { onUserChanged: () => () => undefined }
+      )
+    ).toThrow('attachIdentity needs the identity')
+  })
+
+  it('reports settled only once the port has delivered, and not after detach', async () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    expect(client.getSnapshot().settled).toBe(false)
+
+    const detach = client.attachIdentity(identity.port)
+    expect(
+      client.getSnapshot().settled,
+      'attached is not delivered; Firebase has not answered yet'
+    ).toBe(false)
+
+    identity.fire(null)
+    expect(client.getSnapshot()).toMatchObject({
+      phase: 'signed-out',
+      settled: true
+    })
+
+    detach()
+    expect(client.getSnapshot().settled).toBe(false)
   })
 })
 
