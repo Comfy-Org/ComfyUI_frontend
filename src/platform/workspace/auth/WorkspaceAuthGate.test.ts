@@ -4,12 +4,25 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+})
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -617,10 +630,3 @@ describe('WorkspaceAuthGate', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

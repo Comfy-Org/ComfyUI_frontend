@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useThrottleFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,8 +21,9 @@ import {
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  ...vueUse,
   useThrottleFn: vi.fn((fn) => fn)
 }))
 

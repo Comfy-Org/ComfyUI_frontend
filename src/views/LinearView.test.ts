@@ -11,8 +11,9 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import LinearView from './LinearView.vue'
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
+const firebaseAuth = await vi.hoisted(() => import('firebase/auth'))
+vi.mock(import('firebase/auth'), () => ({
+  ...firebaseAuth,
   setPersistence: vi.fn(async () => {}),
   onAuthStateChanged: vi.fn(() => () => {}),
   onIdTokenChanged: vi.fn(() => () => {})

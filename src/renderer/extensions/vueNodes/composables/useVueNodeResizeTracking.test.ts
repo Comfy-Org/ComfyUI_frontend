@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -74,10 +73,11 @@ vi.mock(import('@/scripts/app'), async () => {
   return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
 })
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => {
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock(import('@vueuse/core'), async () => {
   const { ref } = await import('vue')
   return {
-    ...(await importOriginal<typeof VueUse>()),
+    ...vueUse,
     useDocumentVisibility: () => {
       const visibility = ref<'visible' | 'hidden'>('visible')
       testState.visibility = visibility

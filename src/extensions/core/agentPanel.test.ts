@@ -14,6 +14,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>
@@ -57,16 +59,8 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
   notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  isLGraphNode: (node: unknown): node is LGraphNode =>
-    typeof node === 'object' && node !== null && 'id' in node
-}))
-
-vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  getNodeByLocatorId: mocks.getNodeByLocatorId
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(
   '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
@@ -113,6 +107,11 @@ describe('AgentPanel extension flag gate', () => {
     Object.assign(consentStore, { accepted: true })
     Object.assign(consentStore, { identity: 'account-a/workspace-a' })
     vi.mocked(consentStore.load).mockResolvedValue(false)
+    vi.mocked(isLGraphNode).mockImplementation(
+      (node: unknown): node is LGraphNode =>
+        typeof node === 'object' && node !== null && 'id' in node
+    )
+    vi.mocked(getNodeByLocatorId).mockImplementation(mocks.getNodeByLocatorId)
     agentStore = vi.mocked(useAgentPanelStore())
     agentStore.consentAccepted = false
     canvasStore = vi.mocked(useCanvasStore())

@@ -21,7 +21,6 @@ import {
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import type * as ApiModule from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
@@ -109,10 +108,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
-vi.mock(import('@/scripts/api'), async (importOriginal) => {
-  const actual = await importOriginal<typeof ApiModule>()
-  Object.assign(actual.api, { resetSocket: mockResetSocket })
-  return actual
+const apiModule = await vi.hoisted(() => import('@/scripts/api'))
+vi.mock(import('@/scripts/api'), () => {
+  Object.assign(apiModule.api, { resetSocket: mockResetSocket })
+  return apiModule
 })
 
 // Mock useDialogService

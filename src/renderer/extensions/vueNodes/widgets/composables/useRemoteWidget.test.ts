@@ -23,16 +23,15 @@ const mockCloudAuth = vi.hoisted(() => ({
   authHeader: null as { Authorization: `Bearer ${string}` } | null
 }))
 
-vi.mock(import('axios'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    default: Object.assign(actual.default, { get: vi.fn() })
-  }
-})
+const axiosModule = await vi.hoisted(() => import('axios'))
+vi.mock(import('axios'), () => ({
+  ...axiosModule,
+  default: Object.assign(axiosModule.default, { get: vi.fn() })
+}))
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
+const firebaseAuth = await vi.hoisted(() => import('firebase/auth'))
+vi.mock(import('firebase/auth'), () => ({
+  ...firebaseAuth,
   setPersistence: vi.fn().mockResolvedValue(undefined),
   onAuthStateChanged: vi.fn(() => vi.fn()),
   onIdTokenChanged: vi.fn(() => vi.fn())

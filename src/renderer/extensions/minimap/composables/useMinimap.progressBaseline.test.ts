@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -78,8 +77,9 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  ...vueUse,
   useDocumentVisibility: () => ({ value: 'visible' }),
   useIntervalFn: (callback: () => void) => {
     counters.pollRegistrations++

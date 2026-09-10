@@ -11,8 +11,9 @@ import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-vi.mock(import('es-toolkit/compat'), async (importOriginal) => ({
-  ...(await importOriginal()),
+const esToolkit = await vi.hoisted(() => import('es-toolkit/compat'))
+vi.mock(import('es-toolkit/compat'), () => ({
+  ...esToolkit,
   debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 

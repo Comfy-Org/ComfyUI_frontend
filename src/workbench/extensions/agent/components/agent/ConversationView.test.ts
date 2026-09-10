@@ -14,13 +14,12 @@ vi.hoisted(() => {
   }
 })
 
-import type * as VueUse from '@vueuse/core'
-
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  ...vueUse,
   useIntersectionObserver: (
     _target: unknown,
     callback: (entries: { isIntersecting: boolean }[]) => void

@@ -13,19 +13,20 @@ import { api } from '@/scripts/api'
 import { useBootstrapStore } from './bootstrapStore'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/scripts/api'), async (importOriginal) => {
-  const actual = await importOriginal()
-  Object.assign(actual.api, {
+const apiModule = await vi.hoisted(() => import('@/scripts/api'))
+vi.mock(import('@/scripts/api'), () => {
+  const api = Object.assign(apiModule.api, {
     init: vi.fn().mockResolvedValue(undefined),
     getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
     getCustomNodesI18n: vi.fn().mockResolvedValue({}),
     getUserConfig: vi.fn().mockResolvedValue({})
   })
-  return actual
+  return { ...apiModule, api }
 })
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal()),
+const i18nModule = await vi.hoisted(() => import('@/i18n'))
+vi.mock(import('@/i18n'), () => ({
+  ...i18nModule,
   mergeCustomNodesI18n: vi.fn()
 }))
 

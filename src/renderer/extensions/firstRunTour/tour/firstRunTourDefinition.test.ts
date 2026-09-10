@@ -13,7 +13,6 @@ import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 import type { RolePin } from '../roles/tourRolePins'
-import type * as CanvasCoachTarget from './canvasCoachTarget'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -29,21 +28,22 @@ const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
 
 const disposals = vi.hoisted(() => ({ spy: vi.fn() }))
-vi.mock(import('./canvasCoachTarget'), async (importOriginal) => {
-  const actual = await importOriginal<typeof CanvasCoachTarget>()
-  return {
-    canvasNodeTarget: (...args: Parameters<typeof actual.canvasNodeTarget>) => {
-      const target = actual.canvasNodeTarget(...args)
-      return {
-        ...target,
-        dispose: () => {
-          disposals.spy()
-          target.dispose?.()
-        }
+const canvasCoachTarget = await vi.hoisted(() => import('./canvasCoachTarget'))
+vi.mock(import('./canvasCoachTarget'), () => ({
+  ...canvasCoachTarget,
+  canvasNodeTarget: (
+    nodeId: Parameters<typeof canvasCoachTarget.canvasNodeTarget>[0]
+  ) => {
+    const target = canvasCoachTarget.canvasNodeTarget(nodeId)
+    return {
+      ...target,
+      dispose: () => {
+        disposals.spy()
+        target.dispose?.()
       }
     }
   }
-})
+}))
 
 vi.mock(import('./cameraFraming'), () => ({
   frameNode: (_id: unknown, _signal: AbortSignal, options = {}) => {

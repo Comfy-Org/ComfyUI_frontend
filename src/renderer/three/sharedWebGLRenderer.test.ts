@@ -14,8 +14,8 @@ const { rendererCtor, forceContextLoss, dispose } = vi.hoisted(() => ({
   dispose: vi.fn()
 }))
 
-vi.mock<unknown>(import('three'), async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
+const THREE_SOURCE = await vi.hoisted(() => import('three/src/Three.js'))
+vi.mock<unknown>(import('three'), () => {
   class WebGLRenderer {
     domElement = document.createElement('canvas')
     autoClear = true
@@ -40,7 +40,7 @@ vi.mock<unknown>(import('three'), async (importOriginal) => {
     forceContextLoss = forceContextLoss
     dispose = dispose
   }
-  return { ...actual, WebGLRenderer }
+  return { ...THREE_SOURCE, WebGLRenderer }
 })
 
 describe('acquireSharedRenderer', () => {

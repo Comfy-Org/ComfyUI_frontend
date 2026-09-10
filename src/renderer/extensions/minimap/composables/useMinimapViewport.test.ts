@@ -12,8 +12,9 @@ import {
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock(import('@vueuse/core'), () => ({
+  ...vueUse,
   useRafFn: vi.fn()
 }))
 

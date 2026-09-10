@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RendererView } from './RendererView'
 
-vi.mock<unknown>(import('three'), async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
+const THREE_SOURCE = await vi.hoisted(() => import('three/src/Three.js'))
+vi.mock<unknown>(import('three'), () => {
   class WebGLRenderer {
     domElement = document.createElement('canvas')
     autoClear = true
@@ -24,7 +24,7 @@ vi.mock<unknown>(import('three'), async (importOriginal) => {
     forceContextLoss = vi.fn()
     dispose = vi.fn()
   }
-  return { ...actual, WebGLRenderer }
+  return { ...THREE_SOURCE, WebGLRenderer }
 })
 
 const drawImage = vi.fn()

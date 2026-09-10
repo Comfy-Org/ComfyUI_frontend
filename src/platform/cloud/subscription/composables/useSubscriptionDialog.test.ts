@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -84,8 +83,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -909,10 +907,4 @@ describe('useSubscriptionDialog', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))

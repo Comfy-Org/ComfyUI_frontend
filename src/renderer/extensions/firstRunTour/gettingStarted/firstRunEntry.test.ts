@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -36,8 +35,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  ...vueUse,
   breakpointsTailwind: {},
   createSharedComposable: sharedComposable.create,
   useBreakpoints: () => ({

@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -201,8 +200,9 @@ vi.mock(import('@/renderer/core/canvas/links/linkDropOrchestrator'), () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  ...vueUse,
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
     return vi.fn()

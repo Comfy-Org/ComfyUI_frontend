@@ -136,10 +136,13 @@ const appMock = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
+const workflowSchema = await vi.hoisted(
+  () => import('@/platform/workflow/validation/schemas/workflowSchema')
+)
 vi.mock<unknown>(
   import('@/platform/workflow/validation/schemas/workflowSchema'),
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
+  () => ({
+    ...workflowSchema,
     validateComfyWorkflow: vi.fn(async (content: unknown) => content)
   })
 )
@@ -195,8 +198,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal<object>()),
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: (item: unknown) =>
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
@@ -211,10 +213,11 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const { ref } = await import('vue')
   return {
-    ...(await importOriginal<object>()),
+    ...vueUse,
     useClipboard: () => ({
       copy: clipboard.copy,
       copied: ref(false),
@@ -238,13 +241,9 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    isCloud: true
-  })
-)
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(

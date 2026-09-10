@@ -6,8 +6,9 @@ const { writeText } = vi.hoisted(() => ({
   writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  ...vueUse,
   useClipboard: () => ({ copy: writeText })
 }))
 

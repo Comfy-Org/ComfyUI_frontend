@@ -1,4 +1,3 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
@@ -95,10 +94,11 @@ const mockIntervalResume = vi.fn()
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const { ref } = await import('vue')
   return {
-    ...(await importOriginal<typeof VueUse>()),
+    ...vueUse,
     useDocumentVisibility: vi.fn(() => ref('visible')),
     useRafFn: vi.fn((callback, options) => {
       const id = rafCallbackId++

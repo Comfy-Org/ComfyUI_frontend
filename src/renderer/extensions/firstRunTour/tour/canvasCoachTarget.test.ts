@@ -33,13 +33,13 @@ function graph(id: string) {
   })
 }
 
-vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => ({
-    ...(await importOriginal<typeof Litegraph>()),
-    LiteGraph: { NODE_TITLE_HEIGHT: TITLE_HEIGHT }
-  })
+const litegraph = await vi.hoisted(
+  () => import('@/lib/litegraph/src/litegraph')
 )
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
+  ...litegraph,
+  LiteGraph: { NODE_TITLE_HEIGHT: TITLE_HEIGHT }
+}))
 vi.mock<unknown>(
   import('@/renderer/core/layout/transform/useTransformState'),
   async () => {
@@ -64,11 +64,11 @@ vi.mock<unknown>(
     }
   }
 )
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
+const vueUse = await vi.hoisted(() => import('@vueuse/core'))
+vi.mock<unknown>(import('@vueuse/core'), async () => {
   const { computed, onScopeDispose } = await import('vue')
   return {
-    ...actual,
+    ...vueUse,
     useElementBounding: () => {
       onScopeDispose(state.releaseBounds)
       return {
