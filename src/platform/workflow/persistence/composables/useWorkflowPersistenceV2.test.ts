@@ -1003,6 +1003,43 @@ describe('useWorkflowPersistenceV2', () => {
     expect(JSON.parse(userBPayload.data)).toEqual({ marker: 'user-b-edit' })
   })
 
+  it('fences writes on the initial identity resolution until the workspace store confirms the workspace', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('InitialResolve.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    const payloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      'user-a:workspace-a'
+    )
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    mocks.state.currentGraph = { marker: 'before-workspace-ready' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+    expect(mockToastAdd).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+    mocks.state.currentGraph = { marker: 'after-workspace-ready' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    expect(
+      JSON.parse(JSON.parse(localStorage.getItem(payloadKey)!).data)
+    ).toEqual({ marker: 'after-workspace-ready' })
+  })
+
   it('stays silent while the write gate is deferred on an unresolved identity', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
