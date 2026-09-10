@@ -1,23 +1,24 @@
 /**
  * The Workshop's account-layer wiring: one session client from
- * @comfyorg/account, bound to the env-selected Cloud origin. The credential
+ * @comfyorg/account, bound to the env-selected Cloud origin, and the
+ * site-owned balance reader over it. The credential
  * cache sits in sessionStorage so a token survives a reload but never
  * outlives the tab, and never crosses signed-in users (the client keys it
  * by uid).
  */
 import type { User } from 'firebase/auth'
 
-import type { BillingClient, SessionClient } from '@comfyorg/account/core'
+import type { SessionClient } from '@comfyorg/account/session'
 import {
-  createBillingClient,
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/core'
+} from '@comfyorg/account/session'
 
 import {
   captureAuthRefreshFailed,
   captureAuthRefreshSucceeded
 } from '../scripts/posthog'
+import { createBalanceReader } from './workshop-balance'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
@@ -53,10 +54,10 @@ export const workshopSessionClient: SessionClient<User> =
     storage
   })
 
-export const workshopBillingClient: BillingClient = createBillingClient({
-  session: workshopSessionClient,
-  balanceUrl: `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
-})
+export const workshopBalanceReader = createBalanceReader(
+  workshopSessionClient,
+  `${WORKSHOP_CLOUD_BASE_URL}/api/billing/balance`
+)
 
 /**
  * Mirrors the cloud app's auth-refresh telemetry so both surfaces feed one

@@ -29,6 +29,8 @@ import {
   updatePassword
 } from 'firebase/auth'
 
+import type { AccountIdentity } from '../core/identity.js'
+import { identityBrand } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
 interface ActionCeiling {
@@ -63,10 +65,10 @@ export type FirebaseIdentityConfig =
   | FirebaseIdentityAppConfig
   | FirebaseIdentityAuthConfig
 
-export interface FirebaseIdentity {
+export interface FirebaseIdentity extends AccountIdentity<User> {
   /**
    * Fires with the restored user (or null) once Firebase settles, then on
-   * every change. This is the `IdentityPort` the session core binds to.
+   * every change. This is the identity the session core binds to.
    */
   onUserChanged: (callback: (user: User | null) => void) => () => void
   signInWithGoogle: () => Promise<UserCredential>
@@ -161,6 +163,7 @@ export function createFirebaseIdentity(
     actionTimeoutMs === undefined ? run : withCeiling(run, actionTimeoutMs)
 
   return {
+    [identityBrand]: true,
     onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),

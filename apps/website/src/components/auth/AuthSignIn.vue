@@ -8,7 +8,7 @@ import {
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { SocialAuthButtons } from '@comfyorg/account/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
