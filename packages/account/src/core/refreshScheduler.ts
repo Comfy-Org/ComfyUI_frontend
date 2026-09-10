@@ -40,7 +40,8 @@ export interface RefreshHost {
   ) => boolean
   /** A forced mint for the target that produced the live credential. */
   mint: (user: AccountUser) => MintHandle
-  commitRefreshed: (session: AccountCredential) => void
+  /** Returns a failure when the refreshed session was rejected (wrong scope). */
+  commitRefreshed: (session: AccountCredential) => SessionFailure | undefined
   commitPermanentFailure: (failure: SessionFailure) => void
   /** Clears iff the live credential is still `expiring`; returns what it committed. */
   commitExpired: (expiring: AccountCredential) => SessionFailure | undefined
@@ -144,8 +145,12 @@ export function createRefreshScheduler(
     }
     if (!host.guardsHold(guards, user, mintId)) return
     if (result.status === 'ok') {
+      const rejected = host.commitRefreshed(result.session)
+      if (rejected) {
+        reportOutcome?.('permanent_failure', rejected)
+        return
+      }
       clearExpiry()
-      host.commitRefreshed(result.session)
       armScheduledRefresh(result.session.expiresAt, host.now())
       reportOutcome?.('succeeded')
       return
