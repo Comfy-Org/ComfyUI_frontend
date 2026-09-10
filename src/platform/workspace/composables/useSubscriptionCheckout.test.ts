@@ -1,7 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, reactive } from 'vue'
+import {
+  computed,
+  createApp,
+  defineComponent,
+  effectScope,
+  reactive
+} from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -157,6 +164,7 @@ const {
   mockOpen,
   mockGetBillingStatus,
   mockGetPaymentPortalUrl,
+  mockReportError,
   mockPlans,
   mockResubscribe,
   mockToastAdd,
@@ -188,6 +196,7 @@ const {
     mockOpen: vi.fn(),
     mockGetBillingStatus: vi.fn(),
     mockGetPaymentPortalUrl: vi.fn(),
+    mockReportError: vi.fn(),
     mockPlans: { value: [] as Plan[] },
     mockResubscribe: vi.fn(),
     mockToastAdd: vi.fn(),
@@ -253,7 +262,7 @@ async function previewSubscribe(...args: unknown[]) {
   return response
 }
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
     previewSubscribe,
@@ -271,7 +280,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(
       () => mockShouldUseWorkspaceBilling.value
@@ -279,56 +288,62 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return mockPermissions.value
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return mockPermissions.value
+        }
+      },
+      canReactivatePlan: {
+        get value() {
+          return mockCanReactivatePlan.value
+        }
       }
-    },
-    canReactivatePlan: {
-      get value() {
-        return mockCanReactivatePlan.value
-      }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canSubscribeSelfServe: {
-      get value() {
-        return mockCapabilities.value.canSubscribeSelfServe
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canSubscribeSelfServe: {
+        get value() {
+          return mockCapabilities.value.canSubscribeSelfServe
+        }
+      },
+      canReactivate: {
+        get value() {
+          return mockCapabilities.value.canReactivate
+        }
+      },
+      canChangeSeats: {
+        get value() {
+          return mockCapabilities.value.canChangeSeats
+        }
+      },
+      canDowngradeToPersonal: {
+        get value() {
+          return mockCapabilities.value.canDowngradeToPersonal
+        }
       }
-    },
-    canReactivate: {
-      get value() {
-        return mockCapabilities.value.canReactivate
-      }
-    },
-    canChangeSeats: {
-      get value() {
-        return mockCapabilities.value.canChangeSeats
-      }
-    },
-    canDowngradeToPersonal: {
-      get value() {
-        return mockCapabilities.value.canDowngradeToPersonal
-      }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
   })
 }))
 
 // Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     resubscribe: mockResubscribe,
     listSavedPaymentMethods: mockListSavedPaymentMethods,
@@ -347,43 +362,52 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   }
 }))
 
-vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
-  useBillingOperationStore: () => ({
-    startOperation: mockStartOperation,
-    getOperation: mockGetOperation,
-    get subscriptionActionOperation() {
-      return mockSubscriptionActionOperation.value
-    }
-  })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
-  const { ref } = await import('vue')
-  const activeWorkspaceId = ref('workspace-1')
-  mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
-    activeWorkspaceId.value = workspaceId
-  }
-  return {
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return activeWorkspaceId.value
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/billingOperationStore'),
+  () => ({
+    useBillingOperationStore: () => ({
+      startOperation: mockStartOperation,
+      getOperation: mockGetOperation,
+      get subscriptionActionOperation() {
+        return mockSubscriptionActionOperation.value
       }
     })
-  }
-})
+  })
+)
 
-vi.mock('@/config/comfyApi', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  async () => {
+    const { ref } = await import('vue')
+    const activeWorkspaceId = ref('workspace-1')
+    mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
+      activeWorkspaceId.value = workspaceId
+    }
+    return {
+      useTeamWorkspaceStore: () => ({
+        get activeWorkspaceId() {
+          return activeWorkspaceId.value
+        }
+      })
+    }
+  }
+)
+
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
+  })
+)
 
 const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent,
     trackResubscribeClicked: mockTrackResubscribeClicked,
@@ -392,7 +416,11 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
   AuthStoreError: class AuthStoreError extends Error {
     readonly status: number | undefined
@@ -404,19 +432,10 @@ vi.mock('@/stores/authStore', () => ({
   }
 }))
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
-})
-
 describe('useSubscriptionCheckout', () => {
   let emit: ReturnType<typeof vi.fn>
   const scopes: ReturnType<typeof effectScope>[] = []
+  const apps: App<Element>[] = []
 
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
@@ -428,13 +447,26 @@ describe('useSubscriptionCheckout', () => {
       await import('./useSubscriptionCheckout')
     const scope = effectScope()
     scopes.push(scope)
-    return scope.run(() =>
-      useSubscriptionCheckout(emit as never, paymentIntentSource, {
-        tierPlanType,
-        embeddedCheckoutEnabled,
-        rendersSettlingNotice
+    let checkout: ReturnType<typeof useSubscriptionCheckout> | undefined
+    const app = createApp(
+      defineComponent({
+        setup() {
+          checkout = scope.run(() =>
+            useSubscriptionCheckout(emit as never, paymentIntentSource, {
+              tierPlanType,
+              embeddedCheckoutEnabled,
+              rendersSettlingNotice
+            })
+          )
+          return () => null
+        }
       })
-    )!
+    )
+    app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+    app.mount(document.createElement('div'))
+    apps.push(app)
+    if (!checkout) throw new Error('subscription checkout not initialized')
+    return checkout
   }
 
   async function setupWithApprovedPreview(
@@ -461,7 +493,7 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    setActivePinia(createPinia())
     mockSubscribe.mockReset()
     mockPreviewSubscribe.mockReset()
     mockFetchPlans.mockReset()
@@ -519,6 +551,7 @@ describe('useSubscriptionCheckout', () => {
 
   afterEach(() => {
     for (const scope of scopes.splice(0)) scope.stop()
+    for (const app of apps.splice(0)) app.unmount()
   })
 
   describe('handleSubscribeClick', () => {
@@ -979,14 +1012,41 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
-    it('shows the portal error when payment recovery cannot open', async () => {
-      mockGetPaymentPortalUrl.mockRejectedValueOnce(
-        new Error('Portal unavailable')
+    it('shows the server guidance when payment recovery cannot open', async () => {
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
+      await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED',
+        'Update your payment method before changing plans'
       )
-      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'Update your payment method before changing plans'
+        })
+      )
+    })
+
+    it('keeps the portal error for legacy transition recovery', async () => {
+      mockGetBillingStatus.mockResolvedValueOnce({
+        billing_status: 'payment_failed'
+      })
+      const portalError = new Error('Portal unavailable')
+      mockGetPaymentPortalUrl.mockRejectedValueOnce(portalError)
+
+      await submitRejectedPreview(
+        'TRANSITION_NOT_ALLOWED',
+        'Plan change is unavailable'
+      )
+
+      expect(mockReportError).toHaveBeenCalledWith(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({ detail: 'Portal unavailable' })
       )
@@ -999,13 +1059,16 @@ describe('useSubscriptionCheckout', () => {
       'https://billing.stripe.com.evil.test/portal'
     ])('rejects an unsafe billing portal URL: %s', async (url) => {
       mockGetPaymentPortalUrl.mockResolvedValueOnce({ url })
-      await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+      await submitRejectedPreview(
+        'SUBSCRIPTION_PAYMENT_REQUIRED',
+        'Update your payment method before changing plans'
+      )
       expect(globalThis.location.href).toBe(
         'https://app.test/subscribe?invite=secret#token'
       )
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
-          detail: 'toastMessages.failedToAccessBillingPortal'
+          detail: 'Update your payment method before changing plans'
         })
       )
     })
@@ -1452,6 +1515,81 @@ describe('useSubscriptionCheckout', () => {
     })
   })
 
+  describe('reservation-gate refusal on the write path (409 SUBSCRIPTION_CHANGE_IN_PROGRESS)', () => {
+    // The exact refusal the BE writes for a held billing-op gate: HTTP 409
+    // with { error: { code: 'SUBSCRIPTION_CHANGE_IN_PROGRESS', message:
+    // 'a subscription change is already in progress' } } (cloud
+    // services/billing/server/billing_write.go, gateConflict), parsed by
+    // errorResponseFromBody into this WorkspaceApiError.
+    const GATE_MESSAGE = 'a subscription change is already in progress'
+    const gateError = () =>
+      new WorkspaceApiError(
+        GATE_MESSAGE,
+        409,
+        'SUBSCRIPTION_CHANGE_IN_PROGRESS'
+      )
+
+    it('routes the subscribe-create 409 into the settling notice, not a toast', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(gateError())
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+    })
+
+    it('recognizes the refusal by status and sentinel message when the code is lost', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        new WorkspaceApiError(GATE_MESSAGE, 409)
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('routes the resubscribe 409 into the settling notice, not a toast', async () => {
+      const checkout = await setup()
+      mockResubscribe.mockRejectedValueOnce(gateError())
+
+      await checkout.handleResubscribe()
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('keeps the generic surface for a 409 that is not the gate refusal', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      mockSubscribe.mockRejectedValueOnce(
+        new WorkspaceApiError('duplicate idempotency key', 409)
+      )
+
+      await checkout.handleConfirmTransition()
+
+      expect(checkout.isPaymentSettling.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+  })
+
   describe('handleSubscribeTeamClick', () => {
     const teamStop = {
       id: 'team_1400',
@@ -1460,9 +1598,9 @@ describe('useSubscriptionCheckout', () => {
       discountedUsd: 1295
     }
 
-    async function startTeamPaymentRecovery() {
+    async function startTeamPaymentRecovery(message = 'error') {
       mockPreviewSubscribe.mockRejectedValueOnce(
-        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED')
+        errorWithCode('SUBSCRIPTION_PAYMENT_REQUIRED', message)
       )
       const checkout = await setup()
       const selection = checkout.handleSubscribeTeamClick({
@@ -1741,14 +1879,18 @@ describe('useSubscriptionCheckout', () => {
       mockGetPaymentPortalUrl.mockRejectedValueOnce(
         new Error('Portal unavailable')
       )
-      const { checkout, selection } = await startTeamPaymentRecovery()
+      const { checkout, selection } = await startTeamPaymentRecovery(
+        'Update your payment method before changing plans'
+      )
       await selection
 
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.selectedTeamStop.value).toBeNull()
       expect(mockToastAdd).toHaveBeenCalledOnce()
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Portal unavailable' })
+        expect.objectContaining({
+          detail: 'Update your payment method before changing plans'
+        })
       )
     })
 

@@ -6,7 +6,7 @@ const { writeText } = vi.hoisted(() => ({
   writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal()),
   useClipboard: () => ({ copy: writeText })
 }))
@@ -21,7 +21,7 @@ import {
   stringifyDevEvents
 } from './devPanelLog'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `/api${route}`,
     clientId: 'client-test-1',
@@ -29,10 +29,10 @@ vi.mock('@/scripts/api', () => ({
     api_base: ''
   }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
-vi.mock('@/stores/extensionStore', () => ({
+vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
   useExtensionStore: () => ({ extensions: [] })
 }))
 

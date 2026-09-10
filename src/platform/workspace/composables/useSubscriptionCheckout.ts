@@ -13,6 +13,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   PaymentIntentSource,
   SubscriptionCheckoutType
@@ -27,7 +28,10 @@ import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -501,6 +505,30 @@ export function useSubscriptionCheckout(
     )
   }
 
+  /** The reservation-gate refusal the subscribe/plan-change/resubscribe
+   *  WRITES return while a previous change still holds the workspace's
+   *  billing-op gate: HTTP 409 SUBSCRIPTION_CHANGE_IN_PROGRESS (cloud
+   *  services/billing/server/billing_write.go, gateConflict). With fail-open
+   *  capability gating, a workspace with a stranded `scheduled` row reaches
+   *  this at click time, so it must land in the designed settling state, not
+   *  a generic error surface. Matched by status + code, with the sentinel
+   *  message as fallback for responses parsed without a code. */
+  function isChangeInProgressRefusal(error: unknown): boolean {
+    if (!(error instanceof WorkspaceApiError) || error.status !== 409) {
+      return false
+    }
+    return (
+      error.code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS' ||
+      error.message.includes('subscription change is already in progress')
+    )
+  }
+
+  function isSettlingRefusal(error: unknown): boolean {
+    return (
+      isChangeInProgressRefusal(error) || isSettlingTransitionRefusal(error)
+    )
+  }
+
   /** Settling has a designed response only where the host renders the inline
    *  notice; every other host falls back to a calm toast so the refusal is
    *  never silent. */
@@ -519,9 +547,10 @@ export function useSubscriptionCheckout(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
-    let requiresRecovery =
+    const hasPaymentRecoveryCode =
       hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
+    let requiresRecovery = hasPaymentRecoveryCode
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
         requiresRecovery =
@@ -559,7 +588,10 @@ export function useSubscriptionCheckout(
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
-      showSubscribeError(portalError)
+      reportError(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
+      showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
       return 'failed'
     }
   }
@@ -1090,7 +1122,23 @@ export function useSubscriptionCheckout(
         error
       )
       activeCheckoutAttemptStartedAt = undefined
-      if (await recoverOutstandingPayment(error)) return
+      // The write hit the reservation gate: same designed response as the
+      // preview-path settling refusal - back to the pricing step with the
+      // inline notice, CTAs stay enabled, no generic error surface.
+      if (isChangeInProgressRefusal(error)) {
+        presentSettlingRefusal()
+        resetToPricing()
+        return
+      }
+      if (await recoverOutstandingPayment(error)) {
+        isPaymentSettling.value = false
+        return
+      }
+      if (isSettlingTransitionRefusal(error)) {
+        presentSettlingRefusal()
+        resetToPricing()
+        return
+      }
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
       showSubscribeError(error)
@@ -1532,7 +1580,21 @@ export function useSubscriptionCheckout(
         error
       )
       activeCheckoutAttemptStartedAt = undefined
-      if (await recoverOutstandingPayment(error)) return
+      // Same reservation-gate interception as handleSubscription above.
+      if (isChangeInProgressRefusal(error)) {
+        presentSettlingRefusal()
+        resetToPricing()
+        return
+      }
+      if (await recoverOutstandingPayment(error)) {
+        isPaymentSettling.value = false
+        return
+      }
+      if (isSettlingTransitionRefusal(error)) {
+        presentSettlingRefusal()
+        resetToPricing()
+        return
+      }
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
           teamCreditStopId: stop.id
@@ -1600,6 +1662,11 @@ export function useSubscriptionCheckout(
         payment_intent_source: paymentIntentSource,
         failure_category: categorizeBillingApiError(error)
       })
+      // Reservation-gate refusal: the designed settling notice, not a toast.
+      if (isSettlingRefusal(error)) {
+        presentSettlingRefusal()
+        return
+      }
       toast.add({
         severity: 'error',
         summary: 'Error',

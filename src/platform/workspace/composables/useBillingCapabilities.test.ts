@@ -18,7 +18,7 @@ const mockScope = vi.hoisted(() => ({
   role: 'owner' as 'owner' | 'member'
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   WorkspaceApiError: class WorkspaceApiError extends Error {
     constructor(
       message: string,
@@ -31,30 +31,33 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { getBillingCapabilities: mockGetBillingCapabilities }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockScope.workspaceId
-    },
-    get activeWorkspace() {
-      return mockScope.workspaceId
-        ? { id: mockScope.workspaceId, role: mockScope.role }
-        : null
-    }
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      get activeWorkspaceId() {
+        return mockScope.workspaceId
+      },
+      get activeWorkspace() {
+        return mockScope.workspaceId
+          ? { id: mockScope.workspaceId, role: mockScope.role }
+          : null
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
   useAuthStore: () => ({
     get currentUser() {
       return mockScope.authUid ? { uid: mockScope.authUid } : null
@@ -219,6 +222,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canInviteMembers.value).toBe(true)
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    expect(billingCapabilities.snapshotResolved.value).toBe(true)
   })
 
   it('applies denied server capabilities without client-side inference', async () => {
@@ -286,6 +290,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
+    expect(billingCapabilities.snapshotResolved.value).toBe(false)
     expect(mockReportError).toHaveBeenCalledOnce()
   })
 
@@ -313,7 +318,10 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
+    // Authoritative about the actor, but resolved no capability values: the
+    // pill for a resolved `can_subscribe_self_serve: false` must not render.
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    expect(billingCapabilities.snapshotResolved.value).toBe(false)
   })
 
   it('does not fail open when capability loading is aborted', async () => {
@@ -979,5 +987,99 @@ describe('useBillingCapabilities', () => {
 
     expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
+
+  it('reports the failed read, and clears it once a read succeeds', async () => {
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(true)
+
+    await billingCapabilities.retryCapabilityRead()
+
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+  })
+
+  it('does not report a denial as a failed read', async () => {
+    const { WorkspaceApiError } =
+      await import('@/platform/workspace/api/workspaceApi')
+    mockGetBillingCapabilities.mockRejectedValueOnce(
+      new WorkspaceApiError('Forbidden', 403)
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+  })
+
+  it('retryCapabilityRead refetches now instead of sitting out the backoff', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    // No timer advance: the user-initiated retry must not wait for retryAt.
+    await billingCapabilities.retryCapabilityRead()
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+
+    // The cancelled backoff timer must not fire a third read later.
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('coalesces rapid retries onto the read already in flight', async () => {
+    let resolveRetry!: (value: BillingCapabilitiesResponse) => void
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveRetry = resolve
+          })
+      )
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    // Two rapid clicks: the second must not abort the first and burst a
+    // fresh request — it settles on the read the first click issued.
+    const first = billingCapabilities.retryCapabilityRead()
+    const second = billingCapabilities.retryCapabilityRead()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    resolveRetry(capabilitiesResponse(true))
+    await Promise.all([first, second])
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.capabilityReadFailed.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+  })
+
+  it('a failed user retry does not inflate the automatic backoff', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    mockGetBillingCapabilities.mockRejectedValue(new Error('unavailable'))
+
+    // Two timed failures walk the ladder to the 60s rung.
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    // The user retry fails too — but it restarts the ladder, so the next
+    // automatic retry fires at the base 30s, not a doubled 120s.
+    await billingCapabilities.retryCapabilityRead()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(4)
   })
 })

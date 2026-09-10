@@ -2,13 +2,38 @@ import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json'
-import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingSubscriptionStatus,
+  Plan
+} from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+
+function apiPlan(
+  tier: Plan['tier'],
+  duration: Plan['duration'],
+  credits: number
+): Plan {
+  return {
+    availability: { available: true },
+    credits_cents: credits,
+    duration,
+    max_seats: 5,
+    price_cents: 2000,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 2000,
+      total_credits_cents: credits
+    },
+    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    tier
+  }
+}
 
 interface MockSubscription {
   tier: SubscriptionTier | null
@@ -29,7 +54,11 @@ const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockIsTeamPlan = ref(false)
 const mockCanManageSubscription = ref(true)
 const mockCanDowngradeToPersonal = ref(true)
-const mockCanChangeSeats = ref(true)
+const mockCanChangeSeats = ref<boolean | null>(null)
+const mockCapabilityReadFailed = ref(false)
+const mockSnapshotResolved = ref(true)
+const mockRetryCapabilityRead = vi.fn()
+const mockShouldUseWorkspaceBilling = ref(true)
 const mockRawCanReactivate = ref(true)
 const mockSnapshotAuthoritative = ref(true)
 const mockPermissions = ref({
@@ -38,10 +67,11 @@ const mockPermissions = ref({
   canDowngradeToPersonal: true
 })
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
-    plans: ref([]),
+    plans: computed(() => mockApiPlans.value),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
     fetchPlans: vi.fn(),
     isTeamPlan: computed(() => mockIsTeamPlan.value),
@@ -51,23 +81,57 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-    canReactivate: computed(() => mockRawCanReactivate.value),
-    canChangeSeats: computed(() => mockCanChangeSeats.value),
-    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
-    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => mockPermissions.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+      canReactivate: computed(() => mockRawCanReactivate.value),
+      canChangeSeats: computed(
+        () => mockCanChangeSeats.value ?? mockCanManageSubscription.value
+      ),
+      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
+      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value),
+      snapshotResolved: computed(() => mockSnapshotResolved.value),
+      capabilityReadFailed: computed(() => mockCapabilityReadFailed.value),
+      retryCapabilityRead: mockRetryCapabilityRead
+    })
+  })
+)
+
+const mockBuildSupportUrl = vi.hoisted(() =>
+  vi.fn(() => 'https://support.comfy.test/hc')
+)
+
+vi.mock<unknown>(import('@/platform/support/config'), () => ({
+  buildSupportUrl: mockBuildSupportUrl
+}))
+
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () => ({
+    userEmail: computed(() => 'alex@comfy.test'),
+    resolvedUserInfo: computed(() => ({ id: 'user-123' }))
   })
 }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => mockPermissions.value)
+    })
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -94,6 +158,10 @@ function renderComponent(props: Record<string, unknown> = {}) {
     }
   })
 }
+
+beforeEach(() => {
+  mockApiPlans.value = []
+})
 
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
@@ -547,9 +615,35 @@ describe('UnifiedPricingTable outside Cloud', () => {
   })
 })
 
-describe('UnifiedPricingTable settling notice', () => {
+const cycleToggleStub = {
+  props: ['options'],
+  emits: ['update:modelValue'],
+  template: `<div><button
+      v-for="option in options"
+      :key="option.value"
+      :data-testid="'cycle-' + option.value"
+      @click="$emit('update:modelValue', option.value)"
+    >{{ option.label }}</button></div>`
+}
+
+function renderWithCycleToggle(
+  props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
+) {
+  return render(UnifiedPricingTable, {
+    props,
+    global: {
+      plugins: [i18n],
+      components: { Button },
+      stubs: {
+        SelectButton: cycleToggleStub,
+        CreditSlider: { template: '<div />' }
+      }
+    }
+  })
+}
+
+describe('UnifiedPricingTable credit allotment copy', () => {
   beforeEach(() => {
-    mockRawCanReactivate.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -557,61 +651,59 @@ describe('UnifiedPricingTable settling notice', () => {
     mockIsTeamPlan.value = false
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true
-    mockPermissions.value = {
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: true,
-      canDowngradeToPersonal: true
-    }
     mockDistributionTypes.isCloud = true
   })
 
-  it('swaps the subtitle row for the settling notice in the same slot', () => {
-    renderComponent({ isPaymentSettling: true })
+  it('shows the catalog grant in preference to twelve static months', () => {
+    mockApiPlans.value = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
 
-    expect(
-      screen.getByText(
-        'Finishing up your last payment attempt — you can try again in a moment.'
-      )
-    ).toBeTruthy()
-    expect(
-      screen.queryByText(/Personal plans are for individual use only/)
-    ).toBeNull()
-  })
-
-  it('replaces the team subtitle too when the team tab is up', () => {
-    renderComponent({ isPaymentSettling: true, initialPlanMode: 'team' })
-
-    expect(
-      screen.getByText(
-        'Finishing up your last payment attempt — you can try again in a moment.'
-      )
-    ).toBeTruthy()
-    expect(screen.queryByText(/For teams wanting to collaborate/)).toBeNull()
-  })
-
-  it('keeps the plan CTAs enabled — the retry is the probe', async () => {
-    const user = userEvent.setup()
-    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
-
-    const { emitted } = renderComponent({ isPaymentSettling: true })
-
-    const cta = screen.getByRole('button', {
-      name: 'Subscribe to Creator Yearly'
-    })
-    expect(cta).toBeEnabled()
-    await user.click(cta)
-    expect(emitted().subscribe).toBeTruthy()
-  })
-
-  it('shows the normal subtitle while nothing is settling', () => {
     renderComponent()
 
-    expect(
-      screen.getByText(/Personal plans are for individual use only/)
-    ).toBeTruthy()
-    expect(
-      screen.queryByText(/Finishing up your last payment attempt/)
-    ).toBeNull()
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('50,400')).toBeNull()
+    expect(screen.getByText(/~5,429/)).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
+  })
+
+  it('states the whole-year allotment for personal tiers on the yearly cycle', () => {
+    renderWithCycleToggle()
+
+    expect(screen.getAllByText('credits per year')).toHaveLength(3)
+    expect(screen.queryAllByText('monthly credits')).toHaveLength(0)
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('253,200')).toBeTruthy()
+    expect(screen.queryByText('4,200')).toBeNull()
+    expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
+  })
+
+  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getAllByText('monthly credits')).toHaveLength(3)
+    expect(screen.queryAllByText('credits per year')).toHaveLength(0)
+    expect(screen.getByText('4,200')).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getByText('Generates ~380 5s videos*')).toBeTruthy()
+  })
+
+  it('scales the team allotment with the billing cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('credits per year')).toBeTruthy()
+    expect(screen.getByText('1,772,400')).toBeTruthy()
+    expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getByText('monthly credits')).toBeTruthy()
+    expect(screen.getByText('147,700')).toBeTruthy()
+    expect(screen.getByText('Generates ~13,405 5s videos*')).toBeTruthy()
   })
 })
 
@@ -769,5 +861,273 @@ describe('UnifiedPricingTable plan-scope availability', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+describe('UnifiedPricingTable footer notice pill', () => {
+  const SETTLING_TEXT =
+    'Finishing up your last payment attempt \u2014 you can try again in a moment.'
+  const UNREADABLE_TEXT = "We couldn't check your billing status."
+  const DENIED_TEXT =
+    "A subscription change is already in progress \u2014 you'll be able to subscribe again shortly."
+
+  beforeEach(() => {
+    mockRawCanReactivate.value = true
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockCapabilityReadFailed.value = false
+    mockShouldUseWorkspaceBilling.value = true
+    mockSnapshotResolved.value = true
+    mockCanChangeSeats.value = null
+    mockRetryCapabilityRead.mockClear()
+    mockBuildSupportUrl.mockClear()
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('carries the settling notice in the footer slot, as a status region', () => {
+    renderComponent({ isPaymentSettling: true })
+
+    const pill = screen.getByRole('status')
+    expect(pill.textContent).toContain(SETTLING_TEXT)
+    expect(pill.textContent).toContain('Contact support')
+    expect(screen.queryByText(/Based on this template/)).toBeNull()
+  })
+
+  it('keeps the subtitle row rendering the normal personal header', () => {
+    renderComponent({ isPaymentSettling: true })
+
+    expect(
+      screen.getByText(/Personal plans are for individual use only/)
+    ).toBeTruthy()
+  })
+
+  it('keeps the team subtitle up too while the notice is showing', () => {
+    renderComponent({ isPaymentSettling: true, initialPlanMode: 'team' })
+
+    expect(screen.getByRole('status').textContent).toContain(SETTLING_TEXT)
+    expect(screen.getByText(/For teams wanting to collaborate/)).toBeTruthy()
+  })
+
+  it('keeps the plan CTAs enabled \u2014 the retry is the probe', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
+
+    const { emitted } = renderComponent({ isPaymentSettling: true })
+
+    const cta = screen.getByRole('button', {
+      name: 'Subscribe to Creator Yearly'
+    })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribe).toBeTruthy()
+  })
+
+  it('shows the fine-print blurb while nothing is blocked', () => {
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+    expect(
+      screen.queryByText(new RegExp(SETTLING_TEXT.slice(0, 20)))
+    ).toBeNull()
+  })
+
+  it('shows the unreadable-snapshot notice when the capability read failed', () => {
+    mockCapabilityReadFailed.value = true
+    mockSnapshotResolved.value = false
+
+    renderComponent()
+
+    const pill = screen.getByRole('status')
+    expect(pill.textContent).toContain(UNREADABLE_TEXT)
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Contact support' })).toBeTruthy()
+  })
+
+  it('shows the change-in-progress notice when subscribing is denied', () => {
+    // A resolved snapshot that denies every lifecycle write: under the union
+    // gating (#16967) any single permitted write keeps the CTAs live, and the
+    // pill only renders once they are all disabled.
+    mockCanManageSubscription.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent()
+
+    expect(screen.getByRole('status').textContent).toContain(DENIED_TEXT)
+  })
+
+  it('ranks an unreadable snapshot above a denied capability above settling', async () => {
+    // A failed read leaves no resolved snapshot, and every capability reads
+    // false — the composable cannot produce readFailed alongside a resolved
+    // snapshot, so the stages below walk through reachable states only.
+    mockCapabilityReadFailed.value = true
+    mockSnapshotResolved.value = false
+    mockCanManageSubscription.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent({ isPaymentSettling: true })
+
+    expect(screen.getByRole('status').textContent).toContain(UNREADABLE_TEXT)
+    expect(screen.queryByText(new RegExp(DENIED_TEXT.slice(0, 20)))).toBeNull()
+
+    // The read recovers into a snapshot that resolves subscribing to false.
+    mockCapabilityReadFailed.value = false
+    mockSnapshotResolved.value = true
+    await nextTick()
+    expect(screen.getByRole('status').textContent).toContain(DENIED_TEXT)
+
+    mockCanManageSubscription.value = true
+    await nextTick()
+    expect(screen.getByRole('status').textContent).toContain(SETTLING_TEXT)
+  })
+
+  it('never shows the change-in-progress pill on the legacy billing rail', () => {
+    // legacy_stripe has no capability projection row: the server resolves
+    // every capability false permanently, so the change-in-progress copy
+    // would promise 20k paying customers a change that never completes. They
+    // keep the pre-pill rendering (disabled CTAs, fine-print blurb).
+    mockShouldUseWorkspaceBilling.value = false
+    mockCanManageSubscription.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeDisabled()
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+  })
+
+  it('keeps the fine print when the read is denied outright (401/403)', () => {
+    // A denial is authoritative but resolves no capability values, so every
+    // capability reads false without a resolved snapshot behind it. The
+    // change-in-progress pill would be a fabricated explanation here.
+    mockSnapshotResolved.value = false
+    mockCanManageSubscription.value = false
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+  })
+
+  it('suppresses the denied pill while a change CTA is still enabled', () => {
+    // can_subscribe_self_serve false with can_change_seats true: the pill
+    // saying subscribing is blocked must not sit beside an enabled Change CTA.
+    mockSubscription.value = { tier: 'STANDARD', duration: 'ANNUAL' }
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = true
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Change to Creator Yearly' })
+    ).toBeEnabled()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('shows the denied pill on the team plan only when its CTA is disabled', async () => {
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_2500',
+      credits_monthly: 527_500,
+      stop_usd: 2_500
+    }
+    mockIsTeamPlan.value = true
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = true
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    // Sitting on the current stop the CTA is disabled anyway; moving off it
+    // enables Change plan, and the pill must yield to it.
+    expect(screen.getByRole('status').textContent).toContain(DENIED_TEXT)
+
+    await userEvent.setup().click(screen.getByTestId('team-slider'))
+
+    expect(screen.getByRole('button', { name: 'Change plan' })).toBeEnabled()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('retries the capability read immediately from the Try again link', async () => {
+    const user = userEvent.setup()
+    mockCapabilityReadFailed.value = true
+
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(mockRetryCapabilityRead).toHaveBeenCalledOnce()
+  })
+
+  it('opens the support destination from the Contact support link', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent({ isPaymentSettling: true })
+
+    await user.click(screen.getByRole('button', { name: 'Contact support' }))
+
+    // Same identifying context as the Comfy.ContactSupport command, so the
+    // ticket arrives attached to the account it is about.
+    expect(mockBuildSupportUrl).toHaveBeenCalledWith({
+      userEmail: 'alex@comfy.test',
+      userId: 'user-123'
+    })
+    expect(open).toHaveBeenCalledWith(
+      'https://support.comfy.test/hc',
+      '_blank',
+      'noopener,noreferrer'
+    )
+    open.mockRestore()
+  })
+
+  it('hands focus to the footer region when the pill clears while focused', async () => {
+    const user = userEvent.setup()
+    mockCapabilityReadFailed.value = true
+    mockSnapshotResolved.value = false
+
+    renderComponent()
+
+    const tryAgain = screen.getByRole('button', { name: 'Try again' })
+    await user.click(tryAgain)
+    expect(tryAgain).toHaveFocus()
+
+    // The retry succeeds: the failed state clears and the pill unmounts while
+    // it still holds keyboard focus.
+    mockCapabilityReadFailed.value = false
+    mockSnapshotResolved.value = true
+    await nextTick()
+    await nextTick()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('pricing-table-footer')).toHaveFocus()
+  })
+
+  it('never shows the capability notices outside Cloud', () => {
+    mockDistributionTypes.isCloud = false
+    mockCapabilityReadFailed.value = true
+    mockCanManageSubscription.value = false
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
   })
 })

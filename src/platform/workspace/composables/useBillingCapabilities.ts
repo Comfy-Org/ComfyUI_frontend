@@ -142,6 +142,11 @@ function useBillingCapabilitiesInternal() {
     )
   })
 
+  // Narrower than `snapshotAuthoritative`: a denial (401/403) is authoritative
+  // about the actor but carries no capability values, so surfaces explaining a
+  // specific resolved `false` must not read a denial as that answer.
+  const snapshotResolved = computed(() => capabilities.value !== null)
+
   function clearRefreshTimer(): void {
     if (refreshTimer === null) return
     clearTimeout(refreshTimer)
@@ -404,6 +409,24 @@ function useBillingCapabilitiesInternal() {
     await initialize()
   }
 
+  /**
+   * Refetches the snapshot now, skipping the backoff wait: cancels the
+   * scheduled retry timer, then issues a fresh read. This is the
+   * user-initiated escape hatch from an unreadable endpoint — the timed
+   * retry can otherwise sit out the rest of a 30–60s (or longer) backoff.
+   *
+   * A read already in flight IS the retry: only the timer is cancelled, and
+   * `fetchCapabilities` dedupes onto the active read, so rapid retries
+   * coalesce into one request instead of aborting each other.
+   */
+  async function retryCapabilityRead(): Promise<void> {
+    clearRefreshTimer()
+    // A user-initiated attempt restarts the backoff ladder: its failure must
+    // not double the automatic retry loop further toward the 5-minute cap.
+    readFailures = 0
+    await fetchCapabilities()
+  }
+
   watch(
     [
       () => authStore.currentUser?.uid,
@@ -427,8 +450,14 @@ function useBillingCapabilitiesInternal() {
     canDowngradeToPersonal,
     isReady,
     snapshotAuthoritative,
+    snapshotResolved,
+    /** The capability read for the current scope is in its failure state: the
+     *  snapshot could not be read, affordances are failing closed, and a
+     *  backed-off retry is pending. */
+    capabilityReadFailed: readUnavailableForCurrentScope,
     initialize,
-    refresh
+    refresh,
+    retryCapabilityRead
   }
 }
 

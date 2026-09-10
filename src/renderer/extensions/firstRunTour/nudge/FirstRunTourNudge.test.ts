@@ -23,7 +23,7 @@ const mocks = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('../tour/useFirstRunTourController', () => ({
+vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
     tourWasCompleted: mocks.tourWasCompleted,
@@ -31,7 +31,7 @@ vi.mock('../tour/useFirstRunTourController', () => ({
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
+vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
   useDialogStore: () => ({
     get dialogStack() {
       return mocks.openDialogs.value
@@ -39,11 +39,14 @@ vi.mock('@/stores/dialogStore', () => ({
   })
 }))
 
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
-}))
+vi.mock<unknown>(
+  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  () => ({
+    useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
+  })
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: mocks.trackOnboardingTour })
 }))
 

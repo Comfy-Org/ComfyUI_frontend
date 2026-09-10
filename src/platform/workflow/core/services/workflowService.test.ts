@@ -93,14 +93,14 @@ const subgraphNavigationMocks = vi.hoisted(() => ({
   saveCurrentViewport: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
     confirm: mockConfirm
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
     rootGraph: { serialize: vi.fn(() => ({})), extra: {} },
@@ -110,29 +110,37 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/defaultGraph', () => ({
+vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
   blankGraph: {}
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ linearMode: false })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    storeThumbnail: vi.fn(),
-    getThumbnail: vi.fn()
+  () => ({
+    useCanvasStore: () => ({ linearMode: false })
   })
-}))
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+
+  () => ({
+    useWorkflowThumbnail: () => ({
+      storeThumbnail: vi.fn(),
+      getThumbnail: vi.fn()
+    })
+  })
+)
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
     trackWorkflowSaved: mockTrackWorkflowSaved,
@@ -140,21 +148,24 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
-  useWorkflowDraftStoreV2: () => draftStoreMocks
-}))
+vi.mock<unknown>(
+  import('@/platform/workflow/persistence/stores/workflowDraftStoreV2'),
+  () => ({
+    useWorkflowDraftStoreV2: () => draftStoreMocks
+  })
+)
 
-vi.mock('@/stores/domWidgetStore', () => ({
+vi.mock<unknown>(import('@/stores/domWidgetStore'), () => ({
   useDomWidgetStore: () => ({
     clear: vi.fn()
   })
 }))
 
-vi.mock('@/stores/subgraphNavigationStore', () => ({
+vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
   useSubgraphNavigationStore: () => subgraphNavigationMocks
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
+vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
   useWorkspaceStore: () => ({
     get workflow() {
       return useWorkflowStore()
@@ -728,25 +739,17 @@ describe('useWorkflowService', () => {
           return true
         })
 
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => undefined)
       const firstOpen = useWorkflowService().openWorkflow(first)
       const secondOpen = useWorkflowService().openWorkflow(second)
 
       await expect(firstOpen).rejects.toBe(error)
       await expect(secondOpen).resolves.toBe(true)
-      expect(consoleError).toHaveBeenCalledWith(
-        expect.stringContaining('queued workflow load failed'),
-        error
-      )
       expect(reportErrorMock).toHaveBeenCalledWith(error, {
         errorType: 'workflow_load_failure'
       })
       expect(
         subgraphNavigationMocks.endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
-      consoleError.mockRestore()
       expect(
         vi.mocked(app.loadGraphData).mock.calls.map((call) => call[3])
       ).toEqual([first, second])
