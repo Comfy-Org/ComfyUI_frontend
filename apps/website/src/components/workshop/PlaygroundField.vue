@@ -17,7 +17,6 @@ import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FileSourceInput from './FileSourceInput.vue'
-import ImageSourcePreview from './ImageSourcePreview.vue'
 
 const {
   field,
@@ -123,12 +122,6 @@ const selectedFiles = computed({
   },
   set
 })
-const imageUrl = computed(() => {
-  if (field.presentation?.imageSource !== 'url') return undefined
-  const value = stringValue()
-  if (!isHttpImageSource(value)) return undefined
-  return value
-})
 const uploadField = computed(() => {
   const upload = urlUploadField(field)
   return upload ? { ...upload, name: `${field.name}-upload` } : undefined
@@ -213,7 +206,7 @@ function booleanValue(fallback = false): boolean {
       <div class="flex items-baseline justify-between gap-3">
         <div class="flex items-center gap-2">
           <label
-            :for="`field-${field.name}`"
+            :for="`field-${uploadField?.name ?? field.name}`"
             class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
           >
             {{ field.label }}
@@ -254,8 +247,17 @@ function booleanValue(fallback = false): boolean {
       </p>
     </div>
 
+    <FileSourceInput
+      v-if="uploadField"
+      v-model="selectedFiles"
+      :field="uploadField"
+      :locale
+      :disabled
+      :invalid="invalid()"
+      :described-by="describedBy"
+    />
     <textarea
-      v-if="field.kind === 'text' && field.multiline"
+      v-else-if="field.kind === 'text' && field.multiline"
       :id="`field-${field.name}`"
       :value="stringValue()"
       :placeholder="field.placeholder"
@@ -271,17 +273,9 @@ function booleanValue(fallback = false): boolean {
     <input
       v-else-if="field.kind === 'text'"
       :id="`field-${field.name}`"
-      :type="
-        uploadField || field.presentation?.imageSource === 'url'
-          ? 'url'
-          : 'text'
-      "
+      type="text"
       :value="stringValue()"
-      :placeholder="
-        uploadField || field.presentation?.imageSource === 'url'
-          ? 'https://…'
-          : field.placeholder
-      "
+      :placeholder="field.placeholder"
       :minlength="field.minLength"
       :list="
         field.suggestions?.length ? `suggestions-${field.name}` : undefined
@@ -436,25 +430,8 @@ function booleanValue(fallback = false): boolean {
       :invalid="invalid()"
       :described-by="describedBy"
     />
-    <ImageSourcePreview
-      v-if="imageUrl && !uploadField"
-      :key="imageUrl"
-      :src="imageUrl"
-      :name="field.label"
-      :locale
-    />
-    <FileSourceInput
-      v-if="uploadField"
-      v-model="selectedFiles"
-      :field="uploadField"
-      :locale
-      :disabled
-      :invalid="invalid()"
-      :described-by="describedBy"
-    />
-
     <datalist
-      v-if="field.kind === 'text' && field.suggestions?.length"
+      v-if="!uploadField && field.kind === 'text' && field.suggestions?.length"
       :id="`suggestions-${field.name}`"
     >
       <option
@@ -471,14 +448,7 @@ function booleanValue(fallback = false): boolean {
       role="alert"
       :data-testid="`error-${field.name}`"
     >
-      {{
-        t(
-          fieldError === 'rejected' && field.presentation?.imageSource === 'url'
-            ? 'workshop.field.imageUrlRequired'
-            : errorKey[fieldError],
-          locale
-        )
-      }}
+      {{ t(errorKey[fieldError], locale) }}
     </p>
   </div>
 </template>

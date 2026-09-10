@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import type { FieldSchema, FormValues } from '../../config/workshop-playground'
+import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
+import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
 import {
   defaultValues,
   MAX_UPLOAD_BYTES
@@ -38,6 +40,79 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it.for<{
+    media: NonNullable<WorkshopInputDefinition['urlUpload']>
+    name: string
+    type: string
+    multiline: boolean
+  }>([
+    { media: 'image', name: 'source.png', type: 'image/png', multiline: false },
+    { media: 'video', name: 'source.mp4', type: 'video/mp4', multiline: true },
+    {
+      media: 'audio',
+      name: 'source.mp3',
+      type: 'audio/mpeg',
+      multiline: false
+    },
+    {
+      media: 'image-or-video',
+      name: 'source.webm',
+      type: 'video/webm',
+      multiline: false
+    },
+    {
+      media: 'file',
+      name: 'scene.fbx',
+      type: 'application/octet-stream',
+      multiline: false
+    }
+  ])(
+    'offers uploads only for $media while retaining the example URL',
+    async ({ media, name, type, multiline }) => {
+      const field: FieldSchema = {
+        kind: 'text',
+        name: 'source',
+        label: 'Source',
+        required: true,
+        multiline,
+        presentation: {
+          label: 'Source',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-box',
+          urlUpload: media
+        }
+      }
+      const url = `https://example.com/${name}`
+      const values = mountField(field, { source: url })
+      const upload = vi.fn(async () => `https://storage.example/${name}`)
+      const signal = new AbortController().signal
+      expect(screen.queryByRole('textbox', { hidden: true })).toBeNull()
+      expect(
+        screen.getByRole('button', { name: `Replace ${name}` })
+      ).toBeTruthy()
+      expect(
+        await resolveWorkshopUrlInputs([field], values.value, signal, upload)
+      ).toEqual({ source: url })
+      expect(values.value.source).toBe(url)
+      expect(upload).not.toHaveBeenCalled()
+
+      const file = new File(['source bytes'], name, { type })
+      await userEvent
+        .setup()
+        .upload(
+          screen.getByLabelText('Source', { selector: 'input[type="file"]' }),
+          file
+        )
+      expect(values.value.source).toMatchObject({ file, name, type })
+      expect(
+        await resolveWorkshopUrlInputs([field], values.value, signal, upload)
+      ).toEqual({ source: `https://storage.example/${name}` })
+      expect(upload).toHaveBeenCalledWith(file, signal)
+    }
+  )
+
   it('shows a playable source video when an example URL is prefilled', () => {
     mountField(
       {
@@ -98,13 +173,7 @@ describe('PlaygroundField', () => {
     await user.click(slot.getByRole('button', { name: 'Remove start.png' }))
     expect(values.value.image_url).toBeUndefined()
     expect(slot.queryByRole('img')).toBeNull()
-    await user.type(
-      screen.getByTestId('field-image_url'),
-      'https://example.com/another.png'
-    )
-    expect(slot.getByRole('img').getAttribute('src')).toBe(
-      'https://example.com/another.png'
-    )
+    expect(screen.queryByRole('textbox', { hidden: true })).toBeNull()
     const file = new File(['image'], 'replacement.png', { type: 'image/png' })
     await user.upload(
       slot.getByLabelText('Source image', { selector: 'input[type="file"]' }),
@@ -151,9 +220,9 @@ describe('PlaygroundField', () => {
     expect(await stored.file?.text()).toBe('FBX fixture bytes')
   })
 
-  it('shows URL image previews and inline validation without offering a fake upload', async () => {
-    const user = userEvent.setup()
-    const values = mountField({
+  it('supports uploads for image URL definitions without separate upload metadata', async () => {
+    const user = userEvent.setup({ applyAccept: false })
+    const field: FieldSchema = {
       kind: 'text',
       name: 'image',
       label: 'Image to upscale',
@@ -168,68 +237,60 @@ describe('PlaygroundField', () => {
         control: 'text-box',
         imageSource: 'url'
       }
+    }
+    const values = mountField(field, { image: 'https://example.com/image.png' })
+    const input = screen.getByLabelText('Image to upscale', {
+      selector: 'input[type="file"]'
     })
-    const input = screen.getByRole('textbox', { name: 'Image to upscale' })
-    await user.type(input, 'https://')
-    expect(screen.getByRole('alert').textContent).toContain(
-      'Enter a complete http:// or https:// image URL.'
-    )
-    expect(screen.queryByRole('img')).toBeNull()
-    await user.type(input, 'example.com/image.png')
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('textbox', { hidden: true })).toBeNull()
     expect(
-      screen.getByRole('img', { name: 'Image to upscale' }).getAttribute('src')
+      screen.getByRole('img', { name: 'image.png' }).getAttribute('src')
     ).toBe('https://example.com/image.png')
-    expect(values.value.image).toBe('https://example.com/image.png')
-    expect(screen.queryByText('Choose images or drop them here')).toBeNull()
-    await user.clear(input)
-    expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByRole('alert').textContent).toContain('required')
-  })
-
-  it('lets an upload-capable URL field switch between a URL and a local file without stale values', async () => {
-    const user = userEvent.setup()
-    const values = mountField({
-      kind: 'text',
-      name: 'image',
-      label: 'Source image',
-      required: true,
-      multiline: false,
-      inputSchema: { type: 'string', format: 'http-image-url' },
-      presentation: {
-        label: 'Source image',
-        help: '',
-        hidden: false,
-        advanced: false,
-        control: 'text-box',
-        imageSource: 'url',
-        urlUpload: 'image'
-      }
-    })
-    const url = screen.getByRole('textbox', { name: 'Source image' })
-    await user.type(url, 'https://example.com/first.png')
-    const file = new File(['bytes'], 'local.png', { type: 'image/png' })
     await user.upload(
-      screen.getByLabelText('Source image', { selector: 'input[type="file"]' }),
-      file
+      input,
+      new File(['video'], 'video.mp4', { type: 'video/mp4' })
     )
+    expect(screen.getByRole('alert')).toBeTruthy()
+    expect(values.value.image).toBe('https://example.com/image.png')
+
+    const file = new File(['bytes'], 'local.png', { type: 'image/png' })
+    await user.upload(input, file)
     expect(values.value.image).toMatchObject({ name: 'local.png', file })
     expect(screen.queryByRole('alert')).toBeNull()
     expect(
       screen.getByRole('button', { name: 'Replace local.png' })
     ).toBeTruthy()
-    await user.type(url, 'https://example.com/second.png')
-    expect(values.value.image).toBe('https://example.com/second.png')
+    const upload = vi.fn(async () => 'https://storage.example/local.png')
     expect(
-      screen.queryByRole('button', { name: 'Replace local.png' })
-    ).toBeNull()
-    await user.upload(
-      screen.getByLabelText('Source image', { selector: 'input[type="file"]' }),
-      file
-    )
+      await resolveWorkshopUrlInputs(
+        [field],
+        values.value,
+        new AbortController().signal,
+        upload
+      )
+    ).toEqual({ image: 'https://storage.example/local.png' })
     await user.click(screen.getByRole('button', { name: 'Remove local.png' }))
     expect(values.value.image).toBeUndefined()
+    expect(screen.queryByRole('img')).toBeNull()
     expect(screen.getByRole('alert').textContent).toContain('required')
+  })
+
+  it('keeps non-media text fields editable, including values containing URLs', async () => {
+    const values = mountField({
+      kind: 'text',
+      name: 'website',
+      label: 'Website',
+      required: false,
+      multiline: false
+    })
+    await userEvent
+      .setup()
+      .type(
+        screen.getByRole('textbox', { name: 'Website' }),
+        'https://example.com'
+      )
+    expect(values.value.website).toBe('https://example.com')
+    expect(screen.queryByRole('group')).toBeNull()
   })
 
   it('shows specialist guidance inline without a help popup', () => {
