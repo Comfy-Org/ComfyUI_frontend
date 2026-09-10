@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
@@ -13,15 +12,17 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => undefined
 }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -32,7 +33,7 @@ function jsonResponse(status: number, body: unknown): Response {
 
 const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
 
-vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
+vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
   const { defineComponent, h, onUnmounted } = await import('vue')
   return {
     __esModule: true,
@@ -63,7 +64,6 @@ function renderPanel() {
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))

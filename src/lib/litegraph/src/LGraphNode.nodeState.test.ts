@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -15,10 +13,6 @@ import { NodeOutputSlot } from './node/NodeOutputSlot'
 import { createTestSubgraph } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LGraphNode node-data adoption', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addNodeToSubgraph() {
     const subgraph = createTestSubgraph()
     const node = new LGraphNode('Node')

@@ -37,7 +37,7 @@ test.describe(
         .toBe('true')
     })
 
-    test('persists open and closed state and exposes pressed state', async ({
+    test('persists open and closed state and hides the entry button while open', async ({
       page
     }) => {
       await bootAgentApp(page, true)
@@ -45,10 +45,12 @@ test.describe(
       const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
       const panel = page.getByTestId('docked-agent-panel')
 
-      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
+      await expect(openButton).toBeVisible()
       await openButton.click()
       await expect(panel).toBeVisible()
-      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
+      await expect(
+        page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      ).toHaveCount(0)
       await expect
         .poll(() =>
           page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
@@ -57,7 +59,9 @@ test.describe(
 
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(panel).toHaveCount(0)
-      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
+      await expect(
+        page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      ).toBeVisible()
       await expect
         .poll(() =>
           page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
@@ -88,7 +92,7 @@ test.describe(
         .getByRole('button', { name: enMessages.g.close })
         .press('Enter')
       await expect(panel).toHaveCount(0)
-      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
+      await expect(openButton).toBeVisible()
     })
 
     test('keeps the dock within the viewport and its documented width cap', async ({
@@ -133,7 +137,7 @@ test.describe(
       await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveAttribute('aria-pressed', 'true')
+      ).toHaveCount(0)
     })
 
     test('keeps one Agent panel mounted while switching workflow tabs', async ({

@@ -1,5 +1,6 @@
+import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
@@ -19,36 +20,29 @@ function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
-  authHeader: null as { Authorization: string } | null
+  authHeader: null as { Authorization: `Bearer ${string}` } | null
 }))
 
-vi.mock('axios', () => ({
-  default: {
-    get: vi.fn()
+vi.mock(import('axios'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    default: Object.assign(actual.default, { get: vi.fn() })
   }
+})
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn())
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockCloudAuth.isCloud
   }
 }))
-
-vi.mock('@/stores/authStore', async () => {
-  return {
-    useAuthStore: vi.fn(() => ({
-      getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
-    }))
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', async () => {
-  return {
-    useSettingStore: () => ({
-      settings: {}
-    })
-  }
-})
 
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
@@ -100,6 +94,12 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
   await responsePromise
   return hook.getCachedValue()
 }
+
+beforeEach(() => {
+  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(
+    async () => mockCloudAuth.authHeader
+  )
+})
 
 describe('useRemoteWidget', () => {
   describe('initialization', () => {

@@ -84,7 +84,6 @@ test.describe(
     test('empty canvas click clears Ctrl+A selection and hides the toolbox', async ({
       comfyPage
     }) => {
-      await comfyPage.canvasOps.click({ x: 100, y: 100 })
       await comfyPage.keyboard.selectAll()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
       await expect(comfyPage.selectionToolbox).toBeVisible()
