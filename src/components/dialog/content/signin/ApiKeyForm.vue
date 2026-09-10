@@ -18,17 +18,12 @@
       </div>
     </div>
 
-    <Form
-      v-slot="$form"
-      class="flex flex-col gap-6"
-      :resolver="zodResolver(apiKeySchema)"
-      @submit="onSubmit"
-    >
-      <Message v-if="$form.apiKey?.invalid" severity="error" class="mb-4">
-        {{ $form.apiKey.error.message }}
+    <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
+      <Message v-if="apiKeyError" severity="error" class="mb-4">
+        <span :id="apiKeyErrorId">{{ apiKeyError }}</span>
       </Message>
 
-      <FormField v-slot="$field" name="apiKey" class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2">
         <label
           class="mb-2 text-base font-medium opacity-80"
           for="comfy-org-api-key"
@@ -37,13 +32,16 @@
         </label>
         <div class="flex flex-col gap-2">
           <Input
-            v-bind="$field.props"
             id="comfy-org-api-key"
+            :model-value="apiKey"
+            name="apiKey"
             autocomplete="off"
             class="h-10"
             type="password"
             :placeholder="t('auth.apiKey.placeholder')"
-            :aria-invalid="$field.invalid"
+            :aria-invalid="Boolean(apiKeyError)"
+            :aria-describedby="apiKeyError ? apiKeyErrorId : undefined"
+            @update:model-value="updateApiKey"
           />
           <small class="text-muted">
             {{ t('auth.apiKey.helpText') }}
@@ -64,7 +62,7 @@
             </a>
           </small>
         </div>
-      </FormField>
+      </div>
 
       <div class="mt-4 flex items-center justify-between">
         <Button type="button" variant="textonly" @click="$emit('back')">
@@ -79,15 +77,12 @@
           {{ t('g.save') }}
         </Button>
       </div>
-    </Form>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form, FormField } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -101,6 +96,7 @@ import {
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { getZodFieldErrors } from '@/utils/zodFieldErrors'
 
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
@@ -114,16 +110,35 @@ const comfyPlatformBaseUrl = computed(() =>
 )
 
 const { t } = useI18n()
+const apiKey = ref('')
+const apiKeyError = ref<string>()
+const apiKeyErrorId = 'comfy-org-api-key-error'
 
 const emit = defineEmits<{
   (e: 'back'): void
   (e: 'success'): void
 }>()
 
-const onSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    await apiKeyStore.storeApiKey(event.values.apiKey)
-    emit('success')
+function validateApiKey() {
+  const result = apiKeySchema.safeParse({ apiKey: apiKey.value })
+  apiKeyError.value = result.success
+    ? undefined
+    : getZodFieldErrors(result.error).apiKey
+}
+
+function updateApiKey(value: string | number | undefined) {
+  apiKey.value = String(value ?? '')
+  validateApiKey()
+}
+
+async function onSubmit() {
+  const result = apiKeySchema.safeParse({ apiKey: apiKey.value })
+  if (!result.success) {
+    apiKeyError.value = getZodFieldErrors(result.error).apiKey
+    return
   }
+
+  await apiKeyStore.storeApiKey(result.data.apiKey)
+  emit('success')
 }
 </script>
