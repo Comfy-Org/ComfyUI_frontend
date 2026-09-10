@@ -256,23 +256,14 @@ describe('useSubscription', () => {
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,
         has_funds: true,
-        renewal_date: '2025-11-16T12:00:00Z'
+        renewal_date: '2025-11-16T12:00:00'
       })
 
       mockIsLoggedIn.value = true
       const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
-      // The date format may vary based on timezone, so we just check it's a valid date string
-      expect(formattedRenewalDate.value).toMatch(/^[A-Za-z]{3} \d{1,2}, \d{4}$/)
-      expect(formattedRenewalDate.value).toContain('2025')
-      expect(formattedRenewalDate.value).toContain('Nov')
-    })
-
-    it('should return empty string when renewal date is not available', () => {
-      const { formattedRenewalDate } = useSubscriptionWithScope()
-
-      expect(formattedRenewalDate.value).toBe('')
+      expect(formattedRenewalDate.value).toBe('Nov 16, 2025')
     })
 
     it('should return subscription tier from status', async () => {
@@ -290,10 +281,50 @@ describe('useSubscription', () => {
       expect(subscriptionTier.value).toBe('CREATOR')
     })
 
-    it('should return null when subscription tier is not available', () => {
-      const { subscriptionTier } = useSubscriptionWithScope()
+    it('clears plan details when a refreshed status has no subscription', async () => {
+      mockGetBillingStatus
+        .mockResolvedValueOnce({
+          is_active: true,
+          has_funds: false,
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'ANNUAL',
+          renewal_date: '2025-11-16T12:00:00',
+          cancel_at: '2025-12-01T12:00:00'
+        })
+        .mockResolvedValueOnce({ is_active: false, has_funds: true })
 
+      const {
+        fetchStatus,
+        subscriptionStatus,
+        subscriptionTier,
+        subscriptionDuration,
+        isYearlySubscription,
+        formattedRenewalDate,
+        isCancelled,
+        formattedEndDate
+      } = useSubscriptionWithScope()
+
+      await fetchStatus()
+
+      expect(subscriptionTier.value).toBe('CREATOR')
+      expect(subscriptionDuration.value).toBe('ANNUAL')
+      expect(isYearlySubscription.value).toBe(true)
+      expect(formattedRenewalDate.value).toBe('Nov 16, 2025')
+      expect(isCancelled.value).toBe(true)
+      expect(formattedEndDate.value).toBe('Dec 1, 2025')
+
+      await fetchStatus()
+
+      expect(subscriptionStatus.value).toMatchObject({
+        is_active: false,
+        has_funds: true
+      })
       expect(subscriptionTier.value).toBeNull()
+      expect(subscriptionDuration.value).toBeNull()
+      expect(isYearlySubscription.value).toBe(false)
+      expect(formattedRenewalDate.value).toBe('')
+      expect(isCancelled.value).toBe(false)
+      expect(formattedEndDate.value).toBe('')
     })
 
     it('derives cancellation state and end date from cancel_at', async () => {
@@ -313,24 +344,6 @@ describe('useSubscription', () => {
   })
 
   describe('fetchStatus', () => {
-    it('should fetch subscription status successfully', async () => {
-      const mockStatus = {
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-11-16',
-        team_credit_stop: null
-      }
-
-      mockGetBillingStatus.mockResolvedValue(mockStatus)
-
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await fetchStatus()
-
-      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
-    })
-
     it('should handle fetch errors gracefully', async () => {
       mockGetBillingStatus.mockRejectedValue(
         new Error('Subscription not found')
