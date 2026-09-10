@@ -44,7 +44,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 // eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { createAgentLayoutPort } from '@/renderer/core/layout/agentLayoutPort'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -174,44 +174,7 @@ const graphMutations = (workflowId: string) => {
           }
         : null
     },
-    layout: {
-      createNode(scope, nodeId, layout, context) {
-        const { position, size } = layout
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
-      }
-    }
+    layout: createAgentLayoutPort()
   })
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations
