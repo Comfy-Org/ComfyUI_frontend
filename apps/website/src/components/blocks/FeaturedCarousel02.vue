@@ -293,10 +293,10 @@ useCarouselAutoplay({
       </div>
 
       <div v-if="slides.length > 1" class="mt-6 flex justify-center">
-        <div class="relative flex h-8 w-60 items-center">
+        <div class="group/pagination relative flex h-8 w-60 items-center">
           <div
             aria-hidden="true"
-            class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary-warm-gray/60"
+            class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary-warm-gray/60 transition-[height] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2"
           />
           <button
             v-for="(slide, index) in slides"
@@ -311,7 +311,7 @@ useCarouselAutoplay({
               aria-hidden="true"
               :class="
                 cn(
-                  'absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full transition-colors duration-300',
+                  'absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full transition-[height,background-color] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2',
                   index === activeIndex
                     ? 'bg-primary-comfy-yellow shadow-[0_0_8px_rgba(255,232,49,0.5)]'
                     : 'group-hover:bg-primary-warm-white/30'
