@@ -70,7 +70,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PasswordRules from '@comfyorg/account/PasswordRules.vue'
+import { PasswordRules } from '@comfyorg/account/vue'
 
 const { fieldClass = 'h-10' } = defineProps<{
   fieldClass?: HTMLAttributes['class']

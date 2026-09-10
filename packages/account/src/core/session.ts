@@ -19,20 +19,18 @@
  */
 import { z } from 'zod'
 
-import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
+import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+
+import type { AccountIdentity } from './identity.js'
+import { isAccountIdentity } from './identity.js'
 
 export interface AccountUser {
   readonly uid: string
   getIdToken: () => Promise<string>
 }
 
-const CredentialResponseSchema = z.object({
-  token: z.string(),
-  expires_at: z.string(),
-  workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
-  role: zWorkspaceWithRole.shape.role,
-  permissions: z.array(z.string())
-})
+/** The generated contract for POST /api/auth/token, never a local copy of it. */
+const CredentialResponseSchema = zExchangeTokenResponse
 
 const CachedCredentialSchema = CredentialResponseSchema.omit({
   expires_at: true
@@ -117,8 +115,9 @@ export type SessionFailure = Extract<SessionResult, { status: 'error' }>
 
 /**
  * The identity boundary. An internal port, not a host adapter: real hosts
- * get their implementation from `@comfyorg/account/firebase`; tests pass
- * fakes.
+ * get their implementation from `@comfyorg/account/firebase`; tests brand a
+ * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
+ * the branded form.
  */
 export interface IdentityPort<TUser extends AccountUser = AccountUser> {
   onUserChanged: (callback: (user: TUser | null) => void) => () => void
@@ -222,27 +221,36 @@ export interface SessionClientOptions extends SessionRequestOptions {
   readonly refreshScheduler?: RefreshSchedulerOptions
 }
 
+/**
+ * `settled` is false until the attached identity has delivered at least
+ * once, so a host can tell "Firebase has not answered yet" from "nobody is
+ * signed in" without wrapping the port.
+ */
 export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
   | {
       readonly phase: 'signed-out'
       readonly user: null
       readonly session: undefined
+      readonly settled: boolean
     }
   | {
       readonly phase: 'minting'
       readonly user: TUser
       readonly session: undefined
+      readonly settled: true
     }
   | {
       readonly phase: 'authenticated'
       readonly user: TUser
       readonly session: AccountCredential
+      readonly settled: true
     }
   | {
       readonly phase: 'error'
       readonly user: TUser
       readonly session: undefined
       readonly failure: SessionFailure
+      readonly settled: true
     }
 
 export interface AttachIdentityOptions {
@@ -255,7 +263,7 @@ export interface AttachIdentityOptions {
 
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
   attachIdentity: (
-    identity: IdentityPort<TUser>,
+    identity: AccountIdentity<TUser>,
     options?: AttachIdentityOptions
   ) => () => void
   getSnapshot: () => SessionSnapshot<TUser>
@@ -358,6 +366,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   } = clientOptions
 
   let currentUser: TUser | null = null
+  let identitySettled = false
   let credential: AccountCredential | undefined
   let credentialTarget: string | undefined
   let failure: SessionFailure | undefined
@@ -386,15 +395,36 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
-      return { phase: 'signed-out', user: null, session: undefined }
+      return {
+        phase: 'signed-out',
+        user: null,
+        session: undefined,
+        settled: identitySettled
+      }
     }
     if (credential) {
-      return { phase: 'authenticated', user: currentUser, session: credential }
+      return {
+        phase: 'authenticated',
+        user: currentUser,
+        session: credential,
+        settled: true
+      }
     }
     if (failure) {
-      return { phase: 'error', user: currentUser, session: undefined, failure }
+      return {
+        phase: 'error',
+        user: currentUser,
+        session: undefined,
+        failure,
+        settled: true
+      }
     }
-    return { phase: 'minting', user: currentUser, session: undefined }
+    return {
+      phase: 'minting',
+      user: currentUser,
+      session: undefined,
+      settled: true
+    }
   }
 
   function publish(): void {
@@ -636,22 +666,30 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
     const target = options.workspaceId ?? clientOptions.workspaceId
-    // Storage first (it survives a reload), then the published credential:
-    // a host whose storage is blocked or full must not pay a full exchange
-    // on every read. Only a credential minted for this exact target counts:
-    // a target-less read must never adopt a team-scoped session, or the
-    // next scheduled refresh would quietly re-mint it as personal.
+    // The first FRESH credential wins, storage before memory: a stale stored
+    // record (a write that failed after a later mint) must not shadow the
+    // live one, and a host whose storage is blocked must not pay a full
+    // exchange on every read. Only a credential minted for this exact
+    // target counts: a target-less read must never adopt a team-scoped
+    // session, or the next scheduled refresh would quietly re-mint it as
+    // personal.
     const stored = readCached(user.uid)
-    const cached =
+    const fresh = [
       stored !== undefined && stored.target === target
         ? stored.credential
-        : credential?.uid === user.uid && credentialTarget === target
-          ? credential
-          : undefined
-    if (cached && isCredentialFresh(cached, now, freshMarginMs)) {
+        : undefined,
+      credential?.uid === user.uid && credentialTarget === target
+        ? credential
+        : undefined
+    ].find(
+      (candidate) =>
+        candidate !== undefined &&
+        isCredentialFresh(candidate, now, freshMarginMs)
+    )
+    if (fresh) {
       return {
         mintId: mintSequence,
-        response: Promise.resolve({ status: 'ok', session: cached })
+        response: Promise.resolve({ status: 'ok', session: fresh })
       }
     }
     return sharedMint(user, options, false)
@@ -1003,6 +1041,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
   return {
     attachIdentity(identity, attachOptions) {
+      if (!isAccountIdentity(identity)) {
+        throw new Error(
+          'attachIdentity needs the identity from @comfyorg/account/firebase (or /testing)'
+        )
+      }
       detachCurrent?.()
       let active = true
       const unsubscribe = identity.onUserChanged((next) => {
@@ -1011,6 +1054,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         stopScheduledRefresh()
         teardownCoordination()
         clearExpiry()
+        identitySettled = true
         currentUser = next
         credential = undefined
         credentialTarget = undefined
@@ -1035,6 +1079,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         teardownCoordination()
         clearExpiry()
         currentUser = null
+        identitySettled = false
         credential = undefined
         credentialTarget = undefined
         failure = undefined
