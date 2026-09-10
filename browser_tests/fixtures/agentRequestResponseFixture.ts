@@ -15,13 +15,13 @@ export class AgentRequestResponseQueue {
   ) {}
 
   take(request: PostMessageInput): readonly AgentResponseStep[] {
-    const scenario = this.scenarios[this.nextScenarioIndex]
     const requestNumber = this.nextScenarioIndex + 1
-    if (!scenario) {
+    if (this.nextScenarioIndex >= this.scenarios.length) {
       throw new Error(
         `Unexpected agent request ${requestNumber}: no scenarios remain`
       )
     }
+    const scenario = this.scenarios[this.nextScenarioIndex]
 
     try {
       deepStrictEqual(request, scenario.request)

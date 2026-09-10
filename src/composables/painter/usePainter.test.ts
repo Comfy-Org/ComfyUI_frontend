@@ -13,39 +13,27 @@ import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
   useElementSize: vi.fn(() => ({
     width: ref(512),
-    height: ref(512)
+    height: ref(512),
+    stop: vi.fn()
   }))
 }))
 
-vi.mock('@/composables/maskeditor/StrokeProcessor', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/StrokeProcessor'), () => ({
   StrokeProcessor: vi.fn(() => ({
     addPoint: vi.fn(() => []),
     endStroke: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => {
-  const store = { addAlert: vi.fn() }
-  return { useToastStore: () => store }
-})
-
-vi.mock('@/stores/nodeOutputStore', () => {
-  const store = {
-    getNodeImageUrls: vi.fn(() => undefined),
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-  return { useNodeOutputStore: () => store }
-})
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     fetchApi: vi.fn()
@@ -54,8 +42,12 @@ vi.mock('@/scripts/api', () => ({
 
 const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => fixture.node } } }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
+    canvas: { graph: { getNodeById: () => fixture.node } }
+  }
 }))
 
 const i18n = createI18n({

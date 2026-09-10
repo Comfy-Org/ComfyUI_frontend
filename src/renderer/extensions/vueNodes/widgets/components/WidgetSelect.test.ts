@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
@@ -19,7 +19,7 @@ const i18n = createI18n({
 const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
 const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     shouldUseAssetBrowser: mockShouldUseAssetBrowser,
     isAssetAPIEnabled: mockIsAssetAPIEnabled
@@ -55,7 +55,6 @@ const WidgetSelectDefaultStub = defineComponent({
 })
 
 const globalConfig = {
-  plugins: [createTestingPinia(), i18n],
   stubs: {
     WidgetSelectDropdown: WidgetSelectDropdownStub,
     WidgetSelectDefault: WidgetSelectDefaultStub,
@@ -107,7 +106,7 @@ describe('WidgetSelect Value Binding', () => {
         'onUpdate:modelValue': onModelUpdate,
         ...extraProps
       },
-      global: globalConfig
+      global: { ...globalConfig, plugins: [getActivePinia()!, i18n] }
     })
     return onModelUpdate
   }

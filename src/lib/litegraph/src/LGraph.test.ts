@@ -1,7 +1,5 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -62,12 +60,11 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   mockReportError.mockClear()
 })
@@ -572,8 +569,8 @@ describe('Floating Links / Reroutes', () => {
 
     const floatingLink = [...graph.floatingLinks.values()][0]
     expect(graph.links.get(toLinkId(2))?.id).toBe(toLinkId(2))
-    expect(floatingLink?.id).not.toBe(toLinkId(2))
-    expect(floatingLink?.origin_id).toBe(toNodeId(2))
+    expect(floatingLink.id).not.toBe(toLinkId(2))
+    expect(floatingLink.origin_id).toBe(toNodeId(2))
     expect(graph.floatingLinks.size).toBe(1)
   })
 
@@ -709,7 +706,7 @@ describe('Floating Links / Reroutes', () => {
   })
 })
 
-describe('Link serialization goldens (ADR-0008 topology-store migration)', () => {
+describe('Link serialization goldens (ADR-ECS-0008 topology-store migration)', () => {
   const LINK_KEYS = [
     'id',
     'origin_id',
@@ -1513,7 +1510,6 @@ describe('Subgraph Definition Garbage Collection', () => {
     const innerNode = innerNodes[0]
     const id = widgetId(rootGraph.id, innerNode.id, 'value')
     const locator = createNodeLocatorId(subgraph.id, innerNode.id)
-    if (locator === null) throw new Error('Expected an inner-node locator')
     useWidgetValueStore().registerWidget(id, {
       type: 'number',
       value: 1,
@@ -2200,14 +2196,14 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
     )
 
-    const pw102 = graph.getNodeById(toNodeId(102))?.properties?.proxyWidgets
+    const pw102 = graph.getNodeById(toNodeId(102))?.properties.proxyWidgets
     expect(Array.isArray(pw102)).toBe(true)
     for (const entry of pw102 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
       expect(idsA.has(String(entry[0]))).toBe(true)
     }
 
-    const pw103 = graph.getNodeById(toNodeId(103))?.properties?.proxyWidgets
+    const pw103 = graph.getNodeById(toNodeId(103))?.properties.proxyWidgets
     expect(Array.isArray(pw103)).toBe(true)
     for (const entry of pw103 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -2226,7 +2222,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const innerNode = graph.subgraphs
       .get(SUBGRAPH_A)!
       .nodes.find((n) => n.id === toNodeId(50))
-    const pw = innerNode?.properties?.proxyWidgets
+    const pw = innerNode?.properties.proxyWidgets
     expect(Array.isArray(pw)).toBe(true)
     for (const entry of pw as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -2307,10 +2303,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 })
 
 describe('Zero UUID handling in configure', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {
     const graph = new LGraph()
     const data = graph.serialize()
@@ -2324,6 +2316,31 @@ describe('Zero UUID handling in configure', () => {
     const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
     const subgraph = graph.createSubgraph(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
+  })
+
+  it('keeps a subgraph registered under its own ID across clear()', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const { id } = subgraph
+
+    subgraph.clear()
+
+    expect(subgraph.id).toBe(id)
+    expect(graph.subgraphs.get(id)).toBe(subgraph)
+    expect(graph.subgraphs.has(zeroUuid)).toBe(false)
+  })
+
+  it('creates a subgraph exposing IO without warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+
+    graph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [{ id: createUuidv4(), name: 'value', type: 'INT' }]
+      })
+    )
+
+    expect(warn).not.toHaveBeenCalled()
   })
 })
 

@@ -1,42 +1,44 @@
 import { render, screen } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import PackCardFooter from './PackCardFooter.vue'
 
 // Mock the child components
-vi.mock(
-  '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'),
+
   () => ({
     default: { template: '<div data-testid="pack-install-button"></div>' }
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'),
+
   () => ({
     default: { template: '<div data-testid="pack-enable-toggle"></div>' }
   })
 )
 
 // Mock composables
-const mockIsPackInstalled = vi.fn()
+let mockIsPackInstalled: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackInstalled']>
+>
+beforeEach(() => {
+  mockIsPackInstalled = vi.mocked(useComfyManagerStore().isPackInstalled)
+})
 const mockCheckNodeCompatibility = vi.fn()
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    isPackInstalled: mockIsPackInstalled
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
   () => ({
     useConflictDetection: vi.fn(() => ({
       checkNodeCompatibility: mockCheckNodeCompatibility
@@ -64,7 +66,7 @@ describe('PackCardFooter', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        plugins: [PrimeVue, i18n],
         provide: {
           [IsInstallingKey]: ref(false)
         }

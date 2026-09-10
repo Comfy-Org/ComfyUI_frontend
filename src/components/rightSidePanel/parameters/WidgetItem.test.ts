@@ -1,22 +1,27 @@
 import { render } from '@testing-library/vue'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { widgetId } from '@/types/widgetId'
-import WidgetItem from './WidgetItem.vue'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
-const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn(),
+import WidgetItem from './WidgetItem.vue'
+
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+})
+
+const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
@@ -25,35 +30,18 @@ const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty: vi.fn() }
-  })
-}))
-
-vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
-  useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
-  })
-}))
-
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
+
   () => ({
     getComponent: () => StubWidgetComponent,
     shouldExpand: () => false
   })
 )
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'),
+
   () => ({
     default: StubWidgetComponent
   })
