@@ -1,7 +1,6 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { disposePinia, getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -26,28 +25,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
     flags: { unifiedCloudAuthEnabled: false }
   })
 }))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/workspaceAuthStore'),
-  () => ({
-    useWorkspaceAuthStore: () => ({
-      clearWorkspaceContext: vi.fn(),
-      getWorkspaceAuthHeader: vi.fn().mockReturnValue(null),
-      getUnifiedToken: vi.fn().mockReturnValue(undefined),
-      mintAtLogin: vi.fn()
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      activeWorkspaceId: null,
-      resetForIdentityChange: vi.fn()
-    })
-  })
-)
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
@@ -77,11 +54,6 @@ describe('API key authentication initialization', () => {
       }
     )
     vi.mocked(firebaseAuth.onIdTokenChanged).mockReturnValue(vi.fn())
-  })
-
-  afterEach(() => {
-    const pinia = getActivePinia()
-    if (pinia) disposePinia(pinia)
   })
 
   const customerResponse = (id: string) => ({

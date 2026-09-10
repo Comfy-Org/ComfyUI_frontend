@@ -1,11 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import {
-  createPinia,
-  disposePinia,
-  getActivePinia,
-  setActivePinia
-} from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -61,11 +55,16 @@ function setup(
 describe('Agent workflow resolution', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
   })
-  afterEach(() => {
-    const pinia = getActivePinia()
-    if (pinia) disposePinia(pinia)
+
+  it('does not resolve a new temporary tab through a reused persisted path', () => {
+    const { resolver, bindings, workflows } = setup([
+      workflow('workflows/scratch.json', 'Scratch', { isTemporary: true })
+    ])
+    bindings.bind('stale-cloud-id', 'workflows/scratch.json')
+    expect(resolver.cloudIdFor(workflows.openWorkflows[0])).toBeUndefined()
+    expect(resolver.boundWorkflowFor('stale-cloud-id')).toBeNull()
+    expect(resolver.availableWorkflowReferences.value).toEqual([])
   })
 
   it('uses unique saved names ahead of old bindings and re-evaluates renamed workflows', async () => {
@@ -135,7 +134,7 @@ describe('Agent workflow resolution', () => {
     expect(resolver.openWorkflowFor('cloud-b')).toBeNull()
   })
 
-  it('keeps editor snapshot order and app suffixes separate from display names', async () => {
+  it('keeps editor snapshot order and consistent app reference names', async () => {
     const { resolver, workflows } = setup(
       [
         workflow('workflows/app.app.json', 'Portrait', { suffix: 'app.json' }),
@@ -155,7 +154,7 @@ describe('Agent workflow resolution', () => {
       ]
     })
     expect(resolver.availableWorkflowReferences.value).toEqual([
-      { id: 'cloud-app', name: 'Portrait' },
+      { id: 'cloud-app', name: 'Portrait.app' },
       { id: 'cloud-graph', name: 'Portrait' }
     ])
     workflows.openWorkflows.reverse()

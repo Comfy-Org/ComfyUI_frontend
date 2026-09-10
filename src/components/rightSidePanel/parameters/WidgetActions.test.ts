@@ -1,58 +1,29 @@
-import { render, screen } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
-import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { widgetId } from '@/types/widgetId'
+
 import WidgetActions from './WidgetActions.vue'
 
-const {
-  mockGetInputSpecForWidget,
-  mockIsFavorited,
-  mockToggleFavorite,
-  mockTrackWidgetFavoriteToggled
-} = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn(),
-  mockIsFavorited: vi.fn().mockReturnValue(false),
-  mockToggleFavorite: vi.fn(),
+const { mockTrackWidgetFavoriteToggled } = vi.hoisted(() => ({
   mockTrackWidgetFavoriteToggled: vi.fn()
 }))
 
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      canvas: { setDirty: vi.fn() }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/workspace/favoritedWidgetsStore'), () => ({
-  useFavoritedWidgetsStore: () => ({
-    isFavorited: mockIsFavorited,
-    toggleFavorite: mockToggleFavorite
-  })
 }))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -93,9 +64,13 @@ const i18n = createI18n({
 
 describe('WidgetActions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    mockIsFavorited.mockReturnValue(false)
-    mockGetInputSpecForWidget.mockReturnValue({
+    useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+    vi.mocked(useFavoritedWidgetsStore().toggleFavorite).mockImplementation(
+      () => {}
+    )
+    vi.mocked(useFavoritedWidgetsStore().isFavorited).mockReturnValue(false)
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
       type: 'INT',
       default: 42
     })
@@ -195,7 +170,8 @@ describe('WidgetActions', () => {
   })
 
   it('does not show reset button when no default value exists', () => {
-    mockGetInputSpecForWidget.mockReturnValue({
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
       type: 'CUSTOM'
     })
 
@@ -210,7 +186,8 @@ describe('WidgetActions', () => {
   })
 
   it('uses fallback default for INT type without explicit default', async () => {
-    mockGetInputSpecForWidget.mockReturnValue({
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
       type: 'INT'
     })
 
@@ -225,7 +202,8 @@ describe('WidgetActions', () => {
   })
 
   it('uses first option as default for combo without explicit default', async () => {
-    mockGetInputSpecForWidget.mockReturnValue({
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
       type: 'COMBO',
       options: ['option1', 'option2', 'option3']
     })
@@ -241,7 +219,7 @@ describe('WidgetActions', () => {
   })
 
   it('tracks widget favorite toggled with is_favorited true when favoriting', async () => {
-    mockIsFavorited.mockReturnValue(false)
+    vi.mocked(useFavoritedWidgetsStore().isFavorited).mockReturnValue(false)
 
     const widget = createMockWidget()
     const node = createMockNode()
@@ -257,14 +235,13 @@ describe('WidgetActions', () => {
       is_favorited: true,
       source: 'right_side_panel'
     })
-    expect(mockToggleFavorite).toHaveBeenCalledExactlyOnceWith(
-      node,
-      'test_widget'
-    )
+    expect(
+      vi.mocked(useFavoritedWidgetsStore().toggleFavorite)
+    ).toHaveBeenCalledExactlyOnceWith(node, 'test_widget')
   })
 
   it('tracks widget favorite toggled with is_favorited false when unfavoriting', async () => {
-    mockIsFavorited.mockReturnValue(true)
+    vi.mocked(useFavoritedWidgetsStore().isFavorited).mockReturnValue(true)
 
     const widget = createMockWidget()
     const node = createMockNode()
@@ -332,6 +309,8 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Favorite/ }))
 
-    expect(mockToggleFavorite).toHaveBeenCalledWith(node, 'test_widget')
+    expect(
+      vi.mocked(useFavoritedWidgetsStore().toggleFavorite)
+    ).toHaveBeenCalledWith(node, 'test_widget')
   })
 })

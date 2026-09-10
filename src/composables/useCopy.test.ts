@@ -1,36 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, onTestFinished } from 'vitest'
+import { effectScope } from 'vue'
 import { useCopy } from './useCopy'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const copyMocks = vi.hoisted(() => ({
-  copyHandler: undefined as ((event: ClipboardEvent) => unknown) | undefined,
   canvas: {
     selectedItems: new Set<object>([{}]),
     copyToClipboard: vi.fn()
   }
 }))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  useEventListener: vi.fn(
-    (
-      _target: EventTarget,
-      event: string,
-      handler: (event: ClipboardEvent) => unknown
-    ) => {
-      if (event === 'copy') copyMocks.copyHandler = handler
-      return vi.fn()
-    }
-  )
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      canvas: copyMocks.canvas
-    })
-  })
-)
 
 vi.mock(
   import('@/workbench/eventHelpers'),
@@ -45,17 +25,23 @@ const multiChunkPayloadLength = 0x8000 * 6 + 123
 function copySerializedData(serializedData: string): DataTransfer {
   copyMocks.canvas.copyToClipboard.mockReturnValue(serializedData)
 
-  useCopy()
+  const listenerSpy = vi.spyOn(document, 'addEventListener')
+  const scope = effectScope()
+  scope.run(useCopy)
+  onTestFinished(() => scope.stop())
 
   const dataTransfer = new DataTransfer()
   const event = new ClipboardEvent('copy', {
     clipboardData: dataTransfer
   })
-  const copyHandler = copyMocks.copyHandler
+  const copyHandler = listenerSpy.mock.calls.find(
+    ([name]) => name === 'copy'
+  )?.[1]
   expect(copyHandler).toBeDefined()
-  if (!copyHandler) throw new Error('Expected copy handler to be registered')
+  if (typeof copyHandler !== 'function')
+    throw new Error('Expected copy handler to be registered')
 
-  expect(() => copyHandler(event)).not.toThrow()
+  expect(() => copyHandler.call(document, event)).not.toThrow()
 
   return dataTransfer
 }
@@ -74,7 +60,7 @@ function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
 
 describe('useCopy', () => {
   beforeEach(() => {
-    copyMocks.copyHandler = undefined
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>(copyMocks.canvas)
   })
 
   it('should write large serialized node data to clipboard metadata', () => {

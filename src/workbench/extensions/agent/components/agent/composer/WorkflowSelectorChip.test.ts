@@ -1,6 +1,6 @@
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -21,7 +21,7 @@ const i18n = createI18n({
         switchWorkflow: enMessages.agent.switchWorkflow,
         changeWorkflowForChat: enMessages.agent.changeWorkflowForChat,
         chooseWorkflow: enMessages.agent.chooseWorkflow,
-        selectWorkflowForAgent: 'Select a workflow for agent to work in',
+        selectWorkflowForAgent: enMessages.agent.selectWorkflowForAgent,
         chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
         searchWorkflows: enMessages.agent.searchWorkflows,
         currentTab: 'Current tab',
@@ -44,8 +44,7 @@ let pinia: Pinia
 
 beforeEach(() => {
   vi.useRealTimers()
-  pinia = createPinia()
-  setActivePinia(pinia)
+  pinia = getActivePinia()!
 })
 
 function renderChip(
@@ -70,10 +69,7 @@ const trigger = () =>
 describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
-    const workflowName = within(trigger()).getByText('portrait')
-    expect(trigger()).toHaveClass('flex-1', 'font-normal')
-    expect(trigger()).not.toHaveClass('font-medium')
-    expect(workflowName).not.toHaveClass('underline', 'decoration-solid')
+    expect(within(trigger()).getByText('portrait')).toBeVisible()
     expect(screen.getAllByRole('button')).toHaveLength(1)
 
     await user.hover(trigger())

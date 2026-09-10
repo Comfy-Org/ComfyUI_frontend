@@ -1,6 +1,6 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -203,7 +203,6 @@ function admissionError(
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })
@@ -1229,7 +1228,8 @@ describe('useAgentSession (v1 composition root)', () => {
       'wf-existing',
       'workflows/existing.json'
     )
-    setActivePinia(createPinia())
+    await nextTick()
+    useAgentWorkflowTabBindingStore().$dispose()
     localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
@@ -2045,7 +2045,6 @@ describe('thread resume (B17)', () => {
   ]
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
   })
 
@@ -2151,6 +2150,68 @@ describe('thread resume (B17)', () => {
     })
   })
 
+  it('invalidates an in-flight workflow restoration when starting a new chat', async () => {
+    let finishRestore = () => {}
+    let stillCurrent = () => true
+    const restored = vi.fn(
+      async (_id: string | undefined, isCurrent: () => boolean) => {
+        stillCurrent = isCurrent
+        await new Promise<void>((resolve) => {
+          finishRestore = resolve
+        })
+      }
+    )
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn-a', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start()
+    const first = session.loadThread('first')
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledOnce())
+    expect(stillCurrent()).toBe(true)
+    session.newChat()
+    expect(stillCurrent()).toBe(false)
+    finishRestore()
+    await first
+  })
+
+  it('keeps the first restoration stale when a later thread finishes loading', async () => {
+    let releaseFirst = () => {}
+    let firstIsCurrent = () => true
+    const restored = vi
+      .fn(async (_id: string | undefined, _isCurrent: () => boolean) => {})
+      .mockImplementationOnce(
+        async (_id: string | undefined, isCurrent: () => boolean) => {
+          firstIsCurrent = isCurrent
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve
+          })
+        }
+      )
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start()
+    const first = session.loadThread('first')
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledOnce())
+    await session.loadThread('second')
+    expect(firstIsCurrent()).toBe(false)
+    releaseFirst()
+    await first
+    expect(session.threadId.value).toBe('second')
+  })
+
   it('restores the target from the latest persisted user message', async () => {
     const older = historyRow(1, 'user', 'turn-a', 'First')
     older.workflow_id = 'wf-a'
@@ -2178,7 +2239,7 @@ describe('thread resume (B17)', () => {
 
     await session.loadThread('th-9')
 
-    expect(restored).toHaveBeenCalledWith('wf-b')
+    expect(restored).toHaveBeenCalledWith('wf-b', expect.any(Function))
   })
 
   it('listThreads returns the REST client thread list', async () => {

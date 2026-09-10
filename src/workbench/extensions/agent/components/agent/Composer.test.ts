@@ -1,6 +1,5 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
@@ -49,9 +48,24 @@ function mount(
 }
 
 describe('Composer', () => {
+  it.for(['@unmatched text', '@Nodes unmatched'])(
+    'sends an unmatched mention query with Enter: %s',
+    async (text) => {
+      const view = mount()
+      await userEvent.type(screen.getByRole('textbox'), `${text}{Enter}`)
+      expect(view.emitted().send).toHaveLength(1)
+    }
+  )
+  it('skips the disabled Nodes section during keyboard selection', async () => {
+    mount({
+      nodeReferenceDisabledReason: 'Please select a workflow first',
+      availableWorkflows: [{ id: 'ref', name: 'Reference' }]
+    })
+    await userEvent.type(screen.getByRole('textbox'), '@{Enter}')
+    expect(screen.getByRole('menuitem', { name: 'Reference' })).toBeVisible()
+  })
   beforeEach(() => {
     vi.useRealTimers()
-    setActivePinia(createPinia())
   })
 
   it('preserves new input on Enter while a previous send is submitting', async () => {
@@ -92,7 +106,6 @@ describe('Composer', () => {
     expect(nodes).toHaveAccessibleDescription(reason)
     await userEvent.keyboard('{Enter}')
     expect(screen.queryByRole('menuitem', { name: 'KSampler' })).toBeNull()
-    await userEvent.keyboard('{ArrowDown}{Enter}')
     expect(screen.getByRole('menuitem', { name: 'Back' })).toBeVisible()
     expect(emitted().requestWorkflowReferences).toHaveLength(1)
     expect(emitted().mentionPick).toBeUndefined()
@@ -385,10 +398,12 @@ describe('Composer', () => {
       section: 'Nodes' | 'Workflows',
       text = '@'
     ) {
-      const menu = await openReferenceRoot(text)
+      const menu = await openReferenceRoot()
       await userEvent.click(
         within(menu).getByRole('menuitem', { name: section })
       )
+      if (text !== '@')
+        await userEvent.type(screen.getByRole('textbox'), text.slice(1))
       return screen.getByRole('menu', { name: 'Add to prompt' })
     }
 
@@ -667,18 +682,15 @@ describe('Composer', () => {
   })
 
   it('lists only eligible workflows and emits the selected reference', async () => {
-    const { emitted } = mount(
-      {},
-      {
-        availableWorkflows: [
-          { id: 'wf-edit', name: 'Editable workflow' },
-          { id: 'wf-selected', name: 'Already selected' },
-          { id: 'wf-eligible', name: 'Water world' }
-        ],
-        workflowReferences: [{ id: 'wf-selected', name: 'Already selected' }],
-        editableWorkflowId: 'wf-edit'
-      }
-    )
+    const { emitted } = mount({
+      availableWorkflows: [
+        { id: 'wf-edit', name: 'Editable workflow' },
+        { id: 'wf-selected', name: 'Already selected' },
+        { id: 'wf-eligible', name: 'Water world' }
+      ],
+      workflowReferences: [{ id: 'wf-selected', name: 'Already selected' }],
+      editableWorkflowId: 'wf-edit'
+    })
 
     await openAddMenu()
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
@@ -752,15 +764,12 @@ describe('Composer', () => {
   )
 
   it('removes the workflow reference before the text caret with Backspace', async () => {
-    const { emitted } = mount(
-      {},
-      {
-        workflowReferences: [
-          { id: 'wf-1', name: 'Water world' },
-          { id: 'wf-2', name: 'Portrait lighting' }
-        ]
-      }
-    )
+    const { emitted } = mount({
+      workflowReferences: [
+        { id: 'wf-1', name: 'Water world' },
+        { id: 'wf-2', name: 'Portrait lighting' }
+      ]
+    })
 
     const inlineInput = screen.getByTestId('composer-inline-input')
     const workflowChips = within(inlineInput).getAllByTestId(
@@ -779,12 +788,9 @@ describe('Composer', () => {
   })
 
   it('keeps normal text deletion when the caret is not at the start', async () => {
-    const { emitted } = mount(
-      {},
-      {
-        workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
-      }
-    )
+    const { emitted } = mount({
+      workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+    })
 
     const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
     await userEvent.type(textarea, 'text')

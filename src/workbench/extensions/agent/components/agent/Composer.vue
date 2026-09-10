@@ -139,14 +139,15 @@ const stagedKeys = computed(
 
 const mentionMatches = computed<MentionMatch[]>(() => {
   if (!mentionOpen.value) return []
+  const query = mentionQuery.value.toLowerCase()
   if (mentionSection.value === 'root') {
-    return [
+    const sections: MentionMatch[] = [
       { kind: 'section', id: 'nodes', label: t('agent.nodes') },
       { kind: 'section', id: 'workflows', label: t('agent.workflows') }
     ]
+    return sections.filter(({ label }) => label.toLowerCase().includes(query))
   }
 
-  const query = mentionQuery.value.toLowerCase()
   const back: MentionMatch = { kind: 'back', id: 'back', label: t('g.back') }
   if (mentionSection.value === 'nodes') {
     return [
@@ -184,7 +185,14 @@ const mentionMatches = computed<MentionMatch[]>(() => {
   ]
 })
 
-const mentionVisible = computed(() => mentionOpen.value)
+const mentionVisible = computed(
+  () =>
+    mentionOpen.value &&
+    (mentionQuery.value === '' ||
+      mentionMatches.value.some(
+        (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
+      ))
+)
 const mentionHasResults = computed(
   () => mentionSection.value === 'root' || mentionMatches.value.length > 1
 )
@@ -219,12 +227,14 @@ function closeMention(): void {
 }
 
 function resetMentionActive(): void {
-  mentionActive.value =
-    mentionSection.value !== 'root' &&
-    mentionQuery.value.length > 0 &&
-    mentionMatches.value.length > 1
-      ? 1
-      : 0
+  if (mentionSection.value !== 'root' && mentionQuery.value === '') {
+    mentionActive.value = 0
+    return
+  }
+  const first = mentionMatches.value.findIndex(
+    (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
+  )
+  mentionActive.value = Math.max(0, first)
 }
 
 function syncMention(event: Event): void {
@@ -289,6 +299,12 @@ function pickMention(match: MentionMatch): void {
   if (isNodeReferenceDisabled(match)) return
   if (match.kind === 'section') {
     mentionSection.value = match.id
+    const before = composer.draft.value.slice(0, mentionStart.value + 1)
+    const after = composer.draft.value.slice(
+      mentionStart.value + 1 + mentionQuery.value.length
+    )
+    composer.draft.value = before + after
+    mentionQuery.value = ''
     if (match.id === 'workflows') emit('requestWorkflowReferences')
     resetMentionActive()
     return
@@ -320,13 +336,17 @@ function onComposerKeydown(event: KeyboardEvent): void {
     const matches = mentionMatches.value
     if (event.key === 'ArrowDown') {
       event.preventDefault()
-      mentionActive.value = (mentionActive.value + 1) % matches.length
+      do {
+        mentionActive.value = (mentionActive.value + 1) % matches.length
+      } while (isNodeReferenceDisabled(matches[mentionActive.value]))
       return
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault()
-      mentionActive.value =
-        (mentionActive.value - 1 + matches.length) % matches.length
+      do {
+        mentionActive.value =
+          (mentionActive.value - 1 + matches.length) % matches.length
+      } while (isNodeReferenceDisabled(matches[mentionActive.value]))
       return
     }
     if (event.key === 'Enter' || event.key === 'Tab') {

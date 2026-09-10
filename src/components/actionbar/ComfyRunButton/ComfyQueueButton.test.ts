@@ -1,27 +1,29 @@
-import { createTestingPinia } from '@pinia/testing'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import ComfyQueueButton from './ComfyQueueButton.vue'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -29,12 +31,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
-}))
-
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => ({
-    shiftDown: false
-  })
 }))
 
 const BatchCountEditStub = {
@@ -151,10 +147,8 @@ const stubs = {
 function renderQueueButton(
   props: { paymentRecoveryLock?: 'owner' | 'member' } = {}
 ) {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    stubActions: (actionName) => actionName !== 'recordPromptError'
-  })
+  const pinia = getActivePinia()!
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   const user = userEvent.setup()
 
   const result = render(ComfyQueueButton, {

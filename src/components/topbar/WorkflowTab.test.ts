@@ -1,46 +1,21 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { ComponentProps } from 'vue-component-type-helpers'
-
-import type * as ExecutionStoreModule from '@/stores/executionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
-  const { shallowRef } = await import('vue')
-  return {
-    mockWorkflowStatus: shallowRef<Map<object, WorkflowExecutionStatus>>(
-      new Map()
-    ),
-    mockCloseWorkflow: vi.fn().mockResolvedValue(true)
-  }
-})
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    currentUser: null,
-    isAuthenticated: false,
-    isInitialized: true
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/executionStore'), async (importOriginal) => {
-  const actual = await importOriginal<typeof ExecutionStoreModule>()
-  return {
-    WORKFLOW_STATUS_I18N_KEYS: actual.WORKFLOW_STATUS_I18N_KEYS,
-    useExecutionStore: () => ({
-      getWorkflowStatus(workflow: object | undefined | null) {
-        if (!workflow) return undefined
-        return mockWorkflowStatus.value.get(workflow)
-      }
-    })
-  }
-})
+import WorkflowTab from './WorkflowTab.vue'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
@@ -83,11 +58,7 @@ vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
   }
 }))
 
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
-import WorkflowTab from './WorkflowTab.vue'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
 
@@ -150,24 +121,14 @@ function renderTab({
       ? workflowOption.workflow.path
       : '/workflows/other.json')
 
+  useWorkflowStore().activeWorkflow = fromPartial({
+    key: activeWorkflowKey,
+    path: resolvedActiveWorkflowPath
+  })
+  useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
   const rendered = render(WorkflowTab, {
     global: {
-      plugins: [
-        createTestingPinia({
-          stubActions: false,
-          initialState: {
-            workspace: { shiftDown: false },
-            workflow: {
-              activeWorkflow: {
-                key: activeWorkflowKey,
-                path: resolvedActiveWorkflowPath
-              }
-            },
-            setting: { settingValues: { 'Comfy.Workflow.AutoSave': 'off' } }
-          }
-        }),
-        i18n
-      ],
+      plugins: [i18n],
       stubs: {
         WorkflowActionsList: true,
         Button: {
@@ -189,14 +150,14 @@ function renderTab({
 
 describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
-    mockWorkflowStatus.value = new Map()
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 
   it.for(['running', 'completed', 'failed'] as const)(
     'labels the %s indicator with a translated status name',
     (status) => {
       const workflowOption = makeWorkflowOption()
-      mockWorkflowStatus.value = new Map([[workflowOption.workflow, status]])
+      vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(status)
 
       renderTab({ workflowOption })
       expect(
@@ -207,7 +168,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
   it('does not badge the active tab with its own status', () => {
     const workflowOption = makeWorkflowOption()
-    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
 
     renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
     expect(screen.queryByRole('img')).toBeNull()
@@ -244,7 +205,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
   it('workflow status replaces the unsaved dot', () => {
     const workflowOption = makeWorkflowOption({ isPersisted: false })
-    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
 
     renderTab({ workflowOption })
     expect(
@@ -256,7 +217,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
 describe('WorkflowTab - agent activity indicators', () => {
   beforeEach(() => {
-    mockWorkflowStatus.value = new Map()
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 
   it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
@@ -284,7 +245,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
   it('shows the unseen-changes dot ahead of non-failed execution status', async () => {
     const workflowOption = makeWorkflowOption()
-    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
     renderTab({ workflowOption })
     useWorkflowTabActivityStore().markModified('/workflows/test.json')
     await nextTick()
@@ -300,7 +261,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
   it('a failed run outranks the unseen-changes dot', async () => {
     const workflowOption = makeWorkflowOption()
-    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'failed']])
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('failed')
     renderTab({ workflowOption })
     useWorkflowTabActivityStore().markModified('/workflows/test.json')
     await nextTick()

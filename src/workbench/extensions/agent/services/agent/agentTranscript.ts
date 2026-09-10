@@ -40,14 +40,28 @@ export function normalizeAgentTranscript(
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
       userTexts.set(turnId, text)
-      if (row.workflow_id !== undefined) latestWorkflowId = row.workflow_id
+      if (row.workflow_id) latestWorkflowId = row.workflow_id
       const rawReferences = row.content?.workflow_references
       if (Array.isArray(rawReferences)) {
         const references = rawReferences.flatMap((value) => {
-          if (typeof value !== 'object' || value === null) return []
-          const { workflow_id: id, name } = value as Record<string, unknown>
+          if (
+            typeof value !== 'object' ||
+            value === null ||
+            !('workflow_id' in value) ||
+            !('name' in value)
+          )
+            return []
+          const { workflow_id: id, name } = value
           return typeof id === 'string' && typeof name === 'string'
-            ? [{ id, name }]
+            ? [
+                {
+                  id,
+                  name,
+                  ...('unavailable' in value && value.unavailable === true
+                    ? { unavailable: true }
+                    : {})
+                }
+              ]
             : []
         })
         if (references.length > 0)

@@ -20,6 +20,22 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('ignores empty workflow ids when restoring the latest target', () => {
+    const target = {
+      ...row(1, 'user', 'turn-a', 'Edit A', 'row-1'),
+      workflow_id: 'wf-a'
+    }
+    const detached = {
+      ...row(2, 'user', 'turn-b', 'Hello', 'row-2'),
+      workflow_id: ''
+    }
+    expect(
+      normalizeAgentTranscript([detached]).latestWorkflowId
+    ).toBeUndefined()
+    expect(normalizeAgentTranscript([target, detached]).latestWorkflowId).toBe(
+      'wf-a'
+    )
+  })
   it('orders rows by sequence and groups them by stable turn identity', () => {
     const transcript = normalizeAgentTranscript([
       row(4, 'assistant', 'turn-b', 'Second reply', 'row-4'),
@@ -120,7 +136,7 @@ describe('normalizeAgentTranscript', () => {
           'turn-a',
           [
             { id: 'wf-reference', name: 'Reference' },
-            { id: 'wf-unavailable', name: 'My upscaler' }
+            { id: 'wf-unavailable', name: 'My upscaler', unavailable: true }
           ]
         ]
       ])

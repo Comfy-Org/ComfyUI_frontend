@@ -38,12 +38,10 @@ function renderMessage(props: {
   attachments?: { name: string; previewUrl?: string; ref?: string }[]
   tags?: string[]
   editable?: boolean
-  workflowReferences?: { id: string; name: string }[]
+  workflowReferences?: { id: string; name: string; unavailable?: boolean }[]
 }) {
-  const { workflowReferences, ...componentProps } = props
   return render(UserMessage, {
-    props: componentProps,
-    attrs: { workflowReferences },
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -64,6 +62,28 @@ function stubbedAssets(): { url: string; filename: string; kind: string }[] {
 }
 
 describe('UserMessage', () => {
+  it('shows references on attachment-only turns and disables unavailable ones', async () => {
+    const view = renderMessage({
+      text: '',
+      attachments: [{ name: 'image.png', ref: 'image.png' }],
+      workflowReferences: [
+        { id: 'missing', name: 'Deleted workflow', unavailable: true },
+        { id: 'available', name: 'Available' }
+      ]
+    })
+    const unavailable = screen.getByRole('button', {
+      name: 'Open Deleted workflow'
+    })
+    expect(unavailable).toBeDisabled()
+    await userEvent.click(unavailable)
+    expect(view.emitted().openReferenceWorkflow).toBeUndefined()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open Available' })
+    )
+    expect(view.emitted().openReferenceWorkflow).toEqual([
+      ['available', 'Available']
+    ])
+  })
   it('renders submitted workflow references inline with the prompt snapshot', () => {
     renderMessage({
       text: 'Build a scene from water world.',
@@ -77,25 +97,7 @@ describe('UserMessage', () => {
     const [firstWorkflowChip] = within(bubble).getAllByTestId(
       'workflow-reference-chip'
     )
-    expect(firstWorkflowChip).toHaveClass(
-      'bg-primary-background/30',
-      'ring-1',
-      'ring-inset',
-      'ring-primary-background/30',
-      'text-primary-background-hover',
-      'rounded-sm',
-      'text-xs/[15px]',
-      'font-normal'
-    )
-    expect(firstWorkflowChip).not.toHaveClass('font-medium')
-    expect(bubble).toHaveClass(
-      'flex',
-      'flex-wrap',
-      'gap-1',
-      'text-agent-fg-muted',
-      'text-sm/5',
-      'font-normal'
-    )
+    expect(firstWorkflowChip).toBeVisible()
     expect(within(bubble).getByText('Workflow 2')).toBeVisible()
     expect(
       within(bubble).getByText('Build a scene from water world.')

@@ -18,7 +18,7 @@ type WorkflowResolverDeps = {
   >
   bindings: Pick<
     ReturnType<typeof useAgentWorkflowTabBindingStore>,
-    'workflowIdFor' | 'tabPathFor'
+    'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow'
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
 }
@@ -82,7 +82,11 @@ export function useAgentWorkflowResolver({
       savedMatches(name, workflows.openWorkflows).length === 1
         ? cloudIdsByName.value.get(name)
         : undefined
-    return saved ?? bindings.workflowIdFor(workflow.path)
+    if (saved !== undefined) return saved
+    const bound = bindings.workflowIdFor(workflow.path)
+    return bound !== undefined && bindings.matchesWorkflow(bound, workflow)
+      ? bound
+      : undefined
   }
 
   function resolveWorkflow(
@@ -91,7 +95,7 @@ export function useAgentWorkflowResolver({
   ): ComfyWorkflow | null {
     const path = bindings.tabPathFor(workflowId)
     const bound = path === undefined ? null : workflows.getWorkflowByPath(path)
-    if (bound) return bound
+    if (bound && bindings.matchesWorkflow(workflowId, bound)) return bound
     for (const [name, id] of cloudIdsByName.value) {
       if (id !== workflowId) continue
       const matches = savedMatches(name, nameCandidates)
@@ -121,7 +125,7 @@ export function useAgentWorkflowResolver({
     for (const workflow of workflows.openWorkflows) {
       const id = cloudIdFor(workflow)
       if (id !== undefined && !byId.has(id))
-        byId.set(id, { id, name: workflow.filename })
+        byId.set(id, { id, name: cloudWorkflowName(workflow) })
     }
     return [...byId.values()]
   })

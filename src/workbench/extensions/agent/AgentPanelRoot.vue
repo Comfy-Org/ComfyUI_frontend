@@ -458,7 +458,10 @@ async function onSelectWorkflowTarget(path: string): Promise<boolean> {
       if (!isCurrent()) return false
       workflowId = cloudIdFor(tab)
     }
-    if (workflowId === undefined) return failSelection()
+    if (workflowId === undefined) {
+      if (isCurrent()) warnWorkflowUnavailable()
+      return false
+    }
     if ((await workflowService.openWorkflow(tab)) === false)
       return failSelection(t('agent.targetNavigationUnavailable'))
     if (!isCurrent()) return false
@@ -481,7 +484,7 @@ function onWorkflowAdopted(
   const adoptable =
     sent.id === undefined
       ? bindingStore.tabPathFor(workflowId) === undefined &&
-        boundWorkflowFor(workflowId) === null
+        storedWorkflowFor(workflowId) === null
       : sent.id === workflowId
   if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
@@ -498,12 +501,14 @@ function warnWorkflowUnavailable(): void {
 }
 
 async function onWorkflowRestored(
-  workflowId: string | undefined
+  workflowId: string | undefined,
+  isSessionCurrent: () => boolean
 ): Promise<void> {
+  if (selectedTarget.value !== null || !isSessionCurrent()) return
   const generation = ++targetSelectionGeneration
   if (workflowId === undefined) return
   await refreshCloudWorkflowIds()
-  if (generation !== targetSelectionGeneration) return
+  if (generation !== targetSelectionGeneration || !isSessionCurrent()) return
   const target = boundWorkflowFor(workflowId)
   if (target === null) {
     selectedTarget.value = null
@@ -512,7 +517,7 @@ async function onWorkflowRestored(
   }
   try {
     const opened = await workflowService.openWorkflow(target)
-    if (generation !== targetSelectionGeneration) return
+    if (generation !== targetSelectionGeneration || !isSessionCurrent()) return
     if (opened === false) {
       selectedTarget.value = null
       warnWorkflowUnavailable()
@@ -520,7 +525,7 @@ async function onWorkflowRestored(
     }
     commitWorkflowTarget(target, workflowId)
   } catch {
-    if (generation !== targetSelectionGeneration) return
+    if (generation !== targetSelectionGeneration || !isSessionCurrent()) return
     warnWorkflowUnavailable()
   }
 }
@@ -749,7 +754,7 @@ async function onAgentActiveTab(
     tabActivity.setCreating(false)
     const opened = await workflowService.openWorkflow(tab)
     if (stale() || opened === false) {
-      await workflowStore.closeWorkflow(tab)
+      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
       if (!stale()) warnWorkflowUnavailable()
       return
     }

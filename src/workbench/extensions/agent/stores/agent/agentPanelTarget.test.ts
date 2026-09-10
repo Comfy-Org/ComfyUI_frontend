@@ -1,69 +1,46 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import {
-  createPinia,
-  disposePinia,
-  getActivePinia,
-  setActivePinia
-} from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
-const host = vi.hoisted(() => ({ tabs: [] as ComfyWorkflow[] }))
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get openWorkflows() {
-        return host.tabs
-      }
-    })
-  })
-)
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
-describe('Agent target tab lifetime', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    host.tabs = reactive([])
-  })
-  afterEach(() => {
-    const pinia = getActivePinia()
-    if (pinia) disposePinia(pinia)
-  })
+function setup() {
+  const workflows = useWorkflowStore()
+  const target = workflows.createTemporary('a.json')
+  const other = workflows.createTemporary('b.json')
+  workflows.openWorkflowsInBackground({ right: [target.path, other.path] })
+  const panel = useAgentPanelStore()
+  panel.selectedWorkflow = target
+  return { workflows, panel, target, other }
+}
 
-  it('clears a closed target with no panel mounted and does not retarget to another tab', async () => {
-    const target = fromPartial<ComfyWorkflow>({ path: 'workflows/a.json' })
-    const other = fromPartial<ComfyWorkflow>({ path: 'workflows/b.json' })
-    host.tabs.push(target, other)
-    const panel = useAgentPanelStore()
-    panel.selectedWorkflow = target
+describe('Agent target tab lifetime', () => {
+  it('clears a closed target with no panel mounted and does not retarget on reopening', async () => {
+    const { workflows, panel, target } = setup()
     await nextTick()
-    expect(panel.selectedWorkflow.path).toBe(target.path)
-    host.tabs.splice(0, 1)
+    expect(panel.selectedWorkflow?.path).toBe(target.path)
+    await workflows.closeWorkflow(target)
     await nextTick()
     expect(panel.selectedWorkflow).toBeNull()
-    host.tabs.push(target)
+    const reopened = workflows.createTemporary('a.json')
+    workflows.openWorkflowsInBackground({ right: [reopened.path] })
     await nextTick()
     expect(panel.selectedWorkflow).toBeNull()
   })
 
   it('retains a renamed target when another tab closes', async () => {
-    const target = fromPartial<ComfyWorkflow>({ path: 'workflows/a.json' })
-    host.tabs.push(
-      target,
-      fromPartial<ComfyWorkflow>({ path: 'workflows/b.json' })
-    )
-    const panel = useAgentPanelStore()
-    panel.selectedWorkflow = target
+    const { workflows, panel, target, other } = setup()
+    vi.spyOn(target, 'rename').mockImplementation(async (path) => {
+      target.path = path
+      return target
+    })
+    await workflows.renameWorkflow(target, 'workflows/renamed.json')
+    await workflows.closeWorkflow(other)
     await nextTick()
-    host.tabs[0].path = 'workflows/renamed.json'
-    host.tabs.pop()
-    await nextTick()
-    expect(panel.selectedWorkflow.path).toBe('workflows/renamed.json')
+    expect(panel.selectedWorkflow?.path).toBe('workflows/renamed.json')
   })
 })
