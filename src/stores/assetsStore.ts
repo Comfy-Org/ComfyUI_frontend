@@ -62,38 +62,22 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
  * Convert history job items to asset items
  */
 function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
-  const assetItems: AssetItem[] = []
+  const flatAssets: AssetItem[] = []
 
   for (const job of historyItems) {
-    // Only process completed jobs with preview output
-    if (job.status !== 'completed' || !job.preview_output) {
-      continue
-    }
+    if (job.status !== 'completed' || !job.preview_output) continue
 
     const task = new TaskItemImpl(job)
-
-    if (!task.previewOutput) {
-      continue
+    for (const output of task.previewableOutputs) {
+      flatAssets.push({
+        ...mapTaskOutputToAssetItem(task, output),
+        id: `${task.jobId}:${output.subfolder}/${output.filename}`,
+        job_id: task.jobId
+      })
     }
-
-    const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
-
-    assetItem.user_metadata = {
-      ...assetItem.user_metadata,
-      outputCount:
-        task.previewableOutputsCount ??
-        task.outputsCount ??
-        task.previewableOutputs.length,
-      allOutputs: task.previewableOutputs
-    }
-
-    assetItems.push(assetItem)
   }
 
-  return assetItems.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
+  return flatAssets
 }
 
 const BATCH_SIZE = 200
@@ -282,7 +266,8 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
-  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const allAssets = ref<PagedList<AssetItem>>()
   let assetsScope: EffectScope | undefined
   watch(
     () => flags.assetsEnabled,
@@ -294,18 +279,23 @@ export const useAssetsStore = defineStore('assets', () => {
         assetsScope = effectScope()
         assetsScope.run(() => {
           inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
-          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
-          outputAssets.value = new WrappedList(
-            flatAssets,
-            unflattenOutputAssets
-          )
+          flatOutputAssets.value = useAssetsQuery({
+            tags_any: ['output', 'temp']
+          })
+          allAssets.value = useAssetsQuery({
+            tags_any: ['input', 'output', 'temp']
+          })
         })
       } else {
         inputAssets.value = historyInputs
-        outputAssets.value = useHistoryAssets()
+        flatOutputAssets.value = useHistoryAssets()
+        allAssets.value = undefined
       }
     },
     { immediate: true }
+  )
+  const outputAssets = computed(
+    () => new WrappedList(flatOutputAssets.value, unflattenOutputAssets)
   )
 
   /**
@@ -912,6 +902,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   return {
     // States
+    allAssets,
+    flatOutputAssets,
     inputAssets,
     outputAssets,
     invalidateAll,

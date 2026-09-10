@@ -7,6 +7,7 @@ import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import { pagedItems } from '@/utils/pagedList'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
@@ -68,12 +69,10 @@ function createDefaultOptions(
   overrides: Partial<UseWidgetSelectItemsOptions> = {}
 ): UseWidgetSelectItemsOptions {
   return {
-    values: () => ['img_001.png', 'photo_abc.jpg', 'hash789.png'],
     getOptionLabel: () =>
       undefined as ((value?: string | null) => string) | undefined,
     modelValue: ref<string | undefined>('img_001.png'),
     assetKind: () => 'image' as const,
-    outputMediaAssets: mockMediaAssets,
     assetData: null,
     isAssetMode: () => false,
     filterSelected,
@@ -86,7 +85,7 @@ function createDefaultOptions(
 describe('display label behavior', () => {
   it('uses values as labels when no label function provided', () => {
     const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-    expect(dropdownItems.value[0]).toMatchObject({
+    expect(pagedItems(dropdownItems.value)[0]).toMatchObject({
       name: 'img_001.png',
       label: 'img_001.png'
     })
@@ -97,7 +96,7 @@ describe('display label behavior', () => {
     const { dropdownItems } = useWidgetSelectItems(
       createDefaultOptions({ getOptionLabel: () => getOptionLabel })
     )
-    expect(dropdownItems.value[0].label).toBe('Custom: img_001.png')
+    expect(pagedItems(dropdownItems.value)[0].label).toBe('Custom: img_001.png')
   })
 
   it('falls back to value on label function error', () => {
@@ -111,9 +110,13 @@ describe('display label behavior', () => {
     const { dropdownItems } = useWidgetSelectItems(
       createDefaultOptions({ getOptionLabel: () => getOptionLabel })
     )
-    expect(dropdownItems.value[0].label).toBe('Labeled: img_001.png')
-    expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
-    expect(dropdownItems.value[2].label).toBe('Labeled: hash789.png')
+    expect(pagedItems(dropdownItems.value)[0].label).toBe(
+      'Labeled: img_001.png'
+    )
+    expect(pagedItems(dropdownItems.value)[1].label).toBe('photo_abc.jpg')
+    expect(pagedItems(dropdownItems.value)[2].label).toBe(
+      'Labeled: hash789.png'
+    )
     expect(consoleWarnSpy).toHaveBeenCalled()
     consoleWarnSpy.mockRestore()
   })
@@ -126,7 +129,7 @@ describe('display label behavior', () => {
     const { dropdownItems } = useWidgetSelectItems(
       createDefaultOptions({ getOptionLabel: () => getOptionLabel })
     )
-    expect(dropdownItems.value[1].label).toBe('photo_abc.jpg')
+    expect(pagedItems(dropdownItems.value)[1].label).toBe('photo_abc.jpg')
   })
 
   it('falls back to value when label function returns undefined', () => {
@@ -137,7 +140,7 @@ describe('display label behavior', () => {
     const { dropdownItems } = useWidgetSelectItems(
       createDefaultOptions({ getOptionLabel: () => getOptionLabel })
     )
-    expect(dropdownItems.value[2].label).toBe('hash789.png')
+    expect(pagedItems(dropdownItems.value)[2].label).toBe('hash789.png')
   })
 })
 
@@ -153,8 +156,8 @@ describe('useWidgetSelectItems', () => {
   describe('dropdownItems', () => {
     it('maps values to items with names as labels', () => {
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-      expect(dropdownItems.value).toHaveLength(3)
-      expect(dropdownItems.value[0]).toMatchObject({
+      expect(pagedItems(dropdownItems.value)).toHaveLength(3)
+      expect(pagedItems(dropdownItems.value)[0]).toMatchObject({
         name: 'img_001.png',
         label: 'img_001.png'
       })
@@ -163,11 +166,10 @@ describe('useWidgetSelectItems', () => {
     it('returns empty when values is undefined and no modelValue', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => undefined,
           modelValue: ref(undefined)
         })
       )
-      expect(dropdownItems.value).toHaveLength(0)
+      expect(pagedItems(dropdownItems.value)).toHaveLength(0)
     })
   })
 
@@ -175,36 +177,39 @@ describe('useWidgetSelectItems', () => {
     it('creates fallback item when modelValue not in inputs', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref('template_image.png')
         })
       )
       expect(
-        dropdownItems.value.some((item) => item.name === 'template_image.png')
+        pagedItems(dropdownItems.value).some(
+          (item) => item.name === 'template_image.png'
+        )
       ).toBe(true)
-      expect(dropdownItems.value[0].id).toBe('missing-template_image.png')
+      expect(pagedItems(dropdownItems.value)[0].id).toBe(
+        'missing-template_image.png'
+      )
     })
 
     it('does not include fallback when filter is inputs', async () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref('template_image.png')
         })
       )
       filterSelected.value = 'inputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(2)
+      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
       expect(
-        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
+        pagedItems(dropdownItems.value).every(
+          (item) => !item.id.startsWith('missing-')
+        )
       ).toBe(true)
     })
 
     it('does not include fallback when filter is outputs', async () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref('template_image.png')
         })
       )
@@ -212,33 +217,37 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(
-        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
+        pagedItems(dropdownItems.value).every(
+          (item) => !item.id.startsWith('missing-')
+        )
       ).toBe(true)
     })
 
     it('no fallback when modelValue exists in inputs', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref('img_001.png')
         })
       )
-      expect(dropdownItems.value).toHaveLength(2)
+      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
       expect(
-        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
+        pagedItems(dropdownItems.value).every(
+          (item) => !item.id.startsWith('missing-')
+        )
       ).toBe(true)
     })
 
     it('no fallback when modelValue is undefined', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['img_001.png', 'photo_abc.jpg'],
           modelValue: ref(undefined)
         })
       )
-      expect(dropdownItems.value).toHaveLength(2)
+      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
       expect(
-        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
+        pagedItems(dropdownItems.value).every(
+          (item) => !item.id.startsWith('missing-')
+        )
       ).toBe(true)
     })
   })
@@ -247,14 +256,13 @@ describe('useWidgetSelectItems', () => {
     it('leaves input preview_url empty for mesh kind', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['3d/model.glb', 'other.fbx'],
           modelValue: ref('3d/model.glb'),
           assetKind: () => 'mesh'
         })
       )
-      expect(dropdownItems.value).toHaveLength(2)
-      expect(dropdownItems.value[0].preview_url).toBe('')
-      expect(dropdownItems.value[1].preview_url).toBe('')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
+      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
+      expect(pagedItems(dropdownItems.value)[1].preview_url).toBe('')
     })
 
     it('leaves output preview_url empty for mesh kind even when asset has one', async () => {
@@ -269,7 +277,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined),
           assetKind: () => 'mesh'
         })
@@ -277,22 +284,23 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].preview_url).toBe('')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
     })
 
     it('still uses getMediaUrl for image kind inputs', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => ['img_001.png'],
           modelValue: ref('img_001.png'),
           assetKind: () => 'image'
         })
       )
-      expect(dropdownItems.value[0].preview_url).toContain(
+      expect(pagedItems(dropdownItems.value)[0].preview_url).toContain(
         'filename=img_001.png'
       )
-      expect(dropdownItems.value[0].preview_url).toContain('type=input')
+      expect(pagedItems(dropdownItems.value)[0].preview_url).toContain(
+        'type=input'
+      )
     })
   })
 
@@ -328,7 +336,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref('model_a.safetensors'),
           assetKind: () => 'model',
           isAssetMode: () => true,
@@ -336,8 +343,8 @@ describe('useWidgetSelectItems', () => {
         })
       )
 
-      expect(dropdownItems.value).toHaveLength(2)
-      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
+      expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
         'model_a.safetensors',
         'model_b.safetensors'
       ])
@@ -353,7 +360,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref('missing.safetensors'),
           assetKind: () => 'model',
           isAssetMode: () => true,
@@ -361,8 +367,10 @@ describe('useWidgetSelectItems', () => {
         })
       )
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('missing.safetensors')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
+        'missing.safetensors'
+      )
     })
 
     it('includes missing cloud asset in dropdownItems', () => {
@@ -383,7 +391,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems, selectedSet } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref('missing_model.safetensors'),
           assetKind: () => 'model',
           isAssetMode: () => true,
@@ -391,9 +398,11 @@ describe('useWidgetSelectItems', () => {
         })
       )
 
-      expect(dropdownItems.value).toHaveLength(2)
-      expect(dropdownItems.value[0].name).toBe('missing_model.safetensors')
-      expect(dropdownItems.value[0].id).toBe(
+      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
+        'missing_model.safetensors'
+      )
+      expect(pagedItems(dropdownItems.value)[0].id).toBe(
         'missing-missing_model.safetensors'
       )
       expect(selectedSet.value.has('missing-missing_model.safetensors')).toBe(
@@ -457,17 +466,16 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref('output_001.png')
         })
       )
       filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(dropdownItems.value).toHaveLength(3)
+        expect(pagedItems(dropdownItems.value)).toHaveLength(3)
       })
 
-      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+      expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
         'output_001.png [output]',
         'output_002.png [output]',
         'output_003.png [output]'
@@ -481,15 +489,16 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref('single.png')
         })
       )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('single.png [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
+        'single.png [output]'
+      )
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
     })
 
@@ -514,17 +523,16 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(dropdownItems.value).toHaveLength(4)
+        expect(pagedItems(dropdownItems.value)).toHaveLength(4)
       })
 
-      const names = dropdownItems.value.map((i) => i.name)
+      const names = pagedItems(dropdownItems.value).map((i) => i.name)
       expect(names).toContain('a1.png [output]')
       expect(names).toContain('a2.png [output]')
       expect(names).toContain('b1.png [output]')
@@ -570,21 +578,20 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
 
       await vi.waitFor(() => {
-        expect(dropdownItems.value).toHaveLength(2)
+        expect(pagedItems(dropdownItems.value)).toHaveLength(2)
       })
 
       expect(mockResolveOutputAssetItems).toHaveBeenCalledWith(
         expect.objectContaining({ jobId: 'job-complete' }),
         expect.any(Object)
       )
-      const names = dropdownItems.value.map((i) => i.name)
+      const names = pagedItems(dropdownItems.value).map((i) => i.name)
       expect(names).toEqual(['out1.png [output]', 'out2.png [output]'])
     })
 
@@ -600,7 +607,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
@@ -614,8 +620,10 @@ describe('useWidgetSelectItems', () => {
         )
       })
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('preview.png [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
+        'preview.png [output]'
+      )
       consoleWarnSpy.mockRestore()
     })
 
@@ -650,7 +658,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
@@ -659,8 +666,8 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(mockResolveOutputAssetItems).not.toHaveBeenCalled()
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe(
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
         '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png [output]'
       )
     })
@@ -678,22 +685,23 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
       // The value (item.name) — what becomes modelValue on click — must be the
       // hash-keyed path so /api/view resolves it. Cloud's hash is in
       // asset.hash, not asset.name (which is the human filename).
-      expect(dropdownItems.value[0].name).toBe(
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
         '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png [output]'
       )
       // The label keeps the human filename for the dropdown UI.
-      expect(dropdownItems.value[0].label).toContain('z-image-turbo_00093_.png')
+      expect(pagedItems(dropdownItems.value)[0].label).toContain(
+        'z-image-turbo_00093_.png'
+      )
     })
 
     it('falls back to asset.name when hash is absent (local/history path)', async () => {
@@ -707,15 +715,16 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('ComfyUI_00001_.png [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
+        'ComfyUI_00001_.png [output]'
+      )
     })
 
     it('does not partially expand the list while some multi-output jobs are still resolving (FE-227)', async () => {
@@ -743,14 +752,13 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+      expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
         'previewFirst.png [output]',
         'previewSecond.png [output]'
       ])
@@ -773,7 +781,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
       await nextTick()
 
-      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+      expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
         'previewFirst.png [output]',
         'previewSecond.png [output]'
       ])
@@ -800,10 +808,10 @@ describe('useWidgetSelectItems', () => {
       ])
 
       await vi.waitFor(() => {
-        expect(dropdownItems.value).toHaveLength(5)
+        expect(pagedItems(dropdownItems.value)).toHaveLength(5)
       })
 
-      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+      expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
         'out1a.png [output]',
         'out1b.png [output]',
         'out1c.png [output]',
@@ -831,7 +839,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined),
           assetKind: () => 'mesh' as const
         })
@@ -839,8 +846,10 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('3d/ComfyUI_00105_.glb [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe(
+        '3d/ComfyUI_00105_.glb [output]'
+      )
     })
 
     it('omits the subfolder prefix when the asset has none', async () => {
@@ -860,7 +869,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined),
           assetKind: () => 'mesh' as const
         })
@@ -868,8 +876,8 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe('plain.glb [output]')
     })
 
     it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
@@ -889,7 +897,6 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined),
           assetKind: () => 'image' as const
         })
@@ -897,8 +904,8 @@ describe('useWidgetSelectItems', () => {
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].name).toBe('photo.png [output]')
     })
   })
 
@@ -919,15 +926,16 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].label).toBe('sunset_photo.png [output]')
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].label).toBe(
+        'sunset_photo.png [output]'
+      )
     })
 
     it('renders asset.display_name in label when queue-mapped asset lacks metadata.filename', async () => {
@@ -948,18 +956,17 @@ describe('useWidgetSelectItems', () => {
 
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
-          values: () => [],
           modelValue: ref(undefined)
         })
       )
       filterSelected.value = 'outputs'
       await nextTick()
 
-      expect(dropdownItems.value).toHaveLength(1)
-      expect(dropdownItems.value[0].label).toBe(
+      expect(pagedItems(dropdownItems.value)).toHaveLength(1)
+      expect(pagedItems(dropdownItems.value)[0].label).toBe(
         'ComfyUI-90_right_00001_.png [output]'
       )
-      expect(dropdownItems.value[0].name).toMatch(
+      expect(pagedItems(dropdownItems.value)[0].name).toMatch(
         /^a1ef7d29.*\.png \[output\]$/
       )
     })
@@ -988,8 +995,7 @@ describe('useWidgetSelectItems', () => {
     it('returns set with missing item id when modelValue matches no input', () => {
       const { selectedSet } = useWidgetSelectItems(
         createDefaultOptions({
-          modelValue: ref('nonexistent.png'),
-          values: () => ['img_001.png']
+          modelValue: ref('nonexistent.png')
         })
       )
       expect(selectedSet.value.size).toBe(1)
@@ -1014,7 +1020,7 @@ describe('useWidgetSelectItems', () => {
       ])
 
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-      const names = dropdownItems.value.map((i) => i.name)
+      const names = pagedItems(dropdownItems.value).map((i) => i.name)
       expect(names).not.toContain('photo_abc.jpg')
       expect(names).toContain('img_001.png')
     })
@@ -1052,15 +1058,10 @@ describe('useWidgetSelectItems', () => {
         }
       ])
 
-      const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          values: () => [],
-          outputMediaAssets: mockMediaAssets
-        })
-      )
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
       await nextTick()
 
-      const names = dropdownItems.value.map((i) => i.name)
+      const names = pagedItems(dropdownItems.value).map((i) => i.name)
       expect(names).not.toContain('gone.png [output]')
       expect(names).toContain('kept.png [output]')
     })
@@ -1091,12 +1092,10 @@ describe('useWidgetSelectItems', () => {
         }
       ])
 
-      const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({ outputMediaAssets: mockMediaAssets })
-      )
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
       await nextTick()
 
-      const names = dropdownItems.value.map((i) => i.name)
+      const names = pagedItems(dropdownItems.value).map((i) => i.name)
       expect(names).not.toContain('photo_abc.jpg')
       expect(names).toContain('photo_abc.jpg [output]')
     })
@@ -1119,11 +1118,11 @@ describe('useWidgetSelectItems', () => {
       ])
 
       const { dropdownItems, selectedSet } = useWidgetSelectItems(
-        createDefaultOptions({ modelValue, values: () => [] })
+        createDefaultOptions({ modelValue })
       )
       await nextTick()
 
-      const names = dropdownItems.value.map((i) => i.name)
+      const names = pagedItems(dropdownItems.value).map((i) => i.name)
       expect(names).not.toContain('gone.png [output]')
       expect(selectedSet.value.size).toBe(0)
     })

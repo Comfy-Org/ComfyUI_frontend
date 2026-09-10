@@ -1,5 +1,5 @@
 import { toValue } from 'vue'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -12,7 +12,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
-  dropdownItems: ComputedRef<FormDropdownItem[]>
+  dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
@@ -29,7 +29,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const name =
       id == null
         ? undefined
-        : dropdownItems.value.find((item) => item.id === id)?.name
+        : toValue(dropdownItems).find((item) => item.id === id)?.name
 
     modelValue.value = name
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
