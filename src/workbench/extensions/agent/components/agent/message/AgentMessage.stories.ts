@@ -104,6 +104,24 @@ export const CompletedSummary: Story = {
   }
 }
 
+export const ThinkingOnly: Story = {
+  name: 'DES-778 Thinking-only turn without tool calls',
+  args: {
+    message: message(
+      [
+        {
+          type: 'thinking',
+          text: 'Considering the request. I can answer without changing the graph.',
+          state: 'done',
+          durationMs: 1400
+        },
+        { type: 'text', text: 'No graph edits are needed.', state: 'done' }
+      ],
+      false
+    )
+  }
+}
+
 export const FailedCall: Story = {
   name: 'DES-778 Failed call with an error reply',
   args: {
