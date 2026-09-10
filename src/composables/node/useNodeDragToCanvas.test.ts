@@ -324,7 +324,7 @@ describe('useNodeDragToCanvas', () => {
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
-            operation: 'render',
+            operation: 'configure',
             outcome: 'failed'
           },
           context: {
@@ -373,7 +373,7 @@ describe('useNodeDragToCanvas', () => {
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
-            operation: 'render',
+            operation: 'add',
             outcome: 'failed'
           },
           context: {
