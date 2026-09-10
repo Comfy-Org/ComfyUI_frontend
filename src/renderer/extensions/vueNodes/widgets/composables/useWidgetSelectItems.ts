@@ -1,6 +1,6 @@
 import { capitalize } from 'es-toolkit'
 import { computed, shallowRef, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -30,14 +30,9 @@ import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { PagedList } from '@/utils/pagedList'
 
-function getDisplayLabel(
-  value: string,
-  getOptionLabel?: ((value?: string | null) => string) | undefined
-): string {
-  if (!getOptionLabel) return value
-
+function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
   try {
-    return getOptionLabel(value) || value
+    return getLabel?.(value) || value
   } catch (e) {
     console.warn('Failed to map value:', e)
     return value
@@ -61,28 +56,19 @@ function getMediaUrl(
 
 export interface UseWidgetSelectItemsOptions {
   values: MaybeRefOrGetter<unknown[] | undefined>
-  getOptionLabel: MaybeRefOrGetter<
-    ((value?: string | null) => string) | undefined
-  >
-  modelValue: Ref<string | undefined>
+  getOptionLabel: MaybeRefOrGetter<((value: string) => string) | undefined>
+  modelValue: MaybeRefOrGetter<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
   outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
-  isAssetMode: MaybeRefOrGetter<boolean | undefined>
-  filterSelected: Ref<string>
-  ownershipSelected: Ref<OwnershipOption>
-  baseModelSelected: Ref<Set<string>>
+  isAssetMode: MaybeRefOrGetter<boolean>
+  filterSelected: MaybeRefOrGetter<string>
+  ownershipSelected: MaybeRefOrGetter<OwnershipOption>
+  baseModelSelected: MaybeRefOrGetter<Set<string>>
 }
 
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
-  const {
-    modelValue,
-    outputMediaAssets,
-    assetData,
-    filterSelected,
-    ownershipSelected,
-    baseModelSelected
-  } = options
+  const { modelValue, outputMediaAssets, assetData } = options
 
   const missingMediaStore = useMissingMediaStore()
   const missingMediaValues = computed<ReadonlySet<string>>(
@@ -93,8 +79,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   )
 
   const filterOptions = computed<FilterOption[]>(() => {
-    const isAsset = toValue(options.isAssetMode)
-    if (isAsset) {
+    if (toValue(options.isAssetMode)) {
       const categoryName = assetData?.category.value ?? 'All'
       return [{ name: capitalize(categoryName), value: 'all' }]
     }
@@ -105,13 +90,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     ]
   })
 
-  const showOwnershipFilter = computed(() => !!toValue(options.isAssetMode))
-
   const { ownershipOptions, availableBaseModels } = useAssetFilterOptions(
     () => assetData?.assets.value ?? []
   )
 
-  const showBaseModelFilter = computed(() => !!toValue(options.isAssetMode))
   const baseModelOptions = computed<FilterOption[]>(() => {
     if (!toValue(options.isAssetMode) || !assetData) return []
     return availableBaseModels.value
@@ -254,7 +236,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const missingValueItem = computed<FormDropdownItem | undefined>(() => {
-    const currentValue = modelValue.value
+    const currentValue = toValue(modelValue)
     if (!currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
@@ -315,8 +297,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
   const filteredAssetItems = computed<FormDropdownItem[]>(() =>
     filterItemByBaseModels(
-      filterItemByOwnership(assetItems.value, ownershipSelected.value),
-      baseModelSelected.value
+      filterItemByOwnership(
+        assetItems.value,
+        toValue(options.ownershipSelected)
+      ),
+      toValue(options.baseModelSelected)
     )
   )
 
@@ -328,7 +313,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (toValue(options.isAssetMode) && assetData) {
       return [...missingItems.value, ...filteredAssetItems.value]
     }
-    switch (filterSelected.value) {
+    switch (toValue(options.filterSelected)) {
       case 'inputs':
         return inputItems.value
       case 'outputs':
@@ -343,7 +328,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const selectedSet = computed<Set<string>>(() => {
-    const currentValue = modelValue.value
+    const currentValue = toValue(modelValue)
     if (currentValue === undefined) return new Set()
 
     const item = dropdownItems.value.find((item) => item.name === currentValue)
@@ -353,9 +338,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   return {
     dropdownItems,
     filterOptions,
-    showOwnershipFilter,
     ownershipOptions,
-    showBaseModelFilter,
     baseModelOptions,
     selectedSet
   }
