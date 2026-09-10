@@ -26,6 +26,7 @@ const CLOUD_QUICKSTART =
 // Fixed so a rerun seeds nothing and the printed recorder command never moves.
 const TEMPORAL_INSTALL =
   'brew install temporal, or: https://docs.temporal.io/cli#install'
+// Fixed so a rerun seeds nothing and the printed recorder command never moves.
 const RECORD_USER_ID = 'rec-local-user'
 const RECORD_WORKSPACE_ID = 'w-1f2e3d4c-5b6a-4798-8899-aabbccddeeff'
 
