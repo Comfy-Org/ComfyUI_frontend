@@ -24,10 +24,10 @@ const auth = vi.hoisted(() => ({
 
 vi.mock(import('../../config/workshop-session-state'), () => ({
   useWorkshopSession: () => ({
-    user: ref(null),
+    user: computed(() => null),
     session: computed(() => auth.session.value),
-    sessionFailure: ref<SessionFailure>(),
-    settled: ref(true),
+    sessionFailure: computed<SessionFailure | undefined>(() => undefined),
+    settled: computed(() => true),
     signedIn: computed(() => auth.session.value !== undefined),
     ensureFresh: auth.ensureFresh,
     remint: auth.ensureFresh,
