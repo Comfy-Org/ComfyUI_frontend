@@ -206,6 +206,18 @@ describe('agentRestClient route + method', () => {
     expect(fetchApi).toHaveBeenCalledTimes(3)
   })
 
+  it('bounds thread pagination when every page returns a fresh cursor', async () => {
+    for (let page = 0; page < 20; page++)
+      respond(
+        threadPage([thread(`page-${page}`, 'active')], true, `${page + 1}`)
+      )
+
+    await expect(createAgentRestClient().listThreads()).rejects.toThrow(
+      'Agent thread pagination exceeded the page limit'
+    )
+    expect(fetchApi).toHaveBeenCalledTimes(20)
+  })
+
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
     const page = (
       offset: number,

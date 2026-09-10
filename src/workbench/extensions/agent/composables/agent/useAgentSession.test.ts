@@ -1,9 +1,11 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type * as VueModule from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -45,7 +47,7 @@ afterEach(() => {
   for (const session of createdSessions.splice(0)) session.stop()
 })
 
-const THREAD_KEY = 'Comfy.Agent.ThreadId.user-1.workspace-1'
+const THREAD_KEY = 'Comfy.Agent.ThreadId.user-1/workspace-1'
 
 const identity = await vi.hoisted(async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
@@ -55,17 +57,32 @@ const identity = await vi.hoisted(async () => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ resolvedUserInfo: identity.user })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useCurrentUser: () =>
+      fromPartial<ReturnType<typeof actual.useCurrentUser>>({
+        resolvedUserInfo: identity.user
+      })
+  }
+})
 
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      activeWorkspaceId: identity.workspaceId
-    })
-  })
+  async (importOriginal) => {
+    const actual = await importOriginal()
+    const useTeamWorkspaceStore = Object.assign(
+      () =>
+        fromPartial<ReturnType<typeof actual.useTeamWorkspaceStore>>({
+          get activeWorkspaceId() {
+            return identity.workspaceId.value
+          }
+        }),
+      { $id: actual.useTeamWorkspaceStore.$id }
+    )
+    return { ...actual, useTeamWorkspaceStore }
+  }
 )
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -370,7 +387,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('a stopped session does not restore threads after the identity scope changes', async () => {
     localStorage.setItem(
-      'Comfy.Agent.ThreadId.user-1.workspace-2',
+      'Comfy.Agent.ThreadId.user-1/workspace-2',
       'thread-workspace-2'
     )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
@@ -390,7 +407,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('clears notices and restores the destination thread on a live identity change', async () => {
     localStorage.setItem(
-      'Comfy.Agent.ThreadId.user-1.workspace-2',
+      'Comfy.Agent.ThreadId.user-1/workspace-2',
       'thread-workspace-2'
     )
     const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
@@ -401,17 +418,26 @@ describe('useAgentSession (v1 composition root)', () => {
       })
     })
     const conversation = useAgentConversationStore()
+    const executionErrors = useExecutionErrorStore()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
     conversation.setThreadId('thread-workspace-1')
     conversation.startTurn('turn-1' as TurnId)
     await session.stopTurn()
     expect(session.notices.value).toHaveLength(1)
+    executionErrors.recordPromptError({
+      type: 'agent_api_failed',
+      message: 'Previous scope',
+      details: 'scope-one error'
+    })
+    executionErrors.showErrorOverlay()
 
     identity.workspaceId.value = 'workspace-2'
     await nextTick()
 
     expect(session.notices.value).toEqual([])
+    expect(executionErrors.lastPromptError).toBeNull()
+    expect(executionErrors.isErrorOverlayOpen).toBe(false)
     expect(session.threadId.value).toBe('thread-workspace-2')
     await vi.waitFor(() =>
       expect(getMessages).toHaveBeenCalledWith('thread-workspace-2')
@@ -1300,7 +1326,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
   })
 
-  it('(h10) a conversation switch during prepare() abandons the send with a notice instead of posting it elsewhere', async () => {
+  it('(h10) a conversation switch during prepare() preserves the failed prompt without posting it elsewhere', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>()
     const getMessages = vi.fn(
       async (): Promise<AgentMessages> => [
@@ -1331,20 +1357,103 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(await sendPromise).toBe(false)
     expect(postMessage).not.toHaveBeenCalled()
-    // The prompt must not land in the conversation that is now active.
-    expect(
-      session.entries.value.some(
-        (entry) =>
-          entry.role === 'user' && entry.text === 'meant for the new chat'
-      )
-    ).toBe(false)
-    expect(session.notices.value).toEqual([
-      {
-        level: 'error',
-        text: 'Message was not sent because the conversation changed'
-      }
-    ])
+    expect(session.entries.value.at(-2)).toMatchObject({
+      role: 'user',
+      text: 'meant for the new chat'
+    })
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message was not sent because the conversation changed'
+        }
+      ]
+    })
+    expect(session.notices.value).toEqual([])
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('keeps a send alive when the panel remounts during prepare', async () => {
+    let releasePrepare: () => void = () => undefined
+    const postMessage = vi.fn(
+      async (): Promise<AgentTurnAccepted> => ({
+        thread_id: 'th-remounted',
+        message_id: 'msg-remounted'
+      })
+    )
+    const rest = fakeRest({ postMessage })
+    const first = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        prepare: () =>
+          new Promise<void>((resolve) => {
+            releasePrepare = resolve
+          })
+      }
+    })
+    first.start()
+
+    const send = first.sendMessage('survive remount')
+    first.stop()
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+    releasePrepare()
+
+    expect(await send).toBe(true)
+    expect(postMessage).toHaveBeenCalledOnce()
+    expect(second.threadId.value).toBe('th-remounted')
+  })
+
+  it('persists and cancels an accepted turn when identity changes during POST', async () => {
+    let accept: (ack: AgentTurnAccepted) => void = () => undefined
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          accept = resolve
+        })
+    )
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const send = session.sendMessage('accepted before switch')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    identity.workspaceId.value = 'workspace-2'
+    await nextTick()
+    accept({ thread_id: 'th-old-scope', message_id: 'msg-old-scope' })
+
+    expect(await send).toBe(true)
+    expect(localStorage.getItem(THREAD_KEY)).toBe('th-old-scope')
+    expect(cancelMessage).toHaveBeenCalledWith('th-old-scope', 'msg-old-scope')
+    expect(session.threadId.value).toBeNull()
+  })
+
+  it('does not hydrate or persist before user and workspace identity resolve', async () => {
+    identity.user.value = null
+    identity.workspaceId.value = null
+    localStorage.setItem('Comfy.Agent.ThreadId.signed-out.personal', 'th-other')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(await session.sendMessage('unresolved identity')).toBe(true)
+    expect(
+      localStorage.getItem('Comfy.Agent.ThreadId.signed-out.personal')
+    ).toBe('th-other')
   })
 
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
