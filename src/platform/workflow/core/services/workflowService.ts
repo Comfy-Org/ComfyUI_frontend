@@ -273,7 +273,7 @@ export const useWorkflowService = () => {
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
-        await renameWorkflow(workflow, newPath)
+        if (!(await renameWorkflow(workflow, newPath))) return false
         target = workflow
       } else {
         target = workflowStore.saveAs(workflow, newPath)
@@ -312,9 +312,9 @@ export const useWorkflowService = () => {
           await workflowStore.saveWorkflow(workflow)
           return true
         }
-        await deleteWorkflow(existing, true)
+        if (!(await deleteWorkflow(existing, true))) return false
       }
-      await renameWorkflow(workflow, expectedPath)
+      if (!(await renameWorkflow(workflow, expectedPath))) return false
       toastStore.add({
         severity: 'info',
         summary: t(
@@ -411,8 +411,12 @@ export const useWorkflowService = () => {
     return queueWorkflowLoad(async () => {
       try {
         const loadFromRemote = !workflow.isLoaded
-        if (loadFromRemote) {
-          await workflow.load()
+        if (loadFromRemote && !(await workflow.load())) {
+          reportError(new Error(`Failed to load workflow '${workflow.path}'`), {
+            errorType: 'workflow_load_failure'
+          })
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         const loaded = await app.loadGraphData(
@@ -555,10 +559,17 @@ export const useWorkflowService = () => {
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
+    if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('workflowService.renameFailed')
+      })
+      return false
+    }
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
+    return true
   }
 
   /**
@@ -590,7 +601,7 @@ export const useWorkflowService = () => {
       })
       if (!closed) return false
     }
-    await workflowStore.deleteWorkflow(workflow)
+    if (!(await workflowStore.deleteWorkflow(workflow))) return false
     if (!silent) {
       toastStore.add({
         severity: 'info',
@@ -719,6 +730,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (!loadedWorkflow) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -751,11 +763,13 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      if (!loadedWorkflow) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (!loadedWorkflow) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
@@ -779,6 +793,7 @@ export const useWorkflowService = () => {
     options: { position?: Point } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) return
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
@@ -806,7 +821,7 @@ export const useWorkflowService = () => {
    * Takes an existing workflow and duplicates it with a new name
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
-    if (!workflow.isLoaded) await workflow.load()
+    if (!workflow.isLoaded && !(await workflow.load())) return
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
     if (state) state.id = generateUUID()

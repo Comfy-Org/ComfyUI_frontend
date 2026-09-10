@@ -101,16 +101,22 @@ describe('useUserFileStore', () => {
         expect(file.isLoaded).toBe(true)
       })
 
-      it('should throw error on failed load', async () => {
+      it('returns undefined and clears loading state on failed load', async () => {
         const file = new UserFile('file1.txt', 123, 100)
         vi.mocked(api.getUserData).mockResolvedValue({
           status: 404,
           statusText: 'Not Found'
         } as Response)
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
 
-        await expect(file.load()).rejects.toThrow(
-          "Failed to load file 'file1.txt': 404 Not Found"
-        )
+        await expect(file.load()).resolves.toBeUndefined()
+
+        expect(file.isLoading).toBe(false)
+        expect(file.isLoaded).toBe(false)
+        expect(consoleSpy).toHaveBeenCalledOnce()
+        consoleSpy.mockRestore()
       })
     })
 
@@ -157,6 +163,22 @@ describe('useUserFileStore', () => {
 
         expect(api.deleteUserData).toHaveBeenCalledWith('file1.txt')
       })
+
+      it('returns false when deleting fails', async () => {
+        const file = new UserFile('file1.txt', 123, 100)
+        vi.mocked(api.deleteUserData).mockResolvedValue({
+          status: 500,
+          statusText: 'Internal Server Error'
+        } as Response)
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+
+        await expect(file.delete()).resolves.toBe(false)
+
+        expect(consoleSpy).toHaveBeenCalledOnce()
+        consoleSpy.mockRestore()
+      })
     })
 
     describe('rename', () => {
@@ -176,6 +198,23 @@ describe('useUserFileStore', () => {
         expect(file.path).toBe('newfile.txt')
         expect(file.lastModified).toBe(456)
         expect(file.size).toBe(200)
+      })
+
+      it('does not change the path when renaming fails', async () => {
+        const file = new UserFile('file1.txt', 123, 100)
+        vi.mocked(api.moveUserData).mockResolvedValue({
+          status: 409,
+          statusText: 'Conflict'
+        } as Response)
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
+
+        await expect(file.rename('newfile.txt')).resolves.toBe(false)
+
+        expect(file.path).toBe('file1.txt')
+        expect(consoleSpy).toHaveBeenCalledOnce()
+        consoleSpy.mockRestore()
       })
     })
 
