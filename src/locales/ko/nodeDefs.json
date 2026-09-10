@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -16473,6 +16467,36 @@
       },
       "size": {
         "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Microsoft의 MAI-Image-2.6 모델을 사용하여 OpenRouter를 통해 이미지를 생성하거나 편집합니다. 텍스트를 이미지로 생성하거나, 최대 5개의 참조 이미지를 사용한 이미지 가이드 편집을 1K 또는 1.5K의 7가지 화면 비율로 수행할 수 있습니다.",
+    "display_name": "OpenRouter 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "이미지 생성에 사용할 OpenRouter 이미지 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

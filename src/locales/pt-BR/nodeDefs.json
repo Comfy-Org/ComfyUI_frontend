@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperatura"
-      },
       "model_thinking_level": {
         "name": "nível_de_raciocínio"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -16473,6 +16467,36 @@
       },
       "size": {
         "name": "tamanho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Gere ou edite imagens pelo OpenRouter com os modelos MAI-Image-2.6 da Microsoft: texto para imagem ou edição guiada por imagem com até cinco imagens de referência, em sete proporções de aspecto a 1K ou 1.5K.",
+    "display_name": "Imagem OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo de imagem OpenRouter usado para gerar a imagem."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
       }
     },
     "outputs": {

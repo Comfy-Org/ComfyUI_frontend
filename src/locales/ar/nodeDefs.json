@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "الحد الأقصى للرموز الناتجة"
       },
-      "model_temperature": {
-        "name": "درجة العشوائية"
-      },
       "model_thinking_level": {
         "name": "مستوى التفكير"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "المطالبة",
@@ -16473,6 +16467,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "أنشئ الصور أو حرّرها عبر OpenRouter باستخدام نماذج MAI-Image-2.6 من Microsoft: من نص إلى صورة، أو تحرير موجّه بالصور باستخدام ما يصل إلى خمس صور مرجعية، ضمن سبع نسب عرض إلى ارتفاع وبدقة 1K أو 1.5K.",
+    "display_name": "صورة OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج الصور من OpenRouter المستخدم لإنشاء الصورة."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
       }
     },
     "outputs": {
