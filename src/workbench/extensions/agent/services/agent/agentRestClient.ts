@@ -46,10 +46,7 @@ export class AgentApiError extends Error {
   }
 }
 
-/**
- * The server answered `2xx` and the body could not be read as JSON — a
- * truncated or proxy-mangled response, not a rejected request.
- */
+/** A `2xx` whose body could not be read: truncated or proxy-mangled. */
 export class AgentResponseUnreadableError extends Error {
   constructor(route: string, cause: unknown) {
     super(`Unreadable agent response body from ${route}`, { cause })

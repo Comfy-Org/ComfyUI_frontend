@@ -96,20 +96,12 @@ export interface AgentSessionDeps {
 const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
-/**
- * Statuses whose cause is the request itself or the caller's authorization, so
- * a byte-identical retry fails identically. Everything else the backend can
- * return (429, 5xx) and every transport failure is transient enough that
- * `retryable: true` is the honest answer.
- */
+/** Statuses a byte-identical retry fails identically on. */
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
   400, 401, 403, 404, 405, 409, 410, 422
 ])
 
-/**
- * Whether resending a failed agent request is safe. `accepted` is decisive: the
- * server is already running the turn, so a retry starts a second one.
- */
+/** `accepted` is decisive: resending a started turn starts a second one. */
 export function isRetryableRequestFailure(
   error: unknown,
   accepted: boolean
@@ -120,25 +112,14 @@ export function isRetryableRequestFailure(
   return true
 }
 
-/**
- * `AgentRestClient` reads a response body only after `response.ok`, so any
- * failure to read it out of `postMessage` — unparseable body or schema
- * mismatch — means the server accepted the turn and the FE lost the ack.
- */
+/** Past `response.ok` the turn is running, whatever the body turned out to be. */
 function isUnreadableAckFailure(error: unknown): boolean {
   return (
     error instanceof ZodError || error instanceof AgentResponseUnreadableError
   )
 }
 
-/**
- * `app:agent_error` (TEL-8): every FE-visible agent failure the backend's
- * `agent_turn_failed` does not already cover. Both booleans default from the
- * stage and are overridable, because the stage only approximates them: a
- * history load failing on the resume path is a request the server never
- * accepted while an accepted turn streams on, and a failed cancel is
- * post-acceptance yet safe to send again.
- */
+/** `app:agent_error` (TEL-8). The stage only approximates both booleans. */
 export function trackAgentError(
   errorClass: AgentErrorClass,
   stage: AgentErrorMetadata['failure_stage'],
@@ -211,30 +192,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     notices.value.push({ level: 'error', text })
   }
 
-  /**
-   * The last malformed-frame capture: which turn it belonged to (`null` for the
-   * idle stretch between turns) and whether the user saw it. A stream that has
-   * drifted from the schema, or a hostile one, repeats the same frame
-   * indefinitely, so the capture is deduped per turn rather than per frame —
-   * one report carries the same signal without an unbounded PostHog queue
-   * behind it. A later frame in the same turn is still reported if it escalates
-   * to something the user sees, since that is the case worth a dashboard.
-   */
+  /** A drifted stream repeats forever, so captures dedupe per turn. */
   let malformedStreamReport: {
     turnId: TurnId | null
     visible: boolean
   } | null = null
 
-  /**
-   * Every frame that fails `parseAgentWsEvent` is schema drift worth measuring,
-   * not just the `agent_message_done` sub-case that reaches the user: the rest
-   * are dropped with a `console.warn` no cloud console can see. `uiTreatment`
-   * records which of the two the user actually saw. A malformed frame is never
-   * retryable — nothing here can be re-sent — and `post_acceptance` is claimed
-   * only when a turn really was running. The same dedup bounds what reaches the
-   * unified Sentry/RUM sinks, which carry the parse failure itself rather than
-   * the normalized class.
-   */
   function trackMalformedStreamEvent(
     cause: ZodError,
     eventType: string,
@@ -306,9 +269,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true,
-    // Set by the resume paths, which stash a still-streaming turn before
-    // reloading its thread: the load is a fresh request the server never
-    // accepted, but a turn is accepted and running while it fails.
     stashedTurn = false
   ): Promise<boolean> {
     try {
@@ -413,10 +373,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           : input
       )
     }
-    // The post-ack bookkeeping below shares this try, so the catch cannot tell
-    // a rejected request from a QuotaExceededError out of localStorage or a
-    // throwing `adopted` callback. Everything after this flag flips is a
-    // failure of a turn the server already started.
+    // The server accepted the turn once this flips; the post-ack bookkeeping
+    // below shares the same try.
     let accepted = false
     try {
       const ack = await postTurn(conversationStore.threadId ?? 'new')
@@ -511,9 +469,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       promptEditState.value = { phase: 'idle' }
       reportError(error, { errorType: 'agent_cancel_turn_failed' })
       pushError(error instanceof Error ? error.message : String(error))
-      // The line above returned the prompt to idle and the turn is still
-      // running, so cancelling again is safe; the already-finished race is
-      // handled as the 409 above, not here.
       trackAgentError('cancel_failed', 'post_acceptance', 'error_overlay', {
         retryable: true
       })
@@ -598,8 +553,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!parsed.success) {
       const messageId = (raw as { data?: { message_id?: unknown } }).data
         ?.message_id
-      // Read before the abort below clears it, or every aborted turn reports
-      // itself as having had no turn.
+      // Read before the abort below clears it.
       let reportedTurnId = conversationStore.activeTurnId
       let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
       if (type === 'agent_message_done') {

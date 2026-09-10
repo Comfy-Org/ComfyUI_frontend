@@ -591,8 +591,6 @@ describe('AgentPanelRoot session notices', () => {
       type: 'agent_api_failed',
       details: i18n.global.t('agent.malformedEvent')
     })
-    // Nothing has been sent, so there is no accepted turn for this frame to
-    // have interrupted: the panel is idle and the overlay is all the user gets.
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'malformed_stream_event',
       failure_stage: 'pre_acceptance',

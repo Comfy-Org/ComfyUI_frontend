@@ -2192,8 +2192,6 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
 
     const [error, options] = vi.mocked(reportError).mock.calls[0]
-    // ZodError.message is JSON.stringify(issues): reporting it as the error
-    // itself gives Sentry one group per field path.
     expect((error as Error).message).toBe('Malformed agent stream event')
     expect(options.tags?.event_type).toBe('agent_message_done')
     expect(options.context?.issues).toEqual(expect.any(Array))
@@ -2306,9 +2304,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
   it('treats an unreadable ack body as an accepted turn', async () => {
     const rest = fakeRest({
       postMessage: vi.fn(async () => {
-        // `AgentRestClient` parses only after `response.ok`, so this is what a
-        // 2xx with an unexpected body raises: the turn started, the ack did not
-        // survive validation.
+        // What a 2xx with an unexpected body raises past `response.ok`.
         return zAgentTurnAccepted.parse({ thread_id: 'th-1' })
       })
     })
@@ -2472,9 +2468,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     for (let i = 0; i < 20; i++)
       emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
 
-    // One for the turn the first frame aborted, one for the idle session the
-    // other nineteen arrived into. The count is what matters: a stream that
-    // never stops repeating cannot grow the capture count with it.
+    // The aborted turn, then the idle session the other nineteen arrived into.
     expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
   })
 
