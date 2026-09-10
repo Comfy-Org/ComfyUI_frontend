@@ -407,6 +407,22 @@ describe('ensureFresh', () => {
     expect(result?.status === 'ok' && result.session.workspace.id).toBe('ws-9')
   })
 
+  it('rejects an explicit empty workspaceId instead of minting personal', async () => {
+    const fetchImpl = okFetch()
+    const { client } = makeClient({ fetchImpl })
+
+    const result = await client.ensureFresh(testUser(), { workspaceId: '' })
+
+    expect(result).toMatchObject({
+      status: 'error',
+      code: 'WORKSPACE_NOT_FOUND'
+    })
+    expect(
+      fetchImpl,
+      'an empty target must never reach the exchange as a personal mint'
+    ).not.toHaveBeenCalled()
+  })
+
   it('never lets a target-less read adopt a team-scoped credential, stored or in memory', async () => {
     const fetchImpl = okFetch('personal-jwt')
     const { client, storage } = makeClient({ fetchImpl })

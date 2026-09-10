@@ -238,6 +238,34 @@ describe('opt-in refresh scheduler', () => {
     ).toBe('error')
   })
 
+  it('stops the armed scheduler when a caller-initiated remint fails permanently', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementationOnce(async () => new Response('{}', { status: 401 }))
+      .mockImplementation(async () => mintResponse('jwt-resurrected'))
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    const failed = await client.remint(testUser())
+    expect(failed?.status).toBe('error')
+    expect(client.getToken()).toBeUndefined()
+
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
+
+    expect(
+      fetchImpl,
+      'the old refresh timer must not resurrect a permanently-failed session'
+    ).toHaveBeenCalledTimes(2)
+    expect(client.getToken()).toBeUndefined()
+  })
+
   it('reports each scheduled outcome to the host hook, and only scheduled ones', async () => {
     const outcomes: string[] = []
     const fetchImpl = vi

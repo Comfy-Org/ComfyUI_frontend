@@ -417,12 +417,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     user: AccountUser,
     options: SessionRequestOptions
   ): Promise<SessionResult> {
+    const workspaceId = options.workspaceId ?? clientOptions.workspaceId
+    if (workspaceId === '') {
+      // An explicit empty id is an invalid selection, not personal; fail
+      // closed instead of silently minting a personal-scoped session.
+      return Promise.resolve({ status: 'error', code: 'WORKSPACE_NOT_FOUND' })
+    }
     return exchangeToken(user, {
       exchangeUrl,
-      body:
-        (options.workspaceId ?? clientOptions.workspaceId)
-          ? { workspace_id: options.workspaceId ?? clientOptions.workspaceId }
-          : {},
+      body: workspaceId ? { workspace_id: workspaceId } : {},
       fetchImpl:
         options.fetchImpl ?? clientOptions.fetchImpl ?? globalThis.fetch,
       signal: options.signal ?? clientOptions.signal,
@@ -626,6 +629,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     } else {
       credential = undefined
       failure = result
+      if (isPermanentSessionError(result.code)) {
+        // A caller-initiated permanent failure must retire the armed scheduler
+        // and target too, or its old timer could resurrect the dead session.
+        scheduler?.stop()
+        credentialTarget = undefined
+        safeClear()
+      }
     }
     publish()
     return result
