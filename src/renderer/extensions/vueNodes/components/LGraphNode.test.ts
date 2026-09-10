@@ -109,6 +109,7 @@ vi.mock(
       executing: computed(() => mockData.mockExecuting),
       progress: computed(() => undefined),
       progressPercentage: computed(() => undefined),
+      activity: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
     }))

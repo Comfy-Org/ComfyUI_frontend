@@ -64,6 +64,8 @@
       <NodeBadge
         v-if="activityLabel"
         :text="activityLabel"
+        fg-color="var(--color-node-stroke-executing)"
+        css-icon="icon-[lucide--loader-circle] motion-safe:animate-spin"
         data-testid="node-activity-badge"
       />
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
