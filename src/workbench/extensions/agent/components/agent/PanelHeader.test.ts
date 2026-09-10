@@ -31,7 +31,8 @@ describe('PanelHeader', () => {
   it('exposes the test id and the heading id the dock landmark labels', () => {
     mount()
 
-    const heading = screen.getByTestId('agent-panel-title')
+    const heading = screen.getByRole('heading', { name: 'Comfy Agent' })
+    expect(heading).toHaveAttribute('data-testid', 'agent-panel-title')
     expect(heading).toHaveAttribute('id', 'agent-panel-title')
   })
 
