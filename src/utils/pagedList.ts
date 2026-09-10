@@ -5,16 +5,16 @@ export interface PagedList<T> {
   hasMore: Readonly<MaybeRef<boolean>>
   invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
-  items: Readonly<MaybeRef<T[]>>
+  items: Readonly<MaybeRef<readonly T[]>>
   loadMore: () => Promise<void>
   loadNew: () => Promise<void>
 }
 
 export class WrappedList<T, U> implements PagedList<U> {
-  readonly items: MaybeRef<U[]>
+  readonly items: MaybeRef<readonly U[]>
   constructor(
     private readonly childList: PagedList<T>,
-    private readonly transform: (items: readonly T[]) => U[]
+    private readonly transform: (items: readonly T[]) => readonly U[]
   ) {
     this.items = computed(() => this.transform(toValue(this.childList.items)))
   }
