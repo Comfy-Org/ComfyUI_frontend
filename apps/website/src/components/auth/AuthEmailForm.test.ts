@@ -33,7 +33,7 @@ vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
   }
 })
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return { useWorkshopTurnstileMode: () => ref('shadow') }
 })

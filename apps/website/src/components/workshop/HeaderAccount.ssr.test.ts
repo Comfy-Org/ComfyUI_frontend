@@ -5,12 +5,12 @@ import { renderToString } from 'vue/server-renderer'
 
 import HeaderAccount from './HeaderAccount.vue'
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return { useWorkshopAuthFlag: () => ref(true) }
 })
 
-vi.mock('../../config/workshop-session-state', async () => {
+vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   return {
     useWorkshopSession: () => ({
@@ -23,7 +23,7 @@ vi.mock('../../config/workshop-session-state', async () => {
   }
 })
 
-vi.mock('../../config/workshop-credits', async () => {
+vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   return { useWorkshopCredits: () => ({ balance: ref({ status: 'unknown' }) }) }
 })

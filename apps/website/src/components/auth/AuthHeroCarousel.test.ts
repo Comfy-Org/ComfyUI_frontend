@@ -9,7 +9,7 @@ import type { HeroSlide } from '../../config/hero-slides'
 
 const slides = vi.hoisted(() => ({ value: [] as HeroSlide[] }))
 
-vi.mock('../../config/hero-slides', () => ({
+vi.mock<unknown>(import('../../config/hero-slides'), () => ({
   get HERO_SLIDES() {
     return slides.value
   },
