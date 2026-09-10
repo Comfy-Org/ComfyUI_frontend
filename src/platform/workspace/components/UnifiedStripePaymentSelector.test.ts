@@ -21,9 +21,20 @@ const stripeMocks = vi.hoisted(() => {
   const mount = vi.fn()
   const destroy = vi.fn()
   const on = vi.fn()
+  const addressMount = vi.fn()
+  const addressDestroy = vi.fn()
+  const addressOn = vi.fn()
   const submit = vi.fn()
   const update = vi.fn()
-  const create = vi.fn(() => ({ mount, destroy, on }))
+  const paymentElement = { mount, destroy, on }
+  const addressElement = {
+    mount: addressMount,
+    destroy: addressDestroy,
+    on: addressOn
+  }
+  const create = vi.fn((type: string) =>
+    type === 'address' ? addressElement : paymentElement
+  )
   const elements = { submit, create, update }
   const createConfirmationToken = vi.fn()
   const stripe = {
@@ -34,6 +45,9 @@ const stripeMocks = vi.hoisted(() => {
     mount,
     destroy,
     on,
+    addressMount,
+    addressDestroy,
+    addressOn,
     submit,
     update,
     create,
@@ -57,6 +71,7 @@ const i18n = createI18n({
       subscription: {
         preview: {
           paymentMethod: 'Payment method',
+          billingAddress: 'Billing address',
           stripeMethodChoice: 'Choose a payment method',
           alipayRenewalNote: 'Alipay renewal note',
           payAndSubscribe: 'Pay and subscribe',
@@ -89,6 +104,13 @@ describe('UnifiedStripePaymentSelector', () => {
     handler?.[1]?.(arg)
   }
 
+  function fireAddressElementEvent(name: string, arg?: unknown) {
+    const handler = stripeMocks.addressOn.mock.calls.find(
+      ([event]) => event === name
+    )
+    handler?.[1]?.(arg)
+  }
+
   beforeEach(() => {
     sessionStorage.clear()
     clearCheckoutJourney()
@@ -103,11 +125,19 @@ describe('UnifiedStripePaymentSelector', () => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
-    stripeMocks.create.mockReturnValue({
-      mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy,
-      on: stripeMocks.on
-    })
+    stripeMocks.create.mockImplementation((type: string) =>
+      type === 'address'
+        ? {
+            mount: stripeMocks.addressMount,
+            destroy: stripeMocks.addressDestroy,
+            on: stripeMocks.addressOn
+          }
+        : {
+            mount: stripeMocks.mount,
+            destroy: stripeMocks.destroy,
+            on: stripeMocks.on
+          }
+    )
     stripeMocks.submit.mockResolvedValue({})
     stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
@@ -134,6 +164,25 @@ describe('UnifiedStripePaymentSelector', () => {
       await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
 
       fireStripeElementEvent('loaderror', {
+        error: { code: 'invalid_request' }
+      })
+
+      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'payment_element_failed',
+          element_phase: 'mount',
+          error_code: 'invalid_request'
+        })
+      )
+    })
+
+    it('reports an Address Element load failure as a mount failure', async () => {
+      renderSelector()
+      await waitFor(() =>
+        expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+      )
+
+      fireAddressElementEvent('loaderror', {
         error: { code: 'invalid_request' }
       })
 
@@ -269,6 +318,34 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(emitted().confirm).toEqual([['ctoken_1']])
   })
 
+  it('collects a billing address alongside the payment element', async () => {
+    renderSelector()
+
+    await waitFor(() =>
+      expect(stripeMocks.create).toHaveBeenCalledWith('address', {
+        mode: 'billing'
+      })
+    )
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+  })
+
+  it('blocks submission until the billing address is valid', async () => {
+    const user = userEvent.setup()
+    stripeMocks.submit.mockResolvedValue({
+      error: { code: 'incomplete_address', message: 'Enter your address' }
+    })
+    const { emitted } = renderSelector()
+
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
+    await user.click(screen.getByRole('button', { name: 'Pay and subscribe' }))
+
+    expect(await screen.findByText('Enter your address')).toBeTruthy()
+    expect(stripeMocks.createConfirmationToken).not.toHaveBeenCalled()
+    expect(emitted().confirm).toBeUndefined()
+  })
+
   it('keeps the customer in the form when Stripe rejects its contents', async () => {
     const user = userEvent.setup()
     stripeMocks.submit.mockResolvedValue({
@@ -361,13 +438,16 @@ describe('UnifiedStripePaymentSelector', () => {
     })
   })
 
-  it('destroys the Stripe element when the preview unmounts', async () => {
+  it('destroys the Stripe elements when the preview unmounts', async () => {
     const { unmount } = renderSelector()
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
 
     unmount()
 
     expect(stripeMocks.destroy).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.addressDestroy).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -376,11 +456,19 @@ describe('UnifiedStripePaymentSelector payment method configuration', () => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
-    stripeMocks.create.mockReturnValue({
-      mount: stripeMocks.mount,
-      destroy: stripeMocks.destroy,
-      on: stripeMocks.on
-    })
+    stripeMocks.create.mockImplementation((type: string) =>
+      type === 'address'
+        ? {
+            mount: stripeMocks.addressMount,
+            destroy: stripeMocks.addressDestroy,
+            on: stripeMocks.addressOn
+          }
+        : {
+            mount: stripeMocks.mount,
+            destroy: stripeMocks.destroy,
+            on: stripeMocks.on
+          }
+    )
   })
 
   it('mounts against the served configuration instead of a hardcoded method list', async () => {
