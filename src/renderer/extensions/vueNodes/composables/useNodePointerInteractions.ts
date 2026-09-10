@@ -80,6 +80,8 @@ export function useNodePointerInteractions(
         layoutStore.isDraggingVueNodes.value = true
         startDrag(press.event, press.nodeId)
         return
+      case 'movePress':
+        return
       case 'moveDrag':
         if (canDrag(press)) handleDrag(event, press.nodeId)
         return
