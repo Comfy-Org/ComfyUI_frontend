@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import { CalendarDays, MapPin } from '@lucide/vue'
+import { useResizeObserver } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -23,6 +26,18 @@ const {
 
 // One row markup for the list and the agenda, so the two views cannot drift.
 const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
+
+const descEl = ref<HTMLElement>()
+const clamped = ref(false)
+const expanded = ref(false)
+// A clamped paragraph overflows its own box; re-measuring on resize keeps
+// the Read more affordance honest as the list column changes width. While
+// expanded nothing overflows, so the last measurement is kept.
+useResizeObserver(descEl, ([entry]) => {
+  if (expanded.value) return
+  const el = entry.target as HTMLElement
+  clamped.value = el.scrollHeight > el.clientHeight + 1
+})
 </script>
 
 <template>
@@ -54,23 +69,46 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
         {{ row.category }}
       </Badge>
 
-      <div class="flex min-w-0 items-center gap-2">
-        <h3 class="truncate text-[15px] font-light text-primary-warm-white">
+      <div class="flex min-w-0 items-start gap-2">
+        <h3 class="text-sm font-light text-primary-warm-white">
           {{ row.title }}
         </h3>
         <Badge
           v-if="!row.upcoming"
           variant="subtle"
           size="xxs"
-          class="shrink-0 uppercase"
+          class="mt-0.5 shrink-0 uppercase"
         >
           {{ t('events.directory.pastBadge', locale) }}
         </Badge>
       </div>
 
-      <p class="line-clamp-2 text-[11px] text-primary-comfy-canvas/50">
+      <p
+        ref="descEl"
+        :class="
+          cn(
+            'text-xs text-primary-comfy-canvas/50',
+            !expanded && 'line-clamp-2'
+          )
+        "
+      >
         {{ row.description }}
       </p>
+      <button
+        v-if="clamped || expanded"
+        type="button"
+        class="self-start text-[11px] font-semibold text-primary-comfy-canvas/70 transition-colors hover:text-primary-warm-white"
+        @click.stop="expanded = !expanded"
+      >
+        {{
+          t(
+            expanded
+              ? 'events.directory.readLess'
+              : 'events.directory.readMore',
+            locale
+          )
+        }}
+      </button>
 
       <div
         class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]"
