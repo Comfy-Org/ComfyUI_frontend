@@ -1,13 +1,11 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type * as VueModule from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
-import type * as CurrentUserModule from '@/composables/auth/useCurrentUser'
-import type * as TeamWorkspaceModule from '@/platform/workspace/stores/teamWorkspaceStore'
-
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
@@ -31,41 +29,44 @@ import { useAgentConversationStore } from '../../stores/agent/agentConversationS
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource, TurnOrigin } from './useAgentSession'
-import { useAgentSession } from './useAgentSession'
+import type { AgentEventSource } from '../../services/agent/agentEventSource'
+import type { TurnOrigin } from './useAgentSession'
+import { useAgentSession as createAgentSession } from './useAgentSession'
+
+type AgentSession = ReturnType<typeof createAgentSession>
+const createdSessions: AgentSession[] = []
+const useAgentSession = (...args: Parameters<typeof createAgentSession>) => {
+  const session = createAgentSession(...args)
+  createdSessions.push(session)
+  return session
+}
+
+afterEach(() => {
+  for (const session of createdSessions.splice(0)) session.stop()
+})
 
 const THREAD_KEY = 'Comfy.Agent.ThreadId.user-1.workspace-1'
 
-const identity = vi.hoisted(() => ({
-  user: { __v_isRef: true, value: { id: 'user-1' } },
-  workspaceId: { __v_isRef: true, value: 'workspace-1' }
+const identity = await vi.hoisted(async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
+  return {
+    user: ref<{ id: string } | null>({ id: 'user-1' }),
+    workspaceId: ref<string | null>('workspace-1')
+  }
+})
+
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () => ({ resolvedUserInfo: identity.user })
 }))
 
-vi.mock(import('@/composables/auth/useCurrentUser'), async () => {
-  const actual = await vi.importActual<typeof CurrentUserModule>(
-    '@/composables/auth/useCurrentUser'
-  )
-  return {
-    ...actual,
-    useCurrentUser: () =>
-      ({ resolvedUserInfo: identity.user }) as unknown as ReturnType<
-        typeof actual.useCurrentUser
-      >
-  }
-})
-
-vi.mock(import('@/platform/workspace/stores/teamWorkspaceStore'), async () => {
-  const actual = await vi.importActual<typeof TeamWorkspaceModule>(
-    '@/platform/workspace/stores/teamWorkspaceStore'
-  )
-  return {
-    ...actual,
-    useTeamWorkspaceStore: Object.assign(
-      () => ({ activeWorkspaceId: identity.workspaceId }),
-      { $id: 'teamWorkspace' }
-    ) as unknown as typeof actual.useTeamWorkspaceStore
-  }
-})
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({
+      activeWorkspaceId: identity.workspaceId
+    })
+  })
+)
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -385,6 +386,36 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(getMessages).toHaveBeenCalledWith('thread-workspace-2')
     )
     expect(getMessages).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears notices and restores the destination thread on a live identity change', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.ThreadId.user-1.workspace-2',
+      'thread-workspace-2'
+    )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
+    const rest = fakeRest({
+      getMessages,
+      cancelMessage: vi.fn(async () => {
+        throw new Error('scope-one error')
+      })
+    })
+    const conversation = useAgentConversationStore()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    conversation.setThreadId('thread-workspace-1')
+    conversation.startTurn('turn-1' as TurnId)
+    await session.stopTurn()
+    expect(session.notices.value).toHaveLength(1)
+
+    identity.workspaceId.value = 'workspace-2'
+    await nextTick()
+
+    expect(session.notices.value).toEqual([])
+    expect(session.threadId.value).toBe('thread-workspace-2')
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('thread-workspace-2')
+    )
   })
 
   it.for([

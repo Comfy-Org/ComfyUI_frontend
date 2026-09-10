@@ -18,15 +18,11 @@ import type {
   DraftSnapshot,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
+import type { AgentEventSource } from '../../services/agent/agentEventSource'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
-
-export interface AgentEventSource {
-  subscribe(listener: (raw: unknown) => void): () => void
-  onStatus?(listener: (live: boolean) => void): () => void
-}
 
 export interface SessionNotice {
   level: 'error'
@@ -177,14 +173,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
     loadGeneration++
     conversationStore.dropBackgroundTurns()
     conversationStore.reset()
+    notices.value = []
+    promptEditState.value = { phase: 'idle' }
+    answeringAskIds.value = new Set()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
+  }
+
+  function restoreStoredThread(): void {
+    if (conversationStore.messages.length !== 0) return
+    const stored = storageGet()
+    if (stored === null) return
+    const generation = ++loadGeneration
+    conversationStore.setThreadId(stored)
+    void hydrateFromServer(
+      stored,
+      () =>
+        generation === loadGeneration && ownedGeneration === sessionGeneration
+    )
   }
 
   const stopScopeWatch = watch(storageScope, (scope) => {
     if (ownedGeneration !== sessionGeneration) return
     clearConversation()
     rememberedStorageScope = scope
+    restoreStoredThread()
   })
 
   function pushError(text: string): void {
@@ -216,19 +229,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       })
       return
     }
-    if (conversationStore.messages.length === 0) {
-      const stored = storageGet()
-      if (stored !== null) {
-        const generation = ++loadGeneration
-        conversationStore.setThreadId(stored)
-        void hydrateFromServer(
-          stored,
-          () =>
-            generation === loadGeneration &&
-            ownedGeneration === sessionGeneration
-        )
-      }
-    }
+    restoreStoredThread()
   }
 
   async function hydrateFromServer(
