@@ -12,6 +12,70 @@ import { toError } from '@/utils/errorUtil'
  */
 export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
+/**
+ * Shared tag vocabulary for diagnostics, per ADR-TELEMETRY-ERRORS-0030 rule 2.
+ * The keys are optional and other tags are still allowed, but the five below
+ * are spelled once here so a new call site cannot invent a second spelling of
+ * a value a dashboard groups on.
+ */
+export type FailureKind =
+  | 'invariant'
+  | 'bad_state'
+  | 'missing_event'
+  | 'caught_unexpected'
+  | 'degraded'
+
+export type FeatureArea =
+  | 'workflow'
+  | 'queue'
+  | 'canvas'
+  | 'nodes'
+  | 'auth'
+  | 'cloud'
+  | 'agent'
+  | 'crdt'
+  | 'billing'
+  | 'extensions'
+  | 'settings'
+  | 'assets'
+
+export type DiagnosticOperation =
+  | 'load'
+  | 'save'
+  | 'execute'
+  | 'sync'
+  | 'import'
+  | 'export'
+  | 'render'
+  | 'navigate'
+  | 'auth'
+  /** Registry amendment: emitted by `onboarding/auth.ts` before the taxonomy. */
+  | 'submit_survey'
+
+export type DiagnosticOutcome =
+  | 'failed'
+  | 'recovered'
+  | 'aborted'
+  | 'timed_out'
+  | 'missing'
+  /**
+   * Registry amendments: both are already emitted by `useBillingCapabilities`,
+   * so they are recorded here rather than renamed, which would break the
+   * queries already reading them.
+   */
+  | 'denied'
+  | 'unavailable'
+
+export type AssertMode = 'soft' | 'hard' | 'sampled'
+
+export type DiagnosticTags = {
+  failure_kind?: FailureKind
+  feature_area?: FeatureArea
+  operation?: DiagnosticOperation
+  outcome?: DiagnosticOutcome
+  assert_mode?: AssertMode
+} & Record<string, string | number | boolean | undefined>
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
@@ -19,7 +83,7 @@ export interface ReportErrorOptions {
    * `error_type` RUM context field.
    */
   errorType: string
-  tags?: Record<string, string | number | boolean | undefined>
+  tags?: DiagnosticTags
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
   /**

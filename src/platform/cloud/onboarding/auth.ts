@@ -1,6 +1,7 @@
 import { addBreadcrumb } from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
+import type { DiagnosticOperation } from '@/platform/telemetry/reportError'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { toError } from '@/utils/errorUtil'
@@ -16,7 +17,7 @@ function captureApiError(
   endpoint: string,
   errorType: 'http_error' | 'network_error',
   httpStatus?: number,
-  operation?: string,
+  operation?: DiagnosticOperation,
   extraContext?: Record<string, unknown>
 ) {
   reportError(error, {
