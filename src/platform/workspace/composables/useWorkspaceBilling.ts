@@ -1,4 +1,11 @@
-import { computed, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -19,6 +26,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -366,6 +374,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  // A cancellation or card change made in the portal tab never pushes back to
+  // this one — status has no focus refetch and capability reads are paced —
+  // so the next return to the app re-reads everything the portal could have
+  // changed.
+  let portalReturnRefresh: (() => void) | null = null
+  function refreshOnPortalReturn() {
+    if (portalReturnRefresh) {
+      document.removeEventListener('visibilitychange', portalReturnRefresh)
+    }
+    const onReturn = () => {
+      if (document.visibilityState !== 'visible') return
+      document.removeEventListener('visibilitychange', onReturn)
+      portalReturnRefresh = null
+      void Promise.allSettled([
+        fetchStatus(),
+        fetchBalance(),
+        useBillingCapabilities().refresh()
+      ])
+    }
+    portalReturnRefresh = onReturn
+    document.addEventListener('visibilitychange', onReturn)
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (portalReturnRefresh) {
+        document.removeEventListener('visibilitychange', portalReturnRefresh)
+        portalReturnRefresh = null
+      }
+    })
+  }
+
   async function manageSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -374,6 +414,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
       if (response.url) {
         window.open(response.url, '_blank')
+        refreshOnPortalReturn()
       }
     } catch (err) {
       error.value =
