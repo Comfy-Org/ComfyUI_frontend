@@ -3,11 +3,11 @@
 Updated September 10, 2026.
 
 `ben/models-integration` is the intended merge branch. It is separate from
-the disposable #17263 preview (`ben/workshop-16556-content-preview`). It stacks
-on Maanil's consolidated auth PR #17283, currently
-`957a2403112291d666a8a1fa8ba4bc98b3d98f19`. No shared account-package behavior is
-changed relative to that base. Retarget to main only after checking the auth
-squash result and preserving this branch's own diff.
+the disposable #17263 preview (`ben/workshop-16556-content-preview`). It now
+targets main, directly on Maanil's merged auth squash
+`6f22e4bbbefb41f331aee90163933b9b0b82db74` (#17283). The account package and
+website auth code in that squash match the former `957a240311` base. Only our
+two integration/fix commits were replayed; no auth code was changed.
 
 The older content-only #17227 overlaps this integration. Reconcile its scope
 before merging either PR; it has not been closed or modified by this preparation.
@@ -16,7 +16,7 @@ before merging either PR; it has not been closed or modified by this preparation
 
 - Mar's Models layout, with Rob's packed model/use-case content and distinct
   record IDs. Source content remains 288 records covering 268 original IDs.
-- Verified content/Router/schema intersection: 157 published use-case pages,
+- Verified content/Router/schema intersection: 155 published use-case pages,
   113 Router IDs, zero published Incomplete entries. Unsupported source records
   are retained in the content file but have no catalogue card or detail route.
 - 207 pinned Router documents and 206 authored input contracts at cloud commit
@@ -27,6 +27,9 @@ before merging either PR; it has not been closed or modified by this preparation
 - Real shared account/session integration and opt-in Router execution.
 - Insufficient-credit errors link to the current backend family's real
   `/?settings=plan-credits` page in a new tab, preserving the form and uploads.
+- Eric's media/defaults/layout fixes, including per-use-case creator variants,
+  validated example inputs and distinct Seedance modes. See
+  `MODELS_FEEDBACK_2026-09-10.md` for evidence and remaining editorial gaps.
 
 ## Required before ready-for-review / merge
 
@@ -60,19 +63,25 @@ Production website-origin CORS is a separate backend change, cloud #8885. It
 has not been deployed by this work. The `workshop` PR label enables preview
 Models/auth/Run but does not switch its default staging backend to production.
 
-## Verification already completed on the matching preview code
+## Latest focused verification
 
-- 1,286 focused schema/content/Router/auth/session/balance/component tests;
-  10 header tests; 38 field/media/card tests; 119 shared session-core tests.
-- Enabled build: 2,001 HTML outputs including legacy routes. All 157 intended
-  use-case routes respond and match the packed record's Router ID and content.
-- Installed Playwright: editable seeded prompts on Gemini Omni and Ideogram V3,
-  normal controls, Ideogram aspect ratio and Advanced speed selection, empty
-  optional seed, no Incomplete state, and missing MiniMax routes returning 404.
-  External traffic is blocked; no generation requests are issued.
+- 1,006 focused tests in 10 files for use-case contracts, example downloads,
+  native request composition, identity joins, URL uploads, related cards and
+  media controls. Full lint and root/account/website typechecks pass at commit.
+- Enabled build: 1,999 HTML outputs including legacy routes. The published
+  intersection now has 155 use-case pages; two incorrectly categorized entries
+  are withheld without deleting source content.
+- Installed Playwright on dev and built output: both hero videos decode frames;
+  Grok's image/defaults and Veo's two frames load; Veo's API tab composes Base64;
+  source uploads are visible on the checked image/video pages. Desktop and
+  mobile have no page errors or horizontal overflow. Generation POSTs blocked.
 - All 207 schema documents match the pinned backend files. Contract/index/alias
   regeneration is byte-identical; Rob's source content is unchanged by the
   schema refresh and auth-base sync.
+
+The previous pass also verified auth/session/balance behavior and all use-case
+route identities. Those historical checks are not a fresh paid-generation or
+production-deployment claim.
 
 This assembled feature exceeds the repository's usual small-PR size. Review it
 in data/identity, controls/request composition, then UI/release-boundary order.
