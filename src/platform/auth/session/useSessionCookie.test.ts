@@ -1,24 +1,20 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import type { ComfyApp } from '@/scripts/app'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockGetIdToken = vi.fn()
-const mockGetAuthHeader = vi.fn()
-const mockAuthState = vi.hoisted(() => ({
-  currentUser: { uid: 'user-a' } as { uid: string } | null
-}))
+const mockGetIdToken = vi.fn<ReturnType<typeof useAuthStore>['getIdToken']>(
+  async () => undefined
+)
+const mockGetAuthHeader = vi.fn<
+  ReturnType<typeof useAuthStore>['getAuthHeader']
+>(async () => null)
 const originalFetch = globalThis.fetch
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: true
-}))
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    getIdToken: mockGetIdToken,
-    getAuthHeader: mockGetAuthHeader,
-    get currentUser() {
-      return mockAuthState.currentUser
-    }
-  })
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -27,15 +23,20 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-const mockReportError = vi.fn()
+const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
+beforeEach(() => {
+  vi.mocked(useAuthStore().getIdToken).mockImplementation(mockGetIdToken)
+  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(mockGetAuthHeader)
+})
+
 describe('useSessionCookie', () => {
   beforeEach(() => {
     vi.resetModules()
-    mockAuthState.currentUser = { uid: 'user-a' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
     globalThis.fetch = vi.fn()
   })
 
@@ -59,14 +60,14 @@ describe('useSessionCookie', () => {
       method: 'POST',
       credentials: 'include',
       headers: {
-        Authorization: 'Bearer firebase-id-token',
+        Authorization: 'Bearer firebase-id-token' as const,
         'Content-Type': 'application/json'
       }
     })
   })
 
   it('createSessionOrThrow fails fast without a Firebase token', async () => {
-    mockGetIdToken.mockResolvedValue(null)
+    mockGetIdToken.mockResolvedValue(undefined)
     const { useSessionCookie } =
       await import('@/platform/auth/session/useSessionCookie')
 
@@ -150,7 +151,7 @@ describe('useSessionCookie', () => {
 
   it('serializes strict session creation after the previous user response', async () => {
     mockGetIdToken.mockImplementation(() =>
-      Promise.resolve(`firebase-${mockAuthState.currentUser?.uid}`)
+      Promise.resolve(`firebase-${useAuthStore().currentUser?.uid}`)
     )
     let resolveFirstFetch: (value: Response) => void = () => {}
     vi.mocked(globalThis.fetch)
@@ -166,7 +167,7 @@ describe('useSessionCookie', () => {
     const first = useSessionCookie().createSession()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
 
-    mockAuthState.currentUser = { uid: 'user-b' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
     const second = useSessionCookie().createSessionOrThrow()
     await Promise.resolve()
     await Promise.resolve()
@@ -189,7 +190,7 @@ describe('useSessionCookie', () => {
 
   it('reconfirms a cached owner after another owner mutates the cookie', async () => {
     mockGetIdToken.mockImplementation(() =>
-      Promise.resolve(`firebase-${mockAuthState.currentUser?.uid}`)
+      Promise.resolve(`firebase-${useAuthStore().currentUser?.uid}`)
     )
     let resolveUserB: (value: Response) => void = () => {}
     vi.mocked(globalThis.fetch)
@@ -204,11 +205,11 @@ describe('useSessionCookie', () => {
       await import('@/platform/auth/session/useSessionCookie')
 
     await useSessionCookie().ensureSessionCookie()
-    mockAuthState.currentUser = { uid: 'user-b' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
     const userBSession = useSessionCookie().createSession()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2))
 
-    mockAuthState.currentUser = { uid: 'user-a' }
+    useAuthStore().currentUser = fromPartial({ uid: 'user-a' })
     const userASession = useSessionCookie().ensureSessionCookie()
     await Promise.resolve()
     expect(globalThis.fetch).toHaveBeenCalledTimes(2)
@@ -285,3 +286,14 @@ describe('useSessionCookie', () => {
     )
   })
 })
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
+})
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))

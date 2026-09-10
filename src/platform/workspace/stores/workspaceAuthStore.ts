@@ -1,16 +1,19 @@
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { z } from 'zod'
 
-import type { SessionErrorCode, SessionFailure } from '@comfyorg/account/core'
+import type {
+  SessionErrorCode,
+  SessionFailure
+} from '@comfyorg/account/session'
 import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/core'
+} from '@comfyorg/account/session'
 
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
@@ -873,6 +876,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       { autoMint: false }
     )
   }
+
+  // The flag owns both ends: a rollback to the legacy rail must also stop
+  // the unified scheduler and cross-tab lease, or they keep rotating the
+  // cookie and refilling the slot the API callers no longer read.
+  watch(
+    () => flags.unifiedCloudAuthEnabled,
+    (enabled) => {
+      if (enabled || !detachUnifiedIdentity) return
+      detachUnifiedIdentity()
+      detachUnifiedIdentity = undefined
+      clearUnifiedContext()
+    }
+  )
 
   /**
    * The user the port has delivered, once it is the app's current user

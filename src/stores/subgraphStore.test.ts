@@ -1,5 +1,8 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createTestSubgraph,
@@ -14,6 +17,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
@@ -43,16 +47,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
     prompt: () => 'testname',
     confirm: () => true
   }))
-}))
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: vi.fn(() => ({
-    getCanvas: () => comfyApp.canvas
-  }))
-}))
-vi.mock<unknown>(import('@/stores/subgraphNavigationStore'), () => ({
-  useSubgraphNavigationStore: () => ({
-    beginWorkflowNavigation: () => 1
-  })
 }))
 
 // Mock comfyApp globally for the store setup
@@ -98,6 +92,9 @@ describe('useSubgraphStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(
+      () => comfyApp.canvas
+    )
     store = useSubgraphStore()
   })
 

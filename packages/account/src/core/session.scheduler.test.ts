@@ -5,9 +5,9 @@ import type {
   AccountUser,
   CredentialStorage,
   CrossTabRefreshPort,
-  IdentityPort,
   SessionClientOptions
 } from './session.js'
+import { createTestIdentity } from '../testing.js'
 import { createSessionClient } from './session.js'
 
 const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
@@ -55,12 +55,12 @@ function mintResponse(token: string) {
 
 function manualIdentity() {
   let deliver: ((user: AccountUser | null) => void) | undefined
-  const port: IdentityPort = {
+  const port = createTestIdentity<AccountUser>({
     onUserChanged: (callback) => {
       deliver = callback
       return () => undefined
     }
-  }
+  })
   return {
     port,
     fire: (user: AccountUser | null) => deliver?.(user)
@@ -794,6 +794,51 @@ describe('cross-tab refresh coordination', () => {
     expect(adopted.map((credential) => credential.token)).toEqual([
       'jwt-from-sibling'
     ])
+  })
+
+  it('fails closed at expiry even when the lock manager regrants the same tab after every exhausted chain', async () => {
+    const outcomes: string[] = []
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => mintResponse('jwt-1'))
+      .mockImplementation(async () => new Response('{}', { status: 503 }))
+    // A single tab: every leadership request is granted at once, so an
+    // exhausted chain that yields the lease gets it straight back.
+    const port: CrossTabRefreshPort = {
+      requestLeadership: (_key, onAcquired) => {
+        onAcquired()
+        return () => undefined
+      },
+      publishCredential: () => undefined,
+      onCredential: () => () => undefined
+    }
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: {
+        crossTab: { port },
+        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+      }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS + 60_000)
+
+    expect(
+      client.getToken(),
+      'a regrant re-arms the refresh; it must never cancel the hard expiry'
+    ).toBeUndefined()
+    expect(outcomes).toContain('expired')
+    const callsAtExpiry = fetchImpl.mock.calls.length
+    await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS)
+    expect(
+      fetchImpl.mock.calls.length,
+      'no chain keeps hammering the exchange after the credential is gone'
+    ).toBe(callsAtExpiry)
   })
 
   it('tells the host when a credential was adopted, since the tab did not rotate it itself', async () => {

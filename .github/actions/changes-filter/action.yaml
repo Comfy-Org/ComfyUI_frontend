@@ -1,7 +1,12 @@
-# Outputs default to 'true' for non-pull_request events (push, merge_group):
-# granular path filtering is a PR-only optimization. This avoids the silent
-# skip footgun where a job gated on e.g. `app-website-changes == 'true'`
-# would never run on push.
+# Outputs default to 'true' for non-pull_request events: granular path filtering
+# is a PR-only optimization. This avoids the silent skip footgun where a job
+# gated on e.g. `app-website-changes == 'true'` would never run on push.
+# `evaluate-candidate` is the one exception, and only for `should-run`.
+#
+# It compares a merge-group candidate's synthetic head with its parent, so the
+# verdict covers that candidate alone. Opt in only from a workflow whose
+# required check is emitted whatever the verdict; a check GitHub never creates
+# leaves the queue waiting.
 #
 # Shared dependency files (root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
@@ -19,10 +24,22 @@ description: >
   Computes typed *-changes outputs and a back-compat should-run for
   path-gated CI jobs.
 
+inputs:
+  evaluate-candidate:
+    description: >
+      Also evaluate `should-run` for merge_group candidates, so it can be
+      false there. Left off, they keep the unconditional 'true'.
+    required: false
+    default: 'false'
+
 outputs:
   should-run:
-    description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.'
-    value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
+    description: >
+      Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.
+      With `evaluate-candidate` set to 'true', also evaluated for merge-queue
+      candidates, over the range from the merge group's parent commit to this
+      candidate's synthetic head.
+    value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
@@ -70,7 +87,7 @@ runs:
             - 'pnpm-workspace.yaml'
 
     - name: Filter relevant changes
-      if: ${{ github.event_name == 'pull_request' }}
+      if: ${{ github.event_name == 'pull_request' || (github.event_name == 'merge_group' && inputs.evaluate-candidate == 'true') }}
       id: relevant
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:

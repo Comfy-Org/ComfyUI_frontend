@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { createTestIdentity } from '../testing.js'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
-  IdentityPort,
   SessionClientOptions,
   SessionErrorCode
 } from './session.js'
@@ -88,12 +88,12 @@ function seedCache(
 function manualIdentity() {
   let deliver: ((user: AccountUser | null) => void) | undefined
   const unsubscribe = vi.fn()
-  const port: IdentityPort = {
+  const port = createTestIdentity<AccountUser>({
     onUserChanged: (callback) => {
       deliver = callback
       return unsubscribe
     }
-  }
+  })
   return {
     port,
     fire: (user: AccountUser | null) => deliver?.(user),
@@ -478,7 +478,7 @@ describe('ensureFresh', () => {
           })
         )
       )
-    const { client } = makeClient({ fetchImpl })
+    const { client, storage } = makeClient({ fetchImpl })
     const identity = manualIdentity()
     client.attachIdentity(identity.port, { autoMint: false })
     const user = testUser()
@@ -496,6 +496,10 @@ describe('ensureFresh', () => {
       client.getToken(),
       'a slower personal mint resolving after a workspace switch must not silently revert it'
     ).toBe('team-jwt')
+    expect(
+      JSON.parse(storage.raw() ?? 'null'),
+      'storage must hold the winning team credential; a reload served the stale personal one before'
+    ).toMatchObject({ token: 'team-jwt', target: 'ws-9' })
     expect(
       superseded,
       'a superseded mint resolves undefined, like one outlived by an identity change'
@@ -698,6 +702,157 @@ describe('storage outage', () => {
       fetchImpl,
       'a storage outage must degrade persistence only, never request volume'
     ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('stale storage', () => {
+  it('serves the fresh in-memory credential when the stored record is stale because its write failed', async () => {
+    const storage = memoryStorage()
+    seedCache(storage, { token: 'stale-jwt', expiresAt: Date.now() - 1 })
+    const failingWrites: CredentialStorage = {
+      read: storage.read,
+      write: () => {
+        throw new Error('quota')
+      },
+      clear: storage.clear
+    }
+    const fetchImpl = okFetch('fresh-jwt')
+    const { client } = makeClient({ fetchImpl, storage: failingWrites })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(client.getToken()).toBe('fresh-jwt'))
+
+    await client.ensureFresh()
+    await client.ensureFresh()
+
+    expect(
+      fetchImpl,
+      'a readable-but-stale record must not shadow the live credential and re-mint on every read'
+    ).toHaveBeenCalledOnce()
+  })
+})
+
+describe('exchange response contract', () => {
+  it('rejects an expires_at outside the generated RFC 3339 form as an exchange failure', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(200, mintBody({ expires_at: '2026-09-10T12:00:00+05:30' }))
+    )
+    const { client } = makeClient({ fetchImpl })
+
+    expect(await client.ensureFresh(testUser())).toEqual({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED',
+      httpStatus: 200
+    })
+  })
+})
+
+describe('exchange boundary rejections', () => {
+  it('refuses a 200 whose token is empty', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(200, mintBody({ token: '' }))
+      )
+    })
+
+    const result = await client.ensureFresh(testUser())
+
+    expect(result).toMatchObject({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED'
+    })
+    expect(client.getToken()).toBeUndefined()
+  })
+
+  it('refuses a 200 whose expiry is already in the past', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(
+          200,
+          mintBody({ expires_at: new Date(Date.now() - 60_000).toISOString() })
+        )
+      )
+    })
+
+    const result = await client.ensureFresh(testUser())
+
+    expect(
+      result,
+      'a token dead on arrival can never authorize anything'
+    ).toMatchObject({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+    expect(client.getToken()).toBeUndefined()
+  })
+})
+
+describe('identity epoch commits', () => {
+  it('never commits a mint that crossed a sign-out, even for the same uid signing back in', async () => {
+    let releaseOld!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOld = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'new-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    identity.fire(null)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() =>
+      expect(
+        fetchImpl,
+        'a sign-in after a sign-out must mint for itself, never join the pre-sign-out request'
+      ).toHaveBeenCalledTimes(2)
+    )
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    releaseOld(jsonResponse(200, mintBody({ token: 'old-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the old fetch was minted from the signed-out identity and must never become the new session'
+    ).toBe('new-jwt')
+  })
+})
+
+describe('identity brand', () => {
+  it('refuses a port that did not come from the package entry or the testing seam', () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+
+    expect(() =>
+      client.attachIdentity(
+        // @ts-expect-error an unbranded port is not an AccountIdentity
+        { onUserChanged: () => () => undefined }
+      )
+    ).toThrow('attachIdentity needs the identity')
+  })
+
+  it('reports settled only once the port has delivered, and not after detach', async () => {
+    const { client } = makeClient({ fetchImpl: okFetch() })
+    const identity = manualIdentity()
+    expect(client.getSnapshot().settled).toBe(false)
+
+    const detach = client.attachIdentity(identity.port)
+    expect(
+      client.getSnapshot().settled,
+      'attached is not delivered; Firebase has not answered yet'
+    ).toBe(false)
+
+    identity.fire(null)
+    expect(client.getSnapshot()).toMatchObject({
+      phase: 'signed-out',
+      settled: true
+    })
+
+    detach()
+    expect(client.getSnapshot().settled).toBe(false)
   })
 })
 

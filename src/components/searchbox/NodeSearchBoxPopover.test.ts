@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,8 +6,10 @@ import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBoxPopover from './NodeSearchBoxPopover.vue'
@@ -80,16 +82,11 @@ describe('NodeSearchBoxPopover', () => {
       template: '<div data-testid="search-content-v2"></div>'
     })
 
-    const pinia = createTestingPinia({
-      stubActions: false,
-      initialState: {
-        setting: {
-          settingValues: settings,
-          settingsById: coreSettingsById
-        },
-        searchBox: { visible: false }
-      }
-    })
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore()
+    settingStore.settingValues = settings
+    settingStore.settingsById = coreSettingsById
+    useSearchBoxStore().visible = false
 
     const result = render(NodeSearchBoxPopover, {
       global: {

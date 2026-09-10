@@ -1,5 +1,5 @@
 <template>
-  <small :class="rootClass">
+  <div :class="rootClass">
     {{ copy.requirements }}:
     <ul :class="listClass">
       <li :class="cn(!checks.length && unmetClass)">
@@ -18,7 +18,7 @@
         {{ copy.special }}
       </li>
     </ul>
-  </small>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -32,8 +32,8 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { PasswordRule } from './signInSchemas'
-import { passwordRuleChecks } from './signInSchemas'
+import type { PasswordRule } from '../signInSchemas'
+import { passwordRuleChecks } from '../signInSchemas'
 
 export type PasswordRulesCopy = Readonly<
   Record<PasswordRule | 'requirements', string>

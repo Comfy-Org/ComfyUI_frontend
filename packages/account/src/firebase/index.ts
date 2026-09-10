@@ -25,9 +25,12 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signOut
+  signOut,
+  updatePassword
 } from 'firebase/auth'
 
+import type { AccountIdentity } from '../core/identity.js'
+import { identityBrand } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
 interface ActionCeiling {
@@ -62,10 +65,10 @@ export type FirebaseIdentityConfig =
   | FirebaseIdentityAppConfig
   | FirebaseIdentityAuthConfig
 
-export interface FirebaseIdentity {
+export interface FirebaseIdentity extends AccountIdentity<User> {
   /**
    * Fires with the restored user (or null) once Firebase settles, then on
-   * every change. This is the `IdentityPort` the session core binds to.
+   * every change. This is the identity the session core binds to.
    */
   onUserChanged: (callback: (user: User | null) => void) => () => void
   signInWithGoogle: () => Promise<UserCredential>
@@ -76,6 +79,8 @@ export interface FirebaseIdentity {
     password: string
   ) => Promise<UserCredential>
   sendPasswordReset: (email: string) => Promise<void>
+  /** For the signed-in user; rejects when nobody is signed in. */
+  updatePassword: (newPassword: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -158,6 +163,7 @@ export function createFirebaseIdentity(
     actionTimeoutMs === undefined ? run : withCeiling(run, actionTimeoutMs)
 
   return {
+    [identityBrand]: true,
     onUserChanged: (callback) => onAuthStateChanged(auth(), callback),
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
@@ -169,6 +175,14 @@ export function createFirebaseIdentity(
       bounded(sendPasswordResetEmail(auth(), email)).catch(
         resolveUnknownEmailAsSent
       ),
+    updatePassword: (newPassword) => {
+      const user = auth().currentUser
+      return user
+        ? updatePassword(user, newPassword)
+        : Promise.reject(
+            new Error('No signed-in user to update the password for')
+          )
+    },
     signOut: () => signOut(auth())
   }
 }

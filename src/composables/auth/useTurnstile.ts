@@ -9,7 +9,7 @@ import { getTurnstileSiteKey } from '@/config/turnstile'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { TurnstileMode } from '@/platform/remoteConfig/types'
 
-export { useTurnstileGate } from '@comfyorg/account/turnstile'
+export { useTurnstileGate } from '@comfyorg/account/vue'
 
 /**
  * Reactive Turnstile state for the signup form.

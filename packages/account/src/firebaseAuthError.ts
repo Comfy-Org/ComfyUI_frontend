@@ -76,6 +76,11 @@ export function classifyAuthError(error: unknown): AuthErrorClassification {
  * never invent independently worded copy for the same failure. Keyed by the
  * Firebase code, plus the two named fallbacks. `AUTH_ERROR_COPY` carries the
  * same table per shipped locale; `authErrorMessage` resolves one failure.
+ *
+ * `auth/user-not-found` and `auth/wrong-password` are the one deliberate
+ * exception: both collapse to the generic invalid-credentials line here
+ * regardless of what a host's own locale files say, so a sign-in attempt
+ * can never be used to tell whether an email has an account.
  */
 export const AUTH_ERROR_MESSAGES: AuthErrorCopy = {
   'auth/invalid-email': 'Please enter a valid email address.',
@@ -226,6 +231,12 @@ export type AuthErrorCopy = Readonly<Record<string, string>> & {
  * in its vue-i18n strings). Unauthorized domains need the host's domain and
  * support address, so hosts call `unauthorizedDomainMessage` for that kind.
  */
+/** Resolved to the invalid-credential line whatever table is in play. */
+const ENUMERATION_NEUTRAL_CODES: ReadonlySet<string> = new Set([
+  'auth/user-not-found',
+  'auth/wrong-password'
+])
+
 export function authErrorMessage(
   classification: AuthErrorClassification,
   copySource: AuthCopyLocale | AuthErrorCopy = 'en'
@@ -237,6 +248,9 @@ export function authErrorMessage(
       return copy.signupBlocked
     case 'popup-dismissed':
     case 'auth':
+      if (ENUMERATION_NEUTRAL_CODES.has(classification.code)) {
+        return copy['auth/invalid-credential'] ?? copy.generic
+      }
       return copy[classification.code] ?? copy.generic
     case 'unauthorized-domain':
     case 'unknown':

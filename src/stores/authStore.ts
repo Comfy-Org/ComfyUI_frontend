@@ -5,15 +5,14 @@ import {
   getAdditionalUserInfo,
   onAuthStateChanged,
   onIdTokenChanged,
-  setPersistence,
-  updatePassword
+  setPersistence
 } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/core'
+import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/customerRecovery'
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   signUpWithProvisioning,
@@ -707,7 +706,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!currentUser.value) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
-    await updatePassword(currentUser.value, newPassword)
+    await identity.updatePassword(newPassword)
   }
 
   const addCredits = async (
