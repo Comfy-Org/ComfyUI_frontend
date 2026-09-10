@@ -58,7 +58,7 @@ interface Props {
     query: string,
     items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
 }
 
 const { t } = useI18n()
@@ -319,8 +319,7 @@ function showPicker() {
 const dropdownItems = computed(() =>
   isArray(items)
     ? sortedItems.value
-    : //FIXME update wrapped list typing and remove spread
-      new WrappedList(items, () => [...sortedItems.value])
+    : new WrappedList(items, () => sortedItems.value)
 )
 </script>
 
@@ -331,7 +330,7 @@ const dropdownItems = computed(() =>
       :files
       :is-open
       :placeholder="placeholderText"
-      :selectedItems="itemsList.filter(internalIsSelected)"
+      :selected-items="itemsList.filter(internalIsSelected)"
       :max-selectable
       :uploadable
       :disabled
