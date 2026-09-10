@@ -27,7 +27,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   )
 
   watch(isVisible, (visible) => {
-    if (!visible || openedAt !== null) return
+    if (!visible) {
+      openedAt = null
+      return
+    }
+    if (openedAt !== null) return
     openedAt = Date.now()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
