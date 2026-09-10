@@ -17,7 +17,10 @@ async function setupButtonWidget(comfyPage: ComfyPage) {
   })
   await comfyPage.nodeOps.clearGraph()
   const initialRequest = comfyPage.page.waitForRequest(CHECKPOINTS_ROUTE)
-  const node = await comfyPage.nodeOps.addNode(NODE_TYPE)
+  const node = await comfyPage.nodeOps.addNode(NODE_TYPE, undefined, {
+    x: 300,
+    y: 200
+  })
   await initialRequest
   await comfyPage.vueNodes.selectNode(String(node.id))
 
