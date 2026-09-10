@@ -216,6 +216,21 @@ describe('resilience', () => {
     sessionStorage.removeItem(STORAGE_KEY)
     expect(getActiveCheckoutJourney()?.journey_id).toBe(record.journey_id)
   })
+
+  it('prefers the in-memory journey when a replacement write fails', () => {
+    resolveCheckoutJourney({ ...baseInput, intent: 'a' })
+    const setItem = vi
+      .spyOn(sessionStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('quota exceeded')
+      })
+
+    const { record } = resolveCheckoutJourney({ ...baseInput, intent: 'b' })
+    setItem.mockRestore()
+
+    expect(record.intent).toBe('b')
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(record.journey_id)
+  })
 })
 
 describe('corrupt storage', () => {

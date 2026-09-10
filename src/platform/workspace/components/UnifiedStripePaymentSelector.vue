@@ -92,8 +92,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const telemetry = useTelemetry()
+let isUnmounted = false
 
 function emitPaymentJourneyPhase(phase: CheckoutJourneyPhaseEvent): void {
+  // A callback or awaited continuation can fire after unmount; the active
+  // journey may then belong to a later checkout, so never emit for it.
+  if (isUnmounted) return
   const journey = getActiveCheckoutJourney()
   if (!journey) return
   telemetry?.captureCheckoutJourneyEvent({
@@ -109,7 +113,6 @@ const isSubmitting = ref(false)
 const selectedMethodType = ref('')
 let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
-let isUnmounted = false
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
