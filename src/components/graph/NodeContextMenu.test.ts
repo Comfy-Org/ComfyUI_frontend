@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { MenuOption } from '@/composables/graph/useMoreOptionsMenu'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import NodeContextMenu from './NodeContextMenu.vue'
 
@@ -12,7 +14,7 @@ const { registeredInstance } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+vi.mock<unknown>(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   registerNodeOptionsInstance: (
     instance: null | { show: (event: MouseEvent) => void }
   ) => {
@@ -24,22 +26,17 @@ vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
   })
 }))
 
-vi.mock('@/composables/graph/useNodeCustomization', () => ({
+vi.mock<unknown>(import('@/composables/graph/useNodeCustomization'), () => ({
   useNodeCustomization: () => ({ getCurrentShape: vi.fn() })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => ({
-      canvas: document.createElement('canvas'),
-      ds: { scale: 1, offset: [0, 0] }
-    })
-  })
 }))
 
 describe('NodeContextMenu', () => {
   beforeEach(() => {
     registeredInstance.value = null
+    useCanvasStore().canvas = fromPartial({
+      canvas: document.createElement('canvas'),
+      ds: { scale: 1, offset: [0, 0] }
+    })
   })
 
   it('opens for a widget pointer context-menu event', async () => {
