@@ -61,7 +61,7 @@ function matchesQuery(
 }
 
 /** Search, type and organizer, applied to an already-ordered event list. The
- * caller's order (upcoming first, then past) is preserved. */
+ * caller's order (latest first) is preserved. */
 export function filterDirectoryEvents(
   events: readonly ComfyEvent[],
   filters: EventsDirectoryFilters,

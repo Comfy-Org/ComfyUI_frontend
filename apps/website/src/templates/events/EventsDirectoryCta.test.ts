@@ -46,7 +46,7 @@ describe('EventsDirectoryCta', () => {
     expect(screen.queryByRole('link')).toBeNull()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Save the date?' })
+      screen.getByRole('button', { name: 'Save the date' })
     )
 
     expect(
@@ -65,7 +65,7 @@ describe('EventsDirectoryCta', () => {
     })
     render(EventsDirectoryCta, { props: { row } })
 
-    expect(screen.getByRole('button', { name: 'Save the date?' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Save the date' })).toBeTruthy()
     const link = screen.getByRole('link', { name: 'Register' })
     expect(link.getAttribute('href')).toBe('https://example.com/register')
     expect(link.getAttribute('target')).toBe('_blank')

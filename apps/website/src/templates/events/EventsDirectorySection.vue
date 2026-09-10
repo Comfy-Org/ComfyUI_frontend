@@ -9,13 +9,10 @@ import type { Locale } from '../../i18n/translations'
 import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 
 import MapPins01 from '../../components/blocks/MapPins01.vue'
-import Button from '../../components/ui/button/Button.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
-import { externalLinks } from '../../config/routes'
 import { directoryEvents, eventsDerivedAt } from '../../data/events'
 import { t } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -120,35 +117,24 @@ const caretClass =
     class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto max-w-3xl text-center">
-      <h2
-        class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
-      >
-        {{ t('events.directory.title', locale) }}
-      </h2>
-
       <p
-        class="text-primary-comfy-yellow mt-4 text-xs font-semibold tracking-widest uppercase"
+        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
         aria-live="polite"
       >
         {{ countLabel }}
       </p>
+
+      <h2
+        class="mt-4 text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
+      >
+        {{ t('events.directory.title', locale) }}
+      </h2>
 
       <p
         class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
       >
         {{ t('events.directory.lead', locale) }}
       </p>
-
-      <Button
-        as="a"
-        variant="underlineLink"
-        class="mt-4 justify-center text-sm"
-        :href="externalLinks.eventHostApplicationForm"
-        target="_blank"
-        :rel="resolveRel({ target: '_blank' })"
-      >
-        {{ t('events.hero.applyToHost', locale) }}
-      </Button>
     </div>
 
     <div
@@ -254,7 +240,7 @@ const caretClass =
 
     <div
       v-if="view === 'map'"
-      class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]"
+      class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[54fr_46fr]"
     >
       <MapPins01
         :markers

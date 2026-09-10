@@ -7,6 +7,7 @@ import type { Locale } from '../../i18n/translations'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import Badge from '../../components/ui/badge/Badge.vue'
+import { t } from '../../i18n/translations'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
 const {
@@ -53,9 +54,19 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
         {{ row.category }}
       </Badge>
 
-      <h3 class="truncate text-sm font-light text-primary-warm-white">
-        {{ row.title }}
-      </h3>
+      <div class="flex min-w-0 items-center gap-2">
+        <h3 class="truncate text-sm font-light text-primary-warm-white">
+          {{ row.title }}
+        </h3>
+        <Badge
+          v-if="!row.upcoming"
+          variant="subtle"
+          size="xxs"
+          class="shrink-0 uppercase"
+        >
+          {{ t('events.directory.pastBadge', locale) }}
+        </Badge>
+      </div>
 
       <p class="line-clamp-2 text-[11px] text-primary-comfy-canvas/70">
         {{ row.description }}

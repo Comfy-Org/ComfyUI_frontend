@@ -6547,7 +6547,6 @@ Enterprise`
     'zh-CN': '下一个精选活动'
   },
   'events.hero.browseEvents': { en: 'Browse events', 'zh-CN': '浏览活动' },
-  'events.hero.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
   'events.hero.hostAnEvent': { en: 'Host an event', 'zh-CN': '主办活动' },
   'events.directory.title': {
     en: 'Events around the world',
@@ -6593,9 +6592,10 @@ Enterprise`
     'zh-CN': '放大查看此处的 {count} 场活动'
   },
   'events.directory.saveTheDate': {
-    en: 'Save the date?',
-    'zh-CN': '标记日期？'
+    en: 'Save the date',
+    'zh-CN': '标记日期'
   },
+  'events.directory.pastBadge': { en: 'Past', 'zh-CN': '已结束' },
   'events.directory.virtual': { en: 'Virtual event', 'zh-CN': '线上活动' },
   'events.directory.empty': {
     en: 'No events match those filters yet. Try a broader search.',
@@ -6659,8 +6659,8 @@ Enterprise`
       '确定活动主题、场地和理想的参与人数，然后把活动页面做出来。如果想找些参考，可以看看其他主办方办过什么。'
   },
   'events.host.step2.browseLink': {
-    en: 'Browse events from the Comfy community',
-    'zh-CN': '浏览 Comfy 社区的活动'
+    en: 'Browse events',
+    'zh-CN': '浏览活动'
   },
   'events.host.step3.title': {
     en: 'Apply',
