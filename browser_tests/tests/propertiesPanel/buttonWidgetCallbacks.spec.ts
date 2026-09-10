@@ -19,11 +19,14 @@ async function setupButtonWidget(comfyPage: ComfyPage) {
   const initialRequest = comfyPage.page.waitForRequest(CHECKPOINTS_ROUTE)
   const node = await comfyPage.nodeOps.addNode(NODE_TYPE)
   await initialRequest
-  await node.click('title')
+  await comfyPage.vueNodes.selectNode(String(node.id))
 
   const panel = new PropertiesPanelHelper(comfyPage.page)
   await comfyPage.actionbar.propertiesButton.click()
   await expect(panel.root).toBeVisible()
+  await expect(panel.panelTitle).toContainText(
+    'Remote Widget Node With Refresh Button'
+  )
   return panel
 }
 
@@ -33,12 +36,12 @@ test.describe(
   () => {
     test('invokes the callback from node Parameters', async ({ comfyPage }) => {
       const panel = await setupButtonWidget(comfyPage)
-      const refreshRequest = comfyPage.page.waitForRequest(CHECKPOINTS_ROUTE)
-      await panel.contentArea
-        .getByRole('button', { name: 'refresh', exact: true })
-        .click()
-
-      await refreshRequest
+      await Promise.all([
+        comfyPage.page.waitForRequest(CHECKPOINTS_ROUTE),
+        panel.contentArea
+          .getByRole('button', { name: 'refresh', exact: true })
+          .click()
+      ])
     })
 
     test('invokes the callback from Favorited Inputs', async ({
@@ -61,12 +64,13 @@ test.describe(
 
       await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
       await comfyPage.nextFrame()
-      const refreshRequest = comfyPage.page.waitForRequest(CHECKPOINTS_ROUTE)
-      await panel.contentArea
-        .getByRole('button', { name: 'refresh', exact: true })
-        .click()
-
-      await refreshRequest
+      await expect(panel.panelTitle).toContainText('Workflow Overview')
+      await Promise.all([
+        comfyPage.page.waitForRequest(CHECKPOINTS_ROUTE),
+        panel.contentArea
+          .getByRole('button', { name: 'refresh', exact: true })
+          .click()
+      ])
     })
   }
 )
