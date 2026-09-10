@@ -421,7 +421,8 @@ describe('useSubscriptionCheckout', () => {
   async function setup(
     paymentIntentSource?: PaymentIntentSource,
     tierPlanType: 'personal' | 'team' = 'personal',
-    embeddedCheckoutEnabled = true
+    embeddedCheckoutEnabled = true,
+    rendersSettlingNotice = true
   ) {
     const { useSubscriptionCheckout } =
       await import('./useSubscriptionCheckout')
@@ -430,7 +431,8 @@ describe('useSubscriptionCheckout', () => {
     return scope.run(() =>
       useSubscriptionCheckout(emit as never, paymentIntentSource, {
         tierPlanType,
-        embeddedCheckoutEnabled
+        embeddedCheckoutEnabled,
+        rendersSettlingNotice
       })
     )!
   }
@@ -967,15 +969,14 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
-    it('keeps the original error path for non-payment transition failures', async () => {
-      await submitRejectedPreview(
+    it('treats a non-payment transition refusal as settling, not a raw toast', async () => {
+      const checkout = await submitRejectedPreview(
         'TRANSITION_NOT_ALLOWED',
         'Plan change is unavailable'
       )
       expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: 'Plan change is unavailable' })
-      )
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('shows the portal error when payment recovery cannot open', async () => {
@@ -1302,7 +1303,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
-    it('never routes the settling refusal into outstanding-payment recovery', async () => {
+    it('asks the server before treating the refusal as settling', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
 
@@ -1311,9 +1312,47 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
 
-      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
       expect(mockOpen).not.toHaveBeenCalled()
+      expect(checkout.isPaymentSettling.value).toBe(true)
+    })
+
+    it('routes the refusal to the billing portal when the probe reports payment_failed', async () => {
+      const checkout = await setup()
+      mockGetBillingStatus.mockResolvedValueOnce({
+        billing_status: 'payment_failed'
+      })
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockOpen).toHaveBeenCalledWith(
+        'https://billing.stripe.com/portal',
+        '_blank'
+      )
+      expect(checkout.isPaymentSettling.value).toBe(false)
+    })
+
+    it('falls back to a toast on hosts that do not render the notice', async () => {
+      const checkout = await setup(undefined, 'personal', true, false)
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(true)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'info',
+          detail: 'subscription.settlingNotice'
+        })
+      )
     })
 
     it('recognises the refusal when it arrives as a disallowed preview body', async () => {
@@ -1381,7 +1420,7 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('pricing')
       expect(checkout.selectedTeamStop.value).toBeNull()
       expect(mockToastAdd).not.toHaveBeenCalled()
-      expect(mockGetBillingStatus).not.toHaveBeenCalled()
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
     })
 
     it('shows the notice for a refused team preview (embedded checkout off)', async () => {

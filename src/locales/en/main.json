@@ -3015,6 +3015,7 @@
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the team plan.",
     "settlingNotice": "Finishing up your last payment attempt \u2014 you can try again in a moment.",
+    "settlingToastSummary": "Payment still settling",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "videoEstimate": "Generates ~{count} 5s videos*",

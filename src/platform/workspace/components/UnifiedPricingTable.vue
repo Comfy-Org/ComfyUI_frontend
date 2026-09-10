@@ -31,9 +31,10 @@
            succeeds. -->
       <p
         v-if="isPaymentSettling"
+        role="status"
         class="m-0 flex items-center justify-center gap-1.5 text-center text-sm text-muted-foreground"
       >
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <i aria-hidden="true" class="icon-[lucide--info] size-4 shrink-0" />
         {{ t('subscription.settlingNotice') }}
       </p>
       <I18nT
