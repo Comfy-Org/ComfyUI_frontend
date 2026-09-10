@@ -144,7 +144,10 @@ function parseDiagnostics(output: string): Diagnostic[] {
   ) {
     throw new Error('Oxlint returned an invalid JSON report')
   }
-  return report.diagnostics.filter(isDiagnostic)
+  if (!report.diagnostics.every(isDiagnostic)) {
+    throw new Error('Oxlint returned diagnostics in an unexpected shape')
+  }
+  return report.diagnostics
 }
 
 describe('restricted syntax rules', () => {
@@ -168,6 +171,11 @@ describe('restricted syntax rules', () => {
       { encoding: 'utf8', windowsHide: true }
     )
     if (result.error) throw result.error
+    if (!result.stdout.trim()) {
+      throw new Error(
+        `Oxlint produced no JSON report (status ${result.status}): ${result.stderr}`
+      )
+    }
     findings = parseDiagnostics(result.stdout)
   })
 
@@ -225,25 +233,29 @@ describe('restricted syntax rules', () => {
     expect(findingsFor('no-new-zod-for-remote-api-types')).toEqual([
       expect.objectContaining({
         message:
-          'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+          'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".',
+        severity: 'error'
       })
     ])
     expect(findingsFor('no-playwright-imports-in-fixture-data')).toEqual([
       expect.objectContaining({
         message:
-          'fixtures/data/ must contain only static data. No Playwright imports allowed.'
+          'fixtures/data/ must contain only static data. No Playwright imports allowed.',
+        severity: 'error'
       })
     ])
     expect(findingsFor('no-unit-test-files-in-browser-tests')).toEqual([
       expect.objectContaining({
         message:
-          '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
+          '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead',
+        severity: 'error'
       })
     ])
     expect(findingsFor('no-misplaced-spec-files')).toEqual([
       expect.objectContaining({
         message:
-          '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
+          '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/',
+        severity: 'error'
       })
     ])
   })
