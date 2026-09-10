@@ -214,57 +214,33 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await expect(dialog).toHaveCount(0)
   })
 
-  test('uses a minimal playback button and respects reduced motion', async ({
+  test('preserves the original silent looping promo design', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page
       .getByRole('button', { name: enMessages.agent.askComfyAgent })
       .click()
-    const video = page
-      .getByRole('dialog', { name: enMessages.agent.consent.title })
-      .locator('video')
-    const pause = page.getByRole('button', {
-      name: enMessages.g.pause,
-      exact: true
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
     })
-    const play = page.getByRole('button', {
-      name: enMessages.g.play,
-      exact: true
-    })
-    await expect(pause).toBeVisible()
-    await expect(video).not.toHaveAttribute('controls')
-    await expect
-      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
-      .toBe(false)
-    await pause.focus()
-    await page.keyboard.press('Space')
-    await expect
-      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
-      .toBe(true)
-    await expect(play).toBeFocused()
-    await page.keyboard.press('Space')
-    await expect
-      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
-      .toBe(false)
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await expect(video).not.toHaveAttribute('autoplay')
-    await expect
-      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
-      .toBe(true)
-    await page.keyboard.press('Escape')
-    await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
-      .click()
-    await expect(video).not.toHaveAttribute('autoplay')
+    const video = dialog.locator('video')
     await expect
       .poll(() =>
-        video.evaluate((element: HTMLVideoElement) => element.readyState)
+        video.evaluate((element: HTMLVideoElement) => ({
+          playing: !element.paused,
+          muted: element.muted,
+          loop: element.loop,
+          inline: element.playsInline
+        }))
       )
-      .toBeGreaterThanOrEqual(2)
-    await expect
-      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
-      .toBe(true)
+      .toEqual({ playing: true, muted: true, loop: true, inline: true })
+    await expect(video).not.toHaveAttribute('controls')
+    await expect(
+      dialog.getByRole('button', { name: enMessages.g.pause, exact: true })
+    ).toHaveCount(0)
+    await expect(
+      dialog.getByRole('button', { name: enMessages.g.play, exact: true })
+    ).toHaveCount(0)
   })
 })
