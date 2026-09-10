@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -18,14 +20,14 @@ type FeaturedModel = {
 }
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
-const routes = getRoutes(locale)
+const routes = computed(() => getRoutes(locale))
 
-const models: readonly FeaturedModel[] = [
+const models = computed<readonly FeaturedModel[]>(() => [
   {
     providerName: 'MiniMax',
     modelName: 'MiniMax H3 Max',
     capability: t('home.featuredModels.textToVideo', locale),
-    href: routes.minimax,
+    href: routes.value.minimax,
     providerLogoSrc: '/icons/ai-models/minimax.svg',
     media: {
       type: 'video',
@@ -37,7 +39,7 @@ const models: readonly FeaturedModel[] = [
     providerName: 'Black Forest Labs',
     modelName: 'FLUX 3',
     capability: t('home.featuredModels.imageToVideo', locale),
-    href: routes.flux3,
+    href: routes.value.flux3,
     providerLogoSrc: '/icons/ai-models/black-forest-labs.svg',
     media: {
       type: 'image',
@@ -48,7 +50,7 @@ const models: readonly FeaturedModel[] = [
     providerName: 'ByteDance',
     modelName: 'Seedance 2.5',
     capability: t('home.featuredModels.imageToVideo', locale),
-    href: routes.seedance,
+    href: routes.value.seedance,
     providerLogoSrc: '/icons/ai-models/bytedance.svg',
     media: {
       type: 'video',
@@ -61,7 +63,7 @@ const models: readonly FeaturedModel[] = [
     providerName: 'MiniMax',
     modelName: 'MiniMax H3',
     capability: t('home.featuredModels.imageToVideo', locale),
-    href: routes.minimax,
+    href: routes.value.minimax,
     providerLogoSrc: '/icons/ai-models/minimax.svg',
     media: {
       type: 'video',
@@ -69,7 +71,7 @@ const models: readonly FeaturedModel[] = [
       poster: 'https://media.comfy.org/website/minimax/ice-rider-poster.webp'
     }
   }
-]
+])
 </script>
 
 <template>

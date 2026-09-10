@@ -54,8 +54,10 @@ describe('ModelCardsSection', () => {
     expect(screen.queryByLabelText('FLUX 3 preview')).toBeNull()
   })
 
-  it('localizes the section, cards, and catalog CTA routes', () => {
-    render(ModelCardsSection, { props: { locale: 'zh-CN' } })
+  it('updates the section, cards, and catalog CTA routes when locale changes', async () => {
+    const { rerender } = render(ModelCardsSection)
+
+    await rerender({ locale: 'zh-CN' })
 
     expect(screen.getByRole('region', { name: '精选模型' })).toBeTruthy()
     expect(
