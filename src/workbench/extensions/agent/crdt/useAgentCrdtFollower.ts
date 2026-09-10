@@ -303,6 +303,11 @@ export function useAgentCrdtFollower(
   // (`onReconnected`'s socket drop and a server `doc_subscribed{ok:false}`
   // refusal). See `reconnectReport.ts` for the phases and the transition.
   let reconnect = initialReconnectState
+  // The seq this binding is known to have reached, and the proof that it was
+  // ever bound at all: `null` until a subscribe for it is CONFIRMED. A refusal
+  // before that is FE-1901's cold-start race, not a recovery, so nothing is
+  // armed and no "reconnect" is reported for a connection that never was.
+  let confirmedVersion: number | null = null
 
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
@@ -379,10 +384,11 @@ export function useAgentCrdtFollower(
   }
 
   const armReconnectTracking = (): void => {
+    if (confirmedVersion === null) return
     dispatchReconnect({
       type: 'disconnected',
       at: performance.now(),
-      fromVersion: bridge.lastSequence
+      fromVersion: confirmedVersion
     })
   }
 
@@ -479,12 +485,15 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      // Snapshot before clearSubscribeRetry() resets the attempt counter. A
-      // confirm while a recovery is in flight is a RECOVERY, not the panel's
-      // first-ever bind. The report itself is deferred until the catch-up
-      // frame (see `trackReconnectUpdate`).
+      // Snapshot before clearSubscribeRetry() resets the attempt counter. The
+      // confirm is only a RECOVERY if a disconnect signal armed one; on the
+      // panel's first-ever bind it merely establishes the baseline below.
       const seq = event.detail?.seq
       onReconnectConfirmed(typeof seq === 'number' ? seq : null)
+      confirmedVersion =
+        typeof seq === 'number'
+          ? Math.max(confirmedVersion ?? 0, seq)
+          : (confirmedVersion ?? 0)
       clearSubscribeRetry()
       armStaleProbe()
       reconnectAttempt = 0
@@ -520,6 +529,8 @@ export function useAgentCrdtFollower(
       return
     }
     trackReconnectUpdate(update)
+    if (confirmedVersion !== null)
+      confirmedVersion = Math.max(confirmedVersion, update.seq)
     if (staleProbeTimer !== null) armStaleProbe()
     markActivity()
     refreshPersistedDocId()
@@ -752,6 +763,8 @@ export function useAgentCrdtFollower(
       // never confirmed is dropped without a report.
       flushPendingReconnectReport()
       clearReconnectTracking()
+      // The new binding has never been confirmed and has its own seq space.
+      confirmedVersion = null
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
