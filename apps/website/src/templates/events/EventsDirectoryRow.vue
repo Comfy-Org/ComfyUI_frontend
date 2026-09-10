@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { CalendarDays, MapPin } from '@lucide/vue'
 import { useResizeObserver } from '@vueuse/core'
@@ -11,6 +11,7 @@ import type { DirectoryRow } from '../../utils/eventsDirectory'
 
 import Badge from '../../components/ui/badge/Badge.vue'
 import { t } from '../../i18n/translations'
+import { resolveRel } from '../../utils/cta'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
 const {
@@ -26,6 +27,11 @@ const {
 
 // One row markup for the list and the agenda, so the two views cannot drift.
 const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
+
+// The whole row links to the event's destination — the watch page for past
+// events, the outbound registration or stream page for upcoming ones — via
+// a CardArticle01-style overlay. The chips and Read more sit above it.
+const rowLink = computed(() => row.watch ?? row.register)
 
 const descEl = ref<HTMLElement>()
 const clamped = ref(false)
@@ -46,13 +52,22 @@ useResizeObserver(descEl, ([entry]) => {
     :aria-current="selected ? 'true' : undefined"
     :class="
       cn(
-        'flex gap-3 px-6 py-5 transition-colors',
+        'relative flex gap-3 px-6 py-5 transition-colors',
+        rowLink && 'hover:bg-white/5',
         selected &&
           'bg-primary-comfy-yellow/10 ring-primary-comfy-yellow/40 ring-1 ring-inset'
       )
     "
     data-testid="events-directory-row"
   >
+    <a
+      v-if="rowLink"
+      :href="rowLink.href"
+      :target="rowLink.newTab ? '_blank' : undefined"
+      :rel="rowLink.newTab ? resolveRel({ target: '_blank' }) : undefined"
+      :aria-label="`${row.title} — ${rowLink.label}`"
+      class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none"
+    />
     <!-- A video's poster stands in here; a <video> is not worth it at this
     size. Narrower on phones, where the row runs the full page width. -->
     <img
@@ -97,7 +112,7 @@ useResizeObserver(descEl, ([entry]) => {
       <button
         v-if="clamped || expanded"
         type="button"
-        class="self-start text-[11px] font-semibold text-primary-comfy-canvas/70 transition-colors hover:text-primary-warm-white"
+        class="relative z-20 self-start text-[11px] font-semibold text-primary-comfy-canvas/70 transition-colors hover:text-primary-warm-white"
         @click.stop="expanded = !expanded"
       >
         {{
@@ -111,7 +126,7 @@ useResizeObserver(descEl, ([entry]) => {
       </button>
 
       <div
-        class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]"
+        class="relative z-20 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]"
       >
         <span :class="metaClass">
           <MapPin class="size-3" aria-hidden="true" />
