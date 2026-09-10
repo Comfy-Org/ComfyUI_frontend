@@ -401,8 +401,9 @@ class AgentConversationHarness {
     before: PanelCounts
   ): Promise<void> {
     const expected = this.expectations[turn]
-    if (expected.text === '')
-      await expect(this.streams).toHaveCount(before.streams)
+    const apiBase = new URL('/api', this.page.url()).href.replace(/\/+$/, '')
+    const text = expected.text.replaceAll('{apiBase}', apiBase)
+    if (text === '') await expect(this.streams).toHaveCount(before.streams)
     else
       await expect
         .poll(async () =>
@@ -410,7 +411,7 @@ class AgentConversationHarness {
             (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
           )
         )
-        .toBe(expected.text)
+        .toBe(text)
 
     await expect(this.groups).toHaveCount(
       before.groups + expected.groups.length

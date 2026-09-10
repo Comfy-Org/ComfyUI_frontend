@@ -217,7 +217,8 @@ describe('committed recordings', () => {
       'to_node',
       'to_slot'
     ],
-    delete_node: ['node_id']
+    delete_node: ['node_id'],
+    clear: ['removed_nodes']
   }
 
   it('refuses every recorded op variant missing a field the applier reads', () => {
