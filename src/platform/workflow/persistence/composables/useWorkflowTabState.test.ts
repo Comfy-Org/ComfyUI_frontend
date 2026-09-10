@@ -118,6 +118,17 @@ describe('useWorkflowTabState', () => {
       expect(getOpenPaths()).toBeNull()
     })
 
+    it('ignores pointer written by a different user in the same workspace', async () => {
+      setCurrentWorkspace('ws-1')
+      const { setOpenPaths } = await loadTabState('user-a')
+      setOpenPaths(['workflows/test.json'], 0)
+
+      vi.resetModules()
+      const { getOpenPaths } = await loadTabState('user-b')
+
+      expect(getOpenPaths()).toBeNull()
+    })
+
     it('retains paths when staying in same workspace', async () => {
       setCurrentWorkspace('ws-1')
       const { setOpenPaths, getOpenPaths } = await loadTabState('user-a')

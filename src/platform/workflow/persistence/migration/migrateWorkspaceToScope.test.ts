@@ -56,7 +56,7 @@ function readJson(key: string): unknown {
 
 describe('migrateWorkspaceToScope', () => {
   beforeEach(() => {
-    vi.resetModules()
+    localStorage.clear()
   })
 
   it('moves drafts and restore pointers into the scope and removes the workspace copy', () => {
@@ -250,6 +250,85 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.lastActivePath(sourceWorkspaceId))).toEqual({
       workspaceId: sourceWorkspaceId,
       path: draftPath
+    })
+  })
+
+  it('keeps a restore pointer the scope already owns and still copies the missing one', () => {
+    seedSourceWorkspace()
+    const existingPointer = {
+      workspaceId: destinationScope,
+      path: 'workflows/existing.json'
+    }
+    localStorage.setItem(
+      StorageKeys.lastActivePath(destinationScope),
+      JSON.stringify(existingPointer)
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.lastActivePath(destinationScope))).toEqual(
+      existingPointer
+    )
+    expect(readJson(StorageKeys.lastOpenPaths(destinationScope))).toEqual({
+      workspaceId: destinationScope,
+      paths: [draftPath],
+      activeIndex: 0
+    })
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      buildIndex()
+    )
+    expect(
+      localStorage.getItem(StorageKeys.draftIndex(sourceWorkspaceId))
+    ).toBe(null)
+    expect(
+      localStorage.getItem(StorageKeys.lastActivePath(sourceWorkspaceId))
+    ).toBe(null)
+    expect(
+      localStorage.getItem(StorageKeys.lastOpenPaths(sourceWorkspaceId))
+    ).toBe(null)
+  })
+
+  it('leaves a pre-existing scope restore pointer untouched when the copy rolls back', () => {
+    seedSourceWorkspace()
+    const existingPointer = {
+      workspaceId: destinationScope,
+      path: 'workflows/existing.json'
+    }
+    localStorage.setItem(
+      StorageKeys.lastActivePath(destinationScope),
+      JSON.stringify(existingPointer)
+    )
+    const failingKey = StorageKeys.lastOpenPaths(destinationScope)
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        if (key === failingKey) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        }
+        realSetItem(key, value)
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.lastActivePath(destinationScope))).toEqual(
+      existingPointer
+    )
+    expect(localStorage.getItem(StorageKeys.draftIndex(destinationScope))).toBe(
+      null
+    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(draftPath, destinationScope)
+      )
+    ).toBe(null)
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+    expect(readJson(StorageKeys.lastOpenPaths(sourceWorkspaceId))).toEqual({
+      workspaceId: sourceWorkspaceId,
+      paths: [draftPath],
+      activeIndex: 0
     })
   })
 })

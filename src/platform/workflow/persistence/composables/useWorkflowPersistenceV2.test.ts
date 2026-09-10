@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { hashPath } from '../base/hashUtil'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
@@ -1076,19 +1077,7 @@ describe('useWorkflowPersistenceV2', () => {
     )
     localStorage.setItem(
       workspaceIndexKey,
-      JSON.stringify({
-        v: 2,
-        updatedAt: 1,
-        order: ['Legacy.json'],
-        entries: {
-          'Legacy.json': {
-            path: 'Legacy.json',
-            name: 'Legacy',
-            isTemporary: true,
-            updatedAt: 1
-          }
-        }
-      })
+      JSON.stringify(legacyIndex('Legacy.json'))
     )
     localStorage.setItem(
       workspacePayloadKey,
@@ -1113,5 +1102,88 @@ describe('useWorkflowPersistenceV2', () => {
         )!
       ).data
     ).toBe('{"marker":"legacy"}')
+    expect(useWorkflowDraftStoreV2().getDraft('Legacy.json')?.data).toBe(
+      '{"marker":"legacy"}'
+    )
+  })
+
+  it('removes stale workspace drafts even when the user scope already has an index', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workspaceIndexKey = StorageKeys.draftIndex('workspace-a')
+    const workspacePayloadKey = StorageKeys.draftPayload(
+      'Legacy.json',
+      'workspace-a'
+    )
+    const scopedIndexKey = StorageKeys.draftIndex('user-a:workspace-a')
+    const scopedIndex = JSON.stringify(legacyIndex('Scoped.json'))
+    localStorage.setItem(
+      workspaceIndexKey,
+      JSON.stringify(legacyIndex('Legacy.json'))
+    )
+    localStorage.setItem(
+      workspacePayloadKey,
+      JSON.stringify({ data: '{"marker":"legacy"}', updatedAt: 1 })
+    )
+    localStorage.setItem(scopedIndexKey, scopedIndex)
+    mountWorkflowPersistence()
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    expect(localStorage.getItem(workspaceIndexKey)).toBeNull()
+    expect(localStorage.getItem(workspacePayloadKey)).toBeNull()
+    expect(localStorage.getItem(scopedIndexKey)).toBe(scopedIndex)
+  })
+
+  it('writes the edit deferred during identity resolution once the identity resolves', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Deferred.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-identity' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+    await vi.runAllTimersAsync()
+
+    const payload = localStorage.getItem(
+      StorageKeys.draftPayload(workflow.path, 'user-a:workspace-a')
+    )
+    expect(payload).not.toBeNull()
+    expect(JSON.parse(JSON.parse(payload!).data)).toEqual({
+      marker: 'before-identity'
+    })
   })
 })
+
+function legacyIndex(path: string) {
+  return {
+    v: 2,
+    updatedAt: 1,
+    order: [hashPath(path)],
+    entries: {
+      [hashPath(path)]: {
+        path,
+        name: path.replace(/\.json$/, ''),
+        isTemporary: true,
+        updatedAt: 1
+      }
+    }
+  }
+}
