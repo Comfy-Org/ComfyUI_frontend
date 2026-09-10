@@ -11,11 +11,16 @@ made on 2026-08-27, and the remaining frontend gaps.
 
 ## Context
 
-The Assets design separates a user-visible asset record from the content row
-that describes bytes at a storage location. Multiple records may reference one
-content row. An asset record owns labels and interpretation such as its name,
-tags, metadata, optional preview relationship, and `job_id`; the content row
-owns path, size, modification time, hash, and missing state.
+The OSS core Assets model in the `asset-record-content-split` stack
+([ComfyUI #15915](https://github.com/Comfy-Org/ComfyUI/pull/15915), with
+[#15916](https://github.com/Comfy-Org/ComfyUI/pull/15916) through
+[#15918](https://github.com/Comfy-Org/ComfyUI/pull/15918) carrying the tests)
+separates a user-visible asset record from the content row that describes bytes
+at a storage location. `Asset` is the record; `AssetContent` owns the bytes at a
+path. Multiple records may reference one content row. An asset record owns
+labels and interpretation such as its name, tags, metadata, optional preview
+relationship, and `job_id`; the content row owns path, size, modification time,
+hash, and missing state.
 
 For generated outputs, `job_id` records the prompt associated with that
 record's creation event. It is informational provenance, not an ownership or
@@ -45,8 +50,13 @@ legacy history-backed panel.
    reference one content row, and records for cached reruns may carry different
    `job_id` values while sharing content.
 2. **Deleting through the Asset API deletes one record.**
-   `DELETE /api/assets/{id}` hard-deletes the target asset record. It leaves the
-   content row and file intact and never deletes another asset record.
+   `DELETE /api/assets/{id}` hard-deletes the target asset record
+   (`delete_asset_route` -> `delete_asset_reference` -> `delete_record` ->
+   `session.delete`, verified at
+   [ComfyUI #15915](https://github.com/Comfy-Org/ComfyUI/pull/15915) head
+   59cf36c). It leaves the content row and file intact and never deletes another
+   asset record. This supersedes the soft-delete model in the pinned intended
+   design; see "Relationship to the pinned intended design" below.
 3. **Preview references do not imply ownership.** Deleting a record that names
    a preview leaves the preview record intact. Deleting the preview record
    clears incoming preview references rather than deleting their records.
@@ -85,6 +95,23 @@ legacy history-backed panel.
   deletion cascades to asset records in each backend distribution. Any stronger
   lifecycle claim requires direct backend verification.
 
+## Relationship to the pinned intended design
+
+The ideation-sharing `asset-deletion/intended` documents at revision
+`ab6246440c3234fe315e4fc36145c818e5309868` describe a single-row asset table
+where `DELETE /api/assets/{id}` sets `deleted_at` and a reaper later removes rows
+and bytes. That describes the Cloud/Postgres design. It does not describe OSS
+core, where [ComfyUI #15915](https://github.com/Comfy-Org/ComfyUI/pull/15915)
+introduced the `Asset`/`AssetContent` split and `DELETE /api/assets/{id}` is an
+ORM hard delete of the record row.
+
+For OSS core deletion semantics, this ADR supersedes that revision. The
+references below are kept for the product intent (which the two models share:
+deleting an asset never removes another asset, and never removes bytes another
+record still references), not for the storage mechanics. Cloud's
+generation-delete cascade in that design is Cloud-only and is consistent with
+Decision 5: this ADR asserts no history-to-record cascade for OSS core.
+
 ## Consequences
 
 - Asset-record deletion code and tests can rely on record-only hard deletion;
@@ -100,6 +127,9 @@ legacy history-backed panel.
 
 ## References
 
+- [ComfyUI #15915: asset-record-content-split (code)](https://github.com/Comfy-Org/ComfyUI/pull/15915),
+  verified at head 59cf36c: `Asset`/`AssetContent` split, `delete_record` hard
+  delete of one record row, no soft-delete column
 - [Asset deletion intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/index.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
 - [Asset deletion logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/logical.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
 - [Asset deletion scenario: a user deletes a generation](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/scenarios.md#a-user-deletes-a-generation) (private `Comfy-Org/ideation-sharing` repo — requires org access)
