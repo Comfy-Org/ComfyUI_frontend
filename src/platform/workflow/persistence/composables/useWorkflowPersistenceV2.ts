@@ -104,6 +104,8 @@ export function useWorkflowPersistenceV2() {
   )
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
+  let resolvedUserId: string | null = null
+  let pendingPersistenceOwnerId: string | null = null
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
@@ -113,17 +115,27 @@ export function useWorkflowPersistenceV2() {
   })
 
   const persistCurrentWorkflow = () => {
-    if (!workflowPersistenceEnabled.value) return
+    if (!workflowPersistenceEnabled.value) {
+      pendingPersistenceOwnerId = null
+      return
+    }
     const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow) return
+    if (!activeWorkflow) {
+      pendingPersistenceOwnerId = null
+      return
+    }
 
     const graphData = comfyApp.rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
     // Skip if unchanged
-    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) {
+      pendingPersistenceOwnerId = null
+      return
+    }
     if (getStorageWriteGate() === 'deferred') return
+    pendingPersistenceOwnerId = null
 
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
@@ -154,6 +166,16 @@ export function useWorkflowPersistenceV2() {
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
 
+  function scheduleWorkflowPersistence(): void {
+    pendingPersistenceOwnerId = resolvedUserId
+    debouncedPersist()
+  }
+
+  function persistWorkflowForCurrentOwner(): void {
+    pendingPersistenceOwnerId = resolvedUserId
+    persistCurrentWorkflow()
+  }
+
   function flushPendingPersistence() {
     debouncedPersist.flush()
   }
@@ -163,11 +185,10 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  let resolvedUserId: string | null = null
-
   function fenceIdentityChange(): void {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
+    pendingPersistenceOwnerId = null
     prepareWorkflowLogoutTransition()
     lastSavedJsonByPath.value = {}
   }
@@ -175,7 +196,13 @@ export function useWorkflowPersistenceV2() {
   function releaseIdentityFence(): void {
     completeWorkflowLogoutTransition()
     ensureScopedStorage()
-    persistCurrentWorkflow()
+    if (
+      pendingPersistenceOwnerId !== null &&
+      pendingPersistenceOwnerId === resolvedUserId
+    ) {
+      debouncedPersist.cancel()
+      persistCurrentWorkflow()
+    }
   }
 
   onUserLogout(() => {
@@ -337,16 +364,16 @@ export function useWorkflowPersistenceV2() {
       // Flush any pending persistence from the previous workflow
       debouncedPersist.flush()
       // Persist the new workflow immediately
-      persistCurrentWorkflow()
+      persistWorkflowForCurrentOwner()
     }
   )
 
   // Debounced persistence on graph changes
-  api.addEventListener('graphChanged', debouncedPersist)
+  api.addEventListener('graphChanged', scheduleWorkflowPersistence)
 
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
-    api.removeEventListener('graphChanged', debouncedPersist)
+    api.removeEventListener('graphChanged', scheduleWorkflowPersistence)
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()

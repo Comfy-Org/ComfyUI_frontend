@@ -763,6 +763,9 @@ describe('useWorkflowPersistenceV2', () => {
     Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
     await nextTick()
 
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
     mocks.state.currentGraph = {
       nodes: [],
       extra: { marker: 'workspace-a-final-edit' }
