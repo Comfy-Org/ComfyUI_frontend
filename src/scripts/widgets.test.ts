@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -8,10 +6,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { addValueControlWidget, addValueControlWidgets } from './widgets'
 
 describe('legacy value control API', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('configures the target and returns component-backed projections', () => {
     const graph = new LGraph()
     const node = new LGraphNode('TestNode')

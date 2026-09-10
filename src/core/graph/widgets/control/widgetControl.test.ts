@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -22,10 +20,6 @@ function createControlledNode(): { graph: LGraph; node: LGraphNode } {
 }
 
 describe('widget control persistence', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('round-trips the component through the legacy positional layout', () => {
     const { node } = createControlledNode()
 

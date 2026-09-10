@@ -112,14 +112,16 @@ export function toCalendarEvent(
   locale: Locale
 ): CalendarEvent {
   const target = eventVideoId(event)
-    ? eventPageHref(event.id)[locale]
-    : (event.link?.href[locale] ?? eventPageHref(event.id)[locale])
+    ? localizeHref(eventPath(event), locale)
+    : event.link?.href[locale] ||
+      event.link?.href.en ||
+      localizeHref(eventPath(event), locale)
   const href = new URL(target, SITE_ORIGIN).href
   const start = new Date(event.startDateTime)
   return {
-    title: event.title[locale],
-    description: `${event.description[locale]}\n\n${href}`,
-    location: event.location?.[locale] ?? '',
+    title: event.title[locale] || event.title.en,
+    description: `${event.description[locale] || event.description.en}\n\n${href}`,
+    location: event.location?.[locale] || event.location?.en || '',
     start,
     end: eventEnd(event)
   }
@@ -136,17 +138,19 @@ export function eventJsonLdNode(
 ): JsonLdNode {
   const { siteUrl, site, pageUrl, locale } = input
   const href =
-    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+    event.link?.href[locale] ||
+    event.link?.href.en ||
+    localizeHref(eventPath(event), locale)
   const online = event.location?.en === 'Online'
   return eventNode({
     siteUrl,
     id: jsonLdId(pageUrl, `event-${event.id}`),
-    name: event.title[locale],
-    description: event.description[locale],
+    name: event.title[locale] || event.title.en,
+    description: event.description[locale] || event.description.en,
     startDate: event.startDateTime,
     ...(online
       ? { virtualUrl: href.startsWith('/') ? absoluteUrl(site, href) : href }
-      : { placeName: event.location?.[locale] }),
+      : { placeName: event.location?.[locale] || event.location?.en }),
     locale
   })
 }
@@ -207,6 +211,126 @@ export function deriveFeaturedEvents(
 
 // zh-CN copy is a first pass and pending native review.
 const events: readonly ComfyEvent[] = [
+  {
+    id: 'comfy-agent-beta',
+    category: 'livestream',
+    title: {
+      en: 'Comfy Agent Beta: What It Does & How We Built It',
+      'zh-CN': 'Comfy Agent Beta：它能做什么，我们又是如何打造它的'
+    },
+    description: {
+      en: 'Jo Zhang, Product Manager at Comfy, joins host Allyson to unpack the Comfy Agent beta — what it does and how the team built it.',
+      'zh-CN':
+        'Comfy 产品经理 Jo Zhang 做客本场直播，与主持人 Allyson 一起拆解 Comfy Agent Beta 版——它能做什么，以及团队是如何打造它的。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'September 10, 2026 · 10AM PT',
+      'zh-CN': '2026年9月10日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-09-10T10:00:00-07:00',
+    liveVideoId: '6ZT9y3rdvFg',
+    media: eventVideo(
+      '09.10-agent-beta.mp4',
+      {
+        en: 'Comfy Agent Beta: What It Does & How We Built It livestream',
+        'zh-CN': 'Comfy Agent Beta 直播'
+      },
+      '09.10-agent-beta-still.png'
+    ),
+    featured: {
+      order: 5,
+      media: eventVideo(
+        '09.10-agent-beta.mp4',
+        {
+          en: 'Comfy Agent Beta: What It Does & How We Built It livestream',
+          'zh-CN': 'Comfy Agent Beta 直播'
+        },
+        '09.10-agent-beta-still.png'
+      ),
+      showTitle: false
+    }
+  },
+  {
+    id: 'comfy-agent-ga',
+    category: 'livestream',
+    title: {
+      en: 'Comfy Agent: Live Demos — VFX, 3D & Marketing',
+      'zh-CN': 'Comfy Agent 现场演示：VFX、3D 与营销'
+    },
+    description: {
+      en: 'Purz and Allyson host live demos of Comfy Agent across VFX, 3D, and marketing use cases.',
+      'zh-CN':
+        'Purz 与 Allyson 主持本场直播，现场演示 Comfy Agent 在 VFX、3D 与营销场景中的应用。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'September 15, 2026 · 10AM PT',
+      'zh-CN': '2026年9月15日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-09-15T10:00:00-07:00',
+    liveVideoId: '3pBDHdgVD1E',
+    media: eventVideo(
+      '09.15-agent-ga.mp4',
+      {
+        en: 'Comfy Agent: Live Demos — VFX, 3D & Marketing livestream',
+        'zh-CN': 'Comfy Agent 现场演示直播'
+      },
+      '09.15-agent-ga-still.png'
+    ),
+    featured: {
+      order: 6,
+      media: eventVideo(
+        '09.15-agent-ga.mp4',
+        {
+          en: 'Comfy Agent: Live Demos — VFX, 3D & Marketing livestream',
+          'zh-CN': 'Comfy Agent 现场演示直播'
+        },
+        '09.15-agent-ga-still.png'
+      ),
+      showTitle: false
+    }
+  },
+  {
+    id: 'dev-platform-101',
+    category: 'livestream',
+    title: {
+      en: 'Developer Platform 101: Building with the New Comfy API',
+      'zh-CN': '开发者平台 101：使用全新 Comfy API 构建应用'
+    },
+    description: {
+      en: 'Jacob Segal, Product Manager at Comfy, joins hosts Allyson and Purz for an introduction to building with the new Comfy developer API.',
+      'zh-CN':
+        'Comfy 产品经理 Jacob Segal 做客本场直播，与主持人 Allyson 和 Purz 一起介绍如何使用全新的 Comfy 开发者 API 构建应用。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'September 16, 2026 · 10AM PT',
+      'zh-CN': '2026年9月16日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-09-16T10:00:00-07:00',
+    liveVideoId: '69slO15ovL8',
+    media: eventVideo(
+      '09.16-dev-platform.mp4',
+      {
+        en: 'Developer Platform 101: Building with the New Comfy API livestream',
+        'zh-CN': '开发者平台 101 直播'
+      },
+      '09.16-dev-platform-still.png'
+    ),
+    featured: {
+      order: 7,
+      media: eventVideo(
+        '09.16-dev-platform.mp4',
+        {
+          en: 'Developer Platform 101: Building with the New Comfy API livestream',
+          'zh-CN': '开发者平台 101 直播'
+        },
+        '09.16-dev-platform-still.png'
+      ),
+      showTitle: false
+    }
+  },
   {
     id: 'la-august-meetup',
     category: 'community',
@@ -367,7 +491,11 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '2026年8月26日 · 上午10点（PT）'
     },
     startDateTime: '2026-08-26T10:00:00-07:00',
-    liveVideoId: '6yH_15XSd0w'
+    liveVideoId: '6yH_15XSd0w',
+    media: eventImage('august-26-2026-local-mcp.jpg', {
+      en: 'Local MCP: Run ComfyUI with Your Agent & Hardware livestream',
+      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI 直播'
+    })
   },
   {
     id: 'beyond-the-models',

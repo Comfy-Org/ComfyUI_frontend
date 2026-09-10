@@ -171,16 +171,16 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  {{ n(tier.pricing.credits) }}
+                  {{ n(creditsForTier(tier)) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
-                  {{ t('subscription.monthlyCredits') }}
+                  {{ t(creditsLabelKey) }}
                 </span>
               </div>
               <span class="text-sm text-muted-foreground">
                 {{
                   t('subscription.videoEstimate', {
-                    count: n(tier.pricing.videoEstimate)
+                    count: n(videoEstimateForTier(tier))
                   })
                 }}
               </span>
@@ -249,10 +249,10 @@
                   <span
                     class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                   >
-                    {{ n(teamCredits) }}
+                    {{ n(teamCreditsForCurrentCycle) }}
                   </span>
                   <span class="text-sm text-muted-foreground">
-                    {{ t('subscription.monthlyCredits') }}
+                    {{ t(creditsLabelKey) }}
                   </span>
                 </div>
                 <span class="text-sm text-muted-foreground">
@@ -417,6 +417,7 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
+  amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -471,25 +472,37 @@ const { t, n } = useI18n()
 const capabilities = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
 
-const canSubscribeSelfServe = computed(() =>
-  isCloud
-    ? capabilities.canSubscribeSelfServe.value
-    : permissions.value.canManageSubscription
-)
-const canReactivate = computed(() =>
-  isCloud
-    ? capabilities.canReactivate.value
-    : permissions.value.canManageSubscriptionLifecycle
-)
-const canChangeSeats = computed(() =>
-  isCloud
-    ? capabilities.canChangeSeats.value
-    : permissions.value.canManageSubscription
-)
-const canDowngradeToPersonal = computed(() =>
-  isCloud
-    ? capabilities.canDowngradeToPersonal.value
-    : permissions.value.canDowngradeToPersonal
+// Every CTA here resolves to a billing write the server authorizes on its own,
+// so each catalog asks whether any write that reaches it is permitted instead of
+// mapping each card to one capability itself — that mapping is policy, and the
+// response carries no plan dimension to derive it from. An unresolved snapshot
+// is not a denial: the CTA stays live and the checkout endpoint answers, the
+// same trade canOpenPricingSurface and canTopUp already make.
+//
+// The team catalog is not reachable by downgrading to personal, so its gate
+// stops at the three writes that do reach it.
+const lifecycleActionPermitted = computed(() => {
+  if (!isCloud) return permissions.value.canManageSubscription
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return (
+    capabilities.canSubscribeSelfServe.value ||
+    capabilities.canChangeSeats.value ||
+    capabilities.canReactivate.value
+  )
+})
+
+// Read on its own by the plan-scope toggle, which offers or withholds the whole
+// personal catalog rather than one CTA, so it keeps its own capability.
+const canDowngradeToPersonal = computed(() => {
+  if (!isCloud) return permissions.value.canDowngradeToPersonal
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return capabilities.canDowngradeToPersonal.value
+})
+
+// A personal card is reachable by one further write the team catalog has no
+// counterpart for: leaving a team plan.
+const personalPlanActionPermitted = computed(
+  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
 )
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
@@ -500,8 +513,8 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
-const PRICING_URL = 'https://www.comfy.org/pricing'
+const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -663,7 +676,22 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 // held must not read as current — it is buyable again.
 const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
+// An active current plan has nothing to transition to, which describes the card
+// rather than the actor's permission — so it stays a client-side check while
+// permission comes from lifecycleActionPermitted.
+const offersTransition = (isCurrent: boolean): boolean =>
+  !isCurrent || isCancelled.value
+
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const amountForCurrentCycle = (monthlyAmount: number) =>
+  amountForBillingCycle(monthlyAmount, isYearly.value)
+
+const creditsLabelKey = computed(() =>
+  isYearly.value ? 'subscription.yearlyCredits' : 'subscription.monthlyCredits'
+)
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
 // hardcoded DES-197 fallback so OSS / pre-deploy still renders. Always non-empty
@@ -692,9 +720,11 @@ const selectedTeamStop = computed(
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
     defaultTeamStop.value
 )
-const teamCredits = computed(() => selectedTeamStop.value.credits)
+const teamCreditsForCurrentCycle = computed(() =>
+  amountForCurrentCycle(selectedTeamStop.value.credits)
+)
 const teamVideoEstimate = computed(() =>
-  Math.round(teamCredits.value * VIDEO_PER_CREDIT)
+  Math.round(teamCreditsForCurrentCycle.value * VIDEO_PER_CREDIT)
 )
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
@@ -766,14 +796,17 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-const isTeamButtonDisabled = computed(() => {
-  if (isLoading) return true
-  if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
-  if (isTeamCurrentPlanSelected.value) {
-    return !isCancelled.value || !canReactivate.value
-  }
-  return !canChangeSeats.value
-})
+// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
+// subscription still reports, so it only means "current plan" while the team
+// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
+const isTeamButtonDisabled = computed(
+  () =>
+    isLoading ||
+    !offersTransition(
+      isTeamSubscribed.value && isTeamCurrentPlanSelected.value
+    ) ||
+    !lifecycleActionPermitted.value
+)
 
 // A subscriber moving off their current plan is a prorated change rather than a
 // fresh subscribe; re-subscribe and the locked current plan exit before the
@@ -803,6 +836,17 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   const price = plan.price_cents / 100
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
+
+// The catalog grant for the selected duration is authoritative; the static
+// per-month figure is only the pre-resolve (loading / OSS) fallback.
+const creditsForTier = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
+  amountForCurrentCycle(tier.pricing.credits)
+
+const videoEstimateForTier = (tier: PricingTierConfig): number =>
+  Math.round(
+    creditsForTier(tier) * (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
 
 const currentAccountTier = computed(() =>
   subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
@@ -857,16 +901,10 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
-  if (!canSelectPersonalPlan.value) return false
-  if (isTeamPlan.value) return canDowngradeToPersonal.value
-  if (isCurrentPlan(tierKey)) {
-    return isCancelled.value && canReactivate.value
-  }
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? canChangeSeats.value
-    : canSubscribeSelfServe.value
-}
+const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
+  canSelectPersonalPlan.value &&
+  offersTransition(isCurrentPlan(tierKey)) &&
+  personalPlanActionPermitted.value
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
   isLoading || !canUsePersonalPlanAction(tier.key)

@@ -2,10 +2,12 @@ import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { applyControlValues } from '@/core/graph/widgets/control/widgetControl'
+import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  ISerialisedNode,
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
@@ -125,6 +127,24 @@ export class PrimitiveNode extends LGraphNode {
     return values
   }
 
+  override configure(serialisedNode: ISerialisedNode) {
+    const type = serialisedNode.outputs?.[0]?.type
+    super.configure(serialisedNode)
+    if (
+      !this.graph ||
+      this.widgets?.length ||
+      typeof type !== 'string' ||
+      !outputHasLinks(this.graph, this.id, 0)
+    )
+      return
+
+    useWidgetValueStore().setNodeWidgetRestoration(
+      this.graph.rootGraph.id,
+      this.id,
+      createWidgetRestorationState(serialisedNode)
+    )
+  }
+
   override onAfterGraphConfigured() {
     if (
       this.graph &&
@@ -136,6 +156,14 @@ export class PrimitiveNode extends LGraphNode {
       // Merge values if required
       this._mergeWidgetConfig()
     }
+  }
+
+  private _clearWidgetRestoration() {
+    if (this.graph)
+      useWidgetValueStore().clearNodeWidgetRestoration(
+        this.graph.rootGraph.id,
+        this.id
+      )
   }
 
   override onConnectionsChange(
@@ -224,6 +252,8 @@ export class PrimitiveNode extends LGraphNode {
     if (!config) return
 
     const { type } = getWidgetType(config)
+    if (recreating || this.outputs[0].type !== type)
+      this._clearWidgetRestoration()
     // Update our output to restrict to the widget type
     this.outputs[0].type = type
     this.outputs[0].name = type
@@ -252,62 +282,79 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+    const restoredValue = this.graph
+      ? useWidgetValueStore().getRestoredWidgetValue(
+          this.graph.rootGraph.id,
+          this.id,
+          'value',
+          0
+        )
+      : undefined
 
-    if (
-      type === 'COMBO' &&
-      assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
-    ) {
-      widget = this._createAssetWidget(node, widgetName, inputData)
-      const theirWidget = node.widgets?.find((w) => w.name === widgetName)
-      if (theirWidget) widget.value = theirWidget.value
-      this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
-      return
-    }
-
-    if (isValidWidgetType(type)) {
-      widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
-    } else {
-      // @ts-expect-error InputSpec is not typed correctly
-      widget = this.addWidget(type, 'value', null, () => {}, {})
-    }
-
-    if (node?.widgets && widget) {
-      const theirWidget = node.widgets.find((w) => w.name === widgetName)
-      if (theirWidget) {
-        widget.value = theirWidget.value
+    try {
+      if (
+        type === 'COMBO' &&
+        assetService.shouldUseWidgetAssetPicker(node.comfyClass, widgetName)
+      ) {
+        widget = this._createAssetWidget(node, widgetName, inputData)
+        const theirWidget = node.widgets?.find((w) => w.name === widgetName)
+        if (theirWidget) widget.value = theirWidget.value
+        if (restoredValue) widget.value = restoredValue.value
+        this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+        return
       }
-    }
 
-    if (
-      !inputData?.[1]?.control_after_generate &&
-      (widget.type === 'number' || widget.type === 'combo')
-    ) {
-      const graphId = this.graph?.rootGraph.id ?? zeroUuid
-      let control_value =
-        useWidgetValueStore().getPositionalRestoredWidgetValue(
-          graphId,
+      if (isValidWidgetType(type)) {
+        widget = (ComfyWidgets[type](this, 'value', inputData, app) || {})
+          .widget
+      } else {
+        widget = this.addCustomWidget({
+          type: type.toLowerCase(),
+          name: 'value',
+          value: null,
+          callback: () => {},
+          options: {},
+          y: 0
+        })
+      }
+
+      if (node?.widgets && widget) {
+        const theirWidget = node.widgets.find((w) => w.name === widgetName)
+        if (theirWidget) {
+          widget.value = theirWidget.value
+        }
+      }
+      if (restoredValue) widget.value = restoredValue.value
+
+      if (
+        !inputData?.[1]?.control_after_generate &&
+        (widget.type === 'number' || widget.type === 'combo')
+      ) {
+        const store = useWidgetValueStore()
+        const mode = store.getPositionalRestoredWidgetValue(
+          this.graph?.rootGraph.id ?? zeroUuid,
           this.id,
           1
         )
-      if (!control_value) {
-        control_value = 'fixed'
+        const filter = store.getPositionalRestoredWidgetValue(
+          this.graph?.rootGraph.id ?? zeroUuid,
+          this.id,
+          2
+        )
+        addValueControlWidgets(widget, String(mode ?? 'fixed'))
+        applyControlValues(widget, [mode, filter], 0)
       }
-      const filter = useWidgetValueStore().getPositionalRestoredWidgetValue(
-        graphId,
-        this.id,
-        2
-      )
-      addValueControlWidgets(widget, String(control_value))
-      applyControlValues(widget, [control_value, filter], 0)
-    }
 
-    // Restore any saved control values
-    const controlValues = this.controlValues
-    if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
-      applyControlValues(widget, controlValues, 0)
-    }
+      // Restore any saved control values
+      const controlValues = this.controlValues
+      if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
+        applyControlValues(widget, controlValues, 0)
+      }
 
-    this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+      this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
+    } finally {
+      this._clearWidgetRestoration()
+    }
   }
 
   private _createAssetWidget(
@@ -353,7 +400,7 @@ export class PrimitiveNode extends LGraphNode {
   recreateWidget() {
     const values = this.widgets?.map((w) => w.value)
     this._removeWidgets()
-    this._onFirstConnection(true)
+    this._onFirstConnection(!!values?.length)
     if (values?.length && this.widgets) {
       for (let i = 0; i < this.widgets.length; i++)
         this.widgets[i].value = values[i]
@@ -437,6 +484,7 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   onLastDisconnect() {
+    this._clearWidgetRestoration()
     // We can't remove + re-add the output here as if you drag a link over the same link
     // it removes, then re-adds, causing it to break
     this.outputs[0].type = '*'

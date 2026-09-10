@@ -21,7 +21,7 @@ function collectGraphTargets(graph: LGraph): {
 
   forEachNode(graph, (node) => {
     for (const [id, widget] of mapLiveWidgetsById(node)) live.set(id, widget)
-    for (const [index, input] of (node.inputs ?? []).entries()) {
+    for (const [index, input] of node.inputs.entries()) {
       if (input.widgetId) {
         const widget = node.getWidgetFromSlot(input)
         if (widget) live.set(input.widgetId, widget)

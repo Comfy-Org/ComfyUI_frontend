@@ -22,6 +22,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
 - **[Connection Callbacks Migration Notes](./connection-callbacks-migration.md)** - Callback signatures are unchanged, but node removal and subgraph boundaries fire them in a specific order
 - **[Serialization Callbacks Migration Notes](./serialization-callbacks-migration.md)** - `LGraph.configure()` now needs an active Pinia instance; persist extension data via `properties`/`extra`, not by enumerating node fields
 - **[Node Geometry Migration Notes](./node-geometry-migration.md)** - `node.size` always reflects the requested size now; use `getBounding()` for the node's actual rendered footprint
+- **[Widget Value Recipe Book](./widget-value-recipe-book.md)** - General guidance for choosing between `computed`, `watch`, direct calls, and `effectScope()` when building widget-driven reactive UI
 
 ## Quick Links
 

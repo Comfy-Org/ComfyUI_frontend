@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
@@ -43,10 +41,6 @@ function link(
 }
 
 describe('useLinkStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('keeps the first registration for a contested target slot', () => {
     const store = useLinkStore()
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -111,7 +105,7 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
   })
 
-  it('re-registers a link after deleting its owner bucket', () => {
+  it('reuses a deleted link id for a replacement link', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)
     const current = computed(() => [...store.graphTopologies(graphA)][0])

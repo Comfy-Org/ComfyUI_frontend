@@ -16,7 +16,7 @@ export default defineConfig({
     unstubGlobals: true,
     fakeTimers: { shouldAdvanceTime: true },
     environment: 'node',
-    include: ['src/**/*.{test,spec}.ts'],
+    include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
     setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
     coverage: {
@@ -32,7 +32,12 @@ export default defineConfig({
         'src/test/**',
         'src/content/**',
         'src/i18n/**',
-        'src/content.config.ts'
+        'src/content.config.ts',
+        // Thin Firebase SDK boundary: pure provisioning behavior is tested in
+        // workshop-firebase.test.ts, while popup/listener wiring is exercised
+        // through consumers that mock this module. SDK-owned branches are not
+        // meaningful patch-coverage targets here.
+        'src/config/workshop-firebase.ts'
       ]
     }
   }

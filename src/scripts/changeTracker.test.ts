@@ -1,4 +1,11 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { markRaw, ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createNestedSubgraphs,
@@ -19,23 +26,10 @@ vi.mock('@/base/assert', () => ({
   assert: mockAssert
 }))
 
-const mockNodeOutputStore = vi.hoisted(() => ({
-  snapshotOutputs: vi.fn(() => ({})),
-  restoreOutputs: vi.fn()
-}))
-
-const mockSubgraphNavigationStore = vi.hoisted(() => ({
-  exportState: vi.fn(() => []),
-  restoreState: vi.fn()
-}))
-
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: null as { changeTracker: unknown } | null,
-  getWorkflowByPath: vi.fn()
-}))
-
 vi.mock('@/scripts/app', () => ({
   app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
     graph: {},
     rootGraph: {
       serialize: vi.fn(() => ({
@@ -66,19 +60,6 @@ vi.mock('@/scripts/api', () => ({
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
   }
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  ComfyWorkflow: class {},
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
 }))
 
 import { app } from '@/scripts/app'
@@ -121,8 +102,10 @@ function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const workflow = {
     path: `/test/workflow-${++workflowPathCounter}.json`
   } as never
-  const tracker = new ChangeTracker(workflow, state)
-  mockWorkflowStore.activeWorkflow = { changeTracker: tracker }
+  const tracker = markRaw(new ChangeTracker(workflow, state))
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: tracker
+  })
   return tracker
 }
 
@@ -219,12 +202,16 @@ describe('ChangeTracker', () => {
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
     ChangeTracker.resetCheckStateWarningForTest()
-    mockWorkflowStore.activeWorkflow = null
-    mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
+    useWorkflowStore().activeWorkflow = null
+    vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
+    vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue([])
+    vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+      () => {}
+    )
   })
 
   describe('captureCanvasState', () => {
@@ -270,14 +257,16 @@ describe('ChangeTracker', () => {
 
       it('is a no-op and calls assert when called on inactive tracker', () => {
         const tracker = createTracker()
-        mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {}
+        })
 
         tracker.captureCanvasState()
 
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(mockAssert).toHaveBeenCalledWith(
           false,
-          expect.stringContaining('captureCanvasState')
+          'ChangeTracker.captureCanvasState() called on inactive tracker'
         )
       })
     })
@@ -359,6 +348,30 @@ describe('ChangeTracker', () => {
         )
       })
 
+      it('detects a change after a listener mutates the prior checkpoint', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [0]
+        const canvasState = structuredClone(initial)
+        canvasState.nodes[0].widgets_values = [1]
+        const tracker = createTracker(initial)
+        mockCanvasState(canvasState)
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [2]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(canvasState)
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
       it('decides execution relevance before graphChanged listeners run', () => {
         const initial = createState(1)
         initial.nodes[0].widgets_values = [1]
@@ -428,7 +441,9 @@ describe('ChangeTracker', () => {
         {
           name: 'tracker becomes inactive',
           blockSquash: () => {
-            mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+            useWorkflowStore().activeWorkflow = fromPartial({
+              changeTracker: {}
+            })
           }
         },
         {
@@ -1162,8 +1177,8 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(tracker.activeState).toEqual(changed)
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
-      expect(mockSubgraphNavigationStore.exportState).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
+      expect(useSubgraphNavigationStore().exportState).toHaveBeenCalled()
     })
 
     it('skips captureCanvasState but still calls store during undo/redo', () => {
@@ -1173,20 +1188,22 @@ describe('ChangeTracker', () => {
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
     })
 
     it('is a full no-op and calls assert when called on inactive tracker', () => {
       const tracker = createTracker()
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.deactivate()
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
       expect(mockAssert).toHaveBeenCalledWith(
         false,
-        expect.stringContaining('deactivate')
+        'ChangeTracker.deactivate() called on inactive tracker'
       )
     })
   })
@@ -1205,7 +1222,9 @@ describe('ChangeTracker', () => {
     it('is a no-op when tracker is inactive', () => {
       const tracker = createTracker()
       const original = tracker.activeState
-      mockWorkflowStore.activeWorkflow = { changeTracker: {} }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
 
       tracker.prepareForSave()
 

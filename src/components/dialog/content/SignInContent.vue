@@ -53,10 +53,13 @@
         <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
-      <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
-        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-      </Divider>
+      <div class="my-8 flex items-center gap-3">
+        <div class="grow border-t border-interface-stroke" />
+        <span class="shrink-0 text-muted">{{
+          t('auth.login.orContinueWith')
+        }}</span>
+        <div class="grow border-t border-interface-stroke" />
+      </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
@@ -138,7 +141,7 @@
       <p class="mt-8 text-xs text-muted">
         {{ t('auth.login.termsText') }}
         <a
-          href="https://www.comfy.org/terms-of-service"
+          href="https://comfy.org/terms-of-service/"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -146,7 +149,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://www.comfy.org/privacy-policy"
+          href="https://comfy.org/privacy-policy/"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -162,16 +165,16 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isEmbeddedWebView } from '@/base/webviewDetection'
+import { useRegionGate } from '@comfyorg/account/vue'
+import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useRegionGate } from '@/composables/auth/useRegionGate'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,

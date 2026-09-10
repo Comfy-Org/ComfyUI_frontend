@@ -21,7 +21,7 @@ webSocketTest.describe(
       async ({ comfyPage, getWebSocket }) => {
         await comfyPage.workflow.loadWorkflow('default')
         await comfyPage.page.evaluate(() => {
-          const sampler = window.app!.graph!._nodes.find(
+          const sampler = window.app!.graph._nodes.find(
             (node) => node.type === 'KSampler'
           )
           const control = sampler
@@ -64,7 +64,7 @@ webSocketTest.describe(
         // Find and set the width on the latent node
         const triggerChange = async (value: number) => {
           return await comfyPage.page.evaluate((value) => {
-            const node = window.app!.graph!._nodes.find(
+            const node = window.app!.graph._nodes.find(
               (n) => n.type === 'EmptyLatentImage'
             )
             node!.widgets![0].value = value
@@ -250,7 +250,10 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     })
   })
 
-  test('Can dock actionbar into top menu', async ({ comfyPage }) => {
+  test('Can dock actionbar into top menu', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
     await comfyPage.page.dragAndDrop(
       '.actionbar .drag-handle',
       '.actionbar-container',
@@ -259,8 +262,12 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
-      /static/
-    )
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(true)
+
+    await comfyMouse.dragElementBy(comfyPage.actionbar.dragHandle, {
+      x: -100,
+      y: 100
+    })
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(false)
   })
 })

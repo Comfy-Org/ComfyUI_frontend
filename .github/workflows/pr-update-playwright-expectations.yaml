@@ -158,8 +158,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Snapshot rewrites fail the test command, so validate its JSON report.
       - name: Update snapshots (${{ matrix.shard == 'cloud' && 'cloud' || format('Shard {0}/4', matrix.shard) }})
@@ -459,6 +461,8 @@ jobs:
 
       - name: Commit updated expectations
         id: commit
+        env:
+          TARGET_BRANCH: ${{ needs.setup.outputs.branch }}
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
@@ -492,8 +496,8 @@ jobs:
 
           git commit -F /tmp/commit-msg.txt
 
-          echo "Pushing to ${{ needs.setup.outputs.branch }}..."
-          git push origin ${{ needs.setup.outputs.branch }}
+          echo "Pushing to $TARGET_BRANCH..."
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
 
           echo "✓ Commit and push successful"
 

@@ -42,6 +42,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
+    '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
     // The recorder's scratch spec calls page.pause(), so collecting it outside
@@ -63,7 +64,18 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
+      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes|@agent-harness/
+    },
+
+    // Runs only against the local agent integration harness
+    // (scripts/dev-agent-integration.ts): the panel's local-agent path gates
+    // on VITE_AGENT_STANDALONE, baked at build time and unset in the CI
+    // dist, so these specs are excluded from every CI project by tag.
+    {
+      name: 'agent-harness',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 180000,
+      grep: /@agent-harness/
     },
 
     // The custom-node suite needs the manifest packs installed and a quiet

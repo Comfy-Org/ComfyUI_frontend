@@ -1,24 +1,28 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { AuthStoreError } from '@/stores/authStore'
 
-import { useResubscribe } from './useResubscribe'
+import { useResubscribe as createResubscribe } from './useResubscribe'
 
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
   canManageSubscriptionLifecycle: true,
   canReactivate: true,
+  canReactivatePlan: true,
   resubscribe: vi.fn(),
   toastAdd: vi.fn(),
   trackResubscribeClicked: vi.fn(),
   trackBillingEvent: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ resubscribe: state.resubscribe })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: {
       get value() {
@@ -28,61 +32,84 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canReactivate: {
-      get value() {
-        return state.canReactivate
-      }
-    }
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: {
-      get value() {
-        return {
-          canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canReactivate: {
+        get value() {
+          return state.canReactivate
         }
       }
-    }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+          }
+        }
+      },
+      canReactivatePlan: {
+        get value() {
+          return state.canReactivatePlan
+        }
+      }
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackResubscribeClicked: state.trackResubscribeClicked,
     trackBillingEvent: state.trackBillingEvent
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  AuthStoreError: class AuthStoreError extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.name = 'AuthStoreError'
-      this.status = status
-    }
-  }
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: state.toastAdd })
+  })
+)
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: state.toastAdd })
-}))
+const apps: App<Element>[] = []
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+function useResubscribe(): ReturnType<typeof createResubscribe> {
+  let result: ReturnType<typeof createResubscribe> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createResubscribe()
+        return () => null
+      }
+    })
+  )
+  app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('resubscribe composable not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useResubscribe', () => {
   beforeEach(() => {
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivate = true
+    state.canReactivatePlan = true
     state.resubscribe.mockResolvedValue(undefined)
   })
 
@@ -90,6 +117,7 @@ describe('useResubscribe', () => {
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
     state.canReactivate = false
+    state.canReactivatePlan = false
 
     await handleResubscribe()
 
@@ -102,6 +130,7 @@ describe('useResubscribe', () => {
   it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivate = false
+    state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
     await handleResubscribe()
@@ -110,6 +139,31 @@ describe('useResubscribe', () => {
     expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(state.toastAdd).not.toHaveBeenCalled()
     expect(isResubscribing.value).toBe(false)
+  })
+
+  it('resubscribes when the policy permits it, whatever the raw capability says', async () => {
+    // The legacy rail resolves can_reactivate false while the workspace may
+    // still reactivate; this composable must follow the derived policy. Which
+    // rail produces which value is covered in useWorkspaceUI.test.ts.
+    state.canReactivate = false
+    state.canReactivatePlan = true
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).toHaveBeenCalled()
+  })
+
+  it('refuses whenever the policy denies it', async () => {
+    // Behaviour change: the old gate short-circuited on the legacy rail and ran
+    // no membership check, so a denial there never reached this branch.
+    state.canReactivate = false
+    state.canReactivatePlan = false
+    const { handleResubscribe } = useResubscribe()
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).not.toHaveBeenCalled()
   })
 
   it('fires a started event before resubscribe resolves', async () => {
@@ -128,6 +182,9 @@ describe('useResubscribe', () => {
   it('does not report checkout launch as terminal legacy success', async () => {
     state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = false
+    // This case is about telemetry staging, not the gate; the workspace is
+    // permitted to reactivate so the flow reaches the checkout launch.
+    state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
 
     await handleResubscribe()

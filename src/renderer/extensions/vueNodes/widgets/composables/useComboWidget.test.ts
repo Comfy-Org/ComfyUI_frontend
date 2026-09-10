@@ -1,4 +1,6 @@
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -24,69 +26,56 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockUpdateInputs = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-const mockGetInputName = vi.hoisted(() => vi.fn((hash: string) => hash))
-const mockGetAssets = vi.hoisted(() => vi.fn(() => [] as AssetItem[]))
-const mockAssetsStoreState = vi.hoisted(() => {
-  const inputAssets: AssetItem[] = []
-  return {
-    inputAssets,
-    inputLoading: false
-  }
-})
 
-vi.mock('@/scripts/widgets', () => ({
+vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal()),
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: vi.fn(() => ({
-    get inputAssets() {
-      return mockAssetsStoreState.inputAssets
-    },
-    get inputLoading() {
-      return mockAssetsStoreState.inputLoading
-    },
-    updateInputs: mockUpdateInputs,
-    getInputName: mockGetInputName,
-    getAssets: mockGetAssets
-  }))
-}))
+vi.mock(import('@/composables/useFeatureFlags'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useFeatureFlags: () => {
+      const featureFlags = actual.useFeatureFlags()
+      return {
+        ...featureFlags,
+        flags: { ...featureFlags.flags, assetsEnabled: false }
+      }
+    }
+  }
+})
 
-const mockSettingStoreGet = vi.fn(() => false)
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) =>
     key === 'widgets.selectModel' ? 'Select model' : key
   )
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseAssetBrowser: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false)
   }
 }))
 
-vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
-  const mockAssetBrowserDialogShow = vi.fn()
-  return {
-    useAssetBrowserDialog: vi.fn(() => ({
-      show: mockAssetBrowserDialogShow
-    }))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useAssetBrowserDialog'),
+  () => {
+    const mockAssetBrowserDialogShow = vi.fn()
+    return {
+      useAssetBrowserDialog: vi.fn(() => ({
+        show: mockAssetBrowserDialogShow
+      }))
+    }
   }
-})
+)
 
 function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
   const mockCallback = vi.fn()
@@ -136,16 +125,26 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
   return inputSpec
 }
 
+beforeEach(() => {
+  vi.spyOn(useAssetsStore().inputAssets, 'loadMore').mockImplementation(
+    async () => {
+      useAssetsStore().inputAssets.hasMore = false
+    }
+  )
+})
+
 describe('useComboWidget', () => {
   beforeEach(() => {
-    mockSettingStoreGet.mockReturnValue(false)
-    mockGetInputName.mockImplementation((hash: string) => hash)
-    mockGetAssets.mockImplementation(() => [])
+    vi.mocked(useAssetsStore().getInputName).mockImplementation(
+      (hash: string) => hash
+    )
+    vi.mocked(useAssetsStore().getAssets).mockImplementation(() => [])
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
     mockDistributionState.isCloud = false
-    mockAssetsStoreState.inputAssets = []
-    mockAssetsStoreState.inputLoading = false
+    useAssetsStore().inputAssets.items = []
+    useAssetsStore().inputAssets.isLoading = false
+    useAssetsStore().inputAssets.hasMore = false
   })
 
   it('should handle undefined spec', () => {
@@ -169,10 +168,9 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('should create normal combo widget when asset API is disabled', () => {
+  it('should create normal combo widget when the widget asset picker is disabled', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(false)
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget()
@@ -205,7 +203,7 @@ describe('useComboWidget', () => {
       inputSpecOverrides: Partial<InputSpec> = {}
     ) {
       mockDistributionState.isCloud = true
-      vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({
@@ -229,7 +227,7 @@ describe('useComboWidget', () => {
     }
 
     it('should create asset browser widget when API enabled', () => {
-      mockGetAssets.mockReturnValue([
+      vi.mocked(useAssetsStore().getAssets).mockReturnValue([
         createMockAssetItem({ name: 'cloud_model.safetensors' })
       ])
 
@@ -238,7 +236,7 @@ describe('useComboWidget', () => {
       })
 
       expect(
-        vi.mocked(assetService.shouldUseAssetBrowser)
+        vi.mocked(assetService.shouldUseWidgetAssetPicker)
       ).toHaveBeenCalledWith('CheckpointLoaderSimple', 'ckpt_name')
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'asset',
@@ -250,7 +248,7 @@ describe('useComboWidget', () => {
     })
 
     it('should use first cloud asset as default instead of server combo options', () => {
-      mockGetAssets.mockReturnValue([
+      vi.mocked(useAssetsStore().getAssets).mockReturnValue([
         createMockAssetItem({ name: 'cloud_model.safetensors' })
       ])
 
@@ -262,7 +260,7 @@ describe('useComboWidget', () => {
     })
 
     it('should fallback to assets[0] when inputSpec.default not in cloud assets', () => {
-      mockGetAssets.mockReturnValue([
+      vi.mocked(useAssetsStore().getAssets).mockReturnValue([
         createMockAssetItem({ name: 'cloud_model.safetensors' })
       ])
 
@@ -274,7 +272,7 @@ describe('useComboWidget', () => {
     })
 
     it('should prefer inputSpec.default when it exists in cloud assets', () => {
-      mockGetAssets.mockReturnValue([
+      vi.mocked(useAssetsStore().getAssets).mockReturnValue([
         createMockAssetItem({ name: 'other_model.safetensors' }),
         createMockAssetItem({ name: 'fallback.safetensors' })
       ])
@@ -288,7 +286,7 @@ describe('useComboWidget', () => {
     })
 
     it('should create asset browser widget when default value provided without options', () => {
-      mockGetAssets.mockReturnValue([])
+      vi.mocked(useAssetsStore().getAssets).mockReturnValue([])
 
       const { mockNode } = setupCloudAssetWidget({
         // Note: no options array provided
@@ -299,7 +297,7 @@ describe('useComboWidget', () => {
     })
 
     it('should fallback to placeholder when cloud assets not loaded', () => {
-      mockGetAssets.mockReturnValue([])
+      vi.mocked(useAssetsStore().getAssets).mockReturnValue([])
 
       const { mockNode } = setupCloudAssetWidget({
         options: ['local_model.safetensors']
@@ -311,7 +309,7 @@ describe('useComboWidget', () => {
 
   it('should show Select model when asset widget has undefined current value', () => {
     mockDistributionState.isCloud = true
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
@@ -369,7 +367,7 @@ describe('useComboWidget', () => {
       inputAssets: AssetItem[] = []
     ) {
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = inputAssets
+      useAssetsStore().inputAssets.items = inputAssets
 
       const constructor = useComboWidget()
       const mockNode = createMockNode(scenario.nodeClass)
@@ -393,7 +391,7 @@ describe('useComboWidget', () => {
     ) {
       const options = vi.mocked(mockNode.addWidget).mock.calls[0]?.[4]
 
-      if (typeof options !== 'object' || !options) {
+      if (typeof options !== 'object') {
         throw new Error('Expected options to be an object')
       }
 
@@ -630,7 +628,9 @@ describe('useComboWidget', () => {
 
     it("should format option labels using store's getInputName function", () => {
       const scenario = cloudInputScenarios[0]
-      mockGetInputName.mockReturnValue('Beautiful Sunset.png')
+      vi.mocked(useAssetsStore().getInputName).mockReturnValue(
+        'Beautiful Sunset.png'
+      )
 
       const { mockNode } = setupCloudInputMappingWidget(
         scenario,
@@ -653,7 +653,9 @@ describe('useComboWidget', () => {
       }
 
       const result = options.getOptionLabel(scenario.assetHash)
-      expect(mockGetInputName).toHaveBeenCalledWith(scenario.assetHash)
+      expect(vi.mocked(useAssetsStore().getInputName)).toHaveBeenCalledWith(
+        scenario.assetHash
+      )
       expect(result).toBe('Beautiful Sunset.png')
     })
 
@@ -729,8 +731,9 @@ describe('useComboWidget', () => {
     it('should trigger lazy load for cloud input nodes', () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = []
-      mockAssetsStoreState.inputLoading = false
+      useAssetsStore().inputAssets.items = []
+      useAssetsStore().inputAssets.isLoading = false
+      useAssetsStore().inputAssets.hasMore = true
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({ type: 'combo' })
@@ -743,22 +746,29 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(useAssetsStore().inputAssets.loadMore)
+      ).toHaveBeenCalledTimes(1)
     })
 
     it('should keep empty cloud input value after lazy-loaded inputs resolve a default', async () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = []
-      mockAssetsStoreState.inputLoading = false
-      mockUpdateInputs.mockImplementationOnce(async () => {
-        mockAssetsStoreState.inputAssets = [
-          createMockAssetItem({
-            name: scenario.assetName,
-            hash: scenario.assetHash
-          })
-        ]
-      })
+      await nextTick()
+      useAssetsStore().inputAssets.items = []
+      useAssetsStore().inputAssets.isLoading = false
+      useAssetsStore().inputAssets.hasMore = true
+      vi.spyOn(useAssetsStore().inputAssets, 'loadMore').mockImplementationOnce(
+        async () => {
+          useAssetsStore().inputAssets.items = [
+            createMockAssetItem({
+              name: scenario.assetName,
+              hash: scenario.assetHash
+            })
+          ]
+          useAssetsStore().inputAssets.hasMore = false
+        }
+      )
 
       const constructor = useComboWidget()
       const mockNode = createMockNode(scenario.nodeClass)
@@ -769,47 +779,30 @@ describe('useComboWidget', () => {
 
       const widget = constructor(mockNode, inputSpec)
 
-      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(
+        vi.mocked(useAssetsStore().inputAssets.loadMore)
+      ).toHaveBeenCalledTimes(1)
       expect(getInputWidgetDefault(mockNode)).toBe('')
       expect(widget.value).toBe('')
 
-      await mockUpdateInputs.mock.results[0]?.value
+      await vi.mocked(useAssetsStore().inputAssets.loadMore).mock.results[0]
+        ?.value
 
       expect(getInputWidgetValues(mockNode)).toEqual([scenario.assetHash])
       expect(widget.value).toBe('')
     })
 
-    it('should not trigger lazy load if assets already loading', () => {
-      const scenario = cloudInputScenarios[0]
-      mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = []
-      mockAssetsStoreState.inputLoading = true
-
-      const constructor = useComboWidget()
-      const mockWidget = createMockWidget({ type: 'combo' })
-      const mockNode = createMockNode('LoadImage')
-      vi.mocked(mockNode.addWidget).mockReturnValue(mockWidget)
-      const inputSpec = createMockInputSpec({
-        name: 'image',
-        options: [scenario.assetHash]
-      })
-
-      constructor(mockNode, inputSpec)
-
-      expect(mockUpdateInputs).not.toHaveBeenCalled()
-    })
-
     it('should not trigger lazy load if assets already loaded', () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
-      mockAssetsStoreState.inputAssets = [
+      useAssetsStore().inputAssets.items = [
         createMockAssetItem({
           id: 'asset-123',
           name: scenario.assetName,
           hash: scenario.assetHash
         })
       ]
-      mockAssetsStoreState.inputLoading = false
+      useAssetsStore().inputAssets.isLoading = false
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({ type: 'combo' })
@@ -822,7 +815,9 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(mockUpdateInputs).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useAssetsStore().inputAssets.loadMore)
+      ).not.toHaveBeenCalled()
     })
   })
 })

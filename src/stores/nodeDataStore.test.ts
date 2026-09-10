@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
@@ -29,10 +27,6 @@ function graphScope(rootGraphId: UUID, owningGraphId: UUID): GraphScope {
 }
 
 describe('useNodeDataStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('re-runs consumers when membership changes', () => {
     const store = useNodeDataStore()
     const ids = computed(() =>
@@ -115,13 +109,27 @@ describe('useNodeDataStore', () => {
     expect(registered?.id).toBe(toNodeId(42))
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
   })
+
+  it('reuses a deleted node id for a replacement node', () => {
+    const store = useNodeDataStore()
+    const first = node(1)
+    const registered = store.registerNode(graphScope(rootA, rootA), first)
+    assert(registered)
+
+    expect(store.deleteNode(graphScope(rootA, rootA), registered)).toBe(true)
+
+    const replacement = node(1, 'sub-1')
+    const reRegistered = store.registerNode(
+      graphScope(rootA, 'sub-1'),
+      replacement
+    )
+    expect(reRegistered).toBeDefined()
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([reRegistered])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function registeredState(graph: LGraph, node: LGraphNode) {
     return useNodeDataStore()
       .getGraphNodesFor(graph.id, graph.id)
@@ -200,7 +208,7 @@ describe('nodeDataStore registration via LGraph', () => {
     replacement.id = original.id
 
     expect(transferReplacementOwnership(original, replacement)).toBe(true)
-    expect(original.last_serialization?.type).toBe('missing/Node')
+    expect(original.last_serialization.type).toBe('missing/Node')
     expect(replacement.last_serialization).toBeUndefined()
     expect(
       registeredState(graph, replacement)?.lastSerialization

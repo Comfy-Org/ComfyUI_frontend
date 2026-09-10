@@ -1,7 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import TabNodes from './TabNodes.vue'
@@ -35,10 +33,6 @@ function renderTab() {
 }
 
 describe('TabNodes', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('composes the shared search header with the collapse toggle in its slot', () => {
     renderTab()
 

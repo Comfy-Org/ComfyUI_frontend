@@ -1,18 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { runWidgetControl } from './widgetControlSystem'
-
-const controlPhase = vi.hoisted(() => ({ value: 'after' }))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: () => controlPhase.value
-  })
-}))
 
 function createControlledSeed(callback = vi.fn()) {
   const graph = new LGraph()
@@ -29,8 +20,7 @@ function createControlledSeed(callback = vi.fn()) {
 
 describe('runWidgetControl', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    controlPhase.value = 'after'
+    useSettingStore().settingValues['Comfy.WidgetControlMode'] = 'after'
   })
 
   it('advances the target and invokes its compatibility callback', () => {
@@ -59,7 +49,7 @@ describe('runWidgetControl', () => {
   })
 
   it('skips the first execution in before mode', () => {
-    controlPhase.value = 'before'
+    useSettingStore().settingValues['Comfy.WidgetControlMode'] = 'before'
     const { graph, seed } = createControlledSeed()
 
     runWidgetControl(graph, 'before')

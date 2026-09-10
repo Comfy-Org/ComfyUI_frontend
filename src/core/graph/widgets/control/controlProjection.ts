@@ -81,7 +81,7 @@ function createFilterProjection(target: IBaseWidget): IStringWidget {
         : (target.controlConfig?.filter ?? '')
     },
     set value(value) {
-      const filter = String(value)
+      const filter = value
       if (target.controlConfig) target.controlConfig.filter = filter
       if (target.widgetId) {
         store.updateWidgetControl(target.widgetId, { filter })

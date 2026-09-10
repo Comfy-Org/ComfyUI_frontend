@@ -3,10 +3,8 @@ import type { Ref } from 'vue'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  getOutputKey,
-  resolveOutputAssetItems
-} from '@/platform/assets/utils/outputAssetUtil'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 export type OutputStackListItem = {
   key: string
