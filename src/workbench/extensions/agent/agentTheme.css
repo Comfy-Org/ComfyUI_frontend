@@ -41,6 +41,17 @@
   }
 }
 
+/* Opacity only. The panel is bottom-anchored and scrolls to the newest row, so
+   a rise would move the row upward a second time. */
+@keyframes agent-row-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes agent-shimmer {
   from {
     background-position: 150% center;

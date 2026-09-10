@@ -229,3 +229,24 @@ describe('WorkSummary', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('step entrance', () => {
+  it('marks a step as arriving while the turn runs', () => {
+    render(ActivityTrace, {
+      props: { parts: [tool('c1', 'add_node', 'streaming')], live: true },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('listitem')).toHaveClass('agent-row-enter')
+  })
+
+  it('leaves a finished trace still', async () => {
+    render(WorkSummary, {
+      props: { parts: [tool('c1', 'add_node', 'done', true, 200)] },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(screen.getByRole('listitem')).not.toHaveClass('agent-row-enter')
+  })
+})
