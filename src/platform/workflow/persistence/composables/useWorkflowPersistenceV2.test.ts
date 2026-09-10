@@ -1007,6 +1007,39 @@ describe('useWorkflowPersistenceV2', () => {
     expect(JSON.parse(userBPayload.data)).toEqual({ marker: 'user-b-edit' })
   })
 
+  it('does not adopt the previous identity canvas when the workspace stays ready', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('IdentitySwap.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+
+    onUserResolved({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'user-a-pending-edit' }
+    mocks.state.graphChangedHandler?.()
+    onUserResolved({ id: 'user-b' })
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, 'user-b:workspace-a')
+      )
+    ).toBeNull()
+  })
+
   it('fences writes on the initial identity resolution until the workspace store confirms the workspace', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
@@ -1144,7 +1177,7 @@ describe('useWorkflowPersistenceV2', () => {
     expect(localStorage.getItem(scopedIndexKey)).toBe(scopedIndex)
   })
 
-  it('writes the edit deferred during identity resolution once the identity resolves', async () => {
+  it('does not adopt an ownerless edit when the identity resolves', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
@@ -1168,10 +1201,7 @@ describe('useWorkflowPersistenceV2', () => {
     const payload = localStorage.getItem(
       StorageKeys.draftPayload(workflow.path, 'user-a:workspace-a')
     )
-    expect(payload).not.toBeNull()
-    expect(JSON.parse(JSON.parse(payload!).data)).toEqual({
-      marker: 'before-identity'
-    })
+    expect(payload).toBeNull()
   })
 })
 
