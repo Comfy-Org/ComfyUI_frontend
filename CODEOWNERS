@@ -69,6 +69,9 @@
 # Model-to-node mappings (cloud team)
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
+# Account layer (auth, billing, subscriptions, credits) - owned by the billing codeowners; individual handles to be confirmed by the billing team (decision D-044 in the account-layer PoC run)
+/packages/account/                                 @Comfy-Org/comfy_frontend_devs
+
 # Translations - native-language reviewers
 # NOTE: GitHub only honors a code owner that has WRITE access to this repo.
 # Owners without write access are silently ignored: they are never auto-requested

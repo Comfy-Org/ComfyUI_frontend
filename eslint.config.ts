@@ -172,6 +172,7 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'packages/*/dist/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
@@ -600,6 +601,25 @@ export default defineConfig([
               from: './src/lib/litegraph/**',
               message:
                 'src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  {
+    files: ['packages/account/**/*.{ts,vue}'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/account/**',
+              from: './src/**',
+              message:
+                'packages/account cannot import producer application code; inject host behavior through public account contracts'
             }
           ]
         }
