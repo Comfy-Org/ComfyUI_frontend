@@ -695,20 +695,74 @@ describe('reconcileAgentAdapters', () => {
       expect(useExecutionOrderStore().get(scope, toNodeId(1))).toBeDefined()
     })
 
-    it('does not construct a successor when incumbent removal throws, and can retry', () => {
+    it('keeps the incumbent when successor creation throws, and can retry', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
       reconcileAgentAdapters(graph)
       const stale = graph.getNodeById(toNodeId(1))!
+      const onRemoved = vi.fn()
+      stale.onRemoved = onRemoved
+      const failure = new Error('extension creation failed')
+      let creationFails = true
+      class ReplacementNode extends WidgetNode {
+        override onNodeCreated() {
+          if (creationFails) throw failure
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'replacement-node'),
+          widgets_values: { value: 7 }
+        })
+      )
+
+      expect.soft(() => reconcileAgentAdapters(graph)).not.toThrow()
+      expect(graph._nodes).toHaveLength(1)
+      expect(graph.getNodeById(stale.id)).toBe(stale)
+      expect(stale.graph).toBe(graph)
+      expect(onRemoved).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'agent_node_materialize_create_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      creationFails = false
+      expect(reconcileAgentAdapters(graph)).toEqual([stale.id])
+      expect(graph._nodes).toHaveLength(1)
+      expect(graph.getNodeById(stale.id)).not.toBe(stale)
+      expect(graph.getNodeById(stale.id)?.widgets?.[0].value).toBe(7)
+      expect(onRemoved).toHaveBeenCalledOnce()
+      expect(stale.graph).toBeNull()
+    })
+
+    it('cleans up the unused successor when incumbent removal throws, and can retry', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))!
+      const resources = new Map([[stale.id, stale]])
       const failure = new Error('extension cleanup failed')
       stale.onRemoved = () => {
         throw failure
       }
-      const constructed: LGraphNode[] = []
+      const events = new EventTarget()
+      let handled = 0
       class ReplacementNode extends WidgetNode {
+        listener = () => handled++
+
         constructor() {
           super()
-          constructed.push(this)
+          events.addEventListener('probe', this.listener)
+        }
+
+        override onRemoved() {
+          events.removeEventListener('probe', this.listener)
+          resources.delete(this.id)
+        }
+
+        override onAdded() {
+          resources.set(this.id, this)
         }
       }
       LiteGraph.registerNodeType('replacement-node', ReplacementNode)
@@ -720,7 +774,9 @@ describe('reconcileAgentAdapters', () => {
       )
 
       expect(reconcileAgentAdapters(graph)).toEqual([])
-      expect(constructed).toEqual([])
+      events.dispatchEvent(new Event('probe'))
+      expect(handled).toBe(0)
+      expect(resources.get(stale.id)).toBe(stale)
       expect(graph._nodes).toEqual([stale])
       expect(graph.getNodeById(stale.id)).toBe(stale)
       expect(
@@ -737,7 +793,9 @@ describe('reconcileAgentAdapters', () => {
       stale.onRemoved = undefined
       expect(reconcileAgentAdapters(graph)).toEqual([stale.id])
       expect(graph._nodes).toHaveLength(1)
-      expect(constructed).toEqual(graph._nodes)
+      events.dispatchEvent(new Event('probe'))
+      expect(handled).toBe(1)
+      expect(resources.get(stale.id)).toBe(graph.getNodeById(stale.id))
       expect(graph.getNodeById(stale.id)?.widgets?.[0].value).toBe(7)
       expect(stale.graph).toBeNull()
     })

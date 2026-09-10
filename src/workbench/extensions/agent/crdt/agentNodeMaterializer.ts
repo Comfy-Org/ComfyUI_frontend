@@ -261,22 +261,18 @@ function materialize(
   serialised: ISerialisedNode,
   orphan: LGraphNode | undefined
 ): boolean {
-  if (orphan) {
-    try {
-      graph.remove(orphan, { preserveCanonicalState: true })
-    } catch (cause) {
-      reportError(cause, {
-        errorType: 'agent_node_materialize_remove_failed',
-        context: { graphId: graph.id, nodeId: String(state.id) }
-      })
-      return false
-    }
+  let node: LGraphNode
+  try {
+    node = LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_create_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+    return false
   }
   const nodeStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
-  const node =
-    LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
-  node.id = state.id
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -301,7 +297,10 @@ function materialize(
     if (orphan?.graph === graph) graph._nodes_by_id[orphan.id] = orphan
   }
 
-  const rollback = (cause: unknown) => {
+  const rollback = (
+    cause: unknown,
+    errorType = 'agent_node_materialize_add_failed'
+  ) => {
     // `add()` may throw after attaching (from `onAdded`); only then is there
     // a live node to take back out.
     //
@@ -315,13 +314,14 @@ function materialize(
     let cleanupFailed = false
     try {
       if (graph._nodes_by_id[node.id] === node) graph.remove(node)
+      else node.onRemoved?.()
     } catch (error) {
       cleanupCause = error
       cleanupFailed = true
     }
     restore()
     reportError(cause, {
-      errorType: 'agent_node_materialize_add_failed',
+      errorType,
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
@@ -332,6 +332,15 @@ function materialize(
     }
     return false
   }
+
+  if (orphan) {
+    try {
+      graph.remove(orphan, { preserveCanonicalState: true })
+    } catch (cause) {
+      return rollback(cause, 'agent_node_materialize_remove_failed')
+    }
+  }
+  node.id = state.id
 
   // `add()` only adopts the record's id into an empty slot; with the record
   // still registered its collision loop would mint a fresh id instead.
