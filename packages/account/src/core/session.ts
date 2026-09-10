@@ -414,6 +414,18 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     safeWrite(JSON.stringify({ ...session, target }))
   }
 
+  // The exchange echoes the requested workspace on success (a non-member 404s),
+  // so a scope mismatch is a backend regression to fail closed on — shared by
+  // the direct commit and the scheduled-refresh commit.
+  function targetMismatch(
+    session: AccountCredential,
+    target: string | undefined
+  ): SessionFailure | undefined {
+    return target !== undefined && session.workspace.id !== target
+      ? { status: 'error', code: 'ACCESS_DENIED' }
+      : undefined
+  }
+
   function safeClear(): void {
     try {
       storage.clear()
@@ -566,10 +578,20 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
           mint: (user) =>
             sharedMint(user, { workspaceId: credentialTarget }, true),
           commitRefreshed: (session) => {
+            const mismatch = targetMismatch(session, credentialTarget)
+            if (mismatch) {
+              credential = undefined
+              credentialTarget = undefined
+              failure = mismatch
+              safeClear()
+              publish()
+              return mismatch
+            }
             credential = session
             failure = undefined
             persistCredential(session, credentialTarget)
             publish()
+            return undefined
           },
           commitPermanentFailure: (permanent) => {
             credential = undefined
@@ -673,20 +695,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
     if (result.status === 'ok') {
       const requestedTarget = options.workspaceId ?? clientOptions.workspaceId
-      if (
-        requestedTarget !== undefined &&
-        result.session.workspace.id !== requestedTarget
-      ) {
-        // The exchange echoes the requested workspace on success (a non-member
-        // 404s), so a scope mismatch is a backend regression; fail closed
-        // rather than persist a durable, refreshable wrong-scope session.
+      const mismatch = targetMismatch(result.session, requestedTarget)
+      if (mismatch) {
         credential = undefined
         credentialTarget = undefined
-        failure = { status: 'error', code: 'ACCESS_DENIED' }
+        failure = mismatch
         scheduler?.stop()
         safeClear()
         publish()
-        return failure
+        return mismatch
       }
       credential = result.session
       credentialTarget = requestedTarget

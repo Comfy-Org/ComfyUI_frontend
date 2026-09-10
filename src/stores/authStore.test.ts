@@ -1345,6 +1345,22 @@ describe('useAuthStore', () => {
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
+    it('serves the legacy header during a rollout before the unified mint lands', async () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      const workspaceAuth = useWorkspaceAuthStore()
+      vi.spyOn(workspaceAuth, 'getUnifiedToken').mockReturnValue(undefined)
+      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
+        Authorization: 'Bearer legacy-ws-token'
+      })
+
+      const header = await store.getAuthHeader()
+
+      expect(
+        header,
+        'a rollout flip must not leave an authenticated session headerless while the unified mint is in flight'
+      ).toEqual({ Authorization: 'Bearer legacy-ws-token' })
+    })
+
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
       Object.assign(useTeamWorkspaceStore(), {
