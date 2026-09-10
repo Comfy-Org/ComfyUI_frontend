@@ -14,7 +14,7 @@ const imageCardProps = {
 }
 
 describe('ModelCard', () => {
-  it('exposes image model details semantically', () => {
+  it('exposes image model details and a named provider badge semantically', () => {
     render(ModelCard, { props: imageCardProps })
 
     expect(
@@ -30,7 +30,11 @@ describe('ModelCard', () => {
     expect(
       screen.getByRole('heading', { level: 3, name: 'Image generation' })
     ).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Black Forest Labs' })).toBeTruthy()
+    expect(
+      screen
+        .getByRole('img', { name: 'Black Forest Labs' })
+        .getAttribute('aria-label')
+    ).toBe('Black Forest Labs')
   })
 
   it('renders video media with its playback attributes and source', () => {
@@ -51,6 +55,7 @@ describe('ModelCard', () => {
     expect(video.hasAttribute('loop')).toBe(true)
     expect(video.hasAttribute('muted')).toBe(true)
     expect(video.hasAttribute('playsinline')).toBe(true)
+    expect(video.getAttribute('preload')).toBe('metadata')
     expect(video.getAttribute('poster')).toBe(
       '/models/flux-1-1-pro-poster.webp'
     )
