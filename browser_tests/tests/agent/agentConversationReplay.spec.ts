@@ -10,44 +10,20 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
   test.describe('wire evidence', () => {
     test.use({ conversationCase: WIRING_CASE })
 
-    // The wire check reads pixels the app's own render loop painted, so a
-    // canvas that never repaints after a connect must fail it.
-    test('reports a wire the canvas never painted', async ({
-      agentConversation
+    // The second turn's only edit is a connect, so what the canvas shows after
+    // it is the wire itself: the app's own render loop paints it, and the
+    // expectation is the picture, not a reconstruction of the renderer.
+    test('paints the wire the second turn connects', async ({
+      agentConversation,
+      page
     }) => {
       test.setTimeout(90_000)
-      const [first, second] = agentConversation.conversation.turns
-      const wired = second.response.flatMap((entry) =>
-        entry.kind === 'graph_ops'
-          ? entry.ops.flatMap((op) =>
-              op.op === 'connect'
-                ? [
-                    `${op.from_node}:${op.from_slot}->${op.to_node}:${op.to_slot}`
-                  ]
-                : []
-            )
-          : []
+      await agentConversation.runTurns()
+
+      await expect(page.locator('#graph-canvas')).toHaveScreenshot(
+        'two-turn-dependent-edit-wired.png',
+        { mask: [agentConversation.panel] }
       )
-      expect(wired.length, 'the second turn connects').toBeGreaterThan(0)
-      expect(first.response.some((entry) => entry.kind === 'graph_ops')).toBe(
-        true
-      )
-
-      await agentConversation.sendPrompt(0)
-      await agentConversation.replayResponse(0)
-      await agentConversation.waitForTurnComplete()
-      await agentConversation.expectCanvasReplayed(0)
-
-      await agentConversation.panel.page().evaluate(() => {
-        window.app!.canvas.drawBackCanvas = () => {}
-      })
-      await agentConversation.sendPrompt(1)
-      await agentConversation.replayResponse(1)
-      await agentConversation.waitForTurnComplete()
-
-      await expect
-        .poll(() => agentConversation.unpaintedLinks())
-        .toEqual(expect.arrayContaining(wired))
     })
   })
 

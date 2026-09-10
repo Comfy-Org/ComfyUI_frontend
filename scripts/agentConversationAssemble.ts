@@ -6,7 +6,7 @@ import { isEqual } from 'es-toolkit'
 import { z } from 'zod'
 
 import type {
-  RecordedConversation,
+  AgentConversation,
   zAgentConversationRequest
 } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
@@ -470,9 +470,9 @@ function checkTurnAgreement(
 
 // The replay's own host after the emitted stream; a stream it refuses is a
 // recording nobody can replay.
-function replayHost(conversation: RecordedConversation): HostDoc {
+function replayHost(conversation: AgentConversation): HostDoc {
   try {
-    return assertOpsApply(conversation).host
+    return assertOpsApply(conversation)
   } catch (error) {
     refuse(
       `the replay rejects this recording: ${error instanceof Error ? error.message : String(error)}`
