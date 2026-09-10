@@ -15,7 +15,7 @@ flowchart TD
   package["comfy-multi-player<br/>Merge and publish an immutable release"]
   cloud["Cloud — first runtime consumer<br/>Pin, test, dark deploy, and prove runtime"]
   frontend["Frontend — second runtime consumer<br/>Pin, test, and deploy with exposure off"]
-  acceptance["Enable flags<br/>Prove an authenticated canvas edit and reconnect"]
+  acceptance["Enable flags<br/>Prove an authenticated browser canvas edit and reconnect"]
   stable["Stable promotion<br/>Reuse the exact tested combination"]
 
   package --> cloud --> frontend --> acceptance --> stable
