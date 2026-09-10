@@ -7014,11 +7014,11 @@ Enterprise`
     'zh-CN': '更新于 2026 年 9 月'
   },
   'chatgptImage25.hero.title': {
-    en: 'ChatGPT Image 2.5 is here',
+    en: 'ChatGPT Image 2.5\nis here',
     'zh-CN': 'ChatGPT Image 2.5 已上线'
   },
   'chatgptImage25.hero.description': {
-    en: 'Turn a plain-language brief into a finished image, or revise an existing visual without rebuilding it from scratch. ChatGPT Image 2.5 brings generation, reference-guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    en: 'Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. ChatGPT Image 2.5 brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
     'zh-CN':
       '用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。ChatGPT Image 2.5 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
   },

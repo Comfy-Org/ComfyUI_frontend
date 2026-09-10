@@ -26,8 +26,7 @@ const media = {
   goldfish: { kind: 'image', src: `${mediaBase}/goldfish.webp` },
   engine: { kind: 'image', src: `${mediaBase}/flame-engine.webp` },
   canyon: { kind: 'image', src: `${mediaBase}/canyon-chase.webp` },
-  horizon: { kind: 'image', src: `${mediaBase}/anime-horizon.webp` },
-  cowfish: { kind: 'image', src: `${mediaBase}/cowfish-field.webp` }
+  horizon: { kind: 'image', src: `${mediaBase}/anime-horizon.webp` }
 } as const satisfies Record<string, ModelLaunchMedia>
 
 const premiumNote = { en: 'Pay-as-you-go', 'zh-CN': '按量付费' }
@@ -38,7 +37,7 @@ export const chatgptImage25Page: ModelLaunchPage = {
   breadcrumbLabelKey: 'chatgptImage25.breadcrumb.model',
   breadcrumbUpdatedKey: 'chatgptImage25.breadcrumb.updated',
   hero: {
-    layout: 'content-first',
+    layout: 'media-first',
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
     mobileFallbackImageSrc: media.hero.posterSrc,
@@ -154,21 +153,6 @@ export const chatgptImage25Page: ModelLaunchPage = {
           'zh-CN': '孤独的英雄凝望红日，从克制的动画风景中升起。'
         },
         media: media.horizon,
-        href: chatgptImage25Links.cloud
-      },
-      {
-        id: 'cowfish-field',
-        name: {
-          en: 'Cowfish in a pasture generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的牧场牛鱼场景'
-        },
-        tier: 'premium',
-        note: premiumNote,
-        description: {
-          en: 'A playful photoreal scene turns a pasture into a school of black-and-white cowfish.',
-          'zh-CN': '写实又俏皮的画面，把牧场变成黑白牛鱼的鱼群。'
-        },
-        media: media.cowfish,
         href: chatgptImage25Links.cloud
       }
     ]
