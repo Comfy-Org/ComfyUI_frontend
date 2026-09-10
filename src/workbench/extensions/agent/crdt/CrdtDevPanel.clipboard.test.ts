@@ -242,7 +242,7 @@ describe('CrdtDevPanel clipboard controls', () => {
       name: 'Copy log detail'
     })
     await user.click(detailButtons[1])
-    expect(String(writeText.mock.calls[0][0])).toHaveLength(20_001)
+    expect(writeText.mock.calls[0][0]).toHaveLength(20_001)
     expect(writeText.mock.calls[0][0]).toMatch(/…$/)
   })
 
