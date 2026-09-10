@@ -4,10 +4,7 @@ import { toRaw } from 'vue'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import {
-  createInputSlotView,
-  createOutputSlotView
-} from '@/lib/litegraph/src/node/slotDescriptorView'
+import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -38,7 +35,6 @@ describe('node shell state', () => {
     const state = createNodeShellState(
       node,
       createInputSlotView,
-      createOutputSlotView,
       'Node',
       'some/type',
       undefined
@@ -54,7 +50,6 @@ describe('node shell state', () => {
     const state = createNodeShellState(
       node,
       createInputSlotView,
-      createOutputSlotView,
       '',
       undefined,
       undefined
@@ -69,7 +64,6 @@ describe('node shell state', () => {
     const state = createNodeShellState(
       node,
       createInputSlotView,
-      createOutputSlotView,
       'Node',
       'some/type',
       undefined
@@ -150,7 +144,6 @@ describe('node registration invariants', () => {
     node._state = createNodeShellState(
       node,
       createInputSlotView,
-      createOutputSlotView,
       'Node',
       'test',
       undefined

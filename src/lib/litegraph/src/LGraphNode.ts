@@ -1049,11 +1049,11 @@ export class LGraphNode
     this._state = createNodeShellState(
       this,
       createInputSlotView,
-      createOutputSlotView,
       title,
       type,
       this.title_mode
     )
+    this._state.outputs = createOutputSlotView(this, this._state.outputs)
     this._inputs = this._state.inputs
     this._outputs = this._state.outputs
     for (const property of [
