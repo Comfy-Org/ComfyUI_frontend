@@ -19,10 +19,13 @@
  */
 import { z } from 'zod'
 
-import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
-
 import type { AccountIdentity } from './identity.js'
 import { isAccountIdentity } from './identity.js'
+import {
+  CredentialResponseSchema,
+  abortable,
+  exchangeToken
+} from './exchange.js'
 
 export type { AccountIdentity } from './identity.js'
 
@@ -32,8 +35,6 @@ export interface AccountUser {
 }
 
 /** The generated contract for POST /api/auth/token, never a local copy of it. */
-const CredentialResponseSchema = zExchangeTokenResponse
-
 const CachedCredentialSchema = CredentialResponseSchema.omit({
   expires_at: true
 }).extend({
@@ -292,33 +293,6 @@ export function isCredentialFresh(
  * abort, unparseable body — collapses to TOKEN_EXCHANGE_FAILED, matching
  * production's default branch.
  */
-function codeForResponse(status: number): SessionErrorCode {
-  if (status === 401) return 'INVALID_FIREBASE_TOKEN'
-  if (status === 403) return 'ACCESS_DENIED'
-  if (status === 404) return 'WORKSPACE_NOT_FOUND'
-  return 'TOKEN_EXCHANGE_FAILED'
-}
-
-function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) {
-    return Promise.reject(new DOMException('Aborted', 'AbortError'))
-  }
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = () => reject(new DOMException('Aborted', 'AbortError'))
-    signal.addEventListener('abort', onAbort, { once: true })
-    promise.then(
-      (value) => {
-        signal.removeEventListener('abort', onAbort)
-        resolve(value)
-      },
-      (error: unknown) => {
-        signal.removeEventListener('abort', onAbort)
-        reject(error)
-      }
-    )
-  })
-}
-
 export function createSessionClient<TUser extends AccountUser = AccountUser>(
   clientOptions: SessionClientOptions
 ): SessionClient<TUser> {
@@ -453,149 +427,26 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   /**
-   * Pure network + parse: the schema, the status→code mapping, and the
-   * malformed-body handling match `requestToken`. The AbortSignal/timeout
-   * plumbing is this package's addition — production's callers are
-   * timer-scheduled, these are user-cancelable.
+   * The package's thin wrapper over the pure exchange: resolves the host's
+   * transport/timeout/clock defaults and sends the personal-workspace body.
    */
-  async function mint(
+  function mint(
     user: AccountUser,
     options: SessionRequestOptions
   ): Promise<SessionResult> {
-    const {
-      fetchImpl = clientOptions.fetchImpl ?? globalThis.fetch,
-      signal = clientOptions.signal,
-      timeoutMs = clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS,
-      workspaceId = clientOptions.workspaceId
-    } = options
-
-    if (signal?.aborted) {
-      return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
-    }
-
-    const controller = new AbortController()
-    const abort = () => controller.abort()
-    signal?.addEventListener('abort', abort, { once: true })
-    const timeout = setTimeout(() => controller.abort(), timeoutMs)
-
-    try {
-      let idToken: string
-      try {
-        idToken = await abortable(user.getIdToken(), controller.signal)
-      } catch (error) {
-        // requestToken treats a missing identity token as NOT_AUTHENTICATED;
-        // an identity failure carrying that code keeps it, anything else
-        // (including our own abort) stays in the transient bucket.
-        const coded =
-          !controller.signal.aborted &&
-          typeof error === 'object' &&
-          error !== null &&
-          'code' in error &&
-          error.code === 'NOT_AUTHENTICATED'
-        return {
-          status: 'error',
-          code: coded ? 'NOT_AUTHENTICATED' : 'TOKEN_EXCHANGE_FAILED'
-        }
-      }
-
-      let response: Response
-      try {
-        response = await fetchImpl(exchangeUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-            'Content-Type': 'application/json'
-          },
-          // Same body construction as requestToken: an explicit workspace_id,
-          // or an empty body the backend resolves to the personal workspace.
-          body: JSON.stringify(
-            workspaceId ? { workspace_id: workspaceId } : {}
-          ),
-          signal: controller.signal
-        })
-      } catch {
-        return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
-      }
-
-      if (!response.ok) {
-        return {
-          status: 'error',
-          code: codeForResponse(response.status),
-          httpStatus: response.status
-        }
-      }
-
-      let rawBody: unknown
-      try {
-        // The timeout stays armed through the body read: headers arriving
-        // does not bound the body, and a stalled body must abort exactly
-        // like a stalled connect.
-        rawBody = await abortable(response.json(), controller.signal)
-      } catch {
-        return {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED',
-          httpStatus: response.status
-        }
-      }
-
-      const parseResult = CredentialResponseSchema.safeParse(rawBody)
-      if (!parseResult.success) {
-        return {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED',
-          httpStatus: response.status
-        }
-      }
-      // Date.parse can yield NaN on a schema-valid string, so the expiry gets
-      // its own check after the schema, as in production.
-      const expiresAt = Date.parse(parseResult.data.expires_at)
-      if (Number.isNaN(expiresAt)) {
-        return {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED',
-          httpStatus: response.status
-        }
-      }
-
-      // A 200 that cannot be used is an exchange failure, not a session: an
-      // empty token, or an expiry already inside the fresh margin, would
-      // publish an authenticated snapshot ensureFresh promised never to.
-      if (parseResult.data.token === '') {
-        return {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED',
-          httpStatus: response.status
-        }
-      }
-      const session: AccountCredential = {
-        token: parseResult.data.token,
-        expiresAt,
-        uid: user.uid,
-        workspace: parseResult.data.workspace,
-        role: parseResult.data.role,
-        permissions: parseResult.data.permissions
-      }
-      // A token already dead on arrival can never authorize anything, and
-      // would publish an authenticated snapshot that the next read discards.
-      // A short-but-future expiry is left to the scheduler / valid-on-read
-      // path, which is built to refresh it.
-      const mintNow = options.now?.() ?? clientOptions.now?.() ?? Date.now()
-      if (expiresAt <= mintNow) {
-        return {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED',
-          httpStatus: response.status
-        }
-      }
-      // Storage is written only by a commit that won: a mint that lost
-      // the sequence race or outlived a sign-out must not leave its
-      // credential on disk for the next reload to serve.
-      return { status: 'ok', session }
-    } finally {
-      clearTimeout(timeout)
-      signal?.removeEventListener('abort', abort)
-    }
+    return exchangeToken(user, {
+      exchangeUrl,
+      body:
+        (options.workspaceId ?? clientOptions.workspaceId)
+          ? { workspace_id: options.workspaceId ?? clientOptions.workspaceId }
+          : {},
+      fetchImpl:
+        options.fetchImpl ?? clientOptions.fetchImpl ?? globalThis.fetch,
+      signal: options.signal ?? clientOptions.signal,
+      timeoutMs:
+        options.timeoutMs ?? clientOptions.timeoutMs ?? DEFAULT_MINT_TIMEOUT_MS,
+      now: () => options.now?.() ?? clientOptions.now?.() ?? Date.now()
+    })
   }
 
   /**
