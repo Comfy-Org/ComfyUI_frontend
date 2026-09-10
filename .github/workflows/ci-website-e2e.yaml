@@ -169,7 +169,9 @@ jobs:
         with:
           script: |
             const functionalPassed = process.env.FUNCTIONAL_OUTCOME === 'success'
-            const visualPassed = process.env.VISUAL_OUTCOME === 'success'
+            const visualOutcome = process.env.VISUAL_OUTCOME
+            const visualPassed = visualOutcome === 'success'
+            const visualFailed = visualOutcome === 'failure'
             const reportUrl = process.env.REPORT_URL
 
             const lines = ['## 🌐 Website E2E', '']
@@ -184,7 +186,7 @@ jobs:
 
             const rows = [
               ['Functional tests', functionalPassed ? '✅ Passed' : '❌ Failed'],
-              ['Visual tests', visualPassed ? '✅ Passed' : '❌ Failed'],
+              ['Visual tests', visualPassed ? '✅ Passed' : visualFailed ? '❌ Failed' : '⏭️ Skipped'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
             lines.push(
@@ -249,7 +251,9 @@ jobs:
         with:
           script: |
             const functionalPassed = process.env.FUNCTIONAL_OUTCOME === 'success'
-            const visualPassed = process.env.VISUAL_OUTCOME === 'success'
+            const visualOutcome = process.env.VISUAL_OUTCOME
+            const visualPassed = visualOutcome === 'success'
+            const visualFailed = visualOutcome === 'failure'
             const reportUrl = process.env.REPORT_URL
 
             const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
@@ -264,7 +268,7 @@ jobs:
 
             const rows = [
               ['Functional tests', functionalPassed ? '✅ Passed' : '❌ Failed'],
-              ['Visual tests', visualPassed ? '✅ Passed' : '❌ Failed'],
+              ['Visual tests', visualPassed ? '✅ Passed' : visualFailed ? '❌ Failed' : '⏭️ Skipped'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
             lines.push(
@@ -274,7 +278,7 @@ jobs:
               ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
             )
 
-            if (!visualPassed) {
+            if (visualFailed) {
               lines.push('', '- [ ] Update website screenshots')
             }
 
