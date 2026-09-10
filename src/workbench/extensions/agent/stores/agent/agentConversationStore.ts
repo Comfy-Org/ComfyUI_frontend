@@ -211,13 +211,14 @@ export const useAgentConversationStore = defineStore(
       liveMessage = entry.message
     }
 
-    function settleBackgroundTurn(turnId: string): void {
+    function settleBackgroundTurn(turnId: string): TurnId | null {
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
         entry.transport.settle()
         backgroundTurns.delete(key)
-        return
+        return entry.messageId
       }
+      return null
     }
 
     function dropBackgroundTurns(): void {

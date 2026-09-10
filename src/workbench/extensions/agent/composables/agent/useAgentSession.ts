@@ -600,7 +600,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ?.message_id
       // Read before the abort below clears it, or every aborted turn reports
       // itself as having had no turn.
-      const activeTurnId = conversationStore.activeTurnId
+      let reportedTurnId = conversationStore.activeTurnId
       let uiTreatment: AgentErrorMetadata['ui_treatment'] = 'none'
       if (type === 'agent_message_done') {
         if (
@@ -611,10 +611,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
           pushError(i18n.global.t('agent.malformedEvent'))
           uiTreatment = 'error_overlay'
         } else {
-          conversationStore.settleBackgroundTurn(messageId)
+          reportedTurnId =
+            conversationStore.settleBackgroundTurn(messageId) ?? reportedTurnId
         }
       }
-      trackMalformedStreamEvent(parsed.error, type, activeTurnId, uiTreatment)
+      trackMalformedStreamEvent(parsed.error, type, reportedTurnId, uiTreatment)
       console.warn('[agent] dropping malformed agent event', parsed.error)
       return
     }

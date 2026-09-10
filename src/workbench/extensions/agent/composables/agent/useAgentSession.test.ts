@@ -2160,6 +2160,30 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     ])
   })
 
+  it('dedupes a background turn malformed frame under that turn, not the active one', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('first')
+    await session.loadThread('th-2')
+    await session.sendMessage('second')
+    telemetryState.trackAgentError.mockClear()
+
+    emit({ type: 'agent_message_done', data: { message_id: 'msg-1' } })
+    emit({ type: 'agent_message_delta', data: { wrong: 'shape' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
   it('groups malformed frames under one Sentry issue, detail in context', async () => {
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest: fakeRest(), events: source })
