@@ -91,7 +91,7 @@ const breadcrumbs = [
 >
   {
     isPast ? (
-      <PastEventsSection locale={locale} />
+      <PastEventsSection locale={locale} client:visible />
     ) : (
       <EventsDirectorySection locale={locale} client:visible />
     )
