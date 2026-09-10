@@ -183,6 +183,11 @@ function useSubscriptionInternal() {
       return
     }
 
+    // Claimed before emitting, not after: a second tab wakes on the same
+    // deadline (both derive it from `started_at_ms`), so a mark that trailed
+    // the two emissions left a window wide enough for it to emit as well.
+    markMissingCheckoutCompletionReported(attempt.attempt_id)
+
     reportTelemetryError(
       new Error(
         didLastRecoveryAttemptThrow
@@ -226,7 +231,6 @@ function useSubscriptionInternal() {
       checkout_type: attempt.checkout_type,
       duration_ms: attemptAgeMs
     })
-    markMissingCheckoutCompletionReported(attempt.attempt_id)
   }
 
   const schedulePendingCheckoutRecovery = () => {
