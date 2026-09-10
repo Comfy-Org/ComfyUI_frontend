@@ -2,11 +2,9 @@
  * The workspace session: a short-lived JWT minted from the signed-in
  * identity, which is what actually authorizes runs and balance reads.
  *
- * The exchange contract, response schema, and error taxonomy are extracted
- * from the cloud app's production implementation of this same POST
- * /auth/token call (`requestToken` in
- * src/platform/workspace/stores/workspaceAuthStore.ts) — keep the two in
- * step. Only the freshness strategy differs: valid-on-read (callers await
+ * The exchange parses the generated contract for POST /auth/token and keeps
+ * the cloud app's error taxonomy for it. The freshness strategy is
+ * valid-on-read (callers await
  * `ensureFresh` at the moment they need a token; it never resolves with
  * less than `freshMarginMs` of validity) rather than a proactive refresh
  * timer, because background tabs throttle timers and this package's callers
