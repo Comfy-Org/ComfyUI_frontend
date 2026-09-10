@@ -62,16 +62,6 @@
       "classes": ["billing"]
     },
     {
-      "path": "packages/cloud-client/src/billing/client.ts",
-      "tier": "R3",
-      "classes": ["billing"]
-    },
-    {
-      "path": "apps/desktop-ui/src/subscription/client.ts",
-      "tier": "R3",
-      "classes": ["billing"]
-    },
-    {
       "path": "apps/website/src/components/pricing/PricingCard.vue",
       "tier": "R3",
       "classes": ["billing", "website"]
@@ -145,6 +135,31 @@
       "path": "apps/website/src/components/pricing/FaqLink.astro",
       "tier": "R3",
       "classes": ["billing", "website"]
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/creditsUtil.ts",
+      "tier": "R3",
+      "classes": ["billing", "core-infra"]
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/creditsUtil.test.ts",
+      "tier": "R2",
+      "classes": ["core-infra", "tests"]
+    },
+    {
+      "path": "src/platform/workspace/components/UnifiedStripePaymentSelector.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/workspace/composables/useHasSavedPaymentMethod.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/telemetry/utils/checkoutAttribution.ts",
+      "tier": "R3",
+      "classes": ["billing"]
     }
   ]
 }
