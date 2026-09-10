@@ -41,7 +41,9 @@ pnpm comfy-test agent-replay
 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
 ```
 
-Add `--headed -g <case id>` to watch one and `RECORD_VIDEO=true` for video.
+Add `--headed -g '(^|\s)recorded <case id>(\s|$)'` to watch one (the pattern
+names the whole `recorded <case id>` title segment, so a longer id cannot
+match) and `RECORD_VIDEO=true` for video.
 
 - A failing replay names the turn and the assertion. Compare that turn's
   `response` entries with what the panel rendered; never edit a fixture to make

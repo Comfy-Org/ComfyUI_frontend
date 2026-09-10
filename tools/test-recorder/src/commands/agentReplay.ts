@@ -58,7 +58,7 @@ export function agentReplayInvocation(
   if (options.caseId)
     args.push(
       '-g',
-      `${options.caseId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`
+      `(^|\\s)recorded ${options.caseId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`
     )
   if (options.headed) args.push('--headed')
   // Video is the only local setting this command owns; PLAYWRIGHT_LOCAL would

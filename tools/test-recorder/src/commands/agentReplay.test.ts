@@ -39,12 +39,16 @@ describe('agentReplayInvocation', () => {
     })
     expect(args.slice(-3)).toEqual([
       '-g',
-      'agent-rec-add-set-delete(?![\\w-])',
+      '(^|\\s)recorded agent-rec-add-set-delete(\\s|$)',
       '--headed'
     ])
-    expect(new RegExp(args.at(-2)!).test('agent-rec-add-set-delete-2 >')).toBe(
-      false
-    )
+    const grep = new RegExp(args.at(-2)!)
+    const title = (caseId: string) =>
+      `cloud agentConversationReplay.spec.ts Agent conversation replay recorded ${caseId} replays every recorded turn onto the panel and the canvas`
+    expect(grep.test(title('agent-rec-add-set-delete'))).toBe(true)
+    expect(grep.test(title('prefix-agent-rec-add-set-delete'))).toBe(false)
+    expect(grep.test(title('agent-rec-add-set-delete.retry'))).toBe(false)
+    expect(grep.test(title('agent-rec-add-set-delete-2'))).toBe(false)
     expect(env.PLAYWRIGHT_TEST_URL).toBe('http://127.0.0.1:6207')
     expect(env.RECORD_VIDEO).toBe('true')
   })
@@ -56,7 +60,10 @@ describe('runAgentReplay', () => {
     expect(runAgentReplay({ caseId: 'agent-rec-add-set-delete' }, run)).toBe(3)
     expect(run).toHaveBeenCalledWith(
       'pnpm',
-      expect.arrayContaining(['-g', 'agent-rec-add-set-delete(?![\\w-])']),
+      expect.arrayContaining([
+        '-g',
+        '(^|\\s)recorded agent-rec-add-set-delete(\\s|$)'
+      ]),
       expect.objectContaining({
         env: expect.objectContaining({ DISTRIBUTION: 'cloud' })
       })
@@ -169,7 +176,7 @@ describe('agentReplayCli', () => {
     expect(select).not.toHaveBeenCalled()
     expect(run).toHaveBeenCalledWith(
       'pnpm',
-      expect.arrayContaining(['-g', 'agent-rec-a(?![\\w-])']),
+      expect.arrayContaining(['-g', '(^|\\s)recorded agent-rec-a(\\s|$)']),
       expect.objectContaining({
         env: expect.objectContaining({ RECORD_VIDEO: 'true' })
       })
@@ -209,7 +216,11 @@ describe('agentReplayCli', () => {
     ).resolves.toBe(0)
     expect(run).toHaveBeenCalledWith(
       'pnpm',
-      expect.arrayContaining(['-g', 'agent-rec-b(?![\\w-])', '--headed']),
+      expect.arrayContaining([
+        '-g',
+        '(^|\\s)recorded agent-rec-b(\\s|$)',
+        '--headed'
+      ]),
       expect.anything()
     )
   })
