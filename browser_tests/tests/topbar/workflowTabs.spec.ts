@@ -20,6 +20,7 @@ test.describe('Workflow tabs', () => {
       await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
 
       await topbar.getTab(1).click()
+      await expect.poll(() => topbar.getActiveTabName()).toContain('(2)')
       await expect(topbar.getActiveTab()).toHaveAttribute(
         'aria-pressed',
         'true'
@@ -34,10 +35,12 @@ test.describe('Workflow tabs', () => {
     }) => {
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
       const names = await topbar.getTabNames()
       await topbar.getTab(0).click()
 
       await expect.poll(() => topbar.getActiveTabName()).toContain(names[0])
+      await expect(topbar.getActiveTab()).not.toContainText('(2)')
     })
 
     test('activates a valid neighbor when the active workflow is closed', async ({
@@ -46,12 +49,15 @@ test.describe('Workflow tabs', () => {
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
       await topbar.newWorkflowButton.click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(3)
       await topbar.getTab(1).click()
-      const activeTabName = await topbar.getActiveTabName()
-      await topbar.closeWorkflowTab(activeTabName)
+      await expect.poll(() => topbar.getActiveTabName()).toContain('(2)')
+      const activeTab = topbar.getTab(1)
+      await activeTab.hover()
+      await activeTab.locator('.close-button').click()
 
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
-      await expect.poll(() => topbar.getActiveTabName()).not.toBe(activeTabName)
+      await expect.poll(() => topbar.getActiveTabName()).toContain('(3)')
     })
 
     test('preserves tab identity across browser reload', async ({
@@ -59,8 +65,9 @@ test.describe('Workflow tabs', () => {
     }) => {
       const topbar = comfyPage.menu.topbar
       await topbar.newWorkflowButton.click()
-      await topbar.getTab(1).click()
+      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
       const activeName = await topbar.getActiveTabName()
+      await comfyPage.workflow.waitForDraftPersisted()
 
       await comfyPage.workflow.reloadAndWaitForApp()
       await expect.poll(() => topbar.getActiveTabName()).toContain(activeName)
