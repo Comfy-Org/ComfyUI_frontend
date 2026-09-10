@@ -140,7 +140,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
             template: '<p>subscription.preview.termsNote</p>'
           },
           UnifiedStripePaymentSelector: {
-            emits: ['providerUnreachableChange'],
+            emits: ['providerUnreachableChange', 'elementReadyChange'],
             template: `<div>
               <button @click="$emit('providerUnreachableChange', true)">
                 report unreachable
@@ -148,12 +148,21 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
               <button @click="$emit('providerUnreachableChange', false)">
                 report recovered
               </button>
+              <button @click="$emit('elementReadyChange', true)">
+                report element ready
+              </button>
             </div>`
           }
         }
       }
     })
 
+    // Nothing to agree to until the payment element has actually painted.
+    expect(screen.queryByText('subscription.preview.termsNote')).toBeNull()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'report element ready' })
+    )
     expect(screen.getByText('subscription.preview.termsNote')).toBeTruthy()
 
     // With no way to pay there is nothing to agree to.
@@ -162,9 +171,13 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
     expect(screen.queryByText('subscription.preview.termsNote')).toBeNull()
 
-    // A successful retry brings the form - and the agreement - back.
+    // A successful retry brings the form - and the agreement - back once the
+    // remounted element paints.
     await userEvent.click(
       screen.getByRole('button', { name: 'report recovered' })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'report element ready' })
     )
     expect(screen.getByText('subscription.preview.termsNote')).toBeTruthy()
   })

@@ -293,6 +293,7 @@
         :can-submit="quoteIsCurrent"
         @submitting-change="stripeSubmissionPending = $event"
         @provider-unreachable-change="providerUnreachable = $event"
+        @element-ready-change="paymentElementReady = $event"
         @confirm="confirmPayment"
       />
 
@@ -341,9 +342,13 @@
       </Button>
 
       <!-- Terms Agreement (below the pay action, like Stripe checkout).
-           Hidden while the payment provider is unreachable: with no way to
-           pay, there is nothing to agree to. -->
-      <SubscriptionTermsNote v-if="!providerUnreachableActive" class="mt-2" />
+           Hidden while the payment provider is unreachable or the payment
+           element hasn't painted yet: with no way to pay, there is nothing
+           to agree to. -->
+      <SubscriptionTermsNote
+        v-if="!providerUnreachableActive && !awaitingPaymentElement"
+        class="mt-2"
+      />
     </div>
   </div>
 </template>
@@ -498,6 +503,16 @@ const stripeSubmissionPending = ref(false)
 const providerUnreachable = ref(false)
 const providerUnreachableActive = computed(
   () => captureMode.value && quoteReady.value && providerUnreachable.value
+)
+const paymentElementReady = ref(false)
+// True exactly while the capture selector is mounted but its element hasn't
+// painted; the terms note waits for it the same way the pay CTA does.
+const awaitingPaymentElement = computed(
+  () =>
+    captureMode.value &&
+    quoteReady.value &&
+    !parkedCheckoutRecovery &&
+    !paymentElementReady.value
 )
 const interactionLocked = computed(
   () => isLoading || isApplyingPromotionCode || stripeSubmissionPending.value

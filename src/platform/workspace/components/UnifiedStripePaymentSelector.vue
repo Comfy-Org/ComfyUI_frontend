@@ -60,7 +60,9 @@
       :variant="verificationPending ? 'tertiary' : 'inverted'"
       size="lg"
       class="w-full rounded-lg"
-      :disabled="!stripeElements || !canSubmit || verificationPending"
+      :disabled="
+        !stripeElements || !elementReady || !canSubmit || verificationPending
+      "
       :loading="isLoading || isSubmitting"
     >
       {{ $t('subscription.preview.payAndSubscribe') }}
@@ -118,6 +120,7 @@ const emit = defineEmits<{
   confirm: [confirmationToken: string]
   submittingChange: [submitting: boolean]
   providerUnreachableChange: [unreachable: boolean]
+  elementReadyChange: [ready: boolean]
 }>()
 
 const { t } = useI18n()
@@ -125,6 +128,10 @@ const paymentElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
 const providerUnreachable = ref(false)
+// The pay CTA waits for the element's iframe to actually paint (Stripe's
+// `ready` event), not merely for Elements to be constructed — the gap between
+// the two is the cold-load window where Pay was clickable over a blank form.
+const elementReady = ref(false)
 const isRetryingLoad = ref(false)
 const isSubmitting = ref(false)
 const selectedMethodType = ref('')
@@ -135,6 +142,7 @@ let isUnmounted = false
 onMounted(initializeStripe)
 
 async function initializeStripe() {
+  elementReady.value = false
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   if (!publishableKey) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
@@ -242,6 +250,9 @@ function createAndMountPaymentElement(stripe: Stripe, target: HTMLDivElement) {
     terms: { card: 'never' }
   })
   paymentElement.mount(target)
+  paymentElement.on('ready', () => {
+    if (!isUnmounted) elementReady.value = true
+  })
   // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
   // whichever payment method the user has selected inside the element.
   paymentElement.on('change', (event) => {
@@ -271,6 +282,7 @@ function markConfigurationFailed() {
   paymentElement = undefined
   stripeElements.value = undefined
   selectedMethodType.value = ''
+  elementReady.value = false
   configurationError.value = t('subscription.preview.stripeUnavailable')
 }
 
@@ -279,6 +291,7 @@ function markProviderUnreachable() {
   paymentElement = undefined
   stripeElements.value = undefined
   selectedMethodType.value = ''
+  elementReady.value = false
   providerUnreachable.value = true
 }
 
@@ -299,6 +312,10 @@ watch(
   (unreachable) => emit('providerUnreachableChange', unreachable),
   { immediate: true }
 )
+
+watch(elementReady, (ready) => emit('elementReadyChange', ready), {
+  immediate: true
+})
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
   if (!stripeElements.value || amount <= 0) return

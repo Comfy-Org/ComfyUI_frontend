@@ -79,6 +79,24 @@ function renderSelector(
   })
 }
 
+function fireElementReady() {
+  const readyHandler = stripeMocks.on.mock.calls.find(
+    ([event]) => event === 'ready'
+  )?.[1]
+  expect(readyHandler).toBeTypeOf('function')
+  readyHandler()
+}
+
+async function mountAndReady() {
+  await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+  fireElementReady()
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeEnabled()
+  )
+}
+
 describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
@@ -125,6 +143,12 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
     expect(screen.queryByText("We can't take payments right now")).toBeNull()
 
+    fireElementReady()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      ).toBeEnabled()
+    )
     await user.click(
       screen.getByRole('button', {
         name: 'Pay and subscribe'
@@ -145,7 +169,7 @@ describe('UnifiedStripePaymentSelector', () => {
     })
     const { emitted } = renderSelector()
 
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    await mountAndReady()
     await user.click(
       screen.getByRole('button', {
         name: 'Pay and subscribe'
@@ -166,7 +190,7 @@ describe('UnifiedStripePaymentSelector', () => {
     })
     const { emitted } = renderSelector()
 
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    await mountAndReady()
     await user.click(
       screen.getByRole('button', {
         name: 'Pay and subscribe'
@@ -189,10 +213,45 @@ describe('UnifiedStripePaymentSelector', () => {
   ])('blocks paying when $description', async ({ props }) => {
     renderSelector(66500, 'pmc_test', props)
     await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    fireElementReady()
 
     expect(
       screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeDisabled()
+  })
+
+  it('keeps Pay disabled until the payment element reports ready', async () => {
+    const { emitted } = renderSelector()
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+
+    expect(
+      screen.getByRole('button', { name: 'Pay and subscribe' })
+    ).toBeDisabled()
+    expect(emitted().elementReadyChange).toEqual([[false]])
+
+    fireElementReady()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      ).toBeEnabled()
+    )
+    expect(emitted().elementReadyChange).toEqual([[false], [true]])
+  })
+
+  it('drops back to disabled when the element fails after ready', async () => {
+    renderSelector()
+    await mountAndReady()
+
+    const loaderrorHandler = stripeMocks.on.mock.calls.find(
+      ([event]) => event === 'loaderror'
+    )?.[1]
+    loaderrorHandler({ error: { type: 'invalid_request_error' } })
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      ).toBeDisabled()
+    )
   })
 
   it('shows unavailable state when Stripe configuration is missing', async () => {
@@ -244,9 +303,13 @@ describe('UnifiedStripePaymentSelector', () => {
     expect(stripeMocks.loadStripe).toHaveBeenCalledTimes(2)
     expect(screen.queryByText("We can't take payments right now")).toBeNull()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
-    expect(
-      screen.getByRole('button', { name: 'Pay and subscribe' })
-    ).toBeEnabled()
+
+    fireElementReady()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      ).toBeEnabled()
+    )
   })
 
   it('keeps the unreachable state when the retry fails again', async () => {
