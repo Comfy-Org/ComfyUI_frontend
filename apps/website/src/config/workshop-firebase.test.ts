@@ -1,8 +1,10 @@
+import type { UserCredential } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
+  provisionWorkshopCustomer,
   signInWorkshopWithGoogle
 } from './workshop-firebase'
 
@@ -13,7 +15,7 @@ const identity = vi.hoisted(() => ({
   onUserChanged: vi.fn()
 }))
 
-vi.mock('@comfyorg/account/firebase', () => ({
+vi.mock<unknown>(import('@comfyorg/account/firebase'), () => ({
   createFirebaseIdentity: () => identity
 }))
 
@@ -76,13 +78,14 @@ describe('social sign-in provisioning boundary', () => {
   })
 
   it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
-    identity.signInWithGoogle.mockResolvedValue({ user })
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(null, { status: 500 }))
     )
 
-    const failure = await signInWorkshopWithGoogle().catch((error) => error)
+    const failure = await provisionWorkshopCustomer({
+      user
+    } as unknown as UserCredential).catch((error) => error)
 
     expect(
       isWorkshopProvisioningError(failure),
