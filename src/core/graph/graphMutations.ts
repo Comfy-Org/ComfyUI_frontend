@@ -63,7 +63,8 @@ interface SemanticLiveWidgetMutationPort {
     scope: GraphScope,
     nodeId: NodeId,
     name: string,
-    value: WidgetValue
+    value: WidgetValue,
+    context: RemoteMutationContext
   ): boolean
 }
 
@@ -665,7 +666,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               scope,
               mutation.node.state.id,
               widget.name,
-              widget.value
+              widget.value,
+              context
             )
             widgetStore.registerWidget(
               widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
@@ -697,7 +699,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             scope,
             mutation.nodeId,
             mutation.name,
-            mutation.value
+            mutation.value,
+            context
           )
           if (!widgetStore.getWidget(id)) {
             widgetStore.registerWidget(

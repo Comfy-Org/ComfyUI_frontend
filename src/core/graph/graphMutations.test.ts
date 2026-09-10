@@ -96,7 +96,8 @@ describe('graphMutations', () => {
       scope,
       toNodeId(7),
       'image',
-      'after.png'
+      'after.png',
+      context
     )
   })
 
@@ -115,7 +116,8 @@ describe('graphMutations', () => {
       scope,
       toNodeId(7),
       'image',
-      'added.png'
+      'added.png',
+      context
     )
   })
 

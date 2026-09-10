@@ -252,14 +252,15 @@ const graphMutations = (workflowId: string) => {
       }
     },
     liveWidgets: {
-      setValue(scope, nodeId, name, value) {
+      setValue(scope, nodeId, name, value, context) {
         try {
           const applied = applyLiveWidgetValue(
             app.rootGraphOrUndefined,
             scope,
             nodeId,
             name,
-            value
+            value,
+            context
           )
           if (applied) app.canvas?.setDirty(true)
           return applied
