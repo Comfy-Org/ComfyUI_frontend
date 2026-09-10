@@ -1,0 +1,52 @@
+name: Prepare pnpm lockfile merge
+description: Reproduce a base merge and stage its lockfile side when it is the only conflict
+
+inputs:
+  base-sha:
+    description: Exact base commit to merge
+    required: true
+  require-conflict:
+    description: Fail unless the merge has only a pnpm-lock.yaml conflict
+    required: false
+    default: 'false'
+
+outputs:
+  mode:
+    description: Whether the caller should merge or repair the lockfile
+    value: ${{ steps.merge.outputs.mode }}
+
+runs:
+  using: composite
+  steps:
+    - id: merge
+      shell: bash
+      working-directory: pull-request
+      env:
+        BASE_SHA: ${{ inputs.base-sha }}
+        REQUIRE_CONFLICT: ${{ inputs.require-conflict }}
+      run: |
+        if [ "$(git rev-parse --is-shallow-repository)" = 'true' ]; then
+          git fetch --filter=blob:none --unshallow origin
+        fi
+        git fetch --filter=blob:none --no-tags \
+          "https://github.com/$GITHUB_REPOSITORY.git" "$BASE_SHA"
+
+        set +e
+        git merge --no-commit --no-ff "$BASE_SHA"
+        merge_status=$?
+        set -e
+
+        if [ "$merge_status" -ne 0 ] && \
+           [ "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml' ]; then
+          git checkout --theirs pnpm-lock.yaml
+          git add pnpm-lock.yaml
+          echo 'mode=merge' >> "$GITHUB_OUTPUT"
+        else
+          git merge --abort || true
+          git reset --hard HEAD
+          echo 'mode=repair' >> "$GITHUB_OUTPUT"
+          if [ "$REQUIRE_CONFLICT" = 'true' ]; then
+            echo "::error::Expected only pnpm-lock.yaml to conflict with $BASE_SHA" >&2
+            exit 1
+          fi
+        fi
