@@ -4894,7 +4894,7 @@
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
-      "tokenExchangeFailed": "Failed to authenticate with workspace"
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
     }
   },
   "nightly": {

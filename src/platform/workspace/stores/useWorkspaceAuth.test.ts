@@ -74,7 +74,13 @@ vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
 }))
 
 vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
+  t: (key: string, params?: unknown) => {
+    const error =
+      params && typeof params === 'object' && 'error' in params
+        ? (params as { error?: string }).error
+        : undefined
+    return error ? `${key}: ${error}` : key
+  }
 }))
 
 /** Ref-backed like the real remote-config flag, so the store's watcher sees a rollback. */
@@ -685,6 +691,9 @@ describe('useWorkspaceAuthStore', () => {
       expect(error.value).toBeInstanceOf(WorkspaceAuthError)
       expect((error.value as WorkspaceAuthError).code).toBe(
         'TOKEN_EXCHANGE_FAILED'
+      )
+      expect((error.value as WorkspaceAuthError).message).toContain(
+        'Server error'
       )
     })
 
