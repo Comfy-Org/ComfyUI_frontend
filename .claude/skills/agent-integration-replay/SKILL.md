@@ -7,8 +7,9 @@ description: 'Replay recorded agent conversations as Playwright tests against th
 
 One job: replay the recorded conversations as tests. Replay needs only a
 ComfyUI backend on port 8188 and the dev server below. Recording a new
-conversation and running the real agent locally are not in this tree; the
-recorder lands with #16782 and its stack launcher is proposed in #16781.
+conversation is the recorder's job, documented in
+`browser_tests/fixtures/data/agent/README.md`; the local stack launcher for
+the real agent is proposed in #16781 and is not in this tree.
 
 ## Replay the recorded conversations as tests
 
@@ -41,9 +42,8 @@ pnpm comfy-test agent-replay
 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
 ```
 
-Add `--headed -g '(^|\s)recorded <case id>(\s|$)'` to watch one (the pattern
-names the whole `recorded <case id>` title segment, so a longer id cannot
-match) and `RECORD_VIDEO=true` for video.
+Add `--headed` to watch it and `RECORD_VIDEO=true` for video. For one
+recording use `pnpm comfy-test agent-replay --case <case id>`.
 
 - A failing replay names the turn and the assertion. Compare that turn's
   `response` entries with what the panel rendered; never edit a fixture to make

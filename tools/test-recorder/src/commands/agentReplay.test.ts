@@ -142,6 +142,23 @@ describe('agentReplayCli', () => {
     }
   )
 
+  it.for([['--bogus'], ['stray'], ['--case', 'agent-rec-a', 'stray']])(
+    'refuses the unknown argument in %s before spawning',
+    async (argv) => {
+      const run = vi.fn(() => ({ status: 0 }))
+      const err = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      await expect(
+        agentReplayCli(argv, { run, cases: () => ['agent-rec-a'] })
+      ).resolves.toBe(1)
+      expect(run).not.toHaveBeenCalled()
+      expect(err).toHaveBeenCalledWith(
+        expect.stringContaining(`unknown argument ${argv.at(-1)}`)
+      )
+    }
+  )
+
   it.for([['agent-rec'], ['agent-rec-c']])(
     'refuses %s, which names no recording, before spawning',
     async ([caseId]) => {

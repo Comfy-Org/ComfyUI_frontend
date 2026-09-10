@@ -126,12 +126,25 @@ export interface AgentReplayCliDeps {
 }
 
 const VALUE_FLAGS = ['case', 'url'] as const
+const KNOWN_FLAGS = new Set<string>([...VALUE_FLAGS, 'headed', 'video', 'help'])
 
 export async function agentReplayCli(
   argv: string[],
   deps: AgentReplayCliDeps = {}
 ): Promise<number> {
-  const { flags } = parseFlags(argv, VALUE_FLAGS)
+  const { positional, flags } = parseFlags(argv, VALUE_FLAGS)
+  const unknown = [
+    ...positional,
+    ...Object.keys(flags)
+      .filter((flag) => !KNOWN_FLAGS.has(flag))
+      .map((flag) => `--${flag}`)
+  ]
+  if (unknown.length > 0) {
+    process.stderr.write(
+      `unknown argument ${unknown.join(' ')}\n${AGENT_REPLAY_USAGE}`
+    )
+    return 1
+  }
   if (flags.help !== undefined) return runAgentReplay({ help: true }, deps.run)
   const missing = VALUE_FLAGS.find((flag) => flags[flag] === '')
   if (missing !== undefined) {
