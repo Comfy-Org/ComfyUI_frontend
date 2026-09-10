@@ -1,7 +1,7 @@
 <script setup lang="ts">
 type ModelCardMedia =
   | { type: 'image'; src: string }
-  | { type: 'video'; src: string; poster: string }
+  | { type: 'video'; src: string; poster?: string }
 
 const { modelName, capability, href, providerName, providerLogoSrc, media } =
   defineProps<{
@@ -51,9 +51,9 @@ const { modelName, capability, href, providerName, providerLogoSrc, media } =
     >
       <img :src="providerLogoSrc" alt="" class="max-h-5 max-w-20" />
     </span>
-    <div class="absolute inset-x-0 bottom-0 p-5 text-primary-comfy-canvas">
-      <h2 class="text-sm font-light">{{ modelName }}</h2>
-      <h3 class="mt-1 text-2xl/tight font-bold tracking-wide uppercase">
+    <div class="absolute inset-x-0 bottom-0 p-6 text-primary-comfy-canvas">
+      <h2 class="text-base font-light">{{ modelName }}</h2>
+      <h3 class="text-3xl/tight font-bold">
         {{ capability }}
       </h3>
     </div>

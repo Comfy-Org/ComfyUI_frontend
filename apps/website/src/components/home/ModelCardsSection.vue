@@ -6,7 +6,6 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import ModelCard from '../common/ModelCard.vue'
-import SectionLabel from '../common/SectionLabel.vue'
 
 type FeaturedModel = {
   modelName: string
@@ -16,7 +15,7 @@ type FeaturedModel = {
   providerLogoSrc: string
   media:
     | { type: 'image'; src: string }
-    | { type: 'video'; src: string; poster: string }
+    | { type: 'video'; src: string; poster?: string }
 }
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -42,8 +41,8 @@ const models = computed<readonly FeaturedModel[]>(() => [
     href: routes.value.flux3,
     providerLogoSrc: '/icons/ai-models/black-forest-labs.svg',
     media: {
-      type: 'image',
-      src: '/icons/ai-models/black-forest-labs.svg'
+      type: 'video',
+      src: 'https://media.comfy.org/website/flux-3/card-2.webm'
     }
   },
   {
@@ -81,14 +80,8 @@ const models = computed<readonly FeaturedModel[]>(() => [
   >
     <div class="max-w-9xl mx-auto">
       <div class="bg-transparency-white-t4 rounded-5xl p-4 lg:p-2">
-        <div class="px-2 pt-2 lg:px-4 lg:pt-4">
-          <SectionLabel>{{
-            t('home.featuredModels.label', locale)
-          }}</SectionLabel>
-        </div>
-
         <div
-          class="mt-4 flex snap-x gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0"
+          class="flex snap-x gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0"
         >
           <ModelCard
             v-for="model in models"
@@ -98,7 +91,7 @@ const models = computed<readonly FeaturedModel[]>(() => [
           />
         </div>
 
-        <div class="flex justify-center px-2 pt-6 pb-2 lg:px-4 lg:pt-8 lg:pb-4">
+        <div class="flex justify-center px-2 pt-5 pb-2 lg:px-4 lg:pt-5 lg:pb-2">
           <BrandButton :href="routes.modelsShowcase" variant="outline">
             {{ t('home.featuredModels.exploreMore', locale) }}
           </BrandButton>

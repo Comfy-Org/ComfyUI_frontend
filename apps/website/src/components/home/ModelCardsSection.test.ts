@@ -26,12 +26,13 @@ describe('ModelCardsSection', () => {
     ])
   })
 
-  it('uses posters only for the model previews that have stable ones', () => {
+  it('uses the approved model preview media', () => {
     render(ModelCardsSection)
 
     const minimaxH3Max = screen.getByLabelText('MiniMax H3 Max preview')
     const seedance = screen.getByLabelText('Seedance 2.5 preview')
     const minimaxH3 = screen.getByLabelText('MiniMax H3 preview')
+    const flux3 = screen.getByLabelText('FLUX 3 preview')
 
     expect(minimaxH3Max.getAttribute('src')).toBe(
       'https://media.comfy.org/website/minimax/fluid.webm'
@@ -51,7 +52,10 @@ describe('ModelCardsSection', () => {
     expect(minimaxH3.getAttribute('poster')).toBe(
       'https://media.comfy.org/website/minimax/ice-rider-poster.webp'
     )
-    expect(screen.queryByLabelText('FLUX 3 preview')).toBeNull()
+    expect(flux3.getAttribute('src')).toBe(
+      'https://media.comfy.org/website/flux-3/card-2.webm'
+    )
+    expect(flux3.getAttribute('poster')).toBeNull()
   })
 
   it('updates the section, cards, and catalog CTA routes when locale changes', async () => {
