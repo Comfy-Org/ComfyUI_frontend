@@ -23,6 +23,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingAuthenticationState,
+  BillingOperationPhase,
   BillingDeclineReason
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -103,6 +104,12 @@ interface BillingOperation {
   checkoutType?: SubscriptionCheckoutType
   paymentIntentSource?: PaymentIntentSource
   autoHandleRequiresAction: boolean
+  // Last phase the server reported for a pending operation. awaiting_payment_method
+  // means it is parked on a hosted checkout and will not advance until the
+  // customer supplies a card, so a dialog should offer them a way back rather
+  // than keep waiting. Null while unknown — the field is optional in the
+  // contract, and absent is explicitly no claim, never an implied in_progress.
+  phase: BillingOperationPhase | null
   downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
   // Set when the customer walked away from this operation in the UI (e.g.
   // "Start over" after a failed challenge). The operation itself is not
@@ -251,6 +258,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       checkoutType: metadata?.checkoutType,
       paymentIntentSource: metadata?.paymentIntentSource,
       autoHandleRequiresAction: metadata?.autoHandleRequiresAction ?? false,
+      phase: null,
       downgradeToPersonal: metadata?.downgradeToPersonal,
       dismissed: false
     }
@@ -347,6 +355,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
             response.decline_reason
           )
         : false
+      updateOperationPhase(opId, response.phase ?? null)
       updateOperationActionUrl(opId, validateActionUrl(response.action_url))
       if (pollingPaused) return
       scheduleNextPoll(opId)
@@ -606,6 +615,24 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (!hasTimedOut(operation)) return false
     handleTimeout(opId)
     return true
+  }
+
+  function updateOperationPhase(
+    opId: string,
+    phase: BillingOperationPhase | null
+  ) {
+    const operation = operations.value.get(opId)
+    if (
+      !operation ||
+      operation.status !== 'pending' ||
+      operation.phase === phase
+    ) {
+      return
+    }
+    operations.value = new Map(operations.value).set(opId, {
+      ...operation,
+      phase
+    })
   }
 
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {

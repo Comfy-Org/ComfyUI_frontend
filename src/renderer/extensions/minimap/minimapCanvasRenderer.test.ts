@@ -1,5 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -18,19 +17,8 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: mockUseColorPaletteStore
-}))
-
 vi.mock(import('@/utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
-}))
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeLocationProgressStates: {}
-  }))
 }))
 
 const GRAPH_ID: UUID = 'renderer-graph'
@@ -45,8 +33,6 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockContext = {
       clearRect: vi.fn(),
       fillRect: vi.fn(),
@@ -95,7 +81,7 @@ describe('minimapCanvasRenderer', () => {
       getNodeById: vi.fn()
     })
 
-    mockUseColorPaletteStore.mockReturnValue({
+    Object.assign(useColorPaletteStore(), {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
@@ -309,7 +295,7 @@ describe('minimapCanvasRenderer', () => {
   })
 
   it('should handle light theme colors', () => {
-    mockUseColorPaletteStore.mockReturnValue({
+    Object.assign(useColorPaletteStore(), {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',

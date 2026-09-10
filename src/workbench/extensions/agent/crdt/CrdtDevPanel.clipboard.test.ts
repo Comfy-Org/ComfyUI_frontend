@@ -32,9 +32,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
-vi.mock<unknown>(import('@/stores/extensionStore'), () => ({
-  useExtensionStore: () => ({ extensions: [] })
-}))
 
 const status: AgentCrdtStatus = {
   enabled: true,

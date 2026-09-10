@@ -3,14 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
-const showDialog = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog })
-}))
+let showDialog: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
+>
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findServerPreviewUrl = vi.hoisted(() =>
@@ -81,7 +81,7 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    showDialog.mockClear()
+    showDialog = vi.mocked(useDialogStore().showDialog)
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
@@ -226,7 +226,9 @@ describe('ReplyAssetGroup', () => {
 
     findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
     const dialog = showDialog.mock.calls.at(-1)?.[0]
-    dialog.dialogComponentProps.onClose()
+    const onClose = dialog?.dialogComponentProps?.onClose
+    expect(onClose).toBeTypeOf('function')
+    onClose!()
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')

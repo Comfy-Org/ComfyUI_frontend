@@ -1,37 +1,20 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCommandStore } from '@/stores/commandStore'
 
-const mockExecute = vi.fn()
-const mockGetCommand = vi.fn(() => ({
-  keybinding: {
-    combo: {
-      getKeySequences: () => ['V']
-    }
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ read_only: false })
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  for (const id of ['Comfy.Canvas.Unlock', 'Comfy.Canvas.Lock']) {
+    useCommandStore().registerCommand({ id, function: vi.fn() })
   }
-}))
-const mockFormatKeySequence = vi.fn(() => 'V')
-
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({
-    execute: mockExecute,
-    getCommand: mockGetCommand,
-    formatKeySequence: mockFormatKeySequence
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({
-      canvas: { read_only: false }
-    })
-  })
-)
+})
 
 const i18n = createI18n({
   legacy: false,
