@@ -1,5 +1,9 @@
+import type * as VueUse from '@vueuse/core'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import type { ComfyApp } from '@/scripts/app'
 
 import { render, screen } from '@testing-library/vue'
 
@@ -48,8 +52,6 @@ const testState = vi.hoisted(() => {
   const contentSizes = new Map<string, { width: number; height: number }>()
 
   return {
-    linearMode: false,
-    rootGraphId: ROOT_GRAPH_ID,
     visibility: null as { value: 'visible' | 'hidden' } | null,
     nodeLayouts: new Map<NodeId, NodeLayout>(),
     contentSizes,
@@ -67,22 +69,23 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@vueuse/core'), () => ({
-  useDocumentVisibility: () => {
-    const visibility = ref<'visible' | 'hidden'>('visible')
-    testState.visibility = visibility
-    return visibility
-  },
-  createSharedComposable: <T>(fn: T) => fn
-}))
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
+})
 
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    linearMode: testState.linearMode,
-    rootGraphId: testState.rootGraphId,
-    canvas: { setDirty: testState.setDirty }
-  })
-}))
+vi.mock(import('@vueuse/core'), async (importOriginal) => {
+  const { ref } = await import('vue')
+  return {
+    ...(await importOriginal<typeof VueUse>()),
+    useDocumentVisibility: () => {
+      const visibility = ref<'visible' | 'hidden'>('visible')
+      testState.visibility = visibility
+      return visibility
+    },
+    createSharedComposable: <T>(fn: T) => fn
+  }
+})
 
 vi.mock<unknown>(
   import('@/composables/element/useCanvasPositionConversion'),
@@ -188,10 +191,14 @@ function seedNodeLayout(options: {
   })
 }
 
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
+})
+
 describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
-    testState.linearMode = false
-    testState.rootGraphId = ROOT_GRAPH_ID
+    useCanvasStore().linearMode = false
+    Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
     if (testState.visibility) testState.visibility.value = 'visible'
     testState.nodeLayouts.clear()
     testState.contentSizes.clear()
@@ -227,7 +234,7 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
     vi.clearAllMocks()
-    testState.rootGraphId = SECOND_GRAPH_ID
+    Object.assign(useCanvasStore(), { rootGraphId: SECOND_GRAPH_ID })
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -288,7 +295,7 @@ describe('useVueNodeResizeTracking', () => {
     })
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.rootGraphId).toBe(ROOT_GRAPH_ID)
+    expect(useCanvasStore().rootGraphId).toBe(ROOT_GRAPH_ID)
     expect(testState.reportContentSize).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       subgraphNodeId,

@@ -90,7 +90,6 @@ cloudAppFixture.describe(
           private_models_enabled: true
         } satisfies RemoteConfig
         const settings = {
-          'Comfy.Assets.UseAssetAPI': true,
           'Comfy.TutorialCompleted': true
         }
         const assetsResponse = {

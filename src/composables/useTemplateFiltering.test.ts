@@ -1,53 +1,21 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { until } from '@vueuse/core'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { api } from '@/scripts/api'
 
-const defaultSettingStore = {
-  get: vi.fn((key: string) => {
-    switch (key) {
-      case 'Comfy.Templates.SelectedModels':
-      case 'Comfy.Templates.SelectedUseCases':
-      case 'Comfy.Templates.SelectedRunsOn':
-        return []
-      case 'Comfy.Templates.SortBy':
-        return 'newest'
-      default:
-        return undefined
-    }
-  }),
-  set: vi.fn().mockResolvedValue(undefined)
-}
+let defaultSettingStore: ReturnType<typeof useSettingStore>
 
-const defaultRankingStore = {
-  computeDefaultScore: vi.fn(
-    (_date?: string, _rank?: number, usage: number = 0) => usage
-  ),
-  computeFreshness: vi.fn(() => 0.5),
-  largestUsageScore: 0
-}
+let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 
-const mockSystemStatsStore = {
-  systemStats: {
-    system: {
-      os: 'linux'
-    }
-  }
-}
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => defaultSettingStore)
-}))
-
-vi.mock<unknown>(import('@/stores/templateRankingStore'), () => ({
-  useTemplateRankingStore: vi.fn(() => defaultRankingStore)
-}))
-
-vi.mock<unknown>(import('@/stores/systemStatsStore'), () => ({
-  useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
-}))
+let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
 const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -65,9 +33,31 @@ vi.mock(
 )
 
 describe('useTemplateFiltering', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial<Awaited<ReturnType<typeof api.getSystemStats>>>({
+        system: { os: 'linux' }
+      })
+    )
+    defaultSettingStore = useSettingStore()
+    defaultRankingStore = useTemplateRankingStore()
+    mockSystemStatsStore = useSystemStatsStore()
+    await until(() => mockSystemStatsStore.isInitialized).toBe(true)
+    defaultSettingStore.settingValues = {
+      'Comfy.Templates.SelectedModels': [],
+      'Comfy.Templates.SelectedUseCases': [],
+      'Comfy.Templates.SelectedRunsOn': [],
+      'Comfy.Templates.SortBy': 'newest'
+    }
+    vi.mocked(defaultSettingStore.set).mockResolvedValue(undefined)
+    vi.mocked(defaultRankingStore.computeDefaultScore).mockImplementation(
+      (_date, _rank, usage = 0) => usage
+    )
+    vi.mocked(defaultRankingStore.computeFreshness).mockReturnValue(0.5)
     vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-    mockSystemStatsStore.systemStats.system.os = 'linux'
+    mockSystemStatsStore.systemStats = fromPartial<
+      NonNullable<typeof mockSystemStatsStore.systemStats>
+    >({ system: { os: 'linux' } })
   })
 
   it('filters by search text, models, tags, and license with debounce handling', async () => {
@@ -1087,7 +1077,7 @@ describe('useTemplateFiltering', () => {
 
     it('mac distribution matches templates with mac includeOnDistributions', () => {
       setDistribution('desktop')
-      mockSystemStatsStore.systemStats.system.os = 'darwin'
+      mockSystemStatsStore.systemStats!.system.os = 'darwin'
 
       const macTemplate: TemplateInfo = {
         name: 'mac-template',

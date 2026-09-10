@@ -5,6 +5,7 @@ import type {
   preferInitialSettings as PreferInitialSettings
 } from './comfyPageSetup'
 import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
+import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
@@ -22,6 +23,9 @@ const { noComfyPageSetupCall, preferInitialSettings } = requireFrom(
 }
 const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
   noDuplicateIngestType: typeof NoDuplicateIngestType
+}
+const { useGlobalPinia } = requireFrom('./globalPinia.ts') as {
+  useGlobalPinia: typeof UseGlobalPinia
 }
 const {
   noModuleScopeVitestMocks,
@@ -48,6 +52,7 @@ export default {
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,
     'no-render-in-watch-effect': noRenderInWatchEffect,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
-    'no-redundant-vitest-cleanup': noRedundantVitestCleanup
+    'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
+    'use-global-pinia': useGlobalPinia
   }
 }

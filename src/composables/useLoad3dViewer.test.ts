@@ -15,10 +15,6 @@ vi.mock(import('@/services/load3dService'), () => ({
   useLoad3dService: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: vi.fn()
-}))
-
 vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
     uploadFile: vi.fn(),
@@ -194,12 +190,7 @@ describe('useLoad3dViewer', () => {
     >
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
-    mockToastStore = {
-      addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
-    vi.mocked(useToastStore).mockReturnValue(mockToastStore)
+    mockToastStore = useToastStore()
   })
 
   describe('initialization', () => {

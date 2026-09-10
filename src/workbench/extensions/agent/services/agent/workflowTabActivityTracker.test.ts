@@ -1,40 +1,19 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { registerWorkflowTabActivityTracker } from './workflowTabActivityTracker'
 
-type FakeTab = { path: string }
-
-const hostWorkflow = vi.hoisted(() => ({
-  store: null as unknown as {
-    activeWorkflow: FakeTab | null
-    openWorkflows: FakeTab[]
-  }
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  async () => {
-    const { reactive } = await import('vue')
-    const store = reactive({
-      activeWorkflow: null as FakeTab | null,
-      openWorkflows: [] as FakeTab[]
-    })
-    hostWorkflow.store = store
-    return { useWorkflowStore: () => store }
-  }
-)
+let workflowStore: ReturnType<typeof useWorkflowStore>
 
 describe('registerWorkflowTabActivityTracker', () => {
   let stop: () => void
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    hostWorkflow.store.activeWorkflow = null
-    hostWorkflow.store.openWorkflows = []
+    workflowStore = useWorkflowStore()
     stop = registerWorkflowTabActivityTracker(ref(true))
   })
 
@@ -46,7 +25,9 @@ describe('registerWorkflowTabActivityTracker', () => {
     const activity = useWorkflowTabActivityStore()
     activity.markModified('workflows/a.json')
 
-    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/a.json'
+    })
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
@@ -54,15 +35,19 @@ describe('registerWorkflowTabActivityTracker', () => {
 
   it('prunes activity state when a tab closes, with no panel mounted', async () => {
     const activity = useWorkflowTabActivityStore()
-    hostWorkflow.store.openWorkflows = [
-      { path: 'workflows/a.json' },
-      { path: 'workflows/b.json' }
-    ]
+    const first = createMockLoadedWorkflow({ path: 'workflows/a.json' })
+    const second = createMockLoadedWorkflow({
+      path: 'workflows/b.json',
+      isTemporary: false,
+      unload: vi.fn()
+    })
+    workflowStore.attachWorkflow(first, 0)
+    workflowStore.attachWorkflow(second, 1)
     await nextTick()
     activity.setEditing('workflows/b.json')
     activity.markModified('workflows/b.json')
 
-    hostWorkflow.store.openWorkflows = [{ path: 'workflows/a.json' }]
+    await workflowStore.closeWorkflow(second)
     await nextTick()
 
     expect(activity.editingTabPath).toBeNull()
@@ -74,7 +59,9 @@ describe('registerWorkflowTabActivityTracker', () => {
     activity.markModified('workflows/a.json')
 
     stop()
-    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/a.json'
+    })
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
@@ -90,7 +77,9 @@ describe('registerWorkflowTabActivityTracker', () => {
     await nextTick()
     stop()
     activity.markModified('workflows/a.json')
-    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/a.json'
+    })
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
@@ -103,7 +92,9 @@ describe('registerWorkflowTabActivityTracker', () => {
     const activity = useWorkflowTabActivityStore()
     activity.markModified('workflows/a.json')
 
-    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/a.json'
+    })
     await nextTick()
 
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(true)
@@ -118,7 +109,9 @@ describe('registerWorkflowTabActivityTracker', () => {
     enabled.value = true
     await nextTick()
     activity.markModified('workflows/a.json')
-    hostWorkflow.store.activeWorkflow = { path: 'workflows/a.json' }
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/a.json'
+    })
     await nextTick()
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
 

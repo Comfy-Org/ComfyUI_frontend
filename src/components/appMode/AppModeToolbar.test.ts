@@ -1,30 +1,24 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useAppModeStore } from '@/stores/appModeStore'
 
 import AppModeToolbar from './AppModeToolbar.vue'
 
 const appModeState = vi.hoisted(() => ({
-  enableAppBuilder: true,
-  hasNodes: true
+  enableAppBuilder: true
 }))
-const enterBuilder = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({ enableAppBuilder: appModeState.enableAppBuilder })
+  useAppMode: () => ({
+    enableAppBuilder: appModeState.enableAppBuilder,
+    isAppMode: { value: false },
+    isBuilderMode: { value: false },
+    isSelectMode: { value: false }
+  })
 }))
-
-vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
-  const { computed, reactive } = await import('vue')
-  return {
-    useAppModeStore: () =>
-      reactive({
-        enterBuilder,
-        hasNodes: computed(() => appModeState.hasNodes)
-      })
-  }
-})
 
 const BUILD_AN_APP = 'Build an app'
 
@@ -54,7 +48,8 @@ function renderToolbar() {
 describe('AppModeToolbar', () => {
   beforeEach(() => {
     appModeState.enableAppBuilder = true
-    appModeState.hasNodes = true
+    Object.assign(useAppModeStore(), { hasNodes: true })
+    vi.mocked(useAppModeStore().enterBuilder).mockResolvedValue(undefined)
   })
 
   it('shows an enabled build button and enters the builder on click', async () => {
@@ -65,11 +60,11 @@ describe('AppModeToolbar', () => {
 
     await user.click(button)
 
-    expect(enterBuilder).toHaveBeenCalled()
+    expect(useAppModeStore().enterBuilder).toHaveBeenCalled()
   })
 
   it('disables the build button when there are no nodes', () => {
-    appModeState.hasNodes = false
+    Object.assign(useAppModeStore(), { hasNodes: false })
     renderToolbar()
 
     expect(screen.getByRole('button', { name: BUILD_AN_APP })).toBeDisabled()

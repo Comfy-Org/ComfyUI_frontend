@@ -1,25 +1,20 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type * as VueUse from '@vueuse/core'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick } from 'vue'
+
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 
 const rafCallbacks: Array<() => void> = []
-vi.mock<unknown>(import('@vueuse/core'), () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
   useRafFn: (cb: () => void) => {
     rafCallbacks.push(cb)
     return { pause: vi.fn(), resume: vi.fn() }
   }
-}))
-
-const mockCanvas = ref<unknown>(null)
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    get canvas() {
-      return mockCanvas.value
-    }
-  })
 }))
 
 function createPanelEl() {
@@ -35,21 +30,26 @@ function dragRectangle(eDown: [number, number], eMove: [number, number]) {
   vi.spyOn(canvasEl, 'getBoundingClientRect').mockReturnValue(
     fromPartial<DOMRect>({ left: 0, top: 0, right: 1000, bottom: 800 })
   )
-  mockCanvas.value = {
+  useCanvasStore().canvas = fromPartial({
     canvas: canvasEl,
-    dragging_rectangle: true,
+    dragging_rectangle: [
+      eDown[0],
+      eDown[1],
+      eMove[0] - eDown[0],
+      eMove[1] - eDown[1]
+    ],
     pointer: {
       eDown: { safeOffsetX: eDown[0], safeOffsetY: eDown[1] },
       eMove: { safeOffsetX: eMove[0], safeOffsetY: eMove[1] }
     }
-  }
+  })
   rafCallbacks[rafCallbacks.length - 1]()
 }
 
 describe('SelectionRectangle', () => {
   afterEach(() => {
     rafCallbacks.length = 0
-    mockCanvas.value = null
+    useCanvasStore().canvas = null
   })
 
   it('clips the rectangle to the canvas panel when dragged over the sidebar', async () => {
