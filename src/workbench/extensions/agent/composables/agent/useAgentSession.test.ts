@@ -10,7 +10,7 @@ const telemetryState = vi.hoisted(() => ({
   trackAgentError: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackAgentError: telemetryState.trackAgentError })
 }))
 
@@ -2123,7 +2123,6 @@ describe('thread resume (B17)', () => {
 
 describe('app:agent_error telemetry (TEL-8)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     telemetryState.trackAgentError.mockClear()
     vi.mocked(reportError).mockClear()
