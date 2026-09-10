@@ -320,7 +320,7 @@
 
       <UnifiedStripePaymentSelector
         v-if="captureMode && quoteReady"
-        :key="`${previewData?.quote_id}:${previewData?.quote_version}`"
+        :key="previewData?.payment_method_configuration_id ?? ''"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
         :payment-method-configuration-id="
