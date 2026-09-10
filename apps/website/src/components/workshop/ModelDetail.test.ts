@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
@@ -171,6 +171,71 @@ describe('ModelDetail', () => {
       .mockReset()
       .mockResolvedValue({ status: 'ok', session: credential })
   })
+
+  it.for([
+    {
+      slug: 'vertexai--gemini-3-pro-image--edit-images',
+      label: 'Images',
+      count: 2
+    },
+    { slug: 'bfl--flux-2-max--generate-images', label: 'Image', count: 3 }
+  ])(
+    'fills every source-image slot on first open: $slug',
+    ({ slug, label, count }) => {
+      const details = getRouterWorkshopModelDetail(slug)
+      if (!details) throw new Error('Missing model')
+      mountDetail({ model: details })
+      const slot = within(screen.getByRole('group', { name: label }))
+      expect(slot.getAllByRole('img')).toHaveLength(count)
+      for (const image of slot.getAllByRole('img'))
+        expect(image.getAttribute('src')).toMatch(/^https:\/\//)
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      slug: 'bfl--flux-video-upscale--edit-videos',
+      file: 'color_spin_flower.mp4'
+    },
+    { slug: 'bria--green-screen-video--edit-videos', file: 'investigator.mp4' },
+    {
+      slug: 'bria--replace-video-background--edit-videos',
+      file: 'stained_window_vintage_woman.mp4'
+    },
+    {
+      slug: 'runway--aleph2-video-to-video--edit-videos',
+      file: 'sunset_city_skateboarder.mp4'
+    },
+    { slug: 'wavespeed--flashvsr--edit-videos', file: 'lighter.mp4' }
+  ])(
+    'fills the source-video slot without selecting an example: $slug',
+    ({ slug, file }) => {
+      const details = getRouterWorkshopModelDetail(slug)
+      if (!details) throw new Error('Missing model')
+      mountDetail({ model: details })
+      const form = within(screen.getByTestId('playground-form'))
+      const player = form.getByLabelText(file, { selector: 'video' })
+      expect(player.getAttribute('src')).toContain(`/input/${file}`)
+      expect(
+        form
+          .getAllByRole('group')
+          .some(
+            (group) =>
+              within(group).queryByLabelText(file, { selector: 'video' }) ===
+              player
+          )
+      ).toBe(true)
+      expect(player.hasAttribute('controls')).toBe(true)
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+      if (slug === 'bria--replace-video-background--edit-videos')
+        expect(
+          form
+            .getByRole('img', { name: 'gothic_hall_light_rays.png' })
+            .getAttribute('src')
+        ).toContain('/input/gothic_hall_light_rays.png')
+    }
+  )
 
   it('reuses uploaded URLs and the retry key after a failed paid request', async () => {
     auth.session.value = credential

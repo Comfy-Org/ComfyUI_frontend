@@ -119,6 +119,11 @@ export function wanCreatorRequest(
     )
   if (['reference-video', 'edit'].includes(String(options.mode)))
     url('video_url', 'Source video', true, 'video')
+  if (
+    options.mode === 'reference' &&
+    (id.includes('wan3.0') || id === 'wan/wan2.7-r2v')
+  )
+    url('image_url_2', 'Reference image 2')
   if (options.mode === 'edit') url('image_url', 'Reference image')
   return {
     kind: 'callback',

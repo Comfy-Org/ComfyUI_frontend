@@ -58,6 +58,12 @@ still require editorial review; URL uniqueness is not visual-uniqueness proof.
 - Source thumbnail/sample/example values were compared with the previous packed
   file across active plus withheld content; no missing or modified values.
 
+The subsequent source-media repair adds verified input values to four previously
+empty examples (Bria green screen/background replacement, Runway Aleph 2 and
+FlashVSR). These are editorial updates to the packed file, not values present in
+Rob's original archive. Workflow revision, filenames and checks are recorded in
+`MODELS_FEEDBACK_2026-09-10.md`. Preserve these updates on the next content import.
+
 These are the September 10 import measurements, not permanent schema limits.
 
 ## Updating content

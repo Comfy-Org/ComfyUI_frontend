@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
@@ -57,14 +57,64 @@ describe('PlaygroundField', () => {
       },
       { video: 'https://example.com/source.mp4' }
     )
-    const player = screen.getByLabelText('Source video', { selector: 'video' })
+    const slot = within(screen.getByRole('group', { name: 'Source video' }))
+    const player = slot.getByLabelText('source.mp4', { selector: 'video' })
     expect(player.getAttribute('src')).toBe('https://example.com/source.mp4')
     expect(player.hasAttribute('controls')).toBe(true)
+    expect(player.getAttribute('preload')).toBe('auto')
     expect(
       screen
         .getByLabelText('Source video', { selector: 'input[type="file"]' })
         .getAttribute('accept')
     ).toContain('video/mp4')
+  })
+
+  it('keeps a prefilled URL as a URL until its occupied upload slot is removed or replaced', async () => {
+    const user = userEvent.setup()
+    const values = mountField(
+      {
+        kind: 'text',
+        name: 'image_url',
+        label: 'Source image',
+        required: true,
+        multiline: false,
+        presentation: {
+          label: 'Source image',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-box',
+          imageSource: 'url',
+          urlUpload: 'image'
+        }
+      },
+      { image_url: 'https://example.com/start.png' }
+    )
+    const slot = within(screen.getByRole('group', { name: 'Source image' }))
+    expect(slot.getByRole('img').getAttribute('src')).toBe(
+      'https://example.com/start.png'
+    )
+    expect(values.value.image_url).toBe('https://example.com/start.png')
+    await user.click(slot.getByRole('button', { name: 'Remove start.png' }))
+    expect(values.value.image_url).toBeUndefined()
+    expect(slot.queryByRole('img')).toBeNull()
+    await user.type(
+      screen.getByTestId('field-image_url'),
+      'https://example.com/another.png'
+    )
+    expect(slot.getByRole('img').getAttribute('src')).toBe(
+      'https://example.com/another.png'
+    )
+    const file = new File(['image'], 'replacement.png', { type: 'image/png' })
+    await user.upload(
+      slot.getByLabelText('Source image', { selector: 'input[type="file"]' }),
+      file
+    )
+    expect(values.value.image_url).toMatchObject({
+      file,
+      name: 'replacement.png'
+    })
+    expect(slot.getByRole('img').getAttribute('alt')).toBe('replacement.png')
   })
 
   it('keeps a non-image source as a real file while displaying a file card', async () => {

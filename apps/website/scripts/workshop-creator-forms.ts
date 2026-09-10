@@ -70,6 +70,20 @@ export function creatorFormFor(
         options: model.options
       }
       break
+    case 'luma-image':
+      addRoot(['generation_type', 'type'])
+      prompt('prompt')
+      url(
+        'image_url',
+        model.options.mode === 'edit' ? 'Source image' : 'Reference image',
+        model.options.mode === 'edit'
+      )
+      request = {
+        kind: 'callback',
+        callback: 'luma-image',
+        options: model.options
+      }
+      break
     case 'luma-video':
       addRoot()
       url('first_frame_url', 'First frame', model.options.mode === 'image')

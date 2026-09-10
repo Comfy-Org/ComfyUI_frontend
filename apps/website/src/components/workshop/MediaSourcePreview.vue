@@ -20,7 +20,7 @@ const source = computed(() => objectUrl.value ?? src)
     :aria-label="name"
     controls
     playsinline
-    preload="metadata"
+    preload="auto"
     class="bg-transparency-white-t4 h-32 w-full rounded-xl object-contain"
   />
   <audio
