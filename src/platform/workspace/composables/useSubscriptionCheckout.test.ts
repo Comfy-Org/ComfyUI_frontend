@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { clearCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
@@ -524,6 +525,7 @@ describe('useSubscriptionCheckout', () => {
     mockSubscription.value = null
     mockCaptureCheckoutJourneyEvent.mockClear()
     sessionStorage.clear()
+    clearCheckoutJourney()
   })
 
   describe('checkout journey instrumentation', () => {
@@ -557,13 +559,48 @@ describe('useSubscriptionCheckout', () => {
         phases.indexOf('operation_linked')
       )
 
-      const opLinked = mockCaptureCheckoutJourneyEvent.mock.calls
-        .map(([event]) => event)
-        .find((event) => event.phase === 'operation_linked')
+      const events = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event
+      )
+      const opLinked = events.find(
+        (event) => event.phase === 'operation_linked'
+      )
       expect(opLinked).toMatchObject({
         billing_op_id: 'op-1',
         assignment_status: 'unavailable'
       })
+
+      // Every phase must share one journey identity.
+      const journeyIds = new Set(
+        events.map((event) => event.checkout_journey_id)
+      )
+      expect(journeyIds.size).toBe(1)
+    })
+
+    it('emits preview_ready once per accepted quote revision', async () => {
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        quote_id: 'q1',
+        quote_version: 1
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      const previews = journeyPhases().filter(
+        (phase) => phase === 'preview_ready'
+      )
+      expect(previews).toHaveLength(1)
     })
 
     it('does not re-enter when the same journey resumes', async () => {

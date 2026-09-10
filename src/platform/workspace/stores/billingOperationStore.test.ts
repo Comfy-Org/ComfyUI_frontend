@@ -1,6 +1,7 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
@@ -92,6 +93,7 @@ beforeEach(() => {
   vi.mocked(useToastStore().remove).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   sessionStorage.clear()
+  clearCheckoutJourney()
 })
 
 beforeEach(() => {

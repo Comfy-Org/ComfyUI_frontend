@@ -67,12 +67,16 @@ import type {
   WorkspaceInviteMetadata
 } from './types'
 
+let fallbackEventIdCounter = 0
+
 function createTelemetryEventId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
 
-  return `event-${Date.now()}`
+  // Monotonic suffix so emissions within the same millisecond stay distinct.
+  fallbackEventIdCounter += 1
+  return `event-${Date.now()}-${fallbackEventIdCounter}`
 }
 
 /**

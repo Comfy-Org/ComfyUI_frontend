@@ -583,16 +583,28 @@ async function handleBuy() {
       return
     }
 
-    const linkedJourney = bindOperationToCheckoutJourney(response.billing_op_id)
-    if (linkedJourney) {
-      emitTopupJourneyPhase(linkedJourney, {
-        phase: 'operation_linked',
-        billing_op_id: response.billing_op_id
-      })
+    // Only correlate the response to the journey that submitted it: the user
+    // may have closed this dialog and started another journey while the
+    // request was in flight, and that later journey must not be bound here.
+    const submittingJourneyStillActive =
+      submittingJourney !== null &&
+      getActiveCheckoutJourney()?.journey_id === submittingJourney.journey_id
+    if (submittingJourneyStillActive) {
+      const linkedJourney = bindOperationToCheckoutJourney(
+        response.billing_op_id
+      )
+      if (linkedJourney) {
+        emitTopupJourneyPhase(linkedJourney, {
+          phase: 'operation_linked',
+          billing_op_id: response.billing_op_id
+        })
+      }
     }
 
     if (response.status === 'completed') {
-      clearCheckoutJourney()
+      if (submittingJourneyStillActive) {
+        clearCheckoutJourney()
+      }
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'succeeded',

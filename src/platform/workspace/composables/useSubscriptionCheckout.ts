@@ -174,6 +174,7 @@ export function useSubscriptionCheckout(
   let checkoutMutationSeq = 0
   let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
+  let lastEmittedPreviewRevision: string | undefined
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
     refreshStatusOnFocus = false
@@ -281,12 +282,18 @@ export function useSubscriptionCheckout(
 
     const journey = getActiveCheckoutJourney()
     if (journey) {
-      emitCheckoutJourneyPhase(journey, {
-        phase: 'preview_ready',
-        ...(hasQuoteIdentity(preview) && {
-          preview_revision: `${preview.quote_id}:${preview.quote_version}`
+      const revision = hasQuoteIdentity(preview)
+        ? `${preview.quote_id}:${preview.quote_version}`
+        : undefined
+      // Once per accepted revision: a re-render or refresh that reinstalls the
+      // same quote must not emit another preview_ready.
+      if (revision === undefined || revision !== lastEmittedPreviewRevision) {
+        lastEmittedPreviewRevision = revision
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_ready',
+          ...(revision !== undefined && { preview_revision: revision })
         })
-      })
+      }
     }
     return true
   }
@@ -735,7 +742,7 @@ export function useSubscriptionCheckout(
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
     selectedBillingCycle.value = billingCycle
-    enterCheckoutJourney()
+    enterCheckoutJourney(`${tierKey}:${billingCycle}`)
 
     try {
       let planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -832,6 +839,7 @@ export function useSubscriptionCheckout(
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
+    enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -1206,7 +1214,7 @@ export function useSubscriptionCheckout(
     })
   }
 
-  function enterCheckoutJourney(): CheckoutJourneyRecord | null {
+  function enterCheckoutJourney(intent: string): CheckoutJourneyRecord | null {
     const workspaceId = workspaceStore.activeWorkspaceId
     const ownerUid = useAuthStore().userId
     if (!workspaceId || !ownerUid) return null
@@ -1216,6 +1224,7 @@ export function useSubscriptionCheckout(
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
       entrySource: 'pricing',
+      intent,
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })
     if (!resumed) {
@@ -1520,6 +1529,10 @@ export function useSubscriptionCheckout(
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
+      const submittingJourney = getActiveCheckoutJourney()
+      if (submittingJourney) {
+        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
+      }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
           buildPaymentOptions(quote, confirmationToken, promotionCode)),
@@ -1536,6 +1549,13 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
+        const linked = bindOperationToCheckoutJourney(response.billing_op_id)
+        if (linked) {
+          emitCheckoutJourneyPhase(linked, {
+            phase: 'operation_linked',
+            billing_op_id: response.billing_op_id
+          })
+        }
         trackWorkspaceCheckoutStarted({
           tier: 'team',
           cycle: billingCycle,
