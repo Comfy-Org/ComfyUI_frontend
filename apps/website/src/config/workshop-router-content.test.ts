@@ -120,7 +120,7 @@ describe('Router catalog form projection', () => {
       if (!prompt) throw new Error('Missing prompt')
       const values = defaultValues(schema, detail.defaults)
       expect(String(values[prompt.name]).trim().length).toBeGreaterThan(0)
-      expect(validateForm(schema, values)).toEqual({})
+      expect(validateForm([prompt], values)).toEqual({})
     }
   })
   it('keeps use-case URLs and examples separate while sharing the Router contract', () => {

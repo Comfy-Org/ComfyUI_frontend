@@ -65,6 +65,8 @@
   font-display: optional;
 }
 
+@custom-variant short (@media (max-height: 1100px));
+
 @theme {
   --color-site-dropdown: #332b38;
   --color-site-bg-soft: color-mix(

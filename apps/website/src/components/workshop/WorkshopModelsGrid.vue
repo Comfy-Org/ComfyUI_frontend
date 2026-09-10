@@ -236,9 +236,22 @@ const useCasesInFilter = computed(
 // carries the catalogue's own most-run models and costs nothing to keep true
 // as the catalogue grows.
 const FEATURED_LIMIT = 6
-const featured = computed(() =>
-  sortWorkshopModels(models, 'popular').slice(0, FEATURED_LIMIT)
-)
+const FEATURED_SLUGS = [
+  'byteplus--seedance-2-fast-text-to-video--generate-videos',
+  'bfl--flux-3-text-to-video--generate-videos'
+]
+const featured = computed(() => {
+  const available = sortWorkshopModels(models, 'popular').filter(
+    (model) => model.thumbnailUrl
+  )
+  const selected = FEATURED_SLUGS.flatMap((slug) =>
+    available.filter((model) => model.slug === slug)
+  )
+  return [
+    ...selected,
+    ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
+  ].slice(0, FEATURED_LIMIT)
+})
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
@@ -460,8 +473,8 @@ const menuItemClass =
               cn(
                 'grid grid-cols-1 gap-5 sm:grid-cols-2',
                 railBeside
-                  ? 'xl:grid-cols-3 2xl:grid-cols-4'
-                  : 'lg:grid-cols-3 xl:grid-cols-4'
+                  ? 'xl:grid-cols-4 2xl:grid-cols-5'
+                  : 'lg:grid-cols-4 xl:grid-cols-5'
               )
             "
             aria-labelledby="workshop-models-heading"

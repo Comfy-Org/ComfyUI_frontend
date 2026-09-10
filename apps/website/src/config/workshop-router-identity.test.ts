@@ -14,6 +14,12 @@ import {
 import { routerWorkshopModelPaths } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { workshopContract } from './workshop-contract-catalog'
+import { workshopContentInputs } from './workshop-content-inputs'
+import {
+  defaultValues,
+  schemaForModel,
+  validateForm
+} from './workshop-playground'
 import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema
@@ -96,11 +102,23 @@ describe('legacy content identity repairs', () => {
       expect(detail?.href).toBe(`/models/${detail?.slug}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
       expect(detail?.incompleteReason).toBeUndefined()
-      expect(detail?.execution).toEqual(contract)
+      expect(detail?.execution?.inputSchema).toEqual(contract.inputSchema)
+      expect(detail?.execution?.creator).toEqual(
+        contract.creatorVariants?.[detail?.slug ?? ''] ?? contract.creator
+      )
       expect(detail?.form?.source).toBe('router')
       for (const example of detail?.examples ?? []) {
-        expect(example.values).toEqual({})
-        expect(example.sampleOnly).toBe(true)
+        if (!detail) throw new Error('Missing model detail')
+        const populated = schemaForModel(detail).filter((field) =>
+          Object.hasOwn(example.values, field.name)
+        )
+        expect(populated).toHaveLength(Object.keys(example.values).length)
+        expect(
+          validateForm(populated, defaultValues(populated, example.values))
+        ).toEqual({})
+        expect(example.sampleOnly).toBe(
+          Object.keys(example.values).length === 0
+        )
       }
     }
   )
@@ -115,7 +133,11 @@ describe('legacy content identity repairs', () => {
       joinedIds
     )
     const publishedIds = new Set(publishedAliases.map((alias) => alias.id))
-    const content = display.filter((entry) => publishedIds.has(entry.modelId))
+    const content = display.filter(
+      (entry) =>
+        publishedIds.has(entry.modelId) &&
+        !workshopContentInputs.get(entry.id)?.unavailableReason
+    )
     expect(workshopModels.map((model) => model.slug).sort()).toEqual(
       content.map((entry) => entry.slug).sort()
     )

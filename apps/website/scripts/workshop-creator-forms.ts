@@ -5,6 +5,7 @@ import type { WorkshopCreatorForm } from '../src/config/workshop-creator-form'
 import type { curateWorkshopInputs } from './workshop-input-presentation'
 import { createCreatorFields, schemaAt } from './workshop-creator-fields'
 import { wanCreatorRequest } from './workshop-creator-wan'
+import { workshopContentInputs } from '../src/config/workshop-content-inputs'
 
 const object = z.record(z.string(), z.json())
 const definitions = z
@@ -21,10 +22,15 @@ const definitions = z
 
 export function creatorFormFor(
   id: string,
-  curated: ReturnType<typeof curateWorkshopInputs>
+  curated: ReturnType<typeof curateWorkshopInputs>,
+  options: z.infer<typeof object> = {}
 ): WorkshopCreatorForm | undefined {
-  const model = definitions.models[id]
   if (!Object.hasOwn(definitions.models, id)) return
+  const definition = definitions.models[id]
+  const model = {
+    ...definition,
+    options: { ...definition.options, ...options }
+  }
   const fields = createCreatorFields(id, curated)
   const {
     source,
@@ -40,6 +46,36 @@ export function creatorFormFor(
   } = fields
   let request: WorkshopCreatorForm['request']
   switch (model.family) {
+    case 'gemini-video':
+      add(
+        'input',
+        { type: 'string' },
+        {
+          label: 'Prompt',
+          help: '',
+          advanced: false,
+          control: 'text-area',
+          required: true
+        }
+      )
+      if (model.options.mode === 'image_to_video') {
+        url('image_url', 'First frame', true)
+        url('last_frame_url', 'Last frame')
+      }
+      if (model.options.mode === 'edit')
+        url('video_url', 'Source video', true, 'video')
+      request = {
+        kind: 'callback',
+        callback: 'gemini-video',
+        options: model.options
+      }
+      break
+    case 'luma-video':
+      addRoot()
+      url('first_frame_url', 'First frame', model.options.mode === 'image')
+      url('last_frame_url', 'Last frame')
+      request = { kind: 'callback', callback: 'luma-video', options: {} }
+      break
     case 'text-input':
       addRoot(['input'])
       // Use the supported text variant; the complete native schema still validates the body.
@@ -67,7 +103,17 @@ export function creatorFormFor(
     case 'seedance':
       addRoot()
       prompt('content/[]/text')
-      if (model.options.mode !== 'text') {
+      if (model.options.urlMedia) {
+        if (model.options.mode === 'reference') {
+          url('reference_image_url', 'Reference image', true)
+          for (let index = 2; index <= 4; index++)
+            url(`reference_image_url_${index}`, `Reference image ${index}`)
+        } else if (model.options.mode !== 'text') {
+          url('first_frame_url', 'First frame', true)
+          if (model.options.mode === 'first-last')
+            url('last_frame_url', 'Last frame')
+        }
+      } else if (model.options.mode !== 'text') {
         file('first_frame', 'First frame', 1, model.options.mode === 'image')
         if (model.options.mode === 'mixed') {
           file('last_frame', 'Last frame')
@@ -313,8 +359,17 @@ export function creatorFormFor(
     case 'bfl-video':
       addRoot()
       required.add('prompt')
-      url('start_video', 'Source video', false, 'video')
-      file('images', 'Keyframe images', 10)
+      if (model.options.mode)
+        rules.mode = { fixed: z.string().parse(model.options.mode) }
+      if (!model.options.mode || model.options.mode === 'v2v')
+        url(
+          'start_video',
+          'Source video',
+          model.options.mode === 'v2v',
+          'video'
+        )
+      if (!model.options.mode || model.options.mode === 'i2v')
+        file('images', 'Keyframe images', 10, model.options.mode === 'i2v')
       rules.images = {
         help: 'Choose image-to-video mode. More than two images needs a fixed duration.'
       }
@@ -322,8 +377,17 @@ export function creatorFormFor(
       break
     case 'grok-video':
       addRoot()
-      url('image_url', 'First frame image')
-      request = { kind: 'callback', callback: 'grok-video', options: {} }
+      if (model.options.mode === 'reference') {
+        url('reference_image_url', 'Reference image', true)
+        for (let index = 2; index <= 4; index++)
+          url(`reference_image_url_${index}`, `Reference image ${index}`)
+      } else
+        url('image_url', 'First frame image', model.options.mode === 'image')
+      request = {
+        kind: 'callback',
+        callback: 'grok-video',
+        options: model.options
+      }
       break
     case 'flat':
       addRoot(['multi_shot', 'shot_type', 'type'])
@@ -338,5 +402,29 @@ export function creatorFormFor(
     default:
       throw new Error(`Unknown creator form family: ${model.family}`)
   }
+  for (const [name, value] of Object.entries(
+    object.parse(model.options.fixedValues ?? {})
+  )) {
+    if (!Object.hasOwn(properties, name))
+      throw new Error(`Unknown fixed creator input: ${id}:${name}`)
+    rules[name] = {
+      ...rules[name],
+      fixed: z.union([z.string(), z.number(), z.boolean()]).parse(value)
+    }
+  }
   return fields.build(request)
+}
+
+export function creatorVariantsFor(
+  id: string,
+  curated: ReturnType<typeof curateWorkshopInputs>
+) {
+  return Object.fromEntries(
+    [...workshopContentInputs].flatMap(([contentId, variant]) => {
+      if (variant.routerId !== id || variant.unavailableReason) return []
+      const form = creatorFormFor(id, curated, variant.options)
+      if (!form) throw new Error(`Missing creator form for ${contentId}`)
+      return [[contentId, form]]
+    })
+  )
 }

@@ -16,8 +16,11 @@ export function relatedModels(
     other.capabilities.filter((capability) =>
       model.capabilities.includes(capability)
     ).length
+  const seen = new Set([model.routerId])
   return list
-    .filter((other) => other.slug !== model.slug)
+    .filter(
+      (other) => other.slug !== model.slug && other.routerId !== model.routerId
+    )
     .sort(
       (a, b) =>
         Number(sameProvider(b)) - Number(sameProvider(a)) ||
@@ -26,5 +29,10 @@ export function relatedModels(
           Number(a.modality === model.modality) ||
         b.workflowCount - a.workflowCount
     )
+    .filter((other) => {
+      if (seen.has(other.routerId)) return false
+      seen.add(other.routerId)
+      return true
+    })
     .slice(0, limit)
 }

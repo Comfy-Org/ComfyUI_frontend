@@ -57,4 +57,30 @@ describe('FeaturedBanner', () => {
     render(FeaturedBanner, { props: { models: [base] } })
     expect(screen.queryByTestId('featured-pagination')).toBeNull()
   })
+
+  it('renders video assets as video and replaces them when the slide changes', async () => {
+    const user = userEvent.setup()
+    render(FeaturedBanner, {
+      props: {
+        models: [
+          {
+            ...kling,
+            thumbnailUrl: '/video.mp4',
+            thumbnail: { url: '/video.mp4', kind: 'video' }
+          },
+          {
+            ...base,
+            thumbnailUrl: '/image.webp',
+            thumbnail: { url: '/image.webp', kind: 'image' }
+          }
+        ]
+      }
+    })
+    expect(screen.getByTestId('featured-video').getAttribute('src')).toBe(
+      '/video.mp4'
+    )
+    await user.click(screen.getByRole('button', { name: 'Flux' }))
+    expect(screen.queryByTestId('featured-video')).toBeNull()
+    expect(screen.getByAltText('').getAttribute('src')).toBe('/image.webp')
+  })
 })

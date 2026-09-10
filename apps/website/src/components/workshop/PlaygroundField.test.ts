@@ -38,6 +38,35 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('shows a playable source video when an example URL is prefilled', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'video',
+        label: 'Source video',
+        required: true,
+        multiline: false,
+        presentation: {
+          label: 'Source video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-box',
+          urlUpload: 'video'
+        }
+      },
+      { video: 'https://example.com/source.mp4' }
+    )
+    const player = screen.getByLabelText('Source video', { selector: 'video' })
+    expect(player.getAttribute('src')).toBe('https://example.com/source.mp4')
+    expect(player.hasAttribute('controls')).toBe(true)
+    expect(
+      screen
+        .getByLabelText('Source video', { selector: 'input[type="file"]' })
+        .getAttribute('accept')
+    ).toContain('video/mp4')
+  })
+
   it('keeps a non-image source as a real file while displaying a file card', async () => {
     const user = userEvent.setup()
     const values = mountField({

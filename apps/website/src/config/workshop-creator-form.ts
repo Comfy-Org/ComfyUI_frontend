@@ -34,6 +34,8 @@ export const workshopCreatorFormSchema = z
           'seedance',
           'seedream',
           'gemini-image',
+          'gemini-video',
+          'luma-video',
           'qwen-image',
           'wan-media',
           'bria-edit',

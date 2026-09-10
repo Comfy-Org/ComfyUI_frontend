@@ -10,6 +10,7 @@ import type { FieldSchema, FileValue } from '../../config/workshop-playground'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ImageSourcePreview from './ImageSourcePreview.vue'
+import MediaSourcePreview from './MediaSourcePreview.vue'
 
 const {
   field,
@@ -152,6 +153,15 @@ function fileType(file: FileValue): string {
           :src="file.previewUrl"
           :name="file.name"
           :locale
+        />
+        <MediaSourcePreview
+          v-else-if="
+            file.type.startsWith('video/') || file.type.startsWith('audio/')
+          "
+          :file="file.file"
+          :src="file.previewUrl"
+          :kind="file.type.startsWith('video/') ? 'video' : 'audio'"
+          :name="file.name"
         />
         <div
           v-else

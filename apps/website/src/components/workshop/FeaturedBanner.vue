@@ -85,11 +85,24 @@ const fill = computed(() =>
   >
     <a
       :href="active.model.href"
-      class="group block h-112"
+      class="short:h-76 group block h-84"
       data-testid="featured-slide"
     >
+      <video
+        v-if="active.model.thumbnail?.kind === 'video'"
+        :key="active.model.slug"
+        :src="active.model.thumbnail.url"
+        class="absolute inset-0 size-full object-cover"
+        aria-hidden="true"
+        muted
+        loop
+        playsinline
+        :autoplay="!prefersReducedMotion()"
+        preload="auto"
+        data-testid="featured-video"
+      />
       <img
-        v-if="active.model.thumbnailUrl"
+        v-else-if="active.model.thumbnailUrl"
         :key="active.model.slug"
         :src="active.model.thumbnailUrl"
         alt=""
@@ -102,7 +115,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="relative flex h-full flex-col justify-end gap-4 p-8 pb-20 sm:max-w-2xl sm:justify-center lg:p-12 lg:pb-20"
+        class="sm:short:gap-3 relative flex h-full flex-col justify-end gap-4 p-6 pb-16 sm:max-w-2xl sm:justify-center lg:p-8 lg:pb-16"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
@@ -119,13 +132,13 @@ const fill = computed(() =>
           </Badge>
         </div>
 
-        <h2 class="text-4xl font-bold text-primary-warm-white lg:text-5xl">
+        <h2 class="text-4xl font-bold text-primary-warm-white">
           {{ active.model.name }}
         </h2>
 
         <p
           v-if="active.model.summary"
-          class="text-content-secondary line-clamp-3 max-w-prose"
+          class="text-content-secondary line-clamp-2 max-w-prose"
         >
           {{ active.model.summary }}
         </p>

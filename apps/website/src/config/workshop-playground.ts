@@ -1,5 +1,6 @@
 import { t } from '../i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
+import { workshopExampleFile } from './workshop-example-file'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import {
   parseWorkshopJsonInput,
@@ -89,6 +90,7 @@ export interface FileValue {
   readonly type: string
   readonly previewUrl?: string
   readonly file?: File
+  readonly sourceUrl?: string
 }
 
 export type FieldValue =
@@ -366,7 +368,9 @@ export function defaultValues(
   return Object.fromEntries(
     schema.map((field) => [
       field.name,
-      overrides[field.name] ??
+      (field.kind === 'file' && typeof overrides[field.name] === 'string'
+        ? workshopExampleFile(String(overrides[field.name]))
+        : overrides[field.name]) ??
         (field.kind === 'text' ||
         field.kind === 'select' ||
         field.kind === 'number' ||

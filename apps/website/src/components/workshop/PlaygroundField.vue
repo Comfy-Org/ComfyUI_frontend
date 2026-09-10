@@ -17,6 +17,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FileSourceInput from './FileSourceInput.vue'
 import ImageSourcePreview from './ImageSourcePreview.vue'
+import MediaSourcePreview from './MediaSourcePreview.vue'
 
 const {
   field,
@@ -115,6 +116,13 @@ const imageUrl = computed(() => {
   const value = stringValue()
   if (!isHttpImageSource(value)) return undefined
   return value
+})
+const mediaUrl = computed(() => {
+  const kind = field.presentation?.urlUpload
+  const src = stringValue()
+  return (kind === 'video' || kind === 'audio') && isHttpImageSource(src)
+    ? { kind, src }
+    : undefined
 })
 const uploadField = computed(() => {
   const upload = urlUploadField(field)
@@ -429,6 +437,12 @@ function booleanValue(fallback = false): boolean {
       :src="imageUrl"
       :name="field.label"
       :locale
+    />
+    <MediaSourcePreview
+      v-if="mediaUrl"
+      :src="mediaUrl.src"
+      :kind="mediaUrl.kind"
+      :name="field.label"
     />
     <FileSourceInput
       v-if="uploadField"
