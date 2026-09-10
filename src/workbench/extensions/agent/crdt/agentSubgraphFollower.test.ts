@@ -10,8 +10,6 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -254,7 +252,6 @@ function forwardRaw(
 
 beforeEach(() => {
   vi.mocked(reportError).mockClear()
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('promoted-widget', PromotedWidgetNode)
   LiteGraph.registerNodeType('source', SourceNode)
 })
