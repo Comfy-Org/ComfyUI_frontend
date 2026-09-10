@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { isEmbeddedWebView } from '@/base/webviewDetection'
+import { isEmbeddedWebView } from './webviewDetection'
 
 describe('isEmbeddedWebView', () => {
   describe('Android WebView', () => {
