@@ -46,7 +46,7 @@ vi.mock('./workshop-session-state', async () => {
 })
 
 vi.mock('./workshop-account', () => ({
-  workshopBillingClient: {
+  workshopBalanceReader: {
     getState: () => h.billingState,
     subscribe: (listener: (state: unknown) => void) => {
       h.listeners.add(listener)

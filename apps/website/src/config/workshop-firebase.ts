@@ -109,8 +109,5 @@ export function signOutWorkshop(): Promise<void> {
 }
 
 /** Fires with the restored user (or null) once Firebase settles, then on every change. */
-export function onWorkshopUserChanged(
-  callback: (user: User | null) => void
-): () => void {
-  return identity.onUserChanged(callback)
-}
+/** The identity the session client attaches; only the package can mint one. */
+export const workshopIdentity = identity

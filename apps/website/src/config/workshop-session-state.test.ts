@@ -33,10 +33,13 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   return { useWorkshopAuthFlag: () => flag }
 })
 
-vi.mock<unknown>(import('./workshop-firebase'), () => {
+vi.mock<unknown>(import('./workshop-firebase'), async () => {
+  const { createTestIdentity } = await import('@comfyorg/account/testing')
   h.firebaseEvaluated()
   return {
-    onWorkshopUserChanged: () => () => undefined,
+    workshopIdentity: createTestIdentity({
+      onUserChanged: () => () => undefined
+    }),
     signOutWorkshop: vi.fn()
   }
 })
