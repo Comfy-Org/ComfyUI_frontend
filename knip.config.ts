@@ -24,6 +24,9 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
+    'packages/account': {
+      project: ['src/**/*.{js,ts,vue}']
+    },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
     },

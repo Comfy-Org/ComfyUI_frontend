@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
+
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
-import HeaderAccount from './HeaderAccount.vue'
+import PrototypeAccount from './HeaderAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -13,6 +16,10 @@ const { locale = 'en', githubStars = '' } = defineProps<{
   githubStars?: string
 }>()
 const routes = getRoutes(locale)
+const workshopAuthEnabled = useWorkshopAuthFlag()
+const HeaderAccount = defineAsyncComponent(
+  () => import('../../workshop/HeaderAccount.vue')
+)
 
 const ctaButtons = [
   {
@@ -60,8 +67,12 @@ const ctaButtons = [
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop :locale class="hidden lg:block" />
-    <div class="flex shrink-0 items-center gap-2 lg:hidden">
-      <HeaderAccount :locale />
+    <div
+      data-testid="mobile-nav-cta"
+      class="flex shrink-0 items-center gap-2 lg:hidden"
+    >
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
+      <PrototypeAccount v-else :locale />
       <HeaderMainMobile :locale />
     </div>
 
@@ -85,7 +96,8 @@ const ctaButtons = [
           <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount :locale />
+      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
+      <PrototypeAccount v-else :locale />
     </div>
   </nav>
 </template>

@@ -119,7 +119,7 @@ const isModality = (value: string): value is Modality =>
 const versions: Version[] = [...drafts.values()]
   .map((draft) => {
     const base = bySlug.get(draft.baseSlug)!
-    const busiest = [...draft.templates].sort((a, b) => b.usage - a.usage)[0]
+    const busiest = [...draft.templates].sort((a, b) => b.usage - a.usage).at(0)
     const declaredModality = majority(
       draft.templates.map((template) => template.mediaType)
     )

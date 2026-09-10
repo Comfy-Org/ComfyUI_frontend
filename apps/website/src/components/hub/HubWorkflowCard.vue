@@ -200,7 +200,7 @@ function openCard() {
       <h3
         :class="
           cn(
-            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md lg:text-base',
+            'text-content-bright pointer-events-none absolute bottom-5 left-5 z-10 line-clamp-2 text-sm/[1.35] font-medium drop-shadow-md lg:text-base',
             modelLogos.length > 1 ? 'right-28' : 'right-16'
           )
         "

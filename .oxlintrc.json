@@ -172,7 +172,7 @@
       }
     },
     {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["tools/test-recorder/**/*.ts", "apps/*/scripts/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }

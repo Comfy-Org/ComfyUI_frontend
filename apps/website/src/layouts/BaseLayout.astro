@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import SiteFooter from '../components/common/SiteFooter.vue'
+import GoogleTagManager from '../components/common/GoogleTagManager.astro'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
@@ -81,9 +82,6 @@ const bannerVisible =
     now: new Date(),
   }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
-
-const gtmId = 'GTM-NP9JM6K7'
-const gtmEnabled = import.meta.env.PROD
 
 const structuredData = shouldNoindex
   ? undefined
@@ -167,9 +165,6 @@ const structuredData = shouldNoindex
         />
       ))
     }
-    <link rel="preconnect" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -204,21 +199,7 @@ const structuredData = shouldNoindex
     {structuredData && <JsonLdGraph graph={structuredData} />}
     <slot name="head" />
 
-    <!-- Google Tag Manager -->
-    {gtmEnabled && (
-      <script is:inline define:vars={{ gtmId }}>
-        ;(function (w, d, s, l, i) {
-          w[l] = w[l] || []
-          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-          var f = d.getElementsByTagName(s)[0],
-            j = d.createElement(s),
-            dl = l != 'dataLayer' ? '&l=' + l : ''
-          j.async = true
-          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-          f.parentNode.insertBefore(j, f)
-        })(window, document, 'script', 'dataLayer', gtmId)
-      </script>
-    )}
+    <GoogleTagManager part="head" />
 
     <ClientRouter />
 
@@ -254,16 +235,7 @@ const structuredData = shouldNoindex
     )}
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
-    {gtmEnabled && (
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-          height="0"
-          width="0"
-          style="display:none;visibility:hidden"
-        ></iframe>
-      </noscript>
-    )}
+    <GoogleTagManager part="noscript" />
 
     {bannerVisible && !minimal && (
       <AnnouncementBanner
