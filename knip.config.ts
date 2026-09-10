@@ -6,7 +6,7 @@ const config: KnipConfig = {
   workspaces: {
     '.': {
       entry: [
-        '{build,scripts}/**/*.{js,ts}',
+        '{build,scripts}/**/*.{js,mjs,ts}',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
@@ -64,6 +64,9 @@ const config: KnipConfig = {
     // the build imports it — that is the point: it is the entry point
     // packs import from, so knip cannot see a consumer.
     'public/comfy/api/v2.js',
+    // Example packs: ComfyUI loads their web/ scripts by URL at runtime,
+    // exactly as a real pack does, so the build has no import to find.
+    'examples/node-api/**/web/*.js',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',
