@@ -16,17 +16,31 @@ import {
   waitForStartup
 } from './dev-agent-supervisor'
 
+function multiPlayerDependencySpec(manifest: unknown): string {
+  const dependencies =
+    typeof manifest === 'object' && manifest !== null
+      ? (manifest as { dependencies?: unknown }).dependencies
+      : undefined
+  const spec =
+    typeof dependencies === 'object' && dependencies !== null
+      ? (dependencies as Record<string, unknown>)[
+          '@comfyorg/comfy-multi-player'
+        ]
+      : undefined
+  return typeof spec === 'string' ? spec : ''
+}
+
 async function assertWorkspacePackage(): Promise<void> {
-  const manifest = JSON.parse(
+  const manifest: unknown = JSON.parse(
     await readFile(resolve(PROJECT_ROOT, 'package.json'), 'utf8')
-  ) as { dependencies?: Record<string, string> }
-  const dependency = manifest.dependencies?.['@comfyorg/comfy-multi-player']
-  if (dependency?.startsWith('link:')) {
+  )
+  const dependency = multiPlayerDependencySpec(manifest)
+  if (dependency.startsWith('link:')) {
     throw new Error(
       '@comfyorg/comfy-multi-player must not be pnpm linked; use the in-workspace package'
     )
   }
-  if (!dependency?.startsWith('workspace:')) {
+  if (!dependency.startsWith('workspace:')) {
     console.warn(
       '[dev-agent-integration] @comfyorg/comfy-multi-player is the published package; edits to it will not hot-reload until it is an in-workspace dependency'
     )
