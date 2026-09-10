@@ -1169,7 +1169,9 @@ describe('ChangeTracker', () => {
 
     it('does not force graph undo when a contenteditable consumes undo', async () => {
       const tracker = createTracker(createState(1))
-      const undo = vi.spyOn(tracker, 'undo')
+      tracker.undoQueue.push(createState())
+      const initialActiveState = structuredClone(tracker.activeState)
+      const initialUndoQueue = structuredClone(tracker.undoQueue)
       const editor = document.createElement('div')
       editor.contentEditable = 'true'
       Object.defineProperty(editor, 'isContentEditable', { value: true })
@@ -1190,7 +1192,41 @@ describe('ChangeTracker', () => {
         await vi.runAllTimersAsync()
 
         expect(event.defaultPrevented).toBe(true)
-        expect(undo).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(initialActiveState)
+        expect(tracker.undoQueue).toEqual(initialUndoQueue)
+      } finally {
+        document.body.removeChild(editor)
+      }
+    })
+
+    it('does not force graph redo when a contenteditable consumes redo', async () => {
+      const tracker = createTracker(createState(1))
+      const redoState = createState(2)
+      tracker.redoQueue.push(redoState)
+      const initialActiveState = structuredClone(tracker.activeState)
+      const initialRedoQueue = structuredClone(tracker.redoQueue)
+      const editor = document.createElement('div')
+      editor.contentEditable = 'true'
+      Object.defineProperty(editor, 'isContentEditable', { value: true })
+      editor.addEventListener('keydown', (event) => event.preventDefault())
+      document.body.appendChild(editor)
+
+      try {
+        editor.focus()
+        ChangeTracker.init()
+
+        const event = new KeyboardEvent('keydown', {
+          key: 'y',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+        editor.dispatchEvent(event)
+        await vi.runAllTimersAsync()
+
+        expect(event.defaultPrevented).toBe(true)
+        expect(tracker.activeState).toEqual(initialActiveState)
+        expect(tracker.redoQueue).toEqual(initialRedoQueue)
       } finally {
         document.body.removeChild(editor)
       }
