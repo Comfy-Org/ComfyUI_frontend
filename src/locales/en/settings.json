@@ -336,8 +336,8 @@
     "tooltip": "Show updates for new models, and major new features."
   },
   "Comfy_Pointer_ClickBufferTime": {
-    "name": "Pointer click drift delay",
-    "tooltip": "After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty."
+    "name": "Pointer click drift delay (deprecated)",
+    "tooltip": "No longer used. A press becomes a drag only when the pointer moves further than the click drift distance."
   },
   "Comfy_Pointer_ClickDrift": {
     "name": "Pointer click drift (maximum distance)",

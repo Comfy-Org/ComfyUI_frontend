@@ -372,7 +372,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     /**
      * Press left-mouse at canvas-relative `pos`, hold for `holdMs` (0 = no
      * hold), nudge by `(dx, dy)` absolute pixels, then release. Spec-local
-     * because it exists only to probe the CanvasPointer timing thresholds.
+     * because it exists only to probe the CanvasPointer gesture thresholds.
      */
     const holdDragAt = async (
       comfyPage: ComfyPage,
@@ -427,54 +427,56 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       })
     })
 
-    test('ClickBufferTime governs the click-vs-drag time threshold', async ({
+    test('ClickBufferTime does not affect the distance-only drag threshold', async ({
       comfyPage
     }) => {
-      // Keep drift generous so only elapsed time distinguishes click vs drag.
-      await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 20)
       const node = (
         await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       )[0]
-      const titlePos = await node.getTitlePosition()
-      const NUDGE = 2
+      await comfyPage.settings.setSetting('Comfy.Pointer.ClickDrift', 6)
+      const WITHIN_DRIFT = 2
+      const BEYOND_DRIFT = 8
       const HOLD_MS = 250
 
-      await test.step(`Buffer=2000ms (hold=${HOLD_MS}ms within buffer) → click, node stays put`, async () => {
-        await comfyPage.settings.setSetting(
-          'Comfy.Pointer.ClickBufferTime',
-          2000
-        )
-        const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: HOLD_MS
+      for (const { bufferTime, dragHoldMs } of [
+        { bufferTime: 0, dragHoldMs: 0 },
+        { bufferTime: 2000, dragHoldMs: HOLD_MS }
+      ]) {
+        await test.step(`Buffer=${bufferTime}ms: movement within drift stays a click after ${HOLD_MS}ms`, async () => {
+          await comfyPage.settings.setSetting(
+            'Comfy.Pointer.ClickBufferTime',
+            bufferTime
+          )
+          const titlePos = await node.getTitlePosition()
+          const before = await node.getPosition()
+          await holdDragAt(comfyPage, titlePos, {
+            dx: WITHIN_DRIFT,
+            dy: 0,
+            holdMs: HOLD_MS
+          })
+          const after = await node.getPosition()
+          expect(after.x).toBeCloseTo(before.x, 0)
+          expect(after.y).toBeCloseTo(before.y, 0)
         })
-        const after = await node.getPosition()
-        expect(after.x).toBeCloseTo(before.x, 0)
-        expect(after.y).toBeCloseTo(before.y, 0)
-      })
 
-      await test.step(`Buffer=50ms (hold=${HOLD_MS}ms exceeds buffer) → drag, node moves`, async () => {
-        await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 50)
-        const before = await node.getPosition()
-        await holdDragAt(comfyPage, titlePos, {
-          dx: NUDGE,
-          dy: NUDGE,
-          holdMs: HOLD_MS
+        await test.step(`Buffer=${bufferTime}ms: movement beyond drift drags after ${dragHoldMs}ms`, async () => {
+          const titlePos = await node.getTitlePosition()
+          const before = await node.getPosition()
+          await holdDragAt(comfyPage, titlePos, {
+            dx: BEYOND_DRIFT,
+            dy: 0,
+            holdMs: dragHoldMs
+          })
+          const after = await node.getPosition()
+          expect(after.x).toBeGreaterThan(before.x)
+          expect(after.y).toBeCloseTo(before.y, 0)
         })
-        const after = await node.getPosition()
-        expect(
-          Math.abs(after.x - before.x) + Math.abs(after.y - before.y)
-        ).toBeGreaterThan(0)
-      })
+      }
     })
 
     test('ClickDrift governs the click-vs-drag distance threshold', async ({
       comfyPage
     }) => {
-      // Keep buffer generous so only drift distance matters.
-      await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 2000)
       const node = (
         await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       )[0]
