@@ -274,7 +274,7 @@ function replayAppModeTour() {
             {{ t('menu.run') }}
           </Button>
         </div>
-        <FreeTierQuota v-if="isCloud" />
+        <FreeTierQuota />
       </section>
     </div>
   </div>
