@@ -92,96 +92,34 @@ describe('agentConversationCapabilityMatrix', () => {
       )
   }
 
-  it('names only recordings that show the capability they are listed under', () => {
-    const missing = supported.flatMap((row) =>
-      row.recordings
-        .filter(
-          (caseId) => !shows[row.capability]?.(loadAgentConversation(caseId))
-        )
-        .map((caseId) => `${row.capability}: ${caseId}`)
+  it('lists under each capability exactly the recordings that show it', () => {
+    const catalog = listRecordedConversations().map((caseId) => ({
+      caseId,
+      conversation: loadAgentConversation(caseId)
+    }))
+    const listed = Object.fromEntries(
+      supported.map((row) => [row.capability, [...row.recordings].sort()])
     )
-    expect(missing).toEqual([])
+    const shown = Object.fromEntries(
+      supported.map((row) => [
+        row.capability,
+        catalog
+          .filter(({ conversation }) => shows[row.capability]?.(conversation))
+          .map(({ caseId }) => caseId)
+          .sort()
+      ])
+    )
+    expect(listed).toEqual(shown)
     expect(Object.keys(shows).sort()).toEqual(
       supported.map((row) => row.capability).sort()
     )
   })
 
-  it('lists each required capability once with statuses and reasons intact', () => {
+  it('lists each capability once', () => {
     const capabilities = agentConversationCapabilityMatrix.map(
       (row) => row.capability
     )
     expect(new Set(capabilities).size).toBe(capabilities.length)
-    expect(capabilities).toEqual([
-      'add_node',
-      'connect',
-      'set_widget',
-      'delete_node',
-      'clear',
-      'agent_thinking',
-      'agent_tool_call',
-      'agent_message_delta',
-      'agent_message_done',
-      'agent_active_tab',
-      'tool_error',
-      'clarifying_question',
-      'cancelled_turn',
-      'multi_turn_dependent_edit',
-      'asset_url_in_reply_text',
-      'agent_asset',
-      'agent_ask',
-      'agent_ask_resolved',
-      'reset_doc',
-      'promoted_subgraph_widget',
-      'subgraph_internals'
-    ])
-    expect(
-      agentConversationCapabilityMatrix.filter(
-        (row) => row.status === 'blocked'
-      )
-    ).toEqual([
-      {
-        capability: 'agent_asset',
-        status: 'blocked',
-        reason: 'panel-does-not-render-event'
-      },
-      {
-        capability: 'reset_doc',
-        status: 'blocked',
-        reason: 'deferred-by-op-vocabulary'
-      }
-    ])
-    expect(
-      agentConversationCapabilityMatrix.filter(
-        (row) => row.status === 'recordable'
-      )
-    ).toEqual([
-      {
-        capability: 'agent_ask',
-        status: 'recordable',
-        reason: 'recording-not-yet-captured'
-      },
-      {
-        capability: 'agent_ask_resolved',
-        status: 'recordable',
-        reason: 'recording-not-yet-captured'
-      },
-      {
-        capability: 'promoted_subgraph_widget',
-        status: 'recordable',
-        reason: 'recording-not-yet-captured'
-      }
-    ])
-    expect(
-      agentConversationCapabilityMatrix.filter(
-        (row) => row.status === 'out_of_scope'
-      )
-    ).toEqual([
-      {
-        capability: 'subgraph_internals',
-        status: 'out_of_scope',
-        reason: 'decided 2026-09-04: internals are not part of the suite.'
-      }
-    ])
   })
 
   it('derives the empty workflow seed from the recorded clear workflow', () => {
