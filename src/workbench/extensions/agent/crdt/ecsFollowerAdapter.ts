@@ -283,9 +283,7 @@ interface TargetSession {
   readonly nodeActions: Map<string, NodeRootAction>
   readonly changedWidgets: Map<string, Set<string>>
   readonly replacedWidgetMaps: Set<string>
-  /** Nodes whose positional `__widgets_opaque` array was replaced. */
   readonly replacedOpaqueWidgets: Set<string>
-  /** Nodes whose scalar fields (title, mode, flags, ...) changed in place. */
   readonly changedNodeFields: Set<string>
   readonly changedLinks: Set<string>
   /** Drift keys already surfaced via `reportError` for this session. */
