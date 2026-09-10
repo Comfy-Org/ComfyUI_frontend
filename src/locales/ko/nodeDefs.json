@@ -11011,7 +11011,8 @@
     "display_name": "3D 불러오기 (고급)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "뷰포트의 렌더링 높이(픽셀)입니다."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "뷰포트의 렌더링 너비(픽셀)입니다."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "로드된 3D 모델 파일(glb/obj/stl/etc.)입니다."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "장면 내 각 모델의 배치 정보입니다: 위치, 회전 및 크기(Y축이 위쪽인 월드 공간)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "뷰포트 카메라 정보입니다: 위치, 주시 대상, 줌 및 유형."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더링 너비(픽셀)입니다."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더링 높이(픽셀)입니다."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAI의 GPT 이미지 엔드포인트를 통해 이미지를 생성합니다.",
-    "display_name": "OpenAI GPT 이미지 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Microsoft의 MAI-Image-2.6 모델을 사용하여 OpenRouter를 통해 이미지를 생성하거나 편집합니다. 텍스트-이미지 생성 또는 최대 5개의 참조 이미지를 활용한 이미지 기반 편집을 1K 또는 1.5K의 7가지 종횡비로 지원합니다.",
+    "display_name": "OpenRouter 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "이미지 생성에 사용되는 OpenRouter 이미지 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "3D 미리보기 (고급)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "뷰포트 카메라 정보입니다: 위치, 주시 대상, 줌 및 유형."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "뷰포트의 렌더링 높이(픽셀)입니다."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "뷰포트의 렌더링 너비(픽셀)입니다."
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "업스트림 3D 노드에서 전달된 3D 모델 파일(glb/obj/stl/etc.)입니다."
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "장면 내 각 모델의 배치 정보입니다: 위치, 회전 및 크기(Y축이 위쪽인 월드 공간)."
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "뷰포트 카메라 정보입니다: 위치, 주시 대상, 줌 및 유형."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더링 너비(픽셀)입니다."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더링 높이(픽셀)입니다."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "3D 저장 (고급)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "뷰포트 카메라 정보입니다: 위치, 주시 대상, 줌 및 유형."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "뷰포트의 렌더링 높이(픽셀)입니다."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "상위 3D 노드에서 가져온 3D 모델 파일입니다."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "장면 내 각 모델의 배치 정보입니다: 위치, 회전 및 크기(Y축이 위쪽인 월드 공간)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "뷰포트의 렌더링 너비(픽셀)입니다."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "업스트림 3D 노드에서 전달된 3D 모델 파일(glb/obj/stl/etc.)입니다."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "장면 내 각 모델의 배치 정보입니다: 위치, 회전 및 크기(Y축이 위쪽인 월드 공간)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "뷰포트 카메라 정보입니다: 위치, 주시 대상, 줌 및 유형."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더링 너비(픽셀)입니다."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "뷰포트의 렌더링 높이(픽셀)입니다."
       }
     }
   },

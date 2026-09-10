@@ -1,24 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useNodeBookmarkStore } from './nodeBookmarkStore'
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  useNodeDefStore: () => ({
-    allNodeDefsByName: {},
-    getNodeDefByName: () => undefined
-  })
-}))
 
 const set = vi.fn()
 let bookmarks: string[]
@@ -38,16 +26,13 @@ const nonFolder = fromPartial<ComfyNodeDefImpl>({
 
 describe('node bookmark folder commands', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     bookmarks = ['Folder/', 'Folder/KSampler', 'Existing/']
-    vi.mocked(useSettingStore).mockReturnValue(
-      fromPartial<ReturnType<typeof useSettingStore>>({
-        get: vi.fn((id: string) =>
-          id === 'Comfy.NodeLibrary.Bookmarks.V2' ? bookmarks : {}
-        ),
-        set
-      })
+    const settingStore = useSettingStore()
+    vi.mocked(settingStore.get).mockImplementation((id: string) =>
+      id === 'Comfy.NodeLibrary.Bookmarks.V2' ? bookmarks : {}
     )
+    vi.mocked(settingStore.set).mockImplementation(set)
+    useNodeDefStore().nodeDefsByName = {}
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })

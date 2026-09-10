@@ -27,7 +27,6 @@ import {
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -191,7 +190,6 @@ const ASSETS_ENDPOINT = '/assets'
 const ASSETS_SEED_ENDPOINT = '/assets/seed'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
-const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 // Defensive backstop against a server that never signals exhaustion (e.g. an
@@ -275,9 +273,7 @@ function validateAssetResponse(data: unknown): AssetResponse {
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
-  throw new Error(
-    `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-  )
+  throw new Error(`Invalid asset response against zod schema:\n${error}`)
 }
 
 function validateUploadedAssetResponse(
@@ -385,7 +381,7 @@ function createAssetService() {
       : await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
+        `Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -568,11 +564,13 @@ function createAssetService() {
   }
 
   /**
-   * Checks if the asset API is enabled (cloud environment + user setting).
+   * Whether widget-embedded asset pickers (canvas + Vue node model widgets) are
+   * enabled. Hardcoded to cloud: MODEL_NODE_MAPPINGS is only maintained for
+   * cloud asset tagging. NOT the asset-API gate — that is
+   * useFeatureFlags().flags.assetsEnabled.
    */
-  function isAssetAPIEnabled(): boolean {
-    if (!isCloud) return false
-    return useSettingStore().get('Comfy.Assets.UseAssetAPI')
+  function isWidgetAssetPickerEnabled(): boolean {
+    return isCloud
   }
 
   /**
@@ -583,11 +581,14 @@ function createAssetService() {
    * @param widgetName - The name of the widget to check
    * @returns true if this input should use the asset browser
    */
-  function shouldUseAssetBrowser(
+  function shouldUseWidgetAssetPicker(
     nodeType: string | undefined,
     widgetName: string
   ): boolean {
-    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
+    return (
+      isWidgetAssetPickerEnabled() &&
+      isAssetBrowserEligible(nodeType, widgetName)
+    )
   }
 
   /**
@@ -665,7 +666,7 @@ function createAssetService() {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -674,9 +675,7 @@ function createAssetService() {
     if (result.success) return result.data
 
     const error = fromZodError(result.error)
-    throw new Error(
-      `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-    )
+    throw new Error(`Invalid asset response against zod schema:\n${error}`)
   }
 
   /**
@@ -1194,9 +1193,9 @@ function createAssetService() {
     invalidateModelBuckets,
     onModelsScanned,
     seedModelAssets,
-    isAssetAPIEnabled,
+    isWidgetAssetPickerEnabled,
     isAssetBrowserEligible,
-    shouldUseAssetBrowser,
+    shouldUseWidgetAssetPicker,
     getAssetsForNodeType,
     getAssetsPageForNodeType,
     getAssetDetails,

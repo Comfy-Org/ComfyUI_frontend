@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
@@ -23,7 +21,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 describe('color palette missing-palette contracts', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
