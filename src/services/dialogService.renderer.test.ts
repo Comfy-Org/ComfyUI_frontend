@@ -108,9 +108,9 @@ describe('dialogService Reka renderer opt-in', () => {
   it("showTopUpCreditsDialog() sets renderer 'reka' with headless content", async () => {
     await useDialogService().showTopUpCreditsDialog()
     const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.renderer).toBe('reka')
-    expect(args.dialogComponentProps.headless).toBe(true)
-    expect(args.dialogComponentProps.pt).toBeUndefined()
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.headless).toBe(true)
+    expect(args.dialogComponentProps?.pt).toBeUndefined()
   })
 
   it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {
@@ -147,10 +147,10 @@ describe('dialogService Reka renderer opt-in', () => {
       component: Component
     })
     const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.renderer).toBe('reka')
-    expect(args.dialogComponentProps.pt).toBeUndefined()
-    expect(args.dialogComponentProps.headerClass).toBe('p-0')
-    expect(args.dialogComponentProps.bodyClass).toBe('p-0 overflow-y-hidden')
-    expect(args.dialogComponentProps.footerClass).toBe('p-0')
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.pt).toBeUndefined()
+    expect(args.dialogComponentProps?.headerClass).toBe('p-0')
+    expect(args.dialogComponentProps?.bodyClass).toBe('p-0 overflow-y-hidden')
+    expect(args.dialogComponentProps?.footerClass).toBe('p-0')
   })
 })

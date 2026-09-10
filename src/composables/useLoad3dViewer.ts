@@ -478,7 +478,6 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     containerRef: HTMLElement,
     modelUrl: string
   ) => {
-    if (!containerRef) return
     const generation = ++thumbnailGeneration
 
     try {

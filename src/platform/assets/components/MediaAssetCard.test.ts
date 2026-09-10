@@ -18,22 +18,6 @@ vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/assets/schemas/assetMetadataSchema'),
-  () => ({
-    getOutputAssetMetadata: () => ({
-      allOutputs: [
-        {
-          filename: 'a.png',
-          subfolder: '',
-          type: 'output',
-          display_name: 'Display A'
-        }
-      ]
-    })
-  })
-)
-
 const asset: AssetItem = fromPartial({
   id: 'a',
   name: 'a.png',

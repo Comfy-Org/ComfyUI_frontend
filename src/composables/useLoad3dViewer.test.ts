@@ -46,7 +46,7 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   persistThumbnail,
   persistThumbnailFromDataUrl,
-  THUMBNAIL_CAPTURE_SIZE: 256
+  THUMBNAIL_CAPTURE_SIZE: 256 as const
 }))
 
 vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
