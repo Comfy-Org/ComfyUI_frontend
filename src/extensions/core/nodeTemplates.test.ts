@@ -2,24 +2,18 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyExtension } from '@/types/comfy'
 
-const {
-  getUserData,
-  registeredExtensions,
-  registerExtension,
-  reportErrorMock
-} = vi.hoisted(() => {
-  const registeredExtensions: ComfyExtension[] = []
-  return {
-    getUserData: vi.fn(),
-    registeredExtensions,
-    registerExtension: vi.fn((extension: ComfyExtension) => {
-      registeredExtensions.push(extension)
-    }),
-    reportErrorMock: vi.fn()
+const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
+  async () => {
+    const { createExtensionCapture } =
+      await import('@/utils/__tests__/extensionTestUtils')
+    return {
+      extensions: createExtensionCapture(),
+      getUserData: vi.fn(),
+      reportErrorMock: vi.fn()
+    }
   }
-})
+)
 
 vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
 
@@ -40,7 +34,10 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/scripts/app', () => ({
-  app: { registerExtension, canvas: { selected_nodes: {} } }
+  app: {
+    registerExtension: extensions.registerExtension,
+    canvas: { selected_nodes: {} }
+  }
 }))
 
 vi.mock('@/scripts/ui', () => ({
@@ -88,11 +85,9 @@ it('reports invalid persisted node templates before falling back to empty', asyn
     })
   })
 
-  const extension = registeredExtensions.find(
-    ({ name }) => name === 'Comfy.NodeTemplates'
-  )
-  if (!extension?.getCanvasMenuItems) {
-    throw new Error('Comfy.NodeTemplates extension was not registered')
+  const extension = extensions.getExtension('Comfy.NodeTemplates')
+  if (!extension.getCanvasMenuItems) {
+    throw new Error('Comfy.NodeTemplates does not register canvas menu items')
   }
   expect(extension.getCanvasMenuItems(fromAny({}))).toEqual([
     null,

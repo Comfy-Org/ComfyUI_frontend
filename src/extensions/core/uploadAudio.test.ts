@@ -3,32 +3,28 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyExtension } from '@/types/comfy'
 
 const {
+  extensions,
   mockApiURL,
   mockFetchApi,
   mockMediaRecorderConstruct,
   mockMediaRecorderStart,
   mockMediaRecorderStop,
-  mockRegisterExtension,
   mockReportError,
-  mockStopAllTracks,
-  registeredExtensions
-} = vi.hoisted(() => {
-  const registeredExtensions: ComfyExtension[] = []
+  mockStopAllTracks
+} = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
   return {
+    extensions: createExtensionCapture(),
     mockApiURL: vi.fn((url: string) => `api:${url}`),
     mockFetchApi: vi.fn(),
     mockMediaRecorderConstruct: vi.fn(),
     mockMediaRecorderStart: vi.fn(),
     mockMediaRecorderStop: vi.fn(),
-    mockRegisterExtension: vi.fn((extension: ComfyExtension) => {
-      registeredExtensions.push(extension)
-    }),
     mockReportError: vi.fn(),
-    mockStopAllTracks: vi.fn(),
-    registeredExtensions
+    mockStopAllTracks: vi.fn()
   }
 })
 
@@ -105,7 +101,7 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    registerExtension: mockRegisterExtension,
+    registerExtension: extensions.registerExtension,
     rootGraph: { id: 'root' }
   }
 }))
@@ -121,11 +117,9 @@ vi.mock('@/services/audioService', () => ({
 await import('./uploadAudio')
 
 async function getCustomWidget(extensionName: string, widgetName: string) {
-  const extension = registeredExtensions.find(
-    ({ name }) => name === extensionName
-  )
-  if (!extension?.getCustomWidgets) {
-    throw new Error(`${extensionName} extension was not registered`)
+  const extension = extensions.getExtension(extensionName)
+  if (!extension.getCustomWidgets) {
+    throw new Error(`${extensionName} does not register custom widgets`)
   }
   const widgets = await extension.getCustomWidgets(fromAny({}))
   const widget = widgets[widgetName]
