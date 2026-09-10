@@ -550,6 +550,20 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
+
+export function reconcileAutogrowInputs(node: LGraphNode): void {
+  if (!node.comfyDynamic?.autogrow) return
+  withComfyAutogrow(node)
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    const slot = node.inputs.findLastIndex(
+      (input, index) =>
+        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
+        node.getInputLink(index)
+    )
+    if (slot !== -1) autogrowInputConnected(slot, node)
+  }
+}
+
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return

@@ -1,3 +1,4 @@
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -227,7 +228,10 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (live && nodeStore.ownsNode(scope, live._state)) {
+      reconcileAutogrowInputs(live)
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue

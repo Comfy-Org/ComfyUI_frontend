@@ -10,6 +10,7 @@ import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import {
   LGraph,
   LGraphNode,
@@ -873,6 +874,95 @@ describe('reconcileAgentAdapters', () => {
       await Promise.resolve()
       await Promise.resolve()
     }
+
+    it('restores a usable spare autogrow input omitted by reconciliation', async () => {
+      const node = LiteGraph.createNode('widget-node')
+      const upstream = LiteGraph.createNode('dummy')
+      if (!node || !upstream) throw new Error('Test node types not registered')
+      graph.add(node)
+      graph.add(upstream)
+      upstream.addOutput('image', 'IMAGE')
+      addAutogrow(node, {
+        input: { required: { image: ['IMAGE', {}] } },
+        names: ['image_1', 'image_2', 'image_3']
+      })
+      node.addInput('obsolete', 'IMAGE')
+      const firstLink = upstream.connect(0, node, 0)
+      if (!firstLink) throw new Error('Initial image connection failed')
+      const widget = node.widgets?.[0]
+      if (!widget) throw new Error('Expected value widget')
+      widget.value = 7
+      node.serialize_widgets = true
+      const configure = vi.spyOn(node, 'configure')
+      const serialized = node.serialize()
+      expect(serialized.widgets_values).toEqual([7])
+      const payload = {
+        ...serialized,
+        inputs: serialized.inputs?.slice(0, 1)
+      }
+      const mutations = remoteMutations(graphScopeOf(graph))
+      await settle()
+      minted.length = 0
+
+      for (let frame = 0; frame < 2; frame++) {
+        expect(
+          mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
+        ).toBe(true)
+        expect(reconcileAgentAdapters(graph)).toEqual([])
+        await settle()
+
+        expect(node.inputs.map(({ name }) => name)).toEqual([
+          '0.image_1',
+          '0.image_2'
+        ])
+        expect(node.getInputLink(0)).toBe(firstLink)
+        expect(node.widgets).toEqual([widget])
+        expect(widget.value).toBe(7)
+        expect(configure).not.toHaveBeenCalled()
+        expect(minted).toEqual([])
+      }
+
+      const spare = node.inputs[1]
+      reconcileAgentAdapters(graph)
+      expect(node.inputs[1]).toBe(spare)
+      const secondLink = upstream.connect(0, node, 1)
+      if (!secondLink) throw new Error('Restored image connection failed')
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.image_1',
+        '0.image_2',
+        '0.image_3'
+      ])
+      expect(node.getInputLink(0)).toBe(firstLink)
+      expect(node.getInputLink(1)).toBe(secondLink)
+      expect(node.getInputLink(2)).toBeNull()
+      expect(widget.value).toBe(7)
+
+      const thirdLink = upstream.connect(0, node, 2)
+      if (!thirdLink) throw new Error('Final image connection failed')
+      reconcileAgentAdapters(graph)
+      reconcileAgentAdapters(graph)
+      expect(node.inputs.map(({ name }) => name)).toEqual([
+        '0.image_1',
+        '0.image_2',
+        '0.image_3'
+      ])
+      expect(node.getInputLink(2)).toBe(thirdLink)
+      await settle()
+      minted.length = 0
+
+      expect(
+        mutations.batch(REMOTE, (batch) => {
+          batch.reconcileNode({ ...payload, inputs: [] })
+          batch.removeLinks([firstLink.id, secondLink.id, thirdLink.id])
+        })
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+      await settle()
+      expect(node.inputs).toEqual([])
+      expect(upstream.isOutputConnected(0)).toBe(false)
+      expect(widget.value).toBe(7)
+      expect(minted).toEqual([])
+    })
 
     it('does not echo a remote add back as local operations', async () => {
       const scope = graphScopeOf(graph)
