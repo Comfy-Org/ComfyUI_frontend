@@ -175,6 +175,23 @@ describe('reportError', () => {
     expect(context).toMatchObject({ api_endpoint: '/settings/{key}' })
   })
 
+  it('drops undefined context values from both sinks', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      errorType: 'http_error',
+      context: { requestId: 'abc123', retryAfter: undefined }
+    })
+
+    const [, datadogContext] = addError.mock.calls[0]
+    expect(datadogContext).not.toHaveProperty('retryAfter')
+    expect(datadogContext).toMatchObject({ requestId: 'abc123' })
+
+    const [, sentryOptions] = captureException.mock.calls[0]
+    expect(sentryOptions.extra).not.toHaveProperty('retryAfter')
+    expect(sentryOptions.extra).toMatchObject({ requestId: 'abc123' })
+  })
+
   it('does not throw out of flushErrorReports when a sink throws', async () => {
     sentryLive(false)
     datadogLive(false)
