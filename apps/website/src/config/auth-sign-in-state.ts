@@ -47,6 +47,7 @@ export type AuthSignInEvent =
   | { readonly type: 'mintFailed' }
   | { readonly type: 'mintRetried' }
   | { readonly type: 'signedOut' }
+  | { readonly type: 'signInAbandoned' }
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
@@ -120,5 +121,10 @@ export function authSignInTransition(
       return state.step === 'pending' || state.step === 'minting'
         ? state
         : { step: 'idle' }
+    case 'signInAbandoned':
+      // Drop an attempt a flag flip invalidated; leave settled states alone.
+      return state.step === 'pending' || state.step === 'minting'
+        ? { step: 'idle' }
+        : state
   }
 }

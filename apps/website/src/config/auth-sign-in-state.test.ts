@@ -129,6 +129,13 @@ describe('authSignInTransition', () => {
     expect(authSignInTransition(signedIn, { type: 'signedOut' })).toEqual(idle)
     expect(authSignInTransition(pending, { type: 'signedOut' })).toBe(pending)
   })
+
+  it('drops a pending attempt to idle when the rollout flag invalidates it', () => {
+    expect(
+      authSignInTransition(pending, { type: 'signInAbandoned' }),
+      'a flag flip mid-attempt must leave pending so a later restore is not ignored'
+    ).toEqual(idle)
+  })
 })
 
 describe('signInErrorMessage', () => {
