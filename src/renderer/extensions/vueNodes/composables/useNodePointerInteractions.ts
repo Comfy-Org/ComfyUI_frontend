@@ -52,7 +52,6 @@ export function useNodePointerInteractions(
   let press: Press | null = null
 
   const gesturePolicy = () => ({
-    clickBufferTime: CanvasPointer.bufferTime,
     clickDrift: CanvasPointer.maxClickDrift,
     doubleClickTime: CanvasPointer.doubleClickTime
   })
@@ -146,8 +145,7 @@ export function useNodePointerInteractions(
     dispatch(
       {
         type: 'move',
-        position: { x: event.clientX, y: event.clientY },
-        timeStamp: event.timeStamp
+        position: { x: event.clientX, y: event.clientY }
       },
       event
     )
