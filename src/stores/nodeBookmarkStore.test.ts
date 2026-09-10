@@ -84,12 +84,6 @@ describe('node bookmark folder commands', () => {
         )
     },
     {
-      name: 'unchanged path',
-      error: undefined,
-      command: () =>
-        useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Folder')
-    },
-    {
       name: 'non-folder delete',
       error: undefined,
       command: () => useNodeBookmarkStore().deleteBookmarkFolder(nonFolder)
@@ -104,6 +98,13 @@ describe('node bookmark folder commands', () => {
         expect.objectContaining({ severity: 'error', detail: error })
       )
     }
+  })
+
+  it('accepts an unchanged folder name without persisting', async () => {
+    await expect(
+      useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Folder')
+    ).resolves.toBe(true)
+    expect(set).not.toHaveBeenCalled()
   })
 
   it('persists a successful folder rename', async () => {
