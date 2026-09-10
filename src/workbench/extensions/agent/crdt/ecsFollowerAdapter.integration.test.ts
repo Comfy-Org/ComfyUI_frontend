@@ -667,7 +667,7 @@ describe('EcsFollowerAdapter integration', () => {
     })
     expect(adapter.retryPending('wf')).toEqual({
       status: 'failed',
-      sequence: 0,
+      sequence: 1,
       reason: 'blocked'
     })
     expect(batchAttempts).toBe(1)

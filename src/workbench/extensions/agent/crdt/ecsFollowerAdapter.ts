@@ -140,6 +140,7 @@ interface TargetSession {
   reconcileNextFrame: boolean
   applying: boolean
   projectionBlocked: boolean
+  blockedSequence: number
 }
 
 interface PendingProjection {
@@ -195,8 +196,11 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return { status: 'unbound' }
     if (session.projectionBlocked) {
-      const sequence = session.frameQueue[0]?.update.seq ?? 0
-      return { status: 'failed', sequence, reason: 'blocked' }
+      return {
+        status: 'failed',
+        sequence: session.blockedSequence,
+        reason: 'blocked'
+      }
     }
     if (session.frameQueue.length === 0) return { status: 'idle' }
     if (session.applying) return { status: 'queued' }
@@ -221,7 +225,7 @@ export class EcsFollowerAdapter {
               attempt: pending.attempts
             }
           }
-          this.blockProjection(session)
+          this.blockProjection(session, pending)
           return {
             status: 'failed',
             sequence: pending.update.seq,
@@ -229,7 +233,7 @@ export class EcsFollowerAdapter {
           }
         }
         if (result.outcome === 'exception') {
-          this.blockProjection(session)
+          this.blockProjection(session, pending)
           return {
             status: 'failed',
             sequence: pending.update.seq,
@@ -295,6 +299,7 @@ export class EcsFollowerAdapter {
         typeof this.mutations === 'function'
           ? this.mutations(workflowId)
           : this.mutations,
+      blockedSequence: 0,
       nodeActions: new Map<string, NodeRootAction>(),
       changedWidgets: new Map<string, Set<string>>(),
       replacedWidgetMaps: new Set<string>(),
@@ -436,8 +441,12 @@ export class EcsFollowerAdapter {
     }
   }
 
-  private blockProjection(session: TargetSession): void {
+  private blockProjection(
+    session: TargetSession,
+    cause: PendingProjection
+  ): void {
     session.projectionBlocked = true
+    session.blockedSequence = cause.update.seq
     session.frameQueue.length = 0
     this.discardSessionPending(session)
   }
