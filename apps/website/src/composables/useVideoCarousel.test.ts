@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
-import type { EffectScope } from 'vue'
 
 import { slideProgress } from './useProgressBarPainter'
 import { useVideoCarousel, wrapIndex } from './useVideoCarousel'
@@ -18,14 +17,13 @@ function createVideo(duration = 10) {
   return el
 }
 
-let scope: EffectScope
-
 async function mountCarousel(slideCount: number) {
   const rootEl = document.createElement('div')
   document.body.append(rootEl)
   const root = shallowRef<HTMLElement | null>(rootEl)
   let carousel!: Carousel
-  scope = effectScope()
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
   scope.run(() => {
     carousel = useVideoCarousel({
       count: slideCount,
@@ -38,10 +36,6 @@ async function mountCarousel(slideCount: number) {
   await nextTick()
   return { carousel, videos }
 }
-
-afterEach(() => {
-  scope.stop()
-})
 
 describe('useVideoCarousel', () => {
   it('advances when the active video ends and wraps past the last slide', async () => {

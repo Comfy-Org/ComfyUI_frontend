@@ -2,11 +2,9 @@
  * The workspace session: a short-lived JWT minted from the signed-in
  * identity, which is what actually authorizes runs and balance reads.
  *
- * The exchange contract, response schema, and error taxonomy are extracted
- * from the cloud app's production implementation of this same POST
- * /auth/token call (`requestToken` in
- * src/platform/workspace/stores/workspaceAuthStore.ts) — keep the two in
- * step. Only the freshness strategy differs: valid-on-read (callers await
+ * The exchange parses the generated contract for POST /auth/token and keeps
+ * the cloud app's error taxonomy for it. The freshness strategy is
+ * valid-on-read (callers await
  * `ensureFresh` at the moment they need a token; it never resolves with
  * less than `freshMarginMs` of validity) rather than a proactive refresh
  * timer, because background tabs throttle timers and this package's callers
@@ -23,6 +21,8 @@ import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
 import type { AccountIdentity } from './identity.js'
 import { isAccountIdentity } from './identity.js'
+
+export type { AccountIdentity } from './identity.js'
 
 export interface AccountUser {
   readonly uid: string
@@ -455,6 +455,17 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         }
       }
 
+      // A 200 that cannot be used is an exchange failure, not a session: an
+      // empty token, or an expiry already inside the fresh margin, would
+      // publish an authenticated snapshot ensureFresh promised never to.
+      const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
+      if (parseResult.data.token === '') {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
+      }
       const session: AccountCredential = {
         token: parseResult.data.token,
         expiresAt,
@@ -462,6 +473,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         workspace: parseResult.data.workspace,
         role: parseResult.data.role,
         permissions: parseResult.data.permissions
+      }
+      if (!isCredentialFresh(session, now, freshMarginMs)) {
+        return {
+          status: 'error',
+          code: 'TOKEN_EXCHANGE_FAILED',
+          httpStatus: response.status
+        }
       }
       // The cache write consults the identity epoch like the in-memory
       // commit does: a mint outliving a sign-out or detach must not
@@ -486,6 +504,17 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * reuses an in-flight mint only when that one is also forced, so a 401
    * retry never resolves to a non-forced mint still holding the stale token.
    */
+  /**
+   * A sign-out or a different user makes the running mint unjoinable: it
+   * was started with the previous identity's token, and a caller arriving
+   * after the event must mint for itself.
+   */
+  function abandonInFlight(): void {
+    inFlight = undefined
+    inFlightUid = undefined
+    inFlightForced = false
+  }
+
   function sharedMint(
     user: AccountUser,
     options: SessionRequestOptions,
@@ -553,6 +582,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (!user) return undefined
 
     const startEpoch = identityEpoch
+    const startedSignedOut = currentUser === null
     // A caller that joined an in-flight mint still gets its own signal
     // honored: the shared mint runs on, this caller stops waiting for it.
     let result: SessionResult
@@ -564,9 +594,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     } catch {
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     }
-    if (
+    if (identityEpoch !== startEpoch) {
+      // The one mint allowed to cross an identity event: an explicit-user
+      // mint started while signed out, for the user the port then
+      // delivered (the popup path). Everything else was minted for an
+      // identity that is gone, even when the uid matches again.
+      const popupSettled =
+        requestedUser !== undefined &&
+        startedSignedOut &&
+        currentUser?.uid === user.uid
+      if (!popupSettled) return undefined
+    } else if (
       currentUser?.uid !== user.uid &&
-      (identityEpoch !== startEpoch || !requestedUser || currentUser !== null)
+      (!requestedUser || currentUser !== null)
     ) {
       return undefined
     }
@@ -594,6 +634,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         if (!active) return
         identityEpoch += 1
         identitySettled = true
+        if (!next || next.uid !== currentUser?.uid) abandonInFlight()
         currentUser = next
         credential = undefined
         failure = undefined
