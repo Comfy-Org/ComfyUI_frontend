@@ -131,6 +131,58 @@ describe('useGraphDocumentStore', () => {
     expect(store.persistenceStateOf(documentId)).toBe('clean')
   })
 
+  it('binds a remote target onto the workflow document that already owns it', () => {
+    const store = useGraphDocumentStore()
+    const owned = store.createDocument()
+    if (owned === null) throw new Error('createDocument failed')
+
+    expect(store.resolveOrBindWorkflowTarget('wf-1', owned)).toBe(owned)
+    expect(store.resolveWorkflowTarget('wf-1')?.documentId).toBe(owned)
+    expect(store.resolveOrBindWorkflowTarget('wf-1', owned)).toBe(owned)
+  })
+
+  it('mints a target only for a workflow no local document owns', () => {
+    const store = useGraphDocumentStore()
+    const minted = store.resolveOrBindWorkflowTarget('wf-1', null)
+    if (minted === null) throw new Error('bind failed')
+
+    const otherWorkflowDocument = store.createDocument()
+    if (otherWorkflowDocument === null) throw new Error('createDocument failed')
+    expect(
+      store.resolveOrBindWorkflowTarget('wf-1', otherWorkflowDocument)
+    ).toBe(minted)
+    expect(
+      store.resolveOrBindWorkflowTarget('wf-2', otherWorkflowDocument)
+    ).toBe(otherWorkflowDocument)
+  })
+
+  it('refuses to fork identity when the owning document is already addressed', () => {
+    const store = useGraphDocumentStore()
+    const owned = store.createDocument({ workflowId: 'wf-1' })
+    if (owned === null) throw new Error('createDocument failed')
+
+    expect(store.resolveOrBindWorkflowTarget('wf-2', owned)).toBeNull()
+    expect(store.resolveWorkflowTarget('wf-2')).toBeNull()
+  })
+
+  it('leaves a bound document dirty when a remote commit lands mid-save', () => {
+    const store = useGraphDocumentStore()
+    const owned = store.createDocument()
+    if (owned === null) throw new Error('createDocument failed')
+    store.hydrateDocument(owned, scope)
+    expect(store.resolveOrBindWorkflowTarget('wf-1', owned)).toBe(owned)
+
+    const ticket = store.beginSave(owned)
+    if (!ticket) throw new Error('beginSave failed')
+    const remoteTarget = store.resolveWorkflowTarget('wf-1')?.documentId
+    if (!remoteTarget) throw new Error('remote target unresolved')
+    store.markMutated(remoteTarget)
+    store.completeSave(ticket)
+
+    expect(remoteTarget).toBe(owned)
+    expect(store.persistenceStateOf(owned)).toBe('dirty')
+  })
+
   it('close is compare-and-set: a stale decision must be re-presented', () => {
     const store = useGraphDocumentStore()
     const documentId = store.createDocument()

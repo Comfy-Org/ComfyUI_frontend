@@ -264,10 +264,31 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     return true
   }
 
+  /**
+   * Resolve the document a cloud `workflow_id` addresses, binding the address
+   * onto the document the workflow lifecycle already owns rather than minting
+   * a second one. A workflow that is not open locally has no owner to bind to
+   * and gets a registry-owned document, so remote targets stay addressable.
+   * Returns `null` when the address cannot be bound — a duplicate or stale
+   * mapping is refused, never silently forked into a parallel identity.
+   */
+  function resolveOrBindWorkflowTarget(
+    workflowId: string,
+    ownedDocumentId: DocumentId | null
+  ): DocumentId | null {
+    const mapped = resolveWorkflowTarget(workflowId)
+    if (mapped) return mapped.documentId
+    if (ownedDocumentId === null) return createDocument({ workflowId })
+    return assignWorkflowId(ownedDocumentId, workflowId)
+      ? ownedDocumentId
+      : null
+  }
+
   return {
     createDocument,
     getDocument,
     resolveWorkflowTarget,
+    resolveOrBindWorkflowTarget,
     persistenceStateOf,
     graphLeaseOf,
     beginGraphHydration,

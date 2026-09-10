@@ -166,13 +166,17 @@ const canvasStore = useCanvasStore()
 const graphDocumentStore = useGraphDocumentStore()
 const graphMutationsByWorkflow = new Map<string, GraphMutations>()
 /**
- * Resolve the live document for a workflow id, creating the registry entry
- * when none exists. Never captured: a workflow id can be remapped to a new
- * document after the previous one closes, so callers re-resolve per use.
+ * Resolve the live document for a workflow id. The bound tab's workflow owns
+ * its document identity, so the cloud address binds onto that document and
+ * agent writes advance the same revision the local save baseline reads.
+ * Never captured: a workflow id can be remapped to a new document after the
+ * previous one closes, so callers re-resolve per use.
  */
 const resolveDocumentId = (workflowId: string) =>
-  graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
-  graphDocumentStore.createDocument({ workflowId })
+  graphDocumentStore.resolveOrBindWorkflowTarget(
+    workflowId,
+    boundTabFor(workflowId)?.documentId ?? null
+  )
 /**
  * Record every successful write against the target's document so its
  * revision advances (ADR-0024 dirty tracking). Each method resolves the
