@@ -15,14 +15,10 @@ function run(
 }
 
 describe('reduceDocument', () => {
-  it('starts created and unsaved', () => {
-    expect(initialDocumentState.phase).toBe('created')
-    expect(persistenceOf(initialDocumentState)).toBe('unsaved')
-  })
-
-  it('hydrates created to loaded and ignores repeat hydration', () => {
+  it('hydrates created to loaded without establishing a persistence baseline', () => {
     const loaded = run([{ type: 'hydrated' }])
     expect(loaded.phase).toBe('loaded')
+    expect(persistenceOf(loaded)).toBe('unsaved')
     expect(run([{ type: 'hydrated' }], loaded)).toEqual(loaded)
   })
 
