@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { createDetachedTargetSession } from '@/core/graph/document/detachedTargetSession'
@@ -106,10 +104,6 @@ function ecsSnapshot() {
 }
 
 describe('detached target commit atomicity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('publishes nothing when a later commit step fails, then retries once', () => {
     let refused: NodeId | null = toNodeId(8)
     const { port: layout, layouts } = layoutOwner(() => refused)

@@ -26,7 +26,7 @@ function plain(value: unknown): unknown {
  * Staged-doc counterpart of the adapter's live readers: the adapter reads
  * incremental observer effects off its bound follower doc, while this reads
  * whole snapshots off a detached session's staged doc. Kept local because the
- * projection must never depend on adapter internals (ADR-0024's seam).
+ * projection must never depend on adapter internals (ADR-GRAPH-DOCUMENT-0024's seam).
  */
 function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
   const source = nodesMap(doc).get(id)

@@ -5,7 +5,7 @@ import { reportError } from '@/platform/telemetry/reportError'
  * View concerns attached by activation and detached by deactivation: the
  * renderer/canvas binding, render-attached caches, viewport projection, and
  * input/event hooks. Attach and detach must not touch semantic document
- * state (ADR-0024: activation is presentation).
+ * state (ADR-GRAPH-DOCUMENT-0024: activation is presentation).
  *
  * Contract: the coordinator may call `detach` to undo an `attach` that threw
  * or was superseded mid-handoff, so `detach` must tolerate a partially
@@ -38,7 +38,7 @@ export interface ActivationCoordinatorDeps {
 }
 
 /**
- * Serializes document activation onto the active-canvas binding (ADR-0024).
+ * Serializes document activation onto the active-canvas binding (ADR-GRAPH-DOCUMENT-0024).
  * Requests carry a monotonic generation: a newer request cancels any older
  * in-flight one, and a stale request may clean up its private staged work
  * but can never detach, attach, or publish. The winning request performs one

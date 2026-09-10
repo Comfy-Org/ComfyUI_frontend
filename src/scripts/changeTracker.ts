@@ -376,7 +376,7 @@ export class ChangeTracker {
       )
       // Every call site of updateModified() already gated on a real state
       // change (activeState just moved to a new snapshot), so this maps 1:1
-      // onto the registry's "mutated" event (ADR-0024 dirty tracking).
+      // onto the registry's "mutated" event (ADR-GRAPH-DOCUMENT-0024 dirty tracking).
       // Undo/redo call in too: moving activeState to a prior/later snapshot
       // is still a committed change to the document's current content.
       if (workflow.documentId)

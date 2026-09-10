@@ -76,7 +76,7 @@ function pickSlot(slot: INodeInputSlot | INodeOutputSlot) {
 
 /**
  * Renderer-independent canonical serialization of one document scope's
- * semantic ECS state (ADR-0024's persistence seam). Reads only the domain
+ * semantic ECS state (ADR-GRAPH-DOCUMENT-0024's persistence seam). Reads only the domain
  * stores — never the canvas, layout, or litegraph instances — so the same
  * document content produces the same bytes whether the document is active
  * on the canvas, activated under a different renderer, or never activated

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { serializeDocumentScope } from '@/core/graph/document/documentSerializer'
 import type {
@@ -77,10 +75,6 @@ function populateScope(
 }
 
 describe('serializeDocumentScope', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('serializes only allowlisted slot fields, ignoring runtime-only state', () => {
     // Runtime-only junk, including a cycle through `_widget` — the exact
     // shape that would explode JSON.stringify if slots were spread as-is.

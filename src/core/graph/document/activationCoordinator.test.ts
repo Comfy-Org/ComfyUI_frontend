@@ -9,7 +9,9 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { DocumentId } from '@/types/documentId'
 import { toDocumentId } from '@/types/documentId'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function recordingBinding(log: string[], name: string): DocumentViewBinding {
   return {

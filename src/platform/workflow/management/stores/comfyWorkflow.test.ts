@@ -3,70 +3,35 @@ import { describe, expect, it, vi } from 'vitest'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 
-interface WorkflowDraft {
-  data: string
-  updatedAt: number
-}
-
-const { getDraft, getSetting } = vi.hoisted(() => ({
-  getDraft: vi.fn<() => WorkflowDraft | undefined>(() => undefined),
-  getSetting: vi.fn<() => boolean>(() => false)
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    dispatchCustomEvent: vi.fn()
+vi.mock(import('@/scripts/api'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return {
+    api: fromPartial<ComfyApi>({
+      getUserData: vi.fn(),
+      storeUserData: vi.fn(),
+      dispatchCustomEvent: vi.fn()
+    })
   }
-}))
+})
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
-  useWorkflowDraftStoreV2: vi.fn(() => ({
-    getDraft,
-    markDraftUsed: vi.fn(),
-    removeDraft: vi.fn()
-  }))
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: getSetting
-  }))
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    graph: {},
-    rootGraph: { serialize: vi.fn(() => ({ nodes: [], links: [] })) },
-    loadGraphData: vi.fn(() => Promise.resolve()),
-    canvas: { ds: { scale: 1, offset: [0, 0] } },
-    ui: { autoQueueEnabled: false, autoQueueMode: 'instant' }
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return {
+    app: fromPartial<ComfyApp>({
+      graph: {},
+      rootGraph: { serialize: vi.fn(() => ({ nodes: [], links: [] })) },
+      loadGraphData: vi.fn(() => Promise.resolve()),
+      canvas: { ds: { scale: 1, offset: [0, 0] } },
+      ui: { autoQueueEnabled: false, autoQueueMode: 'instant' }
+    })
   }
-}))
-
-// `ComfyWorkflow.load()` dynamically imports `changeTracker`, which in turn
-// imports these stores. They are unused by the save/document-identity
-// behavior under test here, but mirror changeTracker.test.ts's mocks so the
-// dynamic import resolves without dragging in their real (DOM/app-bound)
-// implementations.
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({}))
-}))
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => ({
-    snapshotOutputs: vi.fn(() => ({})),
-    restoreOutputs: vi.fn()
-  }))
-}))
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => ({
-    exportState: vi.fn(() => []),
-    restoreState: vi.fn()
-  }))
-}))
+})
 
 await import('@/scripts/changeTracker')
 
@@ -90,7 +55,7 @@ async function createLoadedWorkflow(path = 'workflows/test.json') {
   return workflow
 }
 
-describe('ComfyWorkflow document identity (ADR-0024)', () => {
+describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
   it('mints a clean local-only document id for persisted content', async () => {
     const workflow = await createLoadedWorkflow()
     expect(workflow.documentId).not.toBeNull()
@@ -122,9 +87,11 @@ describe('ComfyWorkflow document identity (ADR-0024)', () => {
 
   it('marks a restored draft dirty against the persisted baseline', async () => {
     const draftState = { nodes: [], links: [], version: 1 }
-    getSetting.mockReturnValueOnce(true)
-    getDraft.mockReturnValueOnce({
+    vi.mocked(useSettingStore().get).mockReturnValueOnce(true)
+    vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValueOnce({
       data: JSON.stringify(draftState),
+      name: 'test',
+      isTemporary: false,
       updatedAt: 1
     })
 

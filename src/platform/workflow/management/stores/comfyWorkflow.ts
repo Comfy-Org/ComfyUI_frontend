@@ -46,7 +46,7 @@ export class ComfyWorkflow extends UserFile {
    */
   changeTracker: ChangeTracker | null = null
   /**
-   * This workflow's `GraphDocument` registry identity (ADR-0024). Created
+   * This workflow's `GraphDocument` registry identity (ADR-GRAPH-DOCUMENT-0024). Created
    * local-only (no `workflow_id`) the first time the workflow is loaded and
    * held for the instance's lifetime. Unload retains it, and later loads of
    * the same instance reuse it until an explicit document closer is wired.
@@ -161,7 +161,7 @@ export class ComfyWorkflow extends UserFile {
     const initialState = JSON.parse(this.originalContent)
     const { ChangeTracker } = await import('@/scripts/changeTracker')
     this.changeTracker = markRaw(new ChangeTracker(this, initialState))
-    // Local-only document identity (ADR-0024): every loaded workflow gets a
+    // Local-only document identity (ADR-GRAPH-DOCUMENT-0024): every loaded workflow gets a
     // registry entry, whether or not it is ever bound to a cloud
     // `workflow_id` (that mapping is layered on separately, e.g. by the
     // agent panel). Minted once per load; reused across re-entrant loads of

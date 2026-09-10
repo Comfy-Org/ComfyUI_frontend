@@ -43,7 +43,7 @@ interface SemanticNodeLayout {
 }
 
 /** Restores the layout captured before a batch's layout phase began. */
-export interface SemanticLayoutRestore {
+interface SemanticLayoutRestore {
   restore(context: RemoteMutationContext): void
 }
 
@@ -850,17 +850,20 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const state = widgetStore.getWidget(id)
             if (!state) return []
             const renderState = widgetStore.getWidgetRenderState(id)
+            const visibility = widgetStore.getWidgetVisibility(id)
             return [
               {
                 id,
                 state: { ...toRaw(state) },
-                renderState: renderState ? { ...toRaw(renderState) } : {}
+                renderState: renderState ? { ...toRaw(renderState) } : {},
+                visibility: visibility ? { ...toRaw(visibility) } : undefined
               }
             ]
           })
       }))
     const links = [...linkStore.graphTopologies(scope)].map((topology) => ({
-      ...toRaw(topology)
+      topology: { ...toRaw(topology) },
+      presentation: linkPresentationStore.getPresentation(scope, topology.id)
     }))
 
     return function restore(context: RemoteMutationContext): void {
@@ -872,6 +875,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       ])
       for (const nodeId of occupied)
         widgetStore.clearNode(scope.rootGraphId, nodeId, context)
+      linkPresentationStore.clearOwner(scope)
       linkStore.clearOwner(scope, context)
       nodeStore.clearOwner(scope, context)
 
@@ -883,10 +887,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             widget.id,
             widget.state,
             widget.renderState,
+            widget.visibility,
             context
           )
       }
-      for (const topology of links) linkStore.registerLink(scope, topology)
+      for (const { topology, presentation } of links) {
+        linkStore.registerLink(scope, topology)
+        if (presentation)
+          linkPresentationStore.patch(scope, topology.id, presentation)
+      }
     }
   }
 

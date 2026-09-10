@@ -1,6 +1,6 @@
 /**
  * The pure lifecycle/persistence transition of one `GraphDocument`
- * (ADR-0024). Lifecycle (`created | loaded | closed`) and persistence
+ * (ADR-GRAPH-DOCUMENT-0024). Lifecycle (`created | loaded | closed`) and persistence
  * (`unsaved | clean | dirty`) are independent: the first describes document
  * existence, the second compares the document with its persistence baseline.
  * Persistence is derived from `revision` vs `savedRevision`, never stored.

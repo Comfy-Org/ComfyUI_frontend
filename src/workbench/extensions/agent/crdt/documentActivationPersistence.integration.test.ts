@@ -6,9 +6,7 @@ import {
   readStamps
 } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createActivationCoordinator } from '@/core/graph/document/activationCoordinator'
@@ -121,11 +119,7 @@ function loadedCoordinator() {
   })
 }
 
-describe('document activation persistence (ADR-0024 seam)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
+describe('document activation persistence (ADR-GRAPH-DOCUMENT-0024 seam)', () => {
   it('serializes byte-identically across Base/ECS/Nodes-2.0 activation cycles and save/reload', async () => {
     const scope = scopeFor('root')
     const mutations = mutationsFor(scope)

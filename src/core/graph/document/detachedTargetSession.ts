@@ -64,7 +64,7 @@ const CROSS_TARGET_ERROR = 'Detached target frames must never cross targets'
 
 /**
  * Staged frame queue for a target document that is not attached to a live
- * follower (ADR-0024's unloaded-target path). Frames enqueue in wire order
+ * follower (ADR-GRAPH-DOCUMENT-0024's unloaded-target path). Frames enqueue in wire order
  * and commit one at a time: each commit folds the head frame into a clone of
  * the last committed Yjs state, offers it to the projection port, and only
  * on success publishes the new committed tuple
@@ -99,16 +99,20 @@ export function createDetachedTargetSession(
   let queue: TargetFrame[] = []
   let destroyed = false
 
-  function isTarget(frameWorkflowId: string): boolean {
-    const matchesTarget = frameWorkflowId === workflowId
-    assert(matchesTarget, CROSS_TARGET_ERROR)
-    if (!matchesTarget) throw new TypeError(CROSS_TARGET_ERROR)
-    return matchesTarget
+  /**
+   * A frame addressed to another target is a wiring bug, not a recoverable
+   * transport condition. `assert` reports it but only throws in DEV, so the
+   * production throw is re-derived from the operands rather than from the
+   * asserted flag, which the compiler has already narrowed.
+   */
+  function assertTarget(frameWorkflowId: string): void {
+    assert(frameWorkflowId === workflowId, CROSS_TARGET_ERROR)
+    if (frameWorkflowId !== workflowId) throw new TypeError(CROSS_TARGET_ERROR)
   }
 
   function enqueue(frame: TargetFrame): EnqueueResult {
     if (destroyed) return { status: 'resync-required' }
-    if (!isTarget(frame.workflowId)) return { status: 'resync-required' }
+    assertTarget(frame.workflowId)
     if (needsResync) return { status: 'resync-required' }
 
     const lastAcceptedSeq = queue.at(-1)?.seq ?? committedSeq
@@ -137,7 +141,7 @@ export function createDetachedTargetSession(
   function commitNext(port: TargetFrameApplyPort): CommitResult {
     if (destroyed) return { status: 'idle' }
     if (needsResync) return { status: 'resync-required' }
-    const frame = queue[0]
+    const frame = queue.at(0)
     if (!frame) return { status: 'idle' }
 
     const staged = new Y.Doc()

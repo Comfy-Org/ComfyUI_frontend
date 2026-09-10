@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 
@@ -12,10 +10,6 @@ const scope = {
 }
 
 describe('useGraphDocumentStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('creates local-only documents that are not agent-addressable', () => {
     const store = useGraphDocumentStore()
     const documentId = store.createDocument()

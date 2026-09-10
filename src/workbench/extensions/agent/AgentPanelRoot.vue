@@ -179,7 +179,7 @@ const resolveDocumentId = (workflowId: string) =>
   )
 /**
  * Record every successful write against the target's document so its
- * revision advances (ADR-0024 dirty tracking). Each method resolves the
+ * revision advances (ADR-GRAPH-DOCUMENT-0024 dirty tracking). Each method resolves the
  * document id when the write starts — not at wrapper creation (the workflow
  * may have been rebound to a new document since) and not at success time
  * (the write itself can synchronously trigger a rebind, and the mutation
@@ -211,7 +211,7 @@ const withMutationTracking = (
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
-  // Document identity is early-bound (ADR-0024): the registry entry is
+  // Document identity is early-bound (ADR-GRAPH-DOCUMENT-0024): the registry entry is
   // created when the target is first addressed, not at commit time. Commit
   // scope resolution then records/refreshes the entry's scope, so a target
   // whose tab is momentarily unresolved still commits into its own document.
