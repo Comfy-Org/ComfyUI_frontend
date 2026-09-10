@@ -30,8 +30,7 @@ import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
-vi.mock(import('@/platform/telemetry/reportError'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
