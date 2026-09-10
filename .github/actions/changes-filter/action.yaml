@@ -43,6 +43,9 @@ outputs:
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
+  app-billing-web-changes:
+    description: 'Shared deps, OXC config, billing CI, or `apps/billing-web/**` changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_billing_web == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_frontend == 'true' }}
@@ -68,6 +71,13 @@ runs:
       uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       with:
         filters: |
+          app_billing_web:
+            - 'apps/billing-web/**'
+            - '.github/workflows/ci-billing-web.yaml'
+            - '.github/actions/changes-filter/action.yaml'
+            - '.github/actions/setup-frontend/**'
+            - '.oxfmtrc.json'
+            - '.oxlintrc.json'
           app_website:
             - 'apps/website/**'
           app_frontend:
