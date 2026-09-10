@@ -1,10 +1,11 @@
+import { useToast } from '@/components/ui/toast'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -97,7 +98,6 @@ beforeEach(() => {
   vi.mocked(useExecutionErrorStore().surfaceMissingModels).mockImplementation(
     () => undefined
   )
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
 })
 
 vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
@@ -119,9 +119,20 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => mockHandles.toastStore
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(
+    mockHandles.toastStore.success
+  )
+  vi.mocked(useToast().error).mockImplementation(mockHandles.toastStore.error)
+  vi.mocked(useToast().info).mockImplementation(mockHandles.toastStore.info)
+  vi.mocked(useToast().warning).mockImplementation(
+    mockHandles.toastStore.warning
+  )
+  vi.mocked(useToast().loading).mockImplementation(
+    mockHandles.toastStore.loading
+  )
+  vi.mocked(useToast().custom).mockImplementation(mockHandles.toastStore.custom)
+})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

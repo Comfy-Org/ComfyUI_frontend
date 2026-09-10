@@ -1,6 +1,6 @@
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -56,18 +56,14 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd,
-    loading: mockToastAdd,
-    custom: mockToastAdd
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().info).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().warning).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().loading).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().custom).mockImplementation(mockToastAdd)
+})
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -98,7 +94,6 @@ beforeEach(() => {
 beforeEach(() => {
   vi.mocked(useSettingStore().set).mockImplementation(mockSettingSet)
   vi.mocked(useSettingStore().get).mockImplementation(() => 'default')
-  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
 })
 
 describe('useKeybindingPresetService', () => {

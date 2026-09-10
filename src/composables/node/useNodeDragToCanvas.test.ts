@@ -1,9 +1,9 @@
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useToast } from '@/components/ui/toast'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 

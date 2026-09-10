@@ -1,4 +1,5 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useToast } from '@/components/ui/toast'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -27,16 +28,14 @@ vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warning: vi.fn(),
-    loading: vi.fn(),
-    custom: vi.fn()
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(vi.fn())
+  vi.mocked(useToast().error).mockImplementation(vi.fn())
+  vi.mocked(useToast().info).mockImplementation(vi.fn())
+  vi.mocked(useToast().warning).mockImplementation(vi.fn())
+  vi.mocked(useToast().loading).mockImplementation(vi.fn())
+  vi.mocked(useToast().custom).mockImplementation(vi.fn())
+})
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)

@@ -1,9 +1,10 @@
 import { computed } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showDowngradeToPersonalDialog must refresh members before the no-members
@@ -14,6 +15,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 const refreshMembers = vi.hoisted(() => vi.fn())
 const previewDowngrade = vi.hoisted(() => vi.fn())
 const downgradeToPersonal = vi.hoisted(() => vi.fn())
+const toastAdd = vi.hoisted(() => vi.fn())
 const hasOtherMembers = vi.hoisted(() => ({ value: false }))
 
 const {
@@ -58,16 +60,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: toastAdd,
-    error: toastAdd,
-    info: toastAdd,
-    warning: toastAdd,
-    loading: toastAdd,
-    custom: toastAdd
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(toastAdd)
+  vi.mocked(useToast().error).mockImplementation(toastAdd)
+  vi.mocked(useToast().info).mockImplementation(toastAdd)
+  vi.mocked(useToast().warning).mockImplementation(toastAdd)
+  vi.mocked(useToast().loading).mockImplementation(toastAdd)
+  vi.mocked(useToast().custom).mockImplementation(toastAdd)
+})
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),

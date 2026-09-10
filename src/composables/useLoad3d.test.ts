@@ -52,10 +52,6 @@ vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn()
-}))
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn(),
@@ -205,10 +201,7 @@ describe('useLoad3d', () => {
     })
     vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
-    mockToastStore = {
-      warning: vi.fn()
-    } as Partial<ReturnType<typeof useToast>> as ReturnType<typeof useToast>
-    vi.mocked(useToast).mockReturnValue(mockToastStore)
+    mockToastStore = useToast()
   })
 
   describe('initialization', () => {

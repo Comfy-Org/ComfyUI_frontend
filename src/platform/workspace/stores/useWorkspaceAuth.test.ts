@@ -1,6 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToast } from '@/components/ui/toast'
 import type { User } from 'firebase/auth'
 import {
   onAuthStateChanged,
@@ -28,6 +28,8 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
 
 /**
  * Stands in for Firebase behind the store's identity entry: assigning

@@ -1,6 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToast } from '@/components/ui/toast'
 import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -12,6 +12,10 @@ import {
 
 // Mock dependencies that are not stores
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

@@ -1,9 +1,9 @@
+import { useToast } from '@/components/ui/toast'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 interface ViewportInstance {
   ctorArgs: unknown[]
@@ -47,9 +47,9 @@ vi.mock<unknown>(
     CameraInfoViewport: ViewportMock
   })
 )
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(warning)
+})
 
 import { useCameraInfo } from './useCameraInfo'
 

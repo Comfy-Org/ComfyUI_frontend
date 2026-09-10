@@ -1,4 +1,3 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
@@ -6,6 +5,7 @@ import {
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useToast } from '@/components/ui/toast'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

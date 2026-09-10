@@ -1,4 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
@@ -10,6 +10,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { useCompositorPsdDownload } from './useCompositorPsdDownload'
 
+const toastAdd = vi.hoisted(() => vi.fn())
 const { buildSessionPsdBlob, downloadBlob, loadCompositorSession } = vi.hoisted(
   () => ({
     buildSessionPsdBlob: vi.fn(async () => new Blob(['psd'])),
@@ -32,16 +33,26 @@ vi.mock(
   })
 )
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => toastAdd('success', ...args),
-    error: (...args: unknown[]) => toastAdd('error', ...args),
-    info: (...args: unknown[]) => toastAdd('info', ...args),
-    warning: (...args: unknown[]) => toastAdd('warning', ...args),
-    loading: (...args: unknown[]) => toastAdd('loading', ...args),
-    custom: (...args: unknown[]) => toastAdd('custom', ...args)
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    toastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    toastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    toastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    toastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    toastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    toastAdd('custom', ...args)
+  )
+})
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -83,10 +94,6 @@ function makeSession(glOk = true) {
 
 const node = { id: toNodeId(5) } as unknown as LGraphNode
 
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
-
 describe('useCompositorPsdDownload', () => {
   beforeEach(() => {
     loadCompositorSession.mockResolvedValue(0)
@@ -112,7 +119,7 @@ describe('useCompositorPsdDownload', () => {
     )
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(vi.mocked(toastAdd)).not.toHaveBeenCalled()
   })
 
   it('reports an error and still disposes when WebGL is unavailable', async () => {
@@ -143,7 +150,7 @@ describe('useCompositorPsdDownload', () => {
 
     expect(buildSessionPsdBlob).not.toHaveBeenCalled()
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(toastAdd)).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
   })
 
@@ -157,7 +164,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(toastAdd)).toHaveBeenCalledTimes(1)
     expect(session.dispose).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
@@ -170,7 +177,7 @@ describe('useCompositorPsdDownload', () => {
     await downloadPsd(node)
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(toastAdd)).toHaveBeenCalledTimes(1)
     expect(exporting.value).toBe(false)
   })
 
