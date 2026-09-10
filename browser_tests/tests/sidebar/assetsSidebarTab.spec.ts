@@ -401,7 +401,7 @@ mobileListSmokeTest.describe('FE-130 assets sidebar route mocks', () => {
   )
 
   mobileListSmokeTest(
-    '@mobile-ios @cloud list, filter, group, and delete controls remain usable',
+    '@mobile-ios list, filter, group, and delete controls remain usable',
     async ({ comfyPage }) => {
       await comfyPage.menu.assetsTab.expectTouchControlsUsable(
         mobileTouchControlNames
