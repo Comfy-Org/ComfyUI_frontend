@@ -320,7 +320,7 @@ describe('useNodeDragToCanvas', () => {
             'Widget "ckpt_name" is missing from added node CheckpointLoaderSimple'
         }),
         {
-          errorType: 'nodes_drag_widget_missing',
+          errorType: 'failure_setting_dragged_node_widget',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -369,7 +369,7 @@ describe('useNodeDragToCanvas', () => {
           message: 'Failed to add dragged node TestNode to the graph'
         }),
         {
-          errorType: 'nodes_drag_add_failed',
+          errorType: 'failure_adding_dragged_node',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',

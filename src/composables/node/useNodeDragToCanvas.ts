@@ -44,7 +44,7 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
       reportError(
         new Error(`Widget "${name}" is missing from added node ${node.type}`),
         {
-          errorType: 'nodes_drag_widget_missing',
+          errorType: 'failure_setting_dragged_node_widget',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -100,7 +100,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     reportError(
       new Error(`Failed to add dragged node ${nodeDef.name} to the graph`),
       {
-        errorType: 'nodes_drag_add_failed',
+        errorType: 'failure_adding_dragged_node',
         tags: {
           failure_kind: 'bad_state',
           feature_area: 'nodes',
