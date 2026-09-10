@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "Fija un latente ya codificado como guía, para cuando la guía procede de una etapa anterior en lugar de una imagen. Tiene el mismo efecto que LTXV Add Guide sin el ciclo de decodificación/codificación VAE. Una guía espacialmente más pequeña que el objetivo (una referencia IC-LoRA o de detallado) se dilata sobre una cuadrícula dispersa, y las posiciones finales de su RoPE se amplían en la misma proporción para que cubra el lienzo objetivo en lugar de dirigirse solo a su esquina superior izquierda.",
+    "display_name": "LTXV Añadir guía latente",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional en el espacio de píxeles. Controla la influencia del condicionamiento por región mediante autoatención, multiplicada por strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Latente de guía. Su tamaño espacial debe dividir el del objetivo por el mismo número entero en ambos ejes; un tamaño igual lo fija tal cual, un tamaño a la mitad se trata como una referencia IC-LoRA x2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo objetivo sobre el que se fija la guía."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Índice del fotograma latente en el que comienza la guía, contado en fotogramas latentes en lugar de fotogramas de píxeles. Los valores negativos colocan la guía en fotogramas anteriores al inicio del latente, sin contar hacia atrás desde su final."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Limitado a 1.0. Una guía dilatada marca sus posiciones de relleno con una máscara de eliminación de ruido negativa para que el modelo las descarte; por encima de 1.0, las posiciones conservadas también se volverían negativas y se descartaría toda la guía. Amplifique más allá de 1.0 con attention_mask."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "Decodificar LTXV Audio VAE",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "Cargar 3D (Avanzado)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Alto de renderizado de la ventana gráfica en píxeles."
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Ancho de renderizado de la ventana gráfica en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D cargado (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio global con Y hacia arriba)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de enfoque, zoom y tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica en píxeles."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica en píxeles."
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Genera imágenes a través del endpoint GPT Image de OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Acondicionamiento multivista de Pixal3D",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "Vista cuadrada del lado trasero del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto abarca aproximadamente 1/1.1 del encuadre en su parte más ancha, con la misma escala en todas las vistas. La primera vista conectada (orden front, left, back, right) es el frente hacia el que se orienta la malla."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision DINOv3 ViT-L/16 con pesos NAF incluidos."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FOV horizontal en grados de las vistas tal como están encuadradas: 20 para renderizados con rig y la mayoría de generadores multivista, o MoGeGeometryToFOV en una de las vistas para fotos."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "Vista cuadrada del lado frontal del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto abarca aproximadamente 1/1.1 del encuadre en su parte más ancha, con la misma escala en todas las vistas. La primera vista conectada (orden front, left, back, right) es el frente hacia el que se orienta la malla."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Vista cuadrada del lado izquierdo del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto abarca aproximadamente 1/1.1 del encuadre en su parte más ancha, con la misma escala en todas las vistas. La primera vista conectada (orden front, left, back, right) es el frente hacia el que se orienta la malla."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Vista cuadrada del lado derecho del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto abarca aproximadamente 1/1.1 del encuadre en su parte más ancha, con la misma escala en todas las vistas. La primera vista conectada (orden front, left, back, right) es el frente hacia el que se orienta la malla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "Genera videos de forma sincrónica según el prompt y el tamaño de salida.",
     "display_name": "PixVerse Imagen a Video",
@@ -17300,10 +17390,12 @@
     "display_name": "Vista previa 3D (Avanzado)",
     "inputs": {
       "camera_info": {
-        "name": "info_cámara"
+        "name": "info_cámara",
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de enfoque, zoom y tipo."
       },
       "height": {
-        "name": "alto"
+        "name": "alto",
+        "tooltip": "Altura de renderizado de la ventana gráfica en píxeles."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "ancho"
+        "name": "ancho",
+        "tooltip": "Anchura de renderizado de la ventana gráfica en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "archivo_modelo",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D (glb/obj/stl/etc.) de un nodo 3D anterior."
       },
       "1": {
         "name": "info_cámara",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "info_modelo_3d",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de enfoque, zoom y tipo."
       },
       "3": {
         "name": "ancho",
-        "tooltip": null
+        "tooltip": "Anchura de renderizado de la ventana gráfica en píxeles."
       },
       "4": {
         "name": "alto",
-        "tooltip": null
+        "tooltip": "Altura de renderizado de la ventana gráfica en píxeles."
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "Guardar 3D (Avanzado)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de enfoque, zoom y tipo."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderizado de la ventana gráfica en píxeles."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Archivo de modelo 3D de un nodo 3D ascendente."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Anchura de renderizado de la ventana gráfica en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D (glb/obj/stl/etc.) de un nodo 3D anterior."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de enfoque, zoom y tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Anchura de renderizado de la ventana gráfica en píxeles."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderizado de la ventana gráfica en píxeles."
       }
     }
   },

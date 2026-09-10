@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "מקבע latent שכבר קודד כמדריך, למקרים שבהם המדריך מגיע משלב מוקדם יותר ולא מתמונה. אותה השפעה כמו LTXV Add Guide, ללא הלוך ושוב של פענוח/קידוד VAE. מדריך שגודלו המרחבי קטן מהיעד (הפניית IC-LoRA או הפניית פירוט) מורחב על גבי רשת דלילה, ומיקומי הסיום של RoPE שלו מורחבים באותו יחס כדי שיכסה את קנבס היעד במקום להתייחס רק לפינה השמאלית העליונה שלו.",
+    "display_name": "LTXV הוספת מדריך latent",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "מסכה מרחבית אופציונלית במרחב פיקסלים. שולטת בהשפעת ההתניה לכל אזור באמצעות self-attention, ומוכפלת ב-strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "latent המדריך. גודלו המרחבי חייב לחלק את גודל היעד באותו מספר שלם בשני הצירים; גודל זהה מקבע אותו כפי שהוא, וגודל חצי מטופל כהפניית IC-LoRA פי 2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ה-latent של סרטון היעד שעליו מקובע המדריך."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "אינדקס מסגרת ה-latent שבה מתחיל המדריך, נספר במסגרות latent ולא במסגרות פיקסלים. ערכים שליליים ממקמים את המדריך במסגרות שלפני תחילת ה-latent, ולא נספרים לאחור מסופו."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "מוגבל ל-1.0. מדריך מורחב מסמן את מיקומי הריפוד שלו באמצעות מסכת denoise שלילית כדי שהמודל יתעלם מהם; מעל 1.0 גם המיקומים הנשמרים יהפכו לשליליים והמדריך כולו יושמט. במקום זאת, הגבר מעבר ל-1.0 באמצעות attention_mask."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV Audio VAE Decode",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "טעינת 3D (מתקדם)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "קובץ מודל 3D שנטען (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה מעלה)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "יוצר תמונות דרך נקודת הקצה של OpenAI GPT Image.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D התניה מרובת תצוגות",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "תצוגה ריבועית של הצד האחורי של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט תופס בערך 1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, ובאותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר front, left, back, right) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision עם משקלי NAF כלולים."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FOV אופקי במעלות של התצוגות כפי שהן ממוסגרות: 20 לרינדורי rig ולרוב מחוללי התצוגות המרובות, או MoGeGeometryToFOV על אחת התצוגות עבור תמונות."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "תצוגה ריבועית של הצד הקדמי של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט תופס בערך 1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, ובאותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר front, left, back, right) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "תצוגה ריבועית של הצד השמאלי של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט תופס בערך 1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, ובאותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר front, left, back, right) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "תצוגה ריבועית של הצד הימני של האובייקט, עם alpha או על רקע שחור, ממוסגרת כמו ה-rig: האובייקט תופס בערך 1/1.1 מהמסגרת בנקודה הרחבה ביותר שלו, ובאותו קנה מידה בכל תצוגה. התצוגה המחוברת הראשונה (בסדר front, left, back, right) היא החזית שאליה מותאמת תנוחת ה-mesh."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "שלילי",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "יוצר סרטונים על בסיס הנחיה וגודל פלט.",
     "display_name": "PixVerse תמונה לוידאו",
@@ -17300,10 +17390,12 @@
     "display_name": "תצוגה מקדימה בתלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממד (glb/obj/stl/etc.) מצומת תלת־ממד קודם במעלה הזרם."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "שמירת תלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
-        "name": "מידע מצלמה"
+        "name": "מידע מצלמה",
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "filename_prefix": {
         "name": "קידומת שם קובץ"
       },
       "height": {
-        "name": "גובה"
+        "name": "גובה",
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       },
       "model_3d": {
         "name": "מודל תלת-ממד",
         "tooltip": "קובץ מודל תלת-ממדי מצומת תלת-ממד במעלה הזרם."
       },
       "model_3d_info": {
-        "name": "מידע מודל תלת-ממד"
+        "name": "מידע מודל תלת-ממד",
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "viewport_state": {
         "name": "מצב תצוגה"
       },
       "width": {
-        "name": "רוחב"
+        "name": "רוחב",
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "מודל תלת-ממד",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממד (glb/obj/stl/etc.) מצומת תלת־ממד קודם במעלה הזרם."
       },
       "1": {
         "name": "מידע מודל תלת-ממד",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "2": {
         "name": "מידע מצלמה",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "רוחב",
-        "tooltip": null
+        "tooltip": "רוחב הרינדור של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "גובה",
-        "tooltip": null
+        "tooltip": "גובה הרינדור של חלון התצוגה בפיקסלים."
       }
     }
   },

@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "将已编码的潜空间固定为引导，适用于引导来自较早阶段而非图像的情况。效果与 LTXV Add Guide 相同，但无需进行 VAE 解码/编码往返。空间尺寸小于目标的引导（IC-LoRA 或细节参考）会扩张到稀疏网格上，其 RoPE 终止位置也会按相同比例扩展，从而覆盖目标画布，而非仅对应其左上角。",
+    "display_name": "LTXV 添加潜空间引导",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "可选的像素空间蒙版。通过自注意力控制各区域的条件影响，并与 strength 相乘。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "引导潜空间。其空间尺寸必须在两个轴上均以相同的整数比例整除目标尺寸；相同尺寸时按原样固定，半尺寸会被视为 x2 IC-LoRA 参考。"
+      },
+      "latent": {
+        "name": "潜空间",
+        "tooltip": "引导所固定到的目标视频潜空间。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "引导的起始潜空间帧索引，按潜空间帧而非像素帧计数。负值会将引导置于潜空间起始位置之前的帧，而非从其末尾向前计数。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "上限为 1.0。扩张后的引导会使用负去噪蒙版标记其填充位置，使模型忽略它们；高于 1.0 时保留位置也会变为负值，整个引导都会被忽略。请改用 attention_mask 来放大至 1.0 以上。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "潜空间",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV音频VAE解码",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "加载3D（高级）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "视口的渲染高度（像素）。"
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "视口的渲染宽度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "已加载的 3D 模型文件（glb/obj/stl 等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "场景中每个模型的放置方式：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "视口的渲染宽度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "视口的渲染高度（像素）。"
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "通过OpenAI的GPT Image端点生成图像。",
-    "display_name": "OpenAI GPT 图像 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D 多视图条件化",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "物体背面的方形视图，带 alpha 通道或置于黑色背景上，构图与相机架一致：物体最宽处约占画面的 1/1.1，且每个视图中的比例相同。第一个连接的视图（顺序为 front、left、back、right）将作为网格所朝向的正面。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "包含 NAF 权重的 DINOv3 ViT-L/16 ClipVision。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "所构图视图的水平 FOV（度）：相机架渲染和大多数多视图生成器使用 20；对于照片，可对其中一个视图使用 MoGeGeometryToFOV。"
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "物体正面的方形视图，带 alpha 通道或置于黑色背景上，构图与相机架一致：物体最宽处约占画面的 1/1.1，且每个视图中的比例相同。第一个连接的视图（顺序为 front、left、back、right）将作为网格所朝向的正面。"
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "物体左侧的方形视图，带 alpha 通道或置于黑色背景上，构图与相机架一致：物体最宽处约占画面的 1/1.1，且每个视图中的比例相同。第一个连接的视图（顺序为 front、left、back、right）将作为网格所朝向的正面。"
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "物体右侧的方形视图，带 alpha 通道或置于黑色背景上，构图与相机架一致：物体最宽处约占画面的 1/1.1，且每个视图中的比例相同。第一个连接的视图（顺序为 front、left、back、right）将作为网格所朝向的正面。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "根据提示词和输出尺寸同步生成视频。",
     "display_name": "PixVerse 图像转视频",
@@ -17300,10 +17390,12 @@
     "display_name": "3D 预览（高级）",
     "inputs": {
       "camera_info": {
-        "name": "相机信息"
+        "name": "相机信息",
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "height": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": "视口的渲染高度，单位为像素。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "宽度"
+        "name": "宽度",
+        "tooltip": "视口的渲染宽度，单位为像素。"
       }
     },
     "outputs": {
       "0": {
         "name": "模型文件",
-        "tooltip": null
+        "tooltip": "来自上游 3D 节点的 3D 模型文件（glb/obj/stl/etc.）。"
       },
       "1": {
         "name": "相机信息",
-        "tooltip": null
+        "tooltip": "场景中每个模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "2": {
         "name": "3D 模型信息",
-        "tooltip": null
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "3": {
         "name": "宽度",
-        "tooltip": null
+        "tooltip": "视口的渲染宽度，单位为像素。"
       },
       "4": {
         "name": "高度",
-        "tooltip": null
+        "tooltip": "视口的渲染高度，单位为像素。"
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "保存 3D（高级）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "视口的渲染高度，单位为像素。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "来自上游 3D 节点的 3D 模型文件。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "场景中每个模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "视口的渲染宽度，单位为像素。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "来自上游 3D 节点的 3D 模型文件（glb/obj/stl/etc.）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "场景中每个模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "视口的渲染宽度，单位为像素。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "视口的渲染高度，单位为像素。"
       }
     }
   },

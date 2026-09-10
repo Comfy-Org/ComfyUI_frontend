@@ -9804,6 +9804,55 @@
       }
     }
   },
+  "LTXVAddLatentGuide": {
+    "description": "すでにエンコード済みのlatentをガイドとして固定します。ガイドが画像ではなく前段の処理から出力される場合に使用します。VAEのデコード/エンコード往復処理を行わない点を除き、LTXV Add Guideと同じ効果です。ターゲットより空間的に小さいガイド（IC-LoRAまたはディテール参照）は疎グリッド上に拡張され、そのRoPE終端位置も同じ比率で拡張されるため、ターゲットキャンバス全体をカバーし、左上隅だけを参照することがありません。",
+    "display_name": "LTXV latent ガイドを追加",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "任意のピクセル空間の空間マスク。self-attentionを介して領域ごとの条件付けの影響を制御し、strengthが乗算されます。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "ガイドlatent。空間サイズは両軸で同じ整数比になるようターゲットを割り切れる必要があります。同サイズではそのまま固定され、半分のサイズはx2 IC-LoRA参照として扱われます。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ガイドを固定する対象の動画latent。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "ガイドを開始するlatentフレームのインデックスです。ピクセルフレームではなくlatentフレームで数えます。負の値では、latentの末尾から逆算するのではなく、latent開始前のフレームにガイドを配置します。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "1.0に制限されます。拡張されたガイドはパディング位置を負のdenoiseマスクでマークし、モデルがそれらを除外するようにします。1.0を超えると保持する位置も負になり、ガイド全体が除外されます。1.0を超えて強調するには、代わりにattention_maskを使用してください。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAudioVAEDecode": {
     "display_name": "LTXV オーディオVAEデコード",
     "inputs": {
@@ -10962,7 +11011,8 @@
     "display_name": "3D読み込み（詳細）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_file": {
         "name": "model_file"
@@ -10971,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "読み込まれた3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置: 位置、回転、スケール（Yアップのワールド空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報: 位置、注視対象、ズーム、タイプ。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -16335,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAIのGPT Imageエンドポイントを使って画像を生成します。",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D マルチビュー条件付け",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "オブジェクト背面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様にフレーミングします。オブジェクトは最も幅広い部分でフレームの約1/1.1を占め、すべてのビューで同じスケールにします。最初に接続されたビュー（front、left、back、rightの順）が、メッシュをポーズする際の正面になります。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "NAFウェイトを同梱したDINOv3 ViT-L/16 ClipVision。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "構図におけるビューの水平FOV（度）。リグレンダーおよび大半のマルチビュージェネレーターでは20、写真ではいずれかのビューにMoGeGeometryToFOVを使用します。"
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "オブジェクト正面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様にフレーミングします。オブジェクトは最も幅広い部分でフレームの約1/1.1を占め、すべてのビューで同じスケールにします。最初に接続されたビュー（front、left、back、rightの順）が、メッシュをポーズする際の正面になります。"
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "オブジェクト左側面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様にフレーミングします。オブジェクトは最も幅広い部分でフレームの約1/1.1を占め、すべてのビューで同じスケールにします。最初に接続されたビュー（front、left、back、rightの順）が、メッシュをポーズする際の正面になります。"
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "オブジェクト右側面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様にフレーミングします。オブジェクトは最も幅広い部分でフレームの約1/1.1を占め、すべてのビューで同じスケールにします。最初に接続されたビュー（front、left、back、rightの順）が、メッシュをポーズする際の正面になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "プロンプトと出力サイズに基づいて同期的に動画を生成します。",
     "display_name": "PixVerse 画像から動画へ",
@@ -17300,10 +17390,12 @@
     "display_name": "3Dプレビュー（詳細）",
     "inputs": {
       "camera_info": {
-        "name": "カメラ情報"
+        "name": "カメラ情報",
+        "tooltip": "ビューポートのカメラ情報: 位置、注視点、ズーム、タイプ。"
       },
       "height": {
-        "name": "高さ"
+        "name": "高さ",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17316,29 +17408,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "幅"
+        "name": "幅",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "上流の3Dノードからの3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "カメラ情報",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置: 位置、回転、スケール（Y上向きのワールド空間）。"
       },
       "2": {
         "name": "3Dモデル情報",
-        "tooltip": null
+        "tooltip": "ビューポートのカメラ情報: 位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "幅",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "高さ",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -20677,48 +20770,52 @@
     "display_name": "3Dを保存（詳細）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "ビューポートのカメラ情報: 位置、注視点、ズーム、タイプ。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "上流の3Dノードからの3Dモデルファイル。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "シーン内の各モデルの配置: 位置、回転、スケール（Y上向きのワールド空間）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "上流の3Dノードからの3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置: 位置、回転、スケール（Y上向きのワールド空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "ビューポートのカメラ情報: 位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },

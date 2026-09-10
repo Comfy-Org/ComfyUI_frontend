@@ -10233,32 +10233,34 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Loaded 3D model file (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -10892,6 +10894,55 @@
       "iclora_parameters": {
         "name": "iclora_parameters",
         "tooltip": "Optional IC-LoRA parameters from a Get IC-LoRA Parameters node. Used for adjusting guide processing as required by certain IC-LoRAs (eg. those with a reference_downscale_factor > 1). When chained, each LTXVAddGuide uses only the parameters connected to it."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "display_name": "LTXV Add Latent Guide",
+    "description": "Pins an already-encoded latent as a guide, for when the guide comes out of an earlier stage rather than an image. Same effect as LTXV Add Guide without the VAE decode/encode round trip. A guide that is spatially smaller than the target (an IC-LoRA or detailing reference) is dilated onto a sparse grid, and its RoPE end positions are expanded by the same ratio so it covers the target canvas instead of addressing only the top-left corner of it.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Target video latent the guide is pinned onto."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Guide latent. Its spatial size must divide the target's by the same whole number on both axes; equal size pins it as-is, half size is treated as an x2 IC-LoRA reference."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Latent frame index to start the guide at, counted in latent frames rather than pixel frames. Negative values place the guide on frames before the start of the latent, not counted back from its end."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Capped at 1.0. A dilated guide marks its padding positions with a negative denoise mask so the model drops them; above 1.0 the kept positions would go negative too and the whole guide would be dropped. Amplify beyond 1.0 with attention_mask instead."
+      },
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optional pixel-space spatial mask. Controls per-region conditioning influence via self-attention, multiplied by strength."
       }
     },
     "outputs": {
@@ -16334,7 +16385,7 @@
     }
   },
   "OpenAIGPTImageNodeV2": {
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "description": "Generates images via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
@@ -16855,6 +16906,45 @@
       }
     }
   },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Multi-View Conditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision with bundled NAF weights."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Horizontal FOV in degrees of the views as framed: 20 for rig renders and most multi-view generators, or MoGeGeometryToFOV on one of the views for photos."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "Square view of the object's front side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Square view of the object's left side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      },
+      "back": {
+        "name": "back",
+        "tooltip": "Square view of the object's back side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Square view of the object's right side, with alpha or on a black background, framed like the rig: the object spans about 1/1.1 of the frame at its widest, the same scale in every view. The first connected view (front, left, back, right order) is the front the mesh is posed to."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "display_name": "PixVerse Image to Video",
     "description": "Generates videos based on prompt and output_size.",
@@ -17307,38 +17397,41 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D model file (glb/obj/stl/etc.) from an upstream 3D node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -20391,38 +20484,42 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D model file (glb/obj/stl/etc.) from an upstream 3D node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
