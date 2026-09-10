@@ -299,40 +299,46 @@ describe('SubgraphConversion', () => {
       innerLink.target_slot = 9999
       expectUnpackRejected(graph, subgraphNode)
     })
-    it('Should leave the graph untouched when a subgraph input link has an invalid boundary slot', () => {
-      const subgraph = createTestSubgraph({
-        inputs: [{ name: 'value', type: 'number' }]
-      })
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph input link has invalid boundary slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
 
-      const innerNode = createTestNode(subgraph, ['number'])
-      const innerLink = subgraph.inputNode.slots[0].connect(
-        innerNode.inputs[0],
-        innerNode
-      )
-      assert(innerLink)
-      innerLink.origin_slot = 9999
-      expectUnpackRejected(graph, subgraphNode)
-    })
-    it('Should leave the graph untouched when a subgraph output link has an invalid boundary slot', () => {
-      const subgraph = createTestSubgraph({
-        outputs: [{ name: 'value', type: 'number' }]
-      })
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
+        const innerNode = createTestNode(subgraph, ['number'])
+        const innerLink = subgraph.inputNode.slots[0].connect(
+          innerNode.inputs[0],
+          innerNode
+        )
+        assert(innerLink)
+        innerLink.origin_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+      }
+    )
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph output link has invalid boundary slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph({
+          outputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
 
-      const innerNode = createTestNode(subgraph, [], ['number'])
-      const innerLink = subgraph.outputNode.slots[0].connect(
-        innerNode.outputs[0],
-        innerNode
-      )
-      assert(innerLink)
-      innerLink.target_slot = 9999
-      expectUnpackRejected(graph, subgraphNode)
-    })
+        const innerNode = createTestNode(subgraph, [], ['number'])
+        const innerLink = subgraph.outputNode.slots[0].connect(
+          innerNode.outputs[0],
+          innerNode
+        )
+        assert(innerLink)
+        innerLink.target_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+      }
+    )
     it('Should report success when unpacking an intact subgraph', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)

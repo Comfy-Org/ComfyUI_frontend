@@ -253,13 +253,17 @@ export function findUnresolvableSubgraphLink(
     const originOk =
       link.origin_id === UNASSIGNED_NODE_ID ||
       (link.origin_id === SUBGRAPH_INPUT_ID
-        ? link.origin_slot >= 0 && link.origin_slot < subgraph.inputs.length
+        ? Number.isInteger(link.origin_slot) &&
+          link.origin_slot >= 0 &&
+          link.origin_slot < subgraph.inputs.length
         : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
           undefined)
     const targetOk =
       link.target_id === UNASSIGNED_NODE_ID ||
       (link.target_id === SUBGRAPH_OUTPUT_ID
-        ? link.target_slot >= 0 && link.target_slot < subgraph.outputs.length
+        ? Number.isInteger(link.target_slot) &&
+          link.target_slot >= 0 &&
+          link.target_slot < subgraph.outputs.length
         : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
           undefined)
     if (!originOk || !targetOk) return link
