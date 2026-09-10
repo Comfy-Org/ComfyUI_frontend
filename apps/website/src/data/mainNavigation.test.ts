@@ -5,8 +5,10 @@ import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
   it('includes a Products entry linking to Enterprise Managed Builds', () => {
-    const [productsItem] = getMainNavigation('en')
-    const productsColumn = productsItem.columns?.[0]
+    const productsItem = getMainNavigation('en').find(
+      (item) => item.label === 'Products'
+    )
+    const productsColumn = productsItem?.columns?.[0]
     const managedBuildsEntry = productsColumn?.items.find(
       (item) => item.href === getRoutes('en').managedBuilds
     )

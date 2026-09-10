@@ -228,7 +228,7 @@ describe('AuthForgotPassword', () => {
     )
   })
 
-  it('keeps the plain href in markup so a pre-hydration click still reaches login', () => {
+  it('hydrates the validated return destination into the login link', async () => {
     window.history.replaceState(
       {},
       '',
@@ -236,10 +236,14 @@ describe('AuthForgotPassword', () => {
     )
     render(AuthForgotPassword)
 
-    expect(
-      screen.getByRole('link', { name: /back to login/i }).getAttribute('href'),
-      'hydration never repairs a server-rendered href, so the destination is added at click time instead'
-    ).toBe('/login/')
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole('link', { name: /back to login/i })
+          .getAttribute('href'),
+        'the native link should preserve the destination after hydration'
+      ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F')
+    )
   })
 
   it('drops an unsafe cross-origin return destination', async () => {
@@ -257,6 +261,6 @@ describe('AuthForgotPassword', () => {
     expect(
       assign,
       'a cross-origin destination maps to the safe Workshop-home fallback, never the raw value'
-    ).toHaveBeenCalledWith('/login/?returnTo=%2Fworkshop%2F')
+    ).toHaveBeenCalledWith('/login/?returnTo=%2Fmodels%2F')
   })
 })
