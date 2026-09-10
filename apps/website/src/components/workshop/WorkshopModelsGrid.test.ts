@@ -165,24 +165,21 @@ describe('WorkshopModelsGrid', () => {
       version.value = 'v1.1'
     })
 
-    it.for(['browse-all', 'browse-all-end'])(
-      'leaves the rows for the whole catalogue and back (%s)',
-      async (testId) => {
-        const user = userEvent.setup()
-        render(WorkshopModelsGrid, { props: { models } })
-        expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    it('leaves the rows for the whole catalogue and back', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
 
-        await user.click(screen.getByTestId(testId))
+      await user.click(screen.getByTestId('browse-all-end'))
 
-        expect(screen.queryByTestId('workshop-sections')).toBeNull()
-        expect(cardNames()).toHaveLength(models.length)
-        expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
-          'All models'
-        )
+      expect(screen.queryByTestId('workshop-sections')).toBeNull()
+      expect(cardNames()).toHaveLength(models.length)
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+        'All models'
+      )
 
-        await user.click(screen.getByTestId('section-back'))
-        expect(screen.getByTestId('workshop-sections')).toBeTruthy()
-      }
-    )
+      await user.click(screen.getByTestId('section-back'))
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
   })
 })

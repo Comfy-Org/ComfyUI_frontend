@@ -212,7 +212,7 @@ const isFiltered = computed(
 
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
-const browseAll = ref(false)
+const browseAll = defineModel<boolean>('browseAll', { default: false })
 const browsing = computed(
   () => version.value === 'v1.1' && !isFiltered.value && !browseAll.value
 )
@@ -259,14 +259,21 @@ function leaveSection() {
   selectRail('all')
 }
 
-function clearFilters() {
+function resetFilters() {
   query.value = ''
-  browseAll.value = false
   useCase.value = 'all'
   modalities.value = []
   capabilities.value = []
   providers.value = []
 }
+
+function clearFilters() {
+  browseAll.value = false
+  resetFilters()
+}
+
+// The whole catalogue is the whole catalogue, whatever was typed before.
+watch(browseAll, (on) => on && resetFilters())
 
 const tabClass = (current: boolean) =>
   cn(
@@ -396,19 +403,6 @@ const menuItemClass =
             )
           "
         />
-
-        <button
-          v-if="browsing"
-          type="button"
-          class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 max-sm:hidden"
-          data-testid="browse-all"
-          @click="browseAll = true"
-        >
-          {{ t('workshop.sections.browseAll', locale) }}
-          <span class="text-primary-warm-gray tabular-nums">
-            {{ visible.length }}
-          </span>
-        </button>
 
         <div class="flex items-center gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu

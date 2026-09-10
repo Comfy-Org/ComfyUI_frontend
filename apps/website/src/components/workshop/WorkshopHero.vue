@@ -27,7 +27,7 @@ const slots = useSlots()
         'lg:short:-mt-12 lg:short:pt-12 relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 max-sm:-mt-10 max-sm:pt-10 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
         slots.default
           ? 'mb-8 max-sm:mb-5'
-          : 'sm:short:mb-4 sm:short:pb-0 mb-6 pb-2 max-sm:mb-4 max-sm:pb-0'
+          : 'sm:short:mb-2 sm:short:pb-0 mb-6 pb-2 max-sm:mb-4 max-sm:pb-0'
       )
     "
     data-testid="workshop-hero"
@@ -40,9 +40,18 @@ const slots = useSlots()
     <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>
-    <p v-if="subtitleKey" class="mt-4 text-lg text-primary-comfy-canvas/70">
-      <SplitReveal :text="t(subtitleKey, locale)" :delay="260" :stagger="50" />
-    </p>
+    <div
+      class="sm:short:mt-2 mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4"
+    >
+      <p v-if="subtitleKey" class="text-lg text-primary-comfy-canvas/70">
+        <SplitReveal
+          :text="t(subtitleKey, locale)"
+          :delay="260"
+          :stagger="50"
+        />
+      </p>
+      <slot name="aside" />
+    </div>
 
     <slot />
   </header>
