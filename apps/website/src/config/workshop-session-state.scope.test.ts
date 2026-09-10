@@ -37,7 +37,8 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
       session: undefined
     }),
     getToken: vi.fn()
-  }
+  },
+  subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
 beforeEach(() => {

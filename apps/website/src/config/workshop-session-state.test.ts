@@ -57,7 +57,8 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
     clearStoredCredential: h.clearStoredCredential,
     getSnapshot: () => h.snapshot,
     getToken: vi.fn()
-  }
+  },
+  subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
 const okSession: WorkshopSession = {

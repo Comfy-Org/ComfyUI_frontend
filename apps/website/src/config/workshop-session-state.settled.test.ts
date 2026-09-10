@@ -50,7 +50,8 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
     clearStoredCredential: vi.fn(),
     getSnapshot: () => h.snapshot,
     getToken: vi.fn()
-  }
+  },
+  subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
 beforeEach(() => {
