@@ -31,7 +31,9 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
