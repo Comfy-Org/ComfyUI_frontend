@@ -219,13 +219,13 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).not.toContain('canvas.onNodeMoved')
     })
 
-    it('slow movement within the drift threshold stays a click', () => {
+    it('slow movement within the drift threshold starts a drag', () => {
       gesture.press(A_BODY)
       gesture.move(shifted(A_BODY, NEAR), {}, 500)
       gesture.release(shifted(A_BODY, NEAR))
 
-      expect(posOf(a)).toEqual([20, 40])
-      expect(log).not.toContain('canvas.onNodeMoved')
+      expect(posOf(a)).toEqual([21, 40])
+      expect(log).toContain('canvas.onNodeMoved')
     })
 
     it('release far from the press without a move event is a drag', () => {
