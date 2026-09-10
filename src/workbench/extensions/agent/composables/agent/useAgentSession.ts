@@ -150,17 +150,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return `${encodeURIComponent(userId)}.${encodeURIComponent(workspaceId)}`
   })
   const storageKey = () => `${THREAD_STORAGE_KEY}.${storageScope.value}`
+  // Persistence is best-effort: a blocked or full localStorage must never
+  // fail a send that the server already accepted or reject a hydration.
+  function guardStorage<T>(read: () => T, fallback: T): T {
+    try {
+      return read()
+    } catch (error) {
+      reportError(error, { errorType: 'agent_session_storage_access_failed' })
+      return fallback
+    }
+  }
+  // Only the identity-scoped key is read. The unscoped legacy key predates
+  // scoping and would let a different account or workspace restore another
+  // owner's thread, so it is dropped on sight rather than consulted.
   const storageGet = () =>
-    localStorage.getItem(storageKey()) ??
-    localStorage.getItem(THREAD_STORAGE_KEY)
-  const storageSet = (threadId: string) => {
-    localStorage.setItem(storageKey(), threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
-  }
-  const storageRemove = () => {
-    localStorage.removeItem(storageKey())
-    localStorage.removeItem(THREAD_STORAGE_KEY)
-  }
+    guardStorage(() => {
+      localStorage.removeItem(THREAD_STORAGE_KEY)
+      return localStorage.getItem(storageKey())
+    }, null)
+  const storageSet = (threadId: string) =>
+    guardStorage(() => localStorage.setItem(storageKey(), threadId), undefined)
+  const storageRemove = () =>
+    guardStorage(() => localStorage.removeItem(storageKey()), undefined)
 
   function clearConversation(): void {
     loadGeneration++
@@ -302,6 +313,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         (conversationStore.threadId ?? 'new') !== destinationThread
       ) {
         sending.value = false
+        pushError(i18n.global.t('agent.sendAbandoned'))
         return false
       }
       const wfContext = workflow?.current(origin)

@@ -34,7 +34,7 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-const THREAD_KEY = 'Comfy.Agent.ThreadId'
+const THREAD_KEY = 'Comfy.Agent.ThreadId.user-1.workspace-1'
 
 const identity = vi.hoisted(() => ({
   user: { __v_isRef: true, value: { id: 'user-1' } },
@@ -429,7 +429,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(b8) a stale boot hydrate cannot kill a turn started after a remount', async () => {
     const conversation = useAgentConversationStore()
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    localStorage.setItem(THREAD_KEY, 'th-9')
     const resolvers: Array<(rows: []) => void> = []
     const getMessages = vi.fn(
       () =>
@@ -1269,6 +1269,53 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
   })
 
+  it('(h10) a conversation switch during prepare() abandons the send with a notice instead of posting it elsewhere', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const getMessages = vi.fn(
+      async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-A', 'earlier prompt'),
+        historyRow(2, 'assistant', 'turn-A', 'earlier reply')
+      ]
+    )
+    const rest = fakeRest({ postMessage, getMessages })
+    let releasePrepare: () => void = () => undefined
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        prepare: () =>
+          new Promise<void>((resolve) => {
+            releasePrepare = resolve
+          })
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('meant for the new chat')
+    // The user opens a stored conversation while prepare() is in flight.
+    await session.loadThread('th-existing')
+    releasePrepare()
+
+    expect(await sendPromise).toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    // The prompt must not land in the conversation that is now active.
+    expect(
+      session.entries.value.some(
+        (entry) =>
+          entry.role === 'user' && entry.text === 'meant for the new chat'
+      )
+    ).toBe(false)
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: 'Message was not sent because the conversation changed'
+      }
+    ])
+    expect(session.isStreaming.value).toBe(false)
+  })
+
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
     // Regression for the r3929083595 race: priorWorkflowId was snapshotted
     // before prepare(), so a bindWorkflow() landing in that window (a late
@@ -1317,7 +1364,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     await nextTick()
     useAgentWorkflowTabBindingStore().$dispose()
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
+    localStorage.setItem(THREAD_KEY, 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-existing',
@@ -2136,7 +2183,7 @@ describe('thread resume (B17)', () => {
   })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-9')
+    localStorage.setItem(THREAD_KEY, 'th-9')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -2154,7 +2201,7 @@ describe('thread resume (B17)', () => {
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-gone')
+    localStorage.setItem(THREAD_KEY, 'th-gone')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => {
       throw new AgentApiError('not found', 404, null)
     })
@@ -2163,12 +2210,49 @@ describe('thread resume (B17)', () => {
       events: fakeEvents().source
     })
     session.start()
-    await vi.waitFor(() =>
-      expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
-    )
+    await vi.waitFor(() => expect(localStorage.getItem(THREAD_KEY)).toBeNull())
     expect(session.threadId.value).toBeNull()
     expect(session.entries.value).toHaveLength(0)
     expect(session.notices.value).toHaveLength(0)
+  })
+
+  it('ignores and removes the unscoped legacy thread key instead of restoring it', async () => {
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-other-owner')
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(getMessages).not.toHaveBeenCalled()
+    expect(session.threadId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(localStorage.getItem(THREAD_KEY)).toBeNull()
+  })
+
+  it('keeps an accepted send when localStorage refuses the write', async () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    try {
+      const session = useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+      session.start()
+
+      expect(await session.sendMessage('hello')).toBe(true)
+      expect(session.threadId.value).toBe('th-1')
+      expect(session.notices.value).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+        errorType: 'agent_session_storage_access_failed'
+      })
+    } finally {
+      setItem.mockRestore()
+    }
   })
 
   it('keeps a newly accepted thread when boot hydration 404s for the previous thread', async () => {
@@ -2208,10 +2292,10 @@ describe('thread resume (B17)', () => {
     })
     session.start()
     await session.sendMessage('hello')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+    expect(localStorage.getItem(THREAD_KEY)).toBe('th-1')
 
     session.newChat()
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(localStorage.getItem(THREAD_KEY)).toBeNull()
     expect(useAgentConversationStore().threadId).toBeNull()
   })
 
@@ -2259,7 +2343,7 @@ describe('thread resume (B17)', () => {
 
     expect(getMessages).toHaveBeenCalledWith('th-9')
     expect(session.threadId.value).toBe('th-9')
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-9')
+    expect(localStorage.getItem(THREAD_KEY)).toBe('th-9')
     await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
     expect(session.entries.value[0]).toMatchObject({
       role: 'user',
