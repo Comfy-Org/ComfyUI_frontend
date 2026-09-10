@@ -11011,7 +11011,8 @@
     "display_name": "加载3D（高级）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "视口的渲染高度（像素）。"
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "视口的渲染宽度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "已加载的 3D 模型文件（glb/obj/stl/等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "场景中各模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "视口的渲染宽度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "视口的渲染高度（像素）。"
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "通过OpenAI的GPT Image端点生成图像。",
-    "display_name": "OpenAI GPT 图像 2",
+    "display_name": "OpenAI GPT 图像 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "通过 OpenRouter 使用 Microsoft 的 MAI-Image-2.6 模型生成或编辑图像：文生图，或使用最多五张参考图像进行图像引导编辑，支持七种宽高比及 1K 或 1.5K 分辨率。",
+    "display_name": "OpenRouter 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成图像的 OpenRouter 图像模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "3D 预览（高级）",
     "inputs": {
       "camera_info": {
-        "name": "相机信息"
+        "name": "相机信息",
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "height": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": "视口的渲染高度（像素）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "宽度"
+        "name": "宽度",
+        "tooltip": "视口的渲染宽度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "模型文件",
-        "tooltip": null
+        "tooltip": "来自上游 3D 节点的 3D 模型文件（glb/obj/stl/等）。"
       },
       "1": {
         "name": "相机信息",
-        "tooltip": null
+        "tooltip": "场景中各模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "2": {
         "name": "3D 模型信息",
-        "tooltip": null
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "3": {
         "name": "宽度",
-        "tooltip": null
+        "tooltip": "视口的渲染宽度（像素）。"
       },
       "4": {
         "name": "高度",
-        "tooltip": null
+        "tooltip": "视口的渲染高度（像素）。"
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "保存 3D（高级）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "视口的渲染高度（像素）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "来自上游 3D 节点的 3D 模型文件。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "场景中各模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "视口的渲染宽度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "来自上游 3D 节点的 3D 模型文件（glb/obj/stl/等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "场景中各模型的位置：位置、旋转和缩放（Y 轴向上的世界空间）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "视口相机信息：位置、注视目标、缩放和类型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "视口的渲染宽度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "视口的渲染高度（像素）。"
       }
     }
   },
