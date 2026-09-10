@@ -3,19 +3,21 @@
 # skip footgun where a job gated on e.g. `app-website-changes == 'true'`
 # would never run on push.
 #
-# `evaluate-candidate` opts a caller out of that default for merge_group only,
-# via `candidate-should-run`. dorny/paths-filter diffs `merge_group.base_sha`
-# (the target branch tip) against `merge_group.head_sha` (GitHub's temporary
-# merge commit for the candidate), which already folds in every queue entry
-# ahead of it - so this is whole-queue relevance, not an isolated diff of the
-# candidate's own PR. It still fails safely (an irrelevant-looking entry can
-# only be false-positive-relevant when an entry ahead of it touched a gated
-# path, never false-negative), but it is not the per-candidate optimization
-# the name implies; a later, unrelated entry queued behind a `src/**` change
-# still runs the gated suites. Opt in only from a workflow that emits its
-# required check on every event whatever the verdict - a check GitHub never
-# creates leaves the queue waiting forever. Omitting the input keeps the
-# output 'true'.
+# `evaluate-candidate` opts a caller out of that default, extending `should-run`
+# to merge_group. paths-filter diffs `merge_group.base_sha..head_sha`, and the
+# webhook schema defines base_sha as the merge group's PARENT commit: the
+# preceding entry's synthetic head, or the target branch tip when the candidate
+# is first in line. Entries ahead of this one therefore sit on both sides of the
+# range and cancel, so the verdict isolates the candidate - a website-only entry
+# queued behind a `src/**` change still evaluates to irrelevant. Merge limits
+# govern only the merge step and never combine merge_group builds, so one build
+# is always one candidate. Being a two-dot tree comparison the range omits paths
+# the candidate leaves identical to its parent, which is why nothing that
+# actually lands goes untested. It does need base_sha to be anonymously
+# fetchable, as the callers check out without credentials. Opt in only from a
+# workflow that emits its required check on every event whatever the verdict -
+# a check GitHub never creates leaves the queue waiting forever. Omitting the
+# input leaves every output exactly as it was.
 #
 # Shared dependency files (root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
@@ -36,18 +38,15 @@ description: >
 inputs:
   evaluate-candidate:
     description: >
-      Evaluate the relevance predicate for merge_group candidates too, so
-      `candidate-should-run` can be false there. Left off, merge-queue
-      candidates keep the unconditional 'true' every other output uses.
+      Also evaluate `should-run` for merge_group candidates, so it can be
+      false there. Left off, merge-queue candidates keep the unconditional
+      'true' every output uses for non-pull_request events.
     required: false
     default: 'false'
 
 outputs:
   should-run:
-    description: 'Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed. Ignores `evaluate-candidate`; read `candidate-should-run` to act on merge_group.'
-    value: ${{ github.event_name != 'pull_request' || steps.relevant.outputs.relevant == 'true' }}
-  candidate-should-run:
-    description: 'As `should-run`, but also evaluated for merge-queue candidates when `evaluate-candidate` is set. That evaluation is against the accumulated merge-group diff (base branch tip vs. the temporary merge commit, which includes every queue entry ahead of this one), not this candidate PR in isolation.'
+    description: "Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed. Also evaluated for merge-queue candidates when `evaluate-candidate` is 'true', over the range from the merge group's parent commit (the preceding entry's synthetic head, or the target branch tip when first in line) to this candidate's synthetic head."
     value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'
