@@ -100,9 +100,10 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     comfyPage,
     comfyMouse
   }) => {
+    await comfyPage.settings.setSetting('Comfy.Pointer.ClickBufferTime', 2000)
     const headerPos = await getLoadCheckpointHeaderPos(comfyPage)
 
-    // Move only 2px — below the 3px drag threshold in useNodePointerInteractions
+    // Move only 2px — below the configured pointer drift threshold
     const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
     await comfyMouse.dragElementBy(node.header, { x: 2, y: 1 })
     await comfyPage.nextFrame()
