@@ -1,23 +1,12 @@
-# Outputs default to 'true' for non-pull_request events (push, merge_group):
-# granular path filtering is a PR-only optimization. This avoids the silent
-# skip footgun where a job gated on e.g. `app-website-changes == 'true'`
-# would never run on push.
+# Outputs default to 'true' for non-pull_request events: granular path filtering
+# is a PR-only optimization. This avoids the silent skip footgun where a job
+# gated on e.g. `app-website-changes == 'true'` would never run on push.
+# `evaluate-candidate` is the one exception, and only for `should-run`.
 #
-# `evaluate-candidate` opts a caller out of that default, extending `should-run`
-# to merge_group. paths-filter diffs `merge_group.base_sha..head_sha`, and the
-# webhook schema defines base_sha as the merge group's PARENT commit: the
-# preceding entry's synthetic head, or the target branch tip when the candidate
-# is first in line. Entries ahead of this one therefore sit on both sides of the
-# range and cancel, so the verdict isolates the candidate - a website-only entry
-# queued behind a `src/**` change still evaluates to irrelevant. Merge limits
-# govern only the merge step and never combine merge_group builds, so one build
-# is always one candidate. Being a two-dot tree comparison the range omits paths
-# the candidate leaves identical to its parent, which is why nothing that
-# actually lands goes untested. It does need base_sha to be anonymously
-# fetchable, as the callers check out without credentials. Opt in only from a
-# workflow that emits its required check on every event whatever the verdict -
-# a check GitHub never creates leaves the queue waiting forever. Omitting the
-# input leaves every output exactly as it was.
+# It compares a merge-group candidate's synthetic head with its parent, so the
+# verdict covers that candidate alone. Opt in only from a workflow whose
+# required check is emitted whatever the verdict; a check GitHub never creates
+# leaves the queue waiting.
 #
 # Shared dependency files (root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
@@ -39,14 +28,17 @@ inputs:
   evaluate-candidate:
     description: >
       Also evaluate `should-run` for merge_group candidates, so it can be
-      false there. Left off, merge-queue candidates keep the unconditional
-      'true' every output uses for non-pull_request events.
+      false there. Left off, they keep the unconditional 'true'.
     required: false
     default: 'false'
 
 outputs:
   should-run:
-    description: "Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed. Also evaluated for merge-queue candidates when `evaluate-candidate` is 'true', over the range from the merge group's parent commit (the preceding entry's synthetic head, or the target branch tip when first in line) to this candidate's synthetic head."
+    description: >
+      Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.
+      With `evaluate-candidate` set to 'true', also evaluated for merge-queue
+      candidates, over the range from the merge group's parent commit to this
+      candidate's synthetic head.
     value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
     description: 'Shared deps or `apps/website/**` changed.'

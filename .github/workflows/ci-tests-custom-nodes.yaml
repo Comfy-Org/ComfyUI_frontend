@@ -86,6 +86,7 @@ jobs:
         id: changes
         uses: ./.github/actions/changes-filter
         with:
+          # Inert until this workflow's pull_request/merge_group triggers return.
           evaluate-candidate: 'true'
 
   # Each job is intentionally one worker: the auto-run tier needs exclusive
