@@ -199,7 +199,7 @@ test.describe(
           (candidate) => candidate.name === 'steps'
         )
         if (!widget) throw new Error('KSampler steps widget not found')
-        if (widget.options) widget.options.hidden = false
+        widget.options.hidden = false
       })
       await comfyPage.nextFrame()
 
