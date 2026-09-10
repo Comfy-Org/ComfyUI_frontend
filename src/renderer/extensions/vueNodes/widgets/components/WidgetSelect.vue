@@ -3,7 +3,6 @@
     v-if="isDropdownUIWidget"
     v-model="modelValue"
     :widget
-    :node-type="widget.nodeType ?? nodeType"
     :is-asset-mode="isAssetMode"
   />
   <WidgetWithControl
@@ -37,14 +36,7 @@ const props = defineProps<{
   nodeType?: string
 }>()
 
-const modelValue = defineModel<WidgetValue>()
-
-const assetKind = computed(() => {
-  const spec = props.widget.spec
-  return parseComboSpecDescriptor(
-    spec && isComboInputSpec(spec) ? spec : undefined
-  ).kind
-})
+const modelValue = defineModel<string | undefined>()
 
 const isAssetMode = computed(
   () =>
@@ -55,7 +47,13 @@ const isAssetMode = computed(
     (assetService.isWidgetAssetPickerEnabled() && props.widget.type === 'asset')
 )
 
-const isDropdownUIWidget = computed(
-  () => isAssetMode.value || assetKind.value !== 'unknown'
-)
+const isDropdownUIWidget = computed(() => {
+  if (isAssetMode.value) return true
+
+  const spec = props.widget.spec
+  return (
+    parseComboSpecDescriptor(spec && isComboInputSpec(spec) ? spec : undefined)
+      .kind !== 'unknown'
+  )
+})
 </script>

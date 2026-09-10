@@ -20,61 +20,53 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 export function useAssetWidgetData(
   nodeType: MaybeRefOrGetter<string | undefined>
 ) {
-  if (isCloud) {
-    const assetsStore = useAssetsStore()
-    const modelToNodeStore = useModelToNodeStore()
-
-    const category = computed(() => {
-      const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? modelToNodeStore.getCategoryForNodeType(resolvedType)
-        : undefined
-    })
-
-    const assets = computed<AssetItem[]>(() => {
-      const resolvedType = toValue(nodeType)
-      return resolvedType ? assetsStore.getAssets(resolvedType) : []
-    })
-
-    const isLoading = computed(() => {
-      const resolvedType = toValue(nodeType)
-      return resolvedType ? assetsStore.isModelLoading(resolvedType) : false
-    })
-
-    const error = computed<Error | null>(() => {
-      const resolvedType = toValue(nodeType)
-      return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
-    })
-
-    watch(
-      () => toValue(nodeType),
-      async (currentNodeType) => {
-        if (!currentNodeType) {
-          return
-        }
-
-        const isLoading = assetsStore.isModelLoading(currentNodeType)
-        const hasBeenInitialized = assetsStore.hasAssetKey(currentNodeType)
-
-        if (!isLoading && !hasBeenInitialized) {
-          await assetsStore.updateModelsForNodeType(currentNodeType)
-        }
-      },
-      { immediate: true }
-    )
-
+  if (!isCloud)
     return {
-      category,
-      assets,
-      isLoading,
-      error
+      category: computed(() => undefined),
+      assets: computed<AssetItem[]>(() => []),
+      isLoading: computed(() => false),
+      error: computed(() => null)
     }
-  }
 
-  return {
-    category: computed(() => undefined),
-    assets: computed<AssetItem[]>(() => []),
-    isLoading: computed(() => false),
-    error: computed(() => null)
-  }
+  const assetsStore = useAssetsStore()
+  const modelToNodeStore = useModelToNodeStore()
+
+  const category = computed(() => {
+    const resolvedType = toValue(nodeType)
+    return resolvedType && modelToNodeStore.getCategoryForNodeType(resolvedType)
+  })
+
+  const assets = computed<AssetItem[]>(() => {
+    const resolvedType = toValue(nodeType)
+    return resolvedType ? assetsStore.getAssets(resolvedType) : []
+  })
+
+  const isLoading = computed(() => {
+    const resolvedType = toValue(nodeType)
+    return resolvedType ? assetsStore.isModelLoading(resolvedType) : false
+  })
+
+  const error = computed<Error | null>(() => {
+    const resolvedType = toValue(nodeType)
+    return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
+  })
+
+  watch(
+    () => toValue(nodeType),
+    async (currentNodeType) => {
+      if (!currentNodeType) {
+        return
+      }
+
+      const isLoading = assetsStore.isModelLoading(currentNodeType)
+      const hasBeenInitialized = assetsStore.hasAssetKey(currentNodeType)
+
+      if (!isLoading && !hasBeenInitialized) {
+        await assetsStore.updateModelsForNodeType(currentNodeType)
+      }
+    },
+    { immediate: true }
+  )
+
+  return { category, assets, isLoading, error }
 }
