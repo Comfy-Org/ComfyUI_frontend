@@ -85,6 +85,10 @@ vi.mock<unknown>(
   })
 )
 
+const consentChecking = await vi.hoisted(async () =>
+  (await import('vue')).ref(false)
+)
+
 const withConsent = vi.hoisted(() =>
   vi.fn<(onAccept: () => void) => Promise<void>>()
 )
@@ -93,6 +97,7 @@ vi.mock(
   () => ({
     useAgentConsent: () => ({
       accepted: computed(() => useAgentPanelStore().consentAccepted),
+      isChecking: consentChecking,
       withConsent
     })
   })
@@ -160,6 +165,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  consentChecking.value = false
   distribution.isCloud = false
   distribution.isDesktop = false
   distribution.isNightly = false
@@ -300,6 +306,37 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(withConsent).toHaveBeenCalledTimes(2)
     expect(useAgentPanelStore().isVisible).toBe(true)
+  })
+
+  it('hides the restored panel entry while consent is checked and accepted', async () => {
+    useAgentPanelStore().isOpen = true
+    consentChecking.value = true
+    renderComponent()
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeInTheDocument()
+
+    useAgentPanelStore().consentAccepted = true
+    consentChecking.value = false
+    await nextTick()
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers the entry after the restored consent check finishes without acceptance', async () => {
+    useAgentPanelStore().isOpen = true
+    consentChecking.value = true
+    renderComponent()
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeInTheDocument()
+
+    consentChecking.value = false
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeInTheDocument()
   })
 
   it('keeps a hidden restored intent reachable and clears it before requesting consent', async () => {

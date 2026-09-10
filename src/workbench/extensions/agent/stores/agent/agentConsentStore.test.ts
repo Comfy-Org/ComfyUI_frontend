@@ -72,6 +72,41 @@ describe('agentConsentStore', () => {
     accountApi.set.mockResolvedValue(stored)
   })
 
+  it('keeps the initial consent check pending until the response settles', async () => {
+    const response = deferred<GlobalSetting | undefined>()
+    accountApi.get.mockReturnValueOnce(response.promise)
+    const store = useAgentConsentStore()
+    expect(store).toMatchObject({ isChecking: true })
+
+    const request = store.load()
+    await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
+    expect(store).toMatchObject({ isChecking: true })
+    response.resolve(undefined)
+    await request
+    expect(store).toMatchObject({ isChecking: false, accepted: false })
+  })
+
+  it('settles a failed check so the entry can offer a retry', async () => {
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
+    const store = useAgentConsentStore()
+    await expect(store.load()).rejects.toThrow('authentication is required')
+    expect(store).toMatchObject({ isChecking: false })
+  })
+
+  it('does not let a stale response settle the next workspace initial check', async () => {
+    const response = deferred<GlobalSetting>()
+    accountApi.get.mockReturnValueOnce(response.promise)
+    const store = useAgentConsentStore()
+    const request = store.load()
+    await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    response.resolve(stored)
+    await request
+    expect(store).toMatchObject({ isChecking: true, accepted: false })
+    await store.load()
+    expect(store).toMatchObject({ isChecking: false })
+  })
+
   it('exposes acceptance only after the current account loads true', async () => {
     accountApi.get.mockResolvedValueOnce(stored)
     const store = useAgentConsentStore()
