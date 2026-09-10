@@ -4,13 +4,11 @@ import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
+import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
 import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
-
-const LOCALES = ['en', 'zh-CN', 'ja'] as const
-const DEFAULT_LOCALE = 'en'
 
 export default defineConfig({
   site: 'https://comfy.org',
@@ -46,7 +44,7 @@ export default defineConfig({
     }
   },
   i18n: {
-    locales: [...LOCALES],
+    locales: [...LOCALE_CODES],
     defaultLocale: DEFAULT_LOCALE,
     routing: {
       prefixDefaultLocale: false
