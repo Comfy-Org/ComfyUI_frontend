@@ -10,6 +10,14 @@ export interface PagedList<T> {
   loadNew: () => Promise<void>
 }
 
+export type MaybePaged<T> = readonly T[] | PagedList<T>
+export function isPaged<T>(list: MaybePaged<T>): list is PagedList<T> {
+  return !Array.isArray(list)
+}
+export function pagedItems<T>(list: MaybePaged<T>): readonly T[] {
+  return isPaged(list) ? toValue(list.items) : list
+}
+
 export class WrappedList<T, U> implements PagedList<U> {
   readonly items: MaybeRef<readonly U[]>
   constructor(

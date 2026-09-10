@@ -12,8 +12,8 @@ import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/com
 import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets/utils/comboSpecDescriptor'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -43,7 +43,6 @@ const modelValue = defineModel<string | undefined>({
 })
 
 const { t } = useI18n()
-const outputAssets = useAssetsStore().outputAssets
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -65,11 +64,9 @@ const {
   baseModelOptions,
   selectedSet
 } = useWidgetSelectItems({
-  values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue,
   assetKind,
-  outputMediaAssets: outputAssets,
   assetData: getAssetData(),
   isAssetMode: () => props.isAssetMode ?? false,
   filterSelected,
@@ -79,7 +76,7 @@ const {
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   modelValue,
-  dropdownItems,
+  dropdownItems: () => pagedItems(dropdownItems.value),
   widget: () => props.widget,
   uploadFolder: () => descriptor.value.folder ?? 'input',
   uploadSubfolder: () => descriptor.value.subfolder
