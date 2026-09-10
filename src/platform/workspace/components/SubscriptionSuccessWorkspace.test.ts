@@ -8,7 +8,8 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key,
-    n: (value: number) => String(value)
+    n: (value: number) => String(value),
+    locale: { value: 'en' }
   })
 }))
 
@@ -243,5 +244,41 @@ describe('SubscriptionSuccessWorkspace', () => {
       screen.getByText('workspacePanel.inviteMemberDialog.invitedMessage')
     ).toBeTruthy()
     expect(screen.queryByText('subscription.success.sendInvites')).toBeNull()
+  })
+
+  it('shows the charged total from the quote', () => {
+    renderCard({
+      previewData: {
+        new_plan: { price_cents: 33_600, duration: 'ANNUAL' },
+        amount_due_cents: 26_880,
+        currency: 'usd'
+      } as unknown as PreviewSubscribeResponse
+    })
+
+    expect(screen.getByText('subscription.success.paidToday')).toBeTruthy()
+    expect(screen.getByText('$268.80')).toBeTruthy()
+  })
+
+  it('shows the applied promo with its renewal terms', () => {
+    renderCard({
+      previewData: {
+        new_plan: { price_cents: 33_600, duration: 'ANNUAL' },
+        amount_due_cents: 26_880,
+        currency: 'usd',
+        promotion_code: 'COMFY20',
+        renewal_amount_cents: 33_600,
+        renewal_at: '2027-06-28T00:00:00Z'
+      } as unknown as PreviewSubscribeResponse
+    })
+
+    expect(screen.getByText('subscription.success.promoApplied')).toBeTruthy()
+    expect(screen.getByText(/subscription\.success\.promoRenews/)).toBeTruthy()
+  })
+
+  it('renders neither line without quote amounts', () => {
+    renderCard()
+
+    expect(screen.queryByText('subscription.success.paidToday')).toBeNull()
+    expect(screen.queryByText('subscription.success.promoApplied')).toBeNull()
   })
 })
