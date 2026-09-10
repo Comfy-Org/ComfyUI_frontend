@@ -147,6 +147,9 @@ function switchMode(next: AuthMode, event: MouseEvent): void {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
     return
   event.preventDefault()
+  // A remount mid-attempt would leave the abandoned attempt free to finish
+  // the sign-in and redirect, so the links hold still like the buttons do.
+  if (busy.value) return
   emit('switchMode', next)
 }
 
@@ -339,7 +342,13 @@ watch(initPending, (pending) => {
         {{ t('auth.signUp.haveAccount', locale) }}
         <a
           href="/login/"
-          class="text-brand-yellow no-underline transition-all duration-300 hover:underline"
+          :class="
+            cn(
+              'text-brand-yellow no-underline transition-all duration-300 hover:underline',
+              busy && 'pointer-events-none opacity-50'
+            )
+          "
+          :aria-disabled="busy || undefined"
           @click="switchMode('signIn', $event)"
         >
           {{ t('auth.signUp.signInLink', locale) }}
@@ -349,7 +358,13 @@ watch(initPending, (pending) => {
         {{ t('auth.signIn.newHere', locale) }}
         <a
           href="/signup/"
-          class="text-brand-yellow no-underline transition-all duration-300 hover:underline"
+          :class="
+            cn(
+              'text-brand-yellow no-underline transition-all duration-300 hover:underline',
+              busy && 'pointer-events-none opacity-50'
+            )
+          "
+          :aria-disabled="busy || undefined"
           @click="switchMode('signUp', $event)"
         >
           {{ t('auth.signIn.signUpLink', locale) }}

@@ -6,9 +6,9 @@
   "keywords": [],
   "type": "module",
   "exports": {
-    "./session": "./src/core/index.ts",
+    "./session": "./src/core/session.ts",
     "./firebase": "./src/firebase/index.ts",
-    "./web": "./src/web/index.ts",
+    "./web": "./src/web/crossTabRefresh.ts",
     "./vue": "./src/vue/index.ts",
     "./testing": "./src/testing.ts",
     "./customerRecovery": "./src/core/customerRecovery.ts",
@@ -32,6 +32,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
     "@vueuse/core": "catalog:",
