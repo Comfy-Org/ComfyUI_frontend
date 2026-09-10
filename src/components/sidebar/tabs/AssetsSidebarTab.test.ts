@@ -18,14 +18,16 @@ import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 beforeEach(() => {
   const store = useAssetsStore()
-  store.outputAssets = {
-    items: [],
-    hasMore: false,
-    isLoading: false,
-    loadMore: vi.fn(async () => false),
-    loadNew: vi.fn(async () => {}),
-    invalidate: vi.fn(async () => {})
-  }
+  Object.assign(store, {
+    outputAssets: {
+      items: [],
+      hasMore: false,
+      isLoading: false,
+      loadMore: vi.fn(async () => false),
+      loadNew: vi.fn(async () => {}),
+      invalidate: vi.fn(async () => {})
+    }
+  })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
   vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
@@ -145,13 +147,14 @@ function renderTab({ realTemplate = false } = {}) {
 }
 
 beforeEach(() => {
-  useAssetsStore().outputAssets.items = [folderAsset]
-  useAssetsStore().outputAssets.hasMore = false
+  Object.assign(useAssetsStore().outputAssets, {
+    items: [folderAsset],
+    hasMore: false
+  })
 })
 
 it('keeps pagination mounted when more assets can be loaded', () => {
-  useAssetsStore().outputAssets.items = []
-  useAssetsStore().outputAssets.hasMore = true
+  Object.assign(useAssetsStore().outputAssets, { items: [], hasMore: true })
 
   renderTab()
 
@@ -198,14 +201,16 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 
 describe('AssetsSidebarTab context menu', () => {
   it('inspects an HDR output in the HDR viewer', async () => {
-    useAssetsStore().outputAssets.items = [
-      {
-        ...folderAsset,
-        name: 'sky.exr',
-        loader_path: 'renders/sky.exr',
-        preview_url: '/api/assets/sky-preview/content'
-      }
-    ]
+    Object.assign(useAssetsStore().outputAssets, {
+      items: [
+        {
+          ...folderAsset,
+          name: 'sky.exr',
+          loader_path: 'renders/sky.exr',
+          preview_url: '/api/assets/sky-preview/content'
+        }
+      ]
+    })
     renderTab()
 
     await fireEvent.contextMenu(
@@ -226,7 +231,7 @@ describe('AssetsSidebarTab context menu', () => {
 
   it('inserts a loadable image as a node', async () => {
     const asset = { ...folderAsset, name: 'image.png' }
-    useAssetsStore().outputAssets.items = [asset]
+    Object.assign(useAssetsStore().outputAssets, { items: [asset] })
     renderTab()
 
     await fireEvent.contextMenu(
@@ -242,9 +247,9 @@ describe('AssetsSidebarTab context menu', () => {
   })
 
   it('does not offer insertion for an unloadable file', async () => {
-    useAssetsStore().outputAssets.items = [
-      { ...folderAsset, name: 'result.txt' }
-    ]
+    Object.assign(useAssetsStore().outputAssets, {
+      items: [{ ...folderAsset, name: 'result.txt' }]
+    })
     renderTab()
 
     await fireEvent.contextMenu(

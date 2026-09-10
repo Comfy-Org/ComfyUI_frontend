@@ -648,7 +648,7 @@ describe('verifyMediaCandidates', () => {
     )
     const store = useAssetsStore()
     store.inputAssets = fromPartial({ items: input })
-    store.outputAssets = fromPartial({ items: output })
+    Object.assign(store, { outputAssets: fromPartial({ items: output }) })
   }
 
   const hashLookups = () =>
