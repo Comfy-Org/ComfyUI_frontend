@@ -1,5 +1,5 @@
 import type { AstroIntegration } from 'astro'
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -103,6 +103,13 @@ export async function writeMarkdownTwins(
       report.skipped.push(twinPath)
       continue
     }
+    // A redirect stub is a meta-refresh, not content. Astro's own page list
+    // left these out; reading the built site off disk finds them, so they are
+    // filtered on what the page IS rather than on a config listing them.
+    if (html.includes('http-equiv="refresh"')) {
+      report.skipped.push(twinPath)
+      continue
+    }
     const page = htmlToTwin(html, new URL(route, site).href)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, renderTwin(page), 'utf8')
@@ -111,16 +118,37 @@ export async function writeMarkdownTwins(
   return report
 }
 
+/** Every built page, as Astro would have named it: `about/`, `zh-CN/pricing/`. */
+async function builtPages(root: string): Promise<string[]> {
+  const found: string[] = []
+
+  async function walk(dir: string, prefix: string): Promise<void> {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        await walk(join(dir, entry.name), `${prefix}${entry.name}/`)
+      } else if (entry.name === 'index.html') {
+        found.push(prefix)
+      }
+    }
+  }
+
+  await walk(root, '')
+  return found.sort()
+}
+
 export function markdownTwins(): AstroIntegration {
   return {
     name: 'comfy:markdown-twins',
     hooks: {
       'astro:build:done': async ({ dir, pages, logger }) => {
         const root = fileURLToPath(dir)
-        const report = await writeMarkdownTwins(
-          root,
-          pages.map((page) => page.pathname)
-        )
+        const pathnames = [
+          ...new Set([
+            ...pages.map((page) => page.pathname),
+            ...(await builtPages(root))
+          ])
+        ]
+        const report = await writeMarkdownTwins(root, pathnames)
         // Section indexes and llms-full.txt need every twin that actually
         // exists on disk, not just the ones this build freshly wrote — a
         // twin a page endpoint already wrote (report.existing) is just as
