@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 
 import * as ts from 'typescript'
 
@@ -9,6 +8,14 @@ const files = execFileSync('git', ['ls-files', ':(glob)src/**/*.test.ts'], {
   .trim()
   .split('\n')
   .filter(Boolean)
+
+const program = ts.createProgram(files, {
+  target: ts.ScriptTarget.Latest,
+  noResolve: true,
+  noLib: true,
+  types: []
+})
+const checker = program.getTypeChecker()
 
 type Finding = {
   file: string
@@ -20,22 +27,14 @@ type Finding = {
 
 const findings: Finding[] = []
 
-for (const file of files) {
-  const sourceText = readFileSync(file, 'utf8')
-  const source = ts.createSourceFile(
-    file,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS
-  )
+for (const source of program.getSourceFiles()) {
+  const file = source.fileName
   const declarations: Array<{
     name: ts.Identifier
     statement: ts.VariableStatement
   }> = []
   const assignments: Array<{
-    name: string
-    statement: ts.ExpressionStatement
+    name: ts.Identifier
     value: ts.Expression
   }> = []
 
@@ -64,8 +63,7 @@ for (const file of files) {
       ts.isIdentifier(node.expression.left)
     ) {
       assignments.push({
-        name: node.expression.left.text,
-        statement: node,
+        name: node.expression.left,
         value: node.expression.right
       })
     }
@@ -75,12 +73,10 @@ for (const file of files) {
 
   for (const declaration of declarations) {
     const name = declaration.name.text
-    const scope = declaration.statement.parent
+    const symbol = checker.getSymbolAtLocation(declaration.name)
+    if (!symbol) continue
     const assignment = assignments.find(
-      (candidate) =>
-        candidate.name === name &&
-        candidate.statement.getStart(source) > declaration.statement.end &&
-        candidate.statement.getStart(source) < scope.end
+      (candidate) => checker.getSymbolAtLocation(candidate.name) === symbol
     )
     if (!assignment) continue
 

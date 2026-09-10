@@ -32,6 +32,13 @@ it('uses a local value', () => {
   let local
   local = store.refresh
 })
+let shadowed
+describe('nested suite', () => {
+  let shadowed
+  beforeEach(() => {
+    shadowed = useToastStore().addAlert
+  })
+})
 `
   writeFileSync(file, source)
   execFileSync('git', ['init', '--quiet'], { cwd })
@@ -48,6 +55,7 @@ it('uses a local value', () => {
 
   expect(output.trim().split('\n')).toEqual([
     'direct-store-member\tsrc/example.test.ts:1\talert\tvi.mocked(useToastStore().addAlert)',
+    'direct-store-member\tsrc/example.test.ts:18\tshadowed\tuseToastStore().addAlert',
     'derived-value\tsrc/example.test.ts:2\trefresh\tstore.refresh',
     'derived-value\tsrc/example.test.ts:3\toriginal\tglobalThis.fetch'
   ])

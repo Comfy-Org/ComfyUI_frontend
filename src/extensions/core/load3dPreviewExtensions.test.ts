@@ -27,7 +27,7 @@ const {
     configureForSaveMeshMock: vi.fn(),
     getLoad3dMock: vi.fn(),
     getNodeByLocatorIdMock: vi.fn(),
-    nodeToLoad3dMapMock: new Map()
+    nodeToLoad3dMapMock: new Map<LGraphNode, FakeLoad3d>()
   }
 })
 
