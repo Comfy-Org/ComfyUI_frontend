@@ -2540,6 +2540,9 @@ export class LGraph
         Reflect.deleteProperty(input, inputSlotMarker)
         if (typeof marker === 'number') configuredSlots.set(marker, input)
       }
+      for (const input of n_info.inputs ?? []) {
+        Reflect.deleteProperty(input, inputSlotMarker)
+      }
       configuredInputSlots.set(newNodeId, configuredSlots)
       node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
       toSelect.push(node)

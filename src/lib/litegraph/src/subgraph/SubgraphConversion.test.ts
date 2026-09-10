@@ -348,6 +348,26 @@ describe('SubgraphConversion', () => {
         })
       ).toEqual(['source 0', 'source 2', 'source 4'])
     })
+    it('does not serialize input tracking data on missing-node placeholders', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const missing = createTestNode(graph, ['missing'], [], 'missing target')
+      const { node: wrapper } = graph.convertToSubgraph(
+        new Set<Positionable>([missing])
+      )
+      LiteGraph.unregisterNodeType(missing.type)
+
+      graph.unpackSubgraph(wrapper, { skipMissingNodes: true })
+
+      const placeholder = graph.nodes.find(
+        (node) => node.title === 'missing target'
+      )
+      assert(placeholder)
+      const inputKeys = Object.keys(placeholder.serialize().inputs?.[0] ?? {})
+      expect(
+        inputKeys.some((key) => key.startsWith('__unpackInputSlot_'))
+      ).toBe(false)
+    })
     it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
       const graph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(graph))
