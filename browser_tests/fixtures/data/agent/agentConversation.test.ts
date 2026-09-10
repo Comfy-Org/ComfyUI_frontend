@@ -62,7 +62,7 @@ describe('zAgentConversation', () => {
     ).toThrow('cancel_after must precede the final agent_message_done entry')
   })
 
-  it('refuses a turn that does not end with its done event', () => {
+  it('refuses a turn that carries content after its done event', () => {
     expect(() =>
       zAgentConversation.parse({
         ...recorded,
@@ -70,6 +70,10 @@ describe('zAgentConversation', () => {
           {
             ...recorded.turns[0],
             response: [
+              {
+                kind: 'event',
+                event: { type: 'agent_message_done', data: {} }
+              },
               {
                 kind: 'event',
                 event: { type: 'agent_thinking', data: { delta: 'x' } }

@@ -9,21 +9,21 @@ recorder combines two records per turn:
    accepted operation IDs from its child audit rows.
 
 Do not write `graph_ops` by hand or relabel a synthesized response. The fixture
-schema rejects `response_side: recorded` without a cloud thread ID, a per-turn
-message ID and an export timestamp. Recorded events are the production socket
+schema rejects `response_side: recorded` without a cloud thread ID and an
+export timestamp under `source.capture`, and without a `message_id` on every
+turn. Recorded events are the production socket
 union (`zAgentWsEvent` in `agentApiSchema.ts`) minus the thread and message ids
 the replay mints, so when production changes shape the fix is a new recording
 or a production-side change, never a looser fixture schema.
 
 ## Playbook
 
-```bash
-cd ../cloud && cloud up
-```
-
-Then job 3 in `docs/testing/agent-integration-development.md` ("Start here"):
-record mode, then the recorder command it prints with one `--prompt` per turn.
-Replay the new case with job 1 there plus `-g <case id>`.
+With the cloud repo's own local stack running (`cd ../cloud && cloud up`),
+start the doc host the cloud repo ships and the agent in non-standalone mode
+with `AGENT_CRDT_MODE=on` and `AGENT_TARGET=local`, following that repo's
+instructions, then run the recorder command below with one `--prompt` per
+turn. Replay the new case with the command in `browser_tests/README.md` under
+"Replay coverage for agent bug fixes" plus `-g <case id>`.
 
 ## Recording a conversation
 
@@ -53,18 +53,10 @@ nothing; later turns inherit that subscription, so only the first one needs it.
 Turn 1 opens the thread, and every later turn posts to it the way the panel
 does.
 
-The stack that command needs comes from the launcher's record mode (#16781):
-with the cloud repo's own local stack running (`cloud up` in the cloud
-checkout), run
-
-```bash
-pnpm exec tsx scripts/dev-agent-integration.ts --record --catalog browser_tests/fixtures/data/agent/conversations/<any fixture>.json
-```
-
-It asserts Postgres on 54331 and Redis on 6379, starts the doc host the cloud
-repo ships, starts the agent non-standalone with `AGENT_CRDT_MODE=on` and
-`AGENT_TARGET=local`, seeds the recorder's workspace and user, and prints the
-recorder command above with every value filled, the secret by path.
+The recorder needs Postgres, Redis and the doc host reachable, the M2M secret
+by path, and the workspace and user the agent runs as; a launcher that brings
+that stack up and prints the command with every value filled is proposed in
+#16781 and is not part of this tree.
 
 Recording runs against the cloud agent in its non-standalone mode, with
 Postgres, Redis and the doc host beside it: frames come from its Redis channel
