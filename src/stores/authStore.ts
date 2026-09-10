@@ -244,7 +244,9 @@ export const useAuthStore = defineStore('auth', () => {
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
-      return token ? { Authorization: `Bearer ${token}` } : null
+      // Until the unified mint lands, keep serving the legacy rail rather than
+      // going headerless the instant a rollout flips the flag on.
+      if (token) return { Authorization: `Bearer ${token}` }
     }
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -314,7 +316,7 @@ export const useAuthStore = defineStore('auth', () => {
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
-      return token ? { Authorization: `Bearer ${token}` } : null
+      if (token) return { Authorization: `Bearer ${token}` }
     }
 
     if (currentUser.value === null) {
@@ -335,7 +337,8 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const getAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().getUnifiedToken()
+      const token = useWorkspaceAuthStore().getUnifiedToken()
+      if (token) return token
     }
 
     const workspaceAuth = useWorkspaceAuthStore()
@@ -358,7 +361,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getWorkspaceAuthToken = async (): Promise<string | undefined> => {
     if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().getUnifiedToken()
+      const token = useWorkspaceAuthStore().getUnifiedToken()
+      if (token) return token
     }
 
     if (currentUser.value === null && useApiKeyAuthStore().isAuthenticated) {
