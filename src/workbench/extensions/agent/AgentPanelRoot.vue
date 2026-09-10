@@ -152,6 +152,7 @@ const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
+const { workflowReferences } = storeToRefs(composerStore)
 let composerContextGeneration = 0
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
@@ -319,7 +320,6 @@ watch(
   { immediate: true }
 )
 
-const workflowReferences = ref<WorkflowReference[]>([])
 let composerRevision = 0
 watch(
   () =>

@@ -4006,6 +4006,68 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it.for(['send', 'new-chat'] as const)(
+    'retains draft workflow references on panel reopen and clears them after %s',
+    async (action) => {
+      const { target } = setupWorkflowContext({
+        targetId: 'wf-current',
+        references: [
+          { path: 'workflows/reference.json', workflowId: 'wf-reference' }
+        ]
+      })
+      const bodies = mockMessagesEndpoint('wf-current', [
+        { id: 'wf-reference', name: 'reference' }
+      ])
+      const first = renderWithSelectedTarget()
+      useAgentPanelStore().isOpen = true
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'reference' })
+      )
+      await userEvent.type(screen.getByRole('textbox'), 'Keep this draft')
+      expect(
+        screen.getByRole('button', { name: 'Open reference' })
+      ).toBeVisible()
+
+      first.unmount()
+      const reopened = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      expect(screen.getByRole('textbox')).toHaveValue('Keep this draft')
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+      expect(
+        within(screen.getByTestId('composer-inline-input')).getByRole(
+          'button',
+          { name: 'Open reference' }
+        )
+      ).toBeVisible()
+
+      if (action === 'send') {
+        await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+        await vi.waitFor(() => expect(bodies).toHaveLength(1))
+        expect(bodies[0]).toMatchObject({
+          content: 'Keep this draft',
+          workflow_id: 'wf-current',
+          workflow_references: [
+            { workflow_id: 'wf-reference', name: 'reference' }
+          ]
+        })
+      } else {
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+      }
+
+      reopened.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      expect(
+        within(screen.getByTestId('composer-inline-input')).queryByRole(
+          'button',
+          { name: 'Open reference' }
+        )
+      ).toBeNull()
+    }
+  )
+
   it.for(['open', 'closed'])(
     'navigates to a staged reference in an %s tab without changing the target or draft',
     async (tabState) => {
