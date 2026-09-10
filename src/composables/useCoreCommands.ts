@@ -1065,7 +1065,6 @@ export function useCoreCommands(): ComfyCommand[] {
         const res = graph.convertToSubgraph(canvas.selectedItems)
         const { node } = res
         canvas.select(node)
-        canvasStore.updateSelectedItems()
       }
     },
     {

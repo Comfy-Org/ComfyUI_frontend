@@ -830,7 +830,6 @@ function exitNodeSelectionMode(): void {
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
     canvas.deselectAll()
-    canvasStore.updateSelectedItems()
   }
 }
 
@@ -880,7 +879,6 @@ function onSelectNodes(): void {
   selectedGraphNodes = merged
   if (merged.size) {
     canvas.selectItems([...merged.values()])
-    canvasStore.updateSelectedItems()
   }
   restoreAllowDragNodes = canvas.allow_dragnodes
   restoreSelectOnly = canvas.selectOnly
@@ -944,7 +942,6 @@ function onMentionPick(node: SelectedNode): void {
   )
   if (canvas && graphNode) {
     canvas.selectItems([graphNode], true)
-    canvasStore.updateSelectedItems()
   }
   if (selectionTags.value.length > stagedBefore)
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
@@ -955,7 +952,6 @@ function onRemoveSelectionTag(id: string): void {
   const node = getNodeByLocatorId(app.rootGraph, id)
   if (canvas && node && canvas.selectedItems.has(node)) {
     canvas.deselect(node)
-    canvasStore.updateSelectedItems()
   }
   removeSelectionTag(id)
 }

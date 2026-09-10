@@ -123,7 +123,11 @@ describe('SectionWidgets', () => {
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial({
       setDirty,
-      graph: fromPartial({ getNodeById }),
+      graph: fromPartial({
+        id: 'root',
+        rootGraph: { id: 'root' },
+        getNodeById
+      }),
       animateToBounds
     })
   })

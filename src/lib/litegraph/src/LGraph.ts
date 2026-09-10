@@ -28,6 +28,7 @@ import {
   materializeRerouteLayout,
   releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -794,6 +795,7 @@ export class LGraph
       useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
+      useSelectionStore().clearRoot(toRootGraphId(graphId))
       layoutStore.clearGraph(graphId)
     } else if (getRuntimeRootGraph(this)) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))

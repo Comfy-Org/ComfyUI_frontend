@@ -17,7 +17,10 @@ import {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { SelectionCommand } from '@/core/selection/selectionState'
+import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import { useLinkStore } from '@/stores/linkStore'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -1834,6 +1837,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.selected_nodes = {}
     this.selected_group = null
     this.selectedItems.clear()
+    this.#applySelection({ type: 'selection.clear' })
     this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
 
@@ -4540,9 +4544,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // remove the user's ability to keep children selected (e.g. for
       // deletion) after toggling the group off.
       if (item instanceof LGraphGroup && this.groupSelectChildren) {
-        item.selected = false
-        this.selectedItems.delete(item)
-        this.state.selectionChanged = true
+        this.#setSelected(item, false)
       } else {
         this.deselect(item)
       }
@@ -4565,9 +4567,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
-    item.selected = true
-    this.selectedItems.add(item)
-    this.state.selectionChanged = true
+    this.#setSelected(item, true)
 
     if (item instanceof LGraphGroup) {
       item.recomputeInsideNodes()
@@ -4576,9 +4576,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           item,
           (child) => {
             if (!child.selected || !this.selectedItems.has(child)) {
-              child.selected = true
-              this.selectedItems.add(child)
-              this.state.selectionChanged = true
+              this.#setSelected(child, true)
             }
           },
           (child) => this.select(child)
@@ -4622,18 +4620,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     if (!item.selected && !this.selectedItems.has(item)) return
 
-    item.selected = false
-    this.selectedItems.delete(item)
-    this.state.selectionChanged = true
+    this.#setSelected(item, false)
 
     if (item instanceof LGraphGroup && this.groupSelectChildren) {
       this.#traverseGroupChildren(
         item,
         (child) => {
           if (child.selected || this.selectedItems.has(child)) {
-            child.selected = false
-            this.selectedItems.delete(child)
-            this.state.selectionChanged = true
+            this.#setSelected(child, false)
           }
         },
         (child) => this.deselect(child)
@@ -4671,6 +4665,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       delete this.highlighted_links[id]
     }
+  }
+
+  #setSelected(item: Positionable, selected: boolean): void {
+    item.selected = selected
+    if (selected) this.selectedItems.add(item)
+    else this.selectedItems.delete(item)
+    this.state.selectionChanged = true
+    this.#applySelection({
+      type: selected ? 'selection.add' : 'selection.remove',
+      keys: [selectableKeyOf(item)]
+    })
+  }
+
+  #applySelection(command: SelectionCommand): void {
+    const { graph } = this
+    if (!graph) return
+    useSelectionStore().apply(graphScopeOf(graph), command)
   }
 
   /**
@@ -4775,6 +4786,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     selected.clear()
     if (wasSelected) selected.add(wasSelected)
+    this.#applySelection(
+      wasSelected
+        ? { type: 'selection.replace', keys: [selectableKeyOf(wasSelected)] }
+        : { type: 'selection.clear' }
+    )
 
     this.setDirty(true)
 
@@ -4845,6 +4861,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.selected_nodes = {}
     this.selectedItems.clear()
+    this.#applySelection({ type: 'selection.clear' })
     this.current_node = null
     this.highlighted_links = {}
 
