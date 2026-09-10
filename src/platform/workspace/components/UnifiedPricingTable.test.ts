@@ -582,17 +582,6 @@ describe('UnifiedPricingTable outside Cloud', () => {
   })
 })
 
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
-
 function renderWithCycleToggle(
   props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
 ) {
@@ -602,7 +591,6 @@ function renderWithCycleToggle(
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
         CreditSlider: { template: '<div />' }
       }
     }
@@ -647,7 +635,7 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     const user = userEvent.setup()
     renderWithCycleToggle()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
     await nextTick()
 
     expect(screen.getAllByText('monthly credits')).toHaveLength(3)
@@ -665,7 +653,7 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('1,772,400')).toBeTruthy()
     expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
     await nextTick()
 
     expect(screen.getByText('monthly credits')).toBeTruthy()
