@@ -3097,6 +3097,8 @@
     },
     "preview": {
       "completeVerification": "Complete verification",
+      "completePayment": "Complete your payment",
+      "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
       "startingToday": "Starts today",

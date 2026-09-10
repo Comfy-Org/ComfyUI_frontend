@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -68,7 +66,6 @@ function createReveal(options: Parameters<typeof useSlotLinkReveal>[0]) {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   clearRootLinkReveals(SCOPE.rootGraphId)
 })
 

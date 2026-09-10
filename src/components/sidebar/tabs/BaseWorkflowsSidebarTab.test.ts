@@ -1,16 +1,31 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref, watchEffect } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { nextTick, reactive, ref, watchEffect } from 'vue'
+
+import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  useWorkflowStore,
+  useWorkflowBookmarkStore
+} from '@/platform/workflow/management/stores/workflowStore'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
-import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =
+    'Sidebar'
+  vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
+    undefined
+  )
+})
 
 const {
   setSearchQuery,
@@ -20,24 +35,12 @@ const {
   resetCapturedSearchRoot,
   mockExpandNode,
   mockToggleNodeOnEvent,
-  mockLoadBookmarks,
   mockWorkflowService,
-  mockWorkflowStoreState,
   registerSearchHandlers
 } = vi.hoisted(() => {
   let updateQuery = (_query: string) => {}
   let triggerSearch = (_query: string) => {}
   let capturedSearchRoot: TreeExplorerNode<ComfyWorkflow> | null = null
-
-  const workflowStore = {
-    workflows: [] as ComfyWorkflow[],
-    persistedWorkflows: [] as ComfyWorkflow[],
-    bookmarkedWorkflows: [] as ComfyWorkflow[],
-    openWorkflows: [] as ComfyWorkflow[],
-    activeWorkflow: null as ComfyWorkflow | null,
-    isSyncLoading: false,
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
-  }
 
   return {
     setSearchQuery: (query: string) => {
@@ -55,7 +58,6 @@ const {
     },
     mockExpandNode: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
-    mockLoadBookmarks: vi.fn().mockResolvedValue(undefined),
     mockWorkflowService: {
       openWorkflow: vi.fn().mockResolvedValue(undefined),
       closeWorkflow: vi.fn().mockResolvedValue(undefined),
@@ -64,7 +66,6 @@ const {
       insertWorkflow: vi.fn().mockResolvedValue(undefined),
       duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
     },
-    mockWorkflowStoreState: workflowStore,
     registerSearchHandlers: (
       updateHandler: (query: string) => void,
       searchHandler: (query: string) => void
@@ -74,8 +75,6 @@ const {
     }
   }
 })
-
-const mockWorkflowStore = reactive(mockWorkflowStoreState)
 
 vi.mock<unknown>(
   import('@/components/common/NoResultsPlaceholder.vue'),
@@ -187,34 +186,10 @@ vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({ isAppMode: ref(false) })
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.Workflow.WorkflowTabsPosition') return 'Sidebar'
-      return undefined
-    })
-  })
-}))
-
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
   () => ({
     useWorkflowService: () => mockWorkflowService
-  })
-)
-
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => ({ shiftDown: false })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => mockWorkflowStore,
-    useWorkflowBookmarkStore: () => ({ loadBookmarks: mockLoadBookmarks }),
-    ComfyWorkflow: class {
-      static basePath = 'workflows/'
-    }
   })
 )
 
@@ -248,12 +223,12 @@ describe('BaseWorkflowsSidebarTab', () => {
   beforeEach(() => {
     resetCapturedSearchRoot()
 
-    mockWorkflowStore.workflows = []
-    mockWorkflowStore.persistedWorkflows = []
-    mockWorkflowStore.bookmarkedWorkflows = []
-    mockWorkflowStore.openWorkflows = []
-    mockWorkflowStore.activeWorkflow = null
-    mockWorkflowStore.isSyncLoading = false
+    Object.assign(useWorkflowStore(), { workflows: [] })
+    Object.assign(useWorkflowStore(), { persistedWorkflows: [] })
+    Object.assign(useWorkflowStore(), { bookmarkedWorkflows: [] })
+    Object.assign(useWorkflowStore(), { openWorkflows: [] })
+    useWorkflowStore().activeWorkflow = null
+    useWorkflowStore().isSyncLoading = false
   })
 
   const renderComponent = () =>
@@ -264,16 +239,18 @@ describe('BaseWorkflowsSidebarTab', () => {
         dataTestid: 'workflows-sidebar'
       },
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [i18n],
         stubs: { teleport: true }
       }
     })
 
   it('returns an empty filtered workflow set when searchQuery is empty', async () => {
-    mockWorkflowStore.workflows = [
-      createMockWorkflow('workflows/test-alpha.json'),
-      createMockWorkflow('workflows/test-beta.json')
-    ]
+    Object.assign(useWorkflowStore(), {
+      workflows: [
+        createMockWorkflow('workflows/test-alpha.json'),
+        createMockWorkflow('workflows/test-beta.json')
+      ]
+    })
 
     renderComponent()
     emitSearch('alpha')
@@ -287,11 +264,13 @@ describe('BaseWorkflowsSidebarTab', () => {
   })
 
   it('filters workflows by case-insensitive path match', async () => {
-    mockWorkflowStore.workflows = [
-      createMockWorkflow('workflows/test-alpha.json'),
-      createMockWorkflow('workflows/other-workflow.json'),
-      createMockWorkflow('workflows/TEST-gamma.json')
-    ]
+    Object.assign(useWorkflowStore(), {
+      workflows: [
+        createMockWorkflow('workflows/test-alpha.json'),
+        createMockWorkflow('workflows/other-workflow.json'),
+        createMockWorkflow('workflows/TEST-gamma.json')
+      ]
+    })
 
     renderComponent()
 
@@ -312,15 +291,15 @@ describe('BaseWorkflowsSidebarTab', () => {
 
     await user.click(refreshButton)
 
-    expect(mockWorkflowStore.syncWorkflows).toHaveBeenCalledTimes(1)
+    expect(useWorkflowStore().syncWorkflows).toHaveBeenCalledTimes(1)
 
-    mockWorkflowStore.isSyncLoading = true
+    useWorkflowStore().isSyncLoading = true
     await nextTick()
 
     expect(refreshButton).toBeDisabled()
     expect(refreshButton).toHaveAttribute('aria-busy', 'true')
 
-    mockWorkflowStore.isSyncLoading = false
+    useWorkflowStore().isSyncLoading = false
     await nextTick()
 
     expect(refreshButton).toBeEnabled()
@@ -328,15 +307,17 @@ describe('BaseWorkflowsSidebarTab', () => {
 
     await user.click(refreshButton)
 
-    expect(mockWorkflowStore.syncWorkflows).toHaveBeenCalledTimes(2)
+    expect(useWorkflowStore().syncWorkflows).toHaveBeenCalledTimes(2)
   })
 
   it('reactively updates filtered workflows when a workflow is removed', async () => {
-    mockWorkflowStore.workflows = [
-      createMockWorkflow('workflows/test-alpha.json'),
-      createMockWorkflow('workflows/TEST-alpha-2.json'),
-      createMockWorkflow('workflows/test-beta.json')
-    ]
+    Object.assign(useWorkflowStore(), {
+      workflows: [
+        createMockWorkflow('workflows/test-alpha.json'),
+        createMockWorkflow('workflows/TEST-alpha-2.json'),
+        createMockWorkflow('workflows/test-beta.json')
+      ]
+    })
 
     renderComponent()
 
@@ -347,9 +328,11 @@ describe('BaseWorkflowsSidebarTab', () => {
       'workflows/test-alpha.json'
     ])
 
-    mockWorkflowStore.workflows = mockWorkflowStore.workflows.filter(
-      (workflow) => workflow.path !== 'workflows/TEST-alpha-2.json'
-    )
+    Object.assign(useWorkflowStore(), {
+      workflows: useWorkflowStore().workflows.filter(
+        (workflow) => workflow.path !== 'workflows/TEST-alpha-2.json'
+      )
+    })
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])

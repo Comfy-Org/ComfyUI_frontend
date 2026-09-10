@@ -1,4 +1,5 @@
-import { t } from '@/i18n'
+import { st, t } from '@/i18n'
+import type { IContextMenuValue } from '../interfaces'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
@@ -75,4 +76,25 @@ export function promptRenameLinkBadge(
     (value) => renameLink(host, scope, linkId, value),
     event
   )
+}
+
+export function getLinkMenuOptions(
+  scope: GraphScope,
+  linkId?: LinkId
+): (IContextMenuValue<string> | string | null)[] {
+  const options: (IContextMenuValue<string> | string | null)[] = []
+  const hidden =
+    linkId !== undefined &&
+    useLinkPresentationStore().getPresentation(scope, linkId)?.hidden
+  if (linkId !== undefined) {
+    const actions = hidden ? ['Rename', 'Show Link'] : ['Hide Link']
+    for (const value of actions) {
+      options.push({ content: st(`contextMenu.${value}`, value), value })
+    }
+    options.push(null)
+  }
+  options.push('Add Node')
+  if (!hidden) options.push('Add Reroute')
+  options.push(null, 'Delete', null)
+  return options
 }

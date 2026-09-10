@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
@@ -49,25 +50,25 @@ function drawBadgesInView(
 }
 
 describe('linkBadgeText', () => {
-  it('uses a trimmed label before the link type', () => {
-    const link = createLink(1)
-
-    expect(linkBadgeText(link.type, { label: '  Checkpoint  ' })).toBe(
-      'Checkpoint'
-    )
-  })
-
-  it('falls back to the link type', () => {
-    expect(linkBadgeText(createLink(1).type, {})).toBe('MODEL')
-  })
-
-  it('falls back to an asterisk for a typeless link', () => {
-    expect(linkBadgeText(createLink(1, '').type, {})).toBe('*')
-  })
-
-  it('falls back to an asterisk for a numeric link type', () => {
-    expect(linkBadgeText(createLink(1, -1).type, {})).toBe('*')
-  })
+  it.for([
+    {
+      type: 'MODEL',
+      presentation: { label: '  Checkpoint  ' },
+      expected: 'Checkpoint'
+    },
+    { type: 'MODEL', presentation: {}, expected: 'MODEL' },
+    { type: '', presentation: {}, expected: '*' },
+    { type: -1, presentation: {}, expected: '*' }
+  ] satisfies {
+    type: LLink['type']
+    presentation: LinkPresentation
+    expected: string
+  }[])(
+    'renders $type with $presentation as $expected',
+    ({ type, presentation, expected }) => {
+      expect(linkBadgeText(type, presentation)).toBe(expected)
+    }
+  )
 })
 
 describe('link badge frame layout', () => {
@@ -175,29 +176,48 @@ describe('link badge frame layout', () => {
     expect(ctx.fillText).toHaveBeenCalledTimes(2)
   })
 
-  it('keeps hit areas and rows for culled badges while skipping their paint', () => {
-    const host = document.createElement('canvas')
-    const ctx = createContext()
+  it.for([
+    { name: 'visible', visibleArea: VISIBLE_AREA, paintCount: 2 },
+    { name: 'culled', visibleArea: [5000, 5000, 10, 10], paintCount: 0 }
+  ] satisfies {
+    name: string
+    visibleArea: ReadOnlyRect
+    paintCount: number
+  }[])(
+    'keeps endpoint hit areas for $name badges and paints $paintCount badges',
+    ({ visibleArea, paintCount }) => {
+      const host = document.createElement('canvas')
+      const ctx = createContext()
+      drawBadgesInView(
+        host,
+        ctx,
+        createLink(1),
+        [100, 100],
+        [400, 200],
+        visibleArea
+      )
 
+      expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+      expect(queryLinkBadgeAtPoint(host, 360, 200)).toBe(toLinkId(1))
+      expect(ctx.fillText).toHaveBeenCalledTimes(paintCount)
+    }
+  )
+
+  it('includes badge edges and excludes points just beyond them', () => {
+    const host = document.createElement('canvas')
     drawBadgesInView(
       host,
-      ctx,
+      createContext(),
       createLink(1),
       [100, 100],
-      [400, 200],
-      [5000, 5000, 10, 10]
+      [400, 200]
     )
 
-    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
-    expect(queryLinkBadgeAtPoint(host, 360, 200)).toBe(toLinkId(1))
-    expect(ctx.fillText).not.toHaveBeenCalled()
-  })
-
-  it('paints visible badges immediately', () => {
-    const host = document.createElement('canvas')
-    const ctx = createContext()
-    drawBadgesInView(host, ctx, createLink(9), [100, 100], [400, 200])
-
-    expect(ctx.fillText).toHaveBeenCalledTimes(2)
+    expect(queryLinkBadgeAtPoint(host, 114, 91)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 176, 109)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 113, 91)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(host, 177, 109)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(host, 114, 90)).toBeUndefined()
+    expect(queryLinkBadgeAtPoint(host, 176, 110)).toBeUndefined()
   })
 })

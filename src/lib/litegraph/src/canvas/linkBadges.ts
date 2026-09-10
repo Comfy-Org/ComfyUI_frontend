@@ -1,6 +1,6 @@
 import { textOnColor } from '@/utils/colorUtil'
 
-import type { Point, ReadOnlyRect, Rect } from '../interfaces'
+import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from '../interfaces'
 import { LGraphBadge } from '../LGraphBadge'
 import type { LLink } from '../LLink'
 import type { LinkId } from '@/types/linkId'
@@ -14,12 +14,8 @@ const CONNECTOR_WIDTH = 3
 const BADGE_STACK_GAP = 4
 const BADGE_CONNECT_INSET = 2
 
-interface BadgeHitArea {
-  linkId: LinkId
-  x: number
-  y: number
-  width: number
-  height: number
+interface BadgeHitArea extends HasBoundingRect {
+  readonly linkId: LinkId
 }
 
 export interface LinkBadgeLayout {
@@ -48,15 +44,10 @@ export function queryLinkBadgeAtPoint(
   x: number,
   y: number
 ): LinkId | undefined {
-  return hitAreasByHost
-    .get(host)
-    ?.find(
-      (area) =>
-        x >= area.x &&
-        x <= area.x + area.width &&
-        y >= area.y &&
-        y <= area.y + area.height
-    )?.linkId
+  return hitAreasByHost.get(host)?.find(({ boundingRect }) => {
+    const [left, top, width, height] = boundingRect
+    return x >= left && x <= left + width && y >= top && y <= top + height
+  })?.linkId
 }
 
 export function linkBadgeText(
@@ -86,11 +77,12 @@ function overlapsBadge(
   width: number,
   area: BadgeHitArea
 ): boolean {
+  const [areaLeft, areaTop, areaWidth, areaHeight] = area.boundingRect
   return (
-    left < area.x + area.width &&
-    left + width > area.x &&
-    top < area.y + area.height &&
-    top + BADGE_HEIGHT > area.y
+    left < areaLeft + areaWidth &&
+    left + width > areaLeft &&
+    top < areaTop + areaHeight &&
+    top + BADGE_HEIGHT > areaTop
   )
 }
 
@@ -108,11 +100,8 @@ function freeBadgeCenterY(
       overlapsBadge(left, top, width, area)
     )
     if (overlappingArea) {
-      centerY =
-        overlappingArea.y +
-        overlappingArea.height +
-        BADGE_STACK_GAP +
-        BADGE_HEIGHT / 2
+      const [, top, , height] = overlappingArea.boundingRect
+      centerY = top + height + BADGE_STACK_GAP + BADGE_HEIGHT / 2
     }
   } while (overlappingArea)
   return centerY
@@ -126,10 +115,7 @@ function createHitArea(
 ): BadgeHitArea {
   return {
     linkId,
-    x: left,
-    y: centerY - BADGE_HEIGHT / 2,
-    width,
-    height: BADGE_HEIGHT
+    boundingRect: [left, centerY - BADGE_HEIGHT / 2, width, BADGE_HEIGHT]
   }
 }
 
@@ -210,10 +196,11 @@ function getBadgeHitAreas(
 }
 
 function getConnectorBounds(socket: Point, area: BadgeHitArea): Rect {
-  const left = Math.min(socket[0], area.x)
-  const top = Math.min(socket[1], area.y)
-  const right = Math.max(socket[0], area.x + area.width)
-  const bottom = Math.max(socket[1], area.y + area.height)
+  const [areaLeft, areaTop, width, height] = area.boundingRect
+  const left = Math.min(socket[0], areaLeft)
+  const top = Math.min(socket[1], areaTop)
+  const right = Math.max(socket[0], areaLeft + width)
+  const bottom = Math.max(socket[1], areaTop + height)
   return [left, top, right - left, bottom - top]
 }
 
