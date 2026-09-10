@@ -66,8 +66,7 @@ async function signInWith(provider: AuthSignInProvider) {
   dispatch({ type: 'signInStarted', provider })
   const attempt = signInGeneration
   const live = () => attempt === signInGeneration && enabled.value
-  // A flag-off (or flicker) mid-attempt must drop the attempt, not just return:
-  // a bare return strands the reducer in `pending`, freezing the page.
+  // Flag flip mid-attempt: drop the attempt so the reducer leaves `pending`.
   const abandon = () => dispatch({ type: 'signInAbandoned' })
   let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
@@ -102,8 +101,7 @@ async function signInWith(provider: AuthSignInProvider) {
       email: credential.user.email ?? credential.user.displayName ?? ''
     })
   } catch (error) {
-    // A rejection after the attempt was invalidated is not this attempt's
-    // failure: don't report it or publish error state over the abandoned one.
+    // An invalidated attempt's rejection is not this attempt's failure.
     if (!live()) {
       abandon()
       return

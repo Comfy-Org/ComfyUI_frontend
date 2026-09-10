@@ -89,9 +89,7 @@ export function authSignInTransition(
     case 'signedOut':
       return state.step === 'pending' ? state : { step: 'idle' }
     case 'signInAbandoned':
-      // The rollout flag turned off (or flickered) mid-attempt: drop the
-      // in-flight attempt so the page leaves `pending` and a later restore or
-      // mint is no longer ignored.
+      // Drop an attempt a flag flip invalidated so it leaves `pending`.
       return { step: 'idle' }
   }
 }
