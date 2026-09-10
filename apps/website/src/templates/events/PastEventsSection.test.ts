@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
 import type * as eventsModule from '../../data/events'
@@ -66,7 +68,7 @@ const { fixturePastEvents } = vi.hoisted(() => {
   return { fixturePastEvents: [recorded, clip, artless, untranslated] }
 })
 
-vi.mock('../../data/events', async (importOriginal) => {
+vi.mock(import('../../data/events'), async (importOriginal) => {
   const actual = await importOriginal<typeof eventsModule>()
   return { ...actual, pastEvents: fixturePastEvents }
 })
@@ -118,6 +120,26 @@ describe('PastEventsSection', () => {
     expect(screen.getByRole('button', { name: 'WORKSHOP' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'CONFERENCE' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'HACKATHON' })).toBeNull()
+  })
+
+  it('narrows the cards to a tab category and restores them via ALL', async () => {
+    render(PastEventsSection)
+
+    await userEvent.click(screen.getByRole('button', { name: 'WORKSHOP' }))
+    await nextTick()
+
+    expect(screen.getByText('Artless Workshop')).toBeTruthy()
+    expect(screen.queryByText('Recorded Livestream')).toBeNull()
+    expect(screen.queryByText('Clip Meetup')).toBeNull()
+    expect(screen.queryByText('English-Only Conference')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'ALL' }))
+    await nextTick()
+
+    expect(screen.getByText('Artless Workshop')).toBeTruthy()
+    expect(screen.getByText('Recorded Livestream')).toBeTruthy()
+    expect(screen.getByText('Clip Meetup')).toBeTruthy()
+    expect(screen.getByText('English-Only Conference')).toBeTruthy()
   })
 
   it('passes each card its own art, poster included for clips', () => {

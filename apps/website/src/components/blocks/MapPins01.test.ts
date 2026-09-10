@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
+import type * as Leaflet from 'leaflet'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MapPins01 from './MapPins01.vue'
@@ -29,14 +30,17 @@ const leafletState = vi.hoisted(() => {
     title: string | undefined
     click: (() => void) | undefined
   }> = []
-  return { FakePoint, markers }
+  const flyToBoundsCalls: unknown[] = []
+  const moveendCallbacks: Array<() => void> = []
+  return { FakePoint, markers, flyToBoundsCalls, moveendCallbacks }
 })
 
 // The component's dynamic `import('leaflet')` resolves to this fake; the map
 // projects one degree of longitude/latitude to one container pixel so the
 // 48px cluster threshold is easy to reason about in test coordinates.
-vi.mock('leaflet', () => {
-  const { FakePoint, markers } = leafletState
+vi.mock(import('leaflet'), () => {
+  const { FakePoint, markers, flyToBoundsCalls, moveendCallbacks } =
+    leafletState
   const fakeMap = {
     latLngToContainerPoint: ([lat, lng]: [number, number]) =>
       new FakePoint(lng, lat),
@@ -45,8 +49,14 @@ vi.mock('leaflet', () => {
       lng: point.x
     }),
     on: () => fakeMap,
-    once: () => fakeMap,
-    flyToBounds: () => fakeMap,
+    once: (_event: string, handler: () => void) => {
+      moveendCallbacks.push(handler)
+      return fakeMap
+    },
+    flyToBounds: (...args: unknown[]) => {
+      flyToBoundsCalls.push(args)
+      return fakeMap
+    },
     remove: () => undefined
   }
   const layerGroup = () => {
@@ -78,9 +88,12 @@ vi.mock('leaflet', () => {
     geoJSON: () => ({ addTo: () => undefined }),
     layerGroup,
     point: (x: number, y: number) => new FakePoint(x, y),
-    polyline: () => ({ addTo: () => undefined })
+    polyline: () => ({ addTo: () => undefined }),
+    latLngBounds: (coords: Array<[number, number]>) => coords
   }
-  return { default: fake }
+  // The fake covers only the surface MapPins01 touches, so it cannot satisfy
+  // leaflet's full module type without this widening.
+  return { default: fake } as unknown as typeof Leaflet
 })
 
 // One pixel per degree: the first two pins sit 10px apart (clustered), the
@@ -102,6 +115,8 @@ async function waitForPins(count: number) {
 describe('MapPins01', () => {
   beforeEach(() => {
     leafletState.markers.splice(0)
+    leafletState.flyToBoundsCalls.splice(0)
+    leafletState.moveendCallbacks.splice(0)
     fetchSignal = undefined
     vi.stubGlobal(
       'fetch',
@@ -149,6 +164,34 @@ describe('MapPins01', () => {
     expect(
       leafletState.markers.some((marker) => marker.title === '2 cities')
     ).toBe(true)
+  })
+
+  it('spiderfies a still-coincident cluster after flying in and selects on a leaf click', async () => {
+    const { emitted } = render(MapPins01, {
+      props: { markers, regionLabel: 'Event map' }
+    })
+    await waitForPins(2)
+
+    const cluster = leafletState.markers.find(
+      (marker) => marker.title === 'Paris, Lyon'
+    )
+    cluster?.click?.()
+
+    // The click flies to the cluster's bounds and defers the coincidence
+    // check to the fly's `moveend`.
+    expect(leafletState.flyToBoundsCalls).toHaveLength(1)
+    expect(leafletState.moveendCallbacks).toHaveLength(1)
+
+    // The fake map never changes zoom, so once landed the pins are still
+    // 10px apart — coincident — and the group fans into leaf pins.
+    leafletState.moveendCallbacks[0]()
+
+    const titles = leafletState.markers.map((marker) => marker.title)
+    expect(titles.toSorted()).toEqual(['Lyon', 'Paris', 'Tokyo'])
+
+    const lyon = leafletState.markers.find((marker) => marker.title === 'Lyon')
+    lyon?.click?.()
+    expect(emitted('select')).toEqual([['lyon']])
   })
 
   it('aborts the world-shape fetch when unmounted mid-setup', () => {

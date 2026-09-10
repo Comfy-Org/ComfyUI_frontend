@@ -48,7 +48,7 @@ const { NOW, fixtureEvents } = vi.hoisted(() => {
   }
 })
 
-vi.mock('../../data/events', async (importOriginal) => {
+vi.mock(import('../../data/events'), async (importOriginal) => {
   const actual = await importOriginal<typeof eventsModule>()
   return { ...actual, directoryEvents: fixtureEvents, eventsDerivedAt: NOW }
 })
@@ -145,5 +145,11 @@ describe('EventsDirectorySection', () => {
 
     expect(rowFor('Paris Hack Night')).toBeUndefined()
     expect(rowFor('Tokyo Meetup')?.className).not.toContain('ring-1')
+
+    // Restoring the filter must not resurrect the old pin selection.
+    await userEvent.clear(screen.getByRole('searchbox'))
+    await nextTick()
+
+    expect(rowFor('Paris Hack Night')?.className).not.toContain('ring-1')
   })
 })

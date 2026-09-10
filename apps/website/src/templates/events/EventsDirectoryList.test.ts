@@ -83,6 +83,28 @@ describe('EventsDirectoryList', () => {
     ).toBe('tokyo')
   })
 
+  it('scrolls to a row selected before the list mounted', async () => {
+    const scrollIntoView = vi
+      .spyOn(Element.prototype, 'scrollIntoView')
+      .mockImplementation(() => {})
+    vi.spyOn(window, 'matchMedia').mockReturnValue(mediaQueryList(false))
+
+    render(EventsDirectoryList, {
+      props: { rows, selectedEventId: 'paris' }
+    })
+    await nextTick()
+    await nextTick()
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      block: 'nearest',
+      behavior: 'smooth'
+    })
+    const target = scrollIntoView.mock.contexts.at(-1)
+    expect(
+      target instanceof Element && target.getAttribute('data-event-id')
+    ).toBe('paris')
+  })
+
   it('scrolls without animation when the visitor prefers reduced motion', async () => {
     const scrollIntoView = vi
       .spyOn(Element.prototype, 'scrollIntoView')
