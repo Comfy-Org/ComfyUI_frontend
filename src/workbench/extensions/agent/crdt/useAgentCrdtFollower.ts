@@ -581,6 +581,11 @@ export function useAgentCrdtFollower(
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
   let boundWorkflowId: string | null = null
+  // A lineage break that arrived before any graph existed. The graph-ready
+  // reconcile is an ordinary one, and its fast path would see the reused id
+  // already registered and keep the outgoing definition, so the intent has to
+  // outlive the missing graph.
+  let pendingDefinitionReplacement = false
   // The op layer writes remote frames to the stores only; the live graph
   // catches up here, after each applied frame and once a graph exists.
   function reconcileLiveGraph(
@@ -588,22 +593,32 @@ export function useAgentCrdtFollower(
     replaceSubgraphDefinitions = false
   ): void {
     const graph = getGraph()
-    if (!graph) return
-    const definitionIds = readSubgraphDefinitionIds(bridge.follower.doc)
-    const hasMissingDefinition = definitionIds.some(
-      (id) => !graph.rootGraph.subgraphs.has(id)
-    )
-    const definitions =
-      replaceSubgraphDefinitions || hasMissingDefinition
-        ? readSubgraphDefinitions(bridge.follower.doc)
-        : []
-    const nodeIds = replaceSubgraphDefinitions
+    if (!graph) {
+      pendingDefinitionReplacement ||= replaceSubgraphDefinitions
+      return
+    }
+    const replaceDefinitions =
+      replaceSubgraphDefinitions || pendingDefinitionReplacement
+    // The ID-only fast path probes the live root graph, which still holds the
+    // outgoing generation's definitions at a lineage break -- nothing reads as
+    // missing there, so a reset has to take the full read unconditionally or
+    // retirement would leave the replacement document with no definitions to
+    // register.
+    const needsDefinitions =
+      replaceDefinitions ||
+      readSubgraphDefinitionIds(bridge.follower.doc).some(
+        (id) => !graph.rootGraph.subgraphs.has(id)
+      )
+    const definitions = needsDefinitions
+      ? readSubgraphDefinitions(bridge.follower.doc)
+      : []
+    const nodeIds = replaceDefinitions
       ? reconcileAgentAdapters(graph, definitions, {
           replaceSubgraphDefinitions: true
         })
       : reconcileAgentAdapters(graph, definitions)
-    // A frame that only wires or rewires nodes moves no layout, so nothing
-    // else asks the canvas to paint the new links.
+    pendingDefinitionReplacement = false
+    // Link-only frames also need an explicit repaint.
     graph.setDirtyCanvas(true, true)
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
