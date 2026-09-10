@@ -33,41 +33,63 @@ class FrameTransport extends EventTarget implements DocFrameTransport {
   }
 }
 
-function hostUpdate(): Uint8Array {
+function opIdFor(nodeId: number): string {
+  return String(nodeId).padStart(32, '0')
+}
+
+/**
+ * A host doc that emits one update per added node: the first carries the whole
+ * state (including the schema meta the read gate requires), each later one only
+ * the delta, exactly as the relay fans out a live session.
+ */
+function hostSession() {
   const host = mint({ nodes: [], links: [] }, { types: {} })
-  try {
-    const result = applyOps(
-      host,
-      [
-        {
-          op: 'add_node',
-          op_id: '00000000000000000000000000000001',
-          actor: 'agent:test',
-          base_version: 1,
-          stamp: [1, 'agent:test'],
-          node_id: 1,
-          class_type: 'FollowerSeamNode',
-          pos: [128, 96],
-          node: {
-            id: 1,
-            type: 'FollowerSeamNode',
+  let emitted = 0
+  return {
+    add(nodeId: number): Uint8Array {
+      const before = Y.encodeStateVector(host)
+      const result = applyOps(
+        host,
+        [
+          {
+            op: 'add_node',
+            op_id: opIdFor(nodeId),
+            actor: 'agent:test',
+            base_version: nodeId,
+            stamp: [nodeId, 'agent:test'],
+            node_id: nodeId,
+            class_type: 'FollowerSeamNode',
             pos: [128, 96],
-            inputs: [],
-            outputs: []
+            node: {
+              id: nodeId,
+              type: 'FollowerSeamNode',
+              pos: [128, 96],
+              inputs: [],
+              outputs: []
+            }
           }
-        }
-      ],
-      { types: {} }
-    )
-    expect(result.outcomes).toEqual([
-      {
-        op_id: '00000000000000000000000000000001',
-        outcome: 'applied'
-      }
-    ])
-    return Y.encodeStateAsUpdate(host)
+        ],
+        { types: {} }
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: opIdFor(nodeId), outcome: 'applied' }
+      ])
+      return emitted++ === 0
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, before)
+    },
+    destroy(): void {
+      host.destroy()
+    }
+  }
+}
+
+function hostUpdate(): Uint8Array {
+  const session = hostSession()
+  try {
+    return session.add(1)
   } finally {
-    host.destroy()
+    session.destroy()
   }
 }
 
@@ -182,14 +204,16 @@ describe('follower seam integration', () => {
     }
   })
 
-  it('consumes an update without projecting it while graph scope is unavailable', () => {
-    const seam = setup(() => null)
+  it('projects an update withheld for missing scope once scope returns', () => {
+    let liveScope: typeof scope | null = null
+    const seam = setup(() => liveScope)
+    const host = hostSession()
     try {
       seam.transport.deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
-        update_b64: encodeBase64(hostUpdate())
+        update_b64: encodeBase64(host.add(1))
       })
 
       expect(seam.bridge.lastSequence).toBe(1)
@@ -197,7 +221,24 @@ describe('follower seam integration', () => {
       expect(seam.applyResults).toEqual([false])
       expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
       expect(seam.createLayout).not.toHaveBeenCalled()
+
+      liveScope = scope
+      seam.transport.deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 2,
+        update_b64: encodeBase64(host.add(2))
+      })
+
+      expect(seam.applyResults).toEqual([false, true])
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map((node) => node.id)
+      ).toEqual([toNodeId(1), toNodeId(2)])
+      expect(seam.createLayout).toHaveBeenCalledTimes(2)
     } finally {
+      host.destroy()
       seam.destroy()
     }
   })
