@@ -66,6 +66,9 @@ jobs:
       # server instead of failing to bind an already-occupied port.
       - name: Run e2e tests
         id: e2e
+        # This container's default run-block shell is sh, not bash — the
+        # /dev/tcp readiness probe below is a bash-ism.
+        shell: bash
         run: |
           set +e
           pnpm --filter @comfyorg/website preview &
@@ -128,6 +131,7 @@ jobs:
           ${{
             always() &&
             !cancelled() &&
+            (steps.e2e.outputs.visual-outcome == 'success' || steps.e2e.outputs.visual-outcome == 'failure') &&
             (
               github.event_name != 'pull_request' ||
               github.event.pull_request.head.repo.fork == false
