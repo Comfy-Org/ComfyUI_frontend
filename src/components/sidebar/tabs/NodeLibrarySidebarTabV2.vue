@@ -281,7 +281,7 @@ const sections = computed(() => {
   return nodeOrganizationService.organizeNodesTab(activeNodes.value)
 })
 
-function getFolderIcon(node: TreeNode): string {
+function getFolderIcon(node: TreeNode<ComfyNodeDefImpl>): string {
   const firstLeaf = findFirstLeaf(node)
   if (
     firstLeaf?.data?.api_node &&
@@ -292,7 +292,9 @@ function getFolderIcon(node: TreeNode): string {
   return 'icon-[lucide--folder]'
 }
 
-function findFirstLeaf(node: TreeNode): TreeNode | undefined {
+function findFirstLeaf(
+  node: TreeNode<ComfyNodeDefImpl>
+): TreeNode<ComfyNodeDefImpl> | undefined {
   if (node.leaf) return node
   for (const child of node.children ?? []) {
     const leaf = findFirstLeaf(child)
@@ -302,7 +304,7 @@ function findFirstLeaf(node: TreeNode): TreeNode | undefined {
 }
 
 function fillNodeInfo(
-  node: TreeNode
+  node: TreeNode<ComfyNodeDefImpl>
 ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
   const children = node.children?.map(fillNodeInfo)
   const totalLeaves = node.leaf
@@ -311,7 +313,7 @@ function fillNodeInfo(
 
   return {
     key: node.key,
-    label: node.leaf ? node.data?.display_name : node.label,
+    label: node.leaf ? (node.data?.display_name ?? node.label) : node.label,
     leaf: node.leaf,
     data: node.data,
     icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
@@ -321,7 +323,9 @@ function fillNodeInfo(
   }
 }
 
-function applySorting(tree: TreeNode): TreeNode {
+function applySorting(
+  tree: TreeNode<ComfyNodeDefImpl>
+): TreeNode<ComfyNodeDefImpl> {
   if (sortOrder.value === 'alphabetical') {
     return sortedTree(tree, { groupLeaf: true })
   }
@@ -356,7 +360,7 @@ const renderedSections = computed(() =>
   )
 )
 
-function collectFolderKeys(node: TreeNode): string[] {
+function collectFolderKeys(node: TreeNode<ComfyNodeDefImpl>): string[] {
   if (node.leaf) return []
   const keys = [node.key]
   for (const child of node.children ?? []) {

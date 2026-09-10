@@ -38,12 +38,10 @@ let stopWatchCustomization: (() => void) | null = null
 
 const container = ref<HTMLElement | null>(null)
 onMounted(() => {
-  treeNodeElement.value = container.value?.closest(
-    '.p-tree-node-content'
-  ) as HTMLElement
-  iconElement.value = treeNodeElement.value.querySelector(
-    ':scope > .p-tree-node-icon'
-  ) as HTMLElement
+  treeNodeElement.value =
+    container.value?.closest('.tree-explorer-item') ?? null
+  iconElement.value =
+    treeNodeElement.value?.querySelector('.tree-explorer-node-icon') ?? null
   updateIconColor()
 
   // Start watching after the component is mounted
