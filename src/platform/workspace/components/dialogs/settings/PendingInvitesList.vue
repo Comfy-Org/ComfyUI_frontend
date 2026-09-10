@@ -37,6 +37,23 @@
       <div class="flex items-center justify-end">
         <MoreButton v-slot="{ close }" :aria-label="$t('g.moreOptions')">
           <Button
+            v-if="invite.token"
+            variant="textonly"
+            size="unset"
+            :class="menuItemClass"
+            @click="
+              () => {
+                close()
+                void copyInviteLink(invite)
+              }
+            "
+          >
+            <i class="icon-[lucide--link] size-4" />
+            <span>{{
+              $t('workspacePanel.members.actions.copyInviteLink')
+            }}</span>
+          </Button>
+          <Button
             variant="textonly"
             size="unset"
             :class="menuItemClass"
@@ -82,6 +99,10 @@ import { useI18n } from 'vue-i18n'
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  buildInviteLink,
+  copyTextSilently
+} from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
@@ -108,5 +129,10 @@ function getInviteInitial(email: string): string {
 
 function formatDate(date: Date): string {
   return d(date, { dateStyle: 'medium' })
+}
+
+async function copyInviteLink(invite: WorkspacePendingInvite) {
+  if (!invite.token) return
+  await copyTextSilently(buildInviteLink(invite.token))
 }
 </script>
