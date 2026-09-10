@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "максимум токенов вывода"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "уровень мышления"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "запрос",
@@ -16473,6 +16467,36 @@
       },
       "size": {
         "name": "размер"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Создавайте или редактируйте изображения через OpenRouter с моделями MAI-Image-2.6 от Microsoft: генерация изображения по тексту или редактирование по изображению с использованием до пяти референсных изображений, в семи соотношениях сторон с разрешением 1K или 1.5K.",
+    "display_name": "Изображение OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель изображений OpenRouter, используемая для создания изображения."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {

@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -16473,6 +16467,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "יצירה או עריכה של תמונות באמצעות OpenRouter עם מודלי MAI-Image-2.6 של Microsoft: טקסט לתמונה, או עריכה מונחית-תמונה עם עד חמש תמונות ייחוס, בשבעה יחסי ממדים ברזולוציית 1K או 1.5K.",
+    "display_name": "תמונת OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "מודל התמונה של OpenRouter המשמש ליצירת התמונה."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
