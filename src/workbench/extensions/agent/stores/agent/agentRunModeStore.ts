@@ -88,6 +88,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   const creditLimit = computed(() => preference.value.credit_limit)
   let saveRevision = 0
   let appliedSaveRevision = 0
+  let loadRevision = 0
 
   function apply(nextPreference: AgentRunModePreference): void {
     preference.value = nextPreference
@@ -102,14 +103,22 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   }
 
   async function load(): Promise<void> {
+    const currentLoadRevision = ++loadRevision
     const revision = saveRevision
     try {
       const serverPreference = await api.getRunMode()
-      if (revision === saveRevision) apply(serverPreference)
+      if (currentLoadRevision === loadRevision && revision === saveRevision)
+        apply(serverPreference)
     } catch (error) {
       if (!(error instanceof AgentApiError && error.status === 404)) throw error
       localPreference()
     }
+  }
+
+  function reset(): void {
+    loadRevision++
+    saveRevision++
+    apply(DEFAULT_PREFERENCE)
   }
 
   async function save(
@@ -136,5 +145,5 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
 
   localPreference()
 
-  return { mode, creditLimit, load, save }
+  return { mode, creditLimit, load, save, reset }
 })

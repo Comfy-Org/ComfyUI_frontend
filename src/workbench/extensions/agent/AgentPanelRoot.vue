@@ -744,9 +744,11 @@ async function refreshHistory(): Promise<void> {
 watch(threadId, (id) => history.setActive(id), { immediate: true })
 watch(
   () => resolvedUserInfo.value?.id ?? null,
-  () => {
+  (userId) => {
+    activeTabGeneration++
     historyGeneration++
     history.replaceAll([])
+    if (userId === null) return
     void refreshHistory()
   }
 )
