@@ -106,6 +106,7 @@
         :can-retry-authentication
         :is-authenticating
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -134,6 +135,7 @@
         :can-retry-authentication
         :is-authenticating
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -248,6 +250,7 @@ const {
   canRetryAuthentication,
   isAuthenticating,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
   isTeamCheckout,
   previewVariant,

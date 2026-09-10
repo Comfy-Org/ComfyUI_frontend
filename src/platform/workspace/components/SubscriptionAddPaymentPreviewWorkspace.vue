@@ -251,6 +251,27 @@
         }}
       </div>
 
+      <div v-if="parkedCheckoutRecovery" class="flex flex-col gap-2">
+        <div
+          role="alert"
+          class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+        >
+          {{ $t('subscription.preview.parkedCheckoutDetail') }}
+        </div>
+        <Button
+          variant="inverted"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="isLoading"
+          :disabled="
+            interactionLocked || !quoteIsUsable || verificationRecoveryActive
+          "
+          @click="$emit('addCreditCard')"
+        >
+          {{ $t('subscription.preview.completePayment') }}
+        </Button>
+      </div>
+
       <Button
         v-if="
           embeddedCheckoutEnabled &&
@@ -291,7 +312,7 @@
       </Button>
 
       <UnifiedStripePaymentSelector
-        v-if="captureMode && quoteReady"
+        v-if="captureMode && quoteReady && !parkedCheckoutRecovery"
         :key="`${previewData?.quote_id}:${previewData?.quote_version}`"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
@@ -306,7 +327,7 @@
       />
 
       <Button
-        v-if="captureMode && !quoteReady"
+        v-if="captureMode && !quoteReady && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -320,7 +341,7 @@
       </Button>
 
       <Button
-        v-if="savedMethods?.length"
+        v-if="savedMethods?.length && !parkedCheckoutRecovery"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -334,7 +355,9 @@
       </Button>
 
       <Button
-        v-if="!usePaymentElement && !savedMethods?.length"
+        v-if="
+          !usePaymentElement && !savedMethods?.length && !parkedCheckoutRecovery
+        "
         variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
@@ -397,6 +420,9 @@ interface Props {
   canRetryAuthentication?: boolean
   isAuthenticating?: boolean
   reconciliationOperationId?: string | null
+  /** Subscribe landed on a checkout already waiting for a card; only another
+   *  subscribe can re-issue its payment link. */
+  parkedCheckoutRecovery?: boolean
   usePaymentElement?: boolean
   /** Saved payment methods; when present the capture form is skipped and the
    *  confirm renders as a narrow summary. One method shows a Change
@@ -421,6 +447,7 @@ const {
   canRetryAuthentication = false,
   isAuthenticating = false,
   reconciliationOperationId = null,
+  parkedCheckoutRecovery = false,
   usePaymentElement = false,
   savedMethods = null,
   quoteIsCurrent = false,
