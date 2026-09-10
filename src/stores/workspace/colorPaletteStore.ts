@@ -17,15 +17,21 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
   const customPalettes = ref<ColorPalettes>({})
   const activePaletteId = ref<string>(DEFAULT_COLOR_PALETTE.id)
 
-  const palettesLookup = computed(() => ({
+  const palettesLookup = computed<Partial<ColorPalettes>>(() => ({
     ...CORE_COLOR_PALETTES,
     ...customPalettes.value
   }))
 
-  const palettes = computed(() => Object.values(palettesLookup.value))
-  const completedActivePalette = computed(() =>
-    completePalette(palettesLookup.value[activePaletteId.value])
+  const palettes = computed(() =>
+    Object.values(palettesLookup.value).filter(
+      (palette): palette is Palette => palette !== undefined
+    )
   )
+  const completedActivePalette = computed(() => {
+    const activePalette =
+      palettesLookup.value[activePaletteId.value] ?? DEFAULT_COLOR_PALETTE
+    return completePalette(activePalette)
+  })
 
   const addCustomPalette = (palette: Palette) => {
     if (palette.id in palettesLookup.value) {

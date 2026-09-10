@@ -1,6 +1,6 @@
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -163,9 +163,7 @@ describe('AgentPanel', () => {
     mount()
 
     expect(
-      screen.getByText(
-        "The agent can modify the graph. You'll need to click run to execute the workflow."
-      )
+      screen.getByText(i18n.global.t('agent.runNotice'))
     ).toBeInTheDocument()
     expect(
       screen.getByText('The AI agent can make mistakes')
@@ -176,9 +174,7 @@ describe('AgentPanel', () => {
     mount(true)
 
     expect(
-      screen.getByText(
-        "The agent can modify your workflow. You'll need to click run to execute."
-      )
+      screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
     ).toBeInTheDocument()
     expect(
       screen.getByText(
@@ -224,8 +220,7 @@ describe('AgentPanel', () => {
 
   it('focuses the composer input body after a suggestion and clears on blur', async () => {
     const user = userEvent.setup()
-    const pinia = createPinia()
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     render(AgentPanel, {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
@@ -254,8 +249,7 @@ describe('AgentPanel', () => {
 
   it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
     const user = userEvent.setup()
-    const pinia = createPinia()
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     const prompt = 'Generate a yellow duck with a hockey mask'
     const { emitted } = render(AgentPanel, {
       props: {
