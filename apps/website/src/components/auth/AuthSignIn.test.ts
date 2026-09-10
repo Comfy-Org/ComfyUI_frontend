@@ -185,6 +185,28 @@ describe('AuthSignIn', () => {
     ).toBeTruthy()
   })
 
+  it('holds the mode links while an attempt is pending, so an abandoned attempt cannot sign the visitor in', async () => {
+    handles.google.mockReturnValue(new Promise(() => {}))
+    window.history.replaceState({}, '', '/login/')
+    render(AuthSignIn)
+
+    await clickGoogle()
+    const signUpLink = await screen.findByRole('link', { name: /sign up/i })
+    expect(signUpLink.getAttribute('aria-disabled')).toBe('true')
+
+    signUpLink.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+
+    expect(
+      window.location.pathname,
+      'switching mode remounts the panel and leaves the pending attempt free to finish'
+    ).toBe('/login/')
+    expect(
+      screen.queryByRole('button', { name: /sign up with google/i })
+    ).toBeNull()
+  })
+
   it('leaves for the homepage once a fresh sign-in has a session', async () => {
     handles.google.mockResolvedValue({
       user: { uid: 'user-1', email: 'user@example.com', displayName: null }
