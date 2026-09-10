@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { User } from 'firebase/auth'
 
@@ -11,7 +11,7 @@ const h = vi.hoisted(() => ({
   captureFailed: vi.fn()
 }))
 
-vi.mock('../scripts/posthog', () => ({
+vi.mock<unknown>(import('../scripts/posthog'), () => ({
   captureAuthRefreshSucceeded: h.captureSucceeded,
   captureAuthRefreshFailed: h.captureFailed
 }))
@@ -49,7 +49,10 @@ function statusFetch(status: number) {
 async function importFresh() {
   vi.resetModules()
   const mod = await import('./workshop-account')
-  return mod.workshopSessionClient
+  return {
+    client: mod.workshopSessionClient,
+    startTelemetry: mod.subscribeAuthRefreshTelemetry
+  }
 }
 
 beforeEach(() => {
@@ -58,7 +61,7 @@ beforeEach(() => {
 
 describe('workshop session storage adapter', () => {
   it('caches the minted session and serves it back without a network call', async () => {
-    const client = await importFresh()
+    const { client } = await importFresh()
 
     const first = await client.ensureFresh(testUser(), {
       fetchImpl: okFetch()
@@ -89,7 +92,7 @@ describe('workshop session storage adapter', () => {
         throw new Error('storage disabled')
       }
     })
-    const client = await importFresh()
+    const { client } = await importFresh()
 
     const result = await client.ensureFresh(testUser(), {
       fetchImpl: okFetch()
@@ -118,7 +121,8 @@ describe('auth refresh telemetry', () => {
 
   it('reports one succeeded outcome per minted token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    const client = await importFresh()
+    const { client, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
     const fire = attachManualPort(client)
 
     fire(testFirebaseUser())
@@ -129,7 +133,8 @@ describe('auth refresh telemetry', () => {
 
   it('does not repeat the outcome for a cached read of the same token', async () => {
     vi.stubGlobal('fetch', okFetch())
-    const client = await importFresh()
+    const { client, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
     const fire = attachManualPort(client)
 
     fire(testFirebaseUser())
@@ -147,7 +152,8 @@ describe('auth refresh telemetry', () => {
 
   it('reports a permanent failure outcome', async () => {
     vi.stubGlobal('fetch', statusFetch(403))
-    const client = await importFresh()
+    const { client, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
     const fire = attachManualPort(client)
 
     fire(testFirebaseUser())
@@ -162,7 +168,8 @@ describe('auth refresh telemetry', () => {
 
   it('stays silent on a transient failure', async () => {
     vi.stubGlobal('fetch', statusFetch(503))
-    const client = await importFresh()
+    const { client, startTelemetry } = await importFresh()
+    onTestFinished(startTelemetry())
     const fire = attachManualPort(client)
 
     fire(testFirebaseUser())
