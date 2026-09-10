@@ -34,7 +34,12 @@ export interface DocUpdate {
 export interface DocSubscribed {
   workflowId: string
   ok: boolean
-  /** Cloud omits seq=0; successful subscriptions require docstore seq>=1. */
+  /**
+   * Present and >= 1 on `ok: true`: the relay acks with the docstore seq,
+   * which `docstore.Init` writes as 1 and only ever advances. A `seq` of 0 —
+   * or, under the ack struct's `json:"seq,omitempty"`, an absent one — is
+   * therefore not a legal successful ack, and never means "seq 0".
+   */
   seq?: number
   code?: string
   message?: string
