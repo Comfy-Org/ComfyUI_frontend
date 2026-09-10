@@ -187,7 +187,10 @@ class AgentConversationHarness {
     )
     await bootAgentApp(this.page, agentFlag, {
       // Only the Vue node renderer projects follower edits onto the canvas.
-      settings: { 'Comfy.VueNodes.Enabled': true },
+      settings: {
+        'Comfy.VueNodes.Enabled': true,
+        'Comfy.Graph.CanvasInfo': false
+      },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
       objectInfo: 'server'
     })
