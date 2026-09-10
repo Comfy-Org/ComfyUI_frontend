@@ -6,7 +6,7 @@ import { isEqual } from 'es-toolkit'
 import { z } from 'zod'
 
 import type {
-  RecordedConversation,
+  AgentConversation,
   zAgentConversationRequest
 } from '../browser_tests/fixtures/data/agent/agentConversation'
 import {
@@ -129,7 +129,6 @@ export interface TurnAck {
 export interface RecordedTurn {
   prompt: string
   accepted: TurnAck | null
-  saw_done: boolean
   cancel_sent_at_ms?: number
   cancel_ack?: TurnAck | null
 }
@@ -229,17 +228,13 @@ function checkRecording(
     )
 }
 
-function turnIds(turn: RecordedTurn, label: string, raw: RawCapture): TurnIds {
+function turnIds(turn: RecordedTurn, label: string): TurnIds {
   if (turn.accepted?.status !== 202)
     refuse(`${label} not accepted: ${JSON.stringify(turn.accepted)}`)
   const ack = zAgentTurnAccepted.safeParse(turn.accepted.body)
   if (!ack.success)
     refuse(
       `${label} ack without ids: ${JSON.stringify(turn.accepted.body ?? {})}`
-    )
-  if (!turn.saw_done)
-    refuse(
-      `${label}: agent_message_done never arrived (timed_out=${raw.timed_out}, error=${raw.error})`
     )
   return { threadId: ack.data.thread_id, messageId: ack.data.message_id }
 }
@@ -456,13 +451,28 @@ function checkTurnAgreement(
     refuse(
       `${label}: frames ${list(new Set(frameCalls))} and audit parent rows ${list(new Set(rowCalls))} disagree; the rows are not this turn`
     )
+  // One id is a join key, not proof that both records describe the same call:
+  // the frame and the row must also name the same tool and the same outcome.
+  const frameById = new Map(
+    kept.flatMap(({ event }) =>
+      isTerminalToolCall(event) ? [[event.data.tool_call_id, event.data]] : []
+    )
+  )
+  for (const row of rows) {
+    const frame = frameById.get(row.tool_call_id)!
+    const outcome = row.status === 'ok' ? 'success' : 'error'
+    if (row.tool_name !== frame.tool_name || outcome !== frame.status)
+      refuse(
+        `${label}: tool call ${row.tool_call_id} is ${frame.tool_name} (${frame.status}) on the wire but ${row.tool_name} (${row.status}) in the audit row`
+      )
+  }
 }
 
 // The replay's own host after the emitted stream; a stream it refuses is a
 // recording nobody can replay.
-function replayHost(conversation: RecordedConversation): HostDoc {
+function replayHost(conversation: AgentConversation): HostDoc {
   try {
-    return assertOpsApply(conversation).host
+    return assertOpsApply(conversation)
   } catch (error) {
     refuse(
       `the replay rejects this recording: ${error instanceof Error ? error.message : String(error)}`
@@ -704,9 +714,7 @@ export function assembleConversation(input: AssembleInput) {
   const seedTurn = seedAck.success
     ? { threadId: seedAck.data.thread_id, messageId: seedAck.data.message_id }
     : null
-  const ids = raw.turns.map((turn, index) =>
-    turnIds(turn, turnLabel(index), raw)
-  )
+  const ids = raw.turns.map((turn, index) => turnIds(turn, turnLabel(index)))
   const { threadId } = ids[0]
   const strayed = ids.findIndex((id) => id.threadId !== threadId)
   if (strayed > 0)

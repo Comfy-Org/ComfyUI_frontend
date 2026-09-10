@@ -270,8 +270,7 @@ async function recordTurns(
       })
       const turn: RecordedTurn = {
         prompt,
-        accepted: posted,
-        saw_done: false
+        accepted: posted
       }
       raw.turns.push(turn)
       const ack = zAgentTurnAccepted.safeParse(posted.body)
@@ -293,7 +292,6 @@ async function recordTurns(
           )
       }
       await waitDone(ack.data.message_id, turnLabel(index))
-      turn.saw_done = true
     }
 
     if (
