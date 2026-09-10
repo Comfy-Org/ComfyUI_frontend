@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 
 import type { noComfyPageSetupCall as NoComfyPageSetupCall } from './comfyPageSetup'
 import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
+import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
   noDeprecatedApiSchema as NoDeprecatedApiSchema,
   noDomInComputed as NoDomInComputed,
@@ -26,6 +27,9 @@ const { noComfyPageSetupCall } = requireFrom('./comfyPageSetup.ts') as {
 }
 const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
   noDuplicateIngestType: typeof NoDuplicateIngestType
+}
+const { useGlobalPinia } = requireFrom('./globalPinia.ts') as {
+  useGlobalPinia: typeof UseGlobalPinia
 }
 const {
   noDeprecatedApiSchema,
@@ -78,6 +82,7 @@ export default {
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
-    'no-unsafe-error-assertion': noUnsafeErrorAssertion
+    'no-unsafe-error-assertion': noUnsafeErrorAssertion,
+    'use-global-pinia': useGlobalPinia
   }
 }

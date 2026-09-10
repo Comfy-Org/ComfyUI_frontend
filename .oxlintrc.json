@@ -139,6 +139,15 @@
   "overrides": [
     {
       "files": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/use-global-pinia": "error"
+      }
+    },
+    {
+      "files": [
         "src/**/*.ts",
         "src/**/*.tsx",
         "src/**/*.vue",
