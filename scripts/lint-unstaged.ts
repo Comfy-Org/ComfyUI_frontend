@@ -14,15 +14,16 @@ const files = execFileSync(
 
 if (files.length > 0) {
   const fix = process.argv.includes('--fix') ? ['--fix'] : []
-  run(oxlintEntry, ['--type-aware', ...fix, ...files])
-  run(eslintEntry, ['--cache', ...fix, ...files])
+  const oxlintStatus = run(oxlintEntry, ['--type-aware', ...fix, ...files])
+  const eslintStatus = run(eslintEntry, ['--cache', ...fix, ...files])
+  process.exit(Math.max(oxlintStatus, eslintStatus))
 }
 
-function run(entry: string, args: string[]) {
+function run(entry: string, args: string[]): number {
   const result = spawnSync(process.execPath, [entry, ...args], {
     stdio: 'inherit',
     windowsHide: true
   })
   if (result.error) throw result.error
-  if (result.status !== 0) process.exit(result.status ?? 1)
+  return result.status ?? 1
 }
