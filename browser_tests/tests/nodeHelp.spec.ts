@@ -5,6 +5,16 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+
+test.beforeEach(async ({ page }) => {
+  await page.route('https://example.com/image.png', (route) =>
+    route.fulfill({ path: assetPath('image32x32.webp') })
+  )
+  await page.route('https://example.com/video.webm', (route) =>
+    route.fulfill({ path: assetPath('video/video-preview-wide.webm') })
+  )
+})
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node

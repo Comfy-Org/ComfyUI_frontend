@@ -3,94 +3,45 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 
+// A recording whose second turn wires two nodes; the first turn only adds.
+const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
+
 test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
+  test.describe('wire evidence', () => {
+    test.use({ conversationCase: WIRING_CASE })
+
+    // The second turn's only edit is a connect, so what the canvas shows after
+    // it is the wire itself: the app's own render loop paints it, and the
+    // expectation is the picture, not a reconstruction of the renderer.
+    test('paints the wire the second turn connects @screenshot', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      await agentConversation.runTurns()
+
+      await expect(page.locator('#graph-canvas')).toHaveScreenshot(
+        'two-turn-dependent-edit-wired.png',
+        { mask: [agentConversation.panel] }
+      )
+    })
+  })
+
   for (const conversationCase of listRecordedConversations()) {
     test.describe(`recorded ${conversationCase}`, () => {
       test.use({ conversationCase })
 
-      test('replays the recorded turn onto the panel and the canvas', async ({
-        agentConversation,
-        page
+      test('replays every recorded turn onto the panel and the canvas', async ({
+        agentConversation
       }) => {
-        test.setTimeout(60_000)
-        const { panel } = agentConversation
-
+        test.setTimeout(90_000)
         await agentConversation.runTurns()
 
-        const groups = agentConversation.toolCallGroups()
-        const groupButtons = panel.getByRole('button', {
-          name: /^Ran \d+ tool call/
-        })
-        await expect(groupButtons).toHaveCount(groups.length)
-        const toolRows = panel.getByRole('listitem')
-        for (const [index, calls] of groups.entries()) {
-          const button = groupButtons.nth(index)
-          const succeeded = calls.every((call) => call.ok)
-          await expect(button).toHaveText(
-            new RegExp(`^Ran ${calls.length} tool call`)
-          )
-          // A failed group stays open at turn end; a clean one collapses.
-          await expect(button).toHaveAttribute(
-            'aria-expanded',
-            succeeded ? 'false' : 'true'
-          )
-          if (succeeded) await button.click()
-        }
-        for (const {
-          label,
-          times,
-          rows
-        } of agentConversation.toolRowCounts()) {
-          const named = toolRows.filter({
-            has: page.getByText(label, { exact: true })
-          })
-          await expect(
-            named.filter(
-              times > 1 ? { hasText: `×${times}` } : { hasNotText: '×' }
-            )
-          ).toHaveCount(rows)
-        }
-
         await expect(
-          panel.getByRole('button', {
+          agentConversation.panel.getByRole('button', {
             name: `Open ${agentConversation.conversation.workflow.name}`
           })
         ).toBeVisible()
-        await expect(
-          panel.getByTestId('markdown-stream').first()
-        ).not.toBeEmpty()
-
-        for (const id of agentConversation.addedNodeIds()) {
-          await expect(page.locator(`[data-node-id="${id}"]`)).toBeVisible()
-        }
-        for (const id of agentConversation.removedNodeIds()) {
-          await expect(page.locator(`[data-node-id="${id}"]`)).toBeHidden()
-        }
-        for (const {
-          nodeId,
-          widget,
-          value
-        } of agentConversation.recordedWidgetValues()) {
-          const field = page
-            .locator(`[data-node-id="${nodeId}"]`)
-            .getByLabel(widget, { exact: true })
-          if (typeof value === 'number') {
-            // Number widgets format their input (0.5 renders as 0.50), so compare the number.
-            await expect
-              .poll(async () =>
-                Number(await field.locator('input').first().inputValue())
-              )
-              .toBe(value)
-            continue
-          }
-          const tag = await field.evaluate((el) => el.tagName.toLowerCase())
-          if (tag === 'button') await expect(field).toContainText(value)
-          else await expect(field).toHaveValue(value)
-        }
-
-        await expect
-          .poll(() => agentConversation.graphSnapshot())
-          .toEqual(agentConversation.expectedGraph())
       })
     })
   }

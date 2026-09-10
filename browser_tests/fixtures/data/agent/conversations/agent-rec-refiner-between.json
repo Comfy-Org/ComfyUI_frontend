@@ -293,86 +293,58 @@
                 "properties": {},
                 "widgets_values": [0, "fixed", 20, 8, "euler", "simple", 1]
               },
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "a3b5b79791364f75b1d89391a7a87564",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "node_id": 2092962753103866,
-              "class_type": "KSampler",
-              "base_version": 2
+              "class_type": "KSampler"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "a5d9733c860c40798848bf92d649988f",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 4414751122447181,
               "to_node": 2092962753103866,
               "to_slot": 3,
               "from_node": 3,
               "from_slot": 0,
-              "link_type": "LATENT",
-              "base_version": 2
+              "link_type": "LATENT"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "7ced254ebc4a417589c32b5a1797452d",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 863234800411381,
               "to_node": 2092962753103866,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 0,
-              "link_type": "MODEL",
-              "base_version": 2
+              "link_type": "MODEL"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "57585fd740934c15835cef60c216c84c",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 3220756471207314,
               "to_node": 2092962753103866,
               "to_slot": 1,
               "from_node": 6,
               "from_slot": 0,
-              "link_type": "CONDITIONING",
-              "base_version": 2
+              "link_type": "CONDITIONING"
             },
             {
               "op": "connect",
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "bb113cee68314103861361151c93ad36",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "link_id": 619699595909791,
               "to_node": 8,
               "to_slot": 0,
               "from_node": 2092962753103866,
               "from_slot": 0,
-              "link_type": "LATENT",
-              "base_version": 2
+              "link_type": "LATENT"
             },
             {
               "op": "set_widget",
               "old": 1,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "8ba837eb610e4e0db4561b789bb44953",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": 0.5,
               "widget": "denoise",
-              "node_id": 2092962753103866,
-              "base_version": 2
+              "node_id": 2092962753103866
             },
             {
               "op": "set_widget",
               "old": 20,
-              "actor": "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4",
-              "op_id": "e83bac70162244fa96c7d4633dd5fccc",
-              "stamp": [2, "u-a02b5a87-26d8-451a-a5fc-07b54cbe6db4"],
               "value": 20,
               "widget": "steps",
-              "node_id": 2092962753103866,
-              "base_version": 2
+              "node_id": 2092962753103866
             }
           ],
           "at_ms": 11793

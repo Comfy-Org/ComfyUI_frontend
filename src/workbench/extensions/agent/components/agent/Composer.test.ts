@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
@@ -26,7 +25,7 @@ const tooltipDirectiveStub = {
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -47,7 +46,7 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
 
 describe('Composer', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    vi.useRealTimers()
   })
 
   it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
@@ -55,7 +54,7 @@ describe('Composer', () => {
 
     expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
     const addNodes = screen.getByRole('button', {
-      name: 'add nodes from graph,'
+      name: 'mention nodes from graph,'
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
@@ -72,7 +71,7 @@ describe('Composer', () => {
 
     expect((box as HTMLTextAreaElement).value).toBe('hello')
     expect(
-      screen.queryByRole('button', { name: 'add nodes from graph,' })
+      screen.queryByRole('button', { name: 'mention nodes from graph,' })
     ).toBeNull()
   })
 
@@ -80,7 +79,7 @@ describe('Composer', () => {
     const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
     const hintButton = screen.getByRole('button', {
-      name: 'add nodes from graph,'
+      name: 'mention nodes from graph,'
     })
 
     await userEvent.tab()
@@ -118,7 +117,7 @@ describe('Composer', () => {
 
     // The menu strings only compile once reka mounts the lazy menu content.
     await openAddMenu()
-    await screen.findByRole('menuitem', { name: 'Attach images or files' })
+    await screen.findByRole('menuitem', { name: 'Upload images or files' })
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
@@ -186,33 +185,34 @@ describe('Composer', () => {
       expect(
         screen.getByRole('button', { name: 'Save changes' })
       ).toBeDisabled()
+      expect(screen.getAllByRole('radio')).toHaveLength(2)
+      expect(
+        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+      ).not.toBeInTheDocument()
     })
 
-    it('saves a new run mode with its credit limit and closes', async () => {
+    it('saves auto mode and closes', async () => {
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run with limits/ })
+        await screen.findByRole('radio', { name: /Auto-run without approval/ })
       )
       const save = screen.getByRole('button', { name: 'Save changes' })
       expect(save).toBeEnabled()
-      const input = screen.getByRole('spinbutton', { name: 'credits' })
-      expect(input).toHaveValue(300)
-      await userEvent.clear(input)
-      await userEvent.type(input, '500')
-      expect(save).toBeEnabled()
       await userEvent.click(save)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
 
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
+        await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto_limited')
-      expect(store.creditLimit).toBe(500)
+      expect(store.mode).toBe('auto')
+      expect(store.creditLimit).toBeNull()
     })
 
     it('keeps the popover open and reports a failed save', async () => {
@@ -235,47 +235,6 @@ describe('Composer', () => {
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
-    })
-
-    it('keeps Save disabled while the limit draft is invalid', async () => {
-      mount()
-      const store = useAgentRunModeStore()
-      await store.save('auto_limited', 450)
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
-      )
-      const input = await screen.findByRole('spinbutton', { name: 'credits' })
-      await userEvent.clear(input)
-
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-
-      await userEvent.type(input, '1.5')
-      expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-    })
-
-    it('enables Save when only the credit limit changes', async () => {
-      mount()
-      const store = useAgentRunModeStore()
-      await store.save('auto_limited', 450)
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Auto (limited)' })
-      )
-      const save = await screen.findByRole('button', { name: 'Save changes' })
-      expect(save).toBeDisabled()
-
-      const input = screen.getByRole('spinbutton', { name: 'credits' })
-      await userEvent.clear(input)
-      await userEvent.type(input, '460')
-      expect(save).toBeEnabled()
-
-      await userEvent.click(save)
-      await vi.waitFor(() => expect(store.creditLimit).toBe(460))
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
@@ -367,9 +326,7 @@ describe('Composer', () => {
       await userEvent.type(screen.getByRole('textbox'), '@')
 
       expect(
-        screen
-          .getAllByRole('option')
-          .map((option) => option.textContent?.trim())
+        screen.getAllByRole('option').map((option) => option.textContent.trim())
       ).toEqual(['Alpha', 'KSampler', 'VAE Decode'])
     })
 
@@ -384,7 +341,7 @@ describe('Composer', () => {
 
       const labels = screen
         .getAllByRole('option')
-        .map((option) => option.textContent?.trim())
+        .map((option) => option.textContent.trim())
       expect(labels).not.toContain(NODES[0].title)
       expect(screen.getAllByRole('option')).toHaveLength(NODES.length - 1)
     })
@@ -557,7 +514,7 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     // Anchor on the entry that is always present, so the absence assertions
     // below cannot pass against a menu that never opened.
-    return screen.findByRole('menuitem', { name: 'Add nodes from graph' })
+    return screen.findByRole('menuitem', { name: 'Mention nodes from graph' })
   }
 
   it('hides the conditional entries from the add menu by default', async () => {
@@ -566,10 +523,10 @@ describe('Composer', () => {
     await openAddMenu()
 
     expect(
-      screen.queryByRole('menuitem', { name: 'Attach images or files' })
+      screen.queryByRole('menuitem', { name: 'Upload images or files' })
     ).toBeNull()
     expect(
-      screen.queryByRole('menuitem', { name: 'Add from assets panel' })
+      screen.queryByRole('menuitem', { name: 'Drag in asset from asset panel' })
     ).toBeNull()
   })
 
@@ -578,7 +535,7 @@ describe('Composer', () => {
 
     await openAddMenu()
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'Attach images or files' })
+      await screen.findByRole('menuitem', { name: 'Upload images or files' })
     )
 
     expect(emitted().attach).toHaveLength(1)
@@ -589,7 +546,9 @@ describe('Composer', () => {
 
     await openAddMenu()
     await userEvent.click(
-      await screen.findByRole('menuitem', { name: 'Add from assets panel' })
+      await screen.findByRole('menuitem', {
+        name: 'Drag in asset from asset panel'
+      })
     )
 
     expect(emitted().openAssets).toHaveLength(1)

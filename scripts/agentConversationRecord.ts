@@ -7,6 +7,7 @@ import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
 import {
@@ -15,11 +16,14 @@ import {
   parseOrRefuse,
   refuse,
   turnLabel,
-  zAck,
   zJsonObject,
   zRowsDump,
   zSeedFixture
 } from './agentConversationAssemble'
+import {
+  zAgentTurnAccepted,
+  zAgentWsEvent
+} from '../src/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   NormalizedRows,
   RawCapture,
@@ -45,7 +49,7 @@ const zEnv = z.object({
   AGENT_ATTEMPT: z.string().default('')
 })
 
-const zSeedAck = zAck.extend({ workflow_id: z.string().min(1) })
+const zSeedAck = zAgentTurnAccepted.required({ workflow_id: true })
 
 // The socket carries frames without a data object; the replay union does not.
 const zSocketFrame = z
@@ -55,7 +59,6 @@ const zSocketFrame = z
   })
   .transform((frame) => ({ type: frame.type, data: frame.data ?? {} }))
 
-// The exporter's candidate set: data.ops when it is a list, else data.op.
 const safeJson = (text: string): unknown => {
   try {
     return JSON.parse(text)
@@ -72,6 +75,10 @@ const sha256OfFile = (path: string): string => sha256(readFileSync(path))
 const writeJson = (path: string, value: unknown): void =>
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
 
+// A draft plus every tool result can pass Node's 1 MiB default.
+const ROWS_MAX_BYTES = 64 * 1024 * 1024
+const ROWS_TIMEOUT_MS = 60_000
+
 function readRows(
   exec: string[],
   path: string,
@@ -80,7 +87,11 @@ function readRows(
   const quote = (value: string): string => `'${value.replace(/'/g, "''")}'`
   const sql = `select json_build_object('source', 'postgres', 'parents', coalesce((select json_agg(row_to_json(r) order by r.started_at, r.id) from (select parent.id, parent.tool_call_id, parent.tool_name, parent.status, parent.result, parent.started_at, parent.workflow_id, coalesce(json_agg(json_build_object('op_id', child.op_id, 'status', child.status, 'op_index', child.op_index) order by child.op_index) filter (where child.id is not null), '[]'::json) as children from agent_tool_calls as parent left join agent_tool_calls as child on child.parent_call_id = parent.id where parent.thread_id = ${quote(ids.threadId)} and parent.message_id = ${quote(ids.messageId)} and parent.parent_call_id is null group by parent.id) r), '[]'::json), 'draft', (select content from workflow_drafts where workflow_id = ${quote(ids.workflowId)} limit 1))`
   const dump: unknown = JSON.parse(
-    execFileSync(exec[0], [...exec.slice(1), sql], { encoding: 'utf8' }).trim()
+    execFileSync(exec[0], [...exec.slice(1), sql], {
+      encoding: 'utf8',
+      maxBuffer: ROWS_MAX_BYTES,
+      timeout: ROWS_TIMEOUT_MS
+    }).trim()
   )
   writeJson(path, dump)
   const { parents, draft } = parseOrRefuse(zRowsDump, dump, 'rows dump')
@@ -151,7 +162,10 @@ async function recordTurns(
     raw.frames.push({ ...frame, at_ms: Date.now() })
   )
 
-  const postTurn = async (thread: string, turn: unknown): Promise<TurnAck> => {
+  const postTurn = async (
+    thread: string,
+    turn: AgentPostMessageRequest
+  ): Promise<TurnAck> => {
     const response = await fetch(
       `${raw.base}/agent/threads/${thread}/messages`,
       {
@@ -189,12 +203,17 @@ async function recordTurns(
     }
   }
 
+  const agentEvent = (frame: RecordedFrame) =>
+    zAgentWsEvent.safeParse(frame).data
+
   const done = (messageId: string): boolean =>
-    raw.frames.some(
-      (frame) =>
-        frame.type === 'agent_message_done' &&
-        frame.data.message_id === messageId
-    )
+    raw.frames.some((frame) => {
+      const event = agentEvent(frame)
+      return (
+        event?.type === 'agent_message_done' &&
+        event.data.message_id === messageId
+      )
+    })
 
   const waitDone = async (messageId: string, label: string): Promise<void> => {
     const started = Date.now()
@@ -251,17 +270,20 @@ async function recordTurns(
       })
       const turn: RecordedTurn = {
         prompt,
-        accepted: posted,
-        saw_done: false
+        accepted: posted
       }
       raw.turns.push(turn)
-      const ack = zAck.safeParse(posted.body)
+      const ack = zAgentTurnAccepted.safeParse(posted.body)
       if (posted.status !== 202 || !ack.success)
         refuse(`${turnLabel(index)} not accepted: ${JSON.stringify(posted)}`)
       thread = ack.data.thread_id
       opening ??= ack.data.message_id
       if (options.cancel?.turn === index + 1) {
         await sleep(options.cancel.afterMs)
+        if (done(ack.data.message_id))
+          refuse(
+            `${turnLabel(index)} completed before the cancel was sent; lower --cancel-after-ms`
+          )
         turn.cancel_sent_at_ms = Date.now()
         turn.cancel_ack = await postCancel(thread, ack.data.message_id)
         if (turn.cancel_ack.status !== 202)
@@ -270,16 +292,17 @@ async function recordTurns(
           )
       }
       await waitDone(ack.data.message_id, turnLabel(index))
-      turn.saw_done = true
     }
 
     if (
-      !raw.frames.some(
-        (frame) =>
-          frame.type === 'agent_active_tab' &&
-          frame.data.message_id === opening &&
-          frame.data.workflow_id === seedAck.data.workflow_id
-      )
+      !raw.frames.some((frame) => {
+        const event = agentEvent(frame)
+        return (
+          event?.type === 'agent_active_tab' &&
+          event.data.message_id === opening &&
+          event.data.workflow_id === seedAck.data.workflow_id
+        )
+      })
     )
       refuse(
         `no agent_active_tab for ${seedAck.data.workflow_id}: the agent never switched tabs`
@@ -291,7 +314,7 @@ async function recordTurns(
 
 async function main(argv: string[]): Promise<void> {
   const positional: string[] = []
-  const flags: Record<string, string> = {}
+  const flags: Partial<Record<string, string>> = {}
   const prompts: string[] = []
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -384,7 +407,7 @@ async function main(argv: string[]): Promise<void> {
         'X-Comfy-Workspace': env.AGENT_WORKSPACE_ID,
         'X-Comfy-User': env.AGENT_USER_ID
       },
-      redisExec: env.AGENT_REDIS_EXEC.split(' '),
+      redisExec: env.AGENT_REDIS_EXEC.split(' ').filter(Boolean),
       timeoutMs: env.AGENT_TURN_TIMEOUT,
       seed: seed.workflow.seed,
       prompts,
@@ -393,9 +416,9 @@ async function main(argv: string[]): Promise<void> {
 
     // One row set per turn; the last one also carries the final draft.
     const rows = raw.turns.map((turn, index) => {
-      const ids = zAck.parse(turn.accepted?.body)
+      const ids = zAgentTurnAccepted.parse(turn.accepted?.body)
       return readRows(
-        env.AGENT_PG_EXEC.split(' '),
+        env.AGENT_PG_EXEC.split(' ').filter(Boolean),
         sidecar(`rows.${index + 1}.json`),
         {
           threadId: ids.thread_id,
@@ -441,10 +464,8 @@ async function main(argv: string[]): Promise<void> {
   }
 }
 
-if (
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+const entry = process.argv.at(1)
+if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
   main(process.argv.slice(2)).catch((error: unknown) => {
     const refused = error instanceof RecordRefusal
     process.stderr.write(

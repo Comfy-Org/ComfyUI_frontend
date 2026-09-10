@@ -1,20 +1,29 @@
-import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  mint,
+  project,
+  readGraph
+} from '@comfyorg/comfy-multi-player'
 import type {
   GraphSnapshot,
-  Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
-const HOST_ACTOR = 'agent:comfy'
-export const DOC_PROTOCOL_VERSION = 1
+const HOST_ACTOR = 'agent:comfy:host'
 
-export interface DocFrame {
-  type: 'doc_subscribed' | 'doc_update' | 'doc_ops_result'
+// The shape the fake host puts on the wire; production's parseServerDocFrame
+// validates each one at send time.
+export interface HostFrame {
+  type: ServerDocFrame['type']
   data: Record<string, unknown>
 }
 
@@ -43,7 +52,13 @@ export class HostDoc {
     return readGraph(this.doc)
   }
 
-  subscribed(): DocFrame {
+  // The canonical workflow the library projects from the document: the
+  // nodes, titles, inputs and link tuples the canvas is expected to show.
+  projection(): WorkflowJSON {
+    return project(this.doc, this.catalog)
+  }
+
+  subscribed(): HostFrame {
     return {
       type: 'doc_subscribed',
       data: {
@@ -55,26 +70,16 @@ export class HostDoc {
     }
   }
 
-  catchUp(stateVectorB64: string): DocFrame {
+  catchUp(stateVectorB64: string): HostFrame {
     const update = Y.encodeStateAsUpdate(this.doc, fromBase64(stateVectorB64))
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
-  // Client batches arrive already minted; the real host folds them into the same doc.
-  applyClient(ops: Op[]): string[] {
-    const result = applyOps(this.doc, ops, this.catalog)
-    const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
-    if (rejected.length > 0)
-      throw new Error(
-        `client doc_ops did not apply: ${JSON.stringify(rejected)}`
-      )
-    this.seq += 1
-    return ops.map((op) => op.op_id)
-  }
-
-  apply(operations: GraphOperation[]): DocFrame {
+  // The applier below is the only judge of a recorded op; the cast hands it
+  // the structural record and nothing reads the ops as typed before it runs.
+  apply(operations: RecordedGraphOperation[]): HostFrame {
     const before = Y.encodeStateVector(this.doc)
-    const ops = mintWireOps(operations, {
+    const ops = mintWireOps(operations as GraphOperation[], {
       actor: HOST_ACTOR,
       baseVersion: this.seq
     })
@@ -96,7 +101,7 @@ export class HostDoc {
     update: Uint8Array,
     actor: string,
     opIds: string[]
-  ): DocFrame {
+  ): HostFrame {
     return {
       type: 'doc_update',
       data: {
