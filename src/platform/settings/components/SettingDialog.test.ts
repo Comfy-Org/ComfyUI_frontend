@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import type { Ref } from 'vue'
 
 import type { NavGroupData } from '@/types/navTypes'
@@ -103,7 +104,15 @@ function renderDialog() {
   return render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: {} },
+          missingWarn: false,
+          fallbackWarn: false
+        })
+      ],
       stubs: {
         BaseModalLayout: {
           emits: ['content-scroll'],

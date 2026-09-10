@@ -292,9 +292,8 @@ watch(isHeaderCollapsed, async () => {
   const wasInside =
     active instanceof HTMLElement && !!controlsRef.value?.contains(active)
   if (!wasInside) return
-  const selector = active.tagName.toLowerCase()
   await nextTick()
-  controlsRef.value?.querySelector<HTMLElement>(selector)?.focus()
+  active.focus()
 })
 
 const { t } = useI18n()
