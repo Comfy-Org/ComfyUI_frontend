@@ -10,16 +10,11 @@ let queue: Promise<unknown> = Promise.resolve()
 const MODEL_LOAD_TIMEOUT_MS = 15_000
 
 /**
- * `modelUrl` on the agent path is untrusted — `classifyAssetUrl` keeps the
- * raw `href` from the model's markdown reply, which may carry credentials
- * or a signed query string. three.js's `FileLoader` embeds the URL verbatim
- * in its thrown error (`fetch for "<url>" responded with <status>`), and
- * that error's message and stack both reach `reportError` (Sentry/Datadog),
- * so both must be scrubbed before they leave this module: query strings are
- * dropped and `user:pass@` credentials are stripped from any URL-shaped
- * substring. Agent reply assets are also referenced by root-relative URLs
- * (e.g. `/api/view?filename=mesh-0.glb`), which three.js embeds verbatim
- * too, so path-shaped tokens carrying a query string are scrubbed as well.
+ * `modelUrl` on the agent path is untrusted — it is the raw `href` from the
+ * model's markdown reply and may carry credentials or a signed query string.
+ * three.js's `FileLoader` embeds it verbatim in its thrown error, whose
+ * message and stack both reach `reportError`, so absolute and root-relative
+ * URL-shaped tokens are stripped of credentials and query strings here.
  */
 function redactUrls(text: string): string {
   return text
@@ -32,11 +27,8 @@ function redactUrls(text: string): string {
 
 function redactedCopy(error: unknown): Error {
   const source = error instanceof Error ? error : new Error(String(error))
-  // A fresh Error, not `new Error(source.message)` alone, so the redacted
-  // copy still carries a stack that distinguishes GLTFLoader from
-  // FBXLoader from fetchModelData — triage needs that frame. `cause` is
-  // deliberately not propagated: Sentry's linkedErrorsIntegration walks it
-  // by default and would re-leak the unscrubbed original.
+  // `cause` is deliberately not propagated: Sentry's linkedErrorsIntegration
+  // walks it by default and would re-leak the unscrubbed original.
   const redacted = new Error(redactUrls(source.message))
   redacted.name = source.name
   if (source.stack) redacted.stack = redactUrls(source.stack)
@@ -58,13 +50,10 @@ export type ModelThumbnailResult =
  * live, and persists the result through the asset API so other surfaces
  * pick it up.
  *
- * The whole render (see #16485, extended to cover the full body not just
- * the model load) is bounded by a deadline so a stuck render cannot block
- * the queue forever; a render that outlives its deadline is given up on —
- * its viewer is torn down and the queue moves on — but the underlying
- * transfer and parse are not abortable and run to completion in the
- * background. Aborting `callerSignal` gives up the same way, and skips the
- * render entirely if it has not started yet.
+ * A render that outlives its deadline, or whose `callerSignal` aborts, is
+ * given up on: its viewer is torn down and the queue moves on, but the
+ * underlying transfer and parse are not abortable and run to completion in
+ * the background.
  */
 export function generateModelThumbnail(
   modelUrl: string,
@@ -114,17 +103,9 @@ async function renderThumbnailWithTimeout(
     return { status: 'rendered', dataUrl }
   } catch (error) {
     // Classify by the caught error's identity, not `callerSignal.aborted` at
-    // catch time. One shared AbortController/signal used to cover every
-    // model in a group (it no longer does — see the per-url controllers in
-    // ReplyAssetGroup.vue), and a mutable flag read after the fact can't
-    // tell a genuine render fault (parse error, WebGL fault, the render
-    // deadline) from an unrelated abort that lands in the same tick.
-    // `cancelError` is the one thing only a real caller-signal abort
-    // produces, so compare against it directly.
+    // catch time: a mutable flag read after the fact cannot tell a genuine
+    // render fault from an unrelated abort landing in the same tick.
     if (error === cancelError) return { status: 'cancelled' }
-    // modelUrl is untrusted and may be embedded verbatim in three.js's own
-    // thrown error (FileLoader's "fetch for <url> responded with <status>");
-    // report a redacted copy rather than the original.
     reportError(redactedCopy(error), {
       errorType: 'agent_model_thumbnail_generation_failure'
     })
@@ -142,20 +123,11 @@ async function renderThumbnail(
   assetName: string,
   signal: AbortSignal
 ): Promise<string> {
-  // The deadline covers the whole render body, not just `loadModel`: the
-  // dynamic `import()` below and `captureThumbnail` run in the same queued
-  // task with no deadline of their own, and `queue` is module-global and
-  // serial, so a stalled chunk fetch or a capture that never settles would
-  // otherwise block every later `generateModelThumbnail` caller.
-  //
-  // `deadline` is threaded into `renderThumbnailInner` as its abort signal
-  // so `remove()` there fires immediately once the deadline (or the outer
-  // `signal`) fires, tearing down the viewer the same way a caller cancel
-  // does. Racing a plain timer here (rather than wrapping the whole body in
-  // `withTimeout`) is what lets this function's own promise settle without
-  // waiting on `renderThumbnailInner` — the underlying transfer/parse is
-  // not itself abortable and keeps running in the background once given up
-  // on; awaiting it here would defeat the deadline entirely.
+  // The deadline covers the whole render body, not just `loadModel`, because
+  // `queue` is module-global and serial: a stalled chunk fetch or a capture
+  // that never settles would otherwise block every later caller. Racing a
+  // timer rather than awaiting a wrapped body is what lets this promise
+  // settle while the unabortable transfer/parse runs on in the background.
   const deadline = new AbortController()
   const onSignalAbort = () => deadline.abort()
   signal.addEventListener('abort', onSignalAbort, { once: true })

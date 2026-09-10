@@ -72,18 +72,13 @@ const galleryItems = computed(() =>
 const galleryIndex = ref(-1)
 
 /**
- * One entry per model url. Three parallel structures (a thumbnail map, an
- * abort-controller map, a retried-once set) used to track this and could
- * disagree — a `''` placeholder meant both "in flight" and "gave up",
- * which is what let a hidden/re-shown tile end up permanently blank (see
- * `setVisible` below). Now dropping the entry and aborting its render are
- * the same synchronous act, so the watcher can always tell an owned strand
- * from a superseded one.
+ * One entry per model url; dropping the entry and cancelling its in-flight
+ * work are the same synchronous act.
  *
- * `controller` must be `markRaw`: a `ref`/reactive object deep-proxies
- * nested objects, so an unwrapped `state.controller === controller`
- * comparison would compare a proxy against the raw controller and always
- * be false, silently disowning every pending strand.
+ * `controller` must be `markRaw`: a `ref` deep-proxies nested objects, so an
+ * unwrapped `state.controller === controller` comparison would compare a
+ * proxy against the raw controller and always be false, silently disowning
+ * every pending strand.
  */
 type ThumbnailState =
   | { phase: 'loading'; controller: AbortController }
@@ -125,13 +120,7 @@ function owns(url: string, controller: AbortController): boolean {
   return state?.phase === 'loading' && state.controller === controller
 }
 
-/**
- * Look up a server-rendered preview, falling back to an offscreen render.
- * Per-url controller: `hideThumbnail` aborts it when the asset leaves
- * `visibleVisual` ("Show less" no longer leaves hidden renders running
- * against the shared queue), and `showThumbnail` restarts it, so Show more
- * -> Show less -> Show more never strands a tile blank.
- */
+/** Look up a server-rendered preview, falling back to an offscreen render. */
 function loadModelThumbnail(url: string, filename: string, attempts = 0): void {
   const controller = markRaw(new AbortController())
   thumbnailState.value[url] = { phase: 'loading', controller }
@@ -158,8 +147,6 @@ function loadModelThumbnail(url: string, filename: string, attempts = 0): void {
       // synchronously when the abort was issued.
     })
     .catch((error) => {
-      // An aborted or unmounted strand affected no tile, so its lookup
-      // failure is not a user-visible one worth reporting.
       if (!mounted || !owns(url, controller)) return
       scheduleThumbnailRetry(url, filename, attempts)
       reportError(error, {
@@ -169,14 +156,9 @@ function loadModelThumbnail(url: string, filename: string, attempts = 0): void {
 }
 
 /**
- * A `failed` render may be a transient 15s deadline expiry rather than a
+ * A `failed` render may be a transient deadline expiry rather than a
  * genuinely unrenderable model, so it gets a bounded retry instead of
- * pinning the box icon for the message's lifetime. Deliberately does not
- * check visibility when the retry fires: declining on hidden would strand
- * a url in `gaveUp` with its budget already spent (permanently iconless)
- * -- the exact bug this guards against. The cost of always spending the
- * retry is at most one render for a tile the user may have hidden, which
- * the next `setVisible(url, false)` aborts.
+ * pinning the box icon for the message's lifetime.
  */
 function scheduleThumbnailRetry(
   url: string,
@@ -198,22 +180,15 @@ function scheduleThumbnailRetry(
   }
 }
 
-/**
- * Called from the visibility watcher below when a 3D asset leaves
- * `visibleVisual` ("Show less", or the message re-rendering with fewer
- * assets). Aborts its in-flight render (if any) and drops the entry,
- * freeing the shared render queue instead of leaving it running hidden.
- */
+/** Frees the shared render queue when a 3D asset leaves `visibleVisual`. */
 function hideThumbnail(url: string): void {
   cancelThumbnailState(thumbnailState.value[url])
   delete thumbnailState.value[url]
 }
 
 /**
- * Called when a 3D asset is (re)visible. Starts a fresh load unless one is
- * already in flight, ready, or has spent its retry budget — so Show more
- * -> Show less -> Show more restarts a hidden render rather than leaving
- * the tile permanently blank.
+ * Starts a fresh load for a (re)visible 3D asset unless one is already in
+ * flight, ready, or has spent its retry budget.
  */
 function showThumbnail(url: string, filename: string): void {
   if (!thumbnailState.value[url]) loadModelThumbnail(url, filename)
@@ -262,9 +237,8 @@ function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
     .then((preview) => {
       if (!mounted) return
       if (preview) {
-        // Overwriting a `loading` or `retryPending` entry here would drop
-        // its controller/timer unreachable, so neither unmount nor the
-        // watcher could ever cancel it. Cancel first.
+        // Overwriting a `loading`/`retryPending` entry would leave its
+        // controller/timer unreachable, so cancel before replacing it.
         cancelThumbnailState(thumbnailState.value[asset.url])
         thumbnailState.value[asset.url] = { phase: 'ready', src: preview }
       } else if (retry) {
