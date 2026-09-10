@@ -3,55 +3,19 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toGroupId } from '@/types/groupId'
 
 function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
 }
 
-const mockCanvasStore = vi.hoisted<{ selectedItems: Positionable[] }>(() => ({
-  selectedItems: []
-}))
-
-vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
-  LGraphCanvas: {
-    node_colors: {
-      red: { bgcolor: '#ff0000' },
-      green: { bgcolor: '#00ff00' },
-      blue: { bgcolor: '#0000ff' }
-    }
-  },
-  LiteGraph: {
-    NODE_DEFAULT_BGCOLOR: '#353535'
-  },
-  isColorable: vi.fn(() => true)
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({ activeWorkflow: null })
-  })
-)
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
-
-vi.mock(import('@/utils/colorUtil'), () => ({
-  adjustColor: vi.fn((color: string) => color + '_light')
-}))
-
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  getItemsColorOption: vi.fn(() => null),
-  isLGraphNode: vi.fn((item) => item?.type === 'LGraphNode'),
-  isLGraphGroup: vi.fn((item) => item?.type === 'LGraphGroup')
-}))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
 describe('ColorPickerButton', () => {
   const i18n = createI18n({
@@ -67,10 +31,6 @@ describe('ColorPickerButton', () => {
         }
       }
     }
-  })
-
-  beforeEach(() => {
-    mockCanvasStore.selectedItems = []
   })
 
   function renderComponent() {
@@ -89,13 +49,13 @@ describe('ColorPickerButton', () => {
   }
 
   it('should render when nodes are selected', () => {
-    mockCanvasStore.selectedItems = [createMockPositionable()]
+    useCanvasStore().selectedItems = [createMockPositionable()]
     renderComponent()
     expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
-    mockCanvasStore.selectedItems = [createMockPositionable()]
+    useCanvasStore().selectedItems = [createMockPositionable()]
     const { user } = renderComponent()
     const button = screen.getByTestId('color-picker-button')
 
