@@ -181,6 +181,19 @@ export function setCrdtDebugEnabled(enabled: boolean): void {
 }
 
 /**
+ * Caching the read is what keeps `localStorage` off the CRDT hot path, but a
+ * cache with no invalidation would strand this tab retaining op payloads after
+ * an explicit "off" somewhere else. `storage` fires only for OTHER documents,
+ * so this never races the setters above; a null key is a `clear()`.
+ */
+window.addEventListener('storage', (event) => {
+  if (event.key !== null && event.key !== ENABLED_KEY) return
+  cachedEnabled = null
+  cachedStoredEnabled = null
+  storedEnabledRead = false
+})
+
+/**
  * Whether the user turned the instrument OFF, as opposed to never having said.
  * The ring buffer records for the never-said case — a tester who opens the
  * panel after something breaks needs the run-up — but an explicit "off" should
