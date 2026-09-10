@@ -25,10 +25,12 @@ export type DevEventKind =
   | 'ws_out'
   | 'doc_subscribed'
   | 'doc_update'
+  | 'doc_update_dropped'
   | 'doc_ops_result'
   | 'human_ops_settled'
   | 'doc_reset'
   | 'schema_error'
+  | 'apply_error'
   | 'reconnected'
   | 'subscribe_retry'
   | 'doc_nodes_changed'
@@ -36,6 +38,7 @@ export type DevEventKind =
   | 'stale_probe'
   | 'doc_gap'
   | 'doc_stale'
+  | 'scope_retry'
   | 'agent_node_adapters_materialized'
 
 export interface DevEvent {

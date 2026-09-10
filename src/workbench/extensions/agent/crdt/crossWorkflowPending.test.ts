@@ -60,6 +60,8 @@ const adapterState = vi.hoisted(() => ({
   applyFrame: vi.fn(),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
+  hasPending: vi.fn(() => false),
+  retryPending: vi.fn(() => false),
   destroy: vi.fn()
 }))
 
@@ -108,6 +110,8 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
     applyFrame = adapterState.applyFrame
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
+    hasPending = adapterState.hasPending
+    retryPending = adapterState.retryPending
     destroy = adapterState.destroy
   }
 }))
