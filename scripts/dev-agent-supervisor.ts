@@ -43,11 +43,16 @@ function hasExited(child: ChildProcess): boolean {
   return child.exitCode !== null || child.signalCode !== null
 }
 
+// A start.sh can exit while a descendant it backgrounded still holds the port,
+// so the group is signalled whether or not its leader is still running.
 function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
-  if (child.pid === undefined || hasExited(child)) return
+  if (child.pid === undefined) return
+  if (process.platform === 'win32') {
+    if (!hasExited(child)) child.kill(signal)
+    return
+  }
   try {
-    if (process.platform === 'win32') child.kill(signal)
-    else process.kill(-child.pid, signal)
+    process.kill(-child.pid, signal)
   } catch {
     child.kill(signal)
   }

@@ -164,6 +164,16 @@ describe('supervise', () => {
     expect(rm).toHaveBeenCalledOnce()
   })
 
+  it('signals the group after its leader exited so descendants stop too', async () => {
+    const supervisor = supervise('/tmp/data')
+    supervisor.spawn('start.sh', [], '/cwd', {})
+    children[0].exit(0)
+
+    await expect(stopAndFlush(supervisor, 1)).resolves.toBe(1)
+
+    expect(killed).toEqual([[-100, 'SIGTERM']])
+  })
+
   it('skips children that never got a pid and removes its signal handlers', async () => {
     const sigintBefore = process.listenerCount('SIGINT')
     const sigtermBefore = process.listenerCount('SIGTERM')
