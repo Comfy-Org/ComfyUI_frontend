@@ -78,7 +78,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
   // unusable. The team checkout renders its preview step while the quote is
   // still in flight, which is how "payment options are unavailable" reached
   // customers holding a perfectly good quote.
-  it('withholds the payment element until the quote is usable, then renders it', async () => {
+  it('waits for a usable quote and stays mounted across quote refreshes', async () => {
     let selectorInstances = 0
     const { rerender } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
@@ -122,6 +122,17 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.getByTestId('payment-selector')).toHaveTextContent(
       '50000/usd'
     )
+    expect(selectorInstances).toBe(1)
+
+    await rerender({
+      previewData: {
+        ...previewFixture('MONTHLY', 50_000),
+        quote_id: 'quote_456',
+        quote_version: 3,
+        payment_method_configuration_id: 'pmc_other'
+      }
+    })
+
     expect(selectorInstances).toBe(2)
   })
 
