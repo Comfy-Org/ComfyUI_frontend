@@ -69,10 +69,6 @@ vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: vi.fn(() => false) })
-}))
-
 function enableMocks(assetsEnabled = false) {
   // Reactive so the store's `watch(() => flags.assetsEnabled)` can fire.
   featureState.serverFeatures.assets = assetsEnabled
