@@ -424,7 +424,22 @@ describe('ensureFresh', () => {
   })
 
   it('never lets a target-less read adopt a team-scoped credential, stored or in memory', async () => {
-    const fetchImpl = okFetch('personal-jwt')
+    // Mirror the exchange: an explicit target echoes that workspace, a
+    // target-less mint resolves personal.
+    const fetchImpl = vi.fn<typeof fetch>(async (_url, init) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as {
+        workspace_id?: string
+      }
+      return body.workspace_id === 'ws-9'
+        ? jsonResponse(
+            200,
+            mintBody({
+              token: 'team-jwt',
+              workspace: { id: 'ws-9', name: 'Team', type: 'team' }
+            })
+          )
+        : jsonResponse(200, mintBody({ token: 'personal-jwt' }))
+    })
     const { client, storage } = makeClient({ fetchImpl })
     seedCache(
       storage,
@@ -447,6 +462,25 @@ describe('ensureFresh', () => {
       fetchImpl,
       'the in-memory tier follows the same rule'
     ).toHaveBeenCalledTimes(3)
+  })
+
+  it('fails closed when the exchange returns a different workspace than requested', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        200,
+        mintBody({ workspace: { id: 'ws-other', name: 'Other', type: 'team' } })
+      )
+    )
+    const { client, storage } = makeClient({ fetchImpl })
+
+    const result = await client.remint(testUser(), { workspaceId: 'ws-9' })
+
+    expect(result).toMatchObject({ status: 'error', code: 'ACCESS_DENIED' })
+    expect(client.getToken()).toBeUndefined()
+    expect(
+      storage.raw(),
+      'a wrong-scope success must not become durable'
+    ).toBeNull()
   })
 
   it('never shares an in-flight mint across different workspace targets', async () => {

@@ -612,8 +612,24 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return undefined
     }
     if (result.status === 'ok') {
+      const requestedTarget = options.workspaceId ?? clientOptions.workspaceId
+      if (
+        requestedTarget !== undefined &&
+        result.session.workspace.id !== requestedTarget
+      ) {
+        // The exchange echoes the requested workspace on success (a non-member
+        // 404s), so a scope mismatch is a backend regression; fail closed
+        // rather than persist a durable, refreshable wrong-scope session.
+        credential = undefined
+        credentialTarget = undefined
+        failure = { status: 'error', code: 'ACCESS_DENIED' }
+        scheduler?.stop()
+        safeClear()
+        publish()
+        return failure
+      }
       credential = result.session
-      credentialTarget = options.workspaceId ?? clientOptions.workspaceId
+      credentialTarget = requestedTarget
       failure = undefined
       persistCredential(result.session, credentialTarget)
       scheduler?.armAfterCommit(
