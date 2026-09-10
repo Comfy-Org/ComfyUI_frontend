@@ -166,7 +166,7 @@ function visibleOptions(group: FacetSheetGroup) {
         <span class="h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
       </button>
 
-      <div class="flex items-center justify-between p-3 pb-1">
+      <div class="flex items-center justify-between px-4 pt-1 pb-5">
         <h2 class="text-content text-base font-bold">{{ labels.title }}</h2>
         <button
           type="button"
@@ -182,7 +182,7 @@ function visibleOptions(group: FacetSheetGroup) {
 
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col">
       <TabsList
-        class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2"
+        class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
       >
         <TabsTrigger
           v-for="group in groups"
@@ -208,7 +208,7 @@ function visibleOptions(group: FacetSheetGroup) {
         :value="group.key"
         class="flex min-h-0 flex-col outline-none"
       >
-        <div class="border-b border-white/10 p-2">
+        <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
           <input
             v-model="search[group.key]"
             type="search"
