@@ -196,7 +196,7 @@ describe('Composer', () => {
     const { emitted } = mount({ streaming: true })
     const box = screen.getByRole('textbox')
     box.focus()
-    box.dispatchEvent(
+    const notCanceled = box.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'Escape',
         isComposing: true,
@@ -204,6 +204,7 @@ describe('Composer', () => {
         cancelable: true
       })
     )
+    expect(notCanceled).toBe(true)
     expect(emitted().stop).toBeUndefined()
   })
 
