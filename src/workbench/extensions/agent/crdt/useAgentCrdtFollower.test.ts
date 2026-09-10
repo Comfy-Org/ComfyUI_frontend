@@ -647,6 +647,22 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('TEL-9/TEL-10: a workflow switch resets the reconnect attempt counter', async () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    const { unmount, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ attempt: 1 })
+    )
+    unmount()
+  })
+
   it('reports retry exhaustion exactly once with normalized metadata', () => {
     vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
     vi.setSystemTime(1_000)

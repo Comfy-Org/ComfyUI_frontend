@@ -769,8 +769,11 @@ export function useAgentCrdtFollower(
       // never confirmed is dropped without a report.
       flushPendingReconnectReport()
       clearReconnectTracking()
-      // The new binding has never been confirmed and has its own seq space.
+      // The new binding has never been confirmed and has its own seq space, and
+      // TEL-9's live counter must not carry an abandoned recovery's attempts
+      // into the next workflow's first report.
       confirmedVersion = null
+      reconnectAttempt = 0
       clearStaleProbe()
       connected.value = false
       knownDocNodeIds = new Set()
