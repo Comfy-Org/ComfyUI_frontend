@@ -1,8 +1,14 @@
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { RecordRefusal } from './agentConversationAssemble'
 import type { Observation } from './agentConversationFromLangfuse'
@@ -352,6 +358,7 @@ describe('attributeOf', () => {
 describe('readEnvFile', () => {
   it('parses KEY=VALUE lines, skipping comments and the export prefix', () => {
     const dir = mkdtempSync(join(tmpdir(), 'langfuse-env-'))
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }))
     const path = join(dir, 'langfuse.env')
     writeFileSync(
       path,
@@ -453,6 +460,7 @@ describe('main', () => {
 
   it('imports a text-only trace into a fixture the replay accepts', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'agent-langfuse-import-'))
+    onTestFinished(() => rmSync(dir, { recursive: true, force: true }))
     const { workflow } = zAgentConversation.parse(
       JSON.parse(readFileSync(recording, 'utf8'))
     )

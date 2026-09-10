@@ -125,7 +125,9 @@ The importer reads what the agent's instrumentation emits (cloud
 `comfy.turn_id` (the launch span above it carries the ids but no text); a tool
 span carries `gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and
 reaches its turn through `parentObservationId`; the turn's input and output
-exist only with content capture on (`--prompt` per turn otherwise). It rebuilds
+exist only with content capture on. A turn without recorded output is refused;
+`--prompt` supplies turn inputs positionally from turn 1 and replaces the
+captured input at those positions. It rebuilds
 the tool-call and message frames, reads the audit rows with the recorder's own
 query (`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the
 same assembly gates as a recording. So it imports a session whose audit
@@ -138,8 +140,10 @@ flattened `metadata` key is the fallback); that the page meta carries
 
 An import keeps `response_side: recorded`: the replies and accepted ops are the
 agent's, only the socket framing was rebuilt, and the replay suite lists
-recorded fixtures only. Thinking and active-tab frames are absent; the trace
-does not carry them.
+recorded fixtures only. Thinking frames are absent; the trace does not carry
+them. The trace carries no active-tab frame either, so the importer rebuilds
+one for the opening turn (the `--workflow` id and the seed's name) for assembly
+to bind the workflow through.
 
 ## Capture
 
