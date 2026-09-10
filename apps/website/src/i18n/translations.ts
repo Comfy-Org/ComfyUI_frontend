@@ -8606,6 +8606,14 @@ Enterprise`
     en: 'Back to all categories',
     'zh-CN': '返回所有类别'
   },
+  'workshop.sections.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
+  },
+  'workshop.sections.allModels': {
+    en: 'All models',
+    'zh-CN': '所有模型'
+  },
   'workshop.sections.scrollBack': {
     en: 'Scroll back',
     'zh-CN': '向前滚动'
@@ -8629,12 +8637,12 @@ Enterprise`
   },
   'workshop.useCase.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
   'workshop.useCase.generateVideos': {
-    en: 'Generate videos',
-    'zh-CN': '生成视频'
+    en: 'Text to video',
+    'zh-CN': '文本生成视频'
   },
   'workshop.useCase.animateImages': {
-    en: 'Animate images',
-    'zh-CN': '让图像动起来'
+    en: 'Image to video',
+    'zh-CN': '图像生成视频'
   },
   'workshop.useCase.editVideos': { en: 'Edit videos', 'zh-CN': '编辑视频' },
   'workshop.useCase.3d': { en: '3D', 'zh-CN': '3D' },

@@ -104,6 +104,7 @@ test.describe('Workshop catalog', () => {
       .getByRole('heading', { level: 2 })
       .innerText()
     const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
+    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
     expect(promisedCount).toBeGreaterThan(0)
 
     await videos.getByTestId('section-generate-videos-open').click()
@@ -116,12 +117,36 @@ test.describe('Workshop catalog', () => {
     await expect(page.getByTestId('workshop-use-cases')).toHaveCount(0)
     await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
+      rowLabel
     )
 
     await page.getByTestId('section-back').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
+  })
+
+  test('the rows listing opens the whole catalogue', async ({ page }) => {
+    await page.goto('/models/')
+    const browseAll = page.getByTestId('browse-all')
+    const promisedCount = Number(
+      (await browseAll.innerText()).match(/\d+/)?.[0]
+    )
+    expect(promisedCount).toBeGreaterThan(0)
+
+    await browseAll.click()
+
+    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+    ).toHaveCount(promisedCount)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'All models'
+    )
+
+    await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
   test('model cards open the model detail page', async ({ page }) => {

@@ -159,4 +159,30 @@ describe('WorkshopModelsGrid', () => {
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(cardNames()).toHaveLength(3)
   })
+
+  describe('browsing rows', () => {
+    beforeEach(() => {
+      version.value = 'v1.1'
+    })
+
+    it.for(['browse-all', 'browse-all-end'])(
+      'leaves the rows for the whole catalogue and back (%s)',
+      async (testId) => {
+        const user = userEvent.setup()
+        render(WorkshopModelsGrid, { props: { models } })
+        expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+
+        await user.click(screen.getByTestId(testId))
+
+        expect(screen.queryByTestId('workshop-sections')).toBeNull()
+        expect(cardNames()).toHaveLength(models.length)
+        expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+          'All models'
+        )
+
+        await user.click(screen.getByTestId('section-back'))
+        expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+      }
+    )
+  })
 })
