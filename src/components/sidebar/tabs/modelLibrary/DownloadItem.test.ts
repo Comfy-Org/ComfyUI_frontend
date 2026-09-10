@@ -1,6 +1,5 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import { render, screen } from '@testing-library/vue'
-import { createPinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -22,10 +21,7 @@ describe('DownloadItem', () => {
       props: { download },
       global: {
         directives: { tooltip: {} },
-        plugins: [
-          createPinia(),
-          createI18n({ legacy: false, locale: 'en', messages: { en } })
-        ]
+        plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
       }
     })
 
