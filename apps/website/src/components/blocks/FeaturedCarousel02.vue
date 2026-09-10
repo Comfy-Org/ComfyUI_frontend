@@ -293,7 +293,7 @@ useCarouselAutoplay({
       </div>
 
       <div v-if="slides.length > 1" class="mt-6 flex justify-center">
-        <div class="group/pagination relative flex h-8 w-60 items-center">
+        <div class="group/pagination relative flex h-8 w-72 items-center">
           <div
             aria-hidden="true"
             class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary-warm-gray/60 transition-[height] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2"
