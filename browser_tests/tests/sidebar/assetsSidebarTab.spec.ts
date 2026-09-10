@@ -14,6 +14,10 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
+import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -151,23 +155,30 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
-const mobileCloudAssets = [
-  'previewable-count-a.png',
-  'previewable-count-b.png'
-].map((name, index) => ({
-  id: `mobile-smoke-${index}`,
-  name,
-  job_id: previewableCountJob.id,
-  mime_type: 'image/png',
-  tags: ['output'],
-  preview_url: `/api/view?filename=${name}&type=output`,
-  created_at: new Date(
-    previewableCountJob.create_time - index * 1_000
-  ).toISOString(),
-  updated_at: new Date(
-    previewableCountJob.create_time - index * 1_000
-  ).toISOString()
-}))
+const mobileAssetNames = ['previewable-count-a.png', 'previewable-count-b.png']
+
+const mobileAssets = mobileAssetNames.map(
+  (name, index): AssetItem => ({
+    id: `00000000-0000-4000-b000-00000000000${index}`,
+    name,
+    job_id: previewableCountJob.id,
+    mime_type: 'image/png',
+    tags: ['output'],
+    preview_url: `/api/view?filename=${name}&type=output`,
+    created_at: new Date(
+      previewableCountJob.create_time - index * 1_000
+    ).toISOString(),
+    updated_at: new Date(
+      previewableCountJob.create_time - index * 1_000
+    ).toISOString()
+  })
+)
+
+const mobileAssetsResponse: AssetResponse = {
+  assets: mobileAssets,
+  total: mobileAssets.length,
+  has_more: false
+}
 
 async function verifyMobileListFilterGroupDelete(comfyPage: ComfyPage) {
   const tab = comfyPage.menu.assetsTab
@@ -216,13 +227,7 @@ const mobileListSmokeTest = comfyPageFixture.extend({
       previewableCountJobDetail
     )
     await page.route(/\/api\/assets(?:\?.*)?$/, (route) =>
-      route.fulfill({
-        json: {
-          assets: mobileCloudAssets,
-          total: mobileCloudAssets.length,
-          has_more: false
-        }
-      })
+      route.fulfill({ json: mobileAssetsResponse })
     )
     await mockViewFiles(page, viewFiles)
     await use(page)
