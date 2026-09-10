@@ -105,7 +105,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       '/'
 
     if (newNodePath === folderNode.nodePath) {
-      return false
+      return true
     }
 
     if (bookmarks.value.some((b: string) => b.startsWith(newNodePath))) {
