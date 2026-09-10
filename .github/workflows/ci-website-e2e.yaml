@@ -66,17 +66,18 @@ jobs:
       # server instead of failing to bind an already-occupied port.
       - name: Run e2e tests
         id: e2e
-        # This container's default run-block shell is sh, not bash — the
-        # /dev/tcp readiness probe below is a bash-ism.
-        shell: bash
         run: |
           set +e
           pnpm --filter @comfyorg/website preview &
           PREVIEW_PID=$!
 
+          # Not bash's /dev/tcp: Debian/Ubuntu bash is built with that
+          # feature disabled, so it silently never connects on this image
+          # regardless of shell. Node is guaranteed present here already.
           READY=0
           for i in $(seq 1 30); do
-            (echo > /dev/tcp/127.0.0.1/4321) >/dev/null 2>&1 && { READY=1; break; }
+            node -e "require('net').connect(4321,'127.0.0.1').on('connect',s=>{s.end();process.exit(0)}).on('error',()=>process.exit(1))" \
+              && { READY=1; break; }
             sleep 1
           done
           if [ "$READY" -ne 1 ]; then
