@@ -61,6 +61,11 @@
         :text="badge.required"
         :rest="badge.rest"
       />
+      <NodeBadge
+        v-if="activityLabel"
+        :text="activityLabel"
+        data-testid="node-activity-badge"
+      />
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
@@ -92,9 +97,10 @@ interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
   priceBadges?: { required: string; rest?: string }[]
+  activity?: string
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed, activity } = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -147,6 +153,10 @@ const statusBadge = computed((): NodeBadgeProps | undefined =>
     : bypassed.value
       ? { text: 'Bypassed', cssIcon: 'icon-[lucide--redo-dot]' }
       : undefined
+)
+
+const activityLabel = computed(() =>
+  activity ? st(`nodeActivity.${activity}`, activity) : undefined
 )
 
 const isPinned = computed(() => Boolean(nodeData?.flags.pinned))

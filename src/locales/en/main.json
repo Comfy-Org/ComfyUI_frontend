@@ -2486,6 +2486,10 @@
   "nodeBadge": {
     "partnerNodesCount": "Partner Nodes x {count}"
   },
+  "nodeActivity": {
+    "loading": "Loading",
+    "downloading": "Downloading"
+  },
   "nodeErrors": {
     "render": "Node Render Error",
     "content": "Node Content Error",

@@ -138,6 +138,28 @@ describe('NodeHeader.vue', () => {
     expect(onCollapse).toHaveBeenCalled()
   })
 
+  it('shows a known activity as a word', () => {
+    renderHeader({ activity: 'loading' })
+
+    expect(screen.getByTestId('node-activity-badge')).toHaveTextContent(
+      'Loading'
+    )
+  })
+
+  it('shows an activity it has no word for as sent', () => {
+    renderHeader({ activity: 'warming' })
+
+    expect(screen.getByTestId('node-activity-badge')).toHaveTextContent(
+      'warming'
+    )
+  })
+
+  it('shows no activity badge when the node reports none', () => {
+    renderHeader()
+
+    expect(screen.queryByTestId('node-activity-badge')).toBeNull()
+  })
+
   it('shows the current node title and updates when prop changes', async () => {
     const { rerender } = renderHeader({
       nodeData: makeNodeData({ title: 'Original' })
