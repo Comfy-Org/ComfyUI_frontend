@@ -1,4 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -66,7 +65,6 @@ const renderHarness = (component: typeof Harness) =>
   render(component, {
     global: {
       plugins: [
-        createTestingPinia(),
         createI18n({
           legacy: false,
           locale: 'en',
