@@ -2538,6 +2538,10 @@ export class LGraph
     const presentationStore = useLinkPresentationStore()
     const scope = graphScopeOf(this)
     const subgraphScope = graphScopeOf(subgraphNode.subgraph)
+    type TargetSlotReference = (
+      | { id: UUID }
+      | { name: string; occurrence: number }
+    ) & { input?: INodeInputSlot }
     const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
@@ -2547,23 +2551,54 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
-      targetSlot?: { id: UUID } | { name: string; occurrence: number }
+      targetSlot?: TargetSlotReference
     })[] = []
+    function findTargetSlotIndex(
+      targetNode: LGraphNode,
+      targetSlot: TargetSlotReference
+    ) {
+      if (targetSlot.input) {
+        const index = targetNode.inputs.indexOf(targetSlot.input)
+        if (index !== -1) return index
+        if ('name' in targetSlot) return -1
+      }
+      if ('id' in targetSlot) {
+        return targetNode.isSubgraphNode()
+          ? targetNode.inputs.findIndex(
+              (input) => input._subgraphSlot?.id === targetSlot.id
+            )
+          : -1
+      }
+      let occurrence = 0
+      return targetNode.inputs.findIndex((input) => {
+        if (input.name !== targetSlot.name) return false
+        return occurrence++ === targetSlot.occurrence
+      })
+    }
     function getTargetSlotReference(
       targetNode: LGraphNode | null | undefined,
-      targetSlotIndex: number
+      targetSlotIndex: number,
+      liveTargetNode = targetNode
     ) {
       const targetSlot = targetNode?.inputs[targetSlotIndex]
       if (!targetNode || !targetSlot) return
       const targetSlotId = targetNode.isSubgraphNode()
         ? targetNode.inputs[targetSlotIndex]?._subgraphSlot?.id
         : undefined
-      if (targetSlotId) return { id: targetSlotId }
+      const reference: TargetSlotReference = targetSlotId
+        ? { id: targetSlotId }
+        : {
+            name: targetSlot.name,
+            occurrence: targetNode.inputs
+              .slice(0, targetSlotIndex)
+              .filter((input) => input.name === targetSlot.name).length
+          }
+      const liveTargetSlotIndex = liveTargetNode
+        ? findTargetSlotIndex(liveTargetNode, reference)
+        : -1
       return {
-        name: targetSlot.name,
-        occurrence: targetNode.inputs
-          .slice(0, targetSlotIndex)
-          .filter((input) => input.name === targetSlot.name).length
+        ...reference,
+        input: liveTargetNode?.inputs[liveTargetSlotIndex]
       }
     }
     for (const [, link] of subgraphNode.subgraph.links) {
@@ -2661,7 +2696,8 @@ export class LGraph
         externalFirst: false,
         targetSlot: getTargetSlotReference(
           subgraphNode.subgraph.getNodeById(link.target_id),
-          link.target_slot
+          link.target_slot,
+          this.getNodeById(targetId)
         ),
         ...restoredPresentation
       })
@@ -2696,18 +2732,7 @@ export class LGraph
     ) {
       const targetSlot = newLink.targetSlot
       if (!targetSlot) return newLink.tslot
-      if ('id' in targetSlot) {
-        return targetNode.isSubgraphNode()
-          ? targetNode.inputs.findIndex(
-              (input) => input._subgraphSlot?.id === targetSlot.id
-            )
-          : -1
-      }
-      let occurrence = 0
-      return targetNode.inputs.findIndex((input) => {
-        if (input.name !== targetSlot.name) return false
-        return occurrence++ === targetSlot.occurrence
-      })
+      return findTargetSlotIndex(targetNode, targetSlot)
     }
 
     const linkIdMap = new Map<LinkId, LinkId[]>()

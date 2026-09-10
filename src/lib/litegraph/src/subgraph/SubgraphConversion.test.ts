@@ -305,19 +305,33 @@ describe('SubgraphConversion', () => {
       expect(graph.getNodeById(firstLink.originNodeId)?.title).toBe('source 0')
       expect(graph.getNodeById(secondLink.originNodeId)?.title).toBe('source 1')
     })
-    it('preserves links to duplicate-named node inputs by occurrence', () => {
+    it('preserves duplicate-named links when an earlier connection removes an input', () => {
       const graph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(graph))
       const target = createTestNode(graph, [], [], 'duplicate target')
-      target.addInput('duplicate', 'number')
-      target.addInput('duplicate', 'number')
+      for (let index = 0; index < 4; index++) {
+        target.addInput('duplicate', 'number')
+      }
       const source0 = createTestNode(graph, [], ['number'], 'source 0')
-      const source1 = createTestNode(graph, [], ['number'], 'source 1')
+      const source2 = createTestNode(graph, [], ['number'], 'source 2')
+      const source3 = createTestNode(graph, [], ['number'], 'source 3')
       source0.connect(0, target, 0)
-      source1.connect(0, target, 1)
+      source2.connect(0, target, 2)
+      source3.connect(0, target, 3)
       const { node: wrapper } = graph.convertToSubgraph(
-        new Set<Positionable>([source0, source1, target])
+        new Set<Positionable>([source0, source2, source3, target])
       )
+      const targetPrototype = Object.getPrototypeOf(target) as LGraphNode
+      targetPrototype.onConnectionsChange = function (
+        _type,
+        slot,
+        connected,
+        link
+      ) {
+        if (connected && link && slot === 0 && this.inputs.length === 4) {
+          this.removeInput(1)
+        }
+      }
 
       graph.unpackSubgraph(wrapper)
 
@@ -325,11 +339,12 @@ describe('SubgraphConversion', () => {
         (node) => node.title === 'duplicate target'
       )
       assert(unpackedTarget)
-      const firstLink = unpackedTarget.getInputLink(0)
-      const secondLink = unpackedTarget.getInputLink(1)
-      assert(firstLink && secondLink)
-      expect(graph.getNodeById(firstLink.origin_id)?.title).toBe('source 0')
-      expect(graph.getNodeById(secondLink.origin_id)?.title).toBe('source 1')
+      expect(
+        unpackedTarget.inputs.map((_, slot) => {
+          const link = unpackedTarget.getInputLink(slot)
+          return link ? graph.getNodeById(link.origin_id)?.title : undefined
+        })
+      ).toEqual(['source 0', 'source 2', 'source 3'])
     })
     it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
       const graph = createTestRootGraph()
