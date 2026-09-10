@@ -28,6 +28,10 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  getActiveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const INITIAL_INTERVAL_MS = 1000
@@ -671,6 +675,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     updateOperationStatus(opId, 'succeeded', null)
     cleanup(opId)
+
+    if (getActiveCheckoutJourney()?.billing_op_id === opId) {
+      clearCheckoutJourney()
+    }
 
     const telemetry = useTelemetry()
     const now = Date.now()
