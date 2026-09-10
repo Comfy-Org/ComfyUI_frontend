@@ -25,8 +25,17 @@ export class FollowerDoc extends EventTarget {
   /**
    * @throws FollowerApplyError when `Y.applyUpdate` throws on malformed or
    * corrupt bytes. `updatesApplied` is not incremented and no `update` event
-   * is dispatched for a rejected update — the doc is left exactly as it was
-   * before the call (Yjs does not partially apply a rejected update).
+   * is dispatched for a rejected update.
+   *
+   * A rejection is NOT a rollback. `Y.applyUpdate` integrates structs as it
+   * decodes them, so bytes that decode far enough to yield structs and then
+   * fail (a truncated delete set, say) leave those structs in the doc and
+   * advance its state vector — see the truncated-after-structs case in
+   * `followerDoc.test.ts`. The replica can therefore hold content that
+   * `updatesApplied` says was never applied, and a state-vector resync from
+   * this doc will not ask a peer to resend it. Callers must not treat a throw
+   * here as "the frame did not land"; recovery needs a committed replica kept
+   * apart from the one being written into (FE-2006).
    */
   applyRemoteUpdate(update: Uint8Array): void {
     try {

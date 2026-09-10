@@ -56,6 +56,30 @@ describe('FollowerDoc.applyRemoteUpdate', () => {
     expect(follower.doc.getMap('nodes').size).toBe(0)
   })
 
+  // The short byte sequences above are refused during header decoding, before
+  // any struct is integrated, so they cannot tell a rollback apart from a
+  // rejection that never got far enough to mutate anything.
+  it('integrates structs and advances the state vector on an update rejected AFTER decoding them', () => {
+    const full = validHostUpdate()
+    const follower = new FollowerDoc()
+
+    expect(() => {
+      follower.applyRemoteUpdate(full.slice(0, -1))
+    }).toThrow(FollowerApplyError)
+
+    expect(follower.updatesApplied).toBe(0)
+    expect(follower.doc.getMap('nodes').size).toBe(1)
+
+    // The accounting says nothing landed, but the vector has moved past the
+    // rejected update: a peer diffing against it resends none of that state,
+    // so a resync cannot repair the replica.
+    const host = new Y.Doc()
+    Y.applyUpdate(host, full)
+    expect(
+      Y.encodeStateAsUpdate(host, follower.stateVector()).length
+    ).toBeLessThan(full.length)
+  })
+
   it('still applies a later valid update after a rejected one (one bad frame, not a poisoned doc)', () => {
     const follower = new FollowerDoc()
 
