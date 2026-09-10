@@ -123,8 +123,24 @@ test.describe('Sign In dialog — live auth', () => {
     await dialog.signUpEmailInput.fill(email)
     await dialog.signUpPasswordInput.fill('Sup3r-secret-pass!')
     await dialog.signUpConfirmPasswordInput.fill('Sup3r-secret-pass!')
+    // Settle provisioning + rollback first; Current user is absent pre-submit,
+    // so a bare check could pass while the flow was still in flight.
+    const provisioningFailed = comfyPage.page.waitForResponse(
+      (response) =>
+        response.url().includes('/customers') &&
+        response.request().method() === 'POST'
+    )
+    const rollbackDelete = comfyPage.page.waitForResponse((response) =>
+      response.url().includes('accounts:delete')
+    )
     await dialog.signUpButton.click()
+    await provisioningFailed
+    await rollbackDelete
 
+    await expect(
+      dialog.root,
+      'the dialog stays open on a failed signup, never advancing to a signed-in app'
+    ).toBeVisible()
     await expect(
       comfyPage.page.getByRole('button', { name: 'Current user' }),
       'a failed customer-provisioning step must not leave the app signed in'
@@ -171,7 +187,12 @@ test.describe('Sign In dialog — live auth', () => {
     await dialog.open()
 
     await dialog.emailInput.fill(CLOUD_SELF_EMAIL)
+    // Settle the failed request first; the bug is a success toast shown before it returns.
+    const resetRequest = comfyPage.page.waitForResponse((response) =>
+      response.url().includes('accounts:sendOobCode')
+    )
     await dialog.forgotPasswordLink.click()
+    await resetRequest
 
     await expect(
       comfyPage.page.getByText('Password reset email sent'),

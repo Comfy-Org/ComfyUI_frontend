@@ -11,6 +11,11 @@ import {
 import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+// The guarded app root: the router bounces a signed-out visitor to /cloud/login,
+// so reaching it proves auth — and excludes the transitional /cloud/user-check.
+const APP_ROOT = new RegExp(
+  `^${APP_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?(\\?.*)?$`
+)
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
@@ -89,7 +94,7 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     await page.locator('#cloud-sign-in-password').blur()
     await page.getByRole('button', { name: 'Sign in' }).click()
 
-    await expect(page).not.toHaveURL(/\/cloud\/login/, { timeout: 10_000 })
+    await expect(page).toHaveURL(APP_ROOT, { timeout: 10_000 })
   })
 
   test('shows an inline error and stays on the login page on a wrong password', async ({
@@ -126,7 +131,7 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
       .fill('Sup3r-secret-pass!')
     await page.getByRole('button', { name: 'Sign up', exact: true }).click()
 
-    await expect(page).not.toHaveURL(/\/cloud\/signup/, { timeout: 10_000 })
+    await expect(page).toHaveURL(APP_ROOT, { timeout: 10_000 })
   })
 
   test('keeps the submit button disabled while Turnstile is required and unsolved', async ({
@@ -185,9 +190,18 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     })
     await openForgotPasswordForm(page)
 
+    // Settle the failed request first; the bug is a success shown before it returns.
+    const resetRequest = page.waitForResponse((response) =>
+      response.url().includes('accounts:sendOobCode')
+    )
     await page.locator('#reset-email').fill(CLOUD_SELF_EMAIL)
     await page.getByRole('button', { name: 'Send reset link' }).click()
+    await resetRequest
 
+    await expect(
+      page.getByText('Failed to send password reset email'),
+      'a real transport failure must surface the error, not silent success'
+    ).toBeVisible()
     await expect(
       page.getByText('Password reset sent'),
       'a real transport failure must not show the success confirmation'

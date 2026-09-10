@@ -105,21 +105,16 @@ const handleSubmit = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  try {
-    // sendPasswordReset is already wrapped and returns a promise
-    await authActions.sendPasswordReset(email.value)
+  // Resolves undefined on a handled failure; only true means the email was sent.
+  const sent = await authActions.sendPasswordReset(email.value)
+  loading.value = false
 
-    successMessage.value = t('cloudForgotPassword_passwordResetSent')
-
-    // Optionally redirect to login after a delay
-    setTimeout(() => {
-      navigateToLogin()
-    }, 3000)
-  } catch (error) {
-    console.error('Password reset error:', error)
+  if (!sent) {
     errorMessage.value = t('cloudForgotPassword_passwordResetError')
-  } finally {
-    loading.value = false
+    return
   }
+
+  successMessage.value = t('cloudForgotPassword_passwordResetSent')
+  setTimeout(navigateToLogin, 3000)
 }
 </script>
