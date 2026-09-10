@@ -146,6 +146,10 @@ describe('supervise', () => {
   it('escalates to SIGKILL when a child ignores SIGTERM and runs teardown once', async () => {
     const supervisor = supervise('/tmp/data')
     supervisor.spawn('stubborn', [], '/cwd', {})
+    const completed: string[] = []
+    vi.mocked(rm).mockImplementation(async () => {
+      completed.push('teardown')
+    })
     vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
       killed.push([pid, signal as NodeJS.Signals])
       if (signal === 'SIGKILL') children[0].exit(null, 'SIGKILL')
@@ -153,10 +157,14 @@ describe('supervise', () => {
     })
 
     const first = stopAndFlush(supervisor, 130)
-    const second = supervisor.stop(0)
+    const second = supervisor.stop(0).then((code) => {
+      completed.push('second stop resolved')
+      return code
+    })
     await expect(first).resolves.toBe(130)
     await expect(second).resolves.toBe(0)
 
+    expect(completed).toEqual(['teardown', 'second stop resolved'])
     expect(killed).toEqual([
       [-100, 'SIGTERM'],
       [-100, 'SIGKILL']
