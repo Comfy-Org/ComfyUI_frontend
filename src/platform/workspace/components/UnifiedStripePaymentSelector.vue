@@ -58,6 +58,12 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
+import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
+import {
+  getActiveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
 
 const {
   amountCents,
@@ -85,6 +91,17 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const telemetry = useTelemetry()
+
+function emitPaymentJourneyPhase(phase: CheckoutJourneyPhaseEvent): void {
+  const journey = getActiveCheckoutJourney()
+  if (!journey) return
+  telemetry?.captureCheckoutJourneyEvent({
+    ...toCheckoutJourneyContext(journey),
+    ...phase
+  })
+}
+
 const paymentElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
@@ -98,10 +115,18 @@ onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   if (!publishableKey) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element_phase: 'init'
+    })
     return
   }
   if (!paymentMethodConfigurationId) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element_phase: 'init'
+    })
     return
   }
   // A non-positive amount means the caller mounted this before its quote
@@ -114,10 +139,20 @@ onMounted(async () => {
     stripe = await loadStripe(publishableKey)
   } catch {
     configurationError.value = t('subscription.preview.stripeUnavailable')
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element_phase: 'init'
+    })
     return
   }
   if (!stripe || !paymentElementTarget.value || isUnmounted) {
     configurationError.value = t('subscription.preview.stripeUnavailable')
+    if (!isUnmounted) {
+      emitPaymentJourneyPhase({
+        phase: 'payment_element_failed',
+        element_phase: 'init'
+      })
+    }
     return
   }
 
@@ -185,6 +220,18 @@ onMounted(async () => {
     terms: { card: 'never' }
   })
   paymentElement.mount(paymentElementTarget.value)
+  paymentElement.on('ready', () => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({ phase: 'payment_element_ready' })
+  })
+  paymentElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element_phase: 'mount',
+      ...(event.error?.code && { error_code: event.error.code })
+    })
+  })
   // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
   // whichever payment method the user has selected inside the element.
   paymentElement.on('change', (event) => {
@@ -198,7 +245,12 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
   stripeElements.value
     .update({ amount, currency: nextCurrency.toLowerCase() })
     .catch(() => {
-      if (!isUnmounted) configurationError.value = t('g.error')
+      if (isUnmounted) return
+      configurationError.value = t('g.error')
+      emitPaymentJourneyPhase({
+        phase: 'payment_element_failed',
+        element_phase: 'update'
+      })
     })
 })
 
@@ -220,10 +272,16 @@ async function submit() {
   isSubmitting.value = true
   emit('submittingChange', true)
   configurationError.value = ''
+  emitPaymentJourneyPhase({ phase: 'payment_submit_attempted' })
   try {
     const submitResult = await stripeElements.value.submit()
     if (submitResult.error) {
       configurationError.value = submitResult.error.message ?? t('g.error')
+      emitPaymentJourneyPhase({
+        phase: 'payment_submit_failed',
+        submit_phase: 'validation',
+        ...(submitResult.error.code && { error_code: submitResult.error.code })
+      })
       return
     }
     const result = await stripe.createConfirmationToken({
@@ -231,11 +289,20 @@ async function submit() {
     })
     if (result.error) {
       configurationError.value = result.error.message ?? t('g.error')
+      emitPaymentJourneyPhase({
+        phase: 'payment_submit_failed',
+        submit_phase: 'token_creation',
+        ...(result.error.code && { error_code: result.error.code })
+      })
       return
     }
     emit('confirm', result.confirmationToken.id)
   } catch {
     configurationError.value = t('g.error')
+    emitPaymentJourneyPhase({
+      phase: 'payment_submit_failed',
+      submit_phase: 'token_creation'
+    })
   } finally {
     isSubmitting.value = false
     emit('submittingChange', false)
