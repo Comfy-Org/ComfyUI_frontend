@@ -698,7 +698,13 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(43_000)
       expect(mockReportTelemetryError).not.toHaveBeenCalled()
 
-      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+      // Still short of the deadline measured from the attempt's start, which
+      // an implementation counting 10 minutes from ladder exhaustion would
+      // already have passed.
+      await vi.advanceTimersByTimeAsync(547_000)
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(20_000)
 
       expect(mockReportTelemetryError).toHaveBeenCalledOnce()
       expect(mockReportTelemetryError).toHaveBeenCalledWith(
