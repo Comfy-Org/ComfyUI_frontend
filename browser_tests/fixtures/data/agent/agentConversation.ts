@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
@@ -22,14 +21,81 @@ export const zRecordedWsEvent = z.object({
 })
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
-// Payload shapes are the pinned applier's contract (it rejects a malformed
-// op at replay time); the fixture only pins the vocabulary.
-const zGraphOperation = z.custom<GraphOperation>(
-  (value) =>
-    isRecord(value) &&
-    typeof value.op === 'string' &&
-    (FROZEN_OPS as readonly string[]).includes(value.op)
-)
+function isNodeId(value: unknown): boolean {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
+function isNodeIdList(value: unknown): boolean {
+  return Array.isArray(value) && value.every(isNodeId)
+}
+
+/** A grown destination slot (`grow`) and a concrete `to_slot` are exclusive. */
+function isConnectPayload(op: Record<string, unknown>): boolean {
+  const destination =
+    op.grow === undefined || op.grow === null
+      ? typeof op.to_slot === 'number'
+      : isRecord(op.grow) &&
+        typeof op.grow.name === 'string' &&
+        typeof op.grow.type === 'string' &&
+        (op.to_slot === undefined || op.to_slot === null)
+  return (
+    destination &&
+    isNodeId(op.link_id) &&
+    isNodeId(op.from_node) &&
+    typeof op.from_slot === 'number' &&
+    isNodeId(op.to_node) &&
+    typeof op.link_type === 'string'
+  )
+}
+
+/** A non-empty `path` is an interior write and needs its `inner_widget`. */
+function isSetWidgetPayload(op: Record<string, unknown>): boolean {
+  const address =
+    op.path === undefined || op.path === null
+      ? op.inner_widget === undefined || op.inner_widget === null
+      : Array.isArray(op.path) &&
+        op.path.length > 0 &&
+        op.path.every((segment) => typeof segment === 'string') &&
+        typeof op.inner_widget === 'string'
+  return (
+    address &&
+    isNodeId(op.node_id) &&
+    typeof op.widget === 'string' &&
+    'value' in op
+  )
+}
+
+/**
+ * The frozen vocabulary's payload contract, per kind. A schema that claims
+ * `GraphOperation` has to verify the member it narrows to: an `add_node`
+ * without its node payload loads fine under a vocabulary-only check and then
+ * fails deep inside `applyOps`, far from the fixture that carried it.
+ */
+export function isGraphOperation(value: unknown): value is GraphOperation {
+  if (!isRecord(value)) return false
+  switch (value.op) {
+    case 'add_node':
+      return (
+        isNodeId(value.node_id) &&
+        typeof value.class_type === 'string' &&
+        Array.isArray(value.pos) &&
+        value.pos.every((coordinate) => typeof coordinate === 'number') &&
+        isRecord(value.node)
+      )
+    case 'connect':
+      return isConnectPayload(value)
+    case 'set_widget':
+      return isSetWidgetPayload(value)
+    case 'delete_node':
+      return isNodeId(value.node_id) && isNodeIdList(value.removed_links)
+    case 'clear':
+      return isNodeIdList(value.removed_nodes)
+    default:
+      return false
+  }
+}
+
+const zGraphOperation = z.custom<GraphOperation>(isGraphOperation)
 
 const zWorkflowJson = z.custom<WorkflowJSON>(
   (value) =>

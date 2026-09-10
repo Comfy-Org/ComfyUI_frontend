@@ -52,8 +52,22 @@ const capture = {
       result: {
         data: {
           ops: [
-            { op: 'add_node', op_id: 'op-accepted', node_id: 1 },
-            { op: 'add_node', op_id: 'op-rejected', node_id: 2 }
+            {
+              op: 'add_node',
+              op_id: 'op-accepted',
+              node_id: 1,
+              class_type: 'PreviewImage',
+              pos: [0, 0],
+              node: { id: 1, type: 'PreviewImage' }
+            },
+            {
+              op: 'add_node',
+              op_id: 'op-rejected',
+              node_id: 2,
+              class_type: 'PreviewImage',
+              pos: [0, 100],
+              node: { id: 2, type: 'PreviewImage' }
+            }
           ]
         }
       }
@@ -83,7 +97,7 @@ describe('exportAgentConversation', () => {
       },
       {
         kind: 'graph_ops',
-        ops: [{ op: 'add_node', op_id: 'op-accepted', node_id: 1 }]
+        ops: [capture.tool_calls[0].result.data.ops[0]]
       },
       {
         kind: 'event',
@@ -97,6 +111,24 @@ describe('exportAgentConversation', () => {
         }
       }
     ])
+  })
+
+  it('refuses an add_node whose node payload is missing', () => {
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        tool_calls: [
+          {
+            ...capture.tool_calls[0],
+            result: {
+              data: {
+                ops: [{ op: 'add_node', op_id: 'op-accepted', node_id: 1 }]
+              }
+            }
+          }
+        ]
+      })
+    ).toThrow('malformed graph operation')
   })
 
   it('refuses an accepted op missing from the recorded result', () => {
@@ -213,6 +245,22 @@ describe('exportAgentConversation', () => {
         data: { workflow_id: 'wf-1', name: 'Tab' }
       }
     })
+  })
+
+  it('refuses to load a fixture whose add_node has no node payload', () => {
+    const conversation = exportAgentConversation(capture)
+
+    expect(() =>
+      zAgentConversation.parse({
+        ...conversation,
+        response: [
+          {
+            kind: 'graph_ops',
+            ops: [{ op: 'add_node', op_id: 'op-accepted', node_id: 1 }]
+          }
+        ]
+      })
+    ).toThrow()
   })
 
   it('refuses a recorded label without backend provenance', () => {

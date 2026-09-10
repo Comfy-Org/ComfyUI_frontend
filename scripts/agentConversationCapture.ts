@@ -3,10 +3,10 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
-import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import {
+  isGraphOperation,
   zAgentConversation,
   zAgentConversationRequest,
   zAgentConversationWorkflow,
@@ -15,12 +15,7 @@ import {
 
 const zOperation = z
   .record(z.string(), z.unknown())
-  .refine(
-    (operation) =>
-      typeof operation.op === 'string' &&
-      (FROZEN_OPS as readonly string[]).includes(operation.op),
-    'unknown graph operation'
-  )
+  .refine(isGraphOperation, 'malformed graph operation')
 
 const zToolCall = z.object({
   tool_call_id: z.string().min(1),
