@@ -27,10 +27,11 @@ import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
+
+import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
 
 const { widgetState } = defineProps<{
   widgetState: DomWidgetState
@@ -178,31 +179,21 @@ const mountElementIfVisible = () => {
     return
   }
 
-  widget.element.classList.add('h-full', 'w-full')
-  widgetElement.value.appendChild(widget.element)
+  try {
+    widget.element.classList.add('h-full', 'w-full')
+    widgetElement.value.appendChild(widget.element)
+  } catch (error) {
+    reportDomWidgetMountFailure(error, {
+      nodeId: widget.node.id,
+      nodeType: widget.node.type,
+      widgetName: widget.name
+    })
+  }
 }
 
 // Check on mount - but only after next tick to ensure visibility is calculated
 onMounted(() => {
-  nextTick(() => {
-    mountElementIfVisible()
-  }).catch((error) => {
-    reportError(error, {
-      errorType: 'canvas_dom_widget_mount_failed',
-      tags: {
-        failure_kind: 'caught_unexpected',
-        feature_area: 'canvas',
-        operation: 'render',
-        outcome: 'failed'
-      },
-      context: {
-        nodeId: widget.node.id,
-        visible: widgetState.visible,
-        hasElement: Boolean(widgetElement.value)
-      },
-      level: 'error'
-    })
-  })
+  void nextTick(mountElementIfVisible)
 })
 
 // And watch for visibility changes
