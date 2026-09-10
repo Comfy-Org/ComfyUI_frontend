@@ -7,6 +7,7 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
 import {
@@ -141,6 +142,15 @@ function useBillingCapabilitiesInternal() {
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
+
+  function trackCapabilityRead(succeeded: boolean): void {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'capability_read',
+      ...(succeeded
+        ? { stage: 'succeeded', outcome: 'success' }
+        : { stage: 'failed', outcome: 'failure' })
+    })
+  }
 
   function clearRefreshTimer(): void {
     if (refreshTimer === null) return
@@ -302,6 +312,7 @@ function useBillingCapabilitiesInternal() {
 
         const resolvedForScope =
           response.resolved_for.workspace_id === workspaceId
+        trackCapabilityRead(resolvedForScope)
         if (resolvedForScope) {
           readFailures = 0
           readState.value = {
@@ -335,6 +346,7 @@ function useBillingCapabilitiesInternal() {
           (error instanceof WorkspaceApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error && error.name === 'AuthStoreError')
+        if (!denied) trackCapabilityRead(false)
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
         // replaces the snapshot even mid-revalidation.
