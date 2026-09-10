@@ -1,12 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
 
 const VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
 
 const paragraphs = [
-  'Comfy Agent can read the workflow you have open, add and edit nodes, and change widget values on your behalf. It only acts on the workflow you have open.',
-  'Running stays your decision: the agent prepares the graph and you click Run to execute it.'
+  enMessages.agent.consent.body1,
+  enMessages.agent.consent.body2
 ]
 
 const meta: Meta<typeof AgentConsentCard> = {
@@ -16,7 +18,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   // The card is designed on a dark surface; default the theme toolbar to dark.
   globals: { theme: 'dark' },
   args: {
-    title: 'Meet Comfy Agent',
+    title: enMessages.agent.consent.title,
     paragraphs,
     videoSrc: VIDEO_SRC,
     docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
@@ -42,14 +44,7 @@ export const SingleParagraph: Story = {
 }
 
 export const LongCopy: Story = {
-  args: {
-    title:
-      'Let the agent read, edit, and run the workflow you currently have open',
-    paragraphs: [
-      ...paragraphs,
-      'Generations started by the agent consume credits in the same way as generations you start yourself, and appear in the same job queue.'
-    ]
-  }
+  args: { paragraphs: [...paragraphs, ...paragraphs] }
 }
 
 /**

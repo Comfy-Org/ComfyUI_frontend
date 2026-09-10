@@ -426,16 +426,14 @@ describe('AgentPanelRoot first-use experience', () => {
     )
   })
 
-  it('opens directly to Agent without the superseded coach prompt', async () => {
+  it('opens directly to the composer without another dialog', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
     await nextTick()
     await nextTick()
 
-    expect(
-      screen.queryByRole('dialog', { name: 'Meet the agent' })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 

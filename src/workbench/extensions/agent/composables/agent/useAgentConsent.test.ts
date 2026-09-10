@@ -223,6 +223,29 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
+  it('keeps a missing-auth save retryable in the same account', async () => {
+    const onOpen = vi.fn()
+    const request = useAgentConsent().withConsent(onOpen)
+    const dialog = await waitForConsentDialog()
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
+
+    ;(dialog.contentProps.onAccept as () => void)()
+    await vi.waitFor(() =>
+      expect(dialog.contentProps.error).toBe(
+        'Could not save your preference. Try again.'
+      )
+    )
+    expect(useDialogStore().dialogStack).toHaveLength(1)
+    expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+    expect(onOpen).not.toHaveBeenCalled()
+
+    fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
+    ;(dialog.contentProps.onAccept as () => void)()
+    await request
+    expect(onOpen).toHaveBeenCalledOnce()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+  })
+
   it('does not apply an open consent card to a different account', async () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent(onOpen)
@@ -234,6 +257,8 @@ describe('useAgentConsent', () => {
 
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(onOpen).not.toHaveBeenCalled()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('authenticates signed-out Local users before saving to their account', async () => {
