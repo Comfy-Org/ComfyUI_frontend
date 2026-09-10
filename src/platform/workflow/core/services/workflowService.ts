@@ -556,7 +556,13 @@ export const useWorkflowService = () => {
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    if (!(await workflowStore.renameWorkflow(workflow, newPath))) return false
+    if (!(await workflowStore.renameWorkflow(workflow, newPath))) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('workflowService.renameFailed')
+      })
+      return false
+    }
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
