@@ -2,7 +2,6 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -180,41 +179,9 @@ const mobileAssetsResponse: AssetResponse = {
   has_more: false
 }
 
-async function verifyMobileListFilterGroupDelete(comfyPage: ComfyPage) {
-  const tab = comfyPage.menu.assetsTab
-
-  await tab.open()
-  await tab.openSettingsMenu()
-  await tab.listViewOption.tap()
-  const firstAsset = tab.listViewItems.filter({
-    hasText: 'previewable-count-a'
-  })
-  await expect(firstAsset).toBeVisible()
-
-  await tab.searchInput.fill('previewable-count-a')
-  await expect(tab.listViewItems).toHaveCount(1)
-  await tab.searchInput.clear()
-
-  const groupButton = firstAsset.getByRole('button', {
-    name: 'See more outputs'
-  })
-  await expect(groupButton).toBeInViewport({ ratio: 1 })
-  await groupButton.tap()
-  await expect(groupButton).toHaveAttribute('aria-expanded', 'true')
-  await expect(
-    tab.listViewItems.filter({ hasText: 'previewable-count-b' })
-  ).toBeVisible()
-
-  await tab.openSettingsMenu()
-  await tab.gridLargeOption.tap()
-  await tab.waitForAssets()
-  await tab.getAssetCardByName('previewable-count-a').tap()
-  await expect(tab.deleteSelectedButton).toBeInViewport({ ratio: 1 })
-  await tab.deleteSelectedButton.tap()
-  await expect(comfyPage.confirmDialog.delete).toBeInViewport({ ratio: 1 })
-  await expect(comfyPage.confirmDialog.reject).toBeInViewport({ ratio: 1 })
-  await comfyPage.confirmDialog.reject.tap()
-  await expect(comfyPage.confirmDialog.root).toBeHidden()
+const mobileTouchControlNames = {
+  assetName: 'previewable-count-a',
+  groupedAssetName: 'previewable-count-b'
 }
 
 const mobileListSmokeTest = comfyPageFixture.extend({
@@ -427,14 +394,18 @@ mobileListSmokeTest.describe('FE-130 assets sidebar route mocks', () => {
   mobileListSmokeTest(
     '@mobile list, filter, group, and delete controls remain usable',
     async ({ comfyPage }) => {
-      await verifyMobileListFilterGroupDelete(comfyPage)
+      await comfyPage.menu.assetsTab.expectTouchControlsUsable(
+        mobileTouchControlNames
+      )
     }
   )
 
   mobileListSmokeTest(
     '@mobile-ios @cloud list, filter, group, and delete controls remain usable',
     async ({ comfyPage }) => {
-      await verifyMobileListFilterGroupDelete(comfyPage)
+      await comfyPage.menu.assetsTab.expectTouchControlsUsable(
+        mobileTouchControlNames
+      )
     }
   )
 })
