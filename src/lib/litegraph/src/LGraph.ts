@@ -2435,27 +2435,63 @@ export class LGraph
   unpackSubgraph(
     subgraphNode: SubgraphNode,
     options?: { skipMissingNodes?: boolean }
-  ) {
+  ): boolean {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const skipMissingNodes = options?.skipMissingNodes ?? false
+    const unavailableNode = skipMissingNodes
+      ? undefined
+      : subgraphNode.subgraph.nodes.find(
+          (node) => !Object.hasOwn(LiteGraph.registered_node_types, node.type)
+        )
+    if (unavailableNode) {
+      console.error(
+        new Error(
+          `Cannot unpack: node type "${unavailableNode.type}" is not registered`
+        )
+      )
+      return false
+    }
+    const nodesToMove: { node: LGraphNode; info: ISerialisedNode }[] = []
+    for (const info of multiClone(subgraphNode.subgraph.nodes)) {
+      let node = LiteGraph.createNode(info.type, info.title)
+      if (!node && skipMissingNodes) {
+        console.warn(
+          `Cannot unpack node of type "${info.type}" - node type not found. Creating placeholder node.`
+        )
+        node = new LGraphNode(
+          info.title || info.type || 'Missing Node',
+          info.type
+        )
+        node.last_serialization = info
+        node.has_errors = true
+      }
+      if (!node) {
+        console.error(
+          new Error(`Cannot unpack: node type "${info.type}" is not registered`)
+        )
+        return false
+      }
+      nodesToMove.push({ node, info })
+    }
 
     // Record state before unpacking for proper undo support
     this.beforeChange()
 
     try {
-      this._unpackSubgraphImpl(subgraphNode, options)
+      this._unpackSubgraphImpl(subgraphNode, nodesToMove)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
     }
+    return true
   }
 
   private _unpackSubgraphImpl(
     subgraphNode: SubgraphNode,
-    options?: { skipMissingNodes?: boolean }
+    nodesToMove: { node: LGraphNode; info: ISerialisedNode }[]
   ) {
-    const skipMissingNodes = options?.skipMissingNodes ?? false
-
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
     const positionables = [
@@ -2473,28 +2509,8 @@ export class LGraph
     const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
-    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
     const nodeIdMap = new Map<NodeId, NodeId>()
-    for (const n_info of movedNodes) {
-      let node = LiteGraph.createNode(n_info.type, n_info.title)
-      if (!node) {
-        if (skipMissingNodes) {
-          console.warn(
-            `Cannot unpack node of type "${n_info.type}" - node type not found. Creating placeholder node.`
-          )
-          node = new LGraphNode(
-            n_info.title || n_info.type || 'Missing Node',
-            n_info.type
-          )
-          node.last_serialization = n_info
-          node.has_errors = true
-        } else {
-          throw new Error(
-            `Cannot unpack: node type "${n_info.type}" is not registered`
-          )
-        }
-      }
-
+    for (const { node, info: n_info } of nodesToMove) {
       const newNodeId = mintNodeId(this.state)
       nodeIdMap.set(toNodeId(n_info.id), newNodeId)
       node.id = newNodeId
