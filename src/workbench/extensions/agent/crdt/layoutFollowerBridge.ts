@@ -151,7 +151,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * socket — so consumers rebind their observers to the new doc rather than
    * staying attached to the destroyed one. Re-subscribing to the SAME
    * workflow keeps the doc: that is the same-lineage catch-up path
-   * (ADR-0024), where the state vector makes the delta cheap.
+   * (ADR-GRAPH-DOCUMENT-0024), where the state vector makes the delta cheap.
    */
   subscribe(workflowId: string): void {
     const lineage = this.lineageWorkflowId
@@ -236,6 +236,11 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
 
+    // The first incompatible frame is already in the Y.Doc. Same-lineage
+    // updates cannot remove those CRDT bytes, so keep the read gate latched
+    // until an explicit doc_reset replaces the lineage.
+    if (this.schemaError !== null) return
+
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
@@ -255,7 +260,7 @@ export class LayoutFollowerBridge extends EventTarget {
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (ADR-0024).
+    // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
     //
     // Before the first applied update the detector is armed from the ack seq
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
@@ -305,11 +310,11 @@ export class LayoutFollowerBridge extends EventTarget {
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
 
-    // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
-    // integrated or they are not — but nothing downstream may READ a doc whose
-    // declared schema this build was not written against. Failing closed here,
-    // before the frame is re-dispatched, is what keeps a v2 doc from being
-    // half-projected onto the canvas by a v1 reader.
+    // KA-11 read-time gate. The frame must merge before its schema can be
+    // checked, but nothing downstream may READ a doc whose declared schema
+    // this build was not written against. Failing closed here, before the
+    // frame is re-dispatched, is what keeps a v2 doc from being half-projected
+    // onto the canvas by a v1 reader.
     try {
       assertReadableSchema(this.follower.doc)
     } catch (error) {

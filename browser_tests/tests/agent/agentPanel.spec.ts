@@ -88,13 +88,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    const firstSummary = panel.getByRole('button', {
-      name: 'Ran 1 tool call for 1.3 seconds'
-    })
-    await expect(firstSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    const summary = panel.getByRole('button', { name: /^Worked for / })
+    await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
-    await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
+    await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.working, { exact: true })
+    ).toBeVisible()
 
     pushEvent(ws, INTERMEDIATE_MESSAGE_EVENT)
     await expect(
@@ -102,73 +102,74 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.working, { exact: true })
+    ).toHaveCount(0)
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Set widget')).toBeVisible()
 
     pushEvent(ws, OPEN_TAB_TOOL_EVENT)
 
-    const secondSummary = panel.getByRole('button', {
-      name: 'Ran 1 tool call for 0.5 seconds'
-    })
-    await expect(secondSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
     pushEvent(ws, RESIZE_IMAGE_TOOL_EVENT)
 
-    const finalSummary = panel.getByRole('button', {
-      name: 'Ran 2 tool calls for 0.7 seconds'
-    })
-    await expect(finalSummary).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(
-      panel.getByRole('button', {
-        name: /^Ran \d+ tool calls?(?: for \d+(?:\.\d+)? seconds)?$/
-      })
-    ).toHaveCount(2)
-    await expect(firstSummary).toHaveCount(1)
-    await expect(secondSummary).toHaveCount(0)
+    await expect(summary).toHaveCount(0)
 
-    const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(2)
-    await expect(toolRows.filter({ hasText: 'Set widget' })).toHaveCount(0)
+    const activityRows = panel.getByRole('listitem')
+    await expect(activityRows).toHaveCount(5)
+    await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
     await expect(
-      toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
+      activityRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
     ).toBeVisible()
     await expect(
-      toolRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
+      activityRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
     ).toBeVisible()
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
       panel.locator('strong', { hasText: 'fully ready' })
     ).toBeVisible()
+    await expect(activityRows).toHaveCount(5)
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
-    ).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Opened a new tab')).toBeHidden()
+    ).toHaveCount(2)
+    await expect(activityRows).toHaveCount(6)
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
+    await expect(summary).toHaveCount(1)
+    await expect(summary).toHaveAttribute('aria-expanded', 'false')
+    await expect(activityRows).toHaveCount(0)
     await expect(
-      panel.getByRole('button', { name: /ran 2 tool calls/i })
-    ).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+      panel.locator('strong', { hasText: 'fully ready' })
+    ).toBeVisible()
+
+    await summary.click()
+    await expect(summary).toHaveAttribute('aria-expanded', 'true')
+    await expect(activityRows).toHaveCount(6)
+    await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
+    await expect(
+      panel.getByText('Checking the remaining edits.', { exact: true })
+    ).toHaveCount(2)
+    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
+    await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
   test.describe('composer sizing', () => {

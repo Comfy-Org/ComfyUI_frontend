@@ -250,7 +250,10 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     })
   })
 
-  test('Can dock actionbar into top menu', async ({ comfyPage }) => {
+  test('Can dock actionbar into top menu', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
     await comfyPage.page.dragAndDrop(
       '.actionbar .drag-handle',
       '.actionbar-container',
@@ -259,8 +262,12 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
-      /static/
-    )
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(true)
+
+    await comfyMouse.dragElementBy(comfyPage.actionbar.dragHandle, {
+      x: -100,
+      y: 100
+    })
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(false)
   })
 })

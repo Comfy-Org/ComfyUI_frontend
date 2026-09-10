@@ -97,8 +97,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -155,8 +157,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
@@ -287,12 +291,16 @@ jobs:
           # onto. pull_request.base.sha is recorded when the PR opens and does not follow the
           # base branch, so diffing against it attributes every spec the base gained since
           # then to this PR.
-          if [[ "$(git rev-parse --verify --quiet HEAD^2)" == "${{ github.event.pull_request.head.sha }}" ]]; then
+          if [ "$(git rev-parse --verify --quiet HEAD^2)" = "${{ github.event.pull_request.head.sha }}" ]; then
             DIFF_RANGE="$(git rev-parse HEAD^1)..HEAD"
           else
             DIFF_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
           fi
-          NEW_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests | grep '\.spec\.ts$' || true)
+          # git diff and grep are separate statements (not piped) so a git diff failure
+          # (e.g. the fallback sha isn't in the local object store) surfaces as a build
+          # error instead of silently reading as "no new specs" and no-oping the video job.
+          ADDED_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests)
+          NEW_FILES=$(printf '%s\n' "$ADDED_FILES" | grep '\.spec\.ts$' || true)
 
           if [ -z "$NEW_FILES" ]; then
             echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
@@ -320,9 +328,11 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
+      - name: Setup frontend
         if: steps.detect.outputs.has-new-tests == 'true'
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       - name: Find safely recordable new tests
         if: steps.detect.outputs.has-new-tests == 'true'
