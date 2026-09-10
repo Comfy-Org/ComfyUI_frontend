@@ -186,6 +186,10 @@ function useSubscriptionInternal() {
     // Claimed before emitting, not after: a second tab wakes on the same
     // deadline (both derive it from `started_at_ms`), so a mark that trailed
     // the two emissions left a window wide enough for it to emit as well.
+    // localStorage offers no compare-and-swap and propagates writes to other
+    // tabs asynchronously, so this narrows that window rather than closing it —
+    // `checkout_attempt_id` on both terminals is what makes the duplicate
+    // collapsible downstream.
     markMissingCheckoutCompletionReported(attempt.attempt_id)
 
     reportTelemetryError(
@@ -223,6 +227,7 @@ function useSubscriptionInternal() {
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',
+      checkout_attempt_id: attempt.attempt_id,
       failure_category: didLastRecoveryAttemptThrow
         ? 'network'
         : 'reconciliation_needed',

@@ -664,7 +664,8 @@ describe('useSubscription', () => {
           stage: 'failed',
           outcome: 'failure',
           failure_category: 'reconciliation_needed',
-          checkout_type: 'new'
+          checkout_type: 'new',
+          checkout_attempt_id: 'attempt-funnel'
         })
       )
     })
