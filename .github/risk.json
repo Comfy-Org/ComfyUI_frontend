@@ -24,8 +24,11 @@
         "**/pr-risk/**",
         ".github/risk.json",
         ".github/risk-runbooks.json",
+        ".github/risk-fixtures.json",
         "**/.github/risk.json",
-        "**/.github/risk-runbooks.json"
+        "**/.github/risk-runbooks.json",
+        "**/.github/risk-fixtures.json",
+        "scripts/check-risk-map-fixtures.sh"
       ]
     },
     {

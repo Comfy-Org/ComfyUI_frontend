@@ -160,6 +160,21 @@
       "path": "src/platform/telemetry/utils/checkoutAttribution.ts",
       "tier": "R3",
       "classes": ["billing"]
+    },
+    {
+      "path": ".github/risk.json",
+      "tier": "R3",
+      "classes": ["risk-map"]
+    },
+    {
+      "path": ".github/risk-fixtures.json",
+      "tier": "R3",
+      "classes": ["risk-map"]
+    },
+    {
+      "path": "scripts/check-risk-map-fixtures.sh",
+      "tier": "R3",
+      "classes": ["build-config", "risk-map"]
     }
   ]
 }
