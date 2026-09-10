@@ -432,7 +432,6 @@ function useSubscriptionInternal() {
     isRecoveringPendingCheckout = true
 
     try {
-      didLastRecoveryAttemptThrow = false
       await fetchSubscriptionStatus()
     } catch (error) {
       console.error(
@@ -494,6 +493,10 @@ function useSubscriptionInternal() {
         })
       )
     }
+    // Any read that lands proves billing is reachable, not just one made by the
+    // recovery ladder. Clearing here rather than in the ladder keeps a stale
+    // `true` from reaching a report armed before billing came back.
+    didLastRecoveryAttemptThrow = false
     if (
       (authStore.userId ?? null) !== ownerId ||
       workspaceStore.activeWorkspaceId !== workspaceId

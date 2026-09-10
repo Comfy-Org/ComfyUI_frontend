@@ -754,6 +754,43 @@ describe('useSubscription', () => {
       )
     })
 
+    it('lets any reachable billing read clear a past network failure', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-reachable-elsewhere',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockRejectedValue(new Error('offline'))
+      mockIsLoggedIn.value = true
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+
+      // Billing comes back, but the deadline wake-up is already armed, so no
+      // further recovery attempt runs before it fires. A plain status read from
+      // the billing UI is the only thing that observes billing is reachable.
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      await fetchStatus()
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing'
+        })
+      )
+    })
+
     it('reports a missing completion once per attempt across reloads', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
