@@ -3,21 +3,20 @@ import { nextTick } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
-
-const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({ removeNodeOutputs: mockRemoveNodeOutputs })
-}))
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
+  nodePreviewImages: {},
+  nodeOutputs: {},
   rootGraph: { nodes: [], _nodes: [] } as unknown as LGraph
 }))
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
 const mockGetNodeByExecutionId = vi.hoisted(() => vi.fn())
-vi.mock('@/utils/graphTraversalUtil', async () => {
+vi.mock(import('@/utils/graphTraversalUtil'), async () => {
   const actual = await vi.importActual<typeof GraphTraversalUtil>(
     '@/utils/graphTraversalUtil'
   )
@@ -27,18 +26,14 @@ vi.mock('@/utils/graphTraversalUtil', async () => {
   }
 })
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({ get: vi.fn(() => false) }))
-}))
-
-vi.mock(
-  '@/platform/missingModel/composables/useMissingModelInteractions',
+vi.mock<unknown>(
+  import('@/platform/missingModel/composables/useMissingModelInteractions'),
   () => ({ clearMissingModelState: vi.fn() })
 )
 
@@ -57,6 +52,8 @@ describe('FE-230 regression — workflow-load missing-media flagging must not wi
   beforeEach(() => {
     mockApp.isGraphReady = true
     mockApp.rootGraph = { nodes: [], _nodes: [] } as unknown as LGraph
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+      false
   })
 
   it('does not clear node.imgs when verification flags a Load Image as missing on workflow load (e.g. mask-editor saved value)', async () => {
@@ -80,6 +77,6 @@ describe('FE-230 regression — workflow-load missing-media flagging must not wi
     await nextTick()
 
     expect(node.imgs).toEqual([{ src: 'blob:mask-edited' }])
-    expect(mockRemoveNodeOutputs).not.toHaveBeenCalled()
+    expect(useNodeOutputStore().removeNodeOutputs).not.toHaveBeenCalled()
   })
 })

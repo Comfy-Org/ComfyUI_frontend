@@ -61,7 +61,11 @@
         class="flex min-w-0 flex-1 items-center gap-3"
       >
         <template v-if="!isHeaderCollapsed && workspaceName">
-          <WorkspaceProfilePic size="lg" :workspace-name="workspaceName" />
+          <WorkspaceProfilePic
+            size="lg"
+            :workspace-name="workspaceName"
+            :subscription-tier="activeWorkspace?.subscriptionTier"
+          />
           <h1
             class="m-0 truncate text-2xl font-semibold text-base-foreground select-none"
           >
@@ -175,7 +179,7 @@ const isWorkspaceCategoryActive = computed(
     activeCategoryKey.value !== null &&
     WORKSPACE_CATEGORY_KEYS.has(activeCategoryKey.value)
 )
-const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 
 const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
   useSettingsHeaderCollapse()

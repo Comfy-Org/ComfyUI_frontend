@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,7 +19,7 @@ import type * as VueUse from '@vueuse/core'
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal<typeof VueUse>()),
   useIntersectionObserver: (
     _target: unknown,
@@ -40,8 +40,7 @@ import { useAgentConversationStore } from '../../stores/agent/agentConversationS
 import ConversationView from './ConversationView.vue'
 
 const T = 'msg-1' as TurnId
-const chat = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
   chat({
     type: 'agent_thinking',
@@ -55,7 +54,13 @@ const delta = (id: string, text: string) =>
 const toolCall = (id: string, name: string, status: string) =>
   chat({
     type: 'agent_tool_call',
-    data: { tool_name: name, status, args: [], message_id: id, thread_id: 'th' }
+    data: {
+      tool_call_id: `call-${name}`,
+      tool_name: name,
+      status,
+      message_id: id,
+      thread_id: 'th'
+    }
   })
 const done = (id: string) =>
   chat({
@@ -73,8 +78,7 @@ const Harness = defineComponent({
 })
 
 function mountHarness() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
   const utils = render(Harness, { global: { plugins: [pinia, i18n] } })
   return { store: useAgentConversationStore(), ...utils }
 }
@@ -82,7 +86,6 @@ function mountHarness() {
 describe('ConversationView', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn()
-    setActivePinia(createPinia())
     intersectionCallbacks.length = 0
   })
 
@@ -95,7 +98,7 @@ describe('ConversationView', () => {
     expect(await screen.findByText('pondering')).toBeInTheDocument()
 
     store.ingest(delta('msg-1', 'Here is a **cat**'))
-    store.ingest(toolCall('msg-1', 'add_node', 'ok'))
+    store.ingest(toolCall('msg-1', 'add_node', 'success'))
     store.ingest(done('msg-1'))
 
     expect(await screen.findByText('make a cat')).toBeInTheDocument()

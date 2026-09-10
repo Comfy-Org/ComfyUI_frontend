@@ -13,6 +13,7 @@
         v-if="isCurrentUser && photoUrl"
         class="size-8"
         :photo-url="photoUrl"
+        icon-class="size-5"
       />
       <div
         v-else

@@ -1,5 +1,8 @@
+import type * as I18nModule from '@/i18n'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -25,7 +28,7 @@ type TestNode = Omit<LGraphNode, 'constructor'> & {
   _testExecutionId?: string
 }
 
-vi.mock('@/utils/graphTraversalUtil', () => {
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & {
     _testExecutionId?: string
     _testActiveExecutionIds?: string[]
@@ -102,7 +105,7 @@ function makeOtherWidget(name: string, value: unknown): IBaseWidget {
 /** Mocks read connectivity from their own input mock data. */
 function stampInputConnectivity(node: LGraphNode): LGraphNode {
   return Object.assign(node, {
-    isInputConnected: (slot: number) => node.inputs?.[slot]?.link != null
+    isInputConnected: (slot: number) => node.inputs[slot].link != null
   })
 }
 
@@ -253,6 +256,17 @@ function makeNestedPromotedModelGraph({
 }
 
 const noAssetSupport = () => false
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+    mockUpdateModelsForNodeType
+  )
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(mockGetAssets)
+})
 
 describe('isModelFileName', () => {
   it('should return true for common model extensions', () => {
@@ -1727,20 +1741,8 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    updateModelsForNodeType: mockUpdateModelsForNodeType,
-    getAssets: mockGetAssets
-  })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: (_key: string, fallback: string) => fallback
 }))
 

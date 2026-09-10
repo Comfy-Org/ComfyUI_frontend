@@ -25,51 +25,63 @@ const searchMocks = vi.hoisted(() => ({
 }))
 const mockFetchBalance = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/composables/useSettingUI', () => ({
-  useSettingUI: () => ({
-    defaultCategory: settingUiMocks.defaultCategory,
-    settingCategories: { value: [] },
-    navGroups: settingUiMocks.navGroups,
-    findCategoryByKey: (key: string) =>
-      settingUiMocks.navGroups.value
-        .flatMap(({ items }) => items)
-        .find(({ id }) => id === key) ?? null,
-    findPanelByKey: (key: string) => {
-      const item = settingUiMocks.navGroups.value
-        .flatMap(({ items }) => items)
-        .find(({ id }) => id === key)
-      return item
-        ? {
-            node: { key: item.id, label: item.label, children: [] },
-            component: { template: `<div>${key} panel</div>` }
-          }
-        : null
-    }
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingUI'),
+  () => ({
+    useSettingUI: () => ({
+      defaultCategory: settingUiMocks.defaultCategory,
+      settingCategories: { value: [] },
+      navGroups: settingUiMocks.navGroups,
+      findCategoryByKey: (key: string) =>
+        settingUiMocks.navGroups.value
+          .flatMap(({ items }) => items)
+          .find(({ id }) => id === key) ?? null,
+      findPanelByKey: (key: string) => {
+        const item = settingUiMocks.navGroups.value
+          .flatMap(({ items }) => items)
+          .find(({ id }) => id === key)
+        return item
+          ? {
+              node: { key: item.id, label: item.label, children: [] },
+              component: { template: `<div>${key} panel</div>` }
+            }
+          : null
+      }
+    })
   })
-}))
+)
 
-vi.mock('@/platform/settings/composables/useSettingSearch', () => ({
-  useSettingSearch: () => ({
-    searchQuery: searchMocks.searchQuery,
-    inSearch: searchMocks.inSearch,
-    searchResultsCategories: searchMocks.searchResultsCategories,
-    matchedNavItemKeys: searchMocks.matchedNavItemKeys,
-    handleSearch: vi.fn(),
-    getSearchResults: () => []
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingSearch'),
+  () => ({
+    useSettingSearch: () => ({
+      searchQuery: searchMocks.searchQuery,
+      inSearch: searchMocks.inSearch,
+      searchResultsCategories: searchMocks.searchResultsCategories,
+      matchedNavItemKeys: searchMocks.matchedNavItemKeys,
+      handleSearch: vi.fn(),
+      getSearchResults: () => []
+    })
   })
-}))
+)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({ fetchBalance: mockFetchBalance })
 }))
 
-vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
-  useSearchQueryTracking: vi.fn()
-}))
+vi.mock(
+  import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
+  () => ({
+    useSearchQueryTracking: vi.fn()
+  })
+)
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => reactive({ workspaceName: ref('Acme Team') })
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => reactive({ workspaceName: ref('Acme Team') })
+  })
+)
 
 beforeEach(() => {
   settingUiMocks.defaultCategory = ref({

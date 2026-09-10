@@ -117,7 +117,7 @@ export const useAuthActions = () => {
         })
         if (confirmed === null) return
 
-        if (confirmed === true) {
+        if (confirmed) {
           const workflowService = useWorkflowService()
           for (const workflow of modifiedWorkflows) {
             try {

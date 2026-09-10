@@ -1,14 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -25,66 +18,45 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { _deserializeItems: vi.fn() }
   }
 }))
 
-vi.mock('@/scripts/defaultGraph', () => ({
+vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
   blankGraph: {}
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
     confirm: vi.fn()
   })
 }))
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
-vi.mock('@/renderer/core/thumbnail/useWorkflowThumbnail', () => ({
-  useWorkflowThumbnail: () => ({
-    storeThumbnail: vi.fn(),
-    getThumbnail: vi.fn()
-  })
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
 
-vi.mock('@/platform/telemetry', () => ({
+  () => ({
+    useWorkflowThumbnail: () => ({
+      storeThumbnail: vi.fn(),
+      getThumbnail: vi.fn()
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
     trackWorkflowSaved: vi.fn(),
     trackEnterLinear: vi.fn()
   })
-}))
-
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
-  useWorkflowDraftStoreV2: () => ({
-    saveDraft: vi.fn(() => true),
-    getDraft: vi.fn(),
-    removeDraft: vi.fn(),
-    markDraftUsed: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ clear: vi.fn() })
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: () => ({ saveCurrentViewport: vi.fn() })
-}))
-
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({})
 }))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
@@ -132,11 +104,8 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
   } as unknown as ComfyWorkflow
 }
 
-beforeAll(() => {
-  LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
-})
-
 beforeEach(() => {
+  LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
   const canvasPrototype: {
     getContext(
       contextId: '2d',
@@ -148,13 +117,21 @@ beforeEach(() => {
   )
 })
 
-afterAll(() => {
-  LiteGraph.unregisterNodeType(PROBE_NODE_TYPE)
+beforeEach(() => {
+  vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => true)
+  vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue(null)
+  vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockImplementation(() => {})
+  vi.mocked(useWorkflowDraftStoreV2().markDraftUsed).mockImplementation(
+    () => {}
+  )
+  vi.mocked(useDomWidgetStore().clear).mockImplementation(() => {})
+  vi.mocked(
+    useSubgraphNavigationStore().saveCurrentViewport
+  ).mockImplementation(() => {})
 })
 
 describe('insertWorkflow scratch graph isolation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
   })
 
@@ -222,4 +199,9 @@ describe('insertWorkflow scratch graph isolation', () => {
       { position: [100, 200] }
     )
   })
+})
+
+vi.mock(import('@vueuse/router'), async () => {
+  const { ref } = await import('vue')
+  return { useRouteHash: () => ref('') }
 })

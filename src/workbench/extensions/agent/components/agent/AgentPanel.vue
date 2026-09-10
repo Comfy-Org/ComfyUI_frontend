@@ -17,6 +17,11 @@ import type { ActiveTab } from '../../types/activeTab'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 
@@ -42,10 +47,12 @@ const {
   workflowDetached = false,
   getMentionNodes = () => [],
   getMentionAssets = async () => [],
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   sessionId = null,
   customTitle,
   historyGroups,
-  editableTurnId = null
+  editableTurnId = null,
+  answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -60,10 +67,12 @@ const {
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
   getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
+  paywallPresentation?: AgentPaywallPresentation
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
   editableTurnId?: TurnId | null
+  answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
@@ -75,6 +84,7 @@ const emit = defineEmits<{
   focusTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
+  paywallAction: [action: AgentPaywallAction]
   selectTab: [path: string]
   clearWorkflow: []
   newChat: []
@@ -86,6 +96,8 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
+  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  openWorkflow: [workflowId: string, workflowName?: string]
 }>()
 
 const showHistory = ref(false)
@@ -286,13 +298,24 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           v-else
           :entries="entries"
           :editable-turn-id="editableTurnId"
+          :answering-ask-ids="answeringAskIds"
+          :paywall-presentation="paywallPresentation"
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
+          @answer-ask="
+            (askId, selection) => emit('answerAsk', askId, selection)
+          "
+          @open-workflow="
+            (workflowId, workflowName) =>
+              emit('openWorkflow', workflowId, workflowName)
+          "
+          @paywall-action="emit('paywallAction', $event)"
         />
       </div>
     </template>
 
     <template v-if="!showHistory">
+      <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
           <RunNoticeBanner :expanded="isMaximized" />

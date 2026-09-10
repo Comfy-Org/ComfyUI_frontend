@@ -6,29 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-
-const testState = vi.hoisted(
-  (): { canvasStore: { canvas: LGraphCanvas | null } | null } => ({
-    canvasStore: null
-  })
-)
-
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { reactive } = await import('vue')
-  testState.canvasStore = reactive({ canvas: null })
-  return { useCanvasStore: () => testState.canvasStore }
-})
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 
 function createCanvas(draw: () => void): LGraphCanvas {
   return fromPartial<LGraphCanvas>({ draw, setDirty: vi.fn() })
-}
-
-function getCanvasStore(): { canvas: LGraphCanvas | null } {
-  if (!testState.canvasStore)
-    throw new Error('Canvas store was not initialized')
-  return testState.canvasStore
 }
 
 describe('useLitegraphSettings', () => {
@@ -45,7 +28,7 @@ describe('useLitegraphSettings', () => {
     const node = new LGraphNode('test')
     const slot = node.addInput('input', '*')
     const draw = vi.fn(() => slot.pos)
-    getCanvasStore().canvas = createCanvas(draw)
+    useCanvasStore().canvas = createCanvas(draw)
 
     scope.run(useLitegraphSettings)
 
@@ -60,7 +43,7 @@ describe('useLitegraphSettings', () => {
   it('redraws when CanvasInfo or the canvas changes', async () => {
     const firstDraw = vi.fn()
     const secondDraw = vi.fn()
-    const canvasStore = getCanvasStore()
+    const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
     canvasStore.canvas = createCanvas(firstDraw)
 
@@ -68,7 +51,7 @@ describe('useLitegraphSettings', () => {
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
     await nextTick()
 
-    expect(canvasStore.canvas?.show_info).toBe(true)
+    expect(canvasStore.canvas.show_info).toBe(true)
     expect(firstDraw).toHaveBeenCalledTimes(2)
 
     canvasStore.canvas = createCanvas(secondDraw)
