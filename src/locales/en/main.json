@@ -3029,6 +3029,7 @@
     "capabilityDeniedNotice": "A subscription change is already in progress — you'll be able to subscribe again shortly.",
     "noticeTryAgain": "Try again",
     "noticeContactSupport": "Contact support",
+    "settlingToastSummary": "Payment still settling",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
