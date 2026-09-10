@@ -726,8 +726,9 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
 }
 
 async function refreshHistory(): Promise<void> {
+  const generation = history.beginRefresh()
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    history.replaceAll((await listThreads()).map(toChatSession), generation)
   } catch (error) {
     surfaceAgentError(
       'agent_api_failed',

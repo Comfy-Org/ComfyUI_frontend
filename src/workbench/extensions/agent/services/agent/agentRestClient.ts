@@ -26,6 +26,8 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
+const CLOUD_WORKFLOW_MAX_PAGES = 5
+const AGENT_THREAD_MAX_PAGES = 20
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -164,7 +166,11 @@ export function createAgentRestClient() {
     const threads: AgentThreadSummary[] = []
     const seenCursors = new Set<string>()
     let cursor: string | undefined
-    do {
+    for (
+      let pageNumber = 0;
+      pageNumber < AGENT_THREAD_MAX_PAGES;
+      pageNumber++
+    ) {
       const after = cursor ? `?after=${encodeURIComponent(cursor)}` : ''
       const page = await request(
         `/agent/threads${after}`,
@@ -172,7 +178,7 @@ export function createAgentRestClient() {
         zAgentThreads
       )
       threads.push(...page.threads)
-      if (!page.pagination.has_more) break
+      if (!page.pagination.has_more) return threads
       const nextCursor = page.pagination.next_cursor
       if (!nextCursor || seenCursors.has(nextCursor))
         throw new AgentApiError(
@@ -182,8 +188,12 @@ export function createAgentRestClient() {
         )
       seenCursors.add(nextCursor)
       cursor = nextCursor
-    } while (cursor)
-    return threads
+    }
+    throw new AgentApiError(
+      'Agent thread pagination exceeded the page limit',
+      502,
+      { maxPages: AGENT_THREAD_MAX_PAGES }
+    )
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {

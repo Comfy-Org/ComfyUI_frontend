@@ -4,6 +4,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createUuidv4 } from '@/utils/uuid'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import {
@@ -19,6 +20,7 @@ import type {
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import type { AgentEventSource } from '../../services/agent/agentEventSource'
+import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
@@ -104,6 +106,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
+  const historyStore = useAgentChatHistoryStore()
+  const executionErrorStore = useExecutionErrorStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
@@ -140,12 +144,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const currentUser = useCurrentUser()
   const workspaceStore = useTeamWorkspaceStore()
-  const storageScope = computed(() => {
-    const userId = toValue(currentUser.resolvedUserInfo)?.id ?? 'signed-out'
-    const workspaceId = toValue(workspaceStore.activeWorkspaceId) ?? 'personal'
-    return `${encodeURIComponent(userId)}.${encodeURIComponent(workspaceId)}`
+  const storageScope = computed<string | null>(() => {
+    const userId = toValue(currentUser.resolvedUserInfo)?.id
+    const workspaceId = toValue(workspaceStore.activeWorkspaceId)
+    if (userId === undefined || workspaceId === null) return null
+    return `${encodeURIComponent(userId)}/${encodeURIComponent(workspaceId)}`
   })
-  const storageKey = () => `${THREAD_STORAGE_KEY}.${storageScope.value}`
+  const storageKey = (scope: string) => `${THREAD_STORAGE_KEY}.${scope}`
   // Persistence is best-effort: a blocked or full localStorage must never
   // fail a send that the server already accepted or reject a hydration.
   function guardStorage<T>(read: () => T, fallback: T): T {
@@ -162,18 +167,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const storageGet = () =>
     guardStorage(() => {
       localStorage.removeItem(THREAD_STORAGE_KEY)
-      return localStorage.getItem(storageKey())
+      const scope = storageScope.value
+      return scope === null ? null : localStorage.getItem(storageKey(scope))
     }, null)
-  const storageSet = (threadId: string) =>
-    guardStorage(() => localStorage.setItem(storageKey(), threadId), undefined)
+  const storageSet = (threadId: string, scope = storageScope.value) => {
+    if (scope === null) return
+    guardStorage(
+      () => localStorage.setItem(storageKey(scope), threadId),
+      undefined
+    )
+  }
   const storageRemove = () =>
-    guardStorage(() => localStorage.removeItem(storageKey()), undefined)
+    guardStorage(() => {
+      const scope = storageScope.value
+      if (scope !== null) localStorage.removeItem(storageKey(scope))
+    }, undefined)
 
   function clearConversation(): void {
     loadGeneration++
     conversationStore.dropBackgroundTurns()
     conversationStore.reset()
+    historyStore.clear()
     notices.value = []
+    executionErrorStore.clearPromptError()
+    executionErrorStore.dismissErrorOverlay()
     promptEditState.value = { phase: 'idle' }
     answeringAskIds.value = new Set()
     boundWorkflowId.value = null
@@ -181,6 +198,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function restoreStoredThread(): void {
+    if (storageScope.value === null) return
     if (conversationStore.messages.length !== 0) return
     const stored = storageGet()
     if (stored === null) return
@@ -197,7 +215,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (ownedGeneration !== sessionGeneration) return
     clearConversation()
     rememberedStorageScope = scope
-    restoreStoredThread()
+    if (scope !== null) restoreStoredThread()
   })
 
   function pushError(text: string): void {
@@ -258,18 +276,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function stop(): void {
-    loadGeneration++
     stopScopeWatch()
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
     const stoppedGeneration = ownedGeneration
-    const stoppedScope = storageScope.value
+    const stoppedScope = rememberedStorageScope
     queueMicrotask(() => {
       if (
         stoppedGeneration !== sessionGeneration &&
-        stoppedScope === rememberedStorageScope
+        stoppedScope === storageScope.value
       )
         return
       conversationStore.abortActiveTurn()
@@ -314,7 +331,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         (conversationStore.threadId ?? 'new') !== destinationThread
       ) {
         sending.value = false
-        pushError(i18n.global.t('agent.sendAbandoned'))
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          i18n.global.t('agent.sendAbandoned')
+        )
         return false
       }
       const wfContext = workflow?.current(origin)
@@ -367,8 +388,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (
         initiatingScope !== storageScope.value ||
         initiatingGeneration !== loadGeneration
-      )
-        return false
+      ) {
+        storageSet(ack.thread_id, initiatingScope)
+        void rest.cancelMessage(ack.thread_id, ack.message_id).catch((error) =>
+          reportError(error, {
+            errorType: 'agent_abandoned_turn_cancel_failed'
+          })
+        )
+        return true
+      }
       conversationStore.setThreadId(ack.thread_id)
       storageSet(ack.thread_id)
       if (ack.workflow_id !== undefined) {
