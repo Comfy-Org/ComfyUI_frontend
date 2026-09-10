@@ -301,9 +301,7 @@ describe('storageIO', () => {
       clearWorkflowStorageForScope('ws-1')
 
       expect(
-        [...Array(localStorage.length)]
-          .map((_, index) => localStorage.key(index))
-          .sort()
+        Object.keys(localStorage).toSorted((a, b) => a.localeCompare(b))
       ).toEqual([
         'Comfy.Workflow.Draft.v2:ws-10:def',
         'Comfy.Workflow.DraftIndex.v2:ws-10',
