@@ -390,7 +390,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     }
 
-    const startEpoch = identityEpoch
     const controller = new AbortController()
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
@@ -455,44 +454,31 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         }
       }
 
-      // A 200 that cannot be used is an exchange failure, not a session: an
-      // empty token, or an expiry already inside the fresh margin, would
-      // publish an authenticated snapshot ensureFresh promised never to.
-      const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
-      if (parseResult.data.token === '') {
+      // A token dead on arrival can never authorize anything; a
+      // short-but-future one is left to the valid-on-read path. An empty
+      // token is never a session either.
+      const mintNow = options.now?.() ?? clientOptions.now?.() ?? Date.now()
+      if (parseResult.data.token === '' || expiresAt <= mintNow) {
         return {
           status: 'error',
           code: 'TOKEN_EXCHANGE_FAILED',
           httpStatus: response.status
         }
       }
-      const session: AccountCredential = {
-        token: parseResult.data.token,
-        expiresAt,
-        uid: user.uid,
-        workspace: parseResult.data.workspace,
-        role: parseResult.data.role,
-        permissions: parseResult.data.permissions
-      }
-      if (!isCredentialFresh(session, now, freshMarginMs)) {
-        return {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED',
-          httpStatus: response.status
+      // Storage is not written here: a mint that loses to a sign-out or a
+      // newer caller must not leave its credential on disk. The winning
+      // commit in refreshWith persists.
+      return {
+        status: 'ok',
+        session: {
+          token: parseResult.data.token,
+          expiresAt,
+          uid: user.uid,
+          workspace: parseResult.data.workspace,
+          role: parseResult.data.role,
+          permissions: parseResult.data.permissions
         }
       }
-      // The cache write consults the identity epoch like the in-memory
-      // commit does: a mint outliving a sign-out or detach must not
-      // resurrect the session in persistent storage.
-      if (identityEpoch === startEpoch) {
-        safeWrite(
-          JSON.stringify({
-            ...session,
-            expires_at: parseResult.data.expires_at
-          })
-        )
-      }
-      return { status: 'ok', session }
     } finally {
       clearTimeout(timeout)
       signal?.removeEventListener('abort', abort)
@@ -613,6 +599,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (result.status === 'ok') {
       credential = result.session
       failure = undefined
+      safeWrite(JSON.stringify(result.session))
     } else {
       credential = undefined
       failure = result

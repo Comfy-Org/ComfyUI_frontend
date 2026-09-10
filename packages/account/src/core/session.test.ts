@@ -479,7 +479,26 @@ describe('exchange boundary', () => {
     expect(client.getToken()).toBeUndefined()
   })
 
-  it('refuses a 200 whose expiry is already inside the fresh margin', async () => {
+  it('refuses a 200 whose expiry is already in the past', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(
+          200,
+          mintBody({ expires_at: new Date(Date.now() - 60_000).toISOString() })
+        )
+      )
+    })
+
+    const result = await client.ensureFresh(testUser())
+
+    expect(
+      result,
+      'a token dead on arrival can never authorize anything'
+    ).toMatchObject({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+    expect(client.getToken()).toBeUndefined()
+  })
+
+  it('accepts a short-but-future token and leaves refreshing it to the caller', async () => {
     const { client } = makeClient({
       fetchImpl: vi.fn<typeof fetch>(async () =>
         jsonResponse(
@@ -492,10 +511,9 @@ describe('exchange boundary', () => {
     const result = await client.ensureFresh(testUser())
 
     expect(
-      result,
-      'ensureFresh promises more than freshMarginMs of validity; a shorter-lived token is not a session'
-    ).toMatchObject({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
-    expect(client.getToken()).toBeUndefined()
+      result?.status,
+      'a short server token is valid truth; the website re-mints on the next read, the cloud scheduler refreshes it'
+    ).toBe('ok')
   })
 })
 
