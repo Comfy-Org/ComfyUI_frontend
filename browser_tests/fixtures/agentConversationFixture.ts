@@ -49,7 +49,8 @@ const COMPOSER_LABEL = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 }).global.t('agent.placeholder')
-const GROUP_LABEL = /^Ran (\d+) tool calls?/
+// Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
+const GROUP_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
 
 interface RecordedLink {
