@@ -412,6 +412,9 @@ export const useWorkflowService = () => {
       try {
         const loadFromRemote = !workflow.isLoaded
         if (loadFromRemote && !(await workflow.load())) {
+          reportError(new Error(`Failed to load workflow '${workflow.path}'`), {
+            errorType: 'workflow_load_failure'
+          })
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
