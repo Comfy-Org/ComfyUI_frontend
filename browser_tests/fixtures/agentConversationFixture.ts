@@ -1,7 +1,7 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { applyOps, mint, readGraph } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
@@ -49,6 +49,14 @@ function fromBase64(value: string): Uint8Array {
   return new Uint8Array(Buffer.from(value, 'base64'))
 }
 
+function decodeJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * The doc host's side of the CRDT channel, in-process: the seed workflow is
  * minted with the same pinned applier the real host runs, each `graph_ops`
@@ -65,10 +73,6 @@ class HostDoc {
     private readonly catalog: WidgetCatalog
   ) {
     this.doc = mint(seed, catalog)
-  }
-
-  nodeIds(): Set<string> {
-    return new Set(Object.keys(readGraph(this.doc).nodes))
   }
 
   subscribed(): DocFrame {
@@ -136,6 +140,14 @@ interface GraphNodeSnapshot {
   outputs: boolean[]
 }
 
+/** Subgraph-scoped ids are strings, and `NaN` leaves the order undefined. */
+function byNodeId(a: GraphNodeSnapshot, b: GraphNodeSnapshot): number {
+  const left = Number(a.id)
+  const right = Number(b.id)
+  if (Number.isNaN(left) || Number.isNaN(right)) return a.id.localeCompare(b.id)
+  return left - right
+}
+
 /**
  * Drives one recorded user prompt -> agent response exchange through the
  * real agent panel: the composer posts the prompt, the mocked backend acks
@@ -200,13 +212,17 @@ class AgentConversationHarness {
 
   async sendPrompt(): Promise<void> {
     const { content } = this.conversation.request
+    const alreadyPosted = this.postedMessages.length
     const composer = this.panel.getByRole('textbox', {
       name: /^Describe ideas/
     })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    await expect.poll(() => this.postedMessages.length).toBeGreaterThan(0)
-    expect(this.postedMessages[0]).toContain(content)
+    await expect
+      .poll(() => this.postedMessages.length)
+      .toBeGreaterThan(alreadyPosted)
+    const posted: unknown = JSON.parse(this.postedMessages[alreadyPosted])
+    expect(posted).toMatchObject({ content })
   }
 
   async replayResponse(): Promise<void> {
@@ -230,15 +246,12 @@ class AgentConversationHarness {
   }
 
   /**
-   * The agent's workflow document as rendered on the canvas: every node the
-   * host doc owns, with its slot connectivity. The tab the agent opens is
-   * expected to be blank (AgentPanelRoot mints it from `blankGraph`); the
-   * doc-id filter is defensive, so a stray template node cannot pin the
-   * template here. Colliding ids are the real hazard: a template link into a
-   * doc node survives the follower's reconcile and shows up as connectivity.
+   * Every node rendered on the canvas, with its slot connectivity. The tab
+   * the agent opens is expected to be blank (AgentPanelRoot mints it from
+   * `blankGraph`), so anything beyond the host doc's own nodes is the
+   * regression this snapshot exists to catch and must not be filtered away.
    */
   async graphSnapshot(): Promise<GraphNodeSnapshot[]> {
-    const docNodeIds = this.host.nodeIds()
     const snapshot = await this.page
       .locator('[data-node-id]')
       .evaluateAll((nodes) =>
@@ -247,20 +260,16 @@ class AgentConversationHarness {
             Array.from(node.querySelectorAll(selector)).map((slot) =>
               slot.classList.contains('lg-slot--connected')
             )
+          const title = node.querySelector('[data-testid="node-title"]')
           return {
             id: node.getAttribute('data-node-id') ?? '',
-            title:
-              node
-                .querySelector('[data-testid="node-title"]')
-                ?.textContent?.trim() ?? '',
+            title: title === null ? '' : title.textContent.trim(),
             inputs: connected('.lg-slot--input'),
             outputs: connected('.lg-slot--output')
           }
         })
       )
-    return snapshot
-      .filter((node) => docNodeIds.has(node.id))
-      .sort((a, b) => Number(a.id) - Number(b.id))
+    return snapshot.sort(byNodeId)
   }
 
   private async mockAgentApi(): Promise<void> {
@@ -314,7 +323,9 @@ class AgentConversationHarness {
   }
 
   private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
+    // The route intercepts the whole `/ws` channel, so a non-JSON client
+    // frame must not throw inside Playwright's websocket handler.
+    const frame = decodeJson(raw.toString())
     if (typeof frame !== 'object' || frame === null) return
     const { type, data } = frame as { type?: unknown; data?: unknown }
     if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
