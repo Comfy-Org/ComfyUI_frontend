@@ -13,7 +13,7 @@ test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
     // The second turn's only edit is a connect, so what the canvas shows after
     // it is the wire itself: the app's own render loop paints it, and the
     // expectation is the picture, not a reconstruction of the renderer.
-    test('paints the wire the second turn connects', async ({
+    test('paints the wire the second turn connects @screenshot', async ({
       agentConversation,
       page
     }) => {
