@@ -137,8 +137,8 @@ export function createDetachedTargetSession(
 
   function commitNext(port: TargetFrameApplyPort): CommitResult {
     if (needsResync) return { status: 'resync-required' }
+    if (queue.length === 0) return { status: 'idle' }
     const frame = queue[0]
-    if (!frame) return { status: 'idle' }
 
     const staged = new Y.Doc()
     Y.applyUpdate(staged, Y.encodeStateAsUpdate(committedDoc))
@@ -220,8 +220,10 @@ export function createDetachedTargetSession(
     const separator = commitId.lastIndexOf(':')
     if (separator < 0) return false
     const commitLineage = commitId.slice(0, separator)
-    const seq = Number(commitId.slice(separator + 1))
-    if (!Number.isInteger(seq)) return false
+    const rawSeq = commitId.slice(separator + 1)
+    if (!/^\d+$/.test(rawSeq)) return false
+    const seq = Number(rawSeq)
+    if (!Number.isSafeInteger(seq)) return false
     return (
       commitLineage === lineage && committedSeq !== null && seq <= committedSeq
     )

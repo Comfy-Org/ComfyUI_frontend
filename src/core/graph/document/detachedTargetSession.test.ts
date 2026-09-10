@@ -359,4 +359,19 @@ describe('createDetachedTargetSession', () => {
     expect(session.isCommitted(`other-lineage:1`)).toBe(false)
     expect(session.isCommitted('malformed')).toBe(false)
   })
+
+  it('isCommitted rejects a commit id whose sequence is not a plain nonnegative integer', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+    session.drainAll(acceptAll)
+    const { lineage } = session.snapshot()
+
+    expect(session.isCommitted(`${lineage}:`)).toBe(false)
+    expect(session.isCommitted(`${lineage}:-5`)).toBe(false)
+    expect(session.isCommitted(`${lineage}:1.5`)).toBe(false)
+    expect(session.isCommitted(`${lineage}: 1`)).toBe(false)
+  })
 })
