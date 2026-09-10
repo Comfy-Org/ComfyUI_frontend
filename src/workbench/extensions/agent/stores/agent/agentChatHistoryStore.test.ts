@@ -12,7 +12,8 @@ const DAY = 86_400_000
 const session = (id: string, updatedAt: number): ChatSession => ({
   id,
   title: id,
-  updatedAt
+  updatedAt,
+  status: 'active'
 })
 
 describe('groupSessionsByRecency', () => {

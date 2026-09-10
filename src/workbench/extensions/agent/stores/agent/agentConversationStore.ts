@@ -37,8 +37,6 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
-  attachments: UserAttachment[] | undefined
-  tags: string[] | undefined
   settled: boolean
 }
 
@@ -58,6 +56,7 @@ export const useAgentConversationStore = defineStore(
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
+    let hydratedAssistantTurnIds = new Set<TurnId>()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -122,14 +121,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function ingest(event: AgentChatEvent): void {
-      const eventThreadId = event.data.thread_id
-      if (
-        transport &&
-        event.data.message_id === activeTurnId.value &&
-        (threadId.value === null ||
-          eventThreadId === undefined ||
-          eventThreadId === threadId.value)
-      ) {
+      if (transport && event.data.message_id === activeTurnId.value) {
         if (event.type === 'agent_message_done') {
           transport.settle()
           clearActive()
@@ -138,6 +130,7 @@ export const useAgentConversationStore = defineStore(
         transport.ingest(event)
         return
       }
+      const eventThreadId = event.data.thread_id
       // agent_active_tab is the one event whose message_id is optional; without
       // it the thread is the only routing key left.
       if (
@@ -177,8 +170,6 @@ export const useAgentConversationStore = defineStore(
         message: liveMessage,
         transport,
         userText: userTexts.value.get(liveMessage.id),
-        attachments: userAttachments.value.get(liveMessage.id),
-        tags: userTags.value.get(liveMessage.id),
         settled: false
       })
       clearActive()
@@ -194,16 +185,30 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      if (entry.settled && hydratedMessageIds.has(entry.messageId)) return
+      const last = kept.at(-1)
+      let poppedHydratedCopy = false
+      if (
+        kept.length === messages.value.length &&
+        last &&
+        !hydratedAssistantTurnIds.has(last.id) &&
+        entry.userText !== undefined &&
+        userTexts.value.get(last.id) === entry.userText
+      ) {
+        kept.pop()
+        userTexts.value.delete(last.id)
+        poppedHydratedCopy = true
+      }
+      if (
+        entry.settled &&
+        !poppedHydratedCopy &&
+        hydratedMessageIds.has(entry.messageId)
+      )
+        return
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
       )
         userTexts.value.set(entry.message.id, entry.userText)
-      if (entry.attachments !== undefined)
-        userAttachments.value.set(entry.message.id, entry.attachments)
-      if (entry.tags !== undefined)
-        userTags.value.set(entry.message.id, entry.tags)
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
@@ -213,51 +218,17 @@ export const useAgentConversationStore = defineStore(
       liveMessage = entry.message
     }
 
-    function settleBackgroundTurn(thread: string, turnId: string): void {
-      const entry = backgroundTurns.get(thread)
-      if (!entry || entry.messageId !== turnId) return
-      entry.transport.settle()
-      backgroundTurns.delete(thread)
-    }
-
-    function startBackgroundTurn(
-      thread: string,
-      turnId: TurnId,
-      text: string,
-      attachments?: UserAttachment[],
-      tags?: string[]
-    ): void {
-      const message = createAssistantMessage(turnId)
-      const backgroundTransport = createAgentEventTransport(message, (m) => {
-        // Repaint only once this transport is the adopted active transport;
-        // while the turn is stashed its snapshots must not touch the displayed
-        // message, whose turn id can collide with this one.
-        if (transport === backgroundTransport) replaceActive(m)
-      })
-      backgroundTurns.set(thread, {
-        messageId: turnId,
-        message,
-        transport: backgroundTransport,
-        userText: text,
-        attachments,
-        tags,
-        settled: false
-      })
+    function settleBackgroundTurn(turnId: string): void {
+      for (const [key, entry] of backgroundTurns) {
+        if (entry.messageId !== turnId) continue
+        entry.transport.settle()
+        backgroundTurns.delete(key)
+        return
+      }
     }
 
     function dropBackgroundTurns(): void {
-      const retained = new Set(
-        [...userAttachments.value.values()].flatMap((attachments) =>
-          attachments.map(({ previewUrl }) => previewUrl)
-        )
-      )
-      for (const entry of backgroundTurns.values()) {
-        entry.transport.settle()
-        for (const { previewUrl } of entry.attachments ?? []) {
-          if (previewUrl?.startsWith('blob:') && !retained.has(previewUrl))
-            URL.revokeObjectURL(previewUrl)
-        }
-      }
+      for (const entry of backgroundTurns.values()) entry.transport.settle()
       backgroundTurns.clear()
     }
 
@@ -269,16 +240,9 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropAttachmentPreviews(): void {
-      const retained = new Set(
-        [...backgroundTurns.values()].flatMap(
-          ({ attachments }) =>
-            attachments?.map(({ previewUrl }) => previewUrl) ?? []
-        )
-      )
       for (const attachments of userAttachments.value.values()) {
         for (const { previewUrl } of attachments) {
-          if (previewUrl?.startsWith('blob:') && !retained.has(previewUrl))
-            URL.revokeObjectURL(previewUrl)
+          if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl)
         }
       }
       userAttachments.value = new Map()
@@ -293,6 +257,7 @@ export const useAgentConversationStore = defineStore(
       dropAttachmentPreviews()
       threadId.value = null
       hydratedMessageIds = new Set()
+      hydratedAssistantTurnIds = new Set()
       clearActive()
     }
 
@@ -305,6 +270,7 @@ export const useAgentConversationStore = defineStore(
       userWorkflowReferences.value = transcript.userWorkflowReferences
       latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
+      hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
       if (transcript.pending) {
         liveMessage = transcript.pending.message
@@ -364,7 +330,6 @@ export const useAgentConversationStore = defineStore(
       stashActiveTurn,
       resumeBackgroundTurn,
       settleBackgroundTurn,
-      startBackgroundTurn,
       dropBackgroundTurns,
       reset,
       hydrate
