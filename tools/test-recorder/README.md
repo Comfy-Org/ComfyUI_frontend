@@ -58,9 +58,11 @@ the PR. See [Browser Tests README § For agents](../../browser_tests/README.md#f
 for the full chain.
 
 `agent-replay` runs the recorded agent conversations as tests against a
-running dev server, non-interactively; `--case <id>` narrows to one recording
-and `--headed` shows it. The three-job workflow (replay, run the agent, record)
-is in `.claude/skills/agent-integration-replay/SKILL.md`.
+running dev server. On a terminal with no flags it asks which recording to
+replay and whether to watch it; `--case <id>` narrows to one recording,
+`--headed` shows it, `--video` records it, and `--help` prints usage without
+running anything. The replay workflow is in
+`.claude/skills/agent-integration-replay/SKILL.md`.
 
 ## Development
 

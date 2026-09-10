@@ -177,13 +177,23 @@ try {
     case 'agent-replay': {
       const { parseFlags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), ['case', 'url'])
-      const { runAgentReplay } = await import('./commands/agentReplay')
-      process.exitCode = runAgentReplay({
-        caseId: flags.case,
-        url: flags.url,
-        headed: flags.headed !== undefined,
-        video: flags.video !== undefined
-      })
+      const { listReplayCases, promptAgentReplayOptions, runAgentReplay } =
+        await import('./commands/agentReplay')
+      if (flags.help !== undefined) {
+        process.exitCode = runAgentReplay({ help: true })
+        break
+      }
+      const interactive = process.stdin.isTTY && Object.keys(flags).length === 0
+      const options = interactive
+        ? await promptAgentReplayOptions(listReplayCases())
+        : {
+            caseId: flags.case,
+            url: flags.url,
+            headed: flags.headed !== undefined,
+            video: flags.video !== undefined
+          }
+      if (options === null) break
+      process.exitCode = runAgentReplay(options)
       break
     }
     case 'list': {
@@ -226,7 +236,7 @@ Commands:
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
-  agent-replay [--case <id>] [--url <dev server>] [--headed] [--video]
+  agent-replay [--case <id>] [--url <dev server>] [--headed] [--video] [--help]
               Replay the recorded agent conversations as tests against a
               running dev server (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
