@@ -26,7 +26,7 @@ const deployTranscript = [
       {{ t('platform.serverlessDeploy.shipHeading', locale) }}
       <template #subtitle>
         <p
-          class="text-smoke-700 mx-auto mt-4 max-w-2xl text-sm whitespace-pre-line"
+          class="mx-auto mt-4 max-w-2xl text-sm whitespace-pre-line text-smoke-700"
         >
           {{ t('platform.serverlessDeploy.shipSubtitle', locale) }}
         </p>

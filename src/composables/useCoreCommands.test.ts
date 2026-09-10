@@ -12,7 +12,6 @@ import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { Mock } from 'vitest'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -87,18 +86,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-let mockModelStoreRefresh: Mock<ReturnType<typeof useModelStore>['refresh']>
-
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
-
-let mockMissingModelStoreRefresh: Mock<
-  ReturnType<typeof useMissingModelStore>['refreshMissingModels']
->
 
 vi.mock(import('firebase/auth'))
 
@@ -143,8 +136,6 @@ vi.mock<unknown>(
     }))
   })
 )
-
-let mockToastAdd: ReturnType<typeof useToastStore>['add']
 
 const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
@@ -272,18 +263,15 @@ describe('useCoreCommands', () => {
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({ changeTracker: mockChangeTracker })
     useCanvasStore().canvas = app.canvas
-    mockModelStoreRefresh = vi.mocked(useModelStore().refresh)
-    mockMissingModelStoreRefresh = vi.mocked(
-      useMissingModelStore().refreshMissingModels
-    )
-    mockToastAdd = useToastStore().add
     mockDistributionState.isCloud = false
     mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
-    mockModelStoreRefresh.mockResolvedValue(true)
-    mockMissingModelStoreRefresh.mockResolvedValue(undefined)
+    vi.mocked(useModelStore().refresh).mockResolvedValue(true)
+    vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
+      undefined
+    )
 
     app.canvas.subgraph = undefined
 
@@ -616,23 +604,29 @@ describe('useCoreCommands', () => {
         })
         order.push('combo:end')
       })
-      mockModelStoreRefresh.mockImplementation(async () => {
+      vi.mocked(useModelStore().refresh).mockImplementation(async () => {
         order.push('models')
         return true
       })
-      mockMissingModelStoreRefresh.mockImplementation(async () => {
-        order.push('missing')
-      })
+      vi.mocked(useMissingModelStore().refreshMissingModels).mockImplementation(
+        async () => {
+          order.push('missing')
+        }
+      )
 
       const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
 
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).not.toHaveBeenCalled()
       resolveComboRefresh()
       await commandPromise
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).toHaveBeenCalledWith({
+      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).toHaveBeenCalledWith({
         reloadDefs: false
       })
       expect(order.indexOf('missing')).toBeGreaterThan(
@@ -646,7 +640,9 @@ describe('useCoreCommands', () => {
       await expect(
         findCmd('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).not.toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
@@ -655,8 +651,10 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).not.toHaveBeenCalled()
     })
   })
 
@@ -685,7 +683,7 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
       expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })
@@ -720,7 +718,7 @@ describe('useCoreCommands', () => {
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
+        expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({ severity: 'warn' })
         )
       }
@@ -808,7 +806,7 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
@@ -821,7 +819,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })

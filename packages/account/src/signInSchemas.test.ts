@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 import type { SafeParseReturnType } from 'zod'
 
 import {
-  signInSchema,
-  signUpSchema,
-  updatePasswordSchema
-} from '@/schemas/signInSchema'
+  PASSWORD_RULES,
+  createAuthSchemas,
+  passwordRuleChecks
+} from './signInSchemas'
+
+const { signInSchema, signUpSchema, updatePasswordSchema } = createAuthSchemas(
+  (key) => key
+)
 
 const VALID_PASSWORD = 'Password1!'
 
@@ -135,5 +139,72 @@ describe('updatePasswordSchema', () => {
 
     expect(result.success).toBe(false)
     expect(errorAt(result, 'confirmPassword')).toBeDefined()
+  })
+})
+
+describe('createAuthSchemas message wiring', () => {
+  it('resolves messages through the injected translator with its params', () => {
+    const seen: Array<[string, unknown]> = []
+    const { signUpSchema: schema } = createAuthSchemas((key, params) => {
+      seen.push([key, params])
+      return `msg:${key}`
+    })
+
+    const result = schema.safeParse(
+      signUpValues({ password: 'short', confirmPassword: 'short' })
+    )
+
+    expect(result.success).toBe(false)
+    expect(
+      seen.some(
+        ([key, params]) =>
+          key === 'validation.minLength' &&
+          (params as Record<string, unknown>).length === 8
+      ),
+      'the 8-char minimum must reach the translator as a param, not be baked into copy'
+    ).toBe(true)
+    expect(
+      result.success ? [] : result.error.issues.map((issue) => issue.message)
+    ).toContain('msg:validation.minLength')
+  })
+})
+
+describe('passwordRuleChecks', () => {
+  it('passes every rule for a password the schema accepts', () => {
+    expect(Object.values(passwordRuleChecks(VALID_PASSWORD))).not.toContain(
+      false
+    )
+    expect(
+      signUpSchema.safeParse(signUpValues()).success,
+      'the checklist and the schema must agree on what a valid password is'
+    ).toBe(true)
+  })
+
+  it.for([
+    ['short', 'Ab1!', 'length'],
+    ['no uppercase', 'password1!', 'uppercase'],
+    ['no lowercase', 'PASSWORD1!', 'lowercase'],
+    ['no number', 'Password!!', 'number'],
+    ['no special', 'Password11', 'special'],
+    ['too long', `${'A'.repeat(31)}a1!`, 'length']
+  ] as const)('reports %s as failing only its rule', ([, password, rule]) => {
+    const checks = passwordRuleChecks(password)
+    expect(checks[rule]).toBe(false)
+    expect(
+      Object.entries(checks)
+        .filter(([, ok]) => !ok)
+        .map(([name]) => name)
+    ).toEqual([rule])
+    expect(
+      signUpSchema.safeParse(
+        signUpValues({ password, confirmPassword: password })
+      ).success,
+      'a password failing any checklist rule must fail the schema too'
+    ).toBe(false)
+  })
+
+  it('exposes the same bounds the schema enforces', () => {
+    expect(PASSWORD_RULES.minLength).toBe(8)
+    expect(PASSWORD_RULES.maxLength).toBe(32)
   })
 })

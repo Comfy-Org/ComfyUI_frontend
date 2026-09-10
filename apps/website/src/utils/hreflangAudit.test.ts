@@ -56,7 +56,7 @@ describe('auditBuiltSite', () => {
 
   it('rejects a clustered page the sitemap leaves out', () => {
     const site = healthySite()
-    site.sitemap?.delete('/zh-CN/about/')
+    site.sitemap.delete('/zh-CN/about/')
 
     expect(auditBuiltSite(site)).toEqual([
       '/zh-CN/about/: advertises alternates but the sitemap omits it'
@@ -67,7 +67,7 @@ describe('auditBuiltSite', () => {
     const site = healthySite()
     site.pages.set('/about/', cluster('/about/'))
     site.pages.delete('/zh-CN/about/')
-    site.sitemap?.delete('/zh-CN/about/')
+    site.sitemap.delete('/zh-CN/about/')
 
     expect(auditBuiltSite(site)).toEqual([
       '/about/: alternate zh-CN -> /zh-CN/about/ was not built (404)'
@@ -89,7 +89,7 @@ describe('auditBuiltSite', () => {
   it('rejects a one-way cluster', () => {
     const site = healthySite()
     site.pages.set('/zh-CN/about/', [])
-    site.sitemap?.set('/zh-CN/about/', [])
+    site.sitemap.set('/zh-CN/about/', [])
 
     expect(auditBuiltSite(site)).toEqual([
       '/about/: lists /zh-CN/about/, which does not list it back'
@@ -123,7 +123,7 @@ describe('auditBuiltSite', () => {
     // The sitemap clusters a page whose markup advertises nothing. Both halves
     // are internally well-formed, so only comparing them catches it.
     const site = healthySite()
-    site.sitemap?.set('/affiliates/', cluster('/affiliates/'))
+    site.sitemap.set('/affiliates/', cluster('/affiliates/'))
 
     expect(auditBuiltSite(site)).toEqual([
       '/affiliates/: sitemap advertises en, zh-CN, x-default that the page does not'
@@ -134,7 +134,7 @@ describe('auditBuiltSite', () => {
     // The language SET still matches the page exactly, so comparing names alone
     // accepts this. It tells Google the English URL is the Chinese one.
     const site = healthySite()
-    site.sitemap?.set('/about/', [
+    site.sitemap.set('/about/', [
       { hreflang: 'en', href: `${ORIGIN}/about/` },
       { hreflang: 'zh-CN', href: `${ORIGIN}/about/` },
       { hreflang: 'x-default', href: `${ORIGIN}/about/` }
@@ -147,7 +147,7 @@ describe('auditBuiltSite', () => {
 
   it('rejects a language repeated inside one sitemap entry', () => {
     const site = healthySite()
-    site.sitemap?.set('/about/', [
+    site.sitemap.set('/about/', [
       ...cluster('/about/'),
       { hreflang: 'en', href: `${ORIGIN}/about/` }
     ])
@@ -164,7 +164,7 @@ describe('auditBuiltSite', () => {
     const site = healthySite()
     const ja = { hreflang: 'ja', href: `${ORIGIN}/zh-CN/about/` }
     site.pages.set('/about/', [...cluster('/about/'), ja])
-    site.sitemap?.set('/about/', [...cluster('/about/'), ja])
+    site.sitemap.set('/about/', [...cluster('/about/'), ja])
 
     expect(auditBuiltSite(site)).toEqual([
       '/about/: page declares hreflang="ja", which is not one of en, zh-CN, x-default',
@@ -174,7 +174,7 @@ describe('auditBuiltSite', () => {
 
   it('reports a sitemap URL with no page behind it', () => {
     const site = healthySite()
-    site.sitemap?.set('/retired/', [])
+    site.sitemap.set('/retired/', [])
 
     expect(auditBuiltSite(site)).toEqual([
       '/retired/: the sitemap lists it, but it was not built (404)'
@@ -185,7 +185,7 @@ describe('auditBuiltSite', () => {
     // The other direction of the same drift: the sitemap dropping x-default
     // while the pages keep emitting it.
     const site = healthySite()
-    site.sitemap?.set('/about/', cluster('/about/').slice(0, 2))
+    site.sitemap.set('/about/', cluster('/about/').slice(0, 2))
 
     expect(auditBuiltSite(site)).toEqual([
       '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it',
