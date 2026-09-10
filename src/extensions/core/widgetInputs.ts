@@ -286,7 +286,7 @@ export class PrimitiveNode extends LGraphNode {
     try {
       if (
         type === 'COMBO' &&
-        assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
+        assetService.shouldUseWidgetAssetPicker(node.comfyClass, widgetName)
       ) {
         widget = this._createAssetWidget(node, widgetName, inputData)
         const theirWidget = node.widgets?.find((w) => w.name === widgetName)
