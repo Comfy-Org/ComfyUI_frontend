@@ -1,4 +1,5 @@
 import { isEqual } from 'es-toolkit'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -494,18 +495,26 @@ export function findUsedSubgraphIds(
 
 function findLiveSubgraphIds(
   rootGraph: LGraph,
-  removedNode: SubgraphNode
+  removedNode: SubgraphNode,
+  preserveCanonicalState: boolean
 ): Set<SubgraphId> {
   const liveIds = new Set<SubgraphId>()
   const toVisit: GraphOrSubgraph[] = [rootGraph]
+  const nodeStore = useNodeDataStore()
 
   while (toVisit.length > 0) {
     const graph = toVisit.shift()!
-    for (const node of graph._nodes) {
-      if (node === removedNode || !node.isSubgraphNode()) continue
-      if (liveIds.has(node.subgraph.id)) continue
-      liveIds.add(node.subgraph.id)
-      toVisit.push(node.subgraph)
+    const subgraphs = preserveCanonicalState
+      ? nodeStore
+          .getGraphNodesFor(rootGraph.id, graph.id)
+          .flatMap((state) => rootGraph.subgraphs.get(state.type) ?? [])
+      : graph._nodes.flatMap((node) =>
+          node !== removedNode && node.isSubgraphNode() ? [node.subgraph] : []
+        )
+    for (const subgraph of subgraphs) {
+      if (liveIds.has(subgraph.id)) continue
+      liveIds.add(subgraph.id)
+      toVisit.push(subgraph)
     }
   }
 
@@ -531,9 +540,14 @@ function collectSubgraphsPostOrder(
 
 export function findReleasableSubgraphs(
   rootGraph: LGraph,
-  removedNode: SubgraphNode
+  removedNode: SubgraphNode,
+  preserveCanonicalState = false
 ): Subgraph[] {
-  const liveIds = findLiveSubgraphIds(rootGraph, removedNode)
+  const liveIds = findLiveSubgraphIds(
+    rootGraph,
+    removedNode,
+    preserveCanonicalState
+  )
   const removedSubtree: Subgraph[] = []
   collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))

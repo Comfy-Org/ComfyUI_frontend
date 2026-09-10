@@ -547,6 +547,34 @@ describe('reconcileAgentAdapters', () => {
   })
 
   describe('remote update of a live node', () => {
+    it('retains a subgraph needed by another replacement in the same batch', () => {
+      const graph = new LGraph()
+      const disable = enableSubgraphNodeCreation(graph)
+      try {
+        const subgraph = graph.createSubgraph(createTestSubgraphData())
+        const inner = new DummyNode()
+        inner.id = toNodeId(3)
+        subgraph.add(inner)
+        graph.add(createTestSubgraphNode(subgraph, { id: 1 }))
+        const scope = seedAgentAddedNode(graph, 2)
+        reconcileAgentAdapters(graph)
+        remoteMutations(scope).batch(REMOTE, (batch) => {
+          batch.reconcileNode(nodePayload(1))
+          batch.reconcileNode(nodePayload(2, subgraph.id))
+        })
+
+        expect(reconcileAgentAdapters(graph)).toEqual([
+          toNodeId(1),
+          toNodeId(2)
+        ])
+        expect(graph.subgraphs.get(subgraph.id)).toBe(subgraph)
+        expect(subgraph.nodes).toEqual([inner])
+        expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+      } finally {
+        disable()
+      }
+    })
+
     it('keeps the same live node when the record is updated in place', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
@@ -612,31 +640,45 @@ describe('reconcileAgentAdapters', () => {
 
       const stale = graph.getNodeById(toNodeId(1))!
       const lifecycle: string[] = []
+      const resources = new Map([[stale.id, stale]])
       graph.events.addEventListener('node:before-removed', (event) => {
         if (event.detail.node === stale) lifecycle.push('before-removed')
       })
-      stale.onRemoved = () => lifecycle.push('onRemoved')
-      const incumbent = useNodeDataStore().getNode(
-        scope.rootGraphId,
-        toNodeId(1)
-      )!
-      expect(useNodeDataStore().deleteNode(scope, incumbent, REMOTE)).toBe(true)
-      expect(
-        mutations.addNode(
-          {
-            ...nodePayload(1, 'widget-node'),
-            outputs: [{ name: 'value', type: '*', links: [9] }],
-            widgets_values: { value: 7 }
-          },
-          { ...REMOTE, opId: 'op-replace-1' }
-        )
-      ).toBe(true)
+      stale.onRemoved = () => {
+        lifecycle.push('onRemoved')
+        resources.delete(stale.id)
+      }
+      class ReplacementNode extends WidgetNode {
+        override onAdded() {
+          lifecycle.push('onAdded')
+          expect(graph._nodes).not.toContain(stale)
+          resources.set(this.id, this)
+        }
+
+        override onConfigure() {
+          lifecycle.push('onConfigure')
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      mutations.batch(REMOTE, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'replacement-node'),
+          outputs: [{ name: 'value', type: '*', links: [9] }],
+          widgets_values: { value: 7 }
+        })
+      )
 
       expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
 
       const replacement = graph.getNodeById(toNodeId(1))!
-      expect(lifecycle).toEqual(['before-removed', 'onRemoved'])
+      expect(lifecycle).toEqual([
+        'before-removed',
+        'onRemoved',
+        'onAdded',
+        'onConfigure'
+      ])
       expect(replacement).not.toBe(stale)
+      expect(resources.get(stale.id)).toBe(replacement)
       expect(graph._nodes).not.toContain(stale)
       expect(graph.getLink(toLinkId(9))).toMatchObject({
         origin_id: toNodeId(1),
@@ -651,6 +693,53 @@ describe('reconcileAgentAdapters', () => {
         layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
       ).toBeDefined()
       expect(useExecutionOrderStore().get(scope, toNodeId(1))).toBeDefined()
+    })
+
+    it('does not construct a successor when incumbent removal throws, and can retry', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))!
+      const failure = new Error('extension cleanup failed')
+      stale.onRemoved = () => {
+        throw failure
+      }
+      const constructed: LGraphNode[] = []
+      class ReplacementNode extends WidgetNode {
+        constructor() {
+          super()
+          constructed.push(this)
+        }
+      }
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      remoteMutations(scope).batch(REMOTE, (batch) =>
+        batch.reconcileNode({
+          ...nodePayload(1, 'replacement-node'),
+          widgets_values: { value: 7 }
+        })
+      )
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(constructed).toEqual([])
+      expect(graph._nodes).toEqual([stale])
+      expect(graph.getNodeById(stale.id)).toBe(stale)
+      expect(
+        useNodeDataStore().getNode(scope.rootGraphId, stale.id)?.type
+      ).toBe('replacement-node')
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, stale.id)
+      ).toBeDefined()
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'agent_node_materialize_remove_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      stale.onRemoved = undefined
+      expect(reconcileAgentAdapters(graph)).toEqual([stale.id])
+      expect(graph._nodes).toHaveLength(1)
+      expect(constructed).toEqual(graph._nodes)
+      expect(graph.getNodeById(stale.id)?.widgets?.[0].value).toBe(7)
+      expect(stale.graph).toBeNull()
     })
   })
 
@@ -813,18 +902,29 @@ describe('reconcileAgentAdapters', () => {
       ).toBeDefined()
     })
 
-    it('retries a failed add on the next reconcile', () => {
-      const graph = new LGraph()
-      seedAgentAddedNode(graph, 1)
-      const add = vi.spyOn(graph, 'add').mockImplementationOnce(() => {
-        throw new Error('transient')
-      })
-      expect(reconcileAgentAdapters(graph)).toEqual([])
-      add.mockRestore()
+    it.for([false, true])(
+      'retries a failed add (replacement: %s)',
+      (replacement) => {
+        const graph = new LGraph()
+        const scope = seedAgentAddedNode(graph, 1)
+        if (replacement) {
+          reconcileAgentAdapters(graph)
+          remoteMutations(scope).batch(REMOTE, (batch) =>
+            batch.reconcileNode(nodePayload(1, 'widget-node'))
+          )
+        }
+        const add = vi.spyOn(graph, 'add').mockImplementationOnce(() => {
+          throw new Error('transient')
+        })
+        expect(reconcileAgentAdapters(graph)).toEqual([])
+        expect(graph._nodes).toHaveLength(0)
+        expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+        add.mockRestore()
 
-      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
-      expect(graph._nodes).toHaveLength(1)
-    })
+        expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+        expect(graph._nodes).toHaveLength(1)
+      }
+    )
 
     it('keeps the attached node when configure() throws', () => {
       const graph = new LGraph()

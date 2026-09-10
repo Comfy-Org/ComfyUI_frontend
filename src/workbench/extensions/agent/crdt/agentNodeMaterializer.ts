@@ -245,7 +245,8 @@ function reconcile(
   const recordIds = new Set(records.map((state) => state.id))
   const detached = orphans.filter(
     (orphan) =>
-      graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
+      orphan.graph === graph &&
+      (graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id))
   )
   for (const orphan of detached) {
     graph.remove(orphan, { preserveCanonicalState: true })
@@ -260,6 +261,17 @@ function materialize(
   serialised: ISerialisedNode,
   orphan: LGraphNode | undefined
 ): boolean {
+  if (orphan) {
+    try {
+      graph.remove(orphan, { preserveCanonicalState: true })
+    } catch (cause) {
+      reportError(cause, {
+        errorType: 'agent_node_materialize_remove_failed',
+        context: { graphId: graph.id, nodeId: String(state.id) }
+      })
+      return false
+    }
+  }
   const nodeStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
   const node =
@@ -286,7 +298,7 @@ function materialize(
         widget
       )
     }
-    if (orphan) graph._nodes_by_id[orphan.id] = orphan
+    if (orphan?.graph === graph) graph._nodes_by_id[orphan.id] = orphan
   }
 
   const rollback = (cause: unknown) => {

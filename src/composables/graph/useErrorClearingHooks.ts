@@ -622,7 +622,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   // `node:before-removed` covers both single removals and graph.clear();
   // `node:removed` fires only from LGraph.remove.
   const onNodeRemoved = ({
-    detail: { node, successor }
+    detail: { node, successor, preserveCanonicalState }
   }: NodeBeforeRemovedEvent) => {
     if (disposed) return
     for (const scan of pendingScans.get(node) ?? []) scan.cancel()
@@ -631,7 +631,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // "parentId:...:nodeId" path that matches how missing asset errors are
     // keyed; without this, removal falls back to the local ID and misses
     // subgraph entries.
-    if (!successor) {
+    if (!successor && !preserveCanonicalState) {
       const execId = getRemovedNodeExecutionId(graph, node.id)
       removeNodeErrors(node, execId)
     }
