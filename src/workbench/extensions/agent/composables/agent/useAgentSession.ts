@@ -189,8 +189,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     historyStore.clear()
     notices.value = []
-    executionErrorStore.clearPromptError()
-    executionErrorStore.dismissErrorOverlay()
+    if (executionErrorStore.lastPromptError?.type === 'agent_api_failed') {
+      executionErrorStore.clearPromptError()
+      if (
+        executionErrorStore.lastExecutionError === null &&
+        executionErrorStore.lastNodeErrors === null
+      )
+        executionErrorStore.dismissErrorOverlay()
+    }
     promptEditState.value = { phase: 'idle' }
     answeringAskIds.value = new Set()
     boundWorkflowId.value = null
@@ -211,12 +217,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
-  const stopScopeWatch = watch(storageScope, (scope) => {
+  function reconcileStorageScope(scope = storageScope.value): void {
     if (ownedGeneration !== sessionGeneration) return
+    if (rememberedStorageScope === scope) return
     clearConversation()
     rememberedStorageScope = scope
     if (scope !== null) restoreStoredThread()
-  })
+  }
+
+  const stopScopeWatch = watch(storageScope, reconcileStorageScope)
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -300,6 +309,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[]
   ): Promise<boolean> {
+    reconcileStorageScope()
     if (sending.value) {
       conversationStore.recordFailedSend(
         nextLocalErrorId(),

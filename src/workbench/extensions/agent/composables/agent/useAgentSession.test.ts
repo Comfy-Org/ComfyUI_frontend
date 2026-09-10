@@ -444,6 +444,59 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
+  it('reconciles an identity change before sending without a reactivity tick', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.ThreadId.user-1/workspace-2',
+      'thread-workspace-2'
+    )
+    const rest = fakeRest()
+    const conversation = useAgentConversationStore()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    conversation.setThreadId('thread-workspace-1')
+
+    identity.workspaceId.value = 'workspace-2'
+    await session.sendMessage('new scope')
+
+    expect(rest.postMessage).toHaveBeenCalledWith(
+      'thread-workspace-2',
+      expect.objectContaining({ content: 'new scope' })
+    )
+  })
+
+  it('preserves shared execution errors when clearing an agent prompt error', async () => {
+    const executionErrors = useExecutionErrorStore()
+    const executionError = {
+      prompt_id: 'unrelated-run',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'queue failed',
+      exception_type: 'RuntimeError',
+      traceback: []
+    }
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    executionErrors.recordExecutionError(executionError)
+    executionErrors.recordPromptError({
+      type: 'agent_api_failed',
+      message: 'Agent failed',
+      details: 'agent request failed'
+    })
+    executionErrors.showErrorOverlay()
+
+    identity.workspaceId.value = 'workspace-2'
+    await nextTick()
+
+    expect(executionErrors.lastPromptError).toBeNull()
+    expect(executionErrors.lastExecutionError).toEqual(executionError)
+    expect(executionErrors.isErrorOverlayOpen).toBe(true)
+  })
+
   it.for([
     ['stale hydrate resolves first', [0, 1]] as const,
     ['current hydrate resolves first', [1, 0]] as const
