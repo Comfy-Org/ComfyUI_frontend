@@ -300,6 +300,22 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  function retireLegacyToken(): void {
+    stopRefreshTimer()
+    workspaceToken.value = null
+    workspaceTokenExpiresAt.value = null
+    workspaceTokenOwnerUid.value = null
+    try {
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
+    } catch {
+      console.warn(
+        'Failed to retire legacy workspace token from sessionStorage'
+      )
+    }
+  }
+
   // Actions
   function init(): void {
     initializeFromSession()
@@ -856,6 +872,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // Any successful mint re-arms the scheduler with a fresh retry budget;
       // this telemetry mirror must follow it or retry_count inflates.
       unifiedScheduledRetryCount = 0
+      // A unified mint retires the legacy token so a flag rollback cannot serve
+      // a stale legacy session under the workspace unified just minted.
+      retireLegacyToken()
       currentWorkspace.value = {
         ...snapshot.session.workspace,
         role: snapshot.session.role
@@ -885,13 +904,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  // The flag owns both ends: a rollback to the legacy rail must also stop
-  // the unified scheduler and cross-tab lease, or they keep rotating the
-  // cookie and refilling the slot the API callers no longer read.
+  // The flag owns both ends: enabling the rail must attach identity and mint
+  // the current target before consumers switch to it, or an already-signed-in
+  // session starts sending no auth header; a rollback must stop the unified
+  // scheduler and cross-tab lease, or they keep rotating the cookie and
+  // refilling the slot the API callers no longer read.
   watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {
-      if (enabled || !detachUnifiedIdentity) return
+      if (enabled) {
+        ensureUnifiedIdentityAttached()
+        void mintAtLogin()
+        return
+      }
+      if (!detachUnifiedIdentity) return
       detachUnifiedIdentity()
       detachUnifiedIdentity = undefined
       clearUnifiedContext()

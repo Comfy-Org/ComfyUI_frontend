@@ -273,10 +273,10 @@ export const useAuthStore = defineStore('auth', () => {
    * Returns Firebase auth header for user-scoped endpoints (e.g., /customers/*).
    * Use this for endpoints that need user identity, not workspace context.
    */
-  const getFirebaseAuthHeader = async (): Promise<AuthHeader | null> => {
-    const token = await getIdToken()
-    return token ? { Authorization: `Bearer ${token}` } : null
-  }
+  const headerFromToken = (token: string | undefined): AuthHeader | null =>
+    token ? { Authorization: `Bearer ${token}` } : null
+  const getFirebaseAuthHeader = async (): Promise<AuthHeader | null> =>
+    headerFromToken(await getIdToken())
 
   /**
    * Returns the user-identity auth header for user-scoped endpoints
@@ -466,10 +466,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const createCustomer = async (
-    payload?: Omit<CreateCustomerPayload, 'signup_source'>
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>,
+    completedCredential?: UserCredential
   ): Promise<CreateCustomerResponse> => {
-    const sessionIdentity = currentUserIdentity()
-    const authHeader = await getUserAuthHeader()
+    // Pin provisioning to the completed credential: a concurrent auth switch
+    // must not let us provision (or roll back) a different account.
+    const completedUser = completedCredential?.user
+    const sessionIdentity = completedUser?.uid ?? currentUserIdentity()
+    const authHeader = completedUser
+      ? headerFromToken(await completedUser.getIdToken())
+      : await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -492,7 +498,7 @@ export const useAuthStore = defineStore('auth', () => {
       isCloud && flags.unifiedCloudAuthEnabled
     )
     if (!createCustomerRes.ok) {
-      assertIdentityUnchanged(sessionIdentity)
+      if (!completedUser) assertIdentityUnchanged(sessionIdentity)
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: createCustomerRes.statusText
@@ -511,7 +517,7 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
-    assertIdentityUnchanged(sessionIdentity)
+    if (!completedUser) assertIdentityUnchanged(sessionIdentity)
     if (sessionIdentity !== null) {
       customerProvisionedIdentity.value = sessionIdentity
     }
@@ -614,9 +620,10 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(() =>
       signUpWithProvisioning({
         createUser: () => identity.createUserWithEmail(email, password),
-        provisionCustomer: () =>
+        provisionCustomer: (credential) =>
           createCustomer(
-            turnstileToken ? { turnstile_token: turnstileToken } : undefined
+            turnstileToken ? { turnstile_token: turnstileToken } : undefined,
+            credential
           ),
         onRollbackFailure: (error) => {
           reportError(error, { errorType: 'auth_signup_rollback_failed' })
@@ -643,13 +650,16 @@ export const useAuthStore = defineStore('auth', () => {
   // token-mint failure (dialog + report) and the record is never attempted
   // without the token it would need anyway.
   const provisionCustomerForSignedInUser = async (
-    payload?: Omit<CreateCustomerPayload, 'signup_source'>
+    payload?: Omit<CreateCustomerPayload, 'signup_source'>,
+    completedCredential?: UserCredential
   ): Promise<void> => {
-    const token = await getIdToken()
+    const token = completedCredential
+      ? await completedCredential.user.getIdToken()
+      : await getIdToken()
     if (!token) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
-    await createCustomer(payload)
+    await createCustomer(payload, completedCredential)
   }
 
   const loginWithGoogle = async (options?: {
@@ -658,7 +668,8 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
         signIn: identity.signInWithGoogle,
-        provisionCustomer: () => provisionCustomerForSignedInUser()
+        provisionCustomer: (credential) =>
+          provisionCustomerForSignedInUser(undefined, credential)
       })
     )
 
@@ -680,7 +691,8 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(() =>
       socialSignInWithProvisioning({
         signIn: identity.signInWithGitHub,
-        provisionCustomer: () => provisionCustomerForSignedInUser()
+        provisionCustomer: (credential) =>
+          provisionCustomerForSignedInUser(undefined, credential)
       })
     )
 
