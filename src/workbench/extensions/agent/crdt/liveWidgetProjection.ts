@@ -1,5 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
@@ -39,7 +41,8 @@ export function applyLiveWidgetValue(
   scope: GraphScope,
   nodeId: NodeId,
   name: string,
-  value: WidgetValue
+  value: WidgetValue,
+  context: RemoteMutationContext
 ): boolean {
   if (!rootGraph) return warn(nodeId, name, 'graph is not ready')
   const graph = owningGraph(rootGraph, scope)
@@ -57,12 +60,21 @@ export function applyLiveWidgetValue(
   }
 
   const previousValue = widget.value
-  widget.value = value
+  const widgetStore = useWidgetValueStore()
+  const setValue = (nextValue: WidgetValue) => {
+    if (
+      !widget.widgetId ||
+      !widgetStore.setValue(widget.widgetId, nextValue, context)
+    ) {
+      widget.value = nextValue
+    }
+  }
+  setValue(value)
   try {
     widget.callback?.(value)
     node.onWidgetChanged?.(name, value, previousValue, widget)
   } catch (error) {
-    widget.value = previousValue
+    setValue(previousValue)
     throw error
   }
   return true
