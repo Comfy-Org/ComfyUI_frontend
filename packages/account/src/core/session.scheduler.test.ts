@@ -266,6 +266,47 @@ describe('opt-in refresh scheduler', () => {
     expect(client.getToken()).toBeUndefined()
   })
 
+  it('fails closed when a scheduled refresh returns a workspace other than the target', async () => {
+    const workspaceResponse = (token: string, wsId: string) =>
+      new Response(
+        JSON.stringify({
+          token,
+          permissions: ['workspace:read'],
+          expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+          workspace: { id: wsId, name: 'Team', type: 'team' },
+          role: 'member'
+        }),
+        { status: 200 }
+      )
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () =>
+        workspaceResponse('jwt-team', 'ws-team')
+      )
+      .mockImplementation(async () =>
+        workspaceResponse('jwt-wrong', 'ws-other')
+      )
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    const user = testUser()
+
+    identity.fire(user)
+    await client.ensureFresh(user, { workspaceId: 'ws-team' })
+    expect(client.getToken()).toBe('jwt-team')
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(
+      client.getToken(),
+      'a scheduled 200 for the wrong workspace must not be committed under the target'
+    ).toBeUndefined()
+    expect(client.getSnapshot().phase).toBe('error')
+  })
+
   it('reports each scheduled outcome to the host hook, and only scheduled ones', async () => {
     const outcomes: string[] = []
     const fetchImpl = vi
