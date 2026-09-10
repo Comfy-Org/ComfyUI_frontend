@@ -12,6 +12,7 @@ import {
   DEFAULT_TEAM_MEMBERS,
   INACTIVE_TEAM_BILLING_STATUS,
   TEAM_BILLING_STATUS,
+  TEAM_MEMBER_WORKSPACE,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
@@ -59,6 +60,14 @@ const CANCELLED_ACTIVE_ENTERPRISE_STATUS = {
 
 const ENDING_SOON_ENTERPRISE_STATUS = {
   ...ACTIVE_ENTERPRISE_STATUS,
+  cancel_at: ENDING_SOON_CANCEL_AT,
+  subscription_status: 'canceled'
+} satisfies BillingStatusResponse
+
+// A cancelled self-serve team: unlike Enterprise there is no notice window,
+// so the ending banner shows as soon as the cancellation lands.
+const CANCELLED_TEAM_STATUS = {
+  ...TEAM_BILLING_STATUS,
   cancel_at: ENDING_SOON_CANCEL_AT,
   subscription_status: 'canceled'
 } satisfies BillingStatusResponse
@@ -399,5 +408,40 @@ test.describe('Unrecognized billing tier regression', { tag: '@cloud' }, () => {
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
     expect(pageErrors).toEqual([])
+  })
+})
+
+// FE-2036: the member ending variant is informational only — a heads-up, not
+// a call to action. Uses the same harness as the Enterprise cases above;
+// createWorkspaceBillingCapabilities resolves the member's capability set
+// (can_reactivate false) from the workspace role on its own.
+test.describe('Member ending banner', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
+  test('shows a team member the informational ending notice with no action', async ({
+    page
+  }) => {
+    const workspace = new CloudWorkspaceMockHelper(page)
+    await workspace.setup(
+      DEFAULT_TEAM_MEMBERS,
+      TEAM_MEMBER_WORKSPACE,
+      CANCELLED_TEAM_STATUS
+    )
+    await enableBillingControl(page)
+    const content = await workspace.openPlanAndCreditsSettings()
+
+    await expect(
+      content.getByText('Your team plan ends on', { exact: false })
+    ).toBeVisible()
+    await expect(
+      content.getByText('You can run workflows until then.')
+    ).toBeVisible()
+    // Not the owner variant: no Reactivate action, no owner body.
+    await expect(
+      content.getByRole('button', { name: 'Reactivate plan' })
+    ).toHaveCount(0)
+    await expect(
+      content.getByText('Reactivate to keep your shared credits and seats.')
+    ).toHaveCount(0)
   })
 })

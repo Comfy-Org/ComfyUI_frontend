@@ -54,10 +54,11 @@ export function deriveBillingBanner(
   if (inputs.isEnterprise) {
     if (!inputs.canAccessSubscriptionFeatures) return null
     if (!inputs.billingControlEnabled) return null
+    // The window is role-independent: members and owners see the notice on
+    // the same day, so nobody learns about the end date from the run lock.
     if (
       inputs.isCancelled &&
       inputs.endDate &&
-      inputs.canManage &&
       isWithinEnterpriseEndingNotice(inputs.endDate, now)
     ) {
       return 'ending'
@@ -83,7 +84,9 @@ export function deriveBillingBanner(
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
-  if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
+  // Members see the ending notice too, not just the owners who can act on
+  // it: better a heads-up now than a run lock on the end date.
+  if (inputs.isCancelled && inputs.endDate) {
     return 'ending'
   }
 

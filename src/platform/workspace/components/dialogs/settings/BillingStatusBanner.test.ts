@@ -143,6 +143,7 @@ const i18n = createI18n({
           ending: {
             title: 'Your team plan ends on {date}',
             body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
+            memberBody: 'You can run workflows until then.',
             enterpriseTitle: 'Your Enterprise plan ends on {date}',
             enterpriseBody:
               'Members keep full access until then. Reach out to our sales team to extend.',
@@ -388,7 +389,7 @@ describe('BillingStatusBanner', () => {
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
-  it('does not expose reactivation controls to a member', () => {
+  it('shows members the ending notice without reactivation controls', () => {
     state.subscription = {
       hasFunds: true,
       isCancelled: true,
@@ -397,12 +398,46 @@ describe('BillingStatusBanner', () => {
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canReactivate = false
+    // Pin the gate itself: a rail that resolves reactivation true still must
+    // not surface the action to a member.
+    state.canReactivatePlan = true
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your team plan ends on'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'You can run workflows until then.'
+    )
+    // The member notice is title and body only: no Reactivate, no dismiss.
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the ending banner non-dismissible for owners and members alike', () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    state.canReactivatePlan = true
+    const { unmount } = renderBanner()
+
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Reactivate plan' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss' })
     ).not.toBeInTheDocument()
+    unmount()
+
+    state.canManageSubscription = false
+    state.canManageSubscriptionLifecycle = false
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your team plan ends on'
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('hides reactivation when the server denies it to a client-side owner', () => {
@@ -467,6 +502,29 @@ describe('BillingStatusBanner', () => {
       expect(
         screen.queryByRole('button', { name: 'Reactivate plan' })
       ).not.toBeInTheDocument()
+    })
+
+    it('keeps members quiet outside the window too', () => {
+      enterpriseEndingIn(30)
+      state.canManageSubscription = false
+      renderBanner()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('gives members informational copy inside the window', () => {
+      enterpriseEndingIn(10)
+      state.canManageSubscription = false
+      state.canReactivatePlan = true
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Enterprise plan ends on'
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You can run workflows until then.'
+      )
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
     })
   })
 })

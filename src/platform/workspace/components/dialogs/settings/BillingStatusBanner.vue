@@ -154,11 +154,14 @@ const banner = computed<BannerView | null>(() => {
       // An Enterprise contract renews through sales, not self-serve
       // reactivation, so it gets its own copy and never a Reactivate action —
       // even where the legacy rail would resolve canReactivatePlan true.
+      // Members get informational copy on both rails, with no action to take.
       if (isEnterprisePlan.value) {
         return {
           muted: true,
           title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
-          body: t(`${bs}.ending.enterpriseBody`),
+          body: canManage.value
+            ? t(`${bs}.ending.enterpriseBody`)
+            : t(`${bs}.ending.memberBody`),
           action: null,
           dismissible: false
         }
@@ -166,8 +169,11 @@ const banner = computed<BannerView | null>(() => {
       return {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
-        body: t(`${bs}.ending.body`),
-        action: canReactivatePlan.value ? 'reactivate' : null,
+        body: canManage.value
+          ? t(`${bs}.ending.body`)
+          : t(`${bs}.ending.memberBody`),
+        action:
+          canManage.value && canReactivatePlan.value ? 'reactivate' : null,
         dismissible: false
       }
     default:
