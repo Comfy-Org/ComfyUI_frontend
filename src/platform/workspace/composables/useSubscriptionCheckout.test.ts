@@ -578,29 +578,32 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('emits preview_ready once per accepted quote revision', async () => {
-      mockPreviewSubscribe.mockResolvedValue({
+      const quote = (version: number) => ({
         allowed: true,
         transition_type: 'new_subscription',
         is_immediate: true,
         requires_reactivation_confirmation: false,
         quote_id: 'q1',
-        quote_version: 1
+        quote_version: version
       })
+      // First revision, then the same revision again (suppressed), then a new
+      // accepted revision (emitted): two preview_ready across three installs.
+      mockPreviewSubscribe.mockResolvedValueOnce(quote(1))
+      mockPreviewSubscribe.mockResolvedValueOnce(quote(1))
+      mockPreviewSubscribe.mockResolvedValueOnce(quote(2))
       const checkout = await setup()
 
-      await checkout.handleSubscribeClick({
-        tierKey: 'standard',
-        billingCycle: 'yearly'
-      })
-      await checkout.handleSubscribeClick({
-        tierKey: 'standard',
-        billingCycle: 'yearly'
-      })
+      for (let i = 0; i < 3; i++) {
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+      }
 
       const previews = journeyPhases().filter(
         (phase) => phase === 'preview_ready'
       )
-      expect(previews).toHaveLength(1)
+      expect(previews).toHaveLength(2)
     })
 
     it('does not re-enter when the same journey resumes', async () => {
@@ -622,10 +625,19 @@ describe('useSubscriptionCheckout', () => {
     it('records a correlated preview failure with no operation id', async () => {
       await submitRejectedPreview('PREVIEW_FAILED')
 
-      const phases = journeyPhases()
-      expect(phases).toContain('entered')
-      expect(phases).toContain('preview_failed')
-      expect(phases).not.toContain('operation_linked')
+      const events = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event
+      )
+      const entered = events.find((event) => event.phase === 'entered')
+      const failed = events.find((event) => event.phase === 'preview_failed')
+      expect(entered).toBeDefined()
+      expect(failed).toBeDefined()
+      expect(events.some((event) => event.phase === 'operation_linked')).toBe(
+        false
+      )
+      // The failure must carry the entered journey's identity and no operation.
+      expect(failed.checkout_journey_id).toBe(entered.checkout_journey_id)
+      expect('billing_op_id' in failed).toBe(false)
     })
   })
 
