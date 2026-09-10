@@ -3,7 +3,6 @@ import { ChevronRight } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { groupModels } from '../../config/model-family'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -26,7 +25,6 @@ const inSection = ref(false)
 // only they need a way through to all of it.
 const browseAll = ref(false)
 const offersBrowseAll = computed(() => version.value === 'v1.1')
-const total = computed(() => groupModels(models).length)
 </script>
 
 <template>
@@ -41,12 +39,11 @@ const total = computed(() => groupModels(models).length)
         <button
           v-if="offersBrowseAll"
           type="button"
-          class="group hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl border border-transparency-white-t20 px-5 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3 max-sm:w-full max-sm:justify-center"
+          class="group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-base font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
           data-testid="browse-all"
           @click="browseAll = true"
         >
           {{ t('workshop.sections.browseAll', locale) }}
-          <span class="text-primary-warm-gray tabular-nums">{{ total }}</span>
           <ChevronRight
             class="size-4 transition-transform group-hover:translate-x-0.5"
             aria-hidden="true"

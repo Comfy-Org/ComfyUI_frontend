@@ -85,7 +85,7 @@ const fill = computed(() =>
   >
     <a
       :href="active.model.href"
-      class="group short:h-84 block h-112"
+      class="group short:h-84 sm:short:h-80 block h-112"
       data-testid="featured-slide"
     >
       <img
@@ -102,7 +102,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="relative flex h-full flex-col justify-end gap-4 p-8 pb-20 sm:max-w-2xl sm:justify-center lg:p-12 lg:pb-20"
+        class="sm:short:pb-16 lg:short:p-8 lg:short:pb-16 relative flex h-full flex-col justify-end gap-4 p-8 pb-20 sm:max-w-2xl sm:justify-center lg:p-12 lg:pb-20"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
@@ -125,7 +125,7 @@ const fill = computed(() =>
 
         <p
           v-if="active.model.summary"
-          class="text-content-secondary line-clamp-3 max-w-prose"
+          class="text-content-secondary line-clamp-3 max-w-prose sm:line-clamp-2"
         >
           {{ active.model.summary }}
         </p>

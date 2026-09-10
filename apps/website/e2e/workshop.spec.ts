@@ -127,23 +127,20 @@ test.describe('Workshop catalog', () => {
 
   test('the rows listing opens the whole catalogue', async ({ page }) => {
     await page.goto('/models/')
-    const browseAll = page.getByTestId('browse-all')
-    const promisedCount = Number(
-      (await browseAll.innerText()).match(/\d+/)?.[0]
-    )
-    expect(promisedCount).toBeGreaterThan(0)
-
-    await browseAll.click()
+    await page.getByTestId('browse-all').click()
 
     await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toContainText('All models')
+    const promisedCount = Number(
+      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
+    )
+    expect(promisedCount).toBeGreaterThan(0)
     await expect(
       page
         .getByTestId('workshop-models-grid')
         .getByTestId('workshop-model-card')
     ).toHaveCount(promisedCount)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'All models'
-    )
 
     await page.getByTestId('section-back').click()
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
