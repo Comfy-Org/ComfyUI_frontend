@@ -1,24 +1,28 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
-const mockIsPackInstalled = vi.fn()
-const mockGetConflictsForPackageByID = vi.fn()
+let mockIsPackInstalled: MockedFunction<
+  ReturnType<typeof useComfyManagerStore>['isPackInstalled']
+>
+let mockGetConflictsForPackageByID: MockedFunction<
+  ReturnType<typeof useConflictDetectionStore>['getConflictsForPackageByID']
+>
 const mockShow = vi.fn()
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
-  })
-}))
-vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
-  useConflictDetectionStore: () => ({
+beforeEach(() => {
+  mockIsPackInstalled = vi.mocked(useComfyManagerStore().isPackInstalled)
+  mockGetConflictsForPackageByID = vi.fn()
+  Object.assign(useConflictDetectionStore(), {
     getConflictsForPackageByID: mockGetConflictsForPackageByID
   })
-}))
-vi.mock(
-  '@/workbench/extensions/manager/composables/useImportFailedNodeDialog',
+})
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useImportFailedNodeDialog'),
   () => ({
     useImportFailedNodeDialog: () => ({
       show: mockShow

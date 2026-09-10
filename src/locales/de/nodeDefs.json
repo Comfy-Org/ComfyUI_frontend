@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Hängt einem Video-latent detaillierende Keyframes an. Jedes Keyframe besteht aus einem latent-Frame von Tokens, dessen RoPE-Position einen einzelnen Pixelframe abdeckt; sie werden zusammen mit dem Video entrauscht und sind nicht Teil der dekodierten Ausgabe. Die Platzierung erfolgt mit einem Slot pro interval_frames Pixel, wobei I2V-Frames, vorhandene Guides und bereits an die Konditionierung angehängte detaillierende Keyframes übersprungen werden. Verbundene Keyframes sind nur Inhalt und werden auf diesem Canvas neu platziert, sofern frame_indices nicht festgelegt ist. Extrahieren Sie sie mit LTXV Separate Generated Keyframes wieder. Erfordert einen für generierte Keyframes trainierten Checkpoint (mit keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Generierte Keyframes hinzufügen",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Optionale Pixelframe-Indizes. Lassen Sie dieses Feld leer, um anhand von interval_frames auf dem aktuellen Canvas zu platzieren. Wenn festgelegt, bestimmt diese Liste die Platzierung (verbundene Keyframes werden der Reihe nach zugeordnet). Der letzte Frame ist zulässig; Frame 0 nicht (er ist bereits ein eigenständiges Token)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Pixelframe-Schrittweite für die automatische Platzierung. Der Standardwert 24 entspricht bei 24 fps etwa einem Keyframe pro Sekunde. Belegte Pixel werden übersprungen. Wird ignoriert, wenn frame_indices festgelegt ist."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optionaler Inhalt zur Initialisierung der neuen Keyframes. Verbinden Sie Keyframes aus einem früheren Separate (gleiche räumliche Größe) oder ein einfaches Video-latent, um an jedem neuen Slot den nächstgelegenen Frame zu kopieren (z. B. nach temporalem Upscale). Diese werden weiterhin entrauscht und nicht als Guides fixiert. Auf einem Keyframes-latent gespeicherte Indizes werden ignoriert, sofern frame_indices nicht festgelegt ist. Hat nur Wirkung, wenn das Sampling unterhalb von Sigma 1 beginnt."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Einfaches 5D-Video-latent, für das parallel Keyframes generiert werden. Fügen Sie sie vor Concat AV Latent hinzu."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative Konditionierung, an die die Keyframes angehängt werden."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Positive Konditionierung, an die die Keyframes angehängt werden."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Wird nur zum Lesen der latent-Skalierungsfaktoren verwendet."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positive Konditionierung mit angehängter Attention für generierte Keyframes."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negative Konditionierung mit angehängter Attention für generierte Keyframes."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video-latent mit an T angehängten generierten Keyframes."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9748,6 +9796,55 @@
       },
       "1": {
         "name": "Negativ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "Fixiert ein bereits kodiertes latent als Guide, wenn der Guide aus einer früheren Stufe statt aus einem Bild stammt. Gleiche Wirkung wie LTXV Add Guide ohne den VAE-Dekodierungs-/Kodierungsdurchlauf. Ein räumlich kleinerer Guide als das Ziel (eine IC-LoRA- oder Detaillierungsreferenz) wird auf ein dünnes Raster erweitert, und seine RoPE-Endpositionen werden um denselben Faktor erweitert, sodass er den Ziel-Canvas abdeckt, statt nur dessen obere linke Ecke anzusprechen.",
+    "display_name": "LTXV Latent-Guide hinzufügen",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optionale räumliche Maske im Pixelraum. Steuert den Einfluss der Konditionierung pro Region über Self-Attention, multipliziert mit strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Guide-latent. Seine räumliche Größe muss die des Ziels auf beiden Achsen durch dieselbe ganze Zahl teilen; bei gleicher Größe wird es unverändert fixiert, bei halber Größe als x2-IC-LoRA-Referenz behandelt."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Ziel-Video-latent, auf dem der Guide fixiert wird."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Latent-Frame-Index, an dem der Guide beginnen soll; er wird in latent-Frames statt in Pixelframes gezählt. Negative Werte platzieren den Guide auf Frames vor dem Beginn des latent und werden nicht vom Ende zurückgezählt."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Auf 1.0 begrenzt. Ein erweiterter Guide markiert seine Padding-Positionen mit einer negativen Denoising-Maske, sodass das Modell sie verwirft; über 1.0 würden auch die beibehaltenen Positionen negativ und der gesamte Guide würde verworfen. Verstärken Sie über 1.0 stattdessen mit attention_mask."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       },
       "2": {
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Setzt noise_mask auf 0, damit dieses Latent beim Sampling sauber bleibt. Funktioniert mit Video oder Audio. Typische Anwendungen: Audio vor Concat AV einfrieren, damit es nur Cross-Attention bereitstellt, oder jedes Latent einfrieren, das nicht entrauscht werden soll.",
+    "display_name": "LTXV Latent einfrieren",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Einzufrierendes Video- oder Audio-Latent. Audio ist 4D, Video ist 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fixiert generierte Keyframes aus einer früheren Phase als eingefrorene Bild-Guides auf einem späteren Canvas. Sie werden als eigenständige Frames decodiert, bei Bedarf skaliert und mit noise_mask=0 geschrieben, damit sie nicht erneut entrauscht werden. Nach einem zeitlichen Upscale werden aufgezeichnete Indizes vom Canvas, auf dem sie generiert wurden, auf diesen skaliert (gleiche Zeitpunkte). Verwenden Sie override_frame_indices, um Positionen explizit festzulegen. Um Keyframes an neuen Positionen weiter zu generieren (und zu entrauschen), verwenden Sie stattdessen Add Generated Keyframes.",
+    "display_name": "LTXV Generierte Keyframes zu Guides",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Die Keyframes-Ausgabe von LTXV Separate Generated Keyframes, die den Pixel-Frame-Index enthält, an dem jeder Keyframe generiert wurde."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Das Ziel-Video-Latent, dem die Guides hinzugefügt werden, z. B. das zeitlich hochskalierte."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Optional — fixiert an diesen Pixel-Frames statt an den aufgezeichneten (oder automatisch skalierten) Positionen. Geben Sie einen Index pro Keyframe an. Leer lassen, um aufgezeichnete Positionen wiederzuverwenden oder sie zu skalieren, wenn der Ziel-Canvas eine andere Länge hat (z. B. nach zeitlichem x2)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Guide-Stärke. 1.0 ist eine feste Fixierung; niedrigere Werte lockern sie."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positives Conditioning mit als Bild-Guides fixierten Keyframes."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negatives Conditioning mit als Bild-Guides fixierten Keyframes."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Ziel-Video-Latent mit den als eingefrorene Guides hinzugefügten Keyframes."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Trennt die von LTXV Add Generated Keyframes hinzugefügten generierten Keyframes wieder aus einem gesampelten Latent und entfernt sie aus dem Conditioning. Trennen Sie sie vor dem räumlichen Upscale des Video-Latents. Führen Sie nicht zuerst LTXV Crop Guides aus — es behandelt generierte Keyframes als entbehrliche Guides und verwirft sie.",
+    "display_name": "LTXV Generierte Keyframes trennen",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Gibt die Keyframes als Batch von Einzel-Frame-Latents zurück. Deaktiviert lassen, um sie als ein Multi-Frame-Latent zu erhalten, was der Latent-Upsampler und ein späteres Add Generated Keyframes erwarten."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Positives Conditioning, aus dem Metadaten generierter Keyframes entfernt wurden."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Negatives Conditioning, aus dem Metadaten generierter Keyframes entfernt wurden."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Video-Latent, aus dem die generierten Keyframes entfernt wurden."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Die extrahierten Keyframes, gekennzeichnet mit generated_keyframe_indices und generated_keyframe_num_frames. Übergeben Sie diese an ein späteres Add Generated Keyframes, um neue Slots zu initialisieren, oder an Generated Keyframes To Guides, um sie als eingefrorene Bild-Guides zu fixieren (Indizes werden neu zugeordnet, wenn sich die Canvas-Länge geändert hat)."
       }
     }
   },
@@ -16705,6 +16900,45 @@
       },
       "1": {
         "name": "Negativ",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Multi-View-Conditioning",
+    "inputs": {
+      "back": {
+        "name": "Rückseite",
+        "tooltip": "Quadratische Ansicht der Rückseite des Objekts, mit Alpha oder auf schwarzem Hintergrund, wie das Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Bildausschnitts ein, in jeder Ansicht derselbe Maßstab. Die erste verbundene Ansicht (Reihenfolge: vorne, links, hinten, rechts) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision mit integrierten NAF-Gewichtungen."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Horizontaler FOV in Grad der Ansichten, wie gerahmt: 20 für Rig-Renderings und die meisten Mehransichtsgeneratoren oder MoGeGeometryToFOV bei einer der Ansichten für Fotos."
+      },
+      "front": {
+        "name": "Vorderseite",
+        "tooltip": "Quadratische Ansicht der Vorderseite des Objekts, mit Alpha oder auf schwarzem Hintergrund, wie das Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Bildausschnitts ein, in jeder Ansicht derselbe Maßstab. Die erste verbundene Ansicht (Reihenfolge: vorne, links, hinten, rechts) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      },
+      "left": {
+        "name": "links",
+        "tooltip": "Quadratische Ansicht der linken Seite des Objekts, mit Alpha oder auf schwarzem Hintergrund, wie das Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Bildausschnitts ein, in jeder Ansicht derselbe Maßstab. Die erste verbundene Ansicht (Reihenfolge: vorne, links, hinten, rechts) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      },
+      "right": {
+        "name": "rechts",
+        "tooltip": "Quadratische Ansicht der rechten Seite des Objekts, mit Alpha oder auf schwarzem Hintergrund, wie das Rig gerahmt: Das Objekt nimmt an seiner breitesten Stelle etwa 1/1.1 des Bildausschnitts ein, in jeder Ansicht derselbe Maßstab. Die erste verbundene Ansicht (Reihenfolge: vorne, links, hinten, rechts) ist die Vorderseite, auf die das Mesh ausgerichtet wird."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativ",
         "tooltip": null
       }
     }

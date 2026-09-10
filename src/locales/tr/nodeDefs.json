@@ -9706,6 +9706,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Bir video latent'ine ayrıntılandırma anahtar kareleri ekler. Her anahtar kare, RoPE konumu tek bir piksel karesini kapsayan token'lardan oluşan bir latent karedir; video ile birlikte gürültüsü giderilir ve kodu çözülmüş çıktının parçası değildir. Yerleştirme, I2V kareleri, mevcut kılavuzlar ve cond üzerindeki mevcut ayrıntılandırma anahtar kareleri atlanarak her interval_frames pikselde bir yuvaya yapılır. Bağlı anahtar kareler yalnızca içeriktir ve frame_indices ayarlanmadıkça bu tuvale yeniden yerleştirilir. Bunları LTXV Separate Generated Keyframes ile geri çıkarın. Oluşturulan anahtar kareler için eğitilmiş bir checkpoint (keyframes_abs_pos_embedding taşıyan) gerektirir.",
+    "display_name": "LTXV Oluşturulan Anahtar Kareleri Ekle",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "İsteğe bağlı piksel kare indeksleri. Geçerli tuvalde interval_frames ile yerleştirmek için boş bırakın. Ayarlandığında bu liste yerleştirmeyi belirler (bağlı anahtar kareler sırayla eşleştirilir). Son kareye izin verilir; kare 0'a verilmez (zaten bağımsız bir token'dır)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Otomatik yerleştirme için piksel kare adımı. Varsayılan 24, 24 fps'de saniyede yaklaşık bir anahtar karedir. Dolu konumlar atlanır. frame_indices ayarlandığında yok sayılır."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Yeni anahtar kareleri başlatmak için isteğe bağlı içerik. Önceki bir Separate'ten anahtar kareleri (aynı uzamsal boyut) bağlayın veya her yeni yuvada en yakın kareyi kopyalamak için düz bir video latent'i bağlayın (ör. zamansal büyütmeden sonra). Bunların gürültüsü yine giderilir, kılavuz olarak sabitlenmezler. Bir keyframes latent'indeki kaydedilmiş indeksler, frame_indices ayarlanmadıkça yok sayılır. Yalnızca örnekleme sigma 1'in altında başladığında etkili olur."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Yanında anahtar kareler oluşturulacak düz 5B video latent'i. Bunları Concat AV Latent'ten önce ekleyin."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Anahtar karelerin bağlandığı negatif koşullandırma."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Anahtar karelerin bağlandığı pozitif koşullandırma."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Yalnızca latent ölçek faktörlerini okumak için kullanılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Oluşturulan anahtar kare dikkati eklenmiş pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Oluşturulan anahtar kare dikkati eklenmiş negatif koşullandırma."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T'ye oluşturulan anahtar kareler eklenmiş video latent'i."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVRehberEkle",
     "inputs": {
@@ -9752,6 +9800,55 @@
       },
       "2": {
         "name": "gizli",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "Zaten kodlanmış bir latent'i, kılavuzun görüntü yerine önceki bir aşamadan geldiği durumlar için kılavuz olarak sabitler. VAE kod çözme/kodlama dönüşü olmadan LTXV Add Guide ile aynı etkiyi sağlar. Hedeften uzamsal olarak daha küçük olan bir kılavuz (bir IC-LoRA veya ayrıntılandırma referansı) seyrek bir ızgaraya genişletilir ve RoPE bitiş konumları aynı oranla genişletilir; böylece yalnızca sol üst köşesini adreslemek yerine hedef tuvali kapsar.",
+    "display_name": "LTXV Latent Kılavuzu Ekle",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "İsteğe bağlı piksel uzayında uzamsal mask. strength ile çarpılan öz-dikkat aracılığıyla bölge başına koşullandırma etkisini kontrol eder."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Kılavuz latent'i. Uzamsal boyutu, her iki eksende de hedef boyutunu aynı tam sayıya bölmelidir; eşit boyut olduğu gibi sabitler, yarı boyut x2 IC-LoRA referansı olarak değerlendirilir."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Kılavuzun sabitlendiği hedef video latent'i."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Kılavuzun başlayacağı latent kare indeksi; piksel kareleri yerine latent karelerde sayılır. Negatif değerler, kılavuzu latent'in başlangıcından önceki karelere yerleştirir; sonundan geriye doğru sayılmaz."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "1.0 ile sınırlandırılır. Genişletilmiş bir kılavuz, modelin bunları bırakması için dolgu konumlarını negatif bir gürültü giderme maskesiyle işaretler; 1.0'ın üzerinde tutulan konumlar da negatife döner ve kılavuzun tamamı bırakılır. Bunun yerine attention_mask ile 1.0'ın üzerine yükseltin."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -10018,6 +10115,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask değerini 0 olarak ayarlayın; böylece bu latent örnekleme sırasında temiz tutulur. Video veya ses için çalışır. Tipik kullanım alanları: Concat AV öncesinde sesi dondurarak yalnızca çapraz dikkat sağlamasını sağlamak ya da gürültüsü giderilmemesi gereken herhangi bir latent'i dondurmak.",
+    "display_name": "LTXV Latent'i Dondur",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Dondurulacak video veya ses latent'i. Ses 4B'dir; video 5B'dir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Önceki bir aşamada oluşturulan anahtar kareleri, sonraki bir tuvalde dondurulmuş görüntü kılavuzları olarak sabitleyin. Bunlar bağımsız kareler olarak kodu çözülür, gerekirse yeniden boyutlandırılır ve yeniden gürültü giderilmemeleri için noise_mask=0 ile yazılır. Zamansal yükseltmeden sonra kaydedilen indisler, oluşturuldukları tuvalden bu tuvale ölçeklendirilir (aynı anlar). Konumları açıkça ayarlamak için override_frame_indices kullanın. Yeni konumlarda anahtar kare oluşturmaya (ve gürültü gidermeye) devam etmek için bunun yerine LTXV Oluşturulan Anahtar Kareleri Ekle kullanın.",
+    "display_name": "LTXV Oluşturulan Anahtar Kareleri Kılavuzlara Dönüştür",
+    "inputs": {
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Her anahtar karenin oluşturulduğu piksel kare indeksini taşıyan LTXV Oluşturulan Anahtar Kareleri Ayır çıktısı."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Kılavuzların ekleneceği hedef video latent'i; örneğin zamansal olarak yükseltilmiş olan."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "İsteğe bağlı — kaydedilen (veya otomatik ölçeklenen) konumlar yerine bu piksel karelerine sabitleyin. Her anahtar kare için bir indeks sağlayın. Kaydedilen konumları yeniden kullanmak veya hedef tuval farklı uzunluktaysa (ör. temporal x2 sonrasında) bunları ölçeklendirmek için boş bırakın."
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Kılavuz gücü. 1.0 kesin bir sabitlemedir; daha düşük değerler bunu gevşetir."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": "Anahtar karelerin görüntü kılavuzları olarak sabitlendiği pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": "Anahtar karelerin görüntü kılavuzları olarak sabitlendiği negatif koşullandırma."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Anahtar karelerin dondurulmuş kılavuzlar olarak eklendiği hedef video latent'i."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVGörüntüdenVideoya",
     "inputs": {
@@ -10245,6 +10403,43 @@
       "1": {
         "name": "audio_latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Oluşturulan Anahtar Kareleri Ekle tarafından eklenen oluşturulmuş anahtar kareleri örneklenmiş bir latent'ten ayırın ve bunları koşullandırmadan kaldırın. Video latent'ini uzamsal olarak yükseltmeden önce ayırın. Önce LTXV Kılavuzları Kırp çalıştırmayın — oluşturulmuş anahtar kareleri atılabilir kılavuzlar olarak ele alır ve kaldırır.",
+    "display_name": "LTXV Oluşturulan Anahtar Kareleri Ayır",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Anahtar kareleri tek kareli latent'lerden oluşan bir batch olarak döndürün. Bunları tek bir çok kareli latent olarak almak için kapalı bırakın; latent yükseltici ve daha sonraki bir LTXV Oluşturulan Anahtar Kareleri Ekle işlemi bunu bekler."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": "Oluşturulan anahtar kare meta verileri kaldırılmış pozitif koşullandırma."
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": "Oluşturulan anahtar kare meta verileri kaldırılmış negatif koşullandırma."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Oluşturulan anahtar kareleri çıkarılmış video latent'i."
+      },
+      "3": {
+        "name": "anahtar kareler",
+        "tooltip": "generated_keyframe_indices ve generated_keyframe_num_frames ile etiketlenmiş, ayrılan anahtar kareler. Yeni yuvaları başlatmak için bunları daha sonraki bir LTXV Oluşturulan Anahtar Kareleri Ekle işlemine veya dondurulmuş görüntü kılavuzları olarak sabitlemek için Oluşturulan Anahtar Kareleri Kılavuzlara Dönüştür işlemine verin (tuval uzunluğu değiştiyse indisler yeniden eşlenir)."
       }
     }
   },
@@ -16696,6 +16891,45 @@
       "image": {
         "name": "görüntü",
         "tooltip": "ImageCropToMask'ten ön işlenmiş görüntü (Pixal3D için pad_factor=1.1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Çoklu Görünüm Koşullandırma",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "Nesnenin arka yüzünün kare görünümü; alfa ile veya siyah arka plan üzerinde, rig gibi kadrajlanmış: nesne en geniş noktasında karenin yaklaşık 1/1.1'ini kaplar ve her görünümde aynı ölçektedir. Bağlanan ilk görünüm (front, left, back, right sırası) mesh'in pozlandığı öndür."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "Birlikte sunulan NAF ağırlıklarına sahip DINOv3 ViT-L/16 ClipVision."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Görünümler kadrajlandığı şekilde yatay FOV, derece cinsinden: rig renderları ve çoğu çoklu görünüm oluşturucusu için 20; fotoğraflarda ise görünümlerden birinde MoGeGeometryToFOV kullanın."
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "Nesnenin ön yüzünün kare görünümü; alfa ile veya siyah arka plan üzerinde, rig gibi kadrajlanmış: nesne en geniş noktasında karenin yaklaşık 1/1.1'ini kaplar ve her görünümde aynı ölçektedir. Bağlanan ilk görünüm (front, left, back, right sırası) mesh'in pozlandığı öndür."
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "Nesnenin sol yüzünün kare görünümü; alfa ile veya siyah arka plan üzerinde, rig gibi kadrajlanmış: nesne en geniş noktasında karenin yaklaşık 1/1.1'ini kaplar ve her görünümde aynı ölçektedir. Bağlanan ilk görünüm (front, left, back, right sırası) mesh'in pozlandığı öndür."
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "Nesnenin sağ yüzünün kare görünümü; alfa ile veya siyah arka plan üzerinde, rig gibi kadrajlanmış: nesne en geniş noktasında karenin yaklaşık 1/1.1'ini kaplar ve her görünümde aynı ölçektedir. Bağlanan ilk görünüm (front, left, back, right sırası) mesh'in pozlandığı öndür."
       }
     },
     "outputs": {
