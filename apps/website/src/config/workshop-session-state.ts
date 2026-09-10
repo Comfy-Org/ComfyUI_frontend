@@ -19,7 +19,10 @@ import type { EffectScope } from 'vue'
 import type { AccountCredential } from '@comfyorg/account/session'
 
 import { useWorkshopAuthFlag } from '../scripts/posthog'
-import { workshopSessionClient } from './workshop-account'
+import {
+  subscribeAuthRefreshTelemetry,
+  workshopSessionClient
+} from './workshop-account'
 
 export type {
   AccountCredential as WorkshopSession,
@@ -34,6 +37,7 @@ let lifecycle: EffectScope | undefined
 let generation = 0
 let detachIdentity: (() => void) | undefined
 let stopSnapshot: (() => void) | undefined
+let stopTelemetry: (() => void) | undefined
 let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
@@ -41,6 +45,8 @@ function stopListeners(): void {
   detachIdentity = undefined
   stopSnapshot?.()
   stopSnapshot = undefined
+  stopTelemetry?.()
+  stopTelemetry = undefined
   stopFocusListener?.()
   stopFocusListener = undefined
 }
@@ -58,6 +64,9 @@ async function begin(expectedGeneration: number): Promise<void> {
   detachIdentity = workshopSessionClient.attachIdentity(
     firebase.workshopIdentity
   )
+  // Auth-refresh telemetry now starts and stops with this lifecycle instead of
+  // at module load; credits/billing stay a separate consumer.
+  stopTelemetry = subscribeAuthRefreshTelemetry()
 
   const onFocus = () => void workshopSessionClient.ensureFresh()
   window.addEventListener('focus', onFocus)

@@ -24,7 +24,7 @@ const STORAGE_KEY = 'comfy.workshop.session.v1'
 const storage = {
   read(): string | null {
     try {
-      return globalThis.sessionStorage?.getItem(STORAGE_KEY) ?? null
+      return globalThis.sessionStorage.getItem(STORAGE_KEY)
     } catch {
       // Storage that throws outright (cookies disabled) behaves as no cache.
       return null
@@ -32,14 +32,14 @@ const storage = {
   },
   write(value: string): void {
     try {
-      globalThis.sessionStorage?.setItem(STORAGE_KEY, value)
+      globalThis.sessionStorage.setItem(STORAGE_KEY, value)
     } catch {
       // A session that only lives in memory still works for this page.
     }
   },
   clear(): void {
     try {
-      globalThis.sessionStorage?.removeItem(STORAGE_KEY)
+      globalThis.sessionStorage.removeItem(STORAGE_KEY)
     } catch {
       // Nothing to clear if storage is unavailable.
     }
@@ -59,22 +59,24 @@ export const workshopSessionClient: SessionClient<User> =
  * credential) and permanent_failure; the retry outcomes belong to cloud's
  * scheduler-based refresh.
  */
-let lastReportedToken: string | undefined
-workshopSessionClient.subscribe((snapshot) => {
-  if (snapshot.phase === 'authenticated') {
-    if (snapshot.session.token === lastReportedToken) return
-    lastReportedToken = snapshot.session.token
-    captureAuthRefreshSucceeded()
-    return
-  }
-  if (snapshot.phase === 'signed-out') {
-    lastReportedToken = undefined
-    return
-  }
-  if (
-    snapshot.phase === 'error' &&
-    isPermanentSessionError(snapshot.failure.code)
-  ) {
-    captureAuthRefreshFailed('permanent_failure')
-  }
-})
+export function subscribeAuthRefreshTelemetry(): () => void {
+  let lastReportedToken: string | undefined
+  return workshopSessionClient.subscribe((snapshot) => {
+    if (snapshot.phase === 'authenticated') {
+      if (snapshot.session.token === lastReportedToken) return
+      lastReportedToken = snapshot.session.token
+      captureAuthRefreshSucceeded()
+      return
+    }
+    if (snapshot.phase === 'signed-out') {
+      lastReportedToken = undefined
+      return
+    }
+    if (
+      snapshot.phase === 'error' &&
+      isPermanentSessionError(snapshot.failure.code)
+    ) {
+      captureAuthRefreshFailed('permanent_failure')
+    }
+  })
+}
