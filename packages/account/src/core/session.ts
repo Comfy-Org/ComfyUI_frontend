@@ -409,6 +409,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     }
   }
 
+  function persistCredential(
+    session: AccountCredential,
+    target: string | undefined
+  ): void {
+    safeWrite(JSON.stringify({ ...session, target }))
+  }
+
   function safeClear(): void {
     try {
       storage.clear()
@@ -464,8 +471,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     }
 
-    const startEpoch = identityEpoch
-    const startInvalidation = invalidationEpoch
     const controller = new AbortController()
     const abort = () => controller.abort()
     signal?.addEventListener('abort', abort, { once: true })
@@ -559,21 +564,9 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         role: parseResult.data.role,
         permissions: parseResult.data.permissions
       }
-      // The cache write consults the identity epoch like the in-memory
-      // commit does: a mint outliving a sign-out, detach, or invalidation
-      // must not resurrect the session in persistent storage.
-      if (
-        identityEpoch === startEpoch &&
-        invalidationEpoch === startInvalidation
-      ) {
-        safeWrite(
-          JSON.stringify({
-            ...session,
-            target: workspaceId,
-            expires_at: parseResult.data.expires_at
-          })
-        )
-      }
+      // Storage is written only by a commit that won: a mint that lost
+      // the sequence race or outlived a sign-out must not leave its
+      // credential on disk for the next reload to serve.
       return { status: 'ok', session }
     } finally {
       clearTimeout(timeout)
@@ -777,6 +770,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       clearExpiry()
       credential = result.session
       failure = undefined
+      persistCredential(result.session, credentialTarget)
       publish()
       armScheduledRefresh(
         result.session.expiresAt,
@@ -859,6 +853,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       credential = result.session
       credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
+      persistCredential(result.session, credentialTarget)
       armScheduledRefresh(
         result.session.expiresAt,
         options.now?.() ?? clientOptions.now?.() ?? Date.now()
