@@ -69,14 +69,15 @@ useResizeObserver(descEl, ([entry]) => {
       class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none"
     />
     <!-- A video's poster stands in here; a <video> is not worth it at this
-    size. Narrower on phones, where the row runs the full page width. -->
+    size. Hidden on phones, where the row runs the full page width and the
+    text needs every column. -->
     <img
       v-if="row.media && (!row.media.isVideo || row.media.poster)"
       :src="row.media.isVideo ? row.media.poster : row.media.src"
       :alt="row.media.alt"
       loading="lazy"
       decoding="async"
-      class="aspect-16/10 w-28 shrink-0 self-start rounded-xl object-cover sm:w-36"
+      class="hidden aspect-16/10 w-36 shrink-0 self-start rounded-xl object-cover sm:block"
     />
 
     <div class="flex min-w-0 flex-1 flex-col gap-0.5">

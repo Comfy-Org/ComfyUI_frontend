@@ -77,8 +77,11 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
         {{ title }}
       </h2>
 
-      <div class="rounded-2xl border-2 border-white/20 p-2">
-        <div class="flex gap-0.5 overflow-clip rounded-lg">
+      <!-- Six chips outrun a phone viewport, so below sm the box spans the
+      card column and the chips wrap; from sm up it stays the inline
+      segmented control. -->
+      <div class="w-full rounded-2xl border-2 border-white/20 p-2 sm:w-auto">
+        <div class="flex flex-wrap justify-center gap-0.5 overflow-clip rounded-lg">
           <button
             v-for="tab in [
               { key: GALLERY_FILTER_ALL, label: allLabel ?? 'ALL' },
