@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
+import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
@@ -34,6 +35,18 @@ const capabilities = defineModel<string[]>('capabilities', { required: true })
 const open = ref(false)
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
+
+// With the keyboard up the sheet has to end where the keyboard starts, or the
+// phone scrolls the field itself out of sight to make room.
+const { height: screen, offsetTop: screenTop } = useVisualViewport()
+const sheetStyle = computed(() =>
+  screen.value === null
+    ? { bottom: '0' }
+    : {
+        height: `${screen.value}px`,
+        transform: `translateY(${screenTop.value}px)`
+      }
+)
 
 async function openSheet() {
   sheetOpen.value = true
@@ -174,7 +187,8 @@ const clearButtonClass =
 
     <Teleport v-if="sheetOpen" to="body">
       <div
-        class="bg-page fixed inset-0 z-50 flex flex-col sm:hidden"
+        class="bg-page fixed inset-x-0 top-0 z-50 flex flex-col sm:hidden"
+        :style="sheetStyle"
         role="dialog"
         aria-modal="true"
         :aria-label="t('workshop.search.label', locale)"

@@ -115,7 +115,7 @@ const chipClass = (selected: boolean) =>
       cn(
         'bg-page flex flex-col gap-5 p-4',
         variant === 'sheet'
-          ? 'flex-1 overflow-y-auto'
+          ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain'
           : 'absolute inset-x-0 top-full z-30 mt-2 rounded-2xl border border-transparency-white-t20 shadow-lg'
       )
     "
