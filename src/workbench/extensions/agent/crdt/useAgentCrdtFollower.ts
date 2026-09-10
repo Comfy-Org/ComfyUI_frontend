@@ -313,6 +313,10 @@ export function useAgentCrdtFollower(
   // the follower was actually offline, not just how long since mount.
   let lastActivityAt: number | null = null
   let reconnectAttempt = 0
+  // Subscription INTENT is set before `bridge.subscribe` and says nothing about
+  // whether the server ever answered. Only a confirmed binding has a connection
+  // to lose, so the reconnect legs gate on this instead.
+  let confirmedWorkflowId: string | null = null
   const markActivity = (): void => {
     lastActivityAt = performance.now()
   }
@@ -436,11 +440,13 @@ export function useAgentCrdtFollower(
       armStaleProbe()
       reconnectAttempt = 0
       markActivity()
+      confirmedWorkflowId = subscribedWorkflowId.value
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
+      confirmedWorkflowId = null
       clearStaleProbe()
       scheduleSubscribeRetry()
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -601,10 +607,10 @@ export function useAgentCrdtFollower(
     )
   }
   const onReconnected: EventListener = () => {
-    // Only a workflow already bound to this follower has a connection to
-    // lose; a reconnect firing before any subscribe intent exists is the
+    // Only a workflow whose subscribe the server CONFIRMED has a connection to
+    // lose; a reconnect before the first `doc_subscribed { ok: true }` is the
     // initial-open case, not a loss/recovery, and is not reported.
-    if (subscribedWorkflowId.value !== null) {
+    if (confirmedWorkflowId !== null) {
       reconnectAttempt += 1
       useTelemetry()?.trackAgentReconnectStarted({
         disconnect_class: 'socket_reconnect',
@@ -709,6 +715,7 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
+      confirmedWorkflowId = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false

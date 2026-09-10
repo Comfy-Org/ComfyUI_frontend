@@ -601,6 +601,17 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('does not report reconnect started for a subscribe the server never confirmed', () => {
+    const { unmount } = mountFollower('wf-1')
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    dispatchFrame('doc_subscribed', { ok: false })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('clears only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)
