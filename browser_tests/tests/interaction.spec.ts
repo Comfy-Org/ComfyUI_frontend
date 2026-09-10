@@ -14,9 +14,11 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
-test.beforeEach(async ({ comfyPage }) => {
+test.beforeEach(async ({ comfyPage, initialSettings }) => {
   // Wait for the legacy menu to appear and canvas to settle after layout shift.
-  await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  if (initialSettings['Comfy.UseNewMenu'] === 'Disabled') {
+    await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  }
   await comfyPage.nextFrame()
 })
 
@@ -879,11 +881,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
 
   test.describe('Restore all open workflows on reload', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     let workflowA: string
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -954,11 +957,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Restore workflow tabs after browser restart', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     let workflowA: string
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -1064,14 +1068,12 @@ test.describe('Load duplicate workflow', () => {
 test.describe('Viewport settings', () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.UseNewMenu': 'Top',
       'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
     }
   })
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 

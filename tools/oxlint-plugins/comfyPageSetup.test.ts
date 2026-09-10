@@ -171,7 +171,7 @@ describe('comfyPage rules', () => {
     expect(findings).toHaveLength(1)
   })
 
-  it('warns on startup and reset hooks, including custom test aliases', () => {
+  it('reports startup and reset hooks as errors, including custom test aliases', () => {
     const reported = settingsFindings.filter((finding) =>
       finding.filename?.endsWith('settings-hooks.spec.ts')
     )
@@ -179,11 +179,11 @@ describe('comfyPage rules', () => {
     expect(reported).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          severity: 'warning',
+          severity: 'error',
           message: expect.stringContaining('initialSettings')
         }),
         expect.objectContaining({
-          severity: 'warning',
+          severity: 'error',
           message: expect.stringContaining('teardown')
         })
       ])

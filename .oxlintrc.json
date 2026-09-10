@@ -186,7 +186,7 @@
     {
       "files": ["browser_tests/tests/**/*.spec.ts"],
       "rules": {
-        "comfy/prefer-initial-settings": "warn"
+        "comfy/prefer-initial-settings": "error"
       }
     },
     {
