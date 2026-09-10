@@ -187,9 +187,7 @@ export function useWorkflowPersistenceV2() {
   })
   onUserResolved((user) => {
     if (!isCloud) return
-    if (resolvedUserId !== null && resolvedUserId !== user.id) {
-      fenceIdentityChange()
-    }
+    if (resolvedUserId !== user.id) fenceIdentityChange()
     stopPendingWorkspaceReadinessWatcher()
     resolvedUserId = user.id
     setStorageIdentity(user.id)
