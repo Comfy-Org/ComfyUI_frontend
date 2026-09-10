@@ -128,6 +128,38 @@ describe('node shell state', () => {
     expect(node.title).toBe('Successor')
     expect(store.ownsNode(scope, node._state)).toBe(true)
   })
+
+  it('refuses a successor registered under a different id', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    const other = new LGraphNode('Other')
+    graph.add(other)
+    const scope = graphScopeOf(graph)
+    const priorState = node._state
+    const priorScope = node._graphScope
+
+    expect(other._state.id).not.toBe(node._state.id)
+    expect(adoptRegisteredNodeState(graph, node, other._state)).toBe(false)
+    expect(node._state).toBe(priorState)
+    expect(node._graphScope).toBe(priorScope)
+    expect(useNodeDataStore().ownsNode(scope, node._state)).toBe(true)
+  })
+
+  it('refuses a successor the store does not own', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    const scope = graphScopeOf(graph)
+    const priorState = node._state
+    const priorScope = node._graphScope
+    const unregistered = { ...priorState, title: 'Successor' }
+
+    expect(useNodeDataStore().ownsNode(scope, unregistered)).toBe(false)
+    expect(adoptRegisteredNodeState(graph, node, unregistered)).toBe(false)
+    expect(node._state).toBe(priorState)
+    expect(node._graphScope).toBe(priorScope)
+  })
 })
 
 describe('node registration invariants', () => {
