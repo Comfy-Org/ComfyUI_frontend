@@ -16,13 +16,17 @@ const config: KnipConfig = {
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{css,js,mdx,ts,vue}',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
         '!src/__ecs_matrix__/**'
       ],
-      ignore: ['scripts/registry-census/detection-proof/**']
+      ignore: [
+        'public/materialdesignicons.min.css',
+        'scripts/registry-census/detection-proof/**',
+        'src/assets/splash.css'
+      ]
     },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
