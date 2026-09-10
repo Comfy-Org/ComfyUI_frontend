@@ -90,12 +90,8 @@ function retireAgentSubgraphDefinitions(graph: MaterializableGraph): void {
   reportedDefinitionFailures.delete(rootGraph)
   if (!ids?.size) return
 
-  const subgraphs = [...ids].flatMap((id) => {
-    const subgraph = rootGraph.subgraphs.get(id)
-    return subgraph ? [subgraph] : []
-  })
   try {
-    rootGraph.releaseSubgraphs(subgraphs)
+    retireWithHosts(graph, ids)
   } catch (cause) {
     // Extension removal hooks are outside this lifecycle's control. The graph
     // release finishes its own cleanup in `finally`; report the hook failure
@@ -116,6 +112,37 @@ function retireAgentSubgraphDefinitions(graph: MaterializableGraph): void {
       nodeDefStore.removeNodeDef(id)
     }
     ids.clear()
+  }
+}
+
+/**
+ * Tear down each retiring definition through its live root host, then release
+ * whatever is left over.
+ *
+ * `LGraph.remove()` already releases the definitions a removed `SubgraphNode`
+ * was the last instance of, and it reaches them through the host's retained
+ * `subgraph` pointer whether or not the definition is still registered on the
+ * root graph. Releasing first and sweeping the host afterwards therefore fires
+ * every interior `onRemoved` twice. Removing the host first makes host and
+ * definition teardown one lifecycle; only definitions no instance ever claimed
+ * still need a direct release.
+ */
+function retireWithHosts(graph: MaterializableGraph, ids: Set<string>): void {
+  const rootGraph = graph.rootGraph
+  const hosts = graph._nodes.filter(
+    (node) => node.isSubgraphNode() && ids.has(node.subgraph.id)
+  )
+  try {
+    for (const host of hosts) {
+      graph.remove(host, { preserveCanonicalState: true })
+    }
+  } finally {
+    rootGraph.releaseSubgraphs(
+      [...ids].flatMap((id) => {
+        const subgraph = rootGraph.subgraphs.get(id)
+        return subgraph ? [subgraph] : []
+      })
+    )
   }
 }
 
