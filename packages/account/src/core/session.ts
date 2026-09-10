@@ -111,16 +111,6 @@ export type SessionResult =
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
 
 /**
- * The identity boundary. An internal port, not a host adapter: real hosts
- * get their implementation from `@comfyorg/account/firebase`; tests brand a
- * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
- * the branded form.
- */
-export interface IdentityPort<TUser extends AccountUser = AccountUser> {
-  onUserChanged: (callback: (user: TUser | null) => void) => () => void
-}
-
-/**
  * Raw string storage for the credential cache. Hosts wrap their medium —
  * per-tab browser storage today, a cookie-backed session tomorrow. Each client
  * instance sees only its own storage: signing out in one tab leaves another
@@ -229,6 +219,11 @@ export function isCredentialFresh(
   return session.expiresAt - now > freshMarginMs
 }
 
+export interface MintHandle {
+  readonly mintId: number
+  readonly response: Promise<SessionResult>
+}
+
 /**
  * The status→code mapping from `requestToken`: 401/403/404 are permanent
  * failures with their own codes; everything else — 5xx, network failure,
@@ -262,8 +257,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         readonly promise: Promise<SessionResult>
         readonly uid: string
         readonly forced: boolean
+        readonly mintId: number
       }
     | undefined
+  let mintSequence = 0
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
@@ -368,41 +365,46 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     user: AccountUser,
     options: SessionRequestOptions,
     forced: boolean
-  ): Promise<SessionResult> {
+  ): MintHandle {
     if (
       inFlight !== undefined &&
       inFlight.uid === user.uid &&
       (!forced || inFlight.forced)
     ) {
-      return inFlight.promise
+      return { mintId: inFlight.mintId, response: inFlight.promise }
     }
+    const mintId = ++mintSequence
     const running = mint(user, options).finally(() => {
       if (inFlight?.promise !== running) return
       inFlight = undefined
     })
-    inFlight = { promise: running, uid: user.uid, forced }
-    return running
+    inFlight = { promise: running, uid: user.uid, forced, mintId }
+    return { mintId, response: running }
   }
 
   function ensureCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): Promise<SessionResult> {
+  ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
-    // The first FRESH credential wins, storage before memory: a stale stored
-    // record (a write that failed after a later mint) must not shadow the
-    // live one, and a host whose storage is blocked must not pay a full
-    // exchange on every read.
+    // Newest fresh credential wins: a remint whose storage write failed must
+    // not be shadowed by the older stored record it replaced.
     const fresh = [
-      readCached(user.uid),
-      credential?.uid === user.uid ? credential : undefined
-    ].find(
-      (candidate) =>
-        candidate !== undefined &&
-        isCredentialFresh(candidate, now, freshMarginMs)
-    )
+      credential?.uid === user.uid ? credential : undefined,
+      readCached(user.uid)
+    ]
+      .filter(
+        (candidate): candidate is AccountCredential =>
+          candidate !== undefined &&
+          isCredentialFresh(candidate, now, freshMarginMs)
+      )
+      .sort((a, b) => b.expiresAt - a.expiresAt)
+      .at(0)
     if (fresh) {
-      return Promise.resolve({ status: 'ok', session: fresh })
+      return {
+        mintId: mintSequence,
+        response: Promise.resolve({ status: 'ok', session: fresh })
+      }
     }
     return sharedMint(user, options, false)
   }
@@ -410,16 +412,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   function remintCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): Promise<SessionResult> {
+  ): MintHandle {
     safeClear()
     return sharedMint(user, options, true)
   }
 
   async function refreshWith(
-    core: (
-      user: AccountUser,
-      options: SessionRequestOptions
-    ) => Promise<SessionResult>,
+    core: (user: AccountUser, options: SessionRequestOptions) => MintHandle,
     requestedUser?: AccountUser,
     options: SessionRequestOptions = {}
   ): Promise<SessionResult | undefined> {
@@ -428,16 +427,26 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
 
     const startEpoch = identityEpoch
     const startedSignedOut = currentUser === null
+    const { mintId, response } = core(user, options)
     // A caller that joined an in-flight mint still gets its own signal
     // honored: the shared mint runs on, this caller stops waiting for it.
     let result: SessionResult
     try {
-      const response = core(user, options)
       result = options.signal
         ? await abortable(response, options.signal)
         : await response
     } catch {
       return { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    }
+    if (mintId !== mintSequence) {
+      if (
+        credential !== undefined &&
+        credential.uid === user.uid &&
+        currentUser?.uid === user.uid
+      ) {
+        return { status: 'ok', session: credential }
+      }
+      return undefined
     }
     if (identityEpoch !== startEpoch) {
       // The one mint allowed to cross an identity event: an explicit-user
@@ -480,7 +489,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         if (!active) return
         identityEpoch += 1
         identitySettled = true
-        if (!next || next.uid !== currentUser?.uid) abandonInFlight()
+        // A same-uid re-auth must not adopt a mint started under the prior identity.
+        abandonInFlight()
         currentUser = next
         credential = undefined
         failure = undefined

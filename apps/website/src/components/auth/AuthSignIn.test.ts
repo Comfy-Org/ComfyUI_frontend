@@ -452,6 +452,34 @@ describe('AuthSignIn', () => {
     expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
   })
 
+  it('skips telemetry and the session mint when the flag turns off while sign-in is pending', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePopup = resolve
+      })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolvePopup!({
+      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.captureAuthCompleted,
+      'a flag disabled mid-flight must stop post-auth telemetry'
+    ).not.toHaveBeenCalled()
+    expect(
+      handles.ensureFresh,
+      'and must not mint or persist a workspace session'
+    ).not.toHaveBeenCalled()
+  })
+
   it('keeps an email user signed in with the inline message when provisioning fails', async () => {
     const failure = {
       user: { uid: 'user-1', email: 'user@example.com', displayName: null }

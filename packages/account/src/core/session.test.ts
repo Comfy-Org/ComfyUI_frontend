@@ -442,6 +442,41 @@ describe('remint', () => {
     releaseForced(jsonResponse(200, mintBody({ token: 'forced-jwt' })))
     expect(await joinedForced).toEqual(await forced)
   })
+
+  it('does not republish or persist an older mint that lost to a forced remint', async () => {
+    let releaseOrdinary!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOrdinary = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'forced-jwt' }))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const forcedResult = await client.remint()
+    expect(forcedResult?.status === 'ok' && forcedResult.session.token).toBe(
+      'forced-jwt'
+    )
+    expect(client.getToken()).toBe('forced-jwt')
+
+    releaseOrdinary(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the older ordinary mint lost the race and must not republish its stale token'
+    ).toBe('forced-jwt')
+    expect(
+      JSON.parse(storage.read() ?? '{}').token,
+      'nor persist it over the winning remint'
+    ).toBe('forced-jwt')
+  })
 })
 
 describe('clearStoredCredential', () => {
@@ -552,6 +587,40 @@ describe('identity epochs', () => {
       'the old fetch was minted from the signed-out identity and must never become the new session'
     ).toBe('new-jwt')
   })
+
+  it('makes a same-uid re-auth mint afresh instead of adopting the in-flight mint', async () => {
+    let releaseOld!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOld = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'new-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() =>
+      expect(
+        fetchImpl,
+        'a same-uid re-auth must mint for itself, never adopt the prior in-flight mint'
+      ).toHaveBeenCalledTimes(2)
+    )
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    releaseOld(jsonResponse(200, mintBody({ token: 'old-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the pre-re-auth mint is from the prior identity event and must never win'
+    ).toBe('new-jwt')
+  })
 })
 
 describe('storage outage', () => {
@@ -610,6 +679,28 @@ describe('stale storage', () => {
       fetchImpl,
       'a readable-but-stale record must not shadow the live credential and re-mint on every read'
     ).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the live credential when a fresh but older stored record would otherwise shadow it', async () => {
+    const storage = memoryStorage()
+    const fetchImpl = okFetch('new-jwt')
+    const { client } = makeClient({ fetchImpl, storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    seedCache(storage, {
+      token: 'old-jwt',
+      expiresAt: Date.now() + 30 * 60 * 1000
+    })
+    await client.ensureFresh()
+
+    expect(
+      client.getToken(),
+      'a fresh-but-older stored write must not downgrade the live, newer credential'
+    ).toBe('new-jwt')
+    expect(JSON.parse(storage.read() ?? '{}').token).toBe('new-jwt')
   })
 })
 
