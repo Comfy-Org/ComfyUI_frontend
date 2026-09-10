@@ -137,30 +137,36 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
         stubs: {
           ...globalOptions.stubs,
           SubscriptionTermsNote: {
-            template: '<p data-testid="terms-note" />'
+            template: '<p>subscription.preview.termsNote</p>'
           },
           UnifiedStripePaymentSelector: {
             emits: ['providerUnreachableChange'],
             template: `<div>
-              <button data-testid="report-unreachable"
-                @click="$emit('providerUnreachableChange', true)" />
-              <button data-testid="report-recovered"
-                @click="$emit('providerUnreachableChange', false)" />
+              <button @click="$emit('providerUnreachableChange', true)">
+                report unreachable
+              </button>
+              <button @click="$emit('providerUnreachableChange', false)">
+                report recovered
+              </button>
             </div>`
           }
         }
       }
     })
 
-    expect(screen.getByTestId('terms-note')).toBeTruthy()
+    expect(screen.getByText('subscription.preview.termsNote')).toBeTruthy()
 
     // With no way to pay there is nothing to agree to.
-    await userEvent.click(screen.getByTestId('report-unreachable'))
-    expect(screen.queryByTestId('terms-note')).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'report unreachable' })
+    )
+    expect(screen.queryByText('subscription.preview.termsNote')).toBeNull()
 
     // A successful retry brings the form - and the agreement - back.
-    await userEvent.click(screen.getByTestId('report-recovered'))
-    expect(screen.getByTestId('terms-note')).toBeTruthy()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'report recovered' })
+    )
+    expect(screen.getByText('subscription.preview.termsNote')).toBeTruthy()
   })
 
   it('submits a zero-dollar quote without mounting Stripe Elements', async () => {

@@ -88,6 +88,8 @@ import type {
 } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import { reportError } from '@/platform/telemetry/reportError'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -155,7 +157,8 @@ async function initializeStripe() {
     // re-injects the script on the next call, so a later retry is a real
     // re-attempt, not a replay of the cached rejection.
     stripe = await loadStripe(publishableKey)
-  } catch {
+  } catch (loadError) {
+    reportError(loadError, { errorType: 'stripe_provider_unreachable' })
     markProviderUnreachable()
     return
   }
@@ -164,8 +167,17 @@ async function initializeStripe() {
     markProviderUnreachable()
     return
   }
+  try {
+    createAndMountPaymentElement(stripe, paymentElementTarget.value)
+  } catch (mountError) {
+    reportError(mountError, { errorType: 'stripe_provider_unreachable' })
+    markProviderUnreachable()
+    return
+  }
   providerUnreachable.value = false
+}
 
+function createAndMountPaymentElement(stripe: Stripe, target: HTMLDivElement) {
   stripeElements.value = stripe.elements({
     mode: 'subscription',
     amount: amountCents,
@@ -229,17 +241,36 @@ async function initializeStripe() {
     // card mandate text would say it twice.
     terms: { card: 'never' }
   })
-  paymentElement.mount(paymentElementTarget.value)
+  paymentElement.mount(target)
   // Method-specific notes (e.g. the Alipay auto-renewal disclosure) key off
   // whichever payment method the user has selected inside the element.
   paymentElement.on('change', (event) => {
     selectedMethodType.value = event.value?.type ?? ''
   })
   // The element's iframe can fail to load even when the SDK script made it
-  // through (partial blocking); that is still a mount-time provider outage.
-  paymentElement.on('loaderror', () => {
-    if (!isUnmounted) markProviderUnreachable()
+  // through. The event's error says whose fault: invalid_request_error means
+  // our element options or method configuration — the ad-blocker story would
+  // be false and retry would loop, so that lands on the configuration error.
+  // Everything else is a mount-time provider outage with a real retry.
+  paymentElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    if (event?.error?.type === 'invalid_request_error') {
+      reportError(event.error, {
+        errorType: 'stripe_payment_element_request_rejected'
+      })
+      markConfigurationFailed()
+      return
+    }
+    reportError(event?.error, { errorType: 'stripe_provider_unreachable' })
+    markProviderUnreachable()
   })
+}
+
+function markConfigurationFailed() {
+  paymentElement?.destroy()
+  paymentElement = undefined
+  stripeElements.value = undefined
+  configurationError.value = t('subscription.preview.stripeUnavailable')
 }
 
 function markProviderUnreachable() {
