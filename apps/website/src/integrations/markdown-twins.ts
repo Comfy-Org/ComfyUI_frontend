@@ -140,20 +140,15 @@ export function markdownTwins(): AstroIntegration {
   return {
     name: 'comfy:markdown-twins',
     hooks: {
-      'astro:build:done': async ({ dir, logger }) => {
+      'astro:build:done': async ({ dir, pages, logger }) => {
         const root = fileURLToPath(dir)
-        // Read the pages off DISK rather than from Astro's `pages` list.
-        //
-        // That list omits routes produced by the i18n fallback, which is every
-        // localized page once a locale is served from the English file. It cost
-        // Japanese all 560 of its twins without a word, and deleting the Chinese
-        // page files would have taken all 144 Chinese twins with them and shrunk
-        // llms-full.txt to match.
-        //
-        // `isExcludedFromSitemap` still decides what deserves a twin, so a
-        // held-back locale gains none: Japanese pages are built but unpublished,
-        // and a twin of an English page at a /ja/ URL is not content.
-        const report = await writeMarkdownTwins(root, await builtPages(root))
+        const pathnames = [
+          ...new Set([
+            ...pages.map((page) => page.pathname),
+            ...(await builtPages(root))
+          ])
+        ]
+        const report = await writeMarkdownTwins(root, pathnames)
         // Section indexes and llms-full.txt need every twin that actually
         // exists on disk, not just the ones this build freshly wrote — a
         // twin a page endpoint already wrote (report.existing) is just as
