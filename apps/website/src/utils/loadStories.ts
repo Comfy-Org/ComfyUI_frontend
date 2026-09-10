@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content'
 import type { Locale } from '../i18n/translations'
 import type { CustomerStoryEntry } from './customers'
 import { sortStories } from './customers'
-import { withEnglishFallback } from './englishFallback'
+import { mergedWithEnglish } from './englishFallback'
 
 // Loads a locale's customer stories from the content collection, sorted by the
 // frontmatter `order`. Centralises the `<locale>/` id-prefix convention so the
@@ -12,9 +12,16 @@ import { withEnglishFallback } from './englishFallback'
 export async function loadStories(
   locale: Locale
 ): Promise<CustomerStoryEntry[]> {
+  // Merged per story, not per collection. All-or-nothing meant a locale missing
+  // one story lost it from the page entirely rather than showing it in English,
+  // and a story can now go missing on its own: `enforce` withdraws a rejected
+  // translation, and English copy changing drops its translation as stale.
   return sortStories(
-    await withEnglishFallback(locale, (code) =>
-      getCollection('customers', ({ id }) => id.startsWith(`${code}/`))
+    await mergedWithEnglish(
+      locale,
+      (code) =>
+        getCollection('customers', ({ id }) => id.startsWith(`${code}/`)),
+      (entry) => entry.id.split('/').pop() ?? entry.id
     )
   )
 }

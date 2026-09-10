@@ -290,18 +290,35 @@ function isMachineWritten(
 }
 
 /**
- * The end of the property before this one, or nothing if it is the first.
+ * The span to cut so a property leaves no comma behind.
  *
- * Removing a property means taking the comma that joined it to its neighbour as
- * well, or the object is left with a trailing or doubled comma. Cutting from
- * the PREVIOUS property's end takes the separator and the newline with it.
+ * Removing the property alone is not enough: the comma joining it to a
+ * neighbour survives and the object no longer parses. Which comma to take
+ * depends on where the property sits.
+ *
+ * - after another property — cut from that one's end, taking the comma before
+ * - first, with properties after — cut to the next one's start, taking the
+ *   comma after. Doing it the other way round left `{ , en: 'A' }`.
+ * - alone — cut just the property, and the object is left empty
  */
-function precedingPropertyEnd(
+function removalSpan(
+  sourceText: string,
   node: ObjectLiteralExpression,
   property: PropertyAssignment
-): number | undefined {
+): { offset: number; length: number } {
   const index = node.properties.indexOf(property)
-  return index > 0 ? node.properties[index - 1].end : undefined
+  const end = commentedEnd(sourceText, property)
+
+  if (index > 0) {
+    const from = node.properties[index - 1].end
+    return { offset: from, length: end - from }
+  }
+
+  // `.at()` rather than an index, which the type says is always defined even
+  // when it is past the end.
+  const next = node.properties.at(index + 1)
+  const from = property.getStart()
+  return { offset: from, length: (next ? next.getStart() : end) - from }
 }
 
 /**
@@ -352,13 +369,7 @@ export function planJapanese(
     if (value === undefined) {
       if (!existing || !isMachineWritten(sourceText, existing)) return
 
-      const previous = precedingPropertyEnd(node, existing)
-      const from = previous ?? existing.getStart()
-      edits.push({
-        offset: from,
-        length: commentedEnd(sourceText, existing) - from,
-        text: ''
-      })
+      edits.push({ ...removalSpan(sourceText, node, existing), text: '' })
       return
     }
 

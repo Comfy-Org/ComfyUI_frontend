@@ -252,3 +252,39 @@ describe('a translation the pipeline has withdrawn', () => {
     expect(planJapanese(FILE, BARE, {})).toEqual([])
   })
 })
+
+/**
+ * Where the withdrawn property sits decides which comma has to go with it.
+ * Removing the property alone leaves the separator behind and the object stops
+ * parsing — `{ , en: 'A' }` was the first attempt at this.
+ */
+describe('a withdrawn property leaves no comma behind', () => {
+  const withdraw = (source: string) =>
+    applyEdits(source, planJapanese('d.ts', source, {}))
+
+  it('when it is last', () => {
+    expect(
+      withdraw(
+        `export const d = {\n  t: {\n    en: 'A',\n    ja: 'あ' /* machine */\n  }\n}\n`
+      )
+    ).toBe(`export const d = {\n  t: {\n    en: 'A'\n  }\n}\n`)
+  })
+
+  it('when it is first', () => {
+    expect(
+      withdraw(
+        `export const d = {\n  t: {\n    ja: 'あ' /* machine */,\n    en: 'A'\n  }\n}\n`
+      )
+    ).toBe(`export const d = {\n  t: {\n    en: 'A'\n  }\n}\n`)
+  })
+
+  it('when it is in the middle', () => {
+    expect(
+      withdraw(
+        `export const d = {\n  t: {\n    en: 'A',\n    ja: 'あ' /* machine */,\n    'zh-CN': '中'\n  }\n}\n`
+      )
+    ).toBe(
+      `export const d = {\n  t: {\n    en: 'A',\n    'zh-CN': '中'\n  }\n}\n`
+    )
+  })
+})
