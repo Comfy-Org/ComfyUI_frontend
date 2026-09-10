@@ -76,7 +76,7 @@ const models = computed<readonly FeaturedModel[]>(() => [
 <template>
   <section
     :aria-label="t('home.featuredModels.label', locale)"
-    class="px-6 lg:px-12"
+    class="px-6 py-8 lg:px-12"
   >
     <div class="max-w-9xl mx-auto">
       <div class="bg-transparency-white-t4 rounded-5xl p-4 lg:p-2">
