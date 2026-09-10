@@ -10,10 +10,11 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets/utils/comboSpecDescriptor'
+import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import type { AssetKind } from '@/types/widgetTypes'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -22,20 +23,20 @@ import {
 interface Props {
   widget: SimplifiedWidget<string | undefined>
   nodeType?: string
-  assetKind?: AssetKind
-  allowUpload?: boolean
-  uploadFolder?: ResultItemType
-  uploadSubfolder?: string
   isAssetMode?: boolean
-  defaultLayoutMode?: LayoutMode
 }
 
 const props = defineProps<Props>()
 
-provide(
-  AssetKindKey,
-  computed(() => props.assetKind)
-)
+const descriptor = computed(() => {
+  const spec = props.widget.spec
+  return parseComboSpecDescriptor(
+    spec && isComboInputSpec(spec) ? spec : undefined
+  )
+})
+const assetKind = computed(() => descriptor.value.kind)
+
+provide(AssetKindKey, assetKind)
 
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
@@ -71,15 +72,15 @@ const getAssetData = () => {
 }
 const assetData = getAssetData()
 
+const filterSelected = ref('all')
+const ownershipSelected = ref<OwnershipOption>('all')
+const baseModelSelected = ref<Set<string>>(new Set())
+
 const {
   dropdownItems,
-  displayItems,
-  filterSelected,
   filterOptions,
-  ownershipSelected,
   showOwnershipFilter,
   ownershipOptions,
-  baseModelSelected,
   showBaseModelFilter,
   baseModelOptions,
   selectedSet
@@ -87,18 +88,21 @@ const {
   values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
-  assetKind: () => props.assetKind,
+  assetKind,
   outputMediaAssets: outputAssets,
   assetData,
-  isAssetMode: () => props.isAssetMode
+  isAssetMode: () => props.isAssetMode,
+  filterSelected,
+  ownershipSelected,
+  baseModelSelected
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   modelValue: stringModelValue,
   dropdownItems,
   widget: () => props.widget,
-  uploadFolder: () => props.uploadFolder,
-  uploadSubfolder: () => props.uploadSubfolder
+  uploadFolder: () => descriptor.value.folder ?? 'input',
+  uploadSubfolder: () => descriptor.value.subfolder
 })
 
 const mediaPlaceholder = computed(() => {
@@ -108,7 +112,7 @@ const mediaPlaceholder = computed(() => {
     return options.placeholder
   }
 
-  switch (props.assetKind) {
+  switch (assetKind.value) {
     case 'image':
       return t('widgets.uploadSelect.placeholderImage')
     case 'video':
@@ -128,13 +132,13 @@ const mediaPlaceholder = computed(() => {
 
 const uploadable = computed(() => {
   if (props.isAssetMode) return false
-  return props.allowUpload === true
+  return descriptor.value.allowUpload
 })
 
 const acceptTypes = computed(() => {
   // Be permissive with accept types because backend uses libraries
   // that can handle a wide range of formats
-  switch (props.assetKind) {
+  switch (assetKind.value) {
     case 'image':
       return 'image/*,.exr'
     case 'video':
@@ -148,7 +152,7 @@ const acceptTypes = computed(() => {
   }
 })
 
-const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
+const layoutMode = ref<LayoutMode>(props.isAssetMode ? 'list' : 'grid')
 
 const isUploading = ref(false)
 async function updateFiles(files: File[]) {
@@ -167,7 +171,6 @@ async function updateFiles(files: File[]) {
       v-model:base-model-selected="baseModelSelected"
       :selected="selectedSet"
       :items="dropdownItems"
-      :display-items="displayItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable

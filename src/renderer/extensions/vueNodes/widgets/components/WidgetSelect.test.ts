@@ -200,10 +200,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('clip.wav', {}, undefined, spec)
       renderComponent(widget, 'clip.wav')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('audio')
-      expect(dropdown.dataset.allowUpload).toBe('true')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('uses dropdown variant for mesh uploads via spec', () => {
@@ -216,12 +213,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('model.glb', {}, undefined, spec)
       renderComponent(widget, 'model.glb')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('mesh')
-      expect(dropdown.dataset.allowUpload).toBe('true')
-      expect(dropdown.dataset.uploadFolder).toBe('input')
-      expect(dropdown.dataset.uploadSubfolder).toBe('3d')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('keeps default select when no spec or media hints are present', () => {

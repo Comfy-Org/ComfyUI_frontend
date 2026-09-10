@@ -1,5 +1,5 @@
 import { capitalize } from 'es-toolkit'
-import { computed, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { t } from '@/i18n'
@@ -69,10 +69,20 @@ export interface UseWidgetSelectItemsOptions {
   outputMediaAssets: MaybeRefOrGetter<PagedList<AssetItem>>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean | undefined>
+  filterSelected: Ref<string>
+  ownershipSelected: Ref<OwnershipOption>
+  baseModelSelected: Ref<Set<string>>
 }
 
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
-  const { modelValue, outputMediaAssets, assetData } = options
+  const {
+    modelValue,
+    outputMediaAssets,
+    assetData,
+    filterSelected,
+    ownershipSelected,
+    baseModelSelected
+  } = options
 
   const missingMediaStore = useMissingMediaStore()
   const missingMediaValues = computed<ReadonlySet<string>>(
@@ -82,7 +92,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       )
   )
 
-  const filterSelected = ref('all')
   const filterOptions = computed<FilterOption[]>(() => {
     const isAsset = toValue(options.isAssetMode)
     if (isAsset) {
@@ -96,14 +105,12 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     ]
   })
 
-  const ownershipSelected = ref<OwnershipOption>('all')
   const showOwnershipFilter = computed(() => !!toValue(options.isAssetMode))
 
   const { ownershipOptions, availableBaseModels } = useAssetFilterOptions(
     () => assetData?.assets.value ?? []
   )
 
-  const baseModelSelected = ref<Set<string>>(new Set())
   const showBaseModelFilter = computed(() => !!toValue(options.isAssetMode))
   const baseModelOptions = computed<FilterOption[]>(() => {
     if (!toValue(options.isAssetMode) || !assetData) return []
@@ -313,58 +320,41 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     )
   )
 
-  const allItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode) && assetData) {
-      return filteredAssetItems.value
-    }
-    return [
-      ...(missingValueItem.value ? [missingValueItem.value] : []),
-      ...inputItems.value,
-      ...outputItems.value
-    ]
-  })
+  const missingItems = computed<FormDropdownItem[]>(() =>
+    missingValueItem.value ? [missingValueItem.value] : []
+  )
 
-  //FIXME should be |PagedList<FormDropdownItem>
   const dropdownItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode)) {
-      return allItems.value
+    if (toValue(options.isAssetMode) && assetData) {
+      return [...missingItems.value, ...filteredAssetItems.value]
     }
-
     switch (filterSelected.value) {
       case 'inputs':
         return inputItems.value
       case 'outputs':
         return outputItems.value
-      case 'all':
       default:
-        return allItems.value
+        return [
+          ...missingItems.value,
+          ...inputItems.value,
+          ...outputItems.value
+        ]
     }
-  })
-
-  const displayItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode) && assetData && missingValueItem.value) {
-      return [missingValueItem.value, ...filteredAssetItems.value]
-    }
-    return dropdownItems.value
   })
 
   const selectedSet = computed<Set<string>>(() => {
     const currentValue = modelValue.value
     if (currentValue === undefined) return new Set()
 
-    const item = displayItems.value.find((item) => item.name === currentValue)
+    const item = dropdownItems.value.find((item) => item.name === currentValue)
     return item ? new Set([item.id]) : new Set()
   })
 
   return {
     dropdownItems,
-    displayItems,
-    filterSelected,
     filterOptions,
-    ownershipSelected,
     showOwnershipFilter,
     ownershipOptions,
-    baseModelSelected,
     showBaseModelFilter,
     baseModelOptions,
     selectedSet
