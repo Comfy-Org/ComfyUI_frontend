@@ -9,7 +9,9 @@ import {
   rememberAgentSessionMemory
 } from './agentSessionMemory'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('agentSessionMemory', () => {
   beforeEach(() => localStorage.clear())
