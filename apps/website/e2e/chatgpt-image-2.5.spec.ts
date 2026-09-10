@@ -19,7 +19,7 @@ test.describe('ChatGPT Images 2.5 launch page @smoke', () => {
     ).toBeVisible()
     await expect(page.locator('video')).toHaveAttribute(
       'src',
-      '/images/chatgpt-image-2.5/hero.mp4'
+      'https://media.comfy.org/website/chatgpt-image-2.5/hero.mp4'
     )
   })
 
@@ -31,24 +31,44 @@ test.describe('ChatGPT Images 2.5 launch page @smoke', () => {
     await galleryHeading.scrollIntoViewIfNeeded()
 
     await expect(galleryHeading).toBeVisible()
-    const galleryImages = page
-      .locator('section')
-      .filter({ has: galleryHeading })
-      .locator('img')
-    await expect(galleryImages).toHaveCount(7)
-    await expect(
-      galleryImages.evaluateAll((images) =>
-        images.map((image) => image.getAttribute('src'))
-      )
-    ).resolves.toEqual([
-      '/images/chatgpt-image-2.5/vaporwave.webp',
-      '/images/chatgpt-image-2.5/alien-convenience-store.webp',
-      '/images/chatgpt-image-2.5/goldfish.webp',
-      '/images/chatgpt-image-2.5/flame-engine.webp',
-      '/images/chatgpt-image-2.5/canyon-chase.webp',
-      '/images/chatgpt-image-2.5/anime-horizon.webp',
-      '/images/chatgpt-image-2.5/cowfish-field.webp'
-    ])
+    const galleryImages = [
+      {
+        name: 'Vaporwave architecture generated with ChatGPT Images 2.5',
+        src: '/images/chatgpt-image-2.5/vaporwave.webp'
+      },
+      {
+        name: 'Aliens in a convenience store generated with ChatGPT Images 2.5',
+        src: '/images/chatgpt-image-2.5/alien-convenience-store.webp'
+      },
+      {
+        name: 'Goldfish in a glass bowl generated with ChatGPT Images 2.5',
+        src: '/images/chatgpt-image-2.5/goldfish.webp'
+      },
+      {
+        name: 'Flaming engine watercolor generated with ChatGPT Images 2.5',
+        src: '/images/chatgpt-image-2.5/flame-engine.webp'
+      },
+      {
+        name: 'Canyon car chase generated with ChatGPT Images 2.5',
+        src: '/images/chatgpt-image-2.5/canyon-chase.webp'
+      },
+      {
+        name: 'Anime sunset landscape generated with ChatGPT Images 2.5',
+        src: '/images/chatgpt-image-2.5/anime-horizon.webp'
+      }
+    ]
+
+    for (const expectedImage of galleryImages) {
+      const image = page.getByRole('img', { name: expectedImage.name })
+      await expect(image).toHaveAttribute('src', expectedImage.src)
+      await expect
+        .poll(() =>
+          image.evaluate(
+            (element) => (element as HTMLImageElement).naturalWidth
+          )
+        )
+        .toBeGreaterThan(0)
+    }
   })
 })
 

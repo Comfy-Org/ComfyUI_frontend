@@ -29,12 +29,13 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'wan3', page: wan3Page }
 ]
 
-const VIDEO_URL = /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webm|mp4)$/
+const VIDEO_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webm|mp4)$/
 const IMAGE_URL =
-  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
 const HERO_STILL_URL =
-  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
