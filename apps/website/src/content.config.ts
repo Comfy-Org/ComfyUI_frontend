@@ -3,6 +3,7 @@ import { file, glob } from 'astro/loaders'
 
 import { customerStorySchema } from './content/customers.schema'
 import { faqSchema } from './content/faq.schema'
+import { workshopDisplaySchema } from './content/workshop-display.schema'
 import { workshopModelSchema } from './content/workshop-models.schema'
 
 const customers = defineCollection({
@@ -36,4 +37,17 @@ const workshopModels = defineCollection({
   schema: workshopModelSchema
 })
 
-export const collections = { customers, faq, workshopModels }
+// The editorial half of Workshop: thumbnails, worked examples, pricing.
+// Separate from `workshopModels` because that file is regenerated wholesale
+// from the partner client and would discard anything written by hand.
+const workshopDisplay = defineCollection({
+  loader: file('./src/content/workshop-display.json'),
+  schema: workshopDisplaySchema
+})
+
+export const collections = {
+  customers,
+  faq,
+  workshopModels,
+  workshopDisplay
+}
