@@ -878,6 +878,12 @@ type BillingTimedOut = {
 type SubscriptionCheckoutBillingEvent = {
   operation: 'subscription_checkout'
   billing_op_id?: string
+  /**
+   * Identifies the checkout attempt this event belongs to, so terminals a
+   * client may emit more than once — a second tab reaching the same deadline,
+   * a reload — collapse to one attempt downstream.
+   */
+  checkout_attempt_id?: string
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
@@ -969,6 +975,10 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
     ...('operation_type' in event && {
       operation_type: event.operation_type
     }),
+    ...('checkout_attempt_id' in event &&
+      event.checkout_attempt_id !== undefined && {
+        checkout_attempt_id: event.checkout_attempt_id
+      }),
     ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
     ...('cycle' in event &&
       event.cycle !== undefined && { cycle: event.cycle }),
