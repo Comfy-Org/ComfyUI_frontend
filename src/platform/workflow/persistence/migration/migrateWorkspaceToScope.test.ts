@@ -96,7 +96,7 @@ describe('migrateWorkspaceToScope', () => {
     ).toBe(null)
   })
 
-  it('leaves an already scoped destination untouched', () => {
+  it('finishes the source cleanup when the destination is already committed', () => {
     seedSourceWorkspace()
     const destinationIndex: DraftIndexV2 = {
       v: 2,
@@ -119,9 +119,48 @@ describe('migrateWorkspaceToScope', () => {
         StorageKeys.draftPayload(draftPath, destinationScope)
       )
     ).toBe(null)
-    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
-      buildIndex()
+    expect(
+      localStorage.getItem(StorageKeys.draftIndex(sourceWorkspaceId))
+    ).toBe(null)
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(draftPath, sourceWorkspaceId)
+      )
+    ).toBe(null)
+    expect(
+      localStorage.getItem(StorageKeys.lastActivePath(sourceWorkspaceId))
+    ).toBe(null)
+    expect(
+      localStorage.getItem(StorageKeys.lastOpenPaths(sourceWorkspaceId))
+    ).toBe(null)
+  })
+
+  it('leaves a committed destination alone when there is no source to clean up', () => {
+    const destinationIndex: DraftIndexV2 = {
+      v: 2,
+      updatedAt: 99,
+      order: [],
+      entries: {}
+    }
+    localStorage.setItem(
+      StorageKeys.draftIndex(destinationScope),
+      JSON.stringify(destinationIndex)
     )
+    localStorage.setItem(
+      StorageKeys.draftPayload(draftPath, sourceWorkspaceId),
+      JSON.stringify({ data: '{}', updatedAt: 1 })
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      destinationIndex
+    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(draftPath, sourceWorkspaceId)
+      )
+    ).not.toBe(null)
   })
 
   it('does nothing when the workspace has no draft index', () => {
@@ -177,5 +216,40 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.lastActivePath(sourceWorkspaceId))).not.toBe(
       null
     )
+  })
+
+  it('removes every copied destination artifact when a restore pointer copy hits the quota', () => {
+    seedSourceWorkspace()
+    const failingKey = StorageKeys.lastOpenPaths(destinationScope)
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        if (key === failingKey) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        }
+        realSetItem(key, value)
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(localStorage.getItem(StorageKeys.draftIndex(destinationScope))).toBe(
+      null
+    )
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(draftPath, destinationScope)
+      )
+    ).toBe(null)
+    expect(
+      localStorage.getItem(StorageKeys.lastActivePath(destinationScope))
+    ).toBe(null)
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+    expect(readJson(StorageKeys.lastActivePath(sourceWorkspaceId))).toEqual({
+      workspaceId: sourceWorkspaceId,
+      path: draftPath
+    })
   })
 })
