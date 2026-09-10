@@ -84,7 +84,7 @@ interface MountDropdownOptions {
     query: string,
     items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
   multiple?: boolean | number
   selected?: Set<string>
   searchQuery?: string
@@ -337,7 +337,7 @@ describe('FormDropdown', () => {
     const onUpdateSelected = vi.fn()
     const searcher = vi.fn(
       async (query: string, sourceItems: readonly FormDropdownItem[]) => {
-        if (query.trim() === '') return [...sourceItems]
+        if (query.trim() === '') return sourceItems
         return sourceItems.filter((item) => item.name.includes(query))
       }
     )
@@ -391,7 +391,7 @@ describe('FormDropdown', () => {
           })
         }
 
-        if (query.trim() === '') return Promise.resolve([...sourceItems])
+        if (query.trim() === '') return Promise.resolve(sourceItems)
         return Promise.resolve(
           sourceItems.filter((item) => item.name.includes(query))
         )
