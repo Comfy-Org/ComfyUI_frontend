@@ -57,6 +57,11 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
       'Comfy.RightSidePanel.ShowErrorsTab',
       true
     )
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Sidebar'
+    )
+    await comfyPage.menu.workflowsTab.open()
   })
 
   test('Should keep an execution error on the workflow that produced it', async ({
@@ -70,7 +75,6 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
     await expect(runtimePanel).toBeVisible()
 
     const workflowsTab = comfyPage.menu.workflowsTab
-    await workflowsTab.open()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toContain('execution_error')
@@ -100,7 +104,6 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
     await expect(comfyPage.page.getByTestId('dialog-overlay')).toBeHidden()
 
     const workflowsTab = comfyPage.menu.workflowsTab
-    await workflowsTab.open()
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toContain('execution-error-before-rename')
