@@ -59,6 +59,9 @@ const unchanged = (state: ReconnectState): ReconnectTransition => ({
   report: null
 })
 
+const isReplay = (seq: number, fromVersion: number, ackSeq: number): boolean =>
+  seq > fromVersion && seq <= ackSeq
+
 export function reduceReconnect(
   state: ReconnectState,
   event: ReconnectEvent
@@ -98,7 +101,9 @@ export function reduceReconnect(
       }
       if (event.ackSeq === null) return idle(report)
       const ackSeq = event.ackSeq
-      const replayed = state.preAck
+      const replayed = state.preAck.filter((frame) =>
+        isReplay(frame.seq, state.fromVersion, ackSeq)
+      )
       const confirmed = {
         ...report,
         to_version: ackSeq,
@@ -126,6 +131,8 @@ export function reduceReconnect(
       // A frame above the ack seq is live traffic: it proves the catch-up was
       // empty (or already counted) and is not part of it.
       if (event.seq > state.ackSeq) return idle(state.report)
+      if (!isReplay(event.seq, state.report.from_version, state.ackSeq))
+        return unchanged(state)
       const report = {
         ...state.report,
         replayed_bytes: state.report.replayed_bytes + event.bytes

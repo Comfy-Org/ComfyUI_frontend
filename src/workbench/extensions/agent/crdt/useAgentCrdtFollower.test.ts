@@ -568,6 +568,40 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('TEL-10: a pre-ack frame above the ack seq is live traffic, not replay', () => {
+    // The relay joins the fanout before it acks, so a frame can arrive ahead
+    // of the ack that says where the catch-up ends. Only frames the ack
+    // actually covers are replay.
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 42,
+      update: new Uint8Array(10)
+    })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(90)
+    })
+    dispatchFrame('doc_subscribed', { ok: true, seq: 42 })
+
+    // The catch-up (seq 42) already landed, so the report needs nothing more.
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 10,
+      from_version: 41,
+      to_version: 42
+    })
+    unmount()
+  })
+
   it('reports retry exhaustion exactly once with normalized metadata', () => {
     vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
     vi.setSystemTime(1_000)
