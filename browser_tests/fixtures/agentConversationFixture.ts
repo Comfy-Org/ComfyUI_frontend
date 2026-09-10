@@ -49,7 +49,8 @@ const COMPOSER_LABEL = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 }).global.t('agent.placeholder')
-const SUMMARY_LABEL = /^Worked/
+// Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
+const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
 const THINKING_GLYPH = '[class*="lucide--brain"]'
 

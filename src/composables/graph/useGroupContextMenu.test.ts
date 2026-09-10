@@ -45,12 +45,8 @@ describe('useGroupContextMenu', () => {
   }
   let legacyMenuMock: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
-  let mockUpdateSelectedItems: ReturnType<
-    typeof vi.mocked<ReturnType<typeof useCanvasStore>['updateSelectedItems']>
-  >
 
   beforeEach(() => {
-    mockUpdateSelectedItems = vi.mocked(useCanvasStore().updateSelectedItems)
     LiteGraph.vueNodesMode = true
     group = { id: 1, recomputeInsideNodes: vi.fn() }
     mockGetCanvasContextMenuTarget.mockReturnValue({ group })
@@ -87,11 +83,14 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(true)
     expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
-    expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useCanvasStore().updateSelectedItems)
+    ).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
-    expect(mockUpdateSelectedItems.mock.invocationCallOrder[0]).toBeLessThan(
-      mockShowNodeOptions.mock.invocationCallOrder[0]
-    )
+    expect(
+      vi.mocked(useCanvasStore().updateSelectedItems).mock
+        .invocationCallOrder[0]
+    ).toBeLessThan(mockShowNodeOptions.mock.invocationCallOrder[0])
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
@@ -147,7 +146,9 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(false)
     expect(group.recomputeInsideNodes).not.toHaveBeenCalled()
-    expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useCanvasStore().updateSelectedItems)
+    ).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
@@ -165,7 +166,9 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(true)
     expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
-    expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useCanvasStore().updateSelectedItems)
+    ).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })

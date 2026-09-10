@@ -11011,7 +11011,8 @@
     "display_name": "Carica 3D (Avanzato)",
     "inputs": {
       "height": {
-        "name": "altezza"
+        "name": "altezza",
+        "tooltip": "Altezza di rendering della viewport in pixel."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "larghezza"
+        "name": "larghezza",
+        "tooltip": "Larghezza di rendering della viewport in pixel."
       }
     },
     "outputs": {
       "0": {
         "name": "modello_3d",
-        "tooltip": null
+        "tooltip": "File del modello 3D caricato (glb/obj/stl/ecc.)."
       },
       "1": {
         "name": "info_modello_3d",
-        "tooltip": null
+        "tooltip": "Posizionamento di ciascun modello nella scena: posizione, rotazione e scala (spazio globale con asse Y verso l'alto)."
       },
       "2": {
         "name": "info_camera",
-        "tooltip": null
+        "tooltip": "Informazioni sulla fotocamera della viewport: posizione, destinazione di puntamento, zoom e tipo."
       },
       "3": {
         "name": "larghezza",
-        "tooltip": null
+        "tooltip": "Larghezza di rendering della viewport in pixel."
       },
       "4": {
         "name": "altezza",
-        "tooltip": null
+        "tooltip": "Altezza di rendering della viewport in pixel."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Genera immagini tramite l'endpoint GPT Image di OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "controllo dopo la generazione"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Genera o modifica immagini tramite OpenRouter con i modelli MAI-Image-2.6 di Microsoft: da testo a immagine oppure modifica guidata da immagini con un massimo di cinque immagini di riferimento, in sette rapporti d'aspetto a 1K o 1.5K.",
+    "display_name": "Immagine OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Il modello di immagini OpenRouter utilizzato per generare l'immagine."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "Anteprima 3D (Avanzata)",
     "inputs": {
       "camera_info": {
-        "name": "info_camera"
+        "name": "info_camera",
+        "tooltip": "Informazioni sulla fotocamera della viewport: posizione, destinazione di puntamento, zoom e tipo."
       },
       "height": {
-        "name": "altezza"
+        "name": "altezza",
+        "tooltip": "Altezza di rendering della viewport in pixel."
       },
       "model_3d": {
         "name": "modello_3d",
@@ -17404,29 +17438,30 @@
         "name": "stato_viewport"
       },
       "width": {
-        "name": "larghezza"
+        "name": "larghezza",
+        "tooltip": "Larghezza di rendering della viewport in pixel."
       }
     },
     "outputs": {
       "0": {
         "name": "modello_3d",
-        "tooltip": null
+        "tooltip": "File del modello 3D (glb/obj/stl/ecc.) da un nodo 3D a monte."
       },
       "1": {
         "name": "info_modello_3d",
-        "tooltip": null
+        "tooltip": "Posizionamento di ciascun modello nella scena: posizione, rotazione e scala (spazio globale con asse Y verso l'alto)."
       },
       "2": {
         "name": "info_camera",
-        "tooltip": null
+        "tooltip": "Informazioni sulla fotocamera della viewport: posizione, destinazione di puntamento, zoom e tipo."
       },
       "3": {
         "name": "larghezza",
-        "tooltip": null
+        "tooltip": "Larghezza di rendering della viewport in pixel."
       },
       "4": {
         "name": "altezza",
-        "tooltip": null
+        "tooltip": "Altezza di rendering della viewport in pixel."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "Salva 3D (Avanzato)",
     "inputs": {
       "camera_info": {
-        "name": "info_camera"
+        "name": "info_camera",
+        "tooltip": "Informazioni sulla fotocamera della viewport: posizione, destinazione di puntamento, zoom e tipo."
       },
       "filename_prefix": {
         "name": "prefisso_nome_file"
       },
       "height": {
-        "name": "altezza"
+        "name": "altezza",
+        "tooltip": "Altezza di rendering della viewport in pixel."
       },
       "model_3d": {
         "name": "modello_3d",
         "tooltip": "File modello 3D da un nodo 3D a monte."
       },
       "model_3d_info": {
-        "name": "info_modello_3d"
+        "name": "info_modello_3d",
+        "tooltip": "Posizionamento di ciascun modello nella scena: posizione, rotazione e scala (spazio globale con asse Y verso l'alto)."
       },
       "viewport_state": {
         "name": "stato_viewport"
       },
       "width": {
-        "name": "larghezza"
+        "name": "larghezza",
+        "tooltip": "Larghezza di rendering della viewport in pixel."
       }
     },
     "outputs": {
       "0": {
         "name": "modello_3d",
-        "tooltip": null
+        "tooltip": "File del modello 3D (glb/obj/stl/ecc.) da un nodo 3D a monte."
       },
       "1": {
         "name": "info_modello_3d",
-        "tooltip": null
+        "tooltip": "Posizionamento di ciascun modello nella scena: posizione, rotazione e scala (spazio globale con asse Y verso l'alto)."
       },
       "2": {
         "name": "info_camera",
-        "tooltip": null
+        "tooltip": "Informazioni sulla fotocamera della viewport: posizione, destinazione di puntamento, zoom e tipo."
       },
       "3": {
         "name": "larghezza",
-        "tooltip": null
+        "tooltip": "Larghezza di rendering della viewport in pixel."
       },
       "4": {
         "name": "altezza",
-        "tooltip": null
+        "tooltip": "Altezza di rendering della viewport in pixel."
       }
     }
   },
