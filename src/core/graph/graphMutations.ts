@@ -98,6 +98,8 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  /** Invoked once per batch that validated and committed. */
+  onCommitted?: () => void
 }
 
 type QueuedMutation =
@@ -827,6 +829,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
       commit(scope, prepared, context)
+      deps.onCommitted?.()
       return true
     },
     addNode(payload, context) {

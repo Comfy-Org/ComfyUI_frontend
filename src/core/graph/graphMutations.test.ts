@@ -426,4 +426,32 @@ describe('graphMutations', () => {
     expect(nodeContexts).toEqual([context])
     expect(widgetContexts).toEqual([context])
   })
+  it('notifies onCommitted once per committed batch and never for a rejected one', () => {
+    const onCommitted = vi.fn()
+    const tracked = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      onCommitted
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(tracked.addNode(node(1), context)).toBe(true)
+    expect(onCommitted).toHaveBeenCalledOnce()
+
+    expect(
+      tracked.batch(context, (batch) => {
+        batch.addNode(node(2))
+        batch.connect({
+          id: 1,
+          originNodeId: 2,
+          originSlot: 0,
+          targetNodeId: 404,
+          targetSlot: 0,
+          type: 'IMAGE'
+        })
+      })
+    ).toBe(false)
+    expect(onCommitted).toHaveBeenCalledOnce()
+    error.mockRestore()
+  })
 })
