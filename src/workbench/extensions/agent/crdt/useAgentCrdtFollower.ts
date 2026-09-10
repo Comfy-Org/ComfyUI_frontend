@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { createUuidv4 } from '@/utils/uuid'
@@ -187,16 +188,20 @@ export const apiTransport: DocFrameTransport = {
   }
 }
 
+// Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
+// logError, which re-throws in dev/test builds (this app registers no
+// app.config.errorHandler) and aborts the rest of unmountComponent - leaving
+// this composable's watch alive to rebind against destroyed objects.
 function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
-  let firstError: unknown = null
   for (const cleanup of cleanups) {
     try {
       cleanup()
     } catch (error) {
-      firstError ??= error
+      reportError(error, {
+        errorType: 'agent_crdt_follower_teardown_failed'
+      })
     }
   }
-  if (firstError !== null) throw firstError
 }
 
 export function useAgentCrdtFollower(

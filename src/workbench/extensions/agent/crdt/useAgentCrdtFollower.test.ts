@@ -49,6 +49,10 @@ const adapterState = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
+const telemetryState = vi.hoisted(() => ({
+  reportError: vi.fn<(cause: unknown, options: { errorType: string }) => void>()
+}))
+
 const apiState = vi.hoisted(() => {
   const target = new EventTarget()
   return {
@@ -98,6 +102,10 @@ vi.mock('./devPanelLog', () => ({
   recordDevEvent: vi.fn()
 }))
 
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: telemetryState.reportError
+}))
+
 vi.mock('@/scripts/api', () => ({ api: apiState.api }))
 vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
 vi.mock('@/stores/authStore', () => ({
@@ -109,6 +117,7 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
+const TEARDOWN_ERROR_TYPE = 'agent_crdt_follower_teardown_failed'
 
 function persistedRecord(): {
   docId: string
@@ -167,6 +176,12 @@ function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
   const current = bridgeState.current
   if (!current) throw new Error('no bridge constructed')
   return current
+}
+
+function reportedTeardownErrors(): unknown[] {
+  return telemetryState.reportError.mock.calls
+    .filter(([, options]) => options.errorType === TEARDOWN_ERROR_TYPE)
+    .map(([cause]) => cause)
 }
 
 function dispatchFrame(type: string, detail: unknown): void {
@@ -837,9 +852,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('tears down totally on unmount, even when an early cleanup throws', () => {
-    // Vue routes an onBeforeUnmount throw through the app error channel, so
-    // the throw is absorbed there; every later cleanup must still run.
+  it('tears down totally on unmount, reporting every cleanup failure instead of throwing', () => {
     const hookErrors: unknown[] = []
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
@@ -857,20 +870,43 @@ describe('useAgentCrdtFollower', () => {
         }
       }
     })
+    const listenerFailure = new Error('listener removal failed')
+    const clientFailure = new Error('client destroy failed')
     apiState.api.removeEventListener.mockImplementation((type, listener) => {
-      if (type === 'reconnected') throw new Error('listener removal failed')
+      if (type === 'reconnected') throw listenerFailure
+      apiState.target.removeEventListener(type, listener)
+    })
+    clientState.destroy.mockImplementation(() => {
+      throw clientFailure
+    })
+
+    unmount()
+
+    expect(hookErrors).toEqual([])
+    expect(reportedTeardownErrors()).toStrictEqual([
+      listenerFailure,
+      clientFailure
+    ])
+    expect(adapterState.destroy).toHaveBeenCalled()
+    expect(bridge().destroy).toHaveBeenCalled()
+    expect(clientState.destroy).toHaveBeenCalled()
+    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
+      'status',
+      expect.any(Function)
+    )
+  })
+
+  it('reports cleanup failures that throw a nullish value', () => {
+    const { unmount } = mountFollower('wf-1')
+    apiState.api.removeEventListener.mockImplementation((type, listener) => {
+      if (type === 'reconnected') throw null
+      if (type === 'status') throw undefined
       apiState.target.removeEventListener(type, listener)
     })
 
     unmount()
 
-    expect(String(hookErrors[0])).toContain('listener removal failed')
+    expect(reportedTeardownErrors()).toStrictEqual([null, undefined])
     expect(clientState.destroy).toHaveBeenCalled()
-    expect(adapterState.destroy).toHaveBeenCalled()
-    expect(bridge().destroy).toHaveBeenCalled()
-    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
-      'status',
-      expect.any(Function)
-    )
   })
 })
