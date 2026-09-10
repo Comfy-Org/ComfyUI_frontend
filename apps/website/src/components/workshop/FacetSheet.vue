@@ -75,7 +75,12 @@ const onPhone = useMediaQuery('(max-width: 639px)')
 const { height: viewport } = useWindowSize()
 const rest = ref<Exclude<SheetRest, 'closed'>>('collapsed')
 const dragged = ref<number | null>(null)
-const grab = ref<{ y: number; height: number; moved: boolean } | null>(null)
+const grab = ref<{
+  y: number
+  height: number
+  moved: boolean
+  fromHandle: boolean
+} | null>(null)
 
 const sheetHeight = computed(() =>
   onPhone.value
@@ -84,12 +89,16 @@ const sheetHeight = computed(() =>
 )
 
 function startDrag(event: PointerEvent) {
+  const target = event.target instanceof Element ? event.target : undefined
+  if (target?.closest('[data-testid="workshop-filter-close"]')) return
   if (event.currentTarget instanceof HTMLElement)
     event.currentTarget.setPointerCapture(event.pointerId)
   grab.value = {
     y: event.clientY,
     height: sheetHeight.value ?? 0,
-    moved: false
+    moved: false,
+    fromHandle:
+      target?.closest('[data-testid="workshop-filter-grabber"]') != null
   }
 }
 
@@ -105,12 +114,16 @@ function endDrag() {
   const from = grab.value
   grab.value = null
   if (!from) return
-  const settled = from.moved
-    ? restAt((dragged.value ?? 0) / viewport.value)
-    : rest.value === 'expanded'
-      ? 'collapsed'
-      : 'expanded'
+  const reached = dragged.value ?? 0
   dragged.value = null
+  // A tap counts only on the handle itself; on the title it would fire while
+  // the thumb is reaching for the close button beside it.
+  if (!from.moved) {
+    if (from.fromHandle)
+      rest.value = rest.value === 'expanded' ? 'collapsed' : 'expanded'
+    return
+  }
+  const settled = restAt(reached / viewport.value)
   if (settled === 'closed') emit('close')
   else rest.value = settled
 }
@@ -135,31 +148,36 @@ function visibleOptions(group: FacetSheetGroup) {
     "
     :style="{ height: sheetHeight ? `${sheetHeight}px` : undefined }"
   >
-    <button
-      type="button"
-      :aria-label="labels.resize"
-      :aria-expanded="rest === 'expanded'"
-      class="mx-auto flex h-6 w-16 shrink-0 cursor-grab touch-none items-center justify-center sm:hidden"
-      data-testid="workshop-filter-grabber"
+    <div
+      class="shrink-0 touch-none sm:hidden"
+      data-testid="workshop-filter-grip"
       @pointerdown="startDrag"
       @pointermove="drag"
       @pointerup="endDrag"
       @pointercancel="endDrag"
     >
-      <span class="h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
-    </button>
-
-    <div class="flex items-center justify-between p-3 pb-1 sm:hidden">
-      <h2 class="text-content text-base font-bold">{{ labels.title }}</h2>
       <button
         type="button"
-        :aria-label="labels.close"
-        class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
-        data-testid="workshop-filter-close"
-        @click="emit('close')"
+        :aria-label="labels.resize"
+        :aria-expanded="rest === 'expanded'"
+        class="mx-auto flex h-6 w-16 cursor-grab items-center justify-center"
+        data-testid="workshop-filter-grabber"
       >
-        <X class="size-4" aria-hidden="true" />
+        <span class="h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
       </button>
+
+      <div class="flex items-center justify-between p-3 pb-1">
+        <h2 class="text-content text-base font-bold">{{ labels.title }}</h2>
+        <button
+          type="button"
+          :aria-label="labels.close"
+          class="text-content-secondary hover:text-content grid size-9 cursor-pointer place-items-center rounded-xl bg-white/8"
+          data-testid="workshop-filter-close"
+          @click="emit('close')"
+        >
+          <X class="size-4" aria-hidden="true" />
+        </button>
+      </div>
     </div>
 
     <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col">
