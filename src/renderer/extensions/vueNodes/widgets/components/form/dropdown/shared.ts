@@ -16,7 +16,7 @@ export async function defaultSearcher(
   query: string,
   items: readonly FormDropdownItem[]
 ) {
-  if (query.trim() === '') return [...items]
+  if (query.trim() === '') return items
   const words = query.trim().toLowerCase().split(' ')
   return items.filter((item) => {
     const name = item.name.toLowerCase()
