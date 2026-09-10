@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, useTemplateRef, watch } from 'vue'
+import { nextTick, onMounted, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { DirectoryRow } from '../../utils/eventsDirectory'
@@ -23,21 +23,30 @@ const listElement = useTemplateRef<HTMLElement>('listElement')
 // Bringing the selected row into view is a one-way sync with the DOM: nothing
 // reads back from it. `nextTick` covers the case where the selection arrives in
 // the same tick as a filter change that re-renders the rows.
+async function scrollToRow(id: string) {
+  await nextTick()
+  listElement.value
+    ?.querySelector(`[data-event-id="${CSS.escape(id)}"]`)
+    ?.scrollIntoView({
+      block: 'nearest',
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth'
+    })
+}
+
 watch(
   () => selectedEventId,
   async (id) => {
-    if (!id) return
-    await nextTick()
-    listElement.value
-      ?.querySelector(`[data-event-id="${CSS.escape(id)}"]`)
-      ?.scrollIntoView({
-        block: 'nearest',
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'auto'
-          : 'smooth'
-      })
+    if (id) await scrollToRow(id)
   }
 )
+
+// A selection can predate this list: pick a pin, switch views, come back, and
+// the list mounts with `selectedEventId` already set.
+onMounted(async () => {
+  if (selectedEventId) await scrollToRow(selectedEventId)
+})
 </script>
 
 <template>

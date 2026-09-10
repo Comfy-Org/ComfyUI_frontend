@@ -26,7 +26,8 @@ export type CardArticleItem = {
   description?: string
   media?: CardArticleMedia
   author?: { name: string; avatarSrc: string }
-  cta: { label: string; href: string; newTab?: boolean }
+  /** Without one the card is informational: no overlay link, no footer pill. */
+  cta?: { label: string; href: string; newTab?: boolean }
 }
 
 const { item, titleClamp = false } = defineProps<{
@@ -57,6 +58,7 @@ function fallbackGradient(id: string): string {
 <template>
   <Card class="group group/pill-trigger relative h-full overflow-hidden">
     <a
+      v-if="item.cta"
       :href="item.cta.href"
       :target="item.cta.newTab ? '_blank' : undefined"
       :rel="resolveRel({ target: item.cta.newTab ? '_blank' : undefined })"
@@ -141,7 +143,7 @@ function fallbackGradient(id: string): string {
         class="size-8 shrink-0 rounded-xl bg-primary-warm-gray text-primary-warm-white"
       />
     </CardFooter>
-    <CardFooter v-else class="mt-auto px-6 pb-6">
+    <CardFooter v-else-if="item.cta" class="mt-auto px-6 pb-6">
       <ButtonPill as="span" variant="ghost" icon-position="left">
         {{ item.cta.label }}
       </ButtonPill>

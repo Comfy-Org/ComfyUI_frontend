@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarDays, ChevronDown, LayoutGrid, Map, Search } from '@lucide/vue'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -58,8 +58,15 @@ const markers = computed<MapPinMarker[]>(() =>
 )
 
 // A pin click selects its event; the list scrolls to that row and highlights
-// it. Filtering the event away deselects it without a second piece of state.
+// it. Filtering the event away clears the selection for good — restoring the
+// filter must not resurrect a pin click the visitor made under different
+// filters. The computed mask covers the tick before the watcher runs.
 const pinnedId = ref<string | null>(null)
+watch(visibleEvents, (events) => {
+  if (pinnedId.value && !events.some((event) => event.id === pinnedId.value)) {
+    pinnedId.value = null
+  }
+})
 const selectedEventId = computed(() =>
   visibleEvents.value.some((event) => event.id === pinnedId.value)
     ? pinnedId.value

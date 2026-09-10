@@ -43,13 +43,17 @@ const items = computed<CardArticleGalleryItem[]>(() =>
         alt: media.alt[locale] || media.alt.en,
         poster: media.type === 'video' ? media.poster : undefined
       },
-      cta: {
-        label: pastCtaLabel(event, locale),
-        href: external
-          ? event.link?.href[locale] || event.link?.href.en || pageHref
-          : pageHref,
-        newTab: external ? event.link?.newTab : undefined
-      }
+      // Mirrors `watchOf`: an unrecorded event with no external link gets no
+      // CTA at all — its /events/[slug] page does not exist.
+      cta: !external
+        ? { label: pastCtaLabel(event, locale), href: pageHref }
+        : event.link
+          ? {
+              label: pastCtaLabel(event, locale),
+              href: event.link.href[locale] || event.link.href.en,
+              newTab: event.link.newTab
+            }
+          : undefined
     }
   })
 )

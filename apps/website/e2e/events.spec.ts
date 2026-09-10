@@ -96,8 +96,8 @@ function expectedAgendaMonths(): { key: string; eventIds: string[] }[] {
 }
 
 // Month headings are localized by Intl, not by an i18n key.
-const monthHeading = (key: string) =>
-  new Intl.DateTimeFormat('en', {
+const monthHeading = (key: string, locale: Locale) =>
+  new Intl.DateTimeFormat(locale, {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC'
@@ -603,7 +603,7 @@ test.describe('Events page — desktop @smoke', () => {
 
     // Headings are localized by Intl, not by an i18n key, and they stick.
     await expect(headings.first()).toHaveText(
-      monthHeading(expectedMonths[0].key)
+      monthHeading(expectedMonths[0].key, 'en')
     )
     await expect(headings.first()).toHaveCSS('position', 'sticky')
 
@@ -628,6 +628,28 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(
       section.getByText(t('events.directory.empty', 'en'))
     ).toBeVisible()
+  })
+
+  test('agenda month headings localize per locale', async ({ page }) => {
+    const firstMonth = expectedAgendaMonths()[0]
+    for (const [path, locale] of LOCALES) {
+      await page.goto(path)
+      const section = directorySection(page, locale)
+      await section.scrollIntoViewIfNeeded()
+
+      const agenda = section.getByTestId('events-directory-agenda')
+      const calendarTab = section.getByRole('button', {
+        name: t('events.directory.view.calendar', locale)
+      })
+      await expect(async () => {
+        await calendarTab.click()
+        await expect(agenda).toBeVisible({ timeout: 1000 })
+      }).toPass()
+
+      await expect(
+        agenda.locator(`[data-month="${firstMonth.key}"]`)
+      ).toHaveText(monthHeading(firstMonth.key, locale))
+    }
   })
 
   test('calendar tab inherits a filter set beforehand and hands it back', async ({
@@ -906,7 +928,11 @@ test.describe('Events page — desktop @smoke', () => {
         const shown = await cards.count()
         // Retry until the island hydrates and the click lands.
         await expect(async () => {
-          await loadMore.click()
+          // A click that landed but whose count assertion timed out must not
+          // be repeated, or the retry skips past the expected page.
+          if ((await cards.count()) === shown) {
+            await loadMore.click()
+          }
           await expect(cards).toHaveCount(
             Math.min(shown + PAST_PAGE_SIZE, pastCardEvents.length),
             { timeout: 1000 }
