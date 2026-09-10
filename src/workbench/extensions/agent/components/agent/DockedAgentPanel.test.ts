@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
@@ -65,7 +64,6 @@ function renderPanel() {
 
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))

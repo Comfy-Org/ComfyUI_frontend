@@ -1,14 +1,12 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
@@ -17,8 +15,6 @@ const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 
 const testState = vi.hoisted(() => {
   return {
-    selectedNodeIds: null as unknown as Ref<Set<NodeId>>,
-    selectedItems: null as unknown as Ref<unknown[]>,
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       moveNode: vi.fn(),
@@ -55,26 +51,6 @@ vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
       testState.capturedAutoPanInstance.current = this
     }
   }
-}))
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({
-    rootGraphId: ROOT_GRAPH_ID,
-    selectedNodeIds: testState.selectedNodeIds,
-    selectedItems: testState.selectedItems,
-    canvas: {
-      ds: testState.mockDs,
-      auto_pan_speed: 10,
-      canvas: {
-        getBoundingClientRect: () => ({
-          left: 0,
-          top: 0,
-          right: 800,
-          bottom: 600
-        })
-      }
-    }
-  })
 }))
 
 vi.mock<unknown>(
@@ -138,8 +114,8 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
-  testState.selectedNodeIds = ref(new Set<NodeId>())
-  testState.selectedItems = ref<unknown[]>([])
+  Object.assign(useCanvasStore(), { selectedNodeIds: new Set() })
+  useCanvasStore().selectedItems = []
   testState.nodeLayouts.clear()
   testState.nodeSnap.shouldSnap.mockReturnValue(false)
   testState.nodeSnap.applySnapToPosition.mockImplementation(
@@ -158,9 +134,20 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', testState.cancelAnimationFrame)
 })
 
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
+  useCanvasStore().canvas = fromPartial({
+    ds: testState.mockDs,
+    auto_pan_speed: 10,
+    canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 800, 600) }
+  })
+})
+
 describe('useNodeDrag', () => {
   it('batches multi-node drag updates into one mutation call per frame', () => {
-    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
+    Object.assign(useCanvasStore(), {
+      selectedNodeIds: new Set([node1, toNodeId('2')])
+    })
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -188,7 +175,7 @@ describe('useNodeDrag', () => {
   })
 
   it('uses the same batched mutation path for single-node drags', () => {
-    testState.selectedNodeIds.value = new Set([node1])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
@@ -213,8 +200,8 @@ describe('useNodeDrag', () => {
     selectedNode.pos = [300, 400]
     const selectedGroup = new LGraphGroup('selected')
     selectedGroup.pos = [500, 600]
-    testState.selectedNodeIds.value = new Set([node1])
-    testState.selectedItems.value = [selectedNode, selectedGroup]
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    useCanvasStore().selectedItems = [selectedNode, selectedGroup]
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -231,7 +218,7 @@ describe('useNodeDrag', () => {
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
-    testState.selectedNodeIds.value = new Set([node1])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
@@ -271,8 +258,8 @@ describe('useNodeDrag', () => {
 
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set([node1]))
-    testState.selectedItems = ref<unknown[]>([])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    useCanvasStore().selectedItems = []
     testState.nodeLayouts.clear()
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 200 },
@@ -323,7 +310,9 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
-    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
+    Object.assign(useCanvasStore(), {
+      selectedNodeIds: new Set([node1, toNodeId('2')])
+    })
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), node1)
@@ -418,12 +407,12 @@ describe('useNodeDrag non-node positionables', () => {
         pos[1] += deltaY
       }
     }
-    testState.selectedItems.value = [group]
+    useCanvasStore().selectedItems = [fromPartial(group)]
     return group
   }
 
   function dragNodeBy(delta: number) {
-    testState.selectedNodeIds.value = new Set([node1])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 0, y: 0 },
       size: { width: 100, height: 50 }

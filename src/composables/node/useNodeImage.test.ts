@@ -1,16 +1,14 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeVideo } from '@/composables/node/useNodeImage'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
-const { canvasInteractionsMock, nodeOutputStoreMock } = vi.hoisted(() => ({
+const { canvasInteractionsMock } = vi.hoisted(() => ({
   canvasInteractionsMock: {
     handleWheel: vi.fn(),
     handlePointerDown: vi.fn(),
     handlePointerMove: vi.fn()
-  },
-  nodeOutputStoreMock: {
-    getNodeImageUrls: vi.fn<(node: unknown) => string[] | undefined>()
   }
 }))
 
@@ -20,9 +18,6 @@ vi.mock<unknown>(
     useCanvasInteractions: () => canvasInteractionsMock
   })
 )
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => nodeOutputStoreMock
-}))
 vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
@@ -31,7 +26,9 @@ describe('useNodeVideo', () => {
   async function setup() {
     vi.clearAllMocks()
 
-    nodeOutputStoreMock.getNodeImageUrls.mockReturnValue(['http://video/1.mp4'])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/1.mp4'
+    ])
     const node = createMockMediaNode({
       size: [400, 400],
       graph: { setDirtyCanvas: vi.fn() }

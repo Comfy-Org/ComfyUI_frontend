@@ -53,16 +53,6 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: vi.fn(() => ({
-      nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-      nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-    }))
-  })
-)
-
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
