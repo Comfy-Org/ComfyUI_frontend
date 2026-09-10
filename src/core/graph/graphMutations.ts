@@ -1,3 +1,5 @@
+import { toRaw } from 'vue'
+
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -40,11 +42,16 @@ interface SemanticNodeLayout {
   size: { width: number; height: number }
 }
 
+/** Restores the layout captured before a batch's layout phase began. */
+export interface SemanticLayoutRestore {
+  restore(context: RemoteMutationContext): void
+}
+
 /**
  * Renderer-owned layout mutation port. Semantic state never imports the
  * renderer or writes position into the shared follower Y.Doc.
  */
-interface SemanticLayoutMutationPort {
+export interface SemanticLayoutMutationPort {
   createNode(
     scope: GraphScope,
     nodeId: NodeId,
@@ -56,6 +63,18 @@ interface SemanticLayoutMutationPort {
     nodeIds: readonly NodeId[],
     context: RemoteMutationContext
   ): void
+  /**
+   * Capture the layout owner's own state for `nodeIds` so a batch that throws
+   * part-way through its layout phase can be put back exactly as it was.
+   * Rollback is the owner's job: the semantic stores cannot reconstruct
+   * z-order or visibility from a node payload. A port that returns `null`
+   * (or omits this) still gets an all-or-nothing semantic commit, and layout
+   * rollback degrades to deleting whatever the batch created.
+   */
+  captureNodes?(
+    scope: GraphScope,
+    nodeIds: readonly NodeId[]
+  ): SemanticLayoutRestore | null
 }
 
 interface GraphMutationBatch {
@@ -146,6 +165,14 @@ type PreparedMutation =
       removedLinkIds: readonly LinkId[]
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
+
+/**
+ * Layout writes are buffered while the semantic stores commit so the renderer
+ * is never moved ahead of a batch that still has a chance of failing.
+ */
+type LayoutOp =
+  | { kind: 'delete'; nodeIds: readonly NodeId[] }
+  | { kind: 'create'; nodeId: NodeId; layout: SemanticNodeLayout }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -603,7 +630,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     scope: GraphScope,
     nodeId: NodeId,
     removedLinkIds: readonly LinkId[],
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    layoutOps: LayoutOp[]
   ): void {
     const node = nodeStore
       .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
@@ -619,13 +647,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
     widgetStore.clearNode(scope.rootGraphId, nodeId, context)
     if (node) nodeStore.deleteNode(scope, node, context)
-    deps.layout.deleteNodes(scope, [nodeId], context)
+    layoutOps.push({ kind: 'delete', nodeIds: [nodeId] })
   }
 
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    layoutOps: LayoutOp[]
   ): void {
     for (const mutation of prepared) {
       switch (mutation.kind) {
@@ -666,12 +695,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           }
           if (!existing) {
-            deps.layout.createNode(
-              scope,
-              mutation.node.state.id,
-              mutation.node.layout,
-              context
-            )
+            layoutOps.push({
+              kind: 'create',
+              nodeId: mutation.node.state.id,
+              layout: mutation.node.layout
+            })
           }
           break
         }
@@ -765,7 +793,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const topology = linkStore.getTopology(scope.rootGraphId, id)
             if (topology) removeLink(scope, topology, context)
           }
-          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+          for (const id of mutation.nodeIds)
+            deleteNode(scope, id, [], context, layoutOps)
           break
         case 'removeLinks':
           for (const id of mutation.linkIds) {
@@ -774,18 +803,158 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           break
         case 'deleteNode':
-          deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
+          deleteNode(
+            scope,
+            mutation.nodeId,
+            mutation.removedLinkIds,
+            context,
+            layoutOps
+          )
           break
         case 'clearSemanticGraph':
           for (const nodeId of mutation.nodeIds) {
             widgetStore.clearNode(scope.rootGraphId, nodeId, context)
           }
-          deps.layout.deleteNodes(scope, mutation.nodeIds, context)
+          layoutOps.push({ kind: 'delete', nodeIds: mutation.nodeIds })
           linkStore.clearOwner(scope, context)
           linkPresentationStore.clearOwner(scope)
           nodeStore.clearOwner(scope, context)
           break
       }
+    }
+  }
+
+  /**
+   * Everything the semantic stores hold for one scope. Node and widget
+   * identities are kept — callers hold references to them — and only their
+   * fields are snapshotted, so a restore puts the same objects back carrying
+   * their pre-batch values. The copies are shallow because every write in
+   * `commit` replaces a field or a slot entry wholesale; nothing nested is
+   * edited in place, and a deep clone would choke on the runtime-only values
+   * a node payload can carry.
+   */
+  function captureSemanticScope(scope: GraphScope) {
+    const captureNode = (node: NodeState) => ({
+      ...toRaw(node),
+      inputs: [...node.inputs],
+      outputs: [...node.outputs]
+    })
+    const nodes = nodeStore
+      .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+      .map((node) => ({
+        ref: node,
+        contents: captureNode(node),
+        widgets: widgetStore
+          .getNodeWidgetIds(scope.rootGraphId, node.id)
+          .flatMap((id) => {
+            const state = widgetStore.getWidget(id)
+            if (!state) return []
+            const renderState = widgetStore.getWidgetRenderState(id)
+            return [
+              {
+                id,
+                state: { ...toRaw(state) },
+                renderState: renderState ? { ...toRaw(renderState) } : {}
+              }
+            ]
+          })
+      }))
+    const links = [...linkStore.graphTopologies(scope)].map((topology) => ({
+      ...toRaw(topology)
+    }))
+
+    return function restore(context: RemoteMutationContext): void {
+      const occupied = new Set<NodeId>([
+        ...nodeStore
+          .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+          .map((node) => node.id),
+        ...nodes.map((captured) => captured.ref.id)
+      ])
+      for (const nodeId of occupied)
+        widgetStore.clearNode(scope.rootGraphId, nodeId, context)
+      linkStore.clearOwner(scope, context)
+      nodeStore.clearOwner(scope, context)
+
+      for (const captured of nodes) {
+        Object.assign(captured.ref, captured.contents)
+        nodeStore.registerNode(scope, captured.ref, context)
+        for (const widget of captured.widgets)
+          widgetStore.registerWidget(
+            widget.id,
+            widget.state,
+            widget.renderState,
+            context
+          )
+      }
+      for (const topology of links) linkStore.registerLink(scope, topology)
+    }
+  }
+
+  function flushLayout(
+    scope: GraphScope,
+    layoutOps: readonly LayoutOp[],
+    context: RemoteMutationContext
+  ): void {
+    for (const op of layoutOps) {
+      if (op.kind === 'delete')
+        deps.layout.deleteNodes(scope, op.nodeIds, context)
+      else deps.layout.createNode(scope, op.nodeId, op.layout, context)
+    }
+  }
+
+  function touchedNodeIds(
+    prepared: readonly PreparedMutation[]
+  ): readonly NodeId[] {
+    return [
+      ...new Set(
+        prepared.flatMap((mutation) => {
+          switch (mutation.kind) {
+            case 'addNode':
+            case 'reconcileNode':
+              return [mutation.node.state.id]
+            case 'setWidget':
+              return [mutation.nodeId]
+            case 'deleteNode':
+              return [mutation.nodeId]
+            case 'removeMissing':
+            case 'clearSemanticGraph':
+              return [...mutation.nodeIds]
+            case 'connect':
+              return [
+                mutation.topology.originNodeId,
+                mutation.topology.targetNodeId
+              ]
+            case 'removeLinks':
+              return []
+          }
+        })
+      )
+    ]
+  }
+
+  /**
+   * The batch's single publication point: the semantic stores are written
+   * first and the renderer's layout second, and a throw from either puts both
+   * back. Without this, a layout port that raises after node and widget
+   * registration leaves the ECS holding a graph the document never committed.
+   */
+  function commitAtomically(
+    scope: GraphScope,
+    prepared: readonly PreparedMutation[],
+    context: RemoteMutationContext
+  ): void {
+    const touched = touchedNodeIds(prepared)
+    const restoreSemantic = captureSemanticScope(scope)
+    const restoreLayout = deps.layout.captureNodes?.(scope, touched) ?? null
+    const layoutOps: LayoutOp[] = []
+    try {
+      commit(scope, prepared, context, layoutOps)
+      flushLayout(scope, layoutOps, context)
+    } catch (error) {
+      if (restoreLayout) restoreLayout.restore(context)
+      else deps.layout.deleteNodes(scope, touched, context)
+      restoreSemantic(context)
+      throw error
     }
   }
 
@@ -826,7 +995,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       })
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
-      commit(scope, prepared, context)
+      commitAtomically(scope, prepared, context)
       return true
     },
     addNode(payload, context) {
