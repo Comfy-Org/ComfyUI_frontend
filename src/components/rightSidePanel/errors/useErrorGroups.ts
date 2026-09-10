@@ -18,6 +18,7 @@ import {
   getNodeByExecutionId,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { createCancelToken } from '@/utils/createCancelToken'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import type { MissingNodeType } from '@/types/comfy'
@@ -103,7 +104,8 @@ type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
 /** Resolve display info for a node by its execution ID. */
 function resolveNodeInfo(nodeId: NodeExecutionId) {
-  const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
+  const rootGraph = app.rootGraphOrUndefined
+  const graphNode = rootGraph ? getNodeByExecutionId(rootGraph, nodeId) : null
 
   return {
     title: resolveNodeDisplayName(graphNode, {
@@ -260,6 +262,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const collapseState = reactive<Record<string, boolean>>({})
 
   const selectedNodeInfo = computed(() => {
+    const rootGraph = app.rootGraphOrUndefined
     const items = canvasStore.selectedItems
     const nodeIds = new Set<string>()
     const containerExecutionIds = new Set<NodeExecutionId>()
@@ -267,8 +270,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const item of items) {
       if (!isLGraphNode(item)) continue
       nodeIds.add(String(item.id))
-      if (item instanceof SubgraphNode && app.rootGraph) {
-        const execId = getExecutionIdByNode(app.rootGraph, item)
+      if (rootGraph && item instanceof SubgraphNode) {
+        const execId = getExecutionIdByNode(rootGraph, item)
         if (execId) containerExecutionIds.add(execId)
       }
     }
@@ -299,8 +302,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return map
     for (const execId of executionErrorStore.allErrorExecutionIds) {
-      const node = getNodeByExecutionId(app.rootGraph, execId)
+      const node = getNodeByExecutionId(rootGraph, execId)
       if (node) map.set(execId, node)
     }
     return map
@@ -308,12 +313,14 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   const missingNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return map
     const nodeTypes = missingNodesStore.missingNodesError?.nodeTypes ?? []
     for (const nodeType of nodeTypes) {
       if (typeof nodeType === 'string') continue
       if (nodeType.nodeId == null) continue
       const nodeId = String(nodeType.nodeId)
-      const node = getNodeByExecutionId(app.rootGraph, nodeId)
+      const node = getNodeByExecutionId(rootGraph, nodeId)
       if (node) map.set(nodeId, node)
     }
     return map
@@ -420,7 +427,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           'node',
           {
             message: e.message,
-            details: e.details ?? undefined,
+            details: e.details,
             ...resolveRunErrorMessage({
               kind: 'node_validation',
               error: e,
@@ -440,6 +447,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!executionErrorStore.lastExecutionError) return
 
     const e = executionErrorStore.lastExecutionError
+    if (e.node_id == null) return
     const nodeId = tryNormalizeNodeExecutionId(e.node_id)
     if (!nodeId) return
 
@@ -482,9 +490,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       if (!toResolve.length) return
 
       const resolvingTypes = toResolve.map((n) => n.type)
-      let cancelled = false
+      const { cancel, isCancelled } = createCancelToken()
       onCleanup(() => {
-        cancelled = true
+        cancel()
         const next = new Map(asyncResolvedIds.value)
         for (const type of resolvingTypes) {
           if (next.get(type) === RESOLVING) next.delete(type)
@@ -502,7 +510,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           packId: (await inferPackFromNodeName.call(n.type))?.id ?? null
         }))
       )
-      if (cancelled) return
+      if (isCancelled()) return
 
       const final = new Map(asyncResolvedIds.value)
       for (const r of results) {
@@ -732,10 +740,11 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
 
     // Resolve from graph for model/media candidates
-    if (app.rootGraph) {
-      const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
-      if (graphNode && nodeIds.has(String(graphNode.id))) return true
-    }
+    const rootGraph = app.rootGraphOrUndefined
+    const graphNode = rootGraph
+      ? getNodeByExecutionId(rootGraph, executionNodeId)
+      : null
+    if (graphNode && nodeIds.has(String(graphNode.id))) return true
 
     for (const containerExecId of selectedNodeInfo.value
       .containerExecutionIds) {
@@ -770,8 +779,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!hasSelection.value) return []
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
-    const matched = candidates.filter(
-      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
+    const matched = candidates.filter((c) =>
+      isAssetCandidateInSelection(c.nodeId)
     )
     if (!matched.length) return []
     return groupCandidatesByMediaType(matched)

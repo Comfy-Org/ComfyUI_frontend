@@ -84,10 +84,9 @@ export class ComfyActionbar {
   }
 
   async isDocked() {
-    const className = await this.root
+    return this.root
       .locator('.actionbar')
-      .getAttribute('class')
-    return className?.includes('static') ?? false
+      .evaluate((element) => getComputedStyle(element).position === 'static')
   }
 
   /** After the action completes, keeps observing until maxRequests or timeout. */

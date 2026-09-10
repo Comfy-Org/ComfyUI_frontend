@@ -11,11 +11,11 @@ describe('BuilderHero', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('platform.products.builder.title', 'en')
+        name: t('platform.builderHero.heading', 'en')
       })
     ).toBeTruthy()
     expect(
-      screen.getByText(t('platform.products.builder.description', 'en'))
+      screen.getByText(t('platform.builderHero.subtitle', 'en'))
     ).toBeTruthy()
   })
 })
