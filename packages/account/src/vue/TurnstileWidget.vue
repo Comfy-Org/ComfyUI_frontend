@@ -15,8 +15,8 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-import type { TurnstileApi } from './turnstileScript'
-import { loadTurnstile } from './turnstileScript'
+import type { TurnstileApi } from '../turnstileScript'
+import { loadTurnstile } from '../turnstileScript'
 
 const {
   siteKey,
