@@ -3,7 +3,7 @@ import { until } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { isFirebaseAuthErrorLike } from '@comfyorg/account/firebaseAuthError'
-import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import { SocialAuthButtons } from '@comfyorg/account/vue'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
 import type {
