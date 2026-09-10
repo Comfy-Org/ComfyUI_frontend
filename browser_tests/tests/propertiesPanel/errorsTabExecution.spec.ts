@@ -10,6 +10,7 @@ import {
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const webSocketTest = mergeTests(test, webSocketFixture)
@@ -81,6 +82,11 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await expect(runtimePanel).toBeHidden()
+
+    const panel = new PropertiesPanelHelper(comfyPage.page)
+    await panel.open(comfyPage.actionbar.propertiesButton)
+    await expect(panel.root).toBeVisible()
+    await expect(panel.errorsTab).toBeHidden()
 
     await workflowsTab.switchToWorkflow('execution_error')
     await openErrorsTab(comfyPage)
