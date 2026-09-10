@@ -146,35 +146,36 @@ export interface SessionClientOptions extends SessionRequestOptions {
 }
 
 /**
- * `settled` is false until the attached identity has delivered at least
- * once, so a host can tell "Firebase has not answered yet" from "nobody is
- * signed in" without wrapping the port.
+ * `pending` is the initial phase, before the attached identity has delivered
+ * even once, so a host can tell "Firebase has not answered yet" (pending)
+ * from "nobody is signed in" (a delivered null) without wrapping the port.
  */
 export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
+  | {
+      readonly phase: 'pending'
+      readonly user: null
+      readonly session: undefined
+    }
   | {
       readonly phase: 'signed-out'
       readonly user: null
       readonly session: undefined
-      readonly settled: boolean
     }
   | {
       readonly phase: 'minting'
       readonly user: TUser
       readonly session: undefined
-      readonly settled: true
     }
   | {
       readonly phase: 'authenticated'
       readonly user: TUser
       readonly session: AccountCredential
-      readonly settled: true
     }
   | {
       readonly phase: 'error'
       readonly user: TUser
       readonly session: undefined
       readonly failure: SessionFailure
-      readonly settled: true
     }
 
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
@@ -256,42 +257,27 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   let identityEpoch = 0
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
 
-  let inFlight: Promise<SessionResult> | undefined
-  let inFlightUid: string | undefined
-  let inFlightForced = false
+  let inFlight:
+    | {
+        readonly promise: Promise<SessionResult>
+        readonly uid: string
+        readonly forced: boolean
+      }
+    | undefined
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
-      return {
-        phase: 'signed-out',
-        user: null,
-        session: undefined,
-        settled: identitySettled
-      }
+      return identitySettled
+        ? { phase: 'signed-out', user: null, session: undefined }
+        : { phase: 'pending', user: null, session: undefined }
     }
     if (credential) {
-      return {
-        phase: 'authenticated',
-        user: currentUser,
-        session: credential,
-        settled: true
-      }
+      return { phase: 'authenticated', user: currentUser, session: credential }
     }
     if (failure) {
-      return {
-        phase: 'error',
-        user: currentUser,
-        session: undefined,
-        failure,
-        settled: true
-      }
+      return { phase: 'error', user: currentUser, session: undefined, failure }
     }
-    return {
-      phase: 'minting',
-      user: currentUser,
-      session: undefined,
-      settled: true
-    }
+    return { phase: 'minting', user: currentUser, session: undefined }
   }
 
   function publish(): void {
@@ -376,8 +362,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    */
   function abandonInFlight(): void {
     inFlight = undefined
-    inFlightUid = undefined
-    inFlightForced = false
   }
 
   function sharedMint(
@@ -387,20 +371,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): Promise<SessionResult> {
     if (
       inFlight !== undefined &&
-      inFlightUid === user.uid &&
-      (!forced || inFlightForced)
+      inFlight.uid === user.uid &&
+      (!forced || inFlight.forced)
     ) {
-      return inFlight
+      return inFlight.promise
     }
-    inFlightUid = user.uid
-    inFlightForced = forced
     const running = mint(user, options).finally(() => {
-      if (inFlight !== running) return
+      if (inFlight?.promise !== running) return
       inFlight = undefined
-      inFlightUid = undefined
-      inFlightForced = false
     })
-    inFlight = running
+    inFlight = { promise: running, uid: user.uid, forced }
     return running
   }
 
