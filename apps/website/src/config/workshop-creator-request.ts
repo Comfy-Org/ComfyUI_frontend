@@ -7,6 +7,7 @@ import { workshopFileBase64 } from './workshop-file-encoding'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { renderWorkshopRequestTemplate } from './workshop-request-template'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
+import { loadWorkshopExampleFile } from './workshop-example-file'
 
 export interface EncodedWorkshopFile {
   readonly data: string
@@ -55,6 +56,13 @@ export async function prepareWorkshopCreatorRequest(
     plain[name] = parsed.data
   }
   let bytes = new TextEncoder().encode(JSON.stringify(plain)).byteLength
+  function reserve(file: { size: number; type: string }, name: string) {
+    bytes += 4 * Math.ceil(file.size / 3) + file.type.length + 256
+    if (bytes > 10 * 1024 * 1024)
+      throw new WorkshopRouterError('validation', null, {
+        [name]: 'requestTooLarge'
+      })
+  }
   const uploads = definition.files.flatMap((field) => {
     const value = values[field.name]
     const files =
@@ -64,11 +72,14 @@ export async function prepareWorkshopCreatorRequest(
         [field.name]: files.length ? 'rejected' : 'required'
       })
     return files.map((value) => {
-      if (typeof value !== 'object' || !(value.file instanceof File))
+      if (
+        typeof value !== 'object' ||
+        (!(value.file instanceof File) && !value.sourceUrl)
+      )
         throw new WorkshopRouterError('validation', null, {
           [field.name]: 'required'
         })
-      const file = value.file
+      const file = value.file ?? value
       const accept = field.mimeTypes ?? ACCEPT[field.accept]
       if (accept.length && !accept.includes(file.type))
         throw new WorkshopRouterError('validation', null, {
@@ -78,16 +89,27 @@ export async function prepareWorkshopCreatorRequest(
         throw new WorkshopRouterError('validation', null, {
           [field.name]: 'tooLarge'
         })
-      bytes += 4 * Math.ceil(file.size / 3) + file.type.length + 256
-      if (bytes > 10 * 1024 * 1024)
-        throw new WorkshopRouterError('validation', null, {
-          [field.name]: 'requestTooLarge'
-        })
-      return { name: field.name, file }
+      if (value.file instanceof File) reserve(value.file, field.name)
+      return { name: field.name, value, accept }
     })
   })
   const files: Record<string, EncodedWorkshopFile[]> = {}
-  for (const { name, file } of uploads) {
+  for (const { name, value, accept } of uploads) {
+    let file: File
+    try {
+      file =
+        value.file instanceof File
+          ? value.file
+          : await loadWorkshopExampleFile(value, signal)
+    } catch {
+      signal.throwIfAborted()
+      throw new WorkshopRouterError('validation', null, {
+        [name]: 'uploadFailed'
+      })
+    }
+    if (accept.length && !accept.includes(file.type))
+      throw new WorkshopRouterError('validation', null, { [name]: 'badType' })
+    if (!(value.file instanceof File)) reserve(file, name)
     const encoded = {
       data: await encodeFile(file, signal),
       mimeType: file.type

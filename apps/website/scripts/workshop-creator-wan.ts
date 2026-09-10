@@ -125,7 +125,10 @@ export function wanCreatorRequest(
     callback: 'wan-media',
     options: {
       ...options,
-      imageInMedia: id.includes('happyhorse') || id === 'wan/wan2.7-i2v'
+      imageInMedia:
+        id.includes('happyhorse') ||
+        id.includes('wan3.0') ||
+        id === 'wan/wan2.7-i2v'
     }
   }
 }

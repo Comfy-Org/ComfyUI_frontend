@@ -11,7 +11,7 @@ packed snapshot; the generated contracts keep native whole-request validation.
 | Router schema documents            |   207 |
 | Authored input contracts           |   206 |
 | Preserved content/use-case records |   288 |
-| Published content/use-case pages   |   157 |
+| Published content/use-case pages   |   155 |
 | Distinct published Router models   |   113 |
 | Published Incomplete pages         |     0 |
 
@@ -35,6 +35,45 @@ resolution is withheld because the provider forbids combining it with aspect
 ratio ([provider reference](https://developer.ideogram.ai/api-reference/generate-images/generate-v3)).
 LTX Pro's resolution picker is restricted to its model-specific matrix, not the
 shared Fast/Pro union. Optional seed remains omitted; output count stays fixed.
+
+## September 10 use-case input and media corrections
+
+Eric's feedback is addressed by selecting a creator form per content/use-case
+ID, without changing the native Router ID or weakening its request schema.
+Seedance first/last frames, reference images and ordinary image-to-video now
+have distinct controls and names. Related cards do not repeat the same Router
+model. Grok, Luma, Wan 3, Gemini video and BFL video modes preserve their native
+media paths; Beeble's video page explicitly requests video output.
+
+Two incorrect category placements are withheld, not deleted from Rob's data:
+`kling--v3--animate-images` points to a text-only request, and
+`wan--reference-video--animate-images` requires a reference video. Their
+supported Generate videos / Edit videos pages remain. This changes 157 to 155
+published use-case pages while retaining 113 Router identities and all 288
+source records.
+
+Worked examples now restore only validated values for the selected form,
+including source-image roles and valid duration/resolution/aspect-ratio values.
+Veo first/last-frame examples download the actual source images on request
+composition, validate MIME/size, and encode those bytes for its Base64 API.
+URL-native inputs retain URL uploads. Every exposed resolution/aspect-ratio
+control is a dropdown; optional seeds are not manufactured from invalid -1
+examples. Video and audio inputs have inline media previews.
+
+The Seedance 2.0 / FLUX.3 hero assets are videos, now rendered as videos.
+Hero/card sizing follows Mar's current compact layout. Browser checks verify
+decoded hero frames, Grok/Veo example images, Veo API composition, source media
+controls, and desktop/mobile overflow without sending a generation request.
+
+Content still needed: all three Seedance 1.0 Lite Animate images records have
+empty `examples` and no output samples. No substitute model's media was added.
+Kling Video Extend intentionally requests a prior generation's `video_id`:
+its native API is not a generic source-video upload endpoint.
+
+The Gemini Interactions typed media/input and video task selection follow the
+[provider API reference](https://ai.google.dev/api/interactions-api?hl=en).
+The committed Router schema remains the validation floor, not an invented
+provider schema.
 
 Schema presence and offline validation do not prove deployed model availability
 or successful paid generation. No paid requests or purchases were made for this

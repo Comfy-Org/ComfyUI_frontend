@@ -10,6 +10,7 @@ import type { Modality, UseCase, WorkshopModel } from './models-catalogue'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
+import { workshopContentInputs } from './workshop-content-inputs'
 
 const routerIndex = workshopRouterIndexSchema.parse(indexJson)
 const canonicalNames = new Map(Object.entries(displayNames))
@@ -92,8 +93,19 @@ const contentSources = display.flatMap((overlay) => {
   if (!entry || !record)
     throw new Error(`Invalid Router content join: ${overlay.id}`)
   if (record.incompleteReason) return []
+  const input = workshopContentInputs.get(overlay.id)
+  if (input && input.routerId !== record.id)
+    throw new Error(`Wrong Router model for content inputs: ${overlay.id}`)
+  if (input?.unavailableReason) return []
   return [{ alias, entry, overlay, record }]
 })
+const sharedNames = new Map<string, Set<string>>()
+for (const { overlay, record } of contentSources) {
+  const key = `${record.id}:${overlay.useCase}`
+  const names = sharedNames.get(key) ?? new Set<string>()
+  names.add(overlay.modelId)
+  sharedNames.set(key, names)
+}
 export const routerContentBySlug = new Map(
   contentSources.map((source) => [source.overlay.slug, source])
 )
@@ -119,6 +131,9 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
       slug,
       name:
         overlay.displayName ??
+        ((sharedNames.get(`${record.id}:${overlay.useCase}`)?.size ?? 0) > 1
+          ? entry.displayName
+          : undefined) ??
         canonicalNames.get(record.id) ??
         entry.displayName,
       workflowCount: exampleCount,

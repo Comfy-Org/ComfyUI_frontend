@@ -274,7 +274,8 @@
       "label": "Input video",
       "help": "Provide the video to transform, extend, or use as a reference.",
       "advanced": false,
-      "control": "text-box"
+      "control": "text-box",
+      "urlUpload": "video"
     },
     {
       "names": ["image_url"],
@@ -930,13 +931,15 @@
     },
     "bfl/flux-kontext-max": {
       "aspect_ratio": {
-        "help": "Set width:height, or leave empty to match the input image.",
+        "help": "Leave unset to match the input image.",
+        "options": ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "9:21"],
         "defaultCandidates": []
       }
     },
     "bfl/flux-kontext-pro": {
       "aspect_ratio": {
-        "help": "Set width:height, or leave empty to match the input image.",
+        "help": "Leave unset to match the input image.",
+        "options": ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "9:21"],
         "defaultCandidates": []
       }
     },
@@ -1016,6 +1019,9 @@
       }
     },
     "bfl/flux-pro-1.1-ultra": {
+      "aspect_ratio": {
+        "options": ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "9:21"]
+      },
       "image_prompt_strength": {
         "label": "Image influence",
         "help": "Blend from prompt only (0) to reference image only (1).",
@@ -1805,10 +1811,14 @@
       },
       "image": {
         "label": "Starting image",
-        "help": "Provide an image URL or base64 image without a data:image prefix."
+        "help": "",
+        "imageSource": "url",
+        "urlUpload": "image"
       },
       "image_tail": {
         "label": "End frame",
+        "imageSource": "url",
+        "urlUpload": "image",
         "help": "Provide the ending image; omit camera controls and motion masks when using it."
       },
       "dynamic_masks": {

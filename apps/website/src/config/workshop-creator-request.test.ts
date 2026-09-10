@@ -12,6 +12,7 @@ import { prepareWorkshopRouterInput } from './workshop-request'
 import { validateWorkshopInput } from './workshop-json-schema'
 import creatorModels from '../data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
+import { formForContract } from './workshop-contract'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -27,6 +28,9 @@ function upload(type = 'image/png'): FileValue {
 function modelFor(id: string) {
   const model = getRouterWorkshopModelDetail(id.replace('/', '--'))
   if (!model?.execution) throw new Error(`Missing Router contract: ${id}`)
+  const contract = workshopContract(id)
+  if (contract)
+    return { ...model, execution: contract, form: formForContract(contract) }
   return { ...model, execution: model.execution }
 }
 
@@ -35,6 +39,9 @@ function valuesFor(id: string): FormValues {
   const fields = schemaForModel(model)
   const values = { ...defaultValues(fields, model.defaults) }
   for (const field of fields) {
+    if (field.kind === 'file' && typeof values[field.name] === 'object') {
+      values[field.name] = upload(field.accept[0])
+    }
     if (
       !field.required ||
       !Object.hasOwn(validateForm([field], values), field.name)

@@ -19,7 +19,7 @@ import {
 } from '../src/config/workshop-router-openapi'
 import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
-import { creatorFormFor } from './workshop-creator-forms'
+import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 
 const jsonSchema = z.record(z.string(), z.json())
 
@@ -105,12 +105,14 @@ export function compileWorkshopContracts(
               ...(schema ? { schema } : {}),
               contentTypes: [...contentTypes]
             })
+      const creatorVariants = creatorVariantsFor(snapshot.id, curated)
       const record = workshopContractRecordSchema.parse({
         catalogId: binding?.id ?? snapshot.id,
         id: snapshot.id,
         sourceCommit: snapshot.sourceCommit,
         ...curated,
         creator: creatorFormFor(snapshot.id, curated),
+        ...(Object.keys(creatorVariants).length ? { creatorVariants } : {}),
         media: binding?.media ?? [],
         advancedFields: [],
         output

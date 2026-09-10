@@ -34,33 +34,59 @@ function seedance({
   values,
   files
 }: WorkshopRequestInputs): Record<string, unknown> {
-  const { prompt, ...body } = values
+  const { prompt, first_frame_url, last_frame_url, ...rest } = values
+  const body = Object.fromEntries(
+    Object.entries(rest).filter(
+      ([name]) => !name.startsWith('reference_image_url')
+    )
+  )
   const first = files.first_frame ?? []
   const last = files.last_frame ?? []
   const references = files.reference_images ?? []
+  const firstUrls = [
+    ...first.map(dataUrl),
+    ...(typeof first_frame_url === 'string' ? [first_frame_url] : [])
+  ]
+  const lastUrls = [
+    ...last.map(dataUrl),
+    ...(typeof last_frame_url === 'string' ? [last_frame_url] : [])
+  ]
+  const referenceUrls = [
+    ...references.map(dataUrl),
+    ...referenceImageUrls(values)
+  ]
   if (
-    (last.length && !first.length) ||
-    (references.length && (first.length || last.length))
+    (lastUrls.length && !firstUrls.length) ||
+    (referenceUrls.length && (firstUrls.length || lastUrls.length))
   )
     throw new WorkshopRouterError('validation', null, {
-      [last.length && !first.length ? 'first_frame' : 'reference_images']:
-        'rejected'
+      [lastUrls.length && !firstUrls.length
+        ? 'first_frame'
+        : 'reference_images']: 'rejected'
     })
   return {
     ...body,
     content: [
       { type: 'text', text: prompt },
       ...[
-        ...first.map((file) => ({ file, role: 'first_frame' })),
-        ...last.map((file) => ({ file, role: 'last_frame' })),
-        ...references.map((file) => ({ file, role: 'reference_image' }))
-      ].map(({ file, role }) => ({
+        ...firstUrls.map((url) => ({ url, role: 'first_frame' })),
+        ...lastUrls.map((url) => ({ url, role: 'last_frame' })),
+        ...referenceUrls.map((url) => ({ url, role: 'reference_image' }))
+      ].map(({ url, role }) => ({
         type: 'image_url',
         role,
-        image_url: { url: dataUrl(file) }
+        image_url: { url }
       }))
     ]
   }
+}
+
+function referenceImageUrls(values: Values): string[] {
+  return Object.entries(values).flatMap(([name, value]) =>
+    name.startsWith('reference_image_url') && typeof value === 'string' && value
+      ? [value]
+      : []
+  )
 }
 
 function gemini({
@@ -307,8 +333,56 @@ export function prepareWorkshopRequestCallback(
     case 'nested-settings':
       return { prompt: values.prompt, settings: prefixed(values, 'setting_') }
     case 'grok-video': {
-      const { image_url, ...body } = values
-      return { ...body, ...(image_url ? { image: { url: image_url } } : {}) }
+      const { image_url, ...rest } = values
+      const body = Object.fromEntries(
+        Object.entries(rest).filter(
+          ([name]) => !name.startsWith('reference_image_url')
+        )
+      )
+      const references = referenceImageUrls(values)
+      return {
+        ...body,
+        ...(image_url ? { image: { url: image_url } } : {}),
+        ...(references.length
+          ? { reference_images: references.map((url) => ({ url })) }
+          : {})
+      }
+    }
+    case 'luma-video': {
+      const { first_frame_url, last_frame_url, ...body } = values
+      return {
+        ...body,
+        ...(first_frame_url || last_frame_url
+          ? {
+              keyframes: {
+                ...(first_frame_url
+                  ? { frame0: { type: 'image', url: first_frame_url } }
+                  : {}),
+                ...(last_frame_url
+                  ? { frame1: { type: 'image', url: last_frame_url } }
+                  : {})
+              }
+            }
+          : {})
+      }
+    }
+    case 'gemini-video': {
+      const { input, image_url, last_frame_url, video_url } = values
+      const media = [
+        ...(image_url ? [{ type: 'image', uri: image_url }] : []),
+        ...(last_frame_url ? [{ type: 'image', uri: last_frame_url }] : []),
+        ...(video_url ? [{ type: 'video', uri: video_url }] : [])
+      ]
+      return {
+        input: media.length ? [{ type: 'text', text: input }, ...media] : input,
+        ...(request.options.mode
+          ? {
+              generation_config: {
+                video_config: { task: request.options.mode }
+              }
+            }
+          : {})
+      }
     }
   }
 }

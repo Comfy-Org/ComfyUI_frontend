@@ -1,5 +1,6 @@
 {
   "models": {
+    "beeble/switchx": { "family": "flat" },
     "bfl/flux-3-video": {
       "family": "bfl-video"
     },
@@ -73,10 +74,10 @@
       "family": "dialogue"
     },
     "gemini-interactions/gemini-omni-1.1-flash": {
-      "family": "text-input"
+      "family": "gemini-video"
     },
     "gemini-interactions/gemini-omni-flash-preview": {
-      "family": "text-input"
+      "family": "gemini-video"
     },
     "ideogram/ideogram-v3": {
       "family": "flat"
@@ -124,10 +125,10 @@
       "family": "flat"
     },
     "luma/ray-2": {
-      "family": "flat"
+      "family": "luma-video"
     },
     "luma/ray-flash-2": {
-      "family": "flat"
+      "family": "luma-video"
     },
     "luma_2/uni-1": {
       "family": "flat"

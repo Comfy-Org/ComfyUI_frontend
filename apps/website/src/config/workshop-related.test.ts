@@ -74,4 +74,18 @@ describe('relatedModels', () => {
       'quiet-video'
     ])
   })
+
+  it('does not repeat the current Router model or another related model under alias slugs', () => {
+    const current = catalog[0]
+    const duplicate = { ...current, slug: 'current-other-mode' }
+    const other = { ...catalog[3], slug: 'video-alias' }
+    const related = relatedModels(current, [...catalog, duplicate, other])
+    expect(related.map((entry) => entry.routerId)).not.toContain(
+      current.routerId
+    )
+    expect(new Set(related.map((entry) => entry.routerId)).size).toBe(
+      related.length
+    )
+    expect(related).toHaveLength(4)
+  })
 })
