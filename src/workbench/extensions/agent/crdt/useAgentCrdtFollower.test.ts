@@ -533,6 +533,46 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('stops sending human ops into a document it refuses to read', () => {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const follower = useAgentCrdtFollower(workflowId, graphMutations)
+        enqueue = follower.enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    const settle = (): void =>
+      dispatchFrame('doc_ops_result', {
+        workflowId: 'wf-1',
+        ok: true,
+        applied: [],
+        skipped: []
+      })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    settle()
+    // Control: a settled batch lets the next one leave, so a later silence is
+    // the read gate and not the in-flight window.
+    enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+    settle()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+    enqueue([{ op: 'delete_node', node_id: '3', removed_links: [] }])
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
   it('falls back to a default message when a schema_version_mismatch detail has no string message', () => {
     const { unmount, status } = mountFollower('wf-1')
 

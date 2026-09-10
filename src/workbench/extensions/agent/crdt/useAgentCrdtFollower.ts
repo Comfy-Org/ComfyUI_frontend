@@ -295,7 +295,11 @@ export function useAgentCrdtFollower(
     },
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
-    workflowId: () => bridge.subscribedWorkflowId,
+    // Reporting unbound while a schema error stands makes the mismatch fail
+    // closed on write as well as on read — a build that refuses to project a
+    // document must not keep minting operations into it.
+    workflowId: () =>
+      schemaError.value === null ? bridge.subscribedWorkflowId : null,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
