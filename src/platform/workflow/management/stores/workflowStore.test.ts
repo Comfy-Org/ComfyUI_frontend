@@ -723,6 +723,21 @@ describe('useWorkflowStore', () => {
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
     })
+
+    it('reattaches a temporary workflow when it is reopened', async () => {
+      const workflow = store.createTemporary('test.json')
+      const otherWorkflow = store.createTemporary('other.json')
+      await store.openWorkflow(workflow)
+      await store.openWorkflow(otherWorkflow)
+      await store.closeWorkflow(workflow)
+
+      await store.openWorkflow(workflow)
+
+      expect(store.getWorkflowByPath(workflow.path)?.path).toBe(workflow.path)
+      expect(store.openWorkflows.map(({ path }) => path)).toContain(
+        workflow.path
+      )
+    })
   })
 
   describe('deleteWorkflow', () => {

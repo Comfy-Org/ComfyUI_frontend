@@ -216,6 +216,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const loadedWorkflow = await workflow.load()
     if (!loadedWorkflow) return
 
+    workflowLookup.value[workflow.path] = loadedWorkflow
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
