@@ -1,6 +1,6 @@
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { createPinia, disposePinia, setActivePinia } from 'pinia'
-import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
@@ -18,46 +18,34 @@ import { TOUR_SEEN_SETTING, tourDefinition } from './onboardingTours'
 import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      settings.store.get(key) ?? (key === TOUR_SEEN_SETTING ? [] : undefined),
-    set: (key: string, value: unknown) => {
-      settings.store.set(key, value)
-      return Promise.resolve()
-    }
-  })
-}))
-
 const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
 }))
 
-const appModeMock = vi.hoisted(
-  (): { mode: Ref<AppMode> | null; hasOutputs: Ref<boolean> | null } => ({
-    mode: null,
-    hasOutputs: null
-  })
-)
+const appModeMock = vi.hoisted((): { mode: Ref<AppMode> | null } => ({
+  mode: null
+}))
 vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref: r } = await import('vue')
+  const { ref: r, computed } = await import('vue')
   appModeMock.mode = r<AppMode>('graph')
-  return { useAppMode: () => ({ mode: appModeMock.mode }) }
-})
-vi.mock<unknown>(import('@/stores/appModeStore'), async () => {
-  const { ref: r } = await import('vue')
-  appModeMock.hasOutputs = r(false)
-  const hasOutputs = appModeMock.hasOutputs
   return {
-    useAppModeStore: () => ({
-      get hasOutputs() {
-        return hasOutputs.value
-      }
+    useAppMode: () => ({
+      mode: appModeMock.mode,
+      isAppMode: computed(() => appModeMock.mode?.value === 'app'),
+      isBuilderMode: computed(() =>
+        appModeMock.mode?.value.startsWith('builder:')
+      ),
+      isSelectMode: computed(
+        () =>
+          appModeMock.mode?.value === 'builder:inputs' ||
+          appModeMock.mode?.value === 'builder:outputs'
+      ),
+      setMode: vi.fn()
     })
   }
 })
+
 const APP_MODE_TARGETS: CoachId[] = [
   'inputs-list',
   'app-run-button',
@@ -66,7 +54,7 @@ const APP_MODE_TARGETS: CoachId[] = [
 ]
 
 function seenTours(): string[] {
-  return (settings.store.get(TOUR_SEEN_SETTING) as string[] | undefined) ?? []
+  return useSettingStore().get(TOUR_SEEN_SETTING)
 }
 
 function setViewport(viewport: { width: number; height: number }) {
@@ -78,11 +66,7 @@ function setViewport(viewport: { width: number; height: number }) {
   happyDOM.setViewport(viewport)
 }
 
-let pinia: Pinia | undefined
-
 function mountStore() {
-  pinia = createPinia()
-  setActivePinia(pinia)
   return useOnboardingTourStore()
 }
 
@@ -102,23 +86,33 @@ function shownCount(coachId?: CoachId) {
   ).length
 }
 
+beforeEach(() => {
+  useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+  vi.mocked(useSettingStore().set).mockImplementation(
+    (key: string, value: unknown) => {
+      Object.assign(useSettingStore().settingValues, { [key]: value })
+      return Promise.resolve()
+    }
+  )
+})
+
+beforeEach(() => {
+  Object.assign(useAppModeStore(), { hasOutputs: false })
+})
+
 describe('onboardingTourStore', () => {
   // Removed in teardown even when a test throws before its own cleanup.
   const appendedTargets: HTMLElement[] = []
   const restoreOnEnter: (() => void)[] = []
 
   afterEach(() => {
-    if (pinia) disposePinia(pinia)
-    pinia = undefined
     clearCoachmarks()
     restoreOnEnter.forEach((restore) => restore())
     restoreOnEnter.length = 0
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
-    settings.store.clear()
     setViewport({ width: 1024, height: 768 })
     if (appModeMock.mode) appModeMock.mode.value = 'graph'
-    if (appModeMock.hasOutputs) appModeMock.hasOutputs.value = false
     telemetry.track.mockClear()
   })
 
@@ -140,11 +134,9 @@ describe('onboardingTourStore', () => {
 
   function enterApp(mode: AppMode, hasOutputs: boolean) {
     const modeRef = appModeMock.mode
-    const outputsRef = appModeMock.hasOutputs
-    if (!modeRef || !outputsRef)
-      throw new Error('app mode mock not initialised')
+    if (!modeRef) throw new Error('app mode mock not initialised')
     modeRef.value = mode
-    outputsRef.value = hasOutputs
+    Object.assign(useAppModeStore(), { hasOutputs })
   }
 
   beforeEach(() => enterApp('app', false))
@@ -186,7 +178,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('does not auto-open a populated app once the tour has been dismissed', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['appMode']
     mountStore()
     enterApp('app', true)
     await nextTick()
@@ -194,7 +186,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('replays a seen tour when explicitly requested', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['appMode']
     const store = mountStore()
     store.replayTour('appMode')
     await nextTick()
@@ -202,7 +194,7 @@ describe('onboardingTourStore', () => {
   })
 
   it('dismisses a replayed tour without the seen-flag when the user leaves its mode', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['appMode']
     const store = mountStore()
     enterApp('app', false)
     await nextTick()
@@ -292,7 +284,7 @@ describe('onboardingTourStore', () => {
     })
 
     it('records a tour that lost the context its steps point at', async () => {
-      settings.store.set(TOUR_SEEN_SETTING, ['appMode'])
+      useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['appMode']
       const store = mountStore()
       enterApp('app', false)
       await nextTick()

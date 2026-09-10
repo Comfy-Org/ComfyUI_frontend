@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -76,7 +75,6 @@ describe('attachMintPortWiring', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     minted = []
     enabled = true
     bound = true

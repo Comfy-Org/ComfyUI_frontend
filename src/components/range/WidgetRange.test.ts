@@ -1,7 +1,5 @@
-import { render, screen } from '@testing-library/vue'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
@@ -9,7 +7,12 @@ import type {
   IWidgetRangeOptions,
   RangeValue
 } from '@/lib/litegraph/src/types/widgets'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import WidgetRange from './WidgetRange.vue'
 
 const upstreamHolder = vi.hoisted(() => ({
   ref: null as { value: unknown } | null
@@ -25,16 +28,6 @@ vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
     singleValueExtractor: () => () => undefined
   }
 })
-
-const outputsHolder = vi.hoisted(() => ({
-  nodeOutputs: {} as Record<string, unknown>
-}))
-
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => outputsHolder
-}))
-
-import WidgetRange from './WidgetRange.vue'
 
 const RangeEditorStub = defineComponent({
   name: 'RangeEditor',
@@ -96,7 +89,7 @@ function renderWidget(
 describe('WidgetRange', () => {
   beforeEach(() => {
     upstreamHolder.ref = null
-    outputsHolder.nodeOutputs = {}
+    useNodeOutputStore().nodeOutputs = {}
   })
 
   describe('Value pass-through', () => {
@@ -170,7 +163,7 @@ describe('WidgetRange', () => {
     })
 
     it('passes a histogram when node output has a matching histogram entry', () => {
-      outputsHolder.nodeOutputs = {
+      useNodeOutputStore().nodeOutputs = {
         loc1: { histogram_range_w: [1, 2, 3, 4] }
       }
       renderWidget(
@@ -185,7 +178,7 @@ describe('WidgetRange', () => {
     })
 
     it('treats an empty histogram array as null', () => {
-      outputsHolder.nodeOutputs = {
+      useNodeOutputStore().nodeOutputs = {
         loc1: { histogram_range_w: [] }
       }
       renderWidget(

@@ -5,12 +5,15 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
 import type { api } from '@/scripts/api'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import type { Mock } from 'vitest'
 
-const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
-  mockFetchApi: vi.fn<typeof api.fetchApi>(),
-  mockAddAlert: vi.fn(),
-  mockInvalidateInputs: vi.fn()
-}))
+const mockFetchApi = vi.hoisted(() => vi.fn<typeof api.fetchApi>())
+let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+let mockInvalidateInputs: Mock<
+  ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
+>
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
 
@@ -31,18 +34,13 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { fetchApi: mockFetchApi }
-}))
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputs }
-  })
+  api: {
+    fetchApi: mockFetchApi,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn()
+  }
 }))
 
 function createMockNode(): LGraphNode {
@@ -76,6 +74,10 @@ describe('useNodeImageUpload', () => {
   let onUploadError: () => void
 
   beforeEach(() => {
+    mockAddAlert = useToastStore().addAlert
+    mockInvalidateInputs = vi
+      .spyOn(useAssetsStore().inputAssets, 'invalidate')
+      .mockResolvedValue(undefined)
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()
