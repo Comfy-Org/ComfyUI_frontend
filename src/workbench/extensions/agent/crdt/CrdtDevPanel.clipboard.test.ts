@@ -16,8 +16,11 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
-import { MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES } from './crdtDebugReport'
-import { clearDevEvents, recordDevEvent } from './devPanelLog'
+import {
+  MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES,
+  formatCrdtEventLog
+} from './crdtDebugReport'
+import { clearDevEvents, devEvents, recordDevEvent } from './devPanelLog'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -188,7 +191,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     }
   })
 
-  it('preserves full filtered-log copying', async () => {
+  it('copies exactly the bounded, warned log for the active filter', async () => {
     const user = userEvent.setup()
     recordDevEvent('doc_update', { seq: 7 })
     recordDevEvent('doc_reset', { reason: 'remint' })
@@ -201,9 +204,11 @@ describe('CrdtDevPanel clipboard controls', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
-    expect(writeText).toHaveBeenCalledOnce()
-    expect(writeText.mock.calls[0][0]).toContain('doc_update')
-    expect(writeText.mock.calls[0][0]).not.toContain('doc_reset')
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+      formatCrdtEventLog(
+        devEvents.value.filter((event) => event.kind === 'doc_update')
+      )
+    )
   })
 
   it('omits unavailable controls without writing', async () => {
