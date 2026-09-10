@@ -14,7 +14,7 @@ import type {
   AccountUser,
   SessionErrorCode,
   SessionResult
-} from './session.js'
+} from './sessionContracts.js'
 
 export const CredentialResponseSchema = zExchangeTokenResponse
 
