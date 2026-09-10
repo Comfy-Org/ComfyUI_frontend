@@ -8632,6 +8632,10 @@ Enterprise`
   'workshop.search.clear': { en: 'Clear search', 'zh-CN': '清除搜索' },
   'workshop.search.done': { en: 'Done', 'zh-CN': '完成' },
   'workshop.search.close': { en: 'Close search', 'zh-CN': '关闭搜索' },
+  'workshop.filter.resize': {
+    en: 'Drag to resize the filters',
+    'zh-CN': '拖动调整筛选器高度'
+  },
   'workshop.search.show': {
     en: 'Show {n} models',
     'zh-CN': '显示 {n} 个模型'

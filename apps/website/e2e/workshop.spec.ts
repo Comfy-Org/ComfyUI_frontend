@@ -352,3 +352,39 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('field-prompt')).not.toHaveValue('')
   })
 })
+
+test.describe('Filter sheet @mobile', () => {
+  test('the handle pulls the sheet up and lets it go', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('workshop-filter').click()
+
+    const sheet = page.getByTestId('workshop-filter-menu')
+    await expect(sheet).toBeVisible()
+    const resting = (await sheet.boundingBox())!.height
+
+    const handle = page.getByTestId('workshop-filter-grabber')
+    const grip = (await handle.boundingBox())!
+    const from = { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 }
+
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(from.x, from.y - 260, { steps: 8 })
+    await page.mouse.up()
+
+    await expect
+      .poll(async () => (await sheet.boundingBox())!.height)
+      .toBeGreaterThan(resting)
+
+    const grown = (await handle.boundingBox())!
+    await page.mouse.move(grown.x + grown.width / 2, grown.y + grown.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(
+      grown.x + grown.width / 2,
+      grown.y + grown.height / 2 + 500,
+      { steps: 8 }
+    )
+    await page.mouse.up()
+
+    await expect(sheet).toHaveCount(0)
+  })
+})
