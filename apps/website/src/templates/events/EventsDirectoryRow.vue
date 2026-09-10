@@ -31,7 +31,7 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
     :aria-current="selected ? 'true' : undefined"
     :class="
       cn(
-        'flex gap-3 px-6 py-4 transition-colors',
+        'flex gap-3 px-6 py-5 transition-colors',
         selected &&
           'bg-primary-comfy-yellow/10 ring-primary-comfy-yellow/40 ring-1 ring-inset'
       )
@@ -46,7 +46,7 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
       :alt="row.media.alt"
       loading="lazy"
       decoding="async"
-      class="aspect-16/10 w-24 shrink-0 rounded-xl object-cover sm:w-32"
+      class="aspect-16/10 w-28 shrink-0 rounded-xl object-cover sm:w-36"
     />
 
     <div class="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -55,7 +55,7 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
       </Badge>
 
       <div class="flex min-w-0 items-center gap-2">
-        <h3 class="truncate text-sm font-light text-primary-warm-white">
+        <h3 class="truncate text-[15px] font-light text-primary-warm-white">
           {{ row.title }}
         </h3>
         <Badge
@@ -68,7 +68,7 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
         </Badge>
       </div>
 
-      <p class="line-clamp-2 text-[11px] text-primary-comfy-canvas/70">
+      <p class="line-clamp-2 text-[11px] text-primary-comfy-canvas/50">
         {{ row.description }}
       </p>
 
