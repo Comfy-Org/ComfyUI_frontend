@@ -36,16 +36,46 @@ Options:
   --record              Record mode: the cloud stack's agent plus the doc host
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
   --doc-host-port PORT  Doc host port in record mode (default: 8096)
-  --pg-exec CMD         Command taking one SQL string, ending in -c
+  --pg-exec CMD         Command taking one SQL string, ending in -c; quote
+                        an argument that contains a space
   --engine NAME         Record mode engine: inline or temporal (default: inline)
   --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7234)
   --help                Show this help
 `
 
 function optionValue(args: string[], index: number, option: string): string {
-  const value = args[index + 1]
+  const value = args.at(index + 1)
   if (value === undefined) throw new Error(`${option} requires a value`)
   return value
+}
+
+// Whitespace separates words, quotes group, a backslash keeps the next character.
+export function splitCommandLine(value: string): string[] {
+  const words: string[] = []
+  let word: string | null = null
+  let quote: string | null = null
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index]
+    if (quote !== null) {
+      if (char === quote) quote = null
+      else word = `${word ?? ''}${char}`
+    } else if (char === '"' || char === "'") {
+      quote = char
+      word ??= ''
+    } else if (char === '\\' && index + 1 < value.length) {
+      index += 1
+      word = `${word ?? ''}${value[index]}`
+    } else if (/\s/.test(char)) {
+      if (word !== null) words.push(word)
+      word = null
+    } else {
+      word = `${word ?? ''}${char}`
+    }
+  }
+  if (quote !== null)
+    throw new Error(`Unterminated ${quote} quote in ${JSON.stringify(value)}`)
+  if (word !== null) words.push(word)
+  return words
 }
 
 function port(value: string, option: string): number {

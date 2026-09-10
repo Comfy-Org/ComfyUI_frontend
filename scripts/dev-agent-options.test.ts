@@ -3,7 +3,11 @@ import { homedir } from 'node:os'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { PROJECT_ROOT, parseOptions } from './dev-agent-options'
+import {
+  PROJECT_ROOT,
+  parseOptions,
+  splitCommandLine
+} from './dev-agent-options'
 
 describe('parseOptions', () => {
   it.for([
@@ -111,5 +115,31 @@ describe('parseOptions', () => {
     { args: ['--unknown'], message: 'Unknown option: --unknown' }
   ])('rejects an invalid launcher contract: $message', ({ args, message }) => {
     expect(() => parseOptions(args)).toThrow(message)
+  })
+})
+
+describe('splitCommandLine', () => {
+  it('keeps a quoted argument and an escaped space as one word', () => {
+    expect(
+      splitCommandLine(
+        `docker exec -i "my pg" psql -f '/tmp/init dir/seed.sql' --dir=/tmp/a\\ b`
+      )
+    ).toEqual([
+      'docker',
+      'exec',
+      '-i',
+      'my pg',
+      'psql',
+      '-f',
+      '/tmp/init dir/seed.sql',
+      '--dir=/tmp/a b'
+    ])
+  })
+
+  it('yields no words for blank input and refuses an open quote', () => {
+    expect(splitCommandLine('   ')).toEqual([])
+    expect(() => splitCommandLine('psql "unfinished')).toThrow(
+      'Unterminated " quote'
+    )
   })
 })

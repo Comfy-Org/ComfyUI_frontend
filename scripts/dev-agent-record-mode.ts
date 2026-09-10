@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
+import { splitCommandLine } from './dev-agent-options'
 import type { Options } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
 import {
@@ -88,10 +89,11 @@ async function containerFor(
   ])
   const names = stdout
     .split('\n')
+    .filter((line) => line !== '')
     .map((line) => line.split(' '))
     .filter(
       ([, imageName, ...ports]) =>
-        imageName?.includes(image) &&
+        imageName.includes(image) &&
         ports.join(' ').includes(`:${portNumber}->`)
     )
     .map(([name]) => name)
@@ -119,7 +121,7 @@ async function redisExecCommand(): Promise<string> {
 
 // Every value is a module constant, so the statement carries no caller input.
 async function seedIdentity(command: string): Promise<void> {
-  const parts = command.split(' ').filter(Boolean)
+  const parts = splitCommandLine(command)
   if (parts.length === 0) throw new Error('--pg-exec must name a command')
   const sql = [
     `insert into users (id, create_time, update_time, email, name) values ('${RECORD_USER_ID}', now(), now(), 'recorder@local', 'recorder') on conflict (id) do nothing;`,
