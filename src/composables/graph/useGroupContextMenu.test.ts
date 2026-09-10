@@ -7,30 +7,20 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-const {
-  mockShowNodeOptions,
-  mockUpdateSelectedItems,
-  mockGetCanvasContextMenuTarget
-} = vi.hoisted(() => ({
-  mockShowNodeOptions: vi.fn(),
-  mockUpdateSelectedItems: vi.fn(),
-  mockGetCanvasContextMenuTarget: vi.fn<
-    () => { reroute?: unknown; group?: unknown }
-  >(() => ({}))
-}))
+const { mockShowNodeOptions, mockGetCanvasContextMenuTarget } = vi.hoisted(
+  () => ({
+    mockShowNodeOptions: vi.fn(),
+    mockGetCanvasContextMenuTarget: vi.fn<
+      () => { reroute?: unknown; group?: unknown }
+    >(() => ({}))
+  })
+)
 
 vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   showNodeOptions: mockShowNodeOptions
 }))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => ({ updateSelectedItems: mockUpdateSelectedItems })
-  })
-)
 
 vi.mock<unknown>(
   import('@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'),
@@ -55,8 +45,12 @@ describe('useGroupContextMenu', () => {
   }
   let legacyMenuMock: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
+  let mockUpdateSelectedItems: ReturnType<
+    typeof vi.mocked<ReturnType<typeof useCanvasStore>['updateSelectedItems']>
+  >
 
   beforeEach(() => {
+    mockUpdateSelectedItems = vi.mocked(useCanvasStore().updateSelectedItems)
     LiteGraph.vueNodesMode = true
     group = { id: 1, recomputeInsideNodes: vi.fn() }
     mockGetCanvasContextMenuTarget.mockReturnValue({ group })

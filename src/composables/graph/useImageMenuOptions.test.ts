@@ -24,10 +24,6 @@ const i18n = createI18n({
   }
 })
 
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
 function setupComposable() {
   let composable!: ReturnType<typeof useImageMenuOptions>
   const Wrapper = defineComponent({

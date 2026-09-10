@@ -5,22 +5,18 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
-
-  () => ({
-    useComfyManagerStore: vi.fn()
-  })
-)
-
 type NodePack = components['schemas']['Node']
 type ManagerStoreReturn = ReturnType<typeof useComfyManagerStore>
 
-const mockUseComfyManagerStore = vi.mocked(useComfyManagerStore)
-
-const mockIsPackInstalled = vi.fn()
-const mockIsPackEnabled = vi.fn()
-const mockGetInstalledPackVersion = vi.fn()
+let mockIsPackInstalled: ReturnType<
+  typeof vi.mocked<ManagerStoreReturn['isPackInstalled']>
+>
+let mockIsPackEnabled: ReturnType<
+  typeof vi.mocked<ManagerStoreReturn['isPackEnabled']>
+>
+let mockGetInstalledPackVersion: ReturnType<
+  typeof vi.mocked<ManagerStoreReturn['getInstalledPackVersion']>
+>
 
 function makePack(overrides: Partial<NodePack> = {}): NodePack {
   return {
@@ -32,14 +28,13 @@ function makePack(overrides: Partial<NodePack> = {}): NodePack {
 }
 
 beforeEach(() => {
+  const store = useComfyManagerStore()
+  mockIsPackInstalled = vi.mocked(store.isPackInstalled)
+  mockIsPackEnabled = vi.mocked(store.isPackEnabled)
+  mockGetInstalledPackVersion = vi.mocked(store.getInstalledPackVersion)
   mockIsPackInstalled.mockReturnValue(true)
   mockIsPackEnabled.mockReturnValue(true)
   mockGetInstalledPackVersion.mockReturnValue('1.0.0')
-  mockUseComfyManagerStore.mockReturnValue({
-    isPackInstalled: mockIsPackInstalled,
-    isPackEnabled: mockIsPackEnabled,
-    getInstalledPackVersion: mockGetInstalledPackVersion
-  } as Partial<ManagerStoreReturn> as ManagerStoreReturn)
 })
 
 describe('usePackUpdateStatus', () => {
@@ -62,7 +57,6 @@ describe('usePackUpdateStatus', () => {
 
   it('reports no update when the pack is not installed', () => {
     mockIsPackInstalled.mockReturnValue(false)
-    mockGetInstalledPackVersion.mockReturnValue(undefined)
 
     const { isUpdateAvailable } = usePackUpdateStatus(makePack())
 

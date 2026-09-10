@@ -1,12 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockDialogService = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
 }))
 
-const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
+let mockDialogStore: ReturnType<typeof useDialogStore>
 
 const mockNewUserService = vi.hoisted(() => ({
   isNewUser: vi.fn()
@@ -18,10 +17,6 @@ const mockTelemetry = vi.hoisted(() => ({
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => mockDialogService
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => mockDialogStore
 }))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
@@ -42,6 +37,10 @@ vi.mock<unknown>(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
+  beforeEach(() => {
+    mockDialogStore = useDialogStore()
+  })
+
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
