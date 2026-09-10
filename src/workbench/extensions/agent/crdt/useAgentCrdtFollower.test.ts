@@ -137,9 +137,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ userId: 'user-1' })
-}))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
