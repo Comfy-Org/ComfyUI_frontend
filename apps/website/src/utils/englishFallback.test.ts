@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { withEnglishFallback } from './englishFallback'
+import { mergedWithEnglish, withEnglishFallback } from './englishFallback'
 
 /** A stand-in for `getCollection`, so the decision is testable without Astro. */
 const collection = (byLocale: Record<string, string[]>) => {
@@ -52,5 +52,55 @@ describe('withEnglishFallback', () => {
 
     expect(await withEnglishFallback('ja', load)).toEqual([])
     expect(calls).toEqual(['ja', 'en'])
+  })
+})
+
+describe('mergedWithEnglish', () => {
+  const load =
+    (byLocale: Record<string, { id: string }[]>) => async (code: string) =>
+      byLocale[code] ?? []
+
+  const id = (entry: { id: string }) => entry.id.split('/').pop() ?? ''
+
+  it('uses the localized entry where one exists', async () => {
+    const merged = await mergedWithEnglish(
+      'ja',
+      load({ en: [{ id: 'en/a' }], ja: [{ id: 'ja/a' }] }),
+      id
+    )
+
+    expect(merged.map((e) => e.id)).toEqual(['ja/a'])
+  })
+
+  /**
+   * The defect this exists for. `withEnglishFallback` falls back only when the
+   * locale has NOTHING, so a locale holding 20 of 21 answers returned 20 — and
+   * the twenty-first vanished from the page rather than showing in English. A
+   * reader cannot tell a missing answer was ever there.
+   *
+   * This became reachable when the writer learned to withdraw a rejected
+   * translation: withdrawal has to leave English behind, not a hole.
+   */
+  it('falls back per entry, not only when the locale is empty', async () => {
+    const merged = await mergedWithEnglish(
+      'ja',
+      load({
+        en: [{ id: 'en/a' }, { id: 'en/b' }],
+        ja: [{ id: 'ja/a' }]
+      }),
+      id
+    )
+
+    expect(merged.map((e) => e.id)).toEqual(['ja/a', 'en/b'])
+  })
+
+  it('returns English untouched for the default locale', async () => {
+    const merged = await mergedWithEnglish(
+      'en',
+      load({ en: [{ id: 'en/a' }] }),
+      id
+    )
+
+    expect(merged.map((e) => e.id)).toEqual(['en/a'])
   })
 })

@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE } from './locales'
+import type { Locale } from './locales'
 import { hasKey, t, translationKeys } from '../i18n/translations'
 
 type BlockType =
@@ -26,7 +28,8 @@ function escapeRegex(s: string): string {
 function inferBlockType(
   prefix: string,
   sectionId: string,
-  i: number
+  i: number,
+  locale: Locale
 ): BlockType {
   const bp = `${prefix}.${sectionId}.block.${i}`
 
@@ -36,12 +39,22 @@ function inferBlockType(
   if (hasKey(`${bp}.heading`)) return 'heading'
   if (hasKey(`${bp}.ol`)) return 'ordered-list'
 
-  const value = hasKey(bp) ? t(bp as never) : ''
+  // The page's own locale, never the default. In the browser only the document's
+  // dictionary is loaded, so asking for English on a Chinese page throws and the
+  // island fails to hydrate — the body of /zh-CN/privacy-policy/ disappeared
+  // that way, server-rendered fine and then wiped by the client.
+  //
+  // `hasKey` is safe without it: every dictionary carries the same keys, so it
+  // reads whichever one is loaded.
+  const value = hasKey(bp) ? t(bp as never, locale) : ''
   if (value.includes('\n')) return 'list'
   return 'paragraph'
 }
 
-export function deriveSections(prefix: string): SectionConfig[] {
+export function deriveSections(
+  prefix: string,
+  locale: Locale = DEFAULT_LOCALE
+): SectionConfig[] {
   const labelRegex = new RegExp(`^${escapeRegex(prefix)}\\.([^.]+)\\.label$`)
   const sectionIds: string[] = []
 
@@ -66,7 +79,7 @@ export function deriveSections(prefix: string): SectionConfig[] {
 
     const blocks = Array.from(blockIndices)
       .sort((a, b) => a - b)
-      .map((i) => ({ type: inferBlockType(prefix, id, i) }))
+      .map((i) => ({ type: inferBlockType(prefix, id, i, locale) }))
 
     return { id, hasTitle, blocks }
   })

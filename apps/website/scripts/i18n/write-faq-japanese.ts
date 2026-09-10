@@ -78,6 +78,7 @@ function main(): void {
 
   const planned: Planned[] = []
   const skipped: string[] = []
+  const withdrawn: { slug: string; file: string }[] = []
 
   for (const english of documents) {
     if (english.locale !== DEFAULT_LOCALE) continue
@@ -86,12 +87,30 @@ function main(): void {
     const key = `faq.${english.category}.${english.slug}`
     const question = machine[`${key}.question`]
     const body = machine[`${key}.body`]
-    if (question === undefined || body === undefined) continue
 
-    // A person's translation is never overwritten.
+    // A person's translation is never overwritten, and never withdrawn.
     const already = existing.get(id)
     if (already && !already.machineWritten) {
       skipped.push(id)
+      continue
+    }
+
+    // Withdrawn: `enforce` dropped this answer, so the machine-written file on
+    // disk is no longer justified. Skipping it left the rejected Japanese
+    // published — `/ja/pricing` went on selecting the `.mdx` this pipeline had
+    // written, which made enforcement cosmetic for anything already generated.
+    if (question === undefined || body === undefined) {
+      if (already) {
+        withdrawn.push({
+          slug: id,
+          file: path.join(
+            FAQ_DIR,
+            english.category,
+            TARGET,
+            `${english.slug}.mdx`
+          )
+        })
+      }
       continue
     }
 
@@ -104,7 +123,7 @@ function main(): void {
     })
   }
 
-  if (planned.length === 0) {
+  if (planned.length === 0 && withdrawn.length === 0) {
     process.stdout.write(
       '[i18n] no Japanese for any FAQ answer yet — run `pnpm i18n:translate` first.\n'
     )
@@ -129,9 +148,16 @@ function main(): void {
     process.stdout.write(`[i18n] ${id}: left alone, a person wrote it\n`)
   }
 
+  for (const entry of withdrawn) {
+    process.stdout.write(
+      `[i18n] ${entry.slug}: withdrawn, its translation was rejected\n`
+    )
+  }
+
   if (dryRun) {
     process.stdout.write(
-      `[i18n] dry run: ${planned.length} answer(s) to write. Nothing written.\n`
+      `[i18n] dry run: ${planned.length} answer(s) to write, ` +
+        `${withdrawn.length} to withdraw. Nothing written.\n`
     )
     return
   }
@@ -155,8 +181,14 @@ function main(): void {
     }
   )
 
+  // Removed after the writes, so a failure mid-write rolls back with every file
+  // still on disk rather than half of them already deleted.
+  for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
+
   process.stdout.write(
-    `[i18n] wrote ${planned.length} Japanese FAQ answer(s).\n`
+    `[i18n] wrote ${planned.length} Japanese FAQ answer(s)` +
+      (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
+      `.\n`
   )
 }
 

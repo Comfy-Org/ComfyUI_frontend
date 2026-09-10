@@ -204,3 +204,51 @@ describe('a written file re-reads as the same file plus Japanese', () => {
     expect(entries.every((entry) => entry.approved.ja === undefined)).toBe(true)
   })
 })
+
+describe('a translation the pipeline has withdrawn', () => {
+  const FILE = 'd.ts'
+
+  /** A file the writer has already filled, as it exists between runs. */
+  const WRITTEN = `export const d = {
+  title: {
+    en: 'Live',
+    'zh-CN': '直播',
+    ja: 'ライブ' /* machine */
+  }
+}
+`
+
+  /**
+   * The defect this exists for. `enforce` drops a rejected translation from
+   * `content/ja.json`, so the key simply stops being supplied here. The writer
+   * skipped anything it had no value for, which left the rejected Japanese
+   * sitting in the file — and the page kept rendering it. Enforcement was
+   * cosmetic for anything already written.
+   */
+  it('removes the machine-written Japanese it can no longer justify', () => {
+    const plan = planJapanese(FILE, WRITTEN, {})
+
+    expect(plan).toHaveLength(1)
+    expect(applyEdits(WRITTEN, plan)).not.toContain('ライブ')
+    expect(applyEdits(WRITTEN, plan)).toContain("'zh-CN': '直播'")
+    expect(applyEdits(WRITTEN, plan)).toContain("en: 'Live'")
+  })
+
+  /** A person's translation is never the pipeline's to withdraw. */
+  it('leaves a hand-written Japanese translation alone', () => {
+    const HUMAN = WRITTEN.replace(' /* machine */', '')
+
+    expect(planJapanese(FILE, HUMAN, {})).toEqual([])
+  })
+
+  it('still writes nothing for a key that never had Japanese', () => {
+    const BARE = `export const d = {
+  title: {
+    en: 'Live'
+  }
+}
+`
+
+    expect(planJapanese(FILE, BARE, {})).toEqual([])
+  })
+})

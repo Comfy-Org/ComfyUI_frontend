@@ -290,6 +290,38 @@ function isMachineWritten(
 }
 
 /**
+ * The end of the property before this one, or nothing if it is the first.
+ *
+ * Removing a property means taking the comma that joined it to its neighbour as
+ * well, or the object is left with a trailing or doubled comma. Cutting from
+ * the PREVIOUS property's end takes the separator and the newline with it.
+ */
+function precedingPropertyEnd(
+  node: ObjectLiteralExpression,
+  property: PropertyAssignment
+): number | undefined {
+  const index = node.properties.indexOf(property)
+  return index > 0 ? node.properties[index - 1].end : undefined
+}
+
+/**
+ * Where a property really ends, marker comment included.
+ *
+ * `property.end` stops at the value, so removing that range alone would strand
+ * a `/* machine *\/` comment with nothing to describe.
+ */
+function commentedEnd(
+  sourceText: string,
+  property: PropertyAssignment
+): number {
+  const after = sourceText.slice(property.end)
+  const marker = /^\s*,?\s*(?:\/\*\s*machine\s*\*\/|\/\/\s*machine\b)/.exec(
+    after
+  )
+  return marker ? property.end + marker[0].length : property.end
+}
+
+/**
  * Where a `ja:` goes in one data file, and what it should say.
  *
  * Nothing is written here. A plan can be inspected, counted and refused before
@@ -310,9 +342,26 @@ export function planJapanese(
 
   forEachLocalizedText(fileName, sourceText, ({ key, node }) => {
     const value = japanese[key]
-    if (value === undefined) return
-
     const existing = findProperty(node, 'ja')
+
+    // Withdrawn: `enforce` dropped this key, so the machine text already in the
+    // file is no longer justified and has to come out. Skipping it left the
+    // rejected Japanese on the page, which made enforcement cosmetic for
+    // anything the writer had already filled. A person's translation is never
+    // ours to withdraw, so only machine output is removed.
+    if (value === undefined) {
+      if (!existing || !isMachineWritten(sourceText, existing)) return
+
+      const previous = precedingPropertyEnd(node, existing)
+      const from = previous ?? existing.getStart()
+      edits.push({
+        offset: from,
+        length: commentedEnd(sourceText, existing) - from,
+        text: ''
+      })
+      return
+    }
+
     if (existing) {
       if (!isMachineWritten(sourceText, existing)) return
       if (literalText(existing.initializer) === value) return

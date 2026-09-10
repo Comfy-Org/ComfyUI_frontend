@@ -388,8 +388,7 @@ export const geminiOmniPage: ModelLaunchPage = {
         id: 'compared-to-previous-omni-flash',
         question: {
           en: 'How does Gemini Omni 1.1 Flash compare to the previous Omni Flash?',
-          'zh-CN': 'Gemini Omni 1.1 Flash 与上一代 Omni Flash 相比如何？',
-          ja: 'Gemini Omni 1.1 Flashは以前のOmni Flashとどう違いますか？' /* machine */
+          'zh-CN': 'Gemini Omni 1.1 Flash 与上一代 Omni Flash 相比如何？'
         },
         answer: {
           en: 'Gemini Omni 1.1 Flash is a full replacement for earlier Omni Flash versions, with the same generate-and-edit workflow and faster generation. The 1.1 release lets you draft videos more efficiently at 360p, upscale to 4K resolution, and extend scenes for longer storytelling.',
