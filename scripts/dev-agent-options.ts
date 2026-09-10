@@ -2,6 +2,8 @@ import { homedir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+export type RecordEngine = 'inline' | 'temporal'
+
 export interface Options {
   agentPort: number
   airBin: string
@@ -9,7 +11,7 @@ export interface Options {
   cloudRepo: string
   comfyUrl: string
   docHostPort: number
-  engine: string
+  engine: RecordEngine
   frontendPort: number
   healthPort: number
   help: boolean
@@ -43,7 +45,7 @@ Options:
 `
 
 function optionValue(args: string[], index: number, option: string): string {
-  const value = args[index + 1]
+  const value = args.at(index + 1)
   if (value === undefined) throw new Error(`${option} requires a value`)
   return value
 }
@@ -54,6 +56,13 @@ function port(value: string, option: string): number {
     throw new Error(`${option} must be an integer from 1 to 65535`)
   }
   return parsed
+}
+
+function engine(value: string): RecordEngine {
+  if (value !== 'inline' && value !== 'temporal') {
+    throw new Error('--engine must be inline or temporal')
+  }
+  return value
 }
 
 export function parseOptions(args: string[]): Options {
@@ -94,7 +103,7 @@ export function parseOptions(args: string[]): Options {
         index++
         break
       case '--engine':
-        options.engine = optionValue(args, index, arg)
+        options.engine = engine(optionValue(args, index, arg))
         index++
         break
       case '--temporal-port':
@@ -132,9 +141,6 @@ export function parseOptions(args: string[]): Options {
   }
   if (options.record && !options.catalog) {
     throw new Error('--record requires --catalog <conversation fixture>')
-  }
-  if (options.engine !== 'inline' && options.engine !== 'temporal') {
-    throw new Error('--engine must be inline or temporal')
   }
   if (options.engine === 'temporal' && !options.record) {
     throw new Error('--engine temporal applies to --record only')

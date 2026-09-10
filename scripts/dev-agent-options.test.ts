@@ -23,6 +23,18 @@ describe('dev agent options', () => {
     ).toThrow(message)
   })
 
+  it('rejects an unsupported engine as the value is read', () => {
+    expect(() =>
+      parseOptions([
+        '--record',
+        '--catalog',
+        'fixture.json',
+        '--engine',
+        'dask'
+      ])
+    ).toThrow('--engine must be inline or temporal')
+  })
+
   it('preserves quoted pg-exec arguments', () => {
     expect(
       parseExecCommand(`"/tmp/Postgres Tools/psql" -U postgres -c`)
