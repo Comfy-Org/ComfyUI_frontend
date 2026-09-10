@@ -10233,32 +10233,34 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Loaded 3D model file (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -16383,7 +16385,7 @@
     }
   },
   "OpenAIGPTImageNodeV2": {
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "description": "Generates images via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
@@ -16471,6 +16473,36 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "display_name": "OpenRouter Image",
+    "description": "Generate or edit images through OpenRouter with Microsoft's MAI-Image-2.6 models: text to image, or image-guided editing with up to five reference images, in seven aspect ratios at 1K or 1.5K.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The OpenRouter image model used to generate the image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17395,38 +17427,41 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D model file (glb/obj/stl/etc.) from an upstream 3D node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -20479,38 +20514,42 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D model file (glb/obj/stl/etc.) from an upstream 3D node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },

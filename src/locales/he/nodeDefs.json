@@ -11011,7 +11011,8 @@
     "display_name": "טעינת 3D (מתקדם)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממד שנטען (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "יוצר תמונות דרך נקודת הקצה של OpenAI GPT Image.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "יצירה או עריכה של תמונות באמצעות OpenRouter עם מודלי MAI-Image-2.6 של Microsoft: טקסט לתמונה, או עריכה מונחית תמונה עם עד חמש תמונות ייחוס, בשבעה יחסי ממדים ברזולוציית 1K או 1.5K.",
+    "display_name": "תמונת OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל התמונות של OpenRouter המשמש ליצירת התמונה."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "תצוגה מקדימה בתלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממד (glb/obj/stl/etc.) מצומת תלת־ממד קודם."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "שמירת תלת-ממד (מתקדם)",
     "inputs": {
       "camera_info": {
-        "name": "מידע מצלמה"
+        "name": "מידע מצלמה",
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "filename_prefix": {
         "name": "קידומת שם קובץ"
       },
       "height": {
-        "name": "גובה"
+        "name": "גובה",
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       },
       "model_3d": {
         "name": "מודל תלת-ממד",
         "tooltip": "קובץ מודל תלת-ממדי מצומת תלת-ממד במעלה הזרם."
       },
       "model_3d_info": {
-        "name": "מידע מודל תלת-ממד"
+        "name": "מידע מודל תלת-ממד",
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "viewport_state": {
         "name": "מצב תצוגה"
       },
       "width": {
-        "name": "רוחב"
+        "name": "רוחב",
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       }
     },
     "outputs": {
       "0": {
         "name": "מודל תלת-ממד",
-        "tooltip": null
+        "tooltip": "קובץ מודל תלת־ממד (glb/obj/stl/etc.) מצומת תלת־ממד קודם."
       },
       "1": {
         "name": "מידע מודל תלת-ממד",
-        "tooltip": null
+        "tooltip": "מיקום כל מודל בסצנה: מיקום, סיבוב וקנה מידה (מרחב עולם שבו ציר Y פונה למעלה)."
       },
       "2": {
         "name": "מידע מצלמה",
-        "tooltip": null
+        "tooltip": "פרטי מצלמת חלון התצוגה: מיקום, יעד מבט, זום וסוג."
       },
       "3": {
         "name": "רוחב",
-        "tooltip": null
+        "tooltip": "רוחב העיבוד של חלון התצוגה בפיקסלים."
       },
       "4": {
         "name": "גובה",
-        "tooltip": null
+        "tooltip": "גובה העיבוד של חלון התצוגה בפיקסלים."
       }
     }
   },

@@ -11011,7 +11011,8 @@
     "display_name": "3D読み込み（詳細）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "読み込まれた3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAIのGPT Imageエンドポイントを使って画像を生成します。",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "MicrosoftのMAI-Image-2.6モデルを使用してOpenRouter経由で画像を生成または編集します。テキストから画像を生成するか、最大5枚の参照画像を使用した画像ガイド編集を、1Kまたは1.5Kの7種類のアスペクト比で行えます。",
+    "display_name": "OpenRouter Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "画像の生成に使用するOpenRouter画像モデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "3Dプレビュー（詳細）",
     "inputs": {
       "camera_info": {
-        "name": "カメラ情報"
+        "name": "カメラ情報",
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "height": {
-        "name": "高さ"
+        "name": "高さ",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "幅"
+        "name": "幅",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "上流の3Dノードからの3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "カメラ情報",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "2": {
         "name": "3Dモデル情報",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "幅",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "高さ",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "3Dを保存（詳細）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "上流の3Dノードからの3Dモデルファイル。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "上流の3Dノードからの3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
