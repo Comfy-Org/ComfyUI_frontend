@@ -43,21 +43,15 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       )
     )
 
-    expect(
-      interiorValues.length,
-      'converted subgraph should expose interior widgets'
-    ).toBeGreaterThan(0)
-
-    expect(interiorValues).toContain(156680208700286)
-    expect(interiorValues).toContain('euler')
-    expect(interiorValues).toContain('v1-5-pruned-emaonly.ckpt')
-    expect(
-      interiorValues.some(
-        (value) =>
-          typeof value === 'string' && value.includes('purple galaxy bottle')
-      ),
-      'the positive prompt text should survive conversion'
-    ).toBe(true)
+    expect(interiorValues).toHaveLength(14)
+    expect(interiorValues).toEqual(
+      expect.arrayContaining([
+        156680208700286,
+        'euler',
+        'v1-5-pruned-emaonly.ckpt',
+        expect.stringContaining('purple galaxy bottle')
+      ])
+    )
   })
 
   test(
