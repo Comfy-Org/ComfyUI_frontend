@@ -1307,7 +1307,14 @@ export interface TelemetryProvider {
  * All methods are required - the registry implements all methods and dispatches
  * to registered providers using optional chaining.
  */
-export type TelemetryDispatcher = Required<TelemetryProvider>
+export type TelemetryDispatcher = Required<TelemetryProvider> & {
+  /**
+   * Caller-facing entry point for checkout-journey events. Mints one `event_id`
+   * and fans out to every provider's `trackCheckoutJourneyEvent`, so callers
+   * never handle the identity themselves.
+   */
+  captureCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void
+}
 
 /**
  * Telemetry event constants
