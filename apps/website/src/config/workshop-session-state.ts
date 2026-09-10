@@ -14,6 +14,7 @@
  */
 import type { User } from 'firebase/auth'
 import { computed, effectScope, readonly, ref, watch } from 'vue'
+import type { EffectScope } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account/session'
 
@@ -29,6 +30,7 @@ const user = ref<User | null>(null)
 const session = ref<AccountCredential | undefined>(undefined)
 const settled = ref(false)
 let started = false
+let lifecycle: EffectScope | undefined
 let generation = 0
 let detachIdentity: (() => void) | undefined
 let stopSnapshot: (() => void) | undefined
@@ -67,7 +69,7 @@ function start(): void {
   started = true
   // This detached scope gives the module singleton its own lifetime instead
   // of binding its watcher to whichever component calls this first.
-  const lifecycle = effectScope(true)
+  lifecycle = effectScope(true)
   const enabled = useWorkshopAuthFlag()
   lifecycle.run(() => {
     watch(
@@ -85,9 +87,14 @@ function start(): void {
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {
-          if (generation === expectedGeneration) {
-            console.error('Workshop auth initialization failed', error)
-          }
+          if (generation !== expectedGeneration) return
+          console.error('Workshop auth initialization failed', error)
+          // Nothing half-installed survives, and the latch opens again so
+          // the next caller retries instead of waiting out the timeout.
+          stopListeners()
+          lifecycle?.stop()
+          lifecycle = undefined
+          started = false
         })
       },
       { immediate: true }
