@@ -2548,7 +2548,20 @@ export class LGraph
       eparent?: RerouteId
       externalFirst: boolean
       targetSlotName?: string
+      targetSlotId?: UUID
     })[] = []
+    function getTargetSlotReference(
+      targetNode: LGraphNode | null | undefined,
+      targetSlotIndex: number
+    ) {
+      const targetSlot = targetNode?.inputs[targetSlotIndex]
+      return {
+        targetSlotName: targetSlot?.name,
+        targetSlotId: targetNode?.isSubgraphNode()
+          ? targetNode.inputs[targetSlotIndex]?._subgraphSlot?.id
+          : undefined
+      }
+    }
     for (const [, link] of subgraphNode.subgraph.links) {
       const presentation = presentationStore.getPresentation(
         subgraphScope,
@@ -2600,6 +2613,10 @@ export class LGraph
             scope,
             sublink.id
           )
+          const targetSlotReference = getTargetSlotReference(
+            this.getNodeById(sublink.target_id),
+            sublink.target_slot
+          )
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2609,9 +2626,7 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            targetSlotName: this.getNodeById(sublink.target_id)?.inputs[
-              sublink.target_slot
-            ]?.name,
+            ...targetSlotReference,
             ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
@@ -2632,6 +2647,10 @@ export class LGraph
       const restoredPresentation = outerLink
         ? getAgreedLinkPresentation([presentation, outerPresentation])
         : presentation
+      const targetSlotReference = getTargetSlotReference(
+        subgraphNode.subgraph.getNodeById(link.target_id),
+        link.target_slot
+      )
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2641,8 +2660,7 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        targetSlotName: subgraphNode.subgraph.getNodeById(link.target_id)
-          ?.inputs[link.target_slot]?.name,
+        ...targetSlotReference,
         ...restoredPresentation
       })
     }
@@ -2670,6 +2688,22 @@ export class LGraph
       return true
     })
 
+    function resolveTargetSlot(
+      targetNode: LGraphNode,
+      newLink: (typeof newLinks)[number]
+    ) {
+      if (newLink.targetSlotId) {
+        return targetNode.isSubgraphNode()
+          ? targetNode.inputs.findIndex(
+              (input) => input._subgraphSlot?.id === newLink.targetSlotId
+            )
+          : -1
+      }
+      return newLink.targetSlotName === undefined
+        ? newLink.tslot
+        : targetNode.findInputSlot(newLink.targetSlotName)
+    }
+
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of dedupedNewLinks) {
       let created: LLink | null | undefined
@@ -2681,10 +2715,7 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
-        const targetSlot =
-          newLink.targetSlotName === undefined
-            ? newLink.tslot
-            : tnode.findInputSlot(newLink.targetSlotName)
+        const targetSlot = resolveTargetSlot(tnode, newLink)
         created =
           targetSlot === -1
             ? null
@@ -2713,11 +2744,11 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(
-          newLink.oslot,
-          targetNode,
-          newLink.targetSlotName ?? newLink.tslot
-        )
+        const targetSlot = resolveTargetSlot(targetNode, newLink)
+        created =
+          targetSlot === -1
+            ? null
+            : originNode.connect(newLink.oslot, targetNode, targetSlot)
       }
       if (!created) {
         console.error('Failed to create link')

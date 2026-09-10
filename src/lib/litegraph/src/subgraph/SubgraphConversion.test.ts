@@ -9,7 +9,7 @@ import {
 } from 'vitest'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LGraph,
   LGraphNode,
@@ -30,6 +30,7 @@ import { toRerouteId } from '@/types/rerouteId'
 import {
   createTestRootGraph,
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode,
   enableSubgraphNodeCreation,
   resetSubgraphFixtureState
@@ -262,6 +263,47 @@ describe('SubgraphConversion', () => {
           unpackedTarget.findInputSlot('inserted_dynamic_input')
         )
       ).toBeNull()
+    })
+    it('preserves links to duplicate-named subgraph inputs by ID', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const targetDefinition = graph.createSubgraph(
+        createTestSubgraphData({ name: 'duplicate target' })
+      )
+      targetDefinition.addInput('duplicate', 'number')
+      targetDefinition.addInput('duplicate', 'number')
+      const target = LiteGraph.createNode(targetDefinition.id)
+      assert(target?.isSubgraphNode())
+      graph.add(target)
+      const source0 = createTestNode(graph, [], ['number'], 'source 0')
+      const source1 = createTestNode(graph, [], ['number'], 'source 1')
+      source0.connect(0, target, 0)
+      source1.connect(0, target, 1)
+      const { node: wrapper } = graph.convertToSubgraph(
+        new Set<Positionable>([source0, source1, target])
+      )
+
+      graph.unpackSubgraph(wrapper)
+
+      const unpackedTarget = graph.nodes.find(
+        (node) =>
+          node.isSubgraphNode() && node.subgraph.id === targetDefinition.id
+      )
+      assert(unpackedTarget)
+      const scope = graphScopeOf(graph)
+      const firstLink = useLinkStore().getInputSlotLink(
+        scope,
+        unpackedTarget.id,
+        0
+      )
+      const secondLink = useLinkStore().getInputSlotLink(
+        scope,
+        unpackedTarget.id,
+        1
+      )
+      assert(firstLink && secondLink)
+      expect(graph.getNodeById(firstLink.originNodeId)?.title).toBe('source 0')
+      expect(graph.getNodeById(secondLink.originNodeId)?.title).toBe('source 1')
     })
     it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
       const graph = createTestRootGraph()
