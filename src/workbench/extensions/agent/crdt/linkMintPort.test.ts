@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -9,6 +12,13 @@ import type {
 } from './linkMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
+vi.mock('./crdtLog', () => ({
+  docLog: { warn: vi.fn() }
+}))
 
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
@@ -121,14 +131,25 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces a subgraph-interior placement observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     place(SUBGRAPH_SCOPE, topology(41))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'crdt_link_change_unrepresentable',
+      tags: {
+        failure_kind: 'invariant',
+        feature_area: 'crdt',
+        operation: 'sync',
+        outcome: 'failed'
+      },
+      context: { change: 'subgraph-interior connect', linkId: 41 },
+      level: 'error'
+    })
+    expect(docLog.warn).toHaveBeenCalledWith(
+      'mint_divergence',
+      expect.any(String),
+      { change: 'subgraph-interior connect', linkId: 41 }
+    )
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
@@ -139,40 +160,37 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     await afterSweep()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    expect(consoleError.mock.calls[0][1]).toBe(41)
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'crdt_link_change_unrepresentable',
+      tags: {
+        failure_kind: 'invariant',
+        feature_area: 'crdt',
+        operation: 'sync',
+        outcome: 'failed'
+      },
+      context: { change: 'link disconnect', linkId: 41 },
+      level: 'error'
+    })
   })
 
   it('stays silent for a consumed severance (the delete carried it)', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     port.severances.take('1')
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('stays silent for teardown severances', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('sweeps the capture window: a later take finds nothing', async () => {

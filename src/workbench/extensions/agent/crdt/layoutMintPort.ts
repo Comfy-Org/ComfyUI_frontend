@@ -10,6 +10,7 @@ import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import type { SeveranceLog } from './linkMintPort'
 import { shouldMint } from './mintGate'
@@ -146,12 +147,22 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
-          // A dropped human mint is a local-graph-vs-doc divergence; it must
-          // be observable, never silent (the surfacing-honesty principle).
-          console.error(
-            '[agent-crdt] add_node mint dropped: no snapshot for node',
-            operation.nodeId
+          docLog.warn(
+            'mint_divergence',
+            'node snapshot unavailable for mint; createNode not sent',
+            { nodeId: operation.nodeId }
           )
+          reportError(new Error('CRDT node snapshot is unavailable for mint'), {
+            errorType: 'crdt_node_snapshot_missing',
+            tags: {
+              failure_kind: 'invariant',
+              feature_area: 'crdt',
+              operation: 'sync',
+              outcome: 'failed'
+            },
+            context: { nodeId: operation.nodeId },
+            level: 'error'
+          })
           return
         }
         deps.enqueue([

@@ -85,3 +85,4 @@ function scopedCrdtLog(scope: CrdtLogScope) {
 }
 
 export const wireLog = scopedCrdtLog('wire')
+export const docLog = scopedCrdtLog('doc')

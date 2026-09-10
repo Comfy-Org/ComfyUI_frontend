@@ -13,6 +13,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -29,6 +30,13 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
+vi.mock('@/workbench/extensions/agent/crdt/crdtLog', () => ({
+  docLog: { warn: vi.fn() }
+}))
 
 function createNodeOp(graphId: string, id: string) {
   return {
@@ -157,15 +165,13 @@ describe('mint ports against the real layout store delivery', () => {
     const severed = linkTopology(41, '2')
     linkStore.registerLink(scope, severed)
     minted.length = 0
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
+    vi.mocked(reportError).mockClear()
 
     // The real teardown order: litegraph severs the node's links
     // synchronously, then the layout deleteNode queues and delivers on the
     // store's own microtask. If delivery ever slips past the ports'
     // double-microtask sweep, removed_links comes back EMPTY here and a
-    // false disconnect-divergence error fires - both assertions below
+    // false disconnect-divergence report fires - both assertions below
     // are the alarm.
     linkStore.deleteLink(scope, severed)
     layoutStore.applyOperation(deleteNodeOp(graphId, '2'))
@@ -178,8 +184,7 @@ describe('mint ports against the real layout store delivery', () => {
         removed_links: [toLinkId(41)]
       }
     ])
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('F2: the intentional-clear capture is consumed by the real clearGraph delivery', async () => {
@@ -231,14 +236,16 @@ describe('mint ports against the real layout store delivery', () => {
     const dangling = linkTopology(43, '9')
     linkStore.registerLink(scope, dangling)
     minted.length = 0
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
 
     linkStore.deleteLink(scope, dangling)
     await realDelivery()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'crdt_link_change_unrepresentable',
+        context: { change: 'link disconnect', linkId: toLinkId(43) }
+      })
+    )
   })
 })
