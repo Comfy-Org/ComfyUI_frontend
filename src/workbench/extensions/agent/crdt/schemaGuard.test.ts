@@ -53,8 +53,9 @@ describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
       FollowerSchemaError
     )
     expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('schema_version=99')
+      expect.stringContaining('meta.schema_version is not the layout')
     )
+    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('99'))
   })
 
   it('never writes the doc it refuses (KA-6: the follower is read-only)', () => {

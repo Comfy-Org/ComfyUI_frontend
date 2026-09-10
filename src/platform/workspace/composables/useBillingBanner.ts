@@ -12,39 +12,40 @@ export type BillingBannerKind =
   | 'paymentFailed'
   | 'outOfCredits'
   | 'ending'
+  | 'planChange'
 
 export interface BillingBannerInputs {
   billingControlEnabled: boolean
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
   isLoaded: boolean
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
   hasFunds: boolean | null
   isCancelled: boolean
   endDate: string | null
   canManage: boolean
   outOfCreditsDismissed: boolean
+  hasScheduledChange: boolean
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending. Payment recovery and the existing billing-control
-// notices have independent rollout gates.
+// outOfCredits > ending > planChange. Payment recovery and the existing
+// billing-control notices have independent rollout gates.
 export function deriveBillingBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.isTeamPlan || !inputs.isLoaded) {
-    return null
-  }
+  if (!inputs.isLoaded) return null
 
   if (inputs.v1PaymentRecovery) {
-    if (inputs.billingStatus === 'paused') return 'paused'
+    if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
     if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
       return 'paymentFailed'
     }
   }
 
-  if (!inputs.isActiveSubscription) return null
+  if (!inputs.isTeamPlan) return null
+  if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
 
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
@@ -53,13 +54,16 @@ export function deriveBillingBanner(
   if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
     return 'ending'
   }
+  if (inputs.hasScheduledChange && !inputs.isCancelled) {
+    return 'planChange'
+  }
 
   return null
 }
 
 function useBillingBannerInternal() {
   const {
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     billingStatus,
     subscription,
     isTeamPlan,
@@ -78,13 +82,14 @@ function useBillingBannerInternal() {
       v1PaymentRecovery: flags.v1PaymentRecovery,
       isTeamPlan: isTeamPlan.value,
       isLoaded: subscription.value !== null,
-      isActiveSubscription: isActiveSubscription.value,
+      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       billingStatus: billingStatus.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       isCancelled: subscription.value?.isCancelled ?? false,
       endDate: subscription.value?.endDate ?? null,
       canManage: permissions.value.canManageSubscription,
-      outOfCreditsDismissed: dismissed.value
+      outOfCreditsDismissed: dismissed.value,
+      hasScheduledChange: subscription.value?.scheduledChange != null
     })
   })
 
