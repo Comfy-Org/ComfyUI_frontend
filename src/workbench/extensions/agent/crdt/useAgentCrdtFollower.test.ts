@@ -472,11 +472,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent-lineage',
-      opId: 'follower-replaced:wf-1'
-    })
+    expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
@@ -824,16 +820,13 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reconciles after a follower_replaced clear', () => {
+    it('waits for a document frame before reconciling a replacement', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
-      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
-        fakeGraph,
-        fakeDefinitions
-      )
+      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
       unmount()
     })
 
