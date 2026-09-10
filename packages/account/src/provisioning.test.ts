@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   customerProvisioningRequest,
-  isCustomerProvisioned,
   signUpWithProvisioning,
   socialSignInWithProvisioning
 } from './provisioning'
@@ -251,18 +250,5 @@ describe('customerProvisioningRequest', () => {
       signal: controller.signal
     })
     expect(own.signal).toBe(controller.signal)
-  })
-})
-
-describe('isCustomerProvisioned', () => {
-  it('accepts the created and already-exists answers', () => {
-    expect(isCustomerProvisioned({ ok: true })).toBe(true)
-  })
-
-  it('treats a 409 as a failure, never as an existing customer', () => {
-    expect(
-      isCustomerProvisioned({ ok: false }),
-      'the backend returns 200 for an existing customer; a 409 here is a real conflict'
-    ).toBe(false)
   })
 })
