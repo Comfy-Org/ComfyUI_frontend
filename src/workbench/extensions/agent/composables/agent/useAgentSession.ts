@@ -363,7 +363,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         i18n.global.t('agent.sendBusy')
       )
-      trackAgentError('send_busy', 'pre_acceptance', 'inline_notice')
       return false
     }
     promptEditState.value = { phase: 'idle' }

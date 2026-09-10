@@ -2333,7 +2333,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
-  it('tracks a pre-acceptance busy-state rejection when a send is already in flight', async () => {
+  it('does not count a busy-state double-submit as an agent error', async () => {
     let resolvePost: (value: AgentTurnAccepted) => void = () => undefined
     const rest = fakeRest({
       postMessage: vi.fn(
@@ -2350,13 +2350,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     const ok = await session.sendMessage('second')
 
     expect(ok).toBe(false)
-    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
-      error_class: 'send_busy',
-      failure_stage: 'pre_acceptance',
-      retryable: true,
-      turn_accepted: false,
-      ui_treatment: 'inline_notice'
-    })
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
     resolvePost({ thread_id: 'th-1', message_id: 'msg-1' })
     await first
   })

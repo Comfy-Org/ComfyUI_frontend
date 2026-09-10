@@ -616,7 +616,6 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
  */
 export type AgentErrorClass =
   | 'request_failed'
-  | 'send_busy'
   | 'malformed_stream_event'
   | 'cancel_failed'
   | 'history_load_failed'
