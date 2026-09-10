@@ -35,6 +35,7 @@ export enum ServerFeatureFlag {
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  HOSTED_BILLING_WEB_ENABLED = 'hosted_billing_web_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
@@ -212,6 +213,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get hostedBillingWebEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED,
+        remoteConfig.value.hosted_billing_web_enabled,
+        import.meta.env.DEV && Boolean(import.meta.env.VITE_BILLING_WEB_URL)
+      )
+    },
     get showSignInButton(): boolean | undefined {
       return api.getServerFeature<boolean | undefined>(
         ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
@@ -334,6 +342,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
+      [ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED]:
+        flags.hostedBillingWebEnabled,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,

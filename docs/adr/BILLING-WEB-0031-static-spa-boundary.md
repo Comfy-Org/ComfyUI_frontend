@@ -29,6 +29,9 @@ The build output is a static SPA:
   contracts are agreed.
 - The Cloud repository continues to own billing APIs, authorization, and
   business logic.
+- The core frontend opens the environment-specific billing URL in a separate
+  tab behind the `hosted_billing_web_enabled` feature flag. It does not embed
+  or import the hosted app.
 
 The first scaffold deliberately does not guess the future SDK interfaces or
 credential lifecycle. Integration code must follow

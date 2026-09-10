@@ -23,8 +23,14 @@ repository.
 Run these commands from the repository root:
 
 ```bash
+pnpm dev:cloud:billing-web
 pnpm --filter @comfyorg/billing-web dev
 pnpm --filter @comfyorg/billing-web typecheck
 pnpm --filter @comfyorg/billing-web test:unit
 pnpm --filter @comfyorg/billing-web build
 ```
+
+`pnpm dev:cloud:billing-web` runs the Cloud frontend on port 5173 and this app
+on port 5174. The command supplies `VITE_BILLING_WEB_URL` to the Cloud frontend,
+which enables the hosted-billing feature flag by default in development. A
+server or local feature-flag override can still disable it.
