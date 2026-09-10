@@ -158,6 +158,34 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('drag-copy-copied-node.png')
   })
 
+  test('Repeated pastes keep every node a distinct instance', async ({
+    comfyPage
+  }) => {
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(1)
+    const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+    await comfyPage.canvas.click()
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.clipboard.copy()
+
+    const pasteCount = 5
+    for (let i = 0; i < pasteCount; i++) {
+      await comfyPage.clipboard.paste()
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount * (i + 2))
+    }
+
+    const nodeIds = await comfyPage.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => String(node.id))
+    )
+    expect(nodeIds).toHaveLength(initialCount * (pasteCount + 1))
+    expect(new Set(nodeIds).size).toBe(nodeIds.length)
+  })
+
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
