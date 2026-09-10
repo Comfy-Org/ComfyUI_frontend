@@ -4,6 +4,8 @@ import generatedModels from './workshop-models.generated.json'
 import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
 import { routerAliasById } from './workshop-browse-content'
+import { workshopContract } from './workshop-contract-catalog'
+import { workshopContentInputs } from './workshop-content-inputs'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 import { schemaForModel } from './workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
@@ -279,9 +281,16 @@ describe('countByUseCase', () => {
 })
 
 describe('workshopModels', () => {
-  it('uses the complete Router catalog with canonical model-page links', () => {
+  it('publishes the content/input-schema intersection with unique use-case links', () => {
     const ids = new Set(
-      [...routerAliasById.values()].map((alias) => alias.routerId)
+      display.flatMap((entry) => {
+        const alias = routerAliasById.get(entry.modelId)
+        return alias &&
+          workshopContract(alias.routerId) &&
+          !workshopContentInputs.get(entry.id)?.unavailableReason
+          ? [alias.routerId]
+          : []
+      })
     )
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(ids)
     expect(new Set(workshopModels.map((model) => model.slug)).size).toBe(

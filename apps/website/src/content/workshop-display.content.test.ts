@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
+import { workshopContract } from '../config/workshop-contract-catalog'
 import { schemaForModel } from '../config/workshop-playground'
 import { workshopModels } from '../config/models-catalogue'
 import { fieldsForDefinition } from '../config/workshop-form-definition'
@@ -50,7 +51,7 @@ describe('the display overlay against the catalog', () => {
       const detail = getRouterWorkshopModelDetail(catalogEntry.slug)
       expect(contentFor(id)?.displayName).toBe(name)
       const alias = routerAliasById.get(id)
-      if (!alias) {
+      if (!alias || !workshopContract(alias.routerId)) {
         expect(detail).toBeUndefined()
         return
       }
