@@ -9362,10 +9362,6 @@ Enterprise`
     en: 'Image preview unavailable. Check the source image.',
     'zh-CN': '无法预览图片，请检查源图片。'
   },
-  'workshop.field.imageUrlRequired': {
-    en: 'Enter a complete http:// or https:// image URL.',
-    'zh-CN': '请输入完整的 http:// 或 https:// 图片链接。'
-  },
   'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },
   'workshop.field.providerDefault': {

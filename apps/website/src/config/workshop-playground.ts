@@ -133,7 +133,9 @@ const URL_UPLOAD_ACCEPT = {
 export function urlUploadField(
   field: FieldSchema
 ): Extract<FieldSchema, { kind: 'file' }> | undefined {
-  const media = field.presentation?.urlUpload
+  const media =
+    field.presentation?.urlUpload ??
+    (field.presentation?.imageSource === 'url' ? 'image' : undefined)
   if (!media || field.kind !== 'text' || field.valueType === 'json')
     return undefined
   return {

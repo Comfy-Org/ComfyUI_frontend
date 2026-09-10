@@ -105,3 +105,18 @@ CI at the preceding integration head `4c9fdeb9b5` passed website units but faile
 23 website E2E/visual checks (438 passed). The route/form failures and
 site screenshot differences remain a separate integration follow-up; this media
 fix does not waive them or claim the entire PR is merge-ready.
+
+## Follow-up: upload-only media controls
+
+Media fields no longer render an editable URL textbox or textarea. Image,
+video, audio, mixed-media and other file inputs use the existing upload control;
+ordinary text fields remain editable. Internal example URLs still populate the
+preview slots on first open and remain unchanged until replaced or removed.
+URL-native models upload selected files to obtain a URL; Base64-native models
+retain their existing encoding path. No catalog or content data was removed.
+
+Verification: 160 focused tests across eight files, website typecheck, changed-file
+lint and the enabled build pass. Browser checks cover 17 example pages on desktop
+and mobile with no media URL editors, decoded previews, and file selection,
+replacement and removal for URL-image, URL-video and multiple-Base64-image forms.
+Generation POSTs were blocked; no paid generation was made.
