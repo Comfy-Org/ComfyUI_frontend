@@ -74,16 +74,25 @@ jobs:
           # Not bash's /dev/tcp: Debian/Ubuntu bash is built with that
           # feature disabled, so it silently never connects on this image
           # regardless of shell. Node is guaranteed present here already.
-          # Connect to 'localhost' (not a literal 127.0.0.1) to match
-          # whatever address astro's own "Local http://localhost:4321/"
-          # actually bound.
+          # A literal 127.0.0.1 probe got a clean, immediate, and permanent
+          # ECONNREFUSED here despite astro logging ready — this image binds
+          # the server to IPv6 loopback only, refusing IPv4 outright. Try
+          # both families instead of assuming either.
           READY=0
           LAST_ERR=""
           for i in $(seq 1 30); do
             LAST_ERR=$(node -e "
-              const s = require('net').connect(4321, 'localhost')
-              s.on('connect', () => { s.end(); process.exit(0) })
-              s.on('error', (e) => { console.error(e.message); process.exit(1) })
+              const net = require('net')
+              const tryHost = (host) => new Promise((resolve) => {
+                const s = net.connect(4321, host)
+                s.on('connect', () => { s.end(); resolve(true) })
+                s.on('error', (e) => resolve(e.message))
+              })
+              Promise.all([tryHost('127.0.0.1'), tryHost('::1')]).then((results) => {
+                if (results.some((r) => r === true)) process.exit(0)
+                console.error(results.join('; '))
+                process.exit(1)
+              })
             " 2>&1) && { READY=1; break; }
             sleep 1
           done
