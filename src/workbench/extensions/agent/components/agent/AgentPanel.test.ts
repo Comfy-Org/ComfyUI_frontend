@@ -47,12 +47,22 @@ const chatHistoryStub = defineComponent({
 type AddAttachmentArgs = [attachment: ComposerAttachment]
 type UpdateAttachmentArgs = [id: string, patch: Partial<ComposerAttachment>]
 type RemoveAttachmentArgs = [id: string]
+type InsertArgs = [text: string]
+type ReplaceDraftArgs = [text: string]
 
 const attachmentCalls = {
   add: [] as AddAttachmentArgs[],
   update: [] as UpdateAttachmentArgs[],
   remove: [] as RemoveAttachmentArgs[]
 }
+
+const draftCalls = {
+  insert: [] as InsertArgs[],
+  replaceDraft: [] as ReplaceDraftArgs[]
+}
+
+const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
+const editedPrompt = 'Generate a yellow duck at sunrise'
 
 const attachment: ComposerAttachment = {
   id: 'attachment-1',
@@ -106,8 +116,12 @@ const eventComposerStub = defineComponent({
   ],
   setup(_, { expose }) {
     expose({
-      insert: () => {},
-      replaceDraft: () => {},
+      insert: (...args: InsertArgs) => {
+        draftCalls.insert.push(args)
+      },
+      replaceDraft: (...args: ReplaceDraftArgs) => {
+        draftCalls.replaceDraft.push(args)
+      },
       addAttachment: (...args: AddAttachmentArgs) => {
         attachmentCalls.add.push(args)
       },
@@ -130,6 +144,24 @@ const eventComposerStub = defineComponent({
       <button type="button" @click="$emit('removeTag', 'tag-1')">Composer remove tag</button>
       <button type="button" @click="$emit('focusTag', 'tag-1')">Composer focus tag</button>
       <button type="button" @click="$emit('mentionPick', { id: 'node-1', title: 'KSampler' })">Composer mention</button>
+    </div>
+  `
+})
+
+const eventEmptyStateStub = defineComponent({
+  emits: ['insert'],
+  template: `
+    <div>
+      <button type="button" @click="$emit('insert', '${suggestedPrompt}')">Empty state suggestion</button>
+    </div>
+  `
+})
+
+const eventConversationViewStub = defineComponent({
+  emits: ['editPrompt'],
+  template: `
+    <div>
+      <button type="button" @click="$emit('editPrompt', '${editedPrompt}')">Conversation edit prompt</button>
     </div>
   `
 })
@@ -161,6 +193,8 @@ describe('AgentPanel', () => {
     attachmentCalls.add.length = 0
     attachmentCalls.update.length = 0
     attachmentCalls.remove.length = 0
+    draftCalls.insert.length = 0
+    draftCalls.replaceDraft.length = 0
   })
 
   it('shows the minimized run notice and disclaimer by default', () => {
@@ -612,5 +646,52 @@ describe('AgentPanel', () => {
       [attachment.id, { uploading: false }]
     ])
     expect(attachmentCalls.remove).toEqual([[attachment.id]])
+  })
+
+  it('inserts an empty state suggestion into the composer draft', async () => {
+    const user = userEvent.setup()
+    render(AgentPanel, {
+      props: { entries: [], historyGroups: createHistoryGroups() },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: eventComposerStub,
+          EmptyState: eventEmptyStateStub,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Empty state suggestion' })
+    )
+
+    expect(draftCalls.insert).toEqual([[suggestedPrompt]])
+    expect(draftCalls.replaceDraft).toEqual([])
+  })
+
+  it('replaces the composer draft when a conversation prompt is edited', async () => {
+    const user = userEvent.setup()
+    render(AgentPanel, {
+      props: {
+        entries: [{ id: 'msg-1' as TurnId, role: 'user', text: editedPrompt }],
+        historyGroups: createHistoryGroups()
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: eventComposerStub,
+          ConversationView: eventConversationViewStub,
+          PanelHeader: true
+        }
+      }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Conversation edit prompt' })
+    )
+
+    expect(draftCalls.replaceDraft).toEqual([[editedPrompt]])
+    expect(draftCalls.insert).toEqual([])
   })
 })
