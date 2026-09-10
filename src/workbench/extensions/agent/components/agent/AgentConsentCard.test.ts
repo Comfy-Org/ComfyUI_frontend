@@ -74,6 +74,17 @@ describe('AgentConsentCard', () => {
     expect(screen.getByRole('button', { name: 'Skip for now' })).toBeEnabled()
   })
 
+  it('provides a native documentation link that opens safely in a new tab', () => {
+    renderCard({ docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent' })
+    const docs = screen.getByRole('link', { name: 'Read the docs' })
+    expect(docs).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/agent-tools/in-app-agent'
+    )
+    expect(docs).toHaveAttribute('target', '_blank')
+    expect(docs).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
   it('shows a placeholder when no video is supplied', () => {
     renderCard()
 

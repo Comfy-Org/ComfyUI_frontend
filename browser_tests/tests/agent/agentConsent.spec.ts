@@ -164,4 +164,97 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(reject).toBeFocused()
     })
   })
+
+  test('keeps actions reachable in a short wide window', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.setViewportSize({ width: 1280, height: 480 })
+    await page
+      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .click()
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
+    })
+    const accept = dialog.getByRole('button', {
+      name: enMessages.agent.consent.accept
+    })
+    const reject = dialog.getByRole('button', {
+      name: enMessages.agent.consent.reject
+    })
+    await accept.scrollIntoViewIfNeeded()
+    await expect(accept).toBeInViewport({ ratio: 1 })
+    await expect(reject).toBeInViewport({ ratio: 1 })
+    await reject.click()
+    await expect(dialog).toHaveCount(0)
+  })
+
+  test('lets a narrow short window scroll from the heading to the actions', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.setViewportSize({ width: 430, height: 600 })
+    await page
+      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .click()
+    const dialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
+    })
+    const heading = dialog.getByRole('heading', {
+      name: enMessages.agent.consent.title
+    })
+    const reject = dialog.getByRole('button', {
+      name: enMessages.agent.consent.reject
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeInViewport({ ratio: 1 })
+    await reject.scrollIntoViewIfNeeded()
+    await expect(reject).toBeInViewport({ ratio: 1 })
+    await reject.click()
+    await expect(dialog).toHaveCount(0)
+  })
+
+  test('allows keyboard pause and stops autoplay for reduced motion', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page
+      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .click()
+    const video = page
+      .getByRole('dialog', { name: enMessages.agent.consent.title })
+      .locator('video')
+    await expect(video).toHaveAttribute('controls', '')
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
+      .toBe(false)
+    await video.focus()
+    await page.keyboard.press('Space')
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
+      .toBe(true)
+    await page.keyboard.press('Space')
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
+      .toBe(false)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await expect(video).not.toHaveAttribute('autoplay')
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
+      .toBe(true)
+    await page.keyboard.press('Escape')
+    await page
+      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .click()
+    await expect(video).not.toHaveAttribute('autoplay')
+    await expect
+      .poll(() =>
+        video.evaluate((element: HTMLVideoElement) => element.readyState)
+      )
+      .toBeGreaterThanOrEqual(2)
+    await expect
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
+      .toBe(true)
+  })
 })
