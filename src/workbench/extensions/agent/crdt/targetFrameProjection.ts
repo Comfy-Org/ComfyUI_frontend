@@ -14,6 +14,7 @@ import type {
   SemanticLinkPayload,
   SemanticNodePayload
 } from '@/core/graph/graphMutations'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { compareNodeIds, toNodeId } from '@/types/nodeId'
 
@@ -44,9 +45,19 @@ function readSemanticNode(doc: Y.Doc, id: string): SemanticNodePayload | null {
       payload[key] = plain(value)
     }
   })
-  payload.id = id
-  payload.type = type
-  return payload as SemanticNodePayload
+  return { ...payload, id: toNodeId(id), type }
+}
+
+function isSlotRecord(
+  value: unknown
+): value is Record<string, unknown> & { name: string; type: ISlotType } {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return false
+  const record = value as Record<string, unknown>
+  return (
+    typeof record.name === 'string' &&
+    (typeof record.type === 'string' || typeof record.type === 'number')
+  )
 }
 
 function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
@@ -56,12 +67,14 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 ): SemanticLinkPayload[TKey extends 'inputs'
   ? 'targetInputs'
   : 'originOutputs'] {
-  const value = nodesMap(doc).get(id)?.get(key)
-  return (
-    value instanceof Y.Array ? value.toJSON() : []
-  ) as SemanticLinkPayload[TKey extends 'inputs'
+  type Slots = SemanticLinkPayload[TKey extends 'inputs'
     ? 'targetInputs'
     : 'originOutputs']
+  const value = nodesMap(doc).get(id)?.get(key)
+  if (!(value instanceof Y.Array)) return [] as Slots
+  const slots: unknown = value.toJSON()
+  if (!Array.isArray(slots) || !slots.every(isSlotRecord)) return [] as Slots
+  return slots
 }
 
 function readSemanticLink(doc: Y.Doc, id: string): SemanticLinkPayload | null {
