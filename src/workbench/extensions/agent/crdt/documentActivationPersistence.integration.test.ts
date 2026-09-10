@@ -119,7 +119,7 @@ function loadedCoordinator() {
   })
 }
 
-describe('document activation persistence (ADR-0024 seam)', () => {
+describe('document activation persistence (ADR-GRAPH-DOCUMENT-0024 seam)', () => {
   it('serializes byte-identically across Base/ECS/Nodes-2.0 activation cycles and save/reload', async () => {
     const scope = scopeFor('root')
     const mutations = mutationsFor(scope)

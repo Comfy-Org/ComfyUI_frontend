@@ -168,7 +168,7 @@ const graphMutationsByWorkflow = new Map<
   }
 >()
 const graphMutations = (workflowId: string) => {
-  // Document identity is early-bound (ADR-0024): the registry entry is
+  // Document identity is early-bound (ADR-GRAPH-DOCUMENT-0024): the registry entry is
   // created when the target is first addressed, not at commit time. Commit
   // scope resolution then records/refreshes the entry's scope, so a target
   // whose tab is momentarily unresolved still commits into its own document.
