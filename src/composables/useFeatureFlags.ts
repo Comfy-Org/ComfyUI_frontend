@@ -217,7 +217,7 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED,
         remoteConfig.value.hosted_billing_web_enabled,
-        import.meta.env.DEV && Boolean(import.meta.env.VITE_BILLING_WEB_URL)
+        false
       )
     },
     get showSignInButton(): boolean | undefined {

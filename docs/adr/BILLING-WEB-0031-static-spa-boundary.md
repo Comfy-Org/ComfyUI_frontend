@@ -31,7 +31,9 @@ The build output is a static SPA:
   business logic.
 - The core frontend opens the environment-specific billing URL in a separate
   tab behind the `hosted_billing_web_enabled` feature flag. It does not embed
-  or import the hosted app.
+  or import the hosted app. The initial flag only redirects the Plans & pricing
+  navigation item; transactional Subscribe, Resubscribe, and embedded-checkout
+  actions remain in the core frontend until the hosted app reaches parity.
 
 The first scaffold deliberately does not guess the future SDK interfaces or
 credential lifecycle. Integration code must follow
