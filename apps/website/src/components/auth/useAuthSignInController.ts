@@ -77,10 +77,17 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     settled: identitySettled,
     ensureFresh
   } = useWorkshopSession()
-  // A returning signed-in visitor leaves without ever seeing the form, as on
-  // cloud where the router holds the route until auth has initialized.
-  const leaving = ref(false)
   const state = ref<AuthSignInState>({ step: 'idle' })
+  // A returning signed-in visitor leaves without ever seeing the form, as on
+  // cloud where the router holds the route until auth has initialized: the
+  // restored-origin mint stays hidden through its successful sign-in.
+  const leaving = computed(() => {
+    const current = state.value
+    if (current.step === 'minting') return current.origin === 'restored'
+    if (current.step === 'signedIn')
+      return current.origin === 'restored' && !current.messageKey
+    return false
+  })
   const showEmailForm = ref(false)
   const isSecureContext = ref(true)
   // Cloud's signup view mounts behind its router, so it probes only when the
@@ -174,7 +181,6 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     if (result?.status === 'ok') {
       dispatch({ type: 'mintSucceeded' })
     } else {
-      leaving.value = false
       dispatch({ type: 'mintFailed' })
     }
   }
@@ -271,7 +277,6 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         email: restored.email ?? restored.displayName ?? ''
       })
       if (before !== state.value.step && state.value.step === 'minting') {
-        leaving.value = true
         // No argument: `restored` is a readonly proxy, and the client already
         // holds the raw current user.
         void runMint()
