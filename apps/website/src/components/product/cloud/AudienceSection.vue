@@ -27,9 +27,9 @@ const cards = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 pt-24 lg:px-20 lg:pt-40">
+  <section class="mx-auto max-w-9xl px-4 pt-24 lg:px-20 lg:pt-40">
     <h2
-      class="text-3.5xl/tight mx-auto max-w-3xl text-center font-light text-primary-comfy-canvas lg:text-5xl/tight"
+      class="mx-auto max-w-3xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
       {{ headingParts[0]
       }}<span class="text-white">{{
@@ -43,7 +43,7 @@ const cards = [
         v-for="card in cards"
         :key="card.labelKey"
         :href="externalLinks.cloud"
-        class="group rounded-4.5xl block overflow-hidden bg-primary-comfy-ink"
+        class="group block overflow-hidden rounded-4.5xl bg-primary-comfy-ink"
       >
         <img
           :src="card.image"
@@ -56,7 +56,7 @@ const cards = [
         <div class="mt-8 p-6">
           <div class="flex items-center justify-between gap-4">
             <p
-              class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
+              class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
             >
               {{ t(card.labelKey, locale) }}
             </p>

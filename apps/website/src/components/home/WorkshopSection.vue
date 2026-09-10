@@ -15,14 +15,14 @@ const { models, locale = 'en' } = defineProps<{
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
   >
     <div
       class="flex flex-col items-start gap-6 lg:flex-row lg:items-end lg:justify-between"
     >
       <div>
         <p
-          class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase"
+          class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
         >
           {{ t('workshop.hero.eyebrow', locale) }}
         </p>
@@ -36,7 +36,7 @@ const { models, locale = 'en' } = defineProps<{
 
       <a
         href="/workshop/"
-        class="hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-comfy-canvas/25 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors"
+        class="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary-comfy-canvas/25 px-6 py-3 text-sm text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow"
       >
         {{ t('home.workshop.browseAll', locale) }}
         <ArrowRight aria-hidden="true" class="size-4" />
@@ -49,11 +49,11 @@ const { models, locale = 'en' } = defineProps<{
       <li v-for="model in models" :key="model.id">
         <a
           :href="model.href"
-          class="group hover:border-primary-comfy-yellow/60 flex h-full flex-col rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6 transition hover:-translate-y-0.5 hover:bg-primary-comfy-canvas/8"
+          class="group flex h-full flex-col rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-6 transition hover:-translate-y-0.5 hover:border-primary-comfy-yellow/60 hover:bg-primary-comfy-canvas/8"
         >
           <div class="flex items-center justify-between gap-4">
             <p
-              class="text-primary-comfy-yellow text-xs tracking-wider uppercase"
+              class="text-xs tracking-wider text-primary-comfy-yellow uppercase"
             >
               {{ model.provider }}
             </p>
@@ -71,7 +71,7 @@ const { models, locale = 'en' } = defineProps<{
           </p>
           <ArrowRight
             aria-hidden="true"
-            class="group-hover:text-primary-comfy-yellow mt-auto size-5 shrink-0 self-end text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1"
+            class="mt-auto size-5 shrink-0 self-end text-primary-comfy-canvas/50 transition-transform group-hover:translate-x-1 group-hover:text-primary-comfy-yellow"
           />
         </a>
       </li>

@@ -56,7 +56,7 @@ const isPartnerNode = directory === 'partner_nodes'
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
       <p
-        class="text-primary-comfy-yellow text-sm font-medium tracking-widest uppercase"
+        class="text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase"
       >
         {{ eyebrow }}
       </p>

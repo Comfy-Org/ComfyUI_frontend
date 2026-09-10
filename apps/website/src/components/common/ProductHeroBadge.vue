@@ -30,7 +30,7 @@ const PIECE = 'h-full w-auto'
   <div
     :class="
       cn(
-        'font-formula-narrow flex shrink-0 items-stretch font-semibold',
+        'flex shrink-0 items-stretch font-formula-narrow font-semibold',
         compact && 'h-[clamp(22px,4vw,46px)]'
       )
     "
@@ -69,7 +69,7 @@ const PIECE = 'h-full w-auto'
       v-if="showLogo"
       :class="
         cn(
-          'bg-primary-comfy-yellow my-auto flex items-center justify-center text-primary-comfy-ink',
+          'my-auto flex items-center justify-center bg-primary-comfy-yellow text-primary-comfy-ink',
           compact ? 'h-full px-3 lg:px-4.5' : 'h-12 lg:my-0 lg:h-auto lg:p-8',
           // Without the connector the two slabs butt together, so the facing
           // edges lose their padding and read as one block.
@@ -111,7 +111,7 @@ const PIECE = 'h-full w-auto'
     <span
       :class="
         cn(
-          'bg-primary-comfy-yellow my-auto flex items-center justify-center text-primary-comfy-ink',
+          'my-auto flex items-center justify-center bg-primary-comfy-yellow text-primary-comfy-ink',
           compact ? 'h-full lg:px-4.5' : 'h-7.25 lg:h-15.5 lg:px-6',
           !showLogo && (compact ? 'px-3' : 'px-4'),
           showLogo && !showConnector && compact && 'pr-3 pl-1 lg:pr-4.5 lg:pl-1'

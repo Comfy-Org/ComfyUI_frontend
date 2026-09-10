@@ -29,7 +29,7 @@ const {
 </script>
 
 <template>
-  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
+  <section :class="cn('mx-auto max-w-9xl px-6 py-16 lg:py-24', className)">
     <h2
       class="text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
     >
@@ -51,7 +51,7 @@ const {
             <tr>
               <th
                 scope="col"
-                class="text-primary-comfy-yellow w-1/2 px-8 pt-8 pb-4 font-mono text-sm font-bold tracking-wide"
+                class="w-1/2 px-8 pt-8 pb-4 font-mono text-sm font-bold tracking-wide text-primary-comfy-yellow"
               >
                 {{ featureLabel }}
               </th>
@@ -59,7 +59,7 @@ const {
                 v-for="column in columns"
                 :key="column"
                 scope="col"
-                class="text-primary-comfy-yellow px-8 pt-8 pb-4 font-mono text-sm font-bold tracking-wide"
+                class="px-8 pt-8 pb-4 font-mono text-sm font-bold tracking-wide text-primary-comfy-yellow"
               >
                 {{ column }}
               </th>

@@ -18,7 +18,7 @@ const {
   <div
     :class="
       cn(
-        'font-formula-narrow flex h-11 items-stretch font-semibold **:select-none sm:h-auto',
+        'flex h-11 items-stretch font-formula-narrow font-semibold **:select-none sm:h-auto',
         sizeClass
       )
     "
@@ -44,7 +44,7 @@ const {
       <span
         :class="
           cn(
-            'bg-primary-comfy-yellow flex items-center justify-center py-1.5 text-primary-comfy-ink transition-all duration-300 sm:py-3 lg:py-5',
+            'flex items-center justify-center bg-primary-comfy-yellow py-1.5 text-primary-comfy-ink transition-all duration-300 sm:py-3 lg:py-5',
             segmentClass
           )
         "

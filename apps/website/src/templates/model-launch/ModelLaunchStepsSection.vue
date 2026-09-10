@@ -23,7 +23,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-20 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:px-20 lg:py-24">
     <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
@@ -35,7 +35,7 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
     <ol
       :class="
         cn(
-          'rounded-5xl bg-transparency-white-t4 mt-12 grid grid-cols-1 gap-4 p-4 lg:gap-2 lg:p-2',
+          'mt-12 grid grid-cols-1 gap-4 rounded-5xl bg-transparency-white-t4 p-4 lg:gap-2 lg:p-2',
           steps.items.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
         )
       "
@@ -43,10 +43,10 @@ const descriptionParts = (step: ModelLaunchSteps['items'][number]) =>
       <li
         v-for="(step, index) in steps.items"
         :key="step.id"
-        class="rounded-4.5xl flex flex-col gap-8 bg-primary-comfy-ink p-6"
+        class="flex flex-col gap-8 rounded-4.5xl bg-primary-comfy-ink p-6"
       >
         <p
-          class="text-primary-comfy-yellow text-sm/tight font-extrabold tracking-wider uppercase"
+          class="text-sm/tight font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
         >
           {{ t(steps.stepLabelKey, locale) }} {{ stepNumber(index) }}
         </p>

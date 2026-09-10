@@ -26,7 +26,7 @@ const {
   <article
     :class="
       cn(
-        'bg-transparency-white-t4 rounded-3xl border border-white/10 p-5 lg:p-6',
+        'rounded-3xl border border-white/10 bg-transparency-white-t4 p-5 lg:p-6',
         className
       )
     "
@@ -47,7 +47,7 @@ const {
       }}<template v-if="link"
         ><a
           :href="link.href"
-          class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+          class="rounded-sm text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
           >{{ link.label }}</a
         >{{ link.suffix }}</template
       >

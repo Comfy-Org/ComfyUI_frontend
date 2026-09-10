@@ -23,7 +23,7 @@ const parsedFaqs = computed(() =>
 </script>
 
 <template>
-  <section :id class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
+  <section :id class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
@@ -65,7 +65,7 @@ const parsedFaqs = computed(() =>
                   :href="part.value"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 rounded-sm underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+                  class="rounded-sm text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
                   >{{ part.label ?? part.value }}</a
                 >
                 <strong

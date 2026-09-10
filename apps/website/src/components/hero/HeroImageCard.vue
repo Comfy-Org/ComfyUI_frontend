@@ -53,16 +53,16 @@ watch(
     <!-- Wire anchor; its centre must match PORTS.inputOut in graphLayout.ts -->
     <span
       v-if="dot"
-      class="bg-primary-comfy-yellow absolute top-[1.325em] right-[1.225em] size-[0.55em] rounded-full"
+      class="absolute top-[1.325em] right-[1.225em] size-[0.55em] rounded-full bg-primary-comfy-yellow"
     />
 
     <span
       v-if="label"
-      class="bg-secondary-deep-plum absolute top-[1em] left-[1em] z-10 flex items-center gap-[0.5em] rounded-[0.5em] px-[0.9em] py-[0.45em]"
+      class="absolute top-[1em] left-[1em] z-10 flex items-center gap-[0.5em] rounded-[0.5em] bg-secondary-deep-plum px-[0.9em] py-[0.45em]"
     >
-      <span class="bg-primary-comfy-yellow size-[0.5em] rounded-full" />
+      <span class="size-[0.5em] rounded-full bg-primary-comfy-yellow" />
       <span
-        class="text-primary-comfy-yellow ppformula-text-center font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em]"
+        class="ppformula-text-center font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em] text-primary-comfy-yellow"
       >
         {{ label }}
       </span>

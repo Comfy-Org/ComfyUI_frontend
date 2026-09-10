@@ -50,7 +50,7 @@ onUnmounted(() => {
     <Sheet v-model:open="isOpen">
       <SheetTrigger
         :aria-label="t('nav.toggleMenu', locale)"
-        class="bg-primary-comfy-yellow grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-comfy-ink hover:opacity-90"
+        class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90"
       >
         <BreadthumbIcon class="h-3 w-5 text-primary-comfy-ink" />
       </SheetTrigger>
@@ -69,7 +69,7 @@ onUnmounted(() => {
         <div>
           <a
             :href="routes.home"
-            class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex w-auto shrink-0 focus-visible:ring-3"
+            class="inline-flex w-auto shrink-0 focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >
             <img src="/icons/logomark.svg" alt="" class="h-11 w-auto" />
             <span class="sr-only">{{ t('nav.home', locale) }}</span>

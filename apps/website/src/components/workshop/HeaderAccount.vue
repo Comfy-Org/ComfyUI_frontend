@@ -94,7 +94,7 @@ async function signOutFromMenu() {
     <a
       v-if="!user"
       :href="signInHref"
-      class="hover:border-primary-comfy-yellow/60 flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors"
+      class="flex h-10 items-center rounded-2xl border border-primary-comfy-canvas/25 px-4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors hover:border-primary-comfy-yellow/60"
       @pointerdown="prepareSignInHref"
       @focus="prepareSignInHref"
       @click="goToSignIn"
@@ -132,7 +132,7 @@ async function signOutFromMenu() {
     <div v-else ref="menuRoot" class="relative">
       <button
         type="button"
-        class="hover:border-primary-comfy-yellow/60 flex h-10 items-center gap-2.5 rounded-2xl border border-primary-comfy-canvas/25 pr-3 pl-1.5 transition-colors"
+        class="flex h-10 items-center gap-2.5 rounded-2xl border border-primary-comfy-canvas/25 pr-3 pl-1.5 transition-colors hover:border-primary-comfy-yellow/60"
         :aria-label="accountLabel"
         :aria-expanded="menuOpen"
         aria-haspopup="menu"
@@ -148,7 +148,7 @@ async function signOutFromMenu() {
         <span
           v-else
           aria-hidden="true"
-          class="bg-primary-comfy-yellow flex size-7 items-center justify-center rounded-full text-xs font-bold text-primary-comfy-ink"
+          class="flex size-7 items-center justify-center rounded-full bg-primary-comfy-yellow text-xs font-bold text-primary-comfy-ink"
         >
           {{ initial }}
         </span>

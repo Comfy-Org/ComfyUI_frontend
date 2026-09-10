@@ -50,9 +50,9 @@ const isContentFirst = hero.layout === 'content-first'
 <template>
   <section
     v-if="isOverlay"
-    class="max-w-9xl mx-auto px-6 py-12 lg:px-20 lg:py-16"
+    class="mx-auto max-w-9xl px-6 py-12 lg:px-20 lg:py-16"
   >
-    <div class="rounded-4.5xl grid overflow-hidden">
+    <div class="grid overflow-hidden rounded-4.5xl">
       <img
         v-if="!hero.videoSrc && hero.placeholderImageSrc"
         :src="hero.placeholderImageSrc"
@@ -161,7 +161,7 @@ const isContentFirst = hero.layout === 'content-first'
 
   <section
     v-else
-    class="max-w-9xl mx-auto flex flex-col px-6 py-12 lg:px-20 lg:py-16"
+    class="mx-auto flex max-w-9xl flex-col px-6 py-12 lg:px-20 lg:py-16"
   >
     <div
       v-if="hero.videoSrc"
@@ -197,7 +197,7 @@ const isContentFirst = hero.layout === 'content-first'
       <div
         v-if="hero.logoSrc"
         aria-hidden="true"
-        class="bg-transparency-white-t4 pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
+        class="pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl bg-transparency-white-t4 backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
       >
         <span
           class="inline-block size-6 bg-current text-primary-warm-white lg:size-8.75"
@@ -265,7 +265,7 @@ const isContentFirst = hero.layout === 'content-first'
       rel="noopener"
       :class="
         cn(
-          'bg-transparency-white-t4 hover:border-primary-comfy-yellow/40 hidden w-full flex-col items-start gap-4 rounded-4xl border border-white/10 p-6 text-left transition-colors sm:flex-row sm:items-center sm:justify-between lg:flex lg:px-10 lg:py-7',
+          'hidden w-full flex-col items-start gap-4 rounded-4xl border border-white/10 bg-transparency-white-t4 p-6 text-left transition-colors hover:border-primary-comfy-yellow/40 sm:flex-row sm:items-center sm:justify-between lg:flex lg:px-10 lg:py-7',
           isContentFirst ? 'order-2 mb-10' : 'order-3 mt-10'
         )
       "
@@ -274,10 +274,10 @@ const isContentFirst = hero.layout === 'content-first'
         {{ t(hero.promptBar.sampleKey, locale) }}
       </span>
       <span
-        class="text-primary-comfy-yellow flex shrink-0 items-center gap-3 text-sm font-extrabold tracking-wider uppercase"
+        class="flex shrink-0 items-center gap-3 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
       >
         <span
-          class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-full text-primary-comfy-ink"
+          class="flex size-8 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
         >
           <ChevronRight class="size-5" :stroke-width="2" />
         </span>

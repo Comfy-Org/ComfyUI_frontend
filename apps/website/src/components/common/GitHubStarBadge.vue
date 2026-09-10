@@ -22,7 +22,7 @@ const { stars } = defineProps<{
       size-class="h-5 sm:h-5"
     />
     <span
-      class="bg-primary-comfy-yellow block size-6 shrink-0"
+      class="block size-6 shrink-0 bg-primary-comfy-yellow"
       aria-hidden="true"
       style="mask: url('/icons/social/github.svg') center / contain no-repeat"
     />

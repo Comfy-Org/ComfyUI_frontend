@@ -19,7 +19,7 @@ defineProps<{ item: NavColumnItem; locale: Locale }>()
     />
     <ArrowUpRight
       v-if="item.external"
-      class="text-primary-comfy-yellow size-4"
+      class="size-4 text-primary-comfy-yellow"
     />
   </span>
 </template>

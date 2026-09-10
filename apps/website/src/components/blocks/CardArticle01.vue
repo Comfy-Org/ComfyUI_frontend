@@ -42,7 +42,7 @@ const { item, titleClamp = false } = defineProps<{
       :target="item.cta.newTab ? '_blank' : undefined"
       :rel="resolveRel({ target: item.cta.newTab ? '_blank' : undefined })"
       :aria-label="`${item.title} — ${item.cta.label}`"
-      class="rounded-4.5xl focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+      class="absolute inset-0 z-10 rounded-4.5xl focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
     />
 
     <div class="flex flex-col-reverse">

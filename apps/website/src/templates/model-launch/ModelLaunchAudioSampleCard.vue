@@ -19,7 +19,7 @@ const { locale = 'en', card } = defineProps<{
       :sources="card.audioSources"
       :poster="card.posterSrc"
       :aria-label="card.description[locale] || card.description.en"
-      class="rounded-4.5xl aspect-19/10 border-0"
+      class="aspect-19/10 rounded-4.5xl border-0"
     />
 
     <p class="mt-6 text-base font-semibold text-primary-comfy-canvas">

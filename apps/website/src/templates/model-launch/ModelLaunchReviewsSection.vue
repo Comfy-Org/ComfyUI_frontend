@@ -24,9 +24,9 @@ const quotes = creatorReviews.map((review) => ({
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 pt-0 pb-16 lg:px-16 lg:pt-4 lg:pb-24">
+  <section class="mx-auto max-w-9xl px-6 pt-0 pb-16 lg:px-16 lg:pt-4 lg:pb-24">
     <div
-      class="rounded-5xl bg-primary-comfy-yellow flex flex-col gap-6 p-8 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:gap-8"
+      class="flex flex-col gap-6 rounded-5xl bg-primary-comfy-yellow p-8 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between lg:gap-8"
     >
       <div class="min-w-0 flex-1">
         <h3
@@ -63,7 +63,7 @@ const quotes = creatorReviews.map((review) => ({
       <article
         v-for="quote in quotes"
         :key="quote.id"
-        class="bg-transparency-white-t4 rounded-5xl flex w-full shrink-0 snap-start flex-col justify-between p-8 lg:w-2/3 lg:p-12"
+        class="flex w-full shrink-0 snap-start flex-col justify-between rounded-5xl bg-transparency-white-t4 p-8 lg:w-2/3 lg:p-12"
       >
         <p
           class="text-xl/relaxed font-light text-primary-comfy-canvas lg:text-2xl/relaxed"
@@ -71,7 +71,7 @@ const quotes = creatorReviews.map((review) => ({
           "{{ quote.body }}"
         </p>
 
-        <p class="text-primary-comfy-yellow mt-10 text-base lg:mt-12">
+        <p class="mt-10 text-base text-primary-comfy-yellow lg:mt-12">
           <span class="font-medium">{{ quote.name }}</span
           ><template v-if="quote.role">,<br />{{ quote.role }}</template>
         </p>

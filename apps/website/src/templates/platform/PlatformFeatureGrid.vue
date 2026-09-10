@@ -23,7 +23,7 @@ const { columns = 3 } = defineProps<{
 <template>
   <section
     :id
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-10 lg:scroll-mt-36 lg:py-14"
   >
     <SectionHeader max-width="xl" heading-size="compact">
       {{ heading }}
