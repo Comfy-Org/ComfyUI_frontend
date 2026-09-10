@@ -1,4 +1,14 @@
-import type { AccountUser, IdentityPort } from './session.js'
+import type { AccountUser } from './session.js'
+
+/**
+ * The identity boundary. An internal port, not a host adapter: real hosts
+ * get their implementation from `@comfyorg/account/firebase`; tests brand a
+ * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
+ * the branded form.
+ */
+export interface IdentityPort<TUser extends AccountUser = AccountUser> {
+  onUserChanged: (callback: (user: TUser | null) => void) => () => void
+}
 
 /**
  * Only the package's own identity entry (and the `./testing` seam) can mint
