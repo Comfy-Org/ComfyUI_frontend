@@ -30,6 +30,7 @@ export type GestureEffect =
   | 'click'
   | 'doubleClick'
   | 'startDrag'
+  | 'movePress'
   | 'moveDrag'
   | 'endDrag'
   | 'cancelDrag'
@@ -97,7 +98,7 @@ export function reduceGesture(
             event.timeStamp - state.timeStamp <= policy.clickBufferTime &&
             within(event.position, state.origin, policy.clickDrift)
           )
-            return { state, effects: ['moveDrag'] }
+            return { state, effects: ['movePress'] }
           return {
             state: {
               phase: 'dragging',

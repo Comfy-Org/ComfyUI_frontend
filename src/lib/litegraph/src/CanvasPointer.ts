@@ -255,6 +255,7 @@ export class CanvasPointer {
         this.onDragStart?.(this, eMove)
         delete this.onDragStart
         return
+      case 'movePress':
       case 'moveDrag':
         this.onDrag?.(e)
         return
