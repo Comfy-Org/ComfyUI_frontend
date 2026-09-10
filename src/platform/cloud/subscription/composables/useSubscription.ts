@@ -427,8 +427,8 @@ function useSubscriptionInternal() {
     isRecoveringPendingCheckout = true
 
     try {
-      await fetchSubscriptionStatus()
       didLastRecoveryAttemptThrow = false
+      await fetchSubscriptionStatus()
     } catch (error) {
       console.error(
         `[Subscription] Failed to recover pending checkout on ${source}:`,
