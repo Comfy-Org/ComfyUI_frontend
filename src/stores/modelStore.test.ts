@@ -610,9 +610,13 @@ describe('useModelStore', () => {
   describe('assets capability change', () => {
     it('rebuilds the library when a late handshake turns the capability on', async () => {
       enableMocks(false)
+      vi.mocked(assetService.getAssetModels).mockResolvedValue([
+        { name: 'asset-only.safetensors', pathIndex: 0 }
+      ])
       store = useModelStore()
       await store.loadModelFolders()
-      await store.getLoadedModelFolder('checkpoints')
+      const legacyFolder = await store.getLoadedModelFolder('checkpoints')
+      expect(Object.keys(legacyFolder!.models)).toContain('0/sdxl.safetensors')
       expect(api.getModels).toHaveBeenCalledTimes(1)
       expect(assetService.getAssetModels).not.toHaveBeenCalled()
 
@@ -622,6 +626,12 @@ describe('useModelStore', () => {
         expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
       })
       expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      await vi.waitFor(async () => {
+        const rebuilt = await store.getLoadedModelFolder('checkpoints')
+        const names = Object.keys(rebuilt!.models)
+        expect(names).toContain('0/asset-only.safetensors')
+        expect(names).not.toContain('0/sdxl.safetensors')
+      })
     })
 
     // Guards the stale-closure risk: createGetModelsFunc() captures its data
@@ -629,6 +639,9 @@ describe('useModelStore', () => {
     // handshake must not keep serving the legacy endpoint after it.
     it('serves folders built before the handshake from the asset API after it', async () => {
       enableMocks(false)
+      vi.mocked(assetService.getAssetModels).mockResolvedValue([
+        { name: 'asset-only.safetensors', pathIndex: 0 }
+      ])
       store = useModelStore()
       await store.loadModelFolders()
       expect(assetService.getAssetModels).not.toHaveBeenCalled()
@@ -638,9 +651,12 @@ describe('useModelStore', () => {
         expect(api.getModelFolders).toHaveBeenCalledTimes(2)
       })
 
-      await store.getLoadedModelFolder('checkpoints')
+      const folder = await store.getLoadedModelFolder('checkpoints')
       expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
       expect(api.getModels).toHaveBeenCalledTimes(0)
+      const names = Object.keys(folder!.models)
+      expect(names).toContain('0/asset-only.safetensors')
+      expect(names).not.toContain('0/sdxl.safetensors')
     })
   })
 
