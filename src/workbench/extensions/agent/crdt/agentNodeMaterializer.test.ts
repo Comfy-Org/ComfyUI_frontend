@@ -1070,7 +1070,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('retires an agent definition from every registry after a document reset', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [interiorNode(7)]
       })
       const { adapter, follower } = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1110,7 +1110,7 @@ describe('reconcileAgentAdapters', () => {
 
     it('recreates a reused definition id from the replacement document', () => {
       const definition = createTestSubgraphData({
-        nodes: [nodePayload(7)] as never
+        nodes: [interiorNode(7)]
       })
       const first = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
@@ -1121,7 +1121,7 @@ describe('reconcileAgentAdapters', () => {
       const stale = graph.subgraphs.get(definition.id)
 
       first.adapter.clearForReset('workflow', REMOTE)
-      const replacement = { ...definition, nodes: [nodePayload(8)] as never }
+      const replacement = { ...definition, nodes: [interiorNode(8)] }
       const second = seedDocument(graph, {
         nodes: [nodePayload(1, definition.id)],
         links: [],
