@@ -1,6 +1,13 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@/renderer/core/canvas/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
@@ -67,7 +74,22 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   _children: Set<Positionable> = new Set()
   graph?: LGraph
   flags: IGraphGroupFlags = {}
-  selected?: boolean
+
+  get selected(): boolean {
+    return isSelectedIn(this.#selectionScope, toSelectableKey('group', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this.#selectionScope,
+      toSelectableKey('group', this.id),
+      !!value
+    )
+  }
+
+  get #selectionScope(): GraphScope | undefined {
+    return this.graph ? graphScopeOf(this.graph) : undefined
+  }
 
   /** Background colour last used to compute {@link _titleTextColor} */
   _lastTitleBgColor?: string

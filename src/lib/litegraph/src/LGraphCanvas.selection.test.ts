@@ -415,6 +415,55 @@ describe('LGraphCanvas selection', () => {
     })
   })
 
+  describe('item.selected accessor', () => {
+    const kinds: { kind: string; create: (graph: LGraph) => Positionable }[] = [
+      { kind: 'node', create: (graph) => addNode(graph, 'N', 500, 40) },
+      {
+        kind: 'group',
+        create: (graph) => addGroup(graph, 'G', [400, 200, 100, 100])
+      },
+      {
+        kind: 'reroute',
+        create: (graph) => graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      }
+    ]
+
+    it.for(kinds)(
+      '$kind: legacy write goes through the store',
+      ({ create }) => {
+        const item = create(graph)
+
+        item.selected = true
+        expect([...canvas.selectedItems]).toEqual([item])
+
+        item.selected = false
+        expect(canvas.selectedItems.size).toBe(0)
+      }
+    )
+
+    it.for(kinds)('$kind: read reflects the store', ({ create }) => {
+      const item = create(graph)
+
+      canvas.select(item)
+      expect(item.selected).toBe(true)
+
+      canvas.deselect(item)
+      expect(item.selected).toBe(false)
+    })
+
+    it.for([
+      { kind: 'node', create: () => new LGraphNode('detached') },
+      { kind: 'group', create: () => new LGraphGroup('detached') }
+    ])('$kind outside any graph is never selected', ({ create }) => {
+      const item = create()
+
+      item.selected = true
+
+      expect(item.selected).toBe(false)
+      expect(canvas.selectedItems.size).toBe(0)
+    })
+  })
+
   describe('marquee', () => {
     beforeEach(() => {
       addNode(graph, 'C', 300, 300)

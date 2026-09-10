@@ -20,6 +20,11 @@ import {
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@/renderer/core/canvas/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -683,7 +688,23 @@ export class LGraphNode
   has_errors?: boolean
   removable?: boolean
   block_delete?: boolean
-  selected?: boolean
+
+  get selected(): boolean {
+    return isSelectedIn(this.#selectionScope, toSelectableKey('node', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this.#selectionScope,
+      toSelectableKey('node', this.id),
+      !!value
+    )
+  }
+
+  get #selectionScope(): GraphScope | undefined {
+    return this.graph ? graphScopeOf(this.graph) : undefined
+  }
+
   get showAdvanced(): boolean | undefined {
     return this._state.showAdvanced
   }
@@ -812,7 +833,7 @@ export class LGraphNode
     )
   }
 
-  public get is_selected(): boolean | undefined {
+  public get is_selected(): boolean {
     return this.selected
   }
 

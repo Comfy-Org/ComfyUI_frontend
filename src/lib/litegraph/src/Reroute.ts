@@ -1,5 +1,10 @@
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@/renderer/core/canvas/selectionStore'
+import { toSelectableKey } from '@/core/selection/selectionState'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -197,7 +202,17 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  selected?: boolean
+  get selected(): boolean {
+    return isSelectedIn(this._graphScope, toSelectableKey('reroute', this.id))
+  }
+
+  set selected(value: boolean | undefined) {
+    setSelectedIn(
+      this._graphScope,
+      toSelectableKey('reroute', this.id),
+      !!value
+    )
+  }
 
   private get membership(): RerouteMembership {
     return this._graphScope
