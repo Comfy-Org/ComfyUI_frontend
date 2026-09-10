@@ -1,6 +1,6 @@
-import { createPinia, disposePinia, setActivePinia } from 'pinia'
-import type { Pinia } from 'pinia'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -11,18 +11,6 @@ import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'
 import type { SpotlightStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-const settings = vi.hoisted(() => ({ store: new Map<string, unknown>() }))
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      settings.store.get(key) ?? (key === TOUR_SEEN_SETTING ? [] : undefined),
-    set: (key: string, value: unknown) => {
-      settings.store.set(key, value)
-      return Promise.resolve()
-    }
-  })
-}))
-
 const telemetry = vi.hoisted(() => ({ track: vi.fn() }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: telemetry.track })
@@ -30,13 +18,24 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 
 const appModeMock = vi.hoisted(() => ({ mode: null as Ref<AppMode> | null }))
 vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref } = await import('vue')
+  const { ref, computed } = await import('vue')
   appModeMock.mode = ref<AppMode>('graph')
-  return { useAppMode: () => ({ mode: appModeMock.mode }) }
+  return {
+    useAppMode: () => ({
+      mode: appModeMock.mode,
+      isAppMode: computed(() => appModeMock.mode?.value === 'app'),
+      isBuilderMode: computed(() =>
+        appModeMock.mode?.value.startsWith('builder:')
+      ),
+      isSelectMode: computed(
+        () =>
+          appModeMock.mode?.value === 'builder:inputs' ||
+          appModeMock.mode?.value === 'builder:outputs'
+      ),
+      setMode: vi.fn()
+    })
+  }
 })
-vi.mock<unknown>(import('@/stores/appModeStore'), () => ({
-  useAppModeStore: () => ({ hasOutputs: false })
-}))
 
 function step(
   name: string,
@@ -49,20 +48,24 @@ function stages(): string[] {
   return telemetry.track.mock.calls.map(([stage]) => stage)
 }
 
-let pinia: Pinia | undefined
-
 function mountStore() {
-  pinia = createPinia()
-  setActivePinia(pinia)
   return useOnboardingTourStore()
 }
 
+beforeEach(() => {
+  useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+  vi.mocked(useSettingStore().set).mockImplementation(
+    (key: string, value: unknown) => {
+      Object.assign(useSettingStore().settingValues, { [key]: value })
+      return Promise.resolve()
+    }
+  )
+  Object.assign(useAppModeStore(), { hasOutputs: false })
+})
+
 describe('onboardingTourStore — runtime-resolved tours', () => {
   afterEach(() => {
-    if (pinia) disposePinia(pinia)
-    pinia = undefined
     clearCoachmarks()
-    settings.store.clear()
     telemetry.track.mockClear()
   })
 
@@ -70,8 +73,6 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
     vi.resetModules()
     const { useOnboardingTourStore: freshStore } =
       await import('./onboardingTourStore')
-    pinia = createPinia()
-    setActivePinia(pinia)
     const store = freshStore()
 
     await expect(store.startTour('firstRun')).resolves.toBe(false)
@@ -94,7 +95,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('tells a repeat user apart from a coverage failure', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['firstRun']
     registerTour('firstRun', () => Promise.resolve([]))
     const store = mountStore()
 
@@ -151,7 +152,7 @@ describe('onboardingTourStore — runtime-resolved tours', () => {
   })
 
   it('counts a user once however often the trigger re-fires', async () => {
-    settings.store.set(TOUR_SEEN_SETTING, ['firstRun'])
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = ['firstRun']
     const store = mountStore()
 
     await store.startTour('firstRun')

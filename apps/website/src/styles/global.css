@@ -19,7 +19,7 @@
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -27,7 +27,7 @@
   src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -35,7 +35,7 @@
   src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -43,7 +43,7 @@
   src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -51,7 +51,7 @@
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -59,7 +59,7 @@
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -67,7 +67,7 @@
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @theme {

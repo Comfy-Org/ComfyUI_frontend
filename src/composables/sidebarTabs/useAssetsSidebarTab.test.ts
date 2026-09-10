@@ -1,17 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
-
-const { mockGetSetting, mockUnseenAddedAssetsCount } = vi.hoisted(() => ({
-  mockGetSetting: vi.fn(),
-  mockUnseenAddedAssetsCount: { value: 0 }
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: mockGetSetting
-  })
-}))
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/AssetsSidebarTab.vue'),
@@ -20,16 +11,10 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/stores/workspace/assetsSidebarBadgeStore'), () => ({
-  useAssetsSidebarBadgeStore: () => ({
-    unseenAddedAssetsCount: mockUnseenAddedAssetsCount.value
-  })
-}))
-
 describe('useAssetsSidebarTab', () => {
   it('hides icon badge when QPO V2 is disabled', () => {
-    mockGetSetting.mockReturnValue(false)
-    mockUnseenAddedAssetsCount.value = 3
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = false
+    Object.assign(useAssetsSidebarBadgeStore(), { unseenAddedAssetsCount: 3 })
 
     const sidebarTab = useAssetsSidebarTab()
 
@@ -38,8 +23,8 @@ describe('useAssetsSidebarTab', () => {
   })
 
   it('shows unseen added assets count when QPO V2 is enabled', () => {
-    mockGetSetting.mockReturnValue(true)
-    mockUnseenAddedAssetsCount.value = 3
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = true
+    Object.assign(useAssetsSidebarBadgeStore(), { unseenAddedAssetsCount: 3 })
 
     const sidebarTab = useAssetsSidebarTab()
 
@@ -48,8 +33,7 @@ describe('useAssetsSidebarTab', () => {
   })
 
   it('hides badge when there are no unseen added assets', () => {
-    mockGetSetting.mockReturnValue(true)
-    mockUnseenAddedAssetsCount.value = 0
+    useSettingStore().settingValues['Comfy.Queue.QPOV2'] = true
 
     const sidebarTab = useAssetsSidebarTab()
 
