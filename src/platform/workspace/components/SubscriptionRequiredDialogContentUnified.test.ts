@@ -319,5 +319,8 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     expect(screen.getByTestId('checkout-dialog-shell')).not.toHaveClass(
       'rounded-2xl'
     )
+    expect(screen.getByTestId('checkout-dialog-shell')).not.toHaveClass(
+      'overflow-hidden'
+    )
   })
 })
