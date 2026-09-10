@@ -5015,7 +5015,7 @@
       "accessDenied": "ليس لديك صلاحية الوصول إلى هذه مساحة العمل",
       "invalidFirebaseToken": "فشل التحقق من الهوية. يرجى محاولة تسجيل الدخول مرة أخرى.",
       "notAuthenticated": "يجب تسجيل الدخول للوصول إلى مساحات العمل",
-      "tokenExchangeFailed": "فشل التحقق من مساحة العمل",
+      "tokenExchangeFailed": "فشل التحقق من مساحة العمل: {error}",
       "workspaceNotFound": "لم يتم العثور على مساحة العمل"
     },
     "initializationFailed": "تعذر تحميل مساحة العمل الخاصة بك",

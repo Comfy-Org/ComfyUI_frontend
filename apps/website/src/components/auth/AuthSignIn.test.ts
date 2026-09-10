@@ -21,6 +21,7 @@ const handles = vi.hoisted(() => ({
   github: vi.fn(),
   emailSignIn: vi.fn(),
   emailSignUp: vi.fn(),
+  provision: vi.fn(),
   turnstileReset: vi.fn(),
   isProvisioningError: vi.fn(),
   isNewUser: vi.fn(),
@@ -96,6 +97,7 @@ vi.mock<unknown>(import('../../config/workshop-firebase'), () => {
     signInWorkshopWithGitHub: handles.github,
     signInWorkshopWithEmail: handles.emailSignIn,
     signUpWorkshopWithEmail: handles.emailSignUp,
+    provisionWorkshopCustomer: handles.provision,
     isWorkshopProvisioningError: handles.isProvisioningError,
     isNewWorkshopUser: handles.isNewUser
   }
@@ -138,6 +140,7 @@ beforeEach(() => {
   handles.github.mockReset()
   handles.emailSignIn.mockReset()
   handles.emailSignUp.mockReset()
+  handles.provision.mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
   handles.isProvisioningError.mockReset().mockReturnValue(false)
   handles.isNewUser.mockReset().mockReturnValue(false)
@@ -443,7 +446,8 @@ describe('AuthSignIn', () => {
       user: { uid: 'user-1', email: 'a@b.co', displayName: null }
     }
     handles.isProvisioningError.mockImplementation((error) => error === failure)
-    handles.google.mockRejectedValue(failure)
+    handles.google.mockResolvedValue({ user: failure.user })
+    handles.provision.mockRejectedValue(failure)
     render(AuthSignIn)
 
     await clickGoogle()
@@ -480,12 +484,65 @@ describe('AuthSignIn', () => {
     ).not.toHaveBeenCalled()
   })
 
+  it('does not provision when the flag turns off during the popup', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePopup = resolve
+      })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolvePopup!({
+      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.provision,
+      'a disable during the popup must stop provisioning before it fires'
+    ).not.toHaveBeenCalled()
+    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+  })
+
+  it('abandons the attempt on an off->on flag flicker during the popup', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePopup = resolve
+      })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    // A live boolean would pass (on at resolution); the generation must not.
+    handles.flag!.value = false
+    handles.flag!.value = true
+    resolvePopup!({
+      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.provision,
+      'an off->on flicker must still abandon the attempt'
+    ).not.toHaveBeenCalled()
+    expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
+  })
+
   it('keeps an email user signed in with the inline message when provisioning fails', async () => {
     const failure = {
       user: { uid: 'user-1', email: 'user@example.com', displayName: null }
     }
     handles.isProvisioningError.mockImplementation((error) => error === failure)
-    handles.emailSignIn.mockRejectedValue(failure)
+    handles.emailSignIn.mockResolvedValue({ user: failure.user })
+    handles.provision.mockRejectedValue(failure)
     render(AuthSignIn)
     render(AuthToast)
     const user = userEvent.setup()

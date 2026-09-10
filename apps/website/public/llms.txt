@@ -79,7 +79,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 - [Comfy Cloud Pricing](https://comfy.org/pricing/): Plans, credits, and what each Comfy Cloud plan includes, for individuals and teams.
 - [Developer Platform](https://comfy.org/platform/): Deploy and scale ComfyUI workflows. Your workflows. Every model. One API.
 - [Developer Platform: Comfy API](https://comfy.org/platform/comfy-api/): Deploy your ComfyUI workflow as a production API. It scales effortlessly with your team or project's needs.
-- [Developer Platform: Models API](https://comfy.org/platform/models/): Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.
+- [Developer Platform: Comfy Router](https://comfy.org/platform/router/): Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.
 - [Developer Platform: Builder](https://comfy.org/platform/builder/): Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to serverless.
 - [Comfy MCP](https://comfy.org/mcp/): The full ComfyUI engine over the Model Context Protocol, so Claude Code, Claude Desktop, and any MCP client can build workflows and generate images, video, audio, and 3D, on Comfy Cloud or your own machine.
 - [Comfy CLI](https://comfy.org/cli/): The command line for the ComfyUI engine: generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, with JSON output built for agents and scripts.
