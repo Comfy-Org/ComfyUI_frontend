@@ -18,8 +18,7 @@
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
     "./telemetry": "./src/telemetry.ts",
-    "./webviewDetection": "./src/webviewDetection.ts",
-    "./styles.css": "./src/styles.css"
+    "./webviewDetection": "./src/webviewDetection.ts"
   },
   "scripts": {
     "lint": "oxlint src --type-aware && eslint src",
