@@ -1,4 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,7 +21,7 @@ const { mockMaxSeats, mockIsPlanLoading } = vi.hoisted(() => {
   }
 })
 
-let pinia: ReturnType<typeof createTestingPinia>
+let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
 }
@@ -123,7 +124,7 @@ function renderComponent() {
 }
 
 beforeEach(() => {
-  pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  pinia = getActivePinia()!
   workspaceStore = useTeamWorkspaceStore(pinia)
   vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
   vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])

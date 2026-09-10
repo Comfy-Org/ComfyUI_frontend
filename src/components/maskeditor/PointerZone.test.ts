@@ -1,23 +1,16 @@
 import { render, screen } from '@testing-library/vue'
-import { reactive, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
-import type { useToolManager } from '@/composables/maskeditor/useToolManager'
+import { nextTick } from 'vue'
 
 import PointerZone from '@/components/maskeditor/PointerZone.vue'
+import type { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
+import type { useToolManager } from '@/composables/maskeditor/useToolManager'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 type PanZoom = ReturnType<typeof usePanAndZoom>
 
-const initialMock = () =>
-  reactive({
-    pointerZone: null as HTMLElement | null,
-    isPanning: false,
-    brushVisible: true
-  })
-
-let mockStore: ReturnType<typeof initialMock>
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 const mockToolManager = vi.hoisted(() => ({
   handlePointerDown: vi.fn().mockResolvedValue(undefined),
@@ -34,10 +27,6 @@ const mockPanZoom = vi.hoisted(() => ({
   updateCursorPosition: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
-
 const renderZone = () =>
   render(PointerZone, {
     props: {
@@ -51,7 +40,7 @@ const getZone = (): HTMLDivElement =>
 
 describe('PointerZone', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
   })
 
   describe('mount', () => {

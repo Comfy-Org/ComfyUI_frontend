@@ -1,16 +1,13 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
 import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockAdd = vi.fn()
-
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: mockAdd })
-}))
 
 const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
@@ -63,6 +60,10 @@ function createMockSecret(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockAdd)
+})
 
 describe('useSecrets', () => {
   describe('fetchSecrets', () => {
