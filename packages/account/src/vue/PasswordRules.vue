@@ -32,8 +32,8 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { PasswordRule } from './signInSchemas'
-import { passwordRuleChecks } from './signInSchemas'
+import type { PasswordRule } from '../signInSchemas'
+import { passwordRuleChecks } from '../signInSchemas'
 
 export type PasswordRulesCopy = Readonly<
   Record<PasswordRule | 'requirements', string>
