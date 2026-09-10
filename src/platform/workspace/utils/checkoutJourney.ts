@@ -65,7 +65,7 @@ export type CheckoutAssignment =
   | { status: 'resolved'; arm: CheckoutJourneyArm }
   | { status: 'unavailable' }
 
-export interface CheckoutJourneyIdentity {
+interface CheckoutJourneyIdentity {
   actorUid: string
   workspaceId: string
 }
@@ -148,14 +148,14 @@ export function toCheckoutJourneyContext(
   }
 }
 
-export function isCheckoutJourneyExpired(
+function isCheckoutJourneyExpired(
   record: CheckoutJourneyRecord,
   now: number
 ): boolean {
   return now - record.started_at_ms > CHECKOUT_JOURNEY_MAX_AGE_MS
 }
 
-export function journeyMatchesIdentity(
+function journeyMatchesIdentity(
   record: CheckoutJourneyRecord,
   identity: CheckoutJourneyIdentity
 ): boolean {
