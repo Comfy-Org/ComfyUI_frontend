@@ -16,14 +16,15 @@ describe('ModelReleaseSection', () => {
     expect(screen.getByText('MiniMax H3', { selector: 'h2' })).toBeTruthy()
 
     const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
-    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+    expect(explore.getAttribute('href')).toBe(
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+    )
 
     const tryCta = screen.getByRole('link', { name: 'Try Workflow' })
     expect(tryCta.getAttribute('href')).toBe(
-      'https://cloud.comfy.org/?template=api_seedance2_5_r2v'
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
     )
-    expect(tryCta.getAttribute('target')).toBe('_blank')
-    expect(tryCta.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(tryCta.getAttribute('target')).toBeNull()
 
     expect(screen.getAllByText('Partner Nodes').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Open Weights').length).toBeGreaterThan(0)
@@ -35,7 +36,9 @@ describe('ModelReleaseSection', () => {
     expect(screen.getAllByText('新模型发布').length).toBeGreaterThan(0)
 
     const explore = screen.getByRole('link', { name: '探索 Seedance 2.5' })
-    expect(explore.getAttribute('href')).toBe('/zh-CN/seedance-2.5')
+    expect(explore.getAttribute('href')).toBe(
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+    )
 
     expect(screen.getByRole('link', { name: '试用工作流' })).toBeTruthy()
     expect(screen.getAllByText('合作伙伴节点').length).toBeGreaterThan(0)

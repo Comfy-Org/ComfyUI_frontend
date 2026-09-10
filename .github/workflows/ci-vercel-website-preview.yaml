@@ -77,6 +77,8 @@ jobs:
         run: |
           if [ "$WORKSHOP_LABELLED" = "true" ]; then
             export WORKSHOP_IN_BUILD=1
+            export PUBLIC_WORKSHOP_AUTH_FLAG=1
+            export PUBLIC_WORKSHOP_ROUTER_RUN=1
           fi
           VERCEL_ENV=preview vercel build
 
