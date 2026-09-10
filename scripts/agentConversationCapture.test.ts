@@ -133,6 +133,16 @@ describe('exportAgentConversation', () => {
     ).toThrow('does not belong to capture thread-1/message-1')
   })
 
+  it('refuses a captured call with no terminal frame even when nothing applied', () => {
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        frames: [capture.frames[0]],
+        tool_calls: [{ ...capture.tool_calls[0], applied_op_ids: [] }]
+      })
+    ).toThrow('no terminal websocket frame for tool call(s): tool-1')
+  })
+
   it('refuses a capture that repeats a tool call id', () => {
     expect(() =>
       exportAgentConversation({

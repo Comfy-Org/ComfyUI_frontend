@@ -157,10 +157,11 @@ export function exportAgentConversation(input: unknown) {
     response.push({ kind: 'event', event })
   }
 
+  // Every captured call needs its terminal frame, not just the mutating
+  // ones: a call whose ops were all rejected has an empty applied list and
+  // would otherwise replay as perpetually running.
   const omitted = capture.tool_calls.filter(
-    (toolCall) =>
-      toolCall.applied_op_ids.length > 0 &&
-      !emittedToolCalls.has(toolCall.tool_call_id)
+    (toolCall) => !emittedToolCalls.has(toolCall.tool_call_id)
   )
   if (omitted.length > 0) {
     throw new Error(
