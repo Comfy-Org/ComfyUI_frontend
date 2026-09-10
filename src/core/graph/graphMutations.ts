@@ -64,7 +64,7 @@ interface SemanticLiveWidgetMutationPort {
     nodeId: NodeId,
     name: string,
     value: WidgetValue
-  ): void
+  ): boolean
 }
 
 interface GraphMutationBatch {
@@ -661,6 +661,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
           for (const widget of mutation.node.widgets) {
+            deps.liveWidgets?.setValue(
+              scope,
+              mutation.node.state.id,
+              widget.name,
+              widget.value
+            )
             widgetStore.registerWidget(
               widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
               {
@@ -687,6 +693,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
         case 'setWidget': {
           const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
+          deps.liveWidgets?.setValue(
+            scope,
+            mutation.nodeId,
+            mutation.name,
+            mutation.value
+          )
           if (!widgetStore.getWidget(id)) {
             widgetStore.registerWidget(
               id,
@@ -704,12 +716,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           } else {
             widgetStore.setValue(id, mutation.value, context)
           }
-          deps.liveWidgets?.setValue(
-            scope,
-            mutation.nodeId,
-            mutation.name,
-            mutation.value
-          )
           break
         }
         case 'connect': {

@@ -40,7 +40,7 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
-  const setLiveWidgetValue = vi.fn()
+  const setLiveWidgetValue = vi.fn(() => true)
 
   beforeEach(() => {
     createLayout.mockReset()
@@ -97,6 +97,25 @@ describe('graphMutations', () => {
       toNodeId(7),
       'image',
       'after.png'
+    )
+  })
+
+  it('projects add-node widget values before committing them to the store', () => {
+    setLiveWidgetValue.mockImplementation(() => {
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toBeUndefined()
+      return true
+    })
+
+    expect(mutations().addNode(node(7, { image: 'added.png' }), context)).toBe(
+      true
+    )
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'added.png'
     )
   })
 

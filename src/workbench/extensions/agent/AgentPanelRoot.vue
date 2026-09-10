@@ -18,7 +18,6 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import { createGraphMutations } from '@/core/graph/graphMutations'
-import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -100,10 +99,8 @@ import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
-import {
-  attachMintPortWiring,
-  runMintPortsSuppressed
-} from './crdt/mintPortWiring'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
+import { applyLiveWidgetValue } from './crdt/liveWidgetProjection'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -256,12 +253,23 @@ const graphMutations = (workflowId: string) => {
     },
     liveWidgets: {
       setValue(scope, nodeId, name, value) {
-        const graph = app.graph
-        if (graph.rootGraph.id !== scope.rootGraphId) return
-        const node = graph.getNodeById(nodeId)
-        if (!node) return
-        runMintPortsSuppressed(() => setNodeWidgetValue(node, name, value))
-        app.canvas?.setDirty(true)
+        try {
+          const applied = applyLiveWidgetValue(
+            app.rootGraphOrUndefined,
+            scope,
+            nodeId,
+            name,
+            value
+          )
+          if (applied) app.canvas?.setDirty(true)
+          return applied
+        } catch (error) {
+          console.warn(
+            `[agent-crdt] live widget projection failed for node ${nodeId}, widget ${name}`,
+            error
+          )
+          return false
+        }
       }
     }
   })
