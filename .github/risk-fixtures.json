@@ -32,11 +32,6 @@
       "classes": ["billing"]
     },
     {
-      "path": "src/platform/telemetry/topupTracker.ts",
-      "tier": "R3",
-      "classes": ["billing"]
-    },
-    {
       "path": "src/components/node/NodePricingBadge.vue",
       "tier": "R3",
       "classes": ["billing"]
@@ -125,6 +120,31 @@
       "path": "docs/pricing-faq.md",
       "tier": "R0",
       "classes": ["docs"]
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.test.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.stories.ts",
+      "tier": "R0",
+      "classes": ["storybook"]
+    },
+    {
+      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "apps/website/src/components/pricing/PricingSection.test.ts",
+      "tier": "R2",
+      "classes": ["tests", "website"]
+    },
+    {
+      "path": "apps/website/src/components/pricing/FaqLink.astro",
+      "tier": "R3",
+      "classes": ["billing", "website"]
     }
   ]
 }
