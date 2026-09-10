@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { watch } from 'vue'
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import {
   clearDevEvents,
