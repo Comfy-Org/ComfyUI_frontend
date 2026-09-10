@@ -159,6 +159,7 @@ const workflowService = vi.hoisted(() => ({
       workflowStore.openWorkflowsInBackground({ right: [tab.path] })
       workflowStore.activeWorkflow = await known.load()
     }
+    return true
   })
 }))
 
@@ -2681,6 +2682,35 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('agent_active_tab closes the minted tab when opening it reports failure', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('work here')
+    workflowService.openWorkflow.mockResolvedValueOnce(false)
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'workflows/Video test.json' })
+      )
+    )
+    await vi.waitFor(() =>
+      expect(
+        workflowStore.getWorkflowByPath('workflows/Video test.json')
+      ).toBeNull()
+    )
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
+    ).toBeUndefined()
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
+  })
+
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -2743,6 +2773,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
         const known = workflowStore.getWorkflowByPath(slow.path)
         if (known) workflowStore.activeWorkflow = await known.load()
+        return true
       }
     )
 

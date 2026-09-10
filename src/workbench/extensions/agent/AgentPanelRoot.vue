@@ -648,11 +648,18 @@ async function onAgentActiveTab(
       agentTabGraph
     )
     tabActivity.setCreating(false)
+    // openWorkflow reports a handled load failure by resolving false, having
+    // restored the retained workflow; the minted tab is a ghost either way.
+    let opened = false
     try {
-      await workflowService.openWorkflow(tab)
+      opened = await workflowService.openWorkflow(tab)
     } catch (error) {
       await workflowStore.closeWorkflow(tab)
       throw error
+    }
+    if (!opened) {
+      await workflowStore.closeWorkflow(tab)
+      return
     }
     if (stale()) {
       // A newer activation superseded this one mid-open: close the minted
