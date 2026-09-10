@@ -320,10 +320,10 @@ describe('ModelLibrarySidebarTab', () => {
       const user = userEvent.setup()
       renderComponent()
       await nextTick()
-      for (let i = 0; i < 520; i++) {
-        Object.assign(useModelStore(), {
-          models: [
-            ...useModelStore().models,
+      Object.assign(useModelStore(), {
+        models: [
+          ...useModelStore().models,
+          ...Array.from({ length: 520 }, (_, i) =>
             fromPartial<ComfyModelDef>({
               key: `checkpoints/bulk-${i}.safetensors`,
               file_name: `bulk-${i}.safetensors`,
@@ -332,9 +332,9 @@ describe('ModelLibrarySidebarTab', () => {
               directory: 'checkpoints',
               searchable: `checkpoints/bulk-${i}.safetensors`
             })
-          ]
-        })
-      }
+          )
+        ]
+      })
 
       await user.type(screen.getByTestId('search-input'), 'bulk')
       await nextTick()
