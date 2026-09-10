@@ -384,6 +384,10 @@ export function useAgentCrdtFollower(
         switch (projection.status) {
           case 'projected':
             projectedSequence.value = projection.sequence
+            // A stale-probe resubscribe can deliver this acknowledgement and
+            // nothing after it, so the nodes the drain just projected reach
+            // the live graph here or not at all.
+            reconcileLiveGraph(target)
             updatesApplied.value = bridge.follower.updatesApplied
             break
           case 'retrying':

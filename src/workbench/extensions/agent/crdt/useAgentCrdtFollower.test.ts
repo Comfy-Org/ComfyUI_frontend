@@ -729,6 +729,22 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reconciles the live graph when a resubscribe drains the retry queue and no frame follows', () => {
+      adapterState.retryPending.mockReturnValue({
+        status: 'projected',
+        sequence: 4
+      })
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_subscribed', { ok: true })
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions
+      )
+      unmount()
+    })
+
     it('does not deep-copy definitions for a frame when all are registered', () => {
       const registeredGraph = {
         rootGraph: {
