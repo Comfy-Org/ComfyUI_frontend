@@ -52,6 +52,7 @@ export function useNodePointerInteractions(
   let press: Press | null = null
 
   const gesturePolicy = () => ({
+    clickBufferTime: CanvasPointer.bufferTime,
     clickDrift: CanvasPointer.maxClickDrift,
     doubleClickTime: CanvasPointer.doubleClickTime
   })
@@ -141,7 +142,11 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
     if (!press) return
     dispatch(
-      { type: 'move', position: { x: event.clientX, y: event.clientY } },
+      {
+        type: 'move',
+        position: { x: event.clientX, y: event.clientY },
+        timeStamp: event.timeStamp
+      },
       event
     )
   }
