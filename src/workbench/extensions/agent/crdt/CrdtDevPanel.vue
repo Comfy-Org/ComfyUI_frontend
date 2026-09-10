@@ -627,12 +627,14 @@ function truncateDetail(detail: string, limit = 200): string {
 
 function eventNodeIds(event: DevEvent): string[] {
   if (event.kind !== 'doc_nodes_changed') return []
-  const detail = event.detail as {
-    added?: unknown
-    removed?: unknown
-  } | null
-  const added = Array.isArray(detail?.added) ? detail.added : []
-  const removed = Array.isArray(detail?.removed) ? detail.removed : []
+  const detail = event.detail
+  if (typeof detail !== 'object' || detail === null) return []
+  const added = Array.isArray(Reflect.get(detail, 'added'))
+    ? Reflect.get(detail, 'added')
+    : []
+  const removed = Array.isArray(Reflect.get(detail, 'removed'))
+    ? Reflect.get(detail, 'removed')
+    : []
   return [
     ...new Set(
       [...added, ...removed].filter(
@@ -884,11 +886,7 @@ function fmtTime(at: number): string {
                   <span class="font-bold">{{ row.event.kind }}</span>
                 </div>
                 <div class="text-agent-fg-muted break-all">
-                  {{
-                    expanded === row.event.seq
-                      ? truncateDetail(row.detail, 20_000)
-                      : row.excerpt
-                  }}
+                  {{ expanded === row.event.seq ? row.detail : row.excerpt }}
                 </div>
               </button>
               <div
