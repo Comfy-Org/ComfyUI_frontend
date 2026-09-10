@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -30,7 +29,6 @@ function getAsyncLoader(component: unknown): () => Promise<unknown> {
 
 describe('useAgentDockMount', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
   })
 

@@ -1,5 +1,8 @@
+vi.mock(import('firebase/auth'))
+vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { createPinia, setActivePinia } from 'pinia'
+import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentConsentStore } from './agentConsentStore'
@@ -27,10 +30,6 @@ const authState = await vi.hoisted(async () => {
     generation: 0
   })
 })
-const authMocks = vi.hoisted(() => ({
-  getHeader: vi.fn(),
-  initialize: vi.fn()
-}))
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     resolvedUserInfo: {
@@ -40,29 +39,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
     }
   })
 }))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    getUserAuthHeader: authMocks.getHeader,
-    getWorkspaceAuthHeader: authMocks.getHeader
-  })
-}))
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return authState.workspaceId
-      },
-      get isSwitching() {
-        return authState.isSwitching
-      },
-      get workspaceTransitionGeneration() {
-        return authState.generation
-      },
-      initialize: authMocks.initialize
-    })
-  })
-)
 const stored: GlobalSetting = {
   key: 'Comfy.AgentPanel.ConsentAccepted',
   value: true,
@@ -81,14 +57,13 @@ function deferred<T>() {
 
 describe('agentConsentStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     authState.identity = 'account-a'
-    authState.workspaceId = 'workspace-a'
-    authState.isSwitching = false
-    authState.generation = 0
-    authMocks.initialize.mockResolvedValue(undefined)
-    authMocks.getHeader.mockReset()
-    authMocks.getHeader.mockResolvedValue({
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    useTeamWorkspaceStore().isSwitching = false
+    Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReset()
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
     accountApi.get.mockReset()
@@ -226,7 +201,7 @@ describe('agentConsentStore', () => {
     await store.load()
     expect(store.accepted).toBe(true)
 
-    authState.workspaceId = 'workspace-b'
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     expect(store.accepted).toBe(false)
     await expect(store.load()).resolves.toBe(false)
     expect(accountApi.get).toHaveBeenCalledTimes(2)
@@ -236,18 +211,27 @@ describe('agentConsentStore', () => {
     const store = useAgentConsentStore()
     await store.accept()
     expect(store.accepted).toBe(true)
-    authState.generation += 1
-    authState.isSwitching = true
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration:
+        useTeamWorkspaceStore().workspaceTransitionGeneration + 1
+    })
+    useTeamWorkspaceStore().isSwitching = true
     expect(store.accepted).toBe(false)
   })
 
   it('does not reuse an open decision after switching away and back', async () => {
     const store = useAgentConsentStore()
     const decisionIdentity = store.identity
-    authState.generation += 1
-    authState.workspaceId = 'workspace-b'
-    authState.generation += 1
-    authState.workspaceId = 'workspace-a'
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration:
+        useTeamWorkspaceStore().workspaceTransitionGeneration + 1
+    })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration:
+        useTeamWorkspaceStore().workspaceTransitionGeneration + 1
+    })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     await expect(store.accept(decisionIdentity ?? undefined)).resolves.toBe(
       false
     )
@@ -255,12 +239,18 @@ describe('agentConsentStore', () => {
   })
 
   it('does not write when workspace scope changes while acquiring a token', async () => {
-    const token = deferred<{ Authorization: string }>()
-    authMocks.getHeader.mockReturnValueOnce(token.promise)
+    const token = deferred<{ Authorization: `Bearer ${string}` }>()
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReturnValueOnce(
+      token.promise
+    )
     const store = useAgentConsentStore()
     const request = store.accept()
-    await vi.waitFor(() => expect(authMocks.getHeader).toHaveBeenCalledOnce())
-    authState.workspaceId = 'workspace-b'
+    await vi.waitFor(() =>
+      expect(
+        vi.mocked(useAuthStore().getWorkspaceAuthHeader)
+      ).toHaveBeenCalledOnce()
+    )
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     token.resolve({ Authorization: 'Bearer workspace-b-token' })
     await expect(request).resolves.toBe(false)
     expect(accountApi.set).not.toHaveBeenCalled()
@@ -275,7 +265,9 @@ describe('agentConsentStore', () => {
       const store = useAgentConsentStore()
       const request = store[method]()
       await vi.waitFor(() => expect(operation).toHaveBeenCalledOnce())
-      authState.workspaceId = 'workspace-b'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b'
+      })
       response.resolve(stored)
       await expect(request).resolves.toBe(false)
       expect(store.accepted).toBe(false)
@@ -283,13 +275,17 @@ describe('agentConsentStore', () => {
   )
 
   it('resolves the workspace after sign-in before saving', async () => {
-    authState.workspaceId = null
-    authMocks.initialize.mockImplementationOnce(async () => {
-      authState.workspaceId = 'workspace-a'
-    })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockImplementationOnce(
+      async () => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-a'
+        })
+      }
+    )
     const store = useAgentConsentStore()
     await expect(store.accept()).resolves.toBe(true)
-    expect(authMocks.initialize).toHaveBeenCalledOnce()
+    expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
     expect(accountApi.set).toHaveBeenCalledOnce()
   })
 
@@ -299,7 +295,7 @@ describe('agentConsentStore', () => {
     const store = useAgentConsentStore()
     const request = store.load()
     await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
-    authState.workspaceId = 'workspace-b'
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     response.reject(new Error('offline'))
     await expect(request).resolves.toBe(false)
   })

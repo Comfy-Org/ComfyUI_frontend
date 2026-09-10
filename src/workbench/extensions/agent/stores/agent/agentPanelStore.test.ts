@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 const telemetry = vi.hoisted(() => ({
@@ -23,12 +22,7 @@ function useConsentedAgentPanelStore() {
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
     vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    useAgentPanelStore().$dispose()
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
@@ -142,11 +136,6 @@ describe('agentPanelStore engagement telemetry', () => {
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    useAgentPanelStore().$dispose()
   })
 
   it('persists the open state when the panel is toggled open', async () => {

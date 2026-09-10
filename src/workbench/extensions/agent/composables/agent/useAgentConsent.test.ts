@@ -1,5 +1,9 @@
+vi.mock(import('firebase/auth'))
+vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { createPinia, setActivePinia } from 'pinia'
+import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -25,33 +29,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   })
 }))
 
-const accountAuthState = vi.hoisted(() => ({
-  getUserAuthHeader: vi.fn(),
-  initialize: vi.fn()
-}))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    getUserAuthHeader: accountAuthState.getUserAuthHeader,
-    getWorkspaceAuthHeader: accountAuthState.getUserAuthHeader
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return authState.workspaceId
-      },
-      get workspaceTransitionGeneration() {
-        return authState.generation
-      },
-      isSwitching: false,
-      initialize: accountAuthState.initialize
-    })
-  })
-)
-
 vi.mock<unknown>(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
@@ -64,10 +41,14 @@ const fetchApi = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/auth/unified/remintRetry'), () => ({
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest: () => Promise.resolve(false)
-}))
+vi.mock(
+  import('@/platform/auth/unified/remintRetry'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    fetchWithUnifiedRemint,
+    shouldRemintCloudRequest: () => Promise.resolve(false)
+  })
+)
 
 const showSignInDialog = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -77,11 +58,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 const reportError = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError
-}))
-
-const addToast = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: addToast })
 }))
 
 async function waitForConsentDialog() {
@@ -113,15 +89,14 @@ const savedResponse = () => settingResponse(true)
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     authState.loggedIn = true
     authState.identity = 'account-a'
-    authState.workspaceId = 'workspace-a'
-    authState.generation = 0
-    accountAuthState.initialize.mockResolvedValue(undefined)
-    accountAuthState.getUserAuthHeader.mockReset()
-    accountAuthState.getUserAuthHeader.mockResolvedValue({
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReset()
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
     fetchApi.mockReset()
@@ -129,7 +104,7 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     showSignInDialog.mockReset()
     reportError.mockReset()
-    addToast.mockReset()
+    vi.mocked(useToastStore().add).mockReset()
   })
 
   it('waits for the account setting to load before deciding whether to ask', async () => {
@@ -169,7 +144,7 @@ describe('useAgentConsent', () => {
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()
-    expect(addToast).toHaveBeenCalledWith(
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
         detail: 'Could not load your Agent preference. Try again.'
       })
@@ -264,10 +239,14 @@ describe('useAgentConsent', () => {
   it('authenticates signed-out Local users before saving to their account', async () => {
     authState.loggedIn = false
     authState.identity = null
-    authState.workspaceId = null
-    accountAuthState.initialize.mockImplementationOnce(async () => {
-      authState.workspaceId = 'workspace-a'
-    })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockImplementationOnce(
+      async () => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-a'
+        })
+      }
+    )
     showSignInDialog.mockImplementationOnce(async () => {
       authState.loggedIn = true
       authState.identity = 'account-a'
@@ -282,7 +261,7 @@ describe('useAgentConsent', () => {
     await request
 
     expect(showSignInDialog).toHaveBeenCalledOnce()
-    expect(accountAuthState.initialize).toHaveBeenCalledOnce()
+    expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
       'https://api.comfy.test/api/global-settings',
@@ -343,8 +322,11 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent(onOpen)
     const dialog = await waitForConsentDialog()
-    authState.workspaceId = 'workspace-b'
-    authState.generation += 1
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration:
+        useTeamWorkspaceStore().workspaceTransitionGeneration + 1
+    })
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
     ;(dialog.contentProps.onAccept as () => void)()
     await request

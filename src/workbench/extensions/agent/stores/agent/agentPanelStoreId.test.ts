@@ -1,5 +1,5 @@
+import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -31,8 +31,7 @@ describe('the agentPanel store id', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    pinia = createPinia()
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.stubGlobal('devicePixelRatio', 1)
   })
