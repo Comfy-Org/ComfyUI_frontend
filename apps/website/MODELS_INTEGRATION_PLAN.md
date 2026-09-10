@@ -68,6 +68,10 @@ Models/auth/Run but does not switch its default staging backend to production.
 - 1,006 focused tests in 10 files for use-case contracts, example downloads,
   native request composition, identity joins, URL uploads, related cards and
   media controls. Full lint and root/account/website typechecks pass at commit.
+- CI exposed stale assumptions in eight additional test files; their 788 tests
+  now pass after updating them for use-case publication/media controls. The
+  720-test contract file also passes under V8 coverage. No full local suite was
+  run; exact-head CI remains the broader check.
 - Enabled build: 1,999 HTML outputs including legacy routes. The published
   intersection now has 155 use-case pages; two incorrectly categorized entries
   are withheld without deleting source content.
