@@ -133,6 +133,24 @@ describe('exportAgentConversation', () => {
     ).toThrow('does not belong to capture thread-1/message-1')
   })
 
+  it('accepts a frame that omits the optional turn identity', () => {
+    const conversation = exportAgentConversation({
+      ...capture,
+      frames: [
+        ...capture.frames,
+        { type: 'agent_active_tab', data: { workflow_id: 'wf-1', name: 'Tab' } }
+      ]
+    })
+
+    expect(conversation.response.at(-1)).toEqual({
+      kind: 'event',
+      event: {
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', name: 'Tab' }
+      }
+    })
+  })
+
   it('refuses a recorded label without backend provenance', () => {
     const conversation = exportAgentConversation(capture)
     const { capture: _capture, ...source } = conversation.source

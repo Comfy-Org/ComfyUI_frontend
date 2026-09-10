@@ -80,6 +80,12 @@ function operationsFromResult(toolCall: z.infer<typeof zToolCall>) {
   })
 }
 
+// Frames such as `agent_active_tab` carry the turn identity optionally
+// (`zAgentActiveTabData`); only a present, mismatched field is foreign.
+function belongsToTurn(field: unknown, expected: string): boolean {
+  return field === undefined || field === expected
+}
+
 /**
  * Projects a cloud backend capture into the replay format. Websocket frames
  * retain their recorded order; accepted semantic ops are inserted immediately
@@ -100,8 +106,8 @@ export function exportAgentConversation(input: unknown) {
 
   for (const frame of capture.frames) {
     if (
-      frame.data.thread_id !== capture.capture.thread_id ||
-      frame.data.message_id !== capture.capture.message_id
+      !belongsToTurn(frame.data.thread_id, capture.capture.thread_id) ||
+      !belongsToTurn(frame.data.message_id, capture.capture.message_id)
     ) {
       throw new Error(
         `recorded ${frame.type} frame does not belong to capture ${capture.capture.thread_id}/${capture.capture.message_id}`
@@ -169,9 +175,7 @@ function main(args: string[]): void {
   writeFileSync(outputPath, `${JSON.stringify(conversation, null, 2)}\n`)
 }
 
-if (
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+const entrypoint = process.argv[1]
+if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
   main(process.argv.slice(2))
 }
