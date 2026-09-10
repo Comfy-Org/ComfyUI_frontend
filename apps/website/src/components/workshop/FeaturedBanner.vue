@@ -85,7 +85,7 @@ const fill = computed(() =>
   >
     <a
       :href="active.model.href"
-      class="group block h-112"
+      class="group short:h-84 block h-112"
       data-testid="featured-slide"
     >
       <img

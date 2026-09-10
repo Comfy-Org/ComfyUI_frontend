@@ -305,7 +305,7 @@ const menuItemClass =
       v-if="browsing && showFeatured && featured.length"
       :models="featured"
       :locale
-      class="mb-10"
+      class="short:mb-6 mb-10"
     />
 
     <aside

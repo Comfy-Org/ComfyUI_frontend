@@ -67,6 +67,10 @@
   font-display: swap;
 }
 
+/* A laptop window, where the fold lands mid-page and a tall hero leaves
+   nothing of the listing in sight. */
+@custom-variant short (@media (max-height: 1100px));
+
 @theme {
   --color-site-dropdown: #332b38;
   --color-site-bg-soft: color-mix(
