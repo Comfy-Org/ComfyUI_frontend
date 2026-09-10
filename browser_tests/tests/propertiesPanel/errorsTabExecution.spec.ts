@@ -69,11 +69,23 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
     )
     await expect(runtimePanel).toBeVisible()
 
-    await comfyPage.menu.workflowsTab.open()
+    const workflowsTab = comfyPage.menu.workflowsTab
+    await workflowsTab.open()
+    const erroredWorkflow = (await workflowsTab.getOpenedWorkflowNames()).find(
+      (name) => name.includes('execution_error')
+    )
+    expect(
+      erroredWorkflow,
+      'the errored workflow should be listed as an open workflow'
+    ).toBeDefined()
+
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toHaveLength(2)
     await expect(runtimePanel).toBeHidden()
 
-    await comfyPage.menu.workflowsTab.switchToWorkflow('execution_error')
+    await workflowsTab.switchToWorkflow(erroredWorkflow!)
     await openErrorsTab(comfyPage)
     await expect(runtimePanel).toBeVisible()
   })
@@ -92,6 +104,10 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
 
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
+    await expect
+      .poll(() => workflowsTab.getOpenedWorkflowNames())
+      .toContain('execution-error-before-rename')
+
     await workflowsTab.renameWorkflow(
       workflowsTab.getOpenedItem('execution-error-before-rename'),
       'execution-error-after-rename'
