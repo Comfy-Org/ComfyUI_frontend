@@ -175,25 +175,8 @@ try {
       break
     }
     case 'agent-replay': {
-      const { parseFlags } = await import('./cli/flags')
-      const { flags } = parseFlags(args.slice(1), ['case', 'url'])
-      const { listReplayCases, promptAgentReplayOptions, runAgentReplay } =
-        await import('./commands/agentReplay')
-      if (flags.help !== undefined) {
-        process.exitCode = runAgentReplay({ help: true })
-        break
-      }
-      const interactive = process.stdin.isTTY && Object.keys(flags).length === 0
-      const options = interactive
-        ? await promptAgentReplayOptions(listReplayCases())
-        : {
-            caseId: flags.case,
-            url: flags.url,
-            headed: flags.headed !== undefined,
-            video: flags.video !== undefined
-          }
-      if (options === null) break
-      process.exitCode = runAgentReplay(options)
+      const { agentReplayCli } = await import('./commands/agentReplay')
+      process.exitCode = await agentReplayCli(args.slice(1))
       break
     }
     case 'list': {
@@ -216,7 +199,7 @@ try {
     default: {
       // Help is a successful request; a typo is not.
       const askedForHelp =
-        command === undefined || command === '--help' || command === 'help'
+        !command || command === '--help' || command === 'help'
       if (!askedForHelp) {
         console.log(pc.red(`  Unknown command: ${command}`))
         process.exitCode = 1

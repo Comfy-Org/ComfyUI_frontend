@@ -1,11 +1,13 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
+import { runCommand } from '../cli/run'
 import {
   AGENT_REPLAY_USAGE,
+  agentReplayCli,
   agentReplayInvocation,
   listReplayCases,
   promptAgentReplayOptions,
@@ -46,21 +48,9 @@ describe('agentReplayInvocation', () => {
 })
 
 describe('runAgentReplay', () => {
-  it('prints usage for --help and spawns nothing', () => {
-    const run = vi.fn()
-    const write = vi
-      .spyOn(process.stdout, 'write')
-      .mockImplementation(() => true)
-    expect(runAgentReplay({ help: true }, run)).toBe(0)
-    expect(run).not.toHaveBeenCalled()
-    expect(write).toHaveBeenCalledWith(AGENT_REPLAY_USAGE)
-  })
-
   it('returns the suite status when it runs', () => {
     const run = vi.fn(() => ({ status: 3 }))
-    expect(
-      runAgentReplay({ caseId: 'agent-rec-add-set-delete' }, run as never)
-    ).toBe(3)
+    expect(runAgentReplay({ caseId: 'agent-rec-add-set-delete' }, run)).toBe(3)
     expect(run).toHaveBeenCalledWith(
       'pnpm',
       expect.arrayContaining(['-g', 'agent-rec-add-set-delete']),
@@ -74,12 +64,16 @@ describe('runAgentReplay', () => {
 describe('the interactive route', () => {
   it('lists every recording by case id', () => {
     const root = mkdtempSync(join(tmpdir(), 'agent-replay-'))
-    const dir = join(root, 'browser_tests/fixtures/data/agent/conversations')
-    mkdirSync(dir, { recursive: true })
-    writeFileSync(join(dir, 'agent-rec-b.json'), '{}')
-    writeFileSync(join(dir, 'agent-rec-a.json'), '{}')
-    writeFileSync(join(dir, 'notes.md'), '')
-    expect(listReplayCases(root)).toEqual(['agent-rec-a', 'agent-rec-b'])
+    try {
+      const dir = join(root, 'browser_tests/fixtures/data/agent/conversations')
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(join(dir, 'agent-rec-b.json'), '{}')
+      writeFileSync(join(dir, 'agent-rec-a.json'), '{}')
+      writeFileSync(join(dir, 'notes.md'), '')
+      expect(listReplayCases(root)).toEqual(['agent-rec-a', 'agent-rec-b'])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('asks for the case and whether to watch it', async () => {
@@ -109,5 +103,104 @@ describe('the interactive route', () => {
         confirm: async () => false
       })
     ).resolves.toEqual({ caseId: undefined, headed: false })
+  })
+})
+
+describe('agentReplayCli', () => {
+  it('prints the usage for --help and spawns nothing', async () => {
+    const run = vi.fn(() => ({ status: 0 }))
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    await expect(agentReplayCli(['--help'], { run })).resolves.toBe(0)
+    expect(run).not.toHaveBeenCalled()
+    expect(out).toHaveBeenCalledWith(AGENT_REPLAY_USAGE)
+  })
+
+  it.for([['--case'], ['--url'], ['--case', '--headed']])(
+    'refuses %s without a value before spawning',
+    async (argv) => {
+      const run = vi.fn(() => ({ status: 0 }))
+      const err = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      await expect(
+        agentReplayCli(argv, { run, interactive: true })
+      ).resolves.toBe(1)
+      expect(run).not.toHaveBeenCalled()
+      expect(err).toHaveBeenCalledWith(
+        expect.stringContaining(`${argv[0]} needs a value`)
+      )
+    }
+  )
+
+  it('runs the flags without prompting, even on a terminal', async () => {
+    const run = vi.fn(() => ({ status: 2 }))
+    const select = vi.fn(async () => '')
+    await expect(
+      agentReplayCli(['--case', 'agent-rec-a', '--video'], {
+        run,
+        interactive: true,
+        prompts: { select, confirm: async () => false }
+      })
+    ).resolves.toBe(2)
+    expect(select).not.toHaveBeenCalled()
+    expect(run).toHaveBeenCalledWith(
+      'pnpm',
+      expect.arrayContaining(['-g', 'agent-rec-a']),
+      expect.objectContaining({
+        env: expect.objectContaining({ RECORD_VIDEO: 'true' })
+      })
+    )
+  })
+
+  it('replays every recording without prompting off a terminal', async () => {
+    const run = vi.fn(() => ({ status: 0 }))
+    const select = vi.fn(async () => '')
+    await expect(
+      agentReplayCli([], {
+        run,
+        interactive: false,
+        prompts: { select, confirm: async () => false }
+      })
+    ).resolves.toBe(0)
+    expect(select).not.toHaveBeenCalled()
+    expect(run).toHaveBeenCalledWith(
+      'pnpm',
+      expect.not.arrayContaining(['-g']),
+      expect.anything()
+    )
+  })
+
+  it('asks on a terminal with no flags and runs the chosen recording', async () => {
+    const run = vi.fn(() => ({ status: 0 }))
+    await expect(
+      agentReplayCli([], {
+        run,
+        interactive: true,
+        cases: () => ['agent-rec-a', 'agent-rec-b'],
+        prompts: {
+          select: async () => 'agent-rec-b',
+          confirm: async () => true
+        }
+      })
+    ).resolves.toBe(0)
+    expect(run).toHaveBeenCalledWith(
+      'pnpm',
+      expect.arrayContaining(['-g', 'agent-rec-b', '--headed']),
+      expect.anything()
+    )
+  })
+})
+
+describe('the comfy-test entry', () => {
+  it('routes agent-replay --help to the usage', { timeout: 60_000 }, () => {
+    const result = runCommand('pnpm', [
+      'exec',
+      'tsx',
+      'tools/test-recorder/src/index.ts',
+      'agent-replay',
+      '--help'
+    ])
+    expect(result.status).toBe(0)
+    expect(String(result.stdout)).toContain('Usage: comfy-test agent-replay')
   })
 })

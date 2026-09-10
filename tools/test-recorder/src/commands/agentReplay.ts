@@ -1,9 +1,11 @@
+import type { SpawnSyncOptions } from 'node:child_process'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { confirm, isCancel, select } from '@clack/prompts'
 import type { ConfirmOptions, SelectOptions } from '@clack/prompts'
 
+import { parseFlags } from '../cli/flags'
 import { runCommand } from '../cli/run'
 
 export interface AgentReplayOptions {
@@ -93,9 +95,16 @@ export async function promptAgentReplayOptions(
   return { caseId: caseId || undefined, headed }
 }
 
+// All the replay reads from the child: its exit status.
+type Runner = (
+  command: string,
+  args: string[],
+  options: SpawnSyncOptions
+) => { status: number | null }
+
 export function runAgentReplay(
   options: AgentReplayOptions,
-  run: typeof runCommand = runCommand
+  run: Runner = runCommand
 ): number {
   if (options.help) {
     process.stdout.write(AGENT_REPLAY_USAGE)
@@ -107,4 +116,41 @@ export function runAgentReplay(
     env: { ...process.env, ...env }
   })
   return result.status ?? 1
+}
+
+export interface AgentReplayCliDeps {
+  run?: Runner
+  prompts?: Prompts
+  cases?: () => string[]
+  interactive?: boolean
+}
+
+const VALUE_FLAGS = ['case', 'url'] as const
+
+// The subcommand's argv boundary: help and a missing value return before anything spawns.
+export async function agentReplayCli(
+  argv: string[],
+  deps: AgentReplayCliDeps = {}
+): Promise<number> {
+  const { flags } = parseFlags(argv, VALUE_FLAGS)
+  if (flags.help !== undefined) return runAgentReplay({ help: true }, deps.run)
+  const missing = VALUE_FLAGS.find((flag) => flags[flag] === '')
+  if (missing !== undefined) {
+    process.stderr.write(`--${missing} needs a value\n${AGENT_REPLAY_USAGE}`)
+    return 1
+  }
+  const interactive =
+    (deps.interactive ?? process.stdin.isTTY) && Object.keys(flags).length === 0
+  const options = interactive
+    ? await promptAgentReplayOptions(
+        (deps.cases ?? listReplayCases)(),
+        deps.prompts
+      )
+    : {
+        caseId: flags.case,
+        url: flags.url,
+        headed: flags.headed !== undefined,
+        video: flags.video !== undefined
+      }
+  return options === null ? 0 : runAgentReplay(options, deps.run)
 }
