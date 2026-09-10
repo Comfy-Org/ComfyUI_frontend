@@ -37,7 +37,11 @@ They are not interchangeable.
 
 Acceptance requires an authenticated browser flow that causes a visible canvas edit and survives
 reconnect. Package CI, frame tests, healthy services, or a served frontend alone do not satisfy the
-gate. Stable promotion reuses the exact integrated combination, makes the backend compatible first,
+gate.
+
+## Stable promotion
+
+Stable promotion reuses the exact integrated combination, makes the backend compatible first,
 verifies the served frontend revision, and expands product access last.
 
 ## Exceptions
