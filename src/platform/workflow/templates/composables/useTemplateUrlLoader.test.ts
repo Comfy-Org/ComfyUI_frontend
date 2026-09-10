@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -55,16 +56,14 @@ vi.mock<unknown>(
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd,
-    loading: mockToastAdd,
-    custom: mockToastAdd
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().info).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().warning).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().loading).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().custom).mockImplementation(mockToastAdd)
+})
 
 const apps: App<Element>[] = []
 

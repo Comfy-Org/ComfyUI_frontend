@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,7 +12,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Mock } from 'vitest'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -142,19 +143,27 @@ vi.mock<unknown>(
   })
 )
 
-
-
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => ({
-    success: (...args: unknown[]) => mockToastAdd('success', ...args),
-    error: (...args: unknown[]) => mockToastAdd('error', ...args),
-    info: (...args: unknown[]) => mockToastAdd('info', ...args),
-    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
-    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
-    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
-  }))
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
@@ -279,7 +288,7 @@ describe('useCoreCommands', () => {
     mockMissingModelStoreRefresh = vi.mocked(
       useMissingModelStore().refreshMissingModels
     )
-    mockToastAdd = useToastStore().add
+
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null

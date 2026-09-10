@@ -139,7 +139,7 @@ vi.mock<unknown>(import('@/utils/envUtil'), () => ({
 }))
 
 // Module-mock heavy child components so we don't pay their import cost.
-const stubModule = { default: { template: '<div />' } }
+const stubModule = vi.hoisted(() => ({ default: { template: '<div />' } }))
 vi.mock<unknown>(
   import('@/components/actionbar/PartnerNodesEducationCard.vue'),
   () => ({

@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -56,17 +57,15 @@ const mockToastLoading = vi.fn((_title: string, _options?: unknown) => 1)
 const mockToastCustom = vi.fn(() => 6)
 const mockToastRemove = vi.fn()
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastSuccess,
-    error: mockToastError,
-    info: mockToastInfo,
-    warning: mockToastWarning,
-    loading: mockToastLoading,
-    custom: mockToastCustom,
-    dismiss: mockToastRemove
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastSuccess)
+  vi.mocked(useToast().error).mockImplementation(mockToastError)
+  vi.mocked(useToast().info).mockImplementation(mockToastInfo)
+  vi.mocked(useToast().warning).mockImplementation(mockToastWarning)
+  vi.mocked(useToast().loading).mockImplementation(mockToastLoading)
+  vi.mocked(useToast().custom).mockImplementation(mockToastCustom)
+  vi.mocked(useToast().dismiss).mockImplementation(mockToastRemove)
+})
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
@@ -103,8 +102,6 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from './billingOperationStore'
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => {})
-  vi.mocked(useToastStore().remove).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 
@@ -767,7 +764,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(useToastStore().remove).toHaveBeenCalledWith(receivedToast)
+      expect(mockToastRemove).toHaveBeenCalledWith(receivedToast)
     })
   })
 

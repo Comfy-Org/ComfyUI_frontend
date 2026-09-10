@@ -1,6 +1,7 @@
+import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { storeToRefs } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -16,6 +17,7 @@ import {
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockTrackUnifiedAuthRefresh = vi.fn()
+const mockToastAdd = vi.hoisted(() => vi.fn())
 
 const mockEnsureSessionCookie = vi.fn()
 
@@ -41,18 +43,26 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => mockToastAdd('success', ...args),
-    error: (...args: unknown[]) => mockToastAdd('error', ...args),
-    info: (...args: unknown[]) => mockToastAdd('info', ...args),
-    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
-    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
-    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
-  })
-}))
-
-
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
@@ -96,10 +106,6 @@ const mockTokenResponse = {
 function expectedExpiresAtMs(expiresAt: string): string {
   return new Date(expiresAt).getTime().toString()
 }
-
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => {})
-})
 
 beforeEach(() => {
   vi.mocked(useAuthStore().getIdToken).mockResolvedValue(undefined)
@@ -1025,7 +1031,7 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(token).toBeNull()
       expect(currentWorkspace.value).toBeNull()
-      expect(useToastStore().add).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
     })
 
     it('backs off re-minting after a failed recovery instead of retrying every call', async () => {
@@ -1122,7 +1128,7 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(token).toBeNull()
       expect(currentWorkspace.value?.id).toBe('workspace-123')
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
       expect(
         useTeamWorkspaceStore().forgetRevokedActiveWorkspace
       ).not.toHaveBeenCalled()
@@ -2466,7 +2472,7 @@ describe('useWorkspaceAuthStore', () => {
       const result = await store.remintUnifiedOnce('unified-token-1')
 
       expect(result).toBeNull()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
@@ -2585,7 +2591,7 @@ describe('useWorkspaceAuthStore', () => {
 
       await expect(mintPromise).resolves.toBe(false)
       expect(store.unifiedToken).toBeNull()
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('coalesces concurrent re-mints and returns the winning token to every caller', async () => {
@@ -2825,7 +2831,7 @@ describe('useWorkspaceAuthStore', () => {
       await store.mintAtLogin()
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('does not toast on a transient refresh failure and keeps the slot', async () => {
@@ -2861,7 +2867,7 @@ describe('useWorkspaceAuthStore', () => {
       const refreshDelay = expiresInMs - 5 * 60 * 1000
       await vi.advanceTimersByTimeAsync(refreshDelay)
 
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
@@ -2957,7 +2963,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
 
       expect(mockFetch).toHaveBeenCalledTimes(5)
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
       expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
         outcome: 'retries_exhausted',
         retry_count: 3
@@ -2994,7 +3000,7 @@ describe('useWorkspaceAuthStore', () => {
       Object.assign(useAuthStore(), { currentUser: null })
       await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
       expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
 
       Object.assign(useAuthStore(), { currentUser: { uid: 'user-a' } })
       await vi.advanceTimersByTimeAsync(5000)
@@ -3109,7 +3115,7 @@ describe('useWorkspaceAuthStore', () => {
       await store.remintUnifiedOnce('unified-token-1')
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
 
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 })

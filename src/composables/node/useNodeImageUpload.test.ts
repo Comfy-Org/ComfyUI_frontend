@@ -1,9 +1,10 @@
+import { useToast } from '@/components/ui/toast'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeImageUpload } from './useNodeImageUpload'
 import type { Mock } from 'vitest'
@@ -37,9 +38,9 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning: mockWarning })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(mockWarning)
+})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -84,7 +85,6 @@ describe('useNodeImageUpload', () => {
   let onUploadError: () => void
 
   beforeEach(() => {
-    mockAddAlert = useToastStore().addAlert
     mockInvalidateInputs = vi
       .spyOn(useAssetsStore().inputAssets, 'invalidate')
       .mockResolvedValue(undefined)

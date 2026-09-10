@@ -1,8 +1,9 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -111,18 +112,12 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning: toastWarningMock })
-}))
-
-
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(toastWarningMock)
+})
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLoad3dNode: vi.fn(() => true)
-}))
-
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LiteGraph: { ContextMenu: vi.fn() }
 }))
 
 type ExtCreated = ComfyExtension & {

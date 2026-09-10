@@ -37,16 +37,6 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   }
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => {
-  const success = vi.fn()
-  const error = vi.fn()
-  const info = vi.fn()
-  const warning = vi.fn()
-  return {
-    useToast: () => ({ success, error, info, warning })
-  }
-})
-
 const mockShowDialog = vi.hoisted(() => vi.fn())
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
@@ -1080,7 +1070,7 @@ describe('useMediaAssetActions', () => {
       const { info } = useToast()
       await vi.waitFor(() => {
         expect(info).toHaveBeenCalledWith(
-          'exportToast.exportStarted',
+          'Preparing ZIP download...',
           expect.objectContaining({
             description: i18n.global.t(
               'mediaAsset.selection.exportStarted',
@@ -1290,7 +1280,11 @@ describe('useMediaAssetActions', () => {
       expect(useToast().success).toHaveBeenCalledWith(
         i18n.global.t('mediaAsset.assetDelete.success'),
         {
-          description: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            1
+          ),
           duration: 2000
         }
       )

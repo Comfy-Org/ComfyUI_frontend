@@ -1,7 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
   EventManagerInterface,
@@ -117,9 +116,9 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(warning)
+})
 
 type LoaderManagerInternals = {
   pickAdapter(

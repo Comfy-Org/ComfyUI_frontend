@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
@@ -18,6 +19,7 @@ const {
   autoSaveStop,
   beforeChange,
   loadCompositorSession,
+  toastAdd,
   saveLayerState,
   savePreview,
   session
@@ -26,7 +28,7 @@ const {
   autoSaveStop: vi.fn(),
   beforeChange: vi.fn(),
   loadCompositorSession: vi.fn().mockResolvedValue(0),
-
+  toastAdd: vi.fn(),
   saveLayerState: vi.fn(() => true),
   savePreview: vi.fn().mockResolvedValue(undefined),
   session: {
@@ -77,16 +79,14 @@ vi.mock(
     useCompositorAutoSave: vi.fn(() => ({ stop: autoSaveStop }))
   })
 )
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: toastAdd,
-    error: toastAdd,
-    info: toastAdd,
-    warning: toastAdd,
-    loading: toastAdd,
-    custom: toastAdd
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(toastAdd)
+  vi.mocked(useToast().error).mockImplementation(toastAdd)
+  vi.mocked(useToast().info).mockImplementation(toastAdd)
+  vi.mocked(useToast().warning).mockImplementation(toastAdd)
+  vi.mocked(useToast().loading).mockImplementation(toastAdd)
+  vi.mocked(useToast().custom).mockImplementation(toastAdd)
+})
 vi.mock(
   import('@/renderer/extensions/compositor/composables/compositorSession'),
   () => ({
@@ -142,7 +142,7 @@ beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
     changeTracker: { afterChange, beforeChange }
   })
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+
   vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([])
 })
 
@@ -242,7 +242,7 @@ describe('LayerEditorContent', () => {
   it('warns on close when edits could not be auto-saved', async () => {
     loadCompositorSession.mockResolvedValueOnce(2)
     const { unmount } = renderEditor('compositor')
-    await vi.waitFor(() => expect(useToastStore().add).toHaveBeenCalled())
+    await vi.waitFor(() => expect(toastAdd).toHaveBeenCalled())
     session.editor.history.canUndo.mockReturnValue(true)
 
     unmount()

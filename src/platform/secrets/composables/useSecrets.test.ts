@@ -1,26 +1,34 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast'
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
 import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockAdd = vi.fn()
 
-
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => mockAdd('success', ...args),
-    error: (...args: unknown[]) => mockAdd('error', ...args),
-    info: (...args: unknown[]) => mockAdd('info', ...args),
-    warning: (...args: unknown[]) => mockAdd('warning', ...args),
-    loading: (...args: unknown[]) => mockAdd('loading', ...args),
-    custom: (...args: unknown[]) => mockAdd('custom', ...args)
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockAdd('custom', ...args)
+  )
+})
 
 const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
@@ -73,10 +81,6 @@ function createMockSecret(
     ...overrides
   }
 }
-
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(mockAdd)
-})
 
 describe('useSecrets', () => {
   describe('fetchSecrets', () => {

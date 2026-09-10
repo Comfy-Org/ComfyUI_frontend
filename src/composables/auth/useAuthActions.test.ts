@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
@@ -94,9 +95,14 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => mockToastStore)
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastStore.success)
+  vi.mocked(useToast().error).mockImplementation(mockToastStore.error)
+  vi.mocked(useToast().info).mockImplementation(mockToastStore.info)
+  vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
+  vi.mocked(useToast().loading).mockImplementation(mockToastStore.loading)
+  vi.mocked(useToast().custom).mockImplementation(mockToastStore.custom)
+})
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkflowStorage: mockClearAllWorkflowStorage,
@@ -149,7 +155,7 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 
 beforeEach(() => {
   mockAuthStore = useAuthStore()
-  mockToastStore = useToastStore()
+
   mockWorkflowStore = useWorkflowStore()
   vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValue({
     checkout_url: 'https://checkout.stripe.test'

@@ -1,7 +1,7 @@
+import { beforeEach } from 'vitest'
+import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -30,9 +30,9 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning: warningMock })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(warningMock)
+})
 
 vi.mock('three/examples/jsm/exporters/GLTFExporter', () => ({
   GLTFExporter: class {

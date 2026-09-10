@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -101,16 +102,14 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd,
-    loading: mockToastAdd,
-    custom: mockToastAdd
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().info).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().warning).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().loading).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().custom).mockImplementation(mockToastAdd)
+})
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,

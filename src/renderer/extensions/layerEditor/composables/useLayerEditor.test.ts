@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,24 +10,31 @@ import { useLayerEditor } from './useLayerEditor'
 
 const { toastAdd } = vi.hoisted(() => ({ toastAdd: vi.fn() }))
 
-
-
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => toastAdd('success', ...args),
-    error: (...args: unknown[]) => toastAdd('error', ...args),
-    info: (...args: unknown[]) => toastAdd('info', ...args),
-    warning: (...args: unknown[]) => toastAdd('warning', ...args),
-    loading: (...args: unknown[]) => toastAdd('loading', ...args),
-    custom: (...args: unknown[]) => toastAdd('custom', ...args)
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    toastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    toastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    toastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    toastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    toastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    toastAdd('custom', ...args)
+  )
+})
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
   vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
     () => undefined
   )

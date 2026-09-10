@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -6,7 +7,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -58,18 +59,26 @@ vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => mockToastAdd('success', ...args),
-    error: (...args: unknown[]) => mockToastAdd('error', ...args),
-    info: (...args: unknown[]) => mockToastAdd('info', ...args),
-    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
-    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
-    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
-  })
-}))
-
-
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 const mockModel = fromPartial<ComfyModelDef>({
   key: 'checkpoints/model.safetensors',

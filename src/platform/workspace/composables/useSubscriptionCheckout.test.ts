@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -351,16 +352,14 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: mockToastAdd,
-    error: mockToastAdd,
-    info: mockToastAdd,
-    warning: mockToastAdd,
-    loading: mockToastAdd,
-    custom: mockToastAdd
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().info).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().warning).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().loading).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().custom).mockImplementation(mockToastAdd)
+})
 
 const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())

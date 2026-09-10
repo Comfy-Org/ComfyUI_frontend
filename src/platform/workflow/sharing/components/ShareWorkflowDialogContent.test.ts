@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -24,9 +25,14 @@ const mockToast = vi.hoisted(() => ({
   custom: vi.fn()
 }))
 
-vi.mock('@/components/ui/toast', () => ({
-  useToast: () => mockToast
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToast.success)
+  vi.mocked(useToast().error).mockImplementation(mockToast.error)
+  vi.mocked(useToast().info).mockImplementation(mockToast.info)
+  vi.mocked(useToast().warning).mockImplementation(mockToast.warning)
+  vi.mocked(useToast().loading).mockImplementation(mockToast.loading)
+  vi.mocked(useToast().custom).mockImplementation(mockToast.custom)
+})
 
 vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}

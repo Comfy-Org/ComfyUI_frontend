@@ -1,7 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -73,6 +74,7 @@ type WorkflowService = ReturnType<typeof useWorkflowService>
 vi.mock(import('firebase/auth'))
 
 const {
+  mockToastStore,
   mockExtensionService,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
@@ -142,9 +144,14 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => mockToastStore)
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
+  vi.mocked(useToast().success).mockImplementation(mockToastStore.success)
+  vi.mocked(useToast().error).mockImplementation(mockToastStore.error)
+  vi.mocked(useToast().info).mockImplementation(mockToastStore.info)
+  vi.mocked(useToast().custom).mockImplementation(mockToastStore.custom)
+  vi.mocked(useToast().dismiss).mockImplementation(mockToastStore.dismiss)
+})
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: vi.fn(() => mockExtensionService)

@@ -1,4 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAudioService } from '@/services/audioService'
@@ -6,6 +6,10 @@ import type { AudioRecordingError } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
 
 const mockApi = vi.hoisted(() => ({
   fetchApi: vi.fn()
@@ -27,9 +31,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => mockToastStore)
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
+})
 
 describe('useAudioService', () => {
   let service: ReturnType<typeof useAudioService>

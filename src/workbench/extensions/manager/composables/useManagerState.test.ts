@@ -1,6 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -12,6 +12,10 @@ import {
 
 // Mock dependencies that are not stores
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -39,22 +43,30 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   }))
 }))
 
-
-
 const { toastAddMock } = vi.hoisted(() => ({
   toastAddMock: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => ({
-    success: (...args: unknown[]) => toastAddMock('success', ...args),
-    error: (...args: unknown[]) => toastAddMock('error', ...args),
-    info: (...args: unknown[]) => toastAddMock('info', ...args),
-    warning: (...args: unknown[]) => toastAddMock('warning', ...args),
-    loading: (...args: unknown[]) => toastAddMock('loading', ...args),
-    custom: (...args: unknown[]) => toastAddMock('custom', ...args)
-  }))
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    toastAddMock('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    toastAddMock('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    toastAddMock('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    toastAddMock('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    toastAddMock('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    toastAddMock('custom', ...args)
+  )
+})
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
@@ -110,7 +122,6 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    toastAddMock = useToastStore().add
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 

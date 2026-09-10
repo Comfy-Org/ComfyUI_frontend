@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { MockInstance } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,9 +26,9 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => ({ warning: vi.fn() }))
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(vi.fn())
+})
 
 let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
 let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>

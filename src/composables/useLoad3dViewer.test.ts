@@ -11,12 +11,12 @@ import { useToast } from '@/components/ui/toast'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock(import('@/services/load3dService'), () => ({
-  useLoad3dService: vi.fn()
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn()
+vi.mock(import('@/services/load3dService'), () => ({
+  useLoad3dService: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
@@ -194,10 +194,7 @@ describe('useLoad3dViewer', () => {
     >
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
-    mockToastStore = {
-      warning: vi.fn()
-    } as Partial<ReturnType<typeof useToast>> as ReturnType<typeof useToast>
-    vi.mocked(useToast).mockReturnValue(mockToastStore)
+    mockToastStore = useToast()
   })
 
   describe('initialization', () => {

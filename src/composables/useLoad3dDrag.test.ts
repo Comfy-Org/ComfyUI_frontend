@@ -6,10 +6,6 @@ import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import { useToast } from '@/components/ui/toast'
 import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn()
-}))
-
 vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key) => key)
 }))
@@ -40,10 +36,7 @@ describe('useLoad3dDrag', () => {
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
-    mockToastStore = {
-      warning: vi.fn()
-    } as Partial<ReturnType<typeof useToast>> as ReturnType<typeof useToast>
-    vi.mocked(useToast).mockReturnValue(mockToastStore)
+    mockToastStore = useToast()
 
     mockOnModelDrop = vi.fn()
   })

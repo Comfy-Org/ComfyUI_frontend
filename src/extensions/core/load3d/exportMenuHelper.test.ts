@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { beforeEach } from 'vitest'
+import { useToast } from '@/components/ui/toast'
+import { describe, expect, it, vi } from 'vitest'
 
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
@@ -16,16 +16,24 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => addToastMock('success', ...args),
-    error: (...args: unknown[]) => addToastMock('error', ...args),
-    info: (...args: unknown[]) => addToastMock('info', ...args),
-    warning: warningMock,
-    loading: (...args: unknown[]) => addToastMock('loading', ...args),
-    custom: (...args: unknown[]) => addToastMock('custom', ...args)
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    addToastMock('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    addToastMock('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    addToastMock('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation(warningMock)
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    addToastMock('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    addToastMock('custom', ...args)
+  )
+})
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
   const actual = await importOriginal()

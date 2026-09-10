@@ -1,8 +1,9 @@
+import { useToast } from '@/components/ui/toast'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { ComfyExtension } from '@/types/comfy'
 
 const { mockWarning, mockApiURL, mockFetchApi, mockRegisterExtension } =
@@ -57,9 +58,9 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning: mockWarning })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(mockWarning)
+})
 
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
   getResourceURL: (subfolder = '', filename = '', type = 'input') =>

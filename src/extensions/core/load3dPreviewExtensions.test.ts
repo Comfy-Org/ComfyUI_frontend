@@ -1,7 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { ComfyExtension } from '@/types/comfy'
 
 const {
@@ -62,9 +63,9 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning: toastWarningMock })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(toastWarningMock)
+})
 
 type ExtCreated = ComfyExtension & {
   nodeCreated: (node: LGraphNode) => Promise<void>

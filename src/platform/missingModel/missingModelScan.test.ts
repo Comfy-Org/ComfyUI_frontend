@@ -1,6 +1,7 @@
+import { useToast } from '@/components/ui/toast'
 import type * as I18nModule from '@/i18n'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -256,10 +257,6 @@ function makeNestedPromotedModelGraph({
 }
 
 const noAssetSupport = () => false
-
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
 
 beforeEach(() => {
   vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
@@ -1741,16 +1738,14 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warning: vi.fn(),
-    loading: vi.fn(),
-    custom: vi.fn()
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(vi.fn())
+  vi.mocked(useToast().error).mockImplementation(vi.fn())
+  vi.mocked(useToast().info).mockImplementation(vi.fn())
+  vi.mocked(useToast().warning).mockImplementation(vi.fn())
+  vi.mocked(useToast().loading).mockImplementation(vi.fn())
+  vi.mocked(useToast().custom).mockImplementation(vi.fn())
+})
 
 vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
   ...(await importOriginal<typeof I18nModule>()),

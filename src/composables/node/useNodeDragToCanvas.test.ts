@@ -1,9 +1,10 @@
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -31,7 +32,7 @@ const {
   }
 })
 
-let mockToastAdd: ReturnType<typeof useToastStore>['add']
+const mockToastAdd = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: vi.fn(() => ({
@@ -39,16 +40,26 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   }))
 }))
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: vi.fn(() => ({
-    success: (...args: unknown[]) => mockToastAdd('success', ...args),
-    error: (...args: unknown[]) => mockToastAdd('error', ...args),
-    info: (...args: unknown[]) => mockToastAdd('info', ...args),
-    warning: (...args: unknown[]) => mockToastAdd('warning', ...args),
-    loading: (...args: unknown[]) => mockToastAdd('loading', ...args),
-    custom: (...args: unknown[]) => mockToastAdd('custom', ...args)
-  }))
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
@@ -60,7 +71,6 @@ describe('useNodeDragToCanvas', () => {
 
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial<LGraphCanvas>(mockCanvas)
-    mockToastAdd = useToastStore().add
   })
 
   afterEach(() => {

@@ -1,8 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { ZIndex } from '@primeuix/utils/zindex'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -17,10 +16,6 @@ const i18n = createI18n({
 
 describe('Toaster', () => {
   const dialogs: HTMLElement[] = []
-
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
 
   afterEach(() => {
     dialogs.splice(0).forEach((dialog) => ZIndex.clear(dialog))

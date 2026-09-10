@@ -1,7 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -31,9 +28,14 @@ const toasts = vi.hoisted(() => ({
   loading: vi.fn(),
   custom: vi.fn()
 }))
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => toasts
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(toasts.success)
+  vi.mocked(useToast().error).mockImplementation(toasts.error)
+  vi.mocked(useToast().info).mockImplementation(toasts.info)
+  vi.mocked(useToast().warning).mockImplementation(toasts.warning)
+  vi.mocked(useToast().loading).mockImplementation(toasts.loading)
+  vi.mocked(useToast().custom).mockImplementation(toasts.custom)
+})
 
 const DEFAULT_REDIRECT = { name: 'cloud-user-check' }
 
