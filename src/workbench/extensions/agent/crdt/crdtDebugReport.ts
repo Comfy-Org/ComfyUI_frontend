@@ -34,6 +34,7 @@ const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
 export const MAX_CRDT_EVENT_LOG_EXPORT_BYTES = 60_000
+export const MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES = 20_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const CIRCULAR_REDACTED = '[circular]'
@@ -57,6 +58,7 @@ const SHARING_WARNING =
 
 const EVENT_LOG_WARNING = `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`
 const EVENT_LOG_TRUNCATED = '[CRDT event log truncated]'
+const EVENT_DETAIL_TRUNCATED = '…[CRDT event detail truncated]'
 
 /**
  * Redaction must RECURSE. A single top-level pass reads as sufficient and is
@@ -337,6 +339,36 @@ export function formatCrdtEventLog(events: readonly DevEvent[]): string {
   while ((serializedBytes[tailStart] & 0xc0) === 0x80) tailStart++
   const body = `${marker}${new TextDecoder().decode(serializedBytes.subarray(tailStart))}`
   return `${prefix}${body}${suffix}`
+}
+
+/**
+ * One event's detail, for the per-row "Copy log detail" button.
+ *
+ * Shares the redaction and the byte budget of {@link formatCrdtEventLog}
+ * rather than handing `event.detail` to the clipboard raw: pasting a single
+ * suspicious event into a bug report is the most natural sharing workflow, and
+ * `DevEvent.detail` is `unknown`, so one schema diagnostic can carry a
+ * megabyte-long message that the browser then rejects outright.
+ *
+ * Truncates from the HEAD, unlike the log: a detail's identifying fields come
+ * first, whereas a log's most recent events come last.
+ */
+export function formatCrdtEventDetail(detail: unknown): string {
+  const redacted = redactEventPayloads(detail)
+  let serialized: string
+  try {
+    // Typed `string`, but `undefined` for the undefined details the ring
+    // buffer permits.
+    const raw: unknown = JSON.stringify(redacted, devEventReplacer())
+    serialized = typeof raw === 'string' ? raw : ''
+  } catch (error) {
+    return `<unserializable: ${String(error)}>`
+  }
+  const bytes = new TextEncoder().encode(serialized)
+  if (bytes.byteLength <= MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES) return serialized
+  let end = MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES
+  while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--
+  return `${new TextDecoder().decode(bytes.subarray(0, end))}${EVENT_DETAIL_TRUNCATED}`
 }
 
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>

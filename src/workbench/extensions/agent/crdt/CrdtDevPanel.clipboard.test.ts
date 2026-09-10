@@ -16,6 +16,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES } from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -97,22 +98,46 @@ describe('CrdtDevPanel clipboard controls', () => {
     expect(writeText).toHaveBeenNthCalledWith(2, 'node-removed')
   })
 
-  it('copies the full log detail while displaying a truncated excerpt', async () => {
+  it('redacts operation payload values out of a copied log detail', async () => {
     const user = userEvent.setup()
-    const detail = { value: 'x'.repeat(220), bytes: new Uint8Array(3) }
-    recordDevEvent('doc_update', detail)
+    recordDevEvent('doc_update', {
+      op: 'set_widget',
+      node_id: 'node-7',
+      value: 'a prompt the tester did not choose to publish',
+      bytes: new Uint8Array(3)
+    })
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    const full = JSON.stringify({
-      value: 'x'.repeat(220),
-      bytes: 'Uint8Array(3)'
-    })
-    expect(screen.getByText(`${full.slice(0, 200)}…`)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+      JSON.stringify({
+        op: 'set_widget',
+        node_id: 'node-7',
+        value: '[redacted by the debug report]',
+        bytes: 'Uint8Array(3)'
+      })
+    )
+  })
+
+  it('bounds a copied log detail while displaying a truncated excerpt', async () => {
+    const user = userEvent.setup()
+    const serialized = JSON.stringify({ message: 'x'.repeat(1_000_000) })
+    recordDevEvent('schema_error', { message: 'x'.repeat(1_000_000) })
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(screen.getByText(`${serialized.slice(0, 200)}…`)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith(full)
+    const copied = writeText.mock.calls[0][0]
+    expect(copied).toContain('[CRDT event detail truncated]')
+    expect(new TextEncoder().encode(copied).byteLength).toBeLessThanOrEqual(
+      MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES +
+        new TextEncoder().encode('…[CRDT event detail truncated]').byteLength
+    )
   })
 
   it('shows transient Copied feedback only on the button that succeeded', async () => {

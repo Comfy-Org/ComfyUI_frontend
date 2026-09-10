@@ -30,6 +30,7 @@ import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport,
+  formatCrdtEventDetail,
   formatCrdtEventLog
 } from './crdtDebugReport'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
@@ -316,7 +317,7 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
     .reverse()
     .slice(0, 150)
     .map((event) => {
-      const detail = stringifyDetail(event.detail)
+      const detail = formatCrdtEventDetail(event.detail)
       return {
         event,
         detail,
