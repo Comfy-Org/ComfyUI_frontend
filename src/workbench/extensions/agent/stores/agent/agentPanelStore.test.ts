@@ -61,6 +61,32 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  it('starts a new visible interval after consent hides and restores the panel', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+    vi.advanceTimersByTime(2000)
+
+    store.consentAccepted = false
+    await nextTick()
+    expect(store.isOpen).toBe(true)
+    vi.advanceTimersByTime(10000)
+    store.consentAccepted = true
+    await nextTick()
+    vi.advanceTimersByTime(3000)
+    store.close('close_button')
+
+    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+      source: 'close_button',
+      open_duration_ms: 3000
+    })
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+      source: 'restored'
+    })
+  })
+
   it('never emits for a rehydrated-open panel while the feature stays disabled', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     useAgentPanelStore()
