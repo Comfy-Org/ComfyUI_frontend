@@ -36,18 +36,9 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('src="/api/view?filename=out.mp4"')
     })
 
-    it('escapes an unquoted raw-media tag as text instead of leaving it live', () => {
-      // marked only recognizes raw inline/block HTML with quoted attributes;
-      // an unquoted src prevents the tag from parsing as HTML at all, so it
-      // renders as escaped text and never reaches MEDIA_SRC_REGEX or DOMPurify
-      // as a live element. Guards against re-introducing an unquoted-src bypass
-      // assumption.
-      const html = renderMarkdownToHtml(
-        '<video src=view?filename=out.mp4></video>',
-        '/api'
-      )
-      expect(html).not.toContain('<video')
-      expect(html).toContain('&lt;video')
+    it('rebases an unquoted relative raw-media src', () => {
+      const html = renderMarkdownToHtml('<video src=out.mp4></video>', '/api')
+      expect(html).toContain('<video src="/api/out.mp4"></video>')
     })
 
     it('leaves absolute and rooted link hrefs alone', () => {

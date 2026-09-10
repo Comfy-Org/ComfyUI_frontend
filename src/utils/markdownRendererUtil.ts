@@ -17,10 +17,10 @@ type RuntimeLinkToken = Omit<Tokens.Link, 'tokens'> & {
 }
 
 // Matches relative src attributes in img, source, and video HTML tags
-// Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
+// Captures: 1) opening tag with src=, 2) optional quote, 3) relative path
 // Excludes absolute paths (starting with /) and URLs (http:// or https://)
 const MEDIA_SRC_REGEX =
-  /(<(?:img|source|video)[^>]*\ssrc=['"])(?!(?:[/#?]|[a-z][a-z0-9+.-]*:))([^'"\s>]+)(['"])/gi
+  /(<(?:img|source|video)[^>]*\ssrc=)(['"]?)(?!(?:[/#?]|[a-z][a-z0-9+.-]*:))([^'"\s>]+)\2/gi
 
 // Rooted paths, fragments, queries, and anything carrying a scheme (http,
 // javascript, data, ...) must keep their original form for sanitizing.
@@ -81,7 +81,7 @@ export function renderMarkdownToHtml(
   if (baseUrl) {
     html = html.replace(
       MEDIA_SRC_REGEX,
-      `$1${baseUrl.replace(/\/+$/, '')}/$2$3`
+      `$1$2${baseUrl.replace(/\/+$/, '')}/$3$2`
     )
   }
 
