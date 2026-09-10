@@ -6,10 +6,27 @@ import { compareNodeIds } from '@/types/nodeId'
 
 const RENDER_ONLY_KEYS = new Set(['boundingRect'])
 
+function compareCodeUnits(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
+function sortBySerializedForm(entries: readonly unknown[]): unknown[] {
+  return entries
+    .map((entry) => [JSON.stringify(entry), entry] as const)
+    .sort(([left], [right]) => compareCodeUnits(left, right))
+    .map(([, entry]) => entry)
+}
+
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize)
-  if (value instanceof Map || value instanceof Set)
-    return canonicalize([...value])
+  // Iteration order of a Map or a Set is insertion order, which differs
+  // between the full-snapshot rebuild path and the live incremental path.
+  if (value instanceof Map)
+    return sortBySerializedForm(
+      [...value].map(([key, entry]) => [canonicalize(key), canonicalize(entry)])
+    )
+  if (value instanceof Set)
+    return sortBySerializedForm([...value].map(canonicalize))
   if (typeof value === 'object' && value !== null) {
     const source = value as Record<string, unknown>
     const result: Record<string, unknown> = {}
@@ -46,7 +63,7 @@ export function serializeDocumentScope(scope: GraphScope): Uint8Array {
       widgets: widgetStore
         .getNodeWidgets(scope.rootGraphId, semantic.id)
         .map(({ name, type, value }) => ({ name, type, value }))
-        .sort((left, right) => left.name.localeCompare(right.name))
+        .sort((left, right) => compareCodeUnits(left.name, right.name))
     }))
 
   const links = [...linkStore.graphTopologies(scope)]
