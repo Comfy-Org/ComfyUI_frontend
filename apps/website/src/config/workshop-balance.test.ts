@@ -7,6 +7,7 @@ import type {
   AccountCredential,
   SessionResult
 } from '@comfyorg/account/session'
+import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
 
 import { createBalanceReader } from './workshop-balance'
 
@@ -62,6 +63,15 @@ function balanceResponse(body: unknown, status = 200) {
   })
 }
 
+/** A contract-valid balance body; the reader reads the effective field. */
+function balanceBody(cents: number): BillingBalanceResponse {
+  return {
+    amount_micros: cents,
+    currency: 'usd',
+    effective_balance_micros: cents
+  }
+}
+
 function deferredFetch() {
   let release!: (response: Response) => void
   const fetchImpl = vi.fn<typeof fetch>(
@@ -74,7 +84,7 @@ describe('createBalanceReader', () => {
   it('publishes the balance for a live session with the session token', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     const fetchImpl = vi.fn<typeof fetch>(async () =>
-      balanceResponse({ effective_balance_micros: 1234 })
+      balanceResponse(balanceBody(1234))
     )
     const reader = createBalanceReader(session, BALANCE_URL, fetchImpl)
 
@@ -90,7 +100,9 @@ describe('createBalanceReader', () => {
     const reader = createBalanceReader(
       fakeSession(credentialFor('uid-1', 'jwt-1')),
       BALANCE_URL,
-      vi.fn<typeof fetch>(async () => balanceResponse({ amount_micros: 777 }))
+      vi.fn<typeof fetch>(async () =>
+        balanceResponse({ amount_micros: 777, currency: 'usd' })
+      )
     )
 
     await reader.refresh()
@@ -98,14 +110,52 @@ describe('createBalanceReader', () => {
     expect(reader.getState()).toEqual({ status: 'ok', cents: 777 })
   })
 
+  it('rejects a partial body that omits the contract-required fields', async () => {
+    const reader = createBalanceReader(
+      fakeSession(credentialFor('uid-1', 'jwt-1')),
+      BALANCE_URL,
+      vi.fn<typeof fetch>(async () =>
+        balanceResponse({ effective_balance_micros: 1234 })
+      )
+    )
+
+    await reader.refresh()
+
+    expect(
+      reader.getState(),
+      'a body without amount_micros/currency is not the billing contract'
+    ).toEqual({ status: 'error' })
+  })
+
+  it('rejects a non-finite balance the schema would otherwise admit', async () => {
+    // Infinity cannot survive JSON on the wire; hand-build to reach the guard.
+    const reader = createBalanceReader(
+      fakeSession(credentialFor('uid-1', 'jwt-1')),
+      BALANCE_URL,
+      vi.fn<typeof fetch>(
+        async () =>
+          ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              amount_micros: Number.POSITIVE_INFINITY,
+              currency: 'usd'
+            })
+          }) as Partial<Response> as Response
+      )
+    )
+
+    await reader.refresh()
+
+    expect(reader.getState()).toEqual({ status: 'error' })
+  })
+
   it('re-mints once on a stale token and retries with the new token', async () => {
     const session = fakeSession(credentialFor('uid-1', 'jwt-1'))
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => balanceResponse({}, 401))
-      .mockImplementationOnce(async () =>
-        balanceResponse({ effective_balance_micros: 500 })
-      )
+      .mockImplementationOnce(async () => balanceResponse(balanceBody(500)))
     const reader = createBalanceReader(session, BALANCE_URL, fetchImpl)
 
     await reader.refresh()
@@ -127,9 +177,7 @@ describe('createBalanceReader', () => {
       .mockImplementationOnce(
         () => new Promise<Response>((resolve) => (release = resolve))
       )
-      .mockImplementationOnce(async () =>
-        balanceResponse({ effective_balance_micros: 500 })
-      )
+      .mockImplementationOnce(async () => balanceResponse(balanceBody(500)))
     const reader = createBalanceReader(session, BALANCE_URL, fetchImpl)
 
     const refreshing = reader.refresh()
@@ -174,7 +222,7 @@ describe('createBalanceReader', () => {
 
     const refreshing = reader.refresh()
     reader.reset()
-    release(balanceResponse({ effective_balance_micros: 999 }))
+    release(balanceResponse(balanceBody(999)))
     await refreshing
 
     expect(reader.getState()).toEqual({ status: 'unknown' })
@@ -187,7 +235,7 @@ describe('createBalanceReader', () => {
 
     const refreshing = reader.refresh()
     session.set(credentialFor('uid-2', 'jwt-b'))
-    release(balanceResponse({ effective_balance_micros: 42 }))
+    release(balanceResponse(balanceBody(42)))
     await refreshing
 
     expect(reader.getState()).toEqual({ status: 'unknown' })
@@ -203,7 +251,7 @@ describe('createBalanceReader', () => {
 
     const first = reader.refresh()
     const second = reader.refresh()
-    release(balanceResponse({ effective_balance_micros: 5 }))
+    release(balanceResponse(balanceBody(5)))
     await Promise.all([first, second])
 
     expect(fetchImpl).toHaveBeenCalledOnce()
@@ -217,9 +265,7 @@ describe('createBalanceReader', () => {
       .mockImplementationOnce(
         () => new Promise<Response>((resolve) => (release = resolve))
       )
-      .mockImplementationOnce(async () =>
-        balanceResponse({ effective_balance_micros: 7 })
-      )
+      .mockImplementationOnce(async () => balanceResponse(balanceBody(7)))
     const reader = createBalanceReader(
       fakeSession(credentialFor('uid-1', 'jwt-1')),
       BALANCE_URL,
@@ -228,7 +274,7 @@ describe('createBalanceReader', () => {
 
     const first = reader.refresh()
     const forced = reader.refresh({ force: true })
-    release(balanceResponse({ effective_balance_micros: 1 }))
+    release(balanceResponse(balanceBody(1)))
     await Promise.all([first, forced])
 
     expect(fetchImpl).toHaveBeenCalledTimes(2)
