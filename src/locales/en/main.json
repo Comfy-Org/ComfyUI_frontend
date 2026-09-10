@@ -2801,6 +2801,7 @@
   },
   "subscription": {
     "plansForWorkspace": "Plans for {workspace}",
+    "eduPromoHeader": "Education discount: up to {percent}% off for eligible students and educators",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
     "soloUseOnly": "Solo use only",

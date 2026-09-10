@@ -97,6 +97,7 @@
           v-for="tier in tiers"
           :key="tier.id"
           class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
+          :data-testid="`pricing-tier-${tier.key}`"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
             <div class="flex flex-row items-center justify-between gap-2">
@@ -117,12 +118,12 @@
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
-                  ${{ getPrice(tier) }}
+                  ${{ formatTierPriceValue(getPrice(tier)) }}
                   <span
-                    v-show="currentBillingCycle === 'yearly'"
+                    v-if="getStruckPrice(tier) !== null"
                     class="text-2xl text-muted-foreground line-through"
                   >
-                    ${{ getMonthlyPrice(tier) }}
+                    ${{ formatTierPriceValue(getStruckPrice(tier)!) }}
                   </span>
                 </span>
                 <span class="font-inter text-sm/normal text-base-foreground">
@@ -237,6 +238,7 @@
                 :stops="teamStops"
                 :default-stop-index="teamDefaultStopIndex"
                 :cycle="currentBillingCycle"
+                :extra-discount-percent="teamEduExtraPercent"
               />
 
               <!-- Selected credit grant + template-based video estimate -->
@@ -418,7 +420,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
   amountForBillingCycle,
+  applyEduDiscount,
+  formatTierPriceValue,
   hasActivePaidPlan,
+  TEAM_EDU_EXTRA_PERCENT,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
@@ -427,6 +432,7 @@ import type {
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
+import { useEduPricing } from '@/platform/cloud/subscription/composables/useEduPricing'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS,
@@ -914,17 +920,39 @@ const getButtonTextClass = (tier: PricingTierConfig): string =>
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
 
-const getPrice = (tier: PricingTierConfig): number =>
-  getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
+const { isEduPricingActive, isTeamEduEligible } = useEduPricing()
+const teamEduExtraPercent = computed(() =>
+  isTeamEduEligible.value ? TEAM_EDU_EXTRA_PERCENT : 0
+)
+
+// Personal tiers only: the coupon cut applies to the API-derived price (or the
+// static fallback).
+const getPrice = (tier: PricingTierConfig): number => {
+  const base = getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
+  return isEduPricingActive.value
+    ? applyEduDiscount(base, tier.key, currentBillingCycle.value)
+    : base
+}
 
 const getMonthlyPrice = (tier: PricingTierConfig): number => {
   const plan = getApiPlanForTier(tier.key, 'monthly')
   return plan ? plan.price_cents / 100 : tier.pricing.monthly
 }
 
+// Struck monthly list price: shown on yearly (the bundle saving) and whenever
+// EDU is active, so the EDU yearly card reads 25% off the monthly list.
+const getStruckPrice = (tier: PricingTierConfig): number | null => {
+  if (isEduPricingActive.value || currentBillingCycle.value === 'yearly')
+    return getMonthlyPrice(tier)
+  return null
+}
+
 const getAnnualTotal = (tier: PricingTierConfig): number => {
   const plan = getApiPlanForTier(tier.key, 'yearly')
-  return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
+  const total = plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
+  return isEduPricingActive.value
+    ? applyEduDiscount(total, tier.key, 'yearly')
+    : total
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
@@ -959,7 +987,8 @@ function handleSubscribeTeam() {
       credits: stop.credits,
       discountedUsd: getStopDiscountedMonthlyUsd(
         stop,
-        currentBillingCycle.value
+        currentBillingCycle.value,
+        teamEduExtraPercent.value
       )
     },
     billingCycle: currentBillingCycle.value,

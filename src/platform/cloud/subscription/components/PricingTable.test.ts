@@ -9,6 +9,7 @@ import { createI18n } from 'vue-i18n'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { applyEduDiscount } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -89,6 +90,17 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     )
   })
 }))
+
+const mockIsEduPricingActive = ref(false)
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useEduPricing'),
+  () => ({
+    useEduPricing: () => ({
+      isEduPricingActive: computed(() => mockIsEduPricingActive.value)
+    })
+  })
+)
 
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
@@ -242,6 +254,7 @@ describe('PricingTable', () => {
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
+    mockIsEduPricingActive.value = false
     Object.assign(useAuthStore(), { userId: 'user-123' })
     mockAccessBillingPortal.mockResolvedValue(true)
     mockLocalStorage.__reset()
@@ -559,6 +572,47 @@ describe('PricingTable', () => {
       await userEvent.click(teamLink!)
 
       expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('EDU pricing', () => {
+    // Display must match the coupon charge: monthly 10% off list, yearly
+    // 6.25% off the yearly price (= 25% off the monthly list).
+    it.for([
+      ['standard', 'monthly', '$18', '$20', null],
+      ['creator', 'monthly', '$31.50', '$35', null],
+      ['pro', 'monthly', '$90', '$100', null],
+      ['standard', 'yearly', '$15', '$20', 'Billed yearly ($180)'],
+      ['creator', 'yearly', '$26.25', '$35', 'Billed yearly ($315)'],
+      ['pro', 'yearly', '$75', '$100', 'Billed yearly ($900)']
+    ] as const)('discounts %s %s in its own card', async (testCase) => {
+      const [tierKey, cycle, price, struck, billed] = testCase
+      mockIsEduPricingActive.value = true
+      renderComponent()
+      await flushPromises()
+
+      if (cycle === 'monthly') {
+        await userEvent.click(screen.getByText('Monthly'))
+        await flushPromises()
+      }
+
+      const card = screen.getByTestId(`pricing-tier-${tierKey}`)
+      expect(card.textContent).toContain(price)
+      expect(card.textContent).toContain(struck)
+      if (billed) expect(card.textContent).toContain(billed)
+    })
+
+    it('keeps list prices when inactive', async () => {
+      renderComponent()
+      await flushPromises()
+
+      expect(screen.getByText('Billed yearly ($192)')).toBeInTheDocument()
+      expect(screen.queryByText('Billed yearly ($180)')).toBeNull()
+    })
+
+    it('rounds discounted prices to cents deterministically', () => {
+      expect(applyEduDiscount(16, 'standard', 'yearly')).toBe(15)
+      expect(applyEduDiscount(35, 'creator', 'monthly')).toBe(31.5)
     })
   })
 })
