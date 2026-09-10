@@ -3,8 +3,10 @@ import { marked } from 'marked'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
@@ -81,7 +83,7 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
-const proseItems = ref<ResultItemImpl[]>([])
+const proseItems = ref<AugmentedResultItem[]>([])
 const proseIndex = ref(-1)
 
 function onProseClick(event: MouseEvent): void {
@@ -125,11 +127,11 @@ const proseClass = cn(
         v-else-if="segment.type === 'assets'"
         :assets="segment.assets"
       />
-      <div
+      <SanitizedHtml
         v-else
         :class="proseClass"
+        :html="segment.html"
         @click="onProseClick"
-        v-html="segment.html"
       />
     </template>
     <MediaLightbox

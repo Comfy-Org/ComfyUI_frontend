@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelThumbnailResult } from '@/components/load3d/modelThumbnail'
 import { i18n } from '@/i18n'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
-const showDialog = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
-}))
+let showDialog: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
+>
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findServerPreviewUrl = vi.hoisted(() =>
@@ -20,7 +20,7 @@ const findServerPreviewUrl = vi.hoisted(() =>
 const findOutputAsset = vi.hoisted(() =>
   vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
 )
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock<unknown>(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   findServerPreviewUrl,
   findOutputAsset
@@ -35,12 +35,12 @@ const generateModelThumbnail = vi.hoisted(() =>
     ): Promise<ModelThumbnailResult> => ({ status: 'failed' })
   )
 )
-vi.mock('@/components/load3d/modelThumbnail', () => ({
+vi.mock(import('@/components/load3d/modelThumbnail'), () => ({
   generateModelThumbnail
 }))
 
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 const image = (n: number): ReplyAsset => ({
   url: `https://x/i${n}.png`,
@@ -91,7 +91,7 @@ const toggle = () =>
 
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
-    showDialog.mockClear()
+    showDialog = vi.mocked(useDialogStore().showDialog)
     isAssetPreviewSupported.mockReset().mockReturnValue(false)
     findServerPreviewUrl.mockReset().mockResolvedValue(null)
     findOutputAsset.mockReset().mockResolvedValue(undefined)
@@ -301,7 +301,9 @@ describe('ReplyAssetGroup', () => {
       findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
       await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
       const dialog = showDialog.mock.calls.at(-1)?.[0]
-      dialog.dialogComponentProps.onClose()
+      const onClose = dialog?.dialogComponentProps?.onClose
+      expect(onClose).toBeTypeOf('function')
+      onClose!()
       await vi.advanceTimersByTimeAsync(0)
 
       expect(vi.getTimerCount()).toBe(0)
@@ -431,7 +433,9 @@ describe('ReplyAssetGroup', () => {
       await vi.waitFor(() => expect(vi.getTimerCount()).toBe(1))
       await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
       const dialog = showDialog.mock.calls.at(-1)?.[0]
-      dialog.dialogComponentProps.onClose()
+      const onClose = dialog?.dialogComponentProps?.onClose
+      expect(onClose).toBeTypeOf('function')
+      onClose!()
       await vi.advanceTimersByTimeAsync(0)
       const callsBeforeUnmount = findServerPreviewUrl.mock.calls.length
       expect(vi.getTimerCount()).toBe(2)
@@ -454,7 +458,9 @@ describe('ReplyAssetGroup', () => {
 
     findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
     const dialog = showDialog.mock.calls.at(-1)?.[0]
-    dialog.dialogComponentProps.onClose()
+    const onClose = dialog?.dialogComponentProps?.onClose
+    expect(onClose).toBeTypeOf('function')
+    onClose!()
 
     const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
     expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')

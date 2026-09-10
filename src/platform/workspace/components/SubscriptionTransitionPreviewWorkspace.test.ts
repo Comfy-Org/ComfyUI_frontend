@@ -12,7 +12,7 @@ import type {
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 // Not cancelled: keeps the reactivation banner out of these baseline scenarios.
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscription: { value: { isCancelled: false, endDate: null } },
     isInitialized: { value: true }
@@ -181,6 +181,29 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       '_blank',
       'noopener,noreferrer'
     )
+  })
+
+  it('reports failed verification without offering to resume it', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        embeddedCheckoutEnabled: true,
+        authenticationState: 'failed_retryable',
+        authenticationError: 'Challenge was closed',
+        // A stale action_url from the abandoned challenge can still be present
+        // when the server reports failed_retryable; the button must stay
+        // hidden regardless.
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
+    expect(
+      screen.queryByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    ).toBeNull()
   })
 
   it('renders a scheduled downgrade with the after-that block and no charge', () => {

@@ -64,7 +64,8 @@ describe('createAgentEventSource', () => {
     const status = vi.fn()
 
     createAgentEventSource(host).onStatus?.(status)
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledOnce()
+    expect(status).toHaveBeenLastCalledWith(false)
 
     emit('reconnecting')
     expect(status).toHaveBeenLastCalledWith(false)
@@ -88,10 +89,11 @@ describe('createAgentEventSource', () => {
     const status = vi.fn()
 
     const unsubscribe = createAgentEventSource(host).onStatus?.(status)
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledOnce()
+    expect(status).toHaveBeenLastCalledWith(false)
 
     unsubscribe?.()
     emit('reconnected')
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledOnce()
   })
 })

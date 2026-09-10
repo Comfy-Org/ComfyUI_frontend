@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type {
   EventManagerInterface,
   MaterialMode,
@@ -56,15 +58,13 @@ const {
   splatLoad,
   pointCloudLoad,
   fetchModelDataMock,
-  isGaussianSplatPLYMock,
-  addAlert
+  isGaussianSplatPLYMock
 } = vi.hoisted(() => ({
   meshLoad: vi.fn(),
   splatLoad: vi.fn(),
   pointCloudLoad: vi.fn(),
   fetchModelDataMock: vi.fn<() => Promise<ArrayBuffer>>(),
-  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>(),
-  addAlert: vi.fn()
+  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
 }))
 
 vi.mock('./MeshModelAdapter', () => ({
@@ -115,9 +115,10 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert })
-}))
+let addAlert: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  addAlert = useToastStore().addAlert
+})
 
 type LoaderManagerInternals = {
   pickAdapter(

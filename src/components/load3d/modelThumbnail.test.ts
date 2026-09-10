@@ -2,20 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { generateModelThumbnail } from './modelThumbnail'
 
-const createLoad3d = vi.hoisted(() => vi.fn())
-vi.mock('@/extensions/core/load3d/createLoad3d', () => ({ createLoad3d }))
-
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const persistThumbnail = vi.hoisted(() =>
   vi.fn(async (_assetName: string, _blob: Blob) => {})
 )
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported,
   persistThumbnail
 }))
 
+const createLoad3d = vi.hoisted(() => vi.fn())
+vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
+  createLoad3d
+}))
+
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 function mockInstance(overrides: Record<string, unknown> = {}) {
   return {

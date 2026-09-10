@@ -120,6 +120,7 @@ export type RemoteConfig = {
     used: number
     remaining: number
   }
+  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
