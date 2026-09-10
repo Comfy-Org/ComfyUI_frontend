@@ -75,6 +75,19 @@
     },
     "notHelpful": "Non utile",
     "openWorkflowTab": "Apri {name}",
+    "paywall": {
+      "addCredits": "Aggiungi crediti",
+      "body": {
+        "local": "Hai esaurito il saldo dei crediti. Aggiungi crediti per mantenere l'agente in esecuzione.",
+        "member": "Questo spazio di lavoro ha utilizzato tutti i suoi crediti. Chiedi al proprietario dello spazio di lavoro di aggiungerne altri.",
+        "salesManaged": "Questo spazio di lavoro viene fatturato tramite il team del tuo account Comfy. Contattali per aggiungere crediti.",
+        "subscribed": "Questo spazio di lavoro ha esaurito i crediti mensili e il saldo delle ricariche. Aggiungi crediti per mantenere l'agente in esecuzione.",
+        "subscriptionRequired": "Hai esaurito i crediti disponibili."
+      },
+      "subscribe": "Abbonati",
+      "title": "Crediti esauriti",
+      "upgradePlan": "Passa a un piano superiore"
+    },
     "placeholder": "Descrivi idee, usa {'@'} per fare riferimento,\nmenciona nodi dal grafo o trascina risorse",
     "ranToolCalls": "Eseguita {count} chiamata a uno strumento | Eseguite {count} chiamate a strumenti",
     "ranToolCallsTimed": "Eseguita {count} chiamata a uno strumento per {seconds} secondi | Eseguite {count} chiamate a strumenti per {seconds} secondi",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "Modifica widget del sottografo",
     "Exit Subgraph": "Esci dal sottografo",
     "Experimental: Browse Model Assets": "Sperimentale: Sfoglia asset dei modelli",
-    "Experimental: Enable AssetAPI": "Sperimentale: Abilita AssetAPI",
     "Experimental: Enable Nodes 2_0": "Sperimentale: Abilita Nodes 2.0",
     "Export": "Esporta",
     "Export (API)": "Esporta (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "Crediti aggiuntivi",
     "additionalCreditsInUse": "In uso",
     "additionalCreditsInfo": "Informazioni sui crediti aggiuntivi",
-    "additionalCreditsTooltip": "Crediti aggiunti al tuo piano. Utilizzati dopo l'esaurimento dei crediti mensili. Ognuno scade un anno dopo l'acquisto.",
+    "additionalCreditsTooltip": "Crediti aggiunti oltre il tuo piano. Vengono utilizzati dopo l'esaurimento dei crediti del piano. Ciascuno scade un anno dopo l'acquisto.",
     "benefits": {
       "benefit1": "Crediti mensili per Partner Nodes — ricarica quando necessario",
       "benefit1FreeTier": "Crediti mensili, ricarica in qualsiasi momento",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "{amount} fatturato ogni mese. Puoi annullare in qualsiasi momento.",
       "changePaymentMethod": "Modifica",
       "commitment": "impegno",
+      "completePayment": "Completa il pagamento",
       "completeVerification": "Completa la verifica",
       "confirm": "Conferma",
       "confirmChange": "Conferma modifica",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "Nascondi funzionalità",
       "newMonthlySubscription": "Nuovo abbonamento mensile",
       "nextPaymentDue": "Prossimo pagamento dovuto {date}. Puoi annullare in qualsiasi momento.",
+      "parkedCheckoutDetail": "La procedura di pagamento precedente è ancora in attesa di un metodo di pagamento. Completa il pagamento per attivare questo piano.",
       "payAndSubscribe": "Paga e abbonati",
       "paymentMethod": "Metodo di pagamento",
       "paymentPopupBlocked": "Impossibile aprire la pagina di pagamento — consenti i popup e riprova.",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "Gestione progetti e asset",
       "perkRolePermissions": "Permessi basati sui ruoli",
       "perkSharedPool": "Pool di crediti condiviso per tutti i membri",
-      "tagline": "Scegli il tuo abbonamento mensile di crediti. Ottieni uno sconto maggiore con un abbonamento di crediti più grande.",
+      "tagline": "Scegli il tuo abbonamento di crediti. Ottieni uno sconto maggiore con un abbonamento di crediti più grande.",
       "unavailable": "Questo piano team non è attualmente disponibile."
     },
     "teamPlanIncludes": "Il tuo piano include tutto in {plan}, più:",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "USD / mese / membro",
     "usdPerYear": "USD / anno",
     "usedAfterMonthly": "Utilizzati dopo l'esaurimento dei crediti mensili",
+    "usedAfterYearly": "Utilizzati dopo l'esaurimento dei crediti annuali",
     "videoEstimate": "Genera ~{count} video da 5s*",
     "videoEstimateExplanation": "Queste stime si basano sul template Wan 2.2 Image-to-Video con impostazioni predefinite (5 sec, 16fps, 640x640, 4-step sampling).",
     "videoEstimateHelp": "Maggiori dettagli su questo template",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "Cosa è incluso:",
     "workspaceNotSubscribed": "Questo workspace non ha un abbonamento attivo",
     "yearly": "Annuale",
+    "yearlyCredits": "crediti all'anno",
     "yearlyCreditsLabel": "Crediti annuali totali",
+    "yearlyCreditsPerMemberLabel": "Crediti annuali / membro",
+    "yearlyCreditsUsedUpTitle": "Crediti annuali esauriti. Nuovamente disponibili il {date}",
+    "yearlyCreditsUsedUpTitleNoDate": "Crediti annuali esauriti",
+    "yearlyUsageProgress": "{used} di {total} crediti annuali utilizzati",
     "yourPlanIncludes": "Il tuo piano include:"
   },
   "tabMenu": {

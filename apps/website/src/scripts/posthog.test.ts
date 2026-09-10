@@ -1,16 +1,24 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as PostHogModule from 'posthog-js'
+
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
   mockCapture: vi.fn()
 }))
 
-vi.mock('posthog-js', () => ({
-  default: {
-    init: hoisted.mockInit,
-    capture: hoisted.mockCapture
-  }
+type PostHogMock = Pick<typeof PostHogModule.default, 'init' | 'capture'>
+
+const postHogMock = {
+  init: hoisted.mockInit,
+  capture: hoisted.mockCapture
+} satisfies PostHogMock
+
+// The real default export carries 130+ members, so only the boundary handoff
+// is asserted; the shape itself is checked against PostHogMock above.
+vi.mock(import('posthog-js'), () => ({
+  default: postHogMock as unknown as typeof PostHogModule.default
 }))
 
 describe('initPostHog', () => {
