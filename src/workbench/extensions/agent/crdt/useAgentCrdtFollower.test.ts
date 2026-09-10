@@ -533,6 +533,20 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('treats a blank server message as no explanation at all', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      workflowId: 'wf-1',
+      code: 'schema_version_mismatch',
+      message: '   '
+    })
+
+    expect(status().schemaError).toBe('Document schema version mismatch')
+    unmount()
+  })
+
   it('stops sending human ops into a document it refuses to read', () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<

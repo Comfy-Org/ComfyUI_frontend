@@ -69,12 +69,16 @@ type SchemaErrorState =
   | { kind: 'fallback' }
   | { kind: 'message'; message: string }
 
+// A blank server message is absent, not an explanation: `parseBoundedString`
+// accepts `''`, and forwarding it verbatim renders an empty toast body while
+// any truthiness-based consumer of the same value reads "no error at all".
 function readSchemaError(detail: unknown): SchemaErrorState {
   if (
     detail !== null &&
     typeof detail === 'object' &&
     'message' in detail &&
-    typeof detail.message === 'string'
+    typeof detail.message === 'string' &&
+    detail.message.trim() !== ''
   )
     return { kind: 'message', message: detail.message }
   return { kind: 'fallback' }
@@ -229,7 +233,9 @@ export function useAgentCrdtFollower(
   const schemaErrorMessage = computed(() => {
     const error = schemaError.value
     if (error === null) return null
-    return error.kind === 'message' ? error.message : schemaErrorFallback.value
+    if (error.kind === 'message') return error.message
+    const fallback = schemaErrorFallback.value.trim()
+    return fallback === '' ? null : fallback
   })
   const subscribedWorkflowId = ref<string | null>(null)
   // Set to the workflow id a `schema_version_mismatch` refusal was reported
