@@ -451,7 +451,7 @@ describe('MissingModelRow', () => {
     const store = useMissingModelStore()
     expect(mockFetchModelMetadata).not.toHaveBeenCalled()
 
-    await userEvent.click(screen.getByTestId('missing-model-download'))
+    await userEvent.click(screen.getByRole('button', { name: /download/i }))
 
     await waitFor(() => {
       expect(store.gatedRepoUrls[model.representative.url!]).toBe(

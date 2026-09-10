@@ -107,25 +107,26 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       await expect(copyUrlButton.first()).toBeVisible()
     })
 
-    test('Should probe and show Download for the devtools model fixture', async ({
+    test('Should probe the devtools model fixture after Download', async ({
       comfyPage
     }) => {
-      await Promise.all([
-        comfyPage.page.waitForResponse(
-          (response) =>
-            response.request().method() === 'HEAD' &&
-            response.url() ===
-              'http://localhost:8188/api/devtools/fake_model.safetensors' &&
-            response.ok()
-        ),
-        loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
-      ])
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
       const downloadButton = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelDownload
       )
       await expect(downloadButton.first()).toBeVisible()
       await expect(downloadButton.first()).toHaveText('Download')
+
+      await Promise.all([
+        comfyPage.page.waitForRequest(
+          (request) =>
+            request.method() === 'HEAD' &&
+            request.url() ===
+              'http://localhost:8188/api/devtools/fake_model.safetensors'
+        ),
+        downloadButton.first().click()
+      ])
     })
 
     test('Should render Download all and Refresh actions for one downloadable model', async ({
@@ -200,6 +201,10 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       })
 
       test('Should classify a 403 model as gated', async ({ comfyPage }) => {
+        await comfyPage.page
+          .getByTestId(TestIds.dialogs.missingModelDownload)
+          .click()
+
         await expect(
           comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
         ).toBeVisible()
@@ -211,10 +216,6 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       test('Should keep Download available for a gated model', async ({
         comfyPage
       }) => {
-        await expect(
-          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
-        ).toBeVisible()
-
         const downloadButton = comfyPage.page.getByTestId(
           TestIds.dialogs.missingModelDownload
         )
@@ -222,15 +223,28 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         await expect(downloadButton).toBeVisible()
         await expect(downloadButton).toBeEnabled()
         await expect(downloadButton).toHaveText('Download')
+
+        await downloadButton.click()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelGatedAccess)
+        ).toBeVisible()
+        await expect(downloadButton).toBeEnabled()
       })
 
       test('Should open the gated repository with the browser fallback', async ({
         comfyPage
       }) => {
-        const pagePromise = comfyPage.page.context().waitForEvent('page')
         await comfyPage.page
-          .getByTestId(TestIds.dialogs.missingModelGatedAccess)
+          .getByTestId(TestIds.dialogs.missingModelDownload)
           .click()
+
+        const gatedAccess = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelGatedAccess
+        )
+        await expect(gatedAccess).toBeVisible()
+
+        const pagePromise = comfyPage.page.context().waitForEvent('page')
+        await gatedAccess.click()
         const accessPage = await pagePromise
 
         await expect(accessPage).toHaveURL(GATED_MODEL_REPO_URL)
