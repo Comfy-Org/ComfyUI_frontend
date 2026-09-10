@@ -76,6 +76,19 @@ describe('useAgentChatHistoryStore', () => {
     })
   })
 
+  it('preserves each session status through replaceAll', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      session('live', 2),
+      { ...session('old', 1), status: 'archived' }
+    ])
+
+    expect(store.sessions).toMatchObject([
+      { id: 'live', status: 'active' },
+      { id: 'old', status: 'archived' }
+    ])
+  })
+
   it('ignores a whitespace-only rename', () => {
     const store = useAgentChatHistoryStore()
     store.rename('a', '   ')
