@@ -226,7 +226,9 @@ function toSelectedNode(node: LGraphNode): SelectedNode {
     id: String(node.id),
     locatorId: workflowStore.nodeToNodeLocatorId(node),
     title: node.title || node.type,
-    workflowId: activeWorkflow ? cloudIdFor(activeWorkflow) : undefined
+    get workflowId() {
+      return activeWorkflow ? cloudIdFor(activeWorkflow) : undefined
+    }
   }
 }
 
