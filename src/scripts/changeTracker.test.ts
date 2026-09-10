@@ -1166,6 +1166,35 @@ describe('ChangeTracker', () => {
       expect(tracker.activeState).toEqual(changed)
       expectAutoQueueGraphChangedNotDispatched()
     })
+
+    it('does not force graph undo when a contenteditable consumes undo', async () => {
+      const tracker = createTracker(createState(1))
+      const undo = vi.spyOn(tracker, 'undo')
+      const editor = document.createElement('div')
+      editor.contentEditable = 'true'
+      Object.defineProperty(editor, 'isContentEditable', { value: true })
+      editor.addEventListener('keydown', (event) => event.preventDefault())
+      document.body.appendChild(editor)
+
+      try {
+        editor.focus()
+        ChangeTracker.init()
+
+        const event = new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+        editor.dispatchEvent(event)
+        await vi.runAllTimersAsync()
+
+        expect(event.defaultPrevented).toBe(true)
+        expect(undo).not.toHaveBeenCalled()
+      } finally {
+        document.body.removeChild(editor)
+      }
+    })
   })
 
   describe('deactivate', () => {
