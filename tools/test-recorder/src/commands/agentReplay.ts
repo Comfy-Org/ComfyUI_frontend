@@ -126,7 +126,8 @@ export interface AgentReplayCliDeps {
 }
 
 const VALUE_FLAGS = ['case', 'url'] as const
-const KNOWN_FLAGS = new Set<string>([...VALUE_FLAGS, 'headed', 'video', 'help'])
+const PRESENCE_FLAGS = ['headed', 'video', 'help'] as const
+const KNOWN_FLAGS = new Set<string>([...VALUE_FLAGS, ...PRESENCE_FLAGS])
 
 export async function agentReplayCli(
   argv: string[],
@@ -143,6 +144,11 @@ export async function agentReplayCli(
     process.stderr.write(
       `unknown argument ${unknown.join(' ')}\n${AGENT_REPLAY_USAGE}`
     )
+    return 1
+  }
+  const valued = PRESENCE_FLAGS.find((flag) => flags[flag])
+  if (valued !== undefined) {
+    process.stderr.write(`--${valued} takes no value\n${AGENT_REPLAY_USAGE}`)
     return 1
   }
   if (flags.help !== undefined) return runAgentReplay({ help: true }, deps.run)

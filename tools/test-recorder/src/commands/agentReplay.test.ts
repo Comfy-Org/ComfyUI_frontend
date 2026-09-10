@@ -159,6 +159,26 @@ describe('agentReplayCli', () => {
     }
   )
 
+  it.for(['--video=false', '--headed=false', '--help=1'])(
+    'refuses a value on %s before spawning',
+    async (flag) => {
+      const run = vi.fn(() => ({ status: 0 }))
+      const err = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      await expect(
+        agentReplayCli(['--case', 'agent-rec-a', flag], {
+          run,
+          cases: () => ['agent-rec-a']
+        })
+      ).resolves.toBe(1)
+      expect(run).not.toHaveBeenCalled()
+      expect(err).toHaveBeenCalledWith(
+        expect.stringContaining(`${flag.split('=')[0]} takes no value`)
+      )
+    }
+  )
+
   it.for([['agent-rec'], ['agent-rec-c']])(
     'refuses %s, which names no recording, before spawning',
     async ([caseId]) => {
