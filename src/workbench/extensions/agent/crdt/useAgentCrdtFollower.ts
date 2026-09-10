@@ -277,7 +277,6 @@ export function useAgentCrdtFollower(
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
-  let pendingReplacementWorkflowId: string | null = null
   const currentDocNodeIds = (): Set<string> => {
     try {
       const doc = bridge.follower.doc as unknown as {
@@ -412,21 +411,11 @@ export function useAgentCrdtFollower(
     refreshPersistedDocId()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    if (pendingReplacementWorkflowId === update.workflowId) {
-      adapter.clearForReset(update.workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${update.workflowId}`
-      })
-    }
     const applied = adapter.applyFrame(update)
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
-    if (applied) {
-      pendingReplacementWorkflowId = null
-      reconcileLiveGraph(update.workflowId)
-    }
+    if (applied) reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -506,7 +495,6 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      pendingReplacementWorkflowId = workflowId
       adapter.bind(workflowId, bridge.follower)
     }
   }

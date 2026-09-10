@@ -147,7 +147,9 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       expect(target.serialize().links).toEqual(authoritative.links)
       if (content === 'empty') return
       const live = target._nodes[0]
+      expect(live).toBe(retained)
       expect(live.title).toBe(authoritative.nodes[0].title)
+      expect(live.widgets![0].value).toBe('local value')
 
       const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
       if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
