@@ -9,7 +9,7 @@ interface ToolRow {
   durationMs?: number
 }
 
-export interface ThinkingRow {
+interface ThinkingRow {
   kind: 'thinking'
   text: string
   state: PartState

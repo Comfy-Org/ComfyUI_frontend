@@ -143,6 +143,7 @@ describe('AgentMessage thinking narration', () => {
   })
 
   it('streams every step flat, then folds the finished turn into one summary', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1000)
     let message = createAssistantMessage('msg-0' as TurnId)
     const transport = createAgentEventTransport(message, (next) => {
       message = next
@@ -163,6 +164,7 @@ describe('AgentMessage thinking narration', () => {
 
     expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
 
+    clock.mockReturnValue(2400)
     transport.ingest({
       type: 'agent_tool_call',
       data: {
@@ -180,7 +182,7 @@ describe('AgentMessage thinking narration', () => {
       screen
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
-    ).toEqual(['Thinking - Inspecting the graph', 'Set widget0.9s'])
+    ).toEqual(['Inspecting the graph1.4s', 'Set widget0.9s'])
     expect(
       screen.queryByRole('button', { name: /worked/i })
     ).not.toBeInTheDocument()
@@ -278,11 +280,11 @@ describe('AgentMessage thinking narration', () => {
       screen
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
-    ).toEqual(['Set widget', 'Thinking - Planning the next step'])
+    ).toEqual(['Set widget', 'Planning the next step'])
     expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
-    expect(screen.getByText('Thinking - Planning the next step')).toHaveClass(
-      'agent-shimmer-text'
-    )
+    expect(
+      screen.queryByRole('button', { name: /^worked/i })
+    ).not.toBeInTheDocument()
   })
 
   it('gathers text-separated tool runs into the one summary', async () => {
@@ -363,10 +365,10 @@ describe('AgentMessage thinking narration', () => {
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
     ).toEqual([
-      'Thought for 1.3sInspecting the graph',
+      'Inspecting the graph1.3s',
       'List slots0.5s',
       'Set widget0.8s',
-      'Thought for 0.7sChecking the result'
+      'Checking the result0.7s'
     ])
   })
 })

@@ -46,7 +46,7 @@ const label = computed(() => {
     <CollapsibleContent
       class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
     >
-      <ActivityTrace :parts finished />
+      <ActivityTrace :parts />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>

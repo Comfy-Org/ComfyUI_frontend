@@ -25,7 +25,7 @@ describe('ActivityTrace', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
+    expect(screen.getByText('Thinking...')).toBeInTheDocument()
     expect(screen.getByRole('listitem').textContent.trim()).toBe('Thinking...')
   })
 
@@ -38,7 +38,7 @@ describe('ActivityTrace', () => {
     })
 
     expect(screen.getByRole('listitem').textContent).toContain(
-      "Thinking - I'll build a graph"
+      "I'll build a graph"
     )
   })
 
@@ -60,11 +60,43 @@ describe('ActivityTrace', () => {
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
     ).toEqual([
-      'Thinking - Inspecting the graph',
+      'Inspecting the graph',
       'List slots',
-      'Thinking - Applying the edit',
+      'Applying the edit',
       'Set widget'
     ])
+  })
+
+  it('shows settled thinking time beside narration while the next step runs', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: {
+        parts: [
+          { type: 'thinking', text: 'Inspecting the graph', state: 'streaming' }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      /^Inspecting the graph$/
+    )
+
+    await rerender({
+      parts: [
+        {
+          type: 'thinking',
+          text: 'Inspecting the graph',
+          state: 'done',
+          durationMs: 1400
+        },
+        tool('c1', 'list_slots', 'streaming')
+      ]
+    })
+
+    const [thinking, nextStep] = screen.getAllByRole('listitem')
+    expect(thinking).toHaveTextContent(/^Inspecting the graph\s*1\.4s$/)
+    expect(within(thinking).getByText('1.4s')).toBeInTheDocument()
+    expect(nextStep).toHaveTextContent('List slots')
   })
 
   it('folds a same-name re-run into one counted step', () => {
@@ -155,8 +187,8 @@ describe('WorkSummary', () => {
     const rows = within(screen.getByRole('list'))
     expect(rows.getByText('Add node')).toBeInTheDocument()
 
-    // reasoning reads in full, with its duration above it
-    expect(screen.getByText('Thought for 0.1s')).toBeInTheDocument()
+    expect(screen.getByText('0.1s')).toBeInTheDocument()
+    expect(screen.queryByText(/^Thought/)).not.toBeInTheDocument()
     expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
   })
 

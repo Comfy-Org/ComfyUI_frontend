@@ -4,10 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  ActivityRow,
-  ThinkingRow
-} from '../../../services/agent/agentActivityRows'
+import type { ActivityRow } from '../../../services/agent/agentActivityRows'
 import { foldActivity } from '../../../services/agent/agentActivityRows'
 import type {
   ActivityPart,
@@ -16,11 +13,8 @@ import type {
 import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
 import { formatDurationCompact } from '../../../utils/formatDuration'
 
-// `finished` marks the turn as over, not the step: reasoning is worth reading as
-// it happens and worth a receipt afterwards.
-const { parts, finished = false } = defineProps<{
+const { parts } = defineProps<{
   parts: readonly ActivityPart[]
-  finished?: boolean
 }>()
 
 const { t } = useI18n()
@@ -40,14 +34,6 @@ function glyphOf(row: ActivityRow): string {
     : toolGlyph(row.name, row.state, row.ok)
 }
 
-function thoughtLabel(row: ThinkingRow): string {
-  return row.durationMs === undefined
-    ? t('agent.thought')
-    : t('agent.thoughtFor', {
-        duration: formatDurationCompact(row.durationMs)
-      })
-}
-
 // Every part object is rebuilt on each token, so a settled row is only
 // recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
@@ -62,7 +48,7 @@ function rowSignature(row: ActivityRow): string {
     <div
       v-for="(row, index) in rows"
       :key="index"
-      v-memo="[rowSignature(row), finished, index === rows.length - 1]"
+      v-memo="[rowSignature(row), index === rows.length - 1]"
       role="listitem"
       class="flex gap-2 px-2"
     >
@@ -78,28 +64,13 @@ function rowSignature(row: ActivityRow): string {
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">
-        <template v-if="row.kind === 'thinking'">
-          <div v-if="finished && row.text" class="min-w-0 flex-1">
-            <span :class="labelClass(row.state)">{{ thoughtLabel(row) }}</span>
-            <p class="text-agent-fg-subtle my-0 pt-1 text-sm/5">
-              {{ row.text }}
-            </p>
-          </div>
-          <!-- a slot, not a t() parameter: `escapeParameter` would turn an
-               apostrophe in the reasoning back into `&apos;` -->
-          <i18n-t
-            v-else-if="row.text"
-            keypath="agent.thinkingAbout"
-            tag="span"
-            scope="global"
-            :class="labelClass(row.state)"
-          >
-            <template #action>{{ row.text }}</template>
-          </i18n-t>
-          <span v-else :class="labelClass(row.state)">{{
-            finished ? thoughtLabel(row) : $t('agent.thinking')
-          }}</span>
-        </template>
+        <span
+          v-if="row.kind === 'thinking'"
+          :class="
+            cn(labelClass(row.state), 'wrap-break-word whitespace-pre-wrap')
+          "
+          >{{ row.text || t('agent.thinking') }}</span
+        >
         <template v-else>
           <span :class="labelClass(row.state)">{{
             toolLabel(row.name, row.state, t)
@@ -109,12 +80,12 @@ function rowSignature(row: ActivityRow): string {
             class="text-agent-fg-subtle mt-0.5 shrink-0 text-xs"
             >×{{ row.count }}</span
           >
-          <span
-            v-if="row.durationMs !== undefined"
-            class="text-agent-fg-subtle mt-0.5 ml-auto shrink-0 font-mono text-xs/4"
-            >{{ formatDurationCompact(row.durationMs) }}</span
-          >
         </template>
+        <span
+          v-if="row.durationMs !== undefined"
+          class="text-agent-fg-subtle mt-0.5 ml-auto shrink-0 font-mono text-xs/4"
+          >{{ formatDurationCompact(row.durationMs) }}</span
+        >
       </div>
     </div>
   </div>

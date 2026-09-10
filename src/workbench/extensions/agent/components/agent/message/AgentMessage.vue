@@ -195,7 +195,7 @@ const status = computed(() => {
 
     <div
       v-if="status"
-      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal"
+      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal"
     >
       <span :class="cn('size-4 shrink-0', status.icon)" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>
