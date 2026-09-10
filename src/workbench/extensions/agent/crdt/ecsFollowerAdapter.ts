@@ -207,6 +207,15 @@ export class EcsFollowerAdapter {
     return this.drainSession(session)
   }
 
+  /**
+   * Frames accepted but not yet settled: queued behind an applying frame, or
+   * held for retry. A caller partitioning frames by outcome owes this many
+   * frames a verdict it cannot give yet.
+   */
+  pendingFrameCount(workflowId: string): number {
+    return this.targets.get(workflowId)?.frameQueue.length ?? 0
+  }
+
   private drainSession(session: TargetSession): FrameProjectionResult {
     session.applying = true
     let projectedSequence = session.frameQueue[0]?.update.seq ?? 0

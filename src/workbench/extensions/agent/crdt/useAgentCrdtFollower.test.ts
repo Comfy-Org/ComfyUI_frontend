@@ -51,6 +51,7 @@ const adapterState = vi.hoisted(() => ({
   unbind: vi.fn(),
   applyFrame: vi.fn(),
   retryPending: vi.fn(),
+  pendingFrameCount: vi.fn(() => 0),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
   destroy: vi.fn()
@@ -112,6 +113,7 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
     retryPending = adapterState.retryPending
+    pendingFrameCount = adapterState.pendingFrameCount
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -227,6 +229,7 @@ describe('useAgentCrdtFollower', () => {
       sequence: update.seq
     }))
     adapterState.retryPending.mockReturnValue({ status: 'idle' })
+    adapterState.pendingFrameCount.mockReset().mockReturnValue(0)
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
@@ -564,6 +567,7 @@ describe('useAgentCrdtFollower', () => {
         received: 1,
         applied: 1,
         skipped: 0,
+        pending: 0,
         errored: 0,
         gap: 0,
         reset: 0,
@@ -605,6 +609,54 @@ describe('useAgentCrdtFollower', () => {
       expect(status().outcomes.received).toBe(1)
       expect(status().outcomes.skipped).toBe(1)
       expect(status().outcomes.applied).toBe(0)
+      unmount()
+    })
+
+    it('keeps received === applied + skipped + pending while a retry holds frames', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      const partition = () => {
+        const { received, applied, skipped, pending } = status().outcomes
+        return { received, applied, skipped, pending }
+      }
+
+      adapterState.applyFrame.mockReturnValueOnce({
+        status: 'retrying',
+        sequence: 1,
+        attempt: 1
+      })
+      adapterState.pendingFrameCount.mockReturnValue(1)
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+      expect(partition()).toEqual({
+        received: 1,
+        applied: 0,
+        skipped: 0,
+        pending: 1
+      })
+
+      adapterState.applyFrame.mockReturnValueOnce({ status: 'queued' })
+      adapterState.pendingFrameCount.mockReturnValue(2)
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+      expect(partition()).toEqual({
+        received: 2,
+        applied: 0,
+        skipped: 0,
+        pending: 2
+      })
+
+      // One drain settles the retried frame, the frame queued behind it, and
+      // the frame that triggered the drain.
+      adapterState.applyFrame.mockReturnValueOnce({
+        status: 'projected',
+        sequence: 3
+      })
+      adapterState.pendingFrameCount.mockReturnValue(0)
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3 })
+      expect(partition()).toEqual({
+        received: 3,
+        applied: 3,
+        skipped: 0,
+        pending: 0
+      })
       unmount()
     })
 
@@ -694,6 +746,7 @@ describe('useAgentCrdtFollower', () => {
         received: 3,
         applied: 2,
         skipped: 1,
+        pending: 0,
         errored: 1,
         gap: 1,
         reset: 0,

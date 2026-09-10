@@ -133,7 +133,7 @@ export const STALE_AFTER_MS = 30_000
  * observable. Each counter increments exactly once, at the boundary where
  * that outcome is decided — never inferred after the fact. `received` counts
  * only frames the bridge re-dispatched as `doc_update`, so
- * `received === applied + skipped` always holds; `errored`, `gap` and
+ * `received === applied + skipped + pending` always holds; `errored`, `gap` and
  * `dropped` are disjoint from it because the bridge returns before
  * re-dispatching in each of those cases (schema gate, FEB-2 seq jump,
  * stale/duplicate discard). Frames the bridge drops for a workflowId other
@@ -151,6 +151,14 @@ export interface AgentCrdtOutcomeCounters {
   applied: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
+  /**
+   * Frames the adapter accepted but has not settled: queued behind an applying
+   * frame, or awaiting retry. Unlike the others this is a gauge, not a
+   * monotonic count — each frame leaves it for `applied` or `skipped` once the
+   * adapter decides, which is why the drain is asked for its queue depth
+   * rather than the outcome being inferred per event.
+   */
+  pending: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
   errored: number
   /** A seq jump was detected upstream; the frame was withheld and a resubscribe forced (`doc_gap`). */
@@ -213,6 +221,7 @@ export function useAgentCrdtFollower(
     received: 0,
     applied: 0,
     skipped: 0,
+    pending: 0,
     errored: 0,
     gap: 0,
     reset: 0,
@@ -245,6 +254,28 @@ export function useAgentCrdtFollower(
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
+  /**
+   * Move every frame the adapter has settled since the last boundary out of
+   * `pending` and into `bucket`. One drain can settle more frames than the
+   * event that triggered it — reentrant frames queued behind the applying one,
+   * and frames an authoritative reconcile already covered — so the count comes
+   * from the adapter's remaining queue depth rather than from this event.
+   */
+  const settleFrames = (
+    workflowId: string,
+    bucket: 'applied' | 'skipped'
+  ): void => {
+    const current = outcomes.value
+    const pending = adapter.pendingFrameCount(workflowId)
+    const settled =
+      current.received - current.applied - current.skipped - pending
+    outcomes.value = {
+      ...current,
+      applied: current.applied + (bucket === 'applied' ? settled : 0),
+      skipped: current.skipped + (bucket === 'skipped' ? settled : 0),
+      pending
+    }
+  }
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -383,6 +414,7 @@ export function useAgentCrdtFollower(
         const projection = adapter.retryPending(target)
         switch (projection.status) {
           case 'projected':
+            settleFrames(target, 'applied')
             projectedSequence.value = projection.sequence
             // A stale-probe resubscribe can deliver this acknowledgement and
             // nothing after it, so the nodes the drain just projected reach
@@ -391,6 +423,7 @@ export function useAgentCrdtFollower(
             updatesApplied.value = bridge.follower.updatesApplied
             break
           case 'retrying':
+            settleFrames(target, 'applied')
             lastFrameType.value = 'projection_retry'
             recordDevEvent('projection_error', {
               workflowId: target,
@@ -399,6 +432,7 @@ export function useAgentCrdtFollower(
             })
             break
           case 'failed':
+            settleFrames(target, 'skipped')
             connected.value = false
             lastFrameType.value = 'projection_error'
             clearStaleProbe()
@@ -408,9 +442,11 @@ export function useAgentCrdtFollower(
               reason: projection.reason
             })
             break
+          case 'unbound':
+            settleFrames(target, 'skipped')
+            break
           case 'idle':
           case 'queued':
-          case 'unbound':
             break
         }
       }
@@ -451,12 +487,10 @@ export function useAgentCrdtFollower(
       case 'queued':
       case 'idle':
       case 'unbound':
-        outcomes.value = {
-          ...outcomes.value,
-          skipped: outcomes.value.skipped + 1
-        }
+        settleFrames(update.workflowId, 'skipped')
         return
       case 'retrying':
+        settleFrames(update.workflowId, 'applied')
         lastFrameType.value = 'projection_retry'
         recordDevEvent('projection_error', {
           workflowId: update.workflowId,
@@ -466,10 +500,7 @@ export function useAgentCrdtFollower(
         })
         return
       case 'failed':
-        outcomes.value = {
-          ...outcomes.value,
-          skipped: outcomes.value.skipped + 1
-        }
+        settleFrames(update.workflowId, 'skipped')
         connected.value = false
         lastFrameType.value = 'projection_error'
         clearStaleProbe()
@@ -481,10 +512,7 @@ export function useAgentCrdtFollower(
         })
         return
       case 'projected':
-        outcomes.value = {
-          ...outcomes.value,
-          applied: outcomes.value.applied + 1
-        }
+        settleFrames(update.workflowId, 'applied')
         connected.value = true
         projectedSequence.value = projection.sequence
     }
@@ -540,6 +568,7 @@ export function useAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     adapter.clearForReset(detail.workflowId, context)
+    settleFrames(detail.workflowId, 'skipped')
     // A lineage break empties the stores but leaves every live adapter
     // standing, and those adapters are what a save serialises. Without a
     // reconcile here the pre-reset nodes survive -- and can be written back
@@ -594,8 +623,10 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
         : null
-    if (detail?.workflowId !== undefined)
+    if (detail?.workflowId !== undefined) {
       adapter.discardPending(detail.workflowId)
+      settleFrames(detail.workflowId, 'skipped')
+    }
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
