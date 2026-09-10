@@ -25,6 +25,7 @@
     "dev:cloud:test": "cross-env DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ vite --config vite.config.mts",
     "dev:cloud:staging": "cross-env DEV_SERVER_COMFYUI_URL=https://stagingcloud.comfy.org/ vite --config vite.config.mts",
     "dev:cloud:prod": "cross-env DEV_SERVER_COMFYUI_URL=https://cloud.comfy.org/ vite --config vite.config.mts",
+    "dev:cloud:crdt": "cross-env DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/ VITE_AGENT_CRDT_FOLLOWER=true vite --config vite.config.mts --port 6273 --strictPort",
     "dev:desktop": "pnpm --filter @comfyorg/desktop-ui run dev",
     "dev:electron": "cross-env DISTRIBUTION=desktop vite --config vite.electron.config.mts",
     "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true vite --config vite.config.mts",

@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComposerAttachment } from './useComposer'
 import { useComposer } from './useComposer'
@@ -17,10 +16,6 @@ function setup(streaming = false) {
 }
 
 describe('useComposer', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('submit trims the draft, sends it, and clears draft + attachments', () => {
     const { composer, onSend } = setup()
     const attachment: ComposerAttachment = {

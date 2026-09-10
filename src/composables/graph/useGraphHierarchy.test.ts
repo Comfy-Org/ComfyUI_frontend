@@ -1,8 +1,12 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import * as measure from '@/lib/litegraph/src/measure'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -10,8 +14,6 @@ import {
   createMockLGraphGroup
 } from '@/utils/__tests__/litegraphTestUtils'
 import { useGraphHierarchy } from './useGraphHierarchy'
-
-vi.mock(import('@/renderer/core/canvas/canvasStore'))
 
 function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
   return Object.assign(
@@ -28,7 +30,7 @@ function createMockGroup(overrides: Partial<LGraphGroup> = {}): LGraphGroup {
 }
 
 describe('useGraphHierarchy', () => {
-  let mockCanvasStore: Partial<ReturnType<typeof useCanvasStore>>
+  let mockCanvasStore: ReturnType<typeof useCanvasStore>
   let mockNode: LGraphNode
   let mockGroups: LGraphGroup[]
 
@@ -36,29 +38,10 @@ describe('useGraphHierarchy', () => {
     mockNode = createMockNode()
     mockGroups = []
 
-    mockCanvasStore = fromAny<
-      Partial<ReturnType<typeof useCanvasStore>>,
-      unknown
-    >({
-      canvas: {
-        graph: {
-          groups: mockGroups
-        }
-      },
-      $id: 'canvas',
-      $state: {},
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {}
+    mockCanvasStore = useCanvasStore()
+    mockCanvasStore.canvas = fromPartial<LGraphCanvas>({
+      graph: { groups: mockGroups }
     })
-
-    vi.mocked(useCanvasStore).mockReturnValue(
-      mockCanvasStore as ReturnType<typeof useCanvasStore>
-    )
   })
 
   describe('findParentGroup', () => {

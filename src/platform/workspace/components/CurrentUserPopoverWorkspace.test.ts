@@ -1,4 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -30,27 +31,6 @@ const state = vi.hoisted(() => ({
   showPricingTable: vi.fn(),
   showSettingsDialog: vi.fn()
 }))
-
-const workspaceStoreMock = vi.hoisted(() => ({
-  store: null as null | {
-    initState: string
-    workspaceName: string
-    isInPersonalWorkspace: boolean
-  }
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  async () => {
-    const { reactive, ref } = await import('vue')
-    workspaceStoreMock.store = reactive({
-      initState: ref('ready'),
-      workspaceName: ref('Personal Workspace'),
-      isInPersonalWorkspace: ref(true)
-    })
-    return { useTeamWorkspaceStore: () => workspaceStoreMock.store }
-  }
-)
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -173,19 +153,17 @@ function renderComponent(
   type: 'personal' | 'team' = 'personal',
   accountActionsOnly = false
 ) {
-  if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-  workspaceStoreMock.store.workspaceName = `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
-  workspaceStoreMock.store.isInPersonalWorkspace = type === 'personal'
+  useTeamWorkspaceStore().initState = 'ready'
+  Object.assign(useTeamWorkspaceStore(), {
+    workspaceName: `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
+  })
+  Object.assign(useTeamWorkspaceStore(), {
+    isInPersonalWorkspace: type === 'personal'
+  })
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn
-        }),
-        PrimeVue,
-        i18n
-      ],
+      plugins: [getActivePinia()!, PrimeVue, i18n],
       directives: {
         tooltip: Tooltip
       },
@@ -376,9 +354,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
 
-    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-    workspaceStoreMock.store.workspaceName = 'Team Workspace'
-    workspaceStoreMock.store.isInPersonalWorkspace = false
+    Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Team Workspace' })
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     await rerender({})
 
     expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(

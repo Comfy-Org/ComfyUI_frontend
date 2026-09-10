@@ -1,4 +1,16 @@
 // @vitest-environment jsdom
+import type * as I18nModule from '@/i18n'
+import type { ComfyApp } from '@/scripts/app'
+import { useReleaseStore } from '../common/releaseStore'
+beforeEach(() => {
+  Object.assign(useReleaseStore(), {
+    recentRelease: null as ReleaseNote | null
+  })
+  Object.assign(useReleaseStore(), { shouldShowPopup: false })
+  vi.mocked(useReleaseStore().handleWhatsNewSeen).mockResolvedValue(undefined)
+  Object.assign(useReleaseStore(), { releases: [] as ReleaseNote[] })
+  vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
+})
 // dompurify is inert under happy-dom — see the tripwire note in
 // vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
@@ -11,6 +23,14 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ReleaseNote } from '../common/releaseService'
 import WhatsNewPopup from './WhatsNewPopup.vue'
+
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 // Mock dependencies
 const mockTranslations: Record<string, string> = {
@@ -25,7 +45,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-vi.mock<unknown>(import('@/i18n'), () => ({
+vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   i18n: {
     global: {
       locale: {
@@ -49,18 +70,12 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-// Mock release store
-const mockReleaseStore = {
-  recentRelease: null as ReleaseNote | null,
-  shouldShowPopup: false,
-  handleWhatsNewSeen: vi.fn(),
-  releases: [] as ReleaseNote[],
-  fetchReleases: vi.fn()
-}
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
+})
 
-vi.mock<unknown>(import('../common/releaseStore'), () => ({
-  useReleaseStore: vi.fn(() => mockReleaseStore)
-}))
+// Mock release store
 
 describe('WhatsNewPopup', () => {
   const renderComponent = (props = {}) => {
@@ -78,19 +93,21 @@ describe('WhatsNewPopup', () => {
   }
 
   beforeEach(() => {
-    mockReleaseStore.recentRelease = null
-    mockReleaseStore.shouldShowPopup = false
-    mockReleaseStore.releases = []
-    mockReleaseStore.handleWhatsNewSeen = vi.fn()
-    mockReleaseStore.fetchReleases = vi.fn()
+    Object.assign(useReleaseStore(), { recentRelease: null })
+    Object.assign(useReleaseStore(), { shouldShowPopup: false })
+    useReleaseStore().releases = []
+    useReleaseStore().handleWhatsNewSeen = vi.fn()
+    useReleaseStore().fetchReleases = vi.fn()
   })
 
   it('renders correctly when shouldShow is true', () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release\n\nSome content'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release\n\nSome content'
+      } as ReleaseNote
+    })
 
     const { container } = renderComponent()
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -98,33 +115,37 @@ describe('WhatsNewPopup', () => {
   })
 
   it('does not render when shouldShow is false', () => {
-    mockReleaseStore.shouldShowPopup = false
+    Object.assign(useReleaseStore(), { shouldShowPopup: false })
     const { container } = renderComponent()
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).toBeNull()
   })
 
   it('calls handleWhatsNewSeen when close button is clicked', async () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: /close/i }))
 
-    expect(mockReleaseStore.handleWhatsNewSeen).toHaveBeenCalledWith('1.2.3')
+    expect(useReleaseStore().handleWhatsNewSeen).toHaveBeenCalledWith('1.2.3')
   })
 
   it('generates correct changelog URL', () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     renderComponent()
 
@@ -135,11 +156,13 @@ describe('WhatsNewPopup', () => {
   })
 
   it('handles missing release content gracefully', () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: ''
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: ''
+      } as ReleaseNote
+    })
 
     const { container } = renderComponent()
 
@@ -148,11 +171,13 @@ describe('WhatsNewPopup', () => {
   })
 
   it('emits whats-new-dismissed event when popup is closed', async () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Test Release'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
 
     const onDismissed = vi.fn()
     const user = userEvent.setup()
@@ -164,21 +189,21 @@ describe('WhatsNewPopup', () => {
   })
 
   it('fetches releases on mount when not already loaded', async () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.releases = []
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    useReleaseStore().releases = []
 
     renderComponent()
 
-    expect(mockReleaseStore.fetchReleases).toHaveBeenCalled()
+    expect(useReleaseStore().fetchReleases).toHaveBeenCalled()
   })
 
   it('does not fetch releases when already loaded', async () => {
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.releases = [{ version: '1.0.0' } as ReleaseNote]
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    useReleaseStore().releases = [{ version: '1.0.0' } as ReleaseNote]
 
     renderComponent()
 
-    expect(mockReleaseStore.fetchReleases).not.toHaveBeenCalled()
+    expect(useReleaseStore().fetchReleases).not.toHaveBeenCalled()
   })
 
   it('processes markdown content correctly', async () => {
@@ -190,11 +215,13 @@ describe('WhatsNewPopup', () => {
     )
     mockMarkdownRenderer.mockReturnValue('<h1>Processed Content</h1>')
 
-    mockReleaseStore.shouldShowPopup = true
-    mockReleaseStore.recentRelease = {
-      version: '1.2.3',
-      content: '# Original Title\n\nContent'
-    } as ReleaseNote
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Original Title\n\nContent'
+      } as ReleaseNote
+    })
 
     renderComponent()
 
