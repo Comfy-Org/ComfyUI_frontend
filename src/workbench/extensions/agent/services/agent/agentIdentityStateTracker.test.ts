@@ -18,7 +18,7 @@ const auth = vi.hoisted(() => ({
   user: null as unknown as Ref<null | { id: string }>
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', async () => {
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
   const { ref } = await import('vue')
   auth.user = ref<null | { id: string }>(null)
   return {
