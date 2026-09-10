@@ -243,10 +243,6 @@ function json(value: unknown): string {
   }
 }
 
-export function redactEventPayloads(
-  value: readonly DevEvent[]
-): readonly DevEvent[]
-export function redactEventPayloads(value: unknown): unknown
 export function redactEventPayloads(value: unknown): unknown {
   return redactPayloadTree(value, 0, [])
 }
