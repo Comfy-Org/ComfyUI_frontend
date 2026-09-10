@@ -67,7 +67,7 @@ export const noComfyPageSetupCall = {
 export const preferInitialSettings: Rule.RuleModule = {
   create(context) {
     return {
-      'CallExpression[callee.property.name="beforeEach"] CallExpression[callee.object.property.name="settings"][callee.property.name="setSetting"]'(
+      'CallExpression[callee.property.name="beforeEach"] CallExpression[callee.object.object.name="comfyPage"][callee.object.property.name="settings"][callee.property.name="setSetting"]'(
         node: Rule.Node
       ) {
         context.report({
@@ -76,7 +76,7 @@ export const preferInitialSettings: Rule.RuleModule = {
             'Prefer test.use({ initialSettings }) for startup settings. Keep this setter only if it depends on runtime state or setup ordering; preserve inherited overrides and pre-navigation mocks when moving it.'
         })
       },
-      'CallExpression[callee.property.name="afterEach"] CallExpression[callee.object.property.name="settings"][callee.property.name="setSetting"]'(
+      'CallExpression[callee.property.name="afterEach"] CallExpression[callee.object.object.name="comfyPage"][callee.object.property.name="settings"][callee.property.name="setSetting"]'(
         node: Rule.Node
       ) {
         context.report({

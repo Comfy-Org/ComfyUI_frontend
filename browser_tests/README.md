@@ -671,6 +671,10 @@ under test. A same-test reload retains those changes.
 Preserve readiness checks and install any mocks needed by startup settings before
 the `comfyPage` fixture boots.
 
+Use `test.use({ initialUrl: '/?template=template_id' })` to choose the first
+app URL without calling `setup()` again. The fixture clears browser storage
+before this navigation. Use `initialLocalStorage` to seed any required values.
+
 Manual backend boots must call `comfyPage.setupSettings({ userId, settings })`
 before navigation to apply the same baseline. `ComfyPage.setup()` alone does not
 reset backend settings. Use a multi-user backend; separate test runs must not

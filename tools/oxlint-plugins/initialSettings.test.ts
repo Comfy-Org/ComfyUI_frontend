@@ -55,6 +55,10 @@ const test = base.extend({
 })
 test.beforeEach(async () => {
   await unrelated.setSetting('other', true)
+  await other.settings.setSetting('other', true)
+})
+test.afterEach(async () => {
+  await other.settings.setSetting('other', false)
 })
 `,
         config

@@ -11,11 +11,6 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
     }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
   test('New command creates a new workflow tab', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
     await expect.poll(() => topbar.getTabNames()).toHaveLength(1)

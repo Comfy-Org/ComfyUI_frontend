@@ -799,6 +799,7 @@ for (const vueNodesEnabled of [false, true]) {
         window.app!.api.getNodeDefs()
       )) as unknown as Record<string, RawNodeDef>
       const nodes = normalizeNodeDefs(defs)
+      using consoleErrors = collectConsoleErrors(comfyPage.page)
 
       // Native anchor pair plus one in-pack, link-typed pair per connectivity
       // pack (derived from the same generator the breadth sweep uses).
@@ -905,7 +906,6 @@ for (const vueNodesEnabled of [false, true]) {
       }
 
       test.setTimeout(PLAN_SETUP_MS + dragEdges.length * DRAG_MS_PER_DRAG)
-      const consoleErrors = collectConsoleErrors(comfyPage.page)
 
       for (const edge of dragEdges) {
         await comfyPage.nodeOps.clearGraph()

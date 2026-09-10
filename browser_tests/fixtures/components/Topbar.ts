@@ -138,7 +138,7 @@ export class Topbar {
   }
 
   async closeTopbarMenu() {
-    await this.menuTrigger.click()
+    await this.page.keyboard.press('Escape')
     await this.menuLocator.waitFor({ state: 'hidden' })
   }
 

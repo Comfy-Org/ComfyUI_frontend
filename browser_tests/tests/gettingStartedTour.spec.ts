@@ -87,13 +87,6 @@ async function tourLength(card: Locator): Promise<number> {
   return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
 }
 
-async function clearWorkflowHistory(page: Page) {
-  await page.evaluate(() => {
-    for (const key of Object.keys(localStorage))
-      if (key.startsWith('Comfy.Workflow.')) localStorage.removeItem(key)
-  })
-}
-
 /**
  * The grid backfills whichever curated templates a backend does not serve, so
  * the walk tours a card that is actually on screen rather than a fixed id.
@@ -401,14 +394,7 @@ test.describe(
     })
 
     test.describe('arriving on a template link', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await clearWorkflowHistory(comfyPage.page)
-        // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-        await comfyPage.setup({
-          clearStorage: false,
-          url: `/?template=${LINKED_TEMPLATE_ID}`
-        })
-      })
+      test.use({ initialUrl: `/?template=${LINKED_TEMPLATE_ID}` })
 
       test('tours the template the link loaded', async ({ comfyPage }) => {
         const { page } = comfyPage
@@ -491,14 +477,7 @@ test.describe(
     })
 
     test.describe('arriving on a link that loads nothing', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await clearWorkflowHistory(comfyPage.page)
-        // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-        await comfyPage.setup({
-          clearStorage: false,
-          url: '/?template=no_such_template_exists'
-        })
-      })
+      test.use({ initialUrl: '/?template=no_such_template_exists' })
 
       test('offers no tour', async ({ comfyPage }) => {
         await expect(

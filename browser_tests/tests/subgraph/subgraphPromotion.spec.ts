@@ -331,11 +331,7 @@ test.describe(
 
           const textarea = clipNode.locator('textarea')
           await expect(textarea).toBeVisible()
-          await textarea.dispatchEvent('contextmenu', {
-            bubbles: true,
-            cancelable: true,
-            button: 2
-          })
+          await textarea.click({ button: 'right' })
           await comfyPage.nextFrame()
 
           const promoteEntry = comfyPage.page
