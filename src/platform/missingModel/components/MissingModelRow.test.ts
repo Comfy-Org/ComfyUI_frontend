@@ -449,6 +449,9 @@ describe('MissingModelRow', () => {
 
     renderRow(model, vi.fn(), false)
     const store = useMissingModelStore()
+    expect(mockFetchModelMetadata).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByTestId('missing-model-download'))
 
     await waitFor(() => {
       expect(store.gatedRepoUrls[model.representative.url!]).toBe(
