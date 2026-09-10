@@ -1,11 +1,40 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
+function useNodeHelpContent(
+  ...args: Parameters<typeof useNodeHelpContentComposable>
+) {
+  let composable!: ReturnType<typeof useNodeHelpContentComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      composable = useNodeHelpContentComposable(...args)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return composable
+}
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
+}
+
+function markdownResponse(markdown: string): Response {
+  return new Response(markdown)
 }
 
 function createMockNode(
@@ -27,19 +56,13 @@ function createMockNode(
   } as ComfyNodeDefImpl
 }
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((url) => url)
   }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    locale: ref('en')
-  })
-}))
-
-vi.mock('@/types/nodeSource', () => ({
+vi.mock<unknown>(import('@/types/nodeSource'), () => ({
   NodeSourceType: {
     Core: 'core',
     CustomNodes: 'custom_nodes'
@@ -75,10 +98,7 @@ describe('useNodeHelpContent', () => {
 
   it('should generate correct baseUrl for core nodes', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '# Test'
-    })
+    mockFetch.mockResolvedValueOnce(markdownResponse('# Test'))
 
     const { baseUrl } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -88,10 +108,7 @@ describe('useNodeHelpContent', () => {
 
   it('should generate correct baseUrl for custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '# Test'
-    })
+    mockFetch.mockResolvedValueOnce(markdownResponse('# Test'))
 
     const { baseUrl } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -101,10 +118,9 @@ describe('useNodeHelpContent', () => {
 
   it('should render markdown content correctly', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '# Test Help\nThis is test help content'
-    })
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse('# Test Help\nThis is test help content')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -114,10 +130,9 @@ describe('useNodeHelpContent', () => {
 
   it('should handle fetch errors and fall back to description', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      statusText: 'Not Found'
-    })
+    mockFetch.mockResolvedValueOnce(
+      new Response(null, { status: 404, statusText: 'Not Found' })
+    )
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -128,10 +143,7 @@ describe('useNodeHelpContent', () => {
 
   it('should include alt attribute for images', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '![image](test.jpg)'
-    })
+    mockFetch.mockResolvedValueOnce(markdownResponse('![image](test.jpg)'))
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -141,10 +153,9 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative video src in custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '<video src="video.mp4"></video>'
-    })
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse('<video src="video.mp4"></video>')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -156,10 +167,9 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative video src for core nodes with node-specific base URL', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '<video src="video.mp4"></video>'
-    })
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse('<video src="video.mp4"></video>')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -182,14 +192,10 @@ describe('useNodeHelpContent', () => {
   it('should try fallback URL for custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
     mockFetch
-      .mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Not Found'
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => '# Fallback content'
-      })
+      .mockResolvedValueOnce(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      )
+      .mockResolvedValueOnce(markdownResponse('# Fallback content'))
 
     useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -205,11 +211,11 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative source src in custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () =>
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse(
         '<video><source src="video.mp4" type="video/mp4" /></video>'
-    })
+      )
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -221,11 +227,11 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative source src for core nodes with node-specific base URL', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () =>
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse(
         '<video><source src="video.webm" type="video/webm" /></video>'
-    })
+      )
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -237,10 +243,9 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative img src in raw HTML for custom nodes', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '# Test\n<img src="image.png" alt="Test image">'
-    })
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse('# Test\n<img src="image.png" alt="Test image">')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -253,10 +258,9 @@ describe('useNodeHelpContent', () => {
 
   it('should prefix relative img src in raw HTML for core nodes', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '# Test\n<img src="image.png" alt="Test image">'
-    })
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse('# Test\n<img src="image.png" alt="Test image">')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -269,10 +273,9 @@ describe('useNodeHelpContent', () => {
 
   it('should not prefix absolute img src in raw HTML', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => '<img src="/absolute/image.png" alt="Absolute">'
-    })
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse('<img src="/absolute/image.png" alt="Absolute">')
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -283,11 +286,11 @@ describe('useNodeHelpContent', () => {
 
   it('should not prefix external img src in raw HTML', async () => {
     const nodeRef = ref(mockCustomNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () =>
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse(
         '<img src="https://example.com/image.png" alt="External">'
-    })
+      )
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -300,9 +303,8 @@ describe('useNodeHelpContent', () => {
 
   it('should handle various quote styles in media src attributes', async () => {
     const nodeRef = ref(mockCoreNode)
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => `# Media Test
+    mockFetch.mockResolvedValueOnce(
+      markdownResponse(`# Media Test
 
 Testing quote styles in properly formed HTML:
 
@@ -316,8 +318,8 @@ Testing quote styles in properly formed HTML:
   <source src='video3.webm' type='video/webm'>
 </video>
 
-The MEDIA_SRC_REGEX handles both single and double quotes in img, video and source tags.`
-    })
+The MEDIA_SRC_REGEX handles both single and double quotes in img, video and source tags.`)
+    )
 
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
@@ -353,10 +355,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
 
     mockFetch
       .mockImplementationOnce(() => firstRequest)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => '# Second node content'
-      })
+      .mockResolvedValueOnce(markdownResponse('# Second node content'))
 
     const { helpContent } = useNodeHelpContent(nodeRef)
     await nextTick()
@@ -367,10 +366,7 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     await flushPromises()
 
     // Now resolve the first (stale) request
-    resolveFirst!({
-      ok: true,
-      text: async () => '# First node content'
-    })
+    resolveFirst!(markdownResponse('# First node content'))
     await flushPromises()
 
     // Should have second node's content, not first

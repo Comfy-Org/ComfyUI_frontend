@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 
 const mocks = vi.hoisted(() => ({
   billing: null as {
-    isActiveSubscription: { value: boolean }
+    canAccessSubscriptionFeatures: { value: boolean }
     isTeamPlan: { value: boolean }
     billingStatus: { value: string | null }
     subscription: { value: { hasFunds: boolean } | null }
@@ -14,9 +14,9 @@ const mocks = vi.hoisted(() => ({
   v1PaymentRecovery: null as { value: boolean } | null
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/composables/useFeatureFlags', async () => {
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
   const { ref } = await import('vue')
   const billingControlEnabled = ref(true)
   const v1PaymentRecovery = ref(true)
@@ -36,39 +36,44 @@ vi.mock('@/composables/useFeatureFlags', async () => {
   }
 })
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await import('vue')
-  const billing = {
-    isActiveSubscription: ref(true),
-    isTeamPlan: ref(true),
-    billingStatus: ref<string | null>('paid'),
-    subscription: ref<{ hasFunds: boolean } | null>({ hasFunds: true }),
-    fetchStatus: vi.fn(),
-    fetchBalance: vi.fn()
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { ref } = await import('vue')
+    const billing = {
+      canAccessSubscriptionFeatures: ref(true),
+      isTeamPlan: ref(true),
+      billingStatus: ref<string | null>('paid'),
+      subscription: ref<{ hasFunds: boolean } | null>({ hasFunds: true }),
+      fetchStatus: vi.fn(),
+      fetchBalance: vi.fn()
+    }
+    mocks.billing = billing
+    return { useBillingContext: () => billing }
   }
-  mocks.billing = billing
-  return { useBillingContext: () => billing }
-})
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
-  const { computed } = await import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: true,
-        canManageSubscriptionLifecycle: true,
-        canTopUp: true
-      }))
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        permissions: computed(() => ({
+          canManageSubscription: true,
+          canManageSubscriptionLifecycle: true
+        }))
+      })
+    }
   }
-})
+)
 
 import { useBillingBanner } from './useBillingBanner'
 
 describe('useBillingBanner', () => {
   beforeEach(() => {
     const b = mocks.billing!
-    b.isActiveSubscription.value = true
+    b.canAccessSubscriptionFeatures.value = true
     b.isTeamPlan.value = true
     b.billingStatus.value = 'paid'
     b.subscription.value = { hasFunds: true }

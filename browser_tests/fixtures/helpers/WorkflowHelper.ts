@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 
-import { test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
 import type {
@@ -118,7 +119,7 @@ export class WorkflowHelper {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
-    await this.waitForWorkflowIdle()
+    await expect(this.comfyPage.workflowUploadInput).toHaveValue('')
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
@@ -197,7 +198,7 @@ export class WorkflowHelper {
 
   async getLinearModeFromGraph(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      return window.app!.rootGraph.extra?.linearMode as boolean | undefined
+      return window.app!.rootGraph.extra.linearMode as boolean | undefined
     })
   }
 
@@ -219,7 +220,7 @@ export class WorkflowHelper {
     await this.comfyPage.page.waitForFunction(
       () =>
         !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy,
+          .isBusy,
       undefined,
       { timeout }
     )

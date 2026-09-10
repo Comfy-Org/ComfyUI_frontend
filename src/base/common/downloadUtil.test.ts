@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import type { MockInstance } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -11,27 +12,21 @@ const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
+vi.mock(
+  import('@/platform/distribution/types'), // eslint-disable-line import-x/no-restricted-paths
+  () => ({
+    get isCloud() {
+      return mockIsCloud.value
+    }
+  })
+)
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
-}))
-
-// Global stubs
-let createObjectURLSpy = vi
-  .spyOn(URL, 'createObjectURL')
-  .mockReturnValue('blob:mock-url')
-let revokeObjectURLSpy = vi
-  .spyOn(URL, 'revokeObjectURL')
-  .mockImplementation(() => {})
+let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
+let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement

@@ -1,22 +1,30 @@
-import { test as base } from '@playwright/test'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
+import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import {
   createSubscriptionHelper,
-  withFreeTier
+  withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
+type CreateCustomerResponse =
+  operations['createCustomer']['responses']['201']['content']['application/json']
 
 /**
- * Boots the local (non-Cloud) build as a logged-in, legacy Free-tier user.
+ * Boots the local (non-Cloud) build as a logged-in unsubscribed workspace owner.
  *
  * Firebase auth must be seeded via `ComfyPage.cloudAuth` *before* the app's
  * first navigation: seeding it against an already-booted page races the
  * app's own Firebase listener and can hang indefinitely. `comfyPageFixture`
  * seeds pre-boot for `@cloud`- and `@auth`-tagged tests. Prefer tagging a
  * spec `@auth` over using this fixture; it exists for specs that also need
- * the Free-tier subscription mocks and the bespoke boot below.
+ * the unsubscribed billing mocks and the bespoke boot below.
  */
 export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page, request }, use, testInfo) => {
@@ -32,7 +40,26 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     })
 
     await comfyPage.cloudAuth.mockAuth()
-    const subscriptionHelper = createSubscriptionHelper(page, withFreeTier())
+    await mockWorkspace(page, workspace('personal', 'owner'), [])
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
+    await page.route('**/api/billing/balance', (route) =>
+      route.fulfill({ json: EMPTY_BILLING_BALANCE })
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill({ json: EMPTY_BILLING_PLANS })
+    )
+    await page.route('**/customers', (route) =>
+      route.fulfill({
+        status: 201,
+        json: { id: 'test-user-e2e' } satisfies CreateCustomerResponse
+      })
+    )
+    const subscriptionHelper = createSubscriptionHelper(
+      page,
+      withUnsubscribed()
+    )
     await subscriptionHelper.mock()
 
     await page.evaluate((id) => {

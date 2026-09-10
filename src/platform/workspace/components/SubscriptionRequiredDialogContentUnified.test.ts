@@ -1,67 +1,103 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
 
+// The complete production contract (quote identity included): the payment
+// preview refuses to mount the payment element on a quote without
+// `quote_id`/`quote_version`, so a partial stub could pass while production
+// renders no payment element.
+function makePreview(
+  overrides: Partial<PreviewSubscribeResponse> = {}
+): PreviewSubscribeResponse {
+  return {
+    allowed: true,
+    transition_type: 'new_subscription',
+    effective_at: '2026-06-19T00:00:00Z',
+    is_immediate: true,
+    cost_today_cents: 129_500,
+    cost_next_period_cents: 129_500,
+    credits_today_cents: 0,
+    credits_next_period_cents: 0,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: 129_500,
+    currency: 'usd',
+    renewal_amount_cents: 129_500,
+    renewal_at: '2027-06-19T00:00:00Z',
+    new_plan: {
+      slug: 'team-yearly',
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      price_cents: 129_500,
+      credits_cents: 0,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 129_500,
+        total_credits_cents: 0
+      },
+      period_end: '2027-06-19T00:00:00Z'
+    },
+    ...overrides
+  }
+}
+
 const mockHandleSubscribeTeamClick = vi.fn()
+const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
 const mockInvalidateQuote = vi.fn()
-const mockIsInPersonalWorkspace = ref(false)
+
 const mockCheckoutStep = ref('pricing')
 const mockPreviewVariant = ref<string | null>(null)
-const mockPreviewData = ref<Record<string, unknown> | null>(null)
+const mockPreviewData = ref<PreviewSubscribeResponse | null>(null)
 const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
+const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: () => ({
-    checkoutStep: mockCheckoutStep,
-    isLoadingPreview: ref(false),
-    loadingTier: ref(null),
-    isSubscribing: ref(false),
-    isResubscribing: ref(false),
-    previewData: mockPreviewData,
-    quoteIsCurrent: ref(false),
-    savedPaymentMethods: ref([]),
-    selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
-    selectedTierKey: ref(null),
-    selectedTeamStop: mockSelectedTeamStop,
-    selectedBillingCycle: ref('yearly'),
-    activeCheckoutActionUrl: ref(null),
-    authenticationState: ref(null),
-    authenticationError: ref(null),
-    canRetryAuthentication: ref(false),
-    isAuthenticating: ref(false),
-    reconciliationOperationId: ref(null),
-    isPolling: ref(false),
-    isTeamCheckout: computed(() => false),
-    previewVariant: computed(() => mockPreviewVariant.value),
-    handleSubscribeClick: mockHandleSubscribeClick,
-    handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-    handleBackToPricing: vi.fn(),
-    handleSuccessClose: vi.fn(),
-    handleAddCreditCard: vi.fn(),
-    handleConfirmTransition: vi.fn(),
-    handleTeamSubscribe: vi.fn(),
-    handleSubscriptionPayment: vi.fn(),
-    handleTeamSubscriptionPayment: vi.fn(),
-    retryPaymentAuthentication: vi.fn(),
-    applyPromotionCode: vi.fn(),
-    invalidateQuote: mockInvalidateQuote,
-    handleResubscribe: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: () => ({
+      checkoutStep: mockCheckoutStep,
+      isLoadingPreview: ref(false),
+      loadingTier: ref(null),
+      isSubscribing: ref(false),
+      isResubscribing: ref(false),
+      previewData: mockPreviewData,
+      quoteIsCurrent: ref(false),
+      savedPaymentMethods: mockSavedPaymentMethods,
+      selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
+      selectedTierKey: ref(null),
+      selectedTeamStop: mockSelectedTeamStop,
+      selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
+      authenticationState: ref(null),
+      authenticationError: ref(null),
+      reconciliationOperationId: ref(null),
+      isPolling: ref(false),
+      isTeamCheckout: computed(() => false),
+      previewVariant: computed(() => mockPreviewVariant.value),
+      handleSubscribeClick: mockHandleSubscribeClick,
+      handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
+      handleBackToPricing: mockHandleBackToPricing,
+      handleSuccessClose: vi.fn(),
+      handleAddCreditCard: vi.fn(),
+      handleConfirmTransition: vi.fn(),
+      handleTeamSubscribe: vi.fn(),
+      handleSubscriptionPayment: vi.fn(),
+      handleTeamSubscriptionPayment: vi.fn(),
+      applyPromotionCode: vi.fn(),
+      invalidateQuote: mockInvalidateQuote,
+      handleResubscribe: vi.fn()
+    })
   })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockIsInPersonalWorkspace.value
-    }
-  })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -92,21 +128,31 @@ const UnifiedPricingTableStub = {
 
 function renderComponent(props: Record<string, unknown> = {}) {
   return render(SubscriptionRequiredDialogContentUnified, {
-    props: { onClose: vi.fn(), ...props },
+    props: { onClose: vi.fn(), embeddedCheckoutEnabled: true, ...props },
     global: {
       plugins: [i18n],
       stubs: {
         UnifiedPricingTable: UnifiedPricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: {
           name: 'SubscriptionAddPaymentPreviewWorkspace',
-          props: ['previewData', 'teamPlan'],
+          props: [
+            'previewData',
+            'teamPlan',
+            'savedMethods',
+            'usePaymentElement'
+          ],
           template: `<div data-testid="add-payment-preview">
             {{ previewData?.amount_due_cents ?? "no-quote" }}
+            <span data-testid="saved-method-count">{{ savedMethods.length }}</span>
+            <span data-testid="payment-element-enabled">{{ usePaymentElement }}</span>
             <button data-testid="saved-method-btn" @click="$emit('update:selectedSavedMethodId', 'pm_other')">Saved method</button>
             <button data-testid="new-method-btn" @click="$emit('changePaymentMethod')">New method</button>
+            <button aria-label="Back" @click="$emit('back')">Back</button>
           </div>`
         },
-        SubscriptionTransitionPreviewWorkspace: { template: '<div />' },
+        SubscriptionTransitionPreviewWorkspace: {
+          template: '<div data-testid="transition-preview" />'
+        },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
     }
@@ -115,12 +161,13 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
-    mockIsInPersonalWorkspace.value = false
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     mockCheckoutStep.value = 'pricing'
     mockPreviewVariant.value = null
     mockPreviewData.value = null
     mockSelectedTeamStop.value = null
     mockSelectedSavedPaymentMethodId.value = 'pm_default'
+    mockSavedPaymentMethods.value = []
   })
 
   // The team checkout mounts the payment element against the quote's amount, so
@@ -131,7 +178,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'team-new'
     mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
-    mockPreviewData.value = { amount_due_cents: 129_500, currency: 'usd' }
+    mockPreviewData.value = makePreview()
 
     renderComponent()
 
@@ -140,10 +187,26 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     )
   })
 
+  // The preview steps render their own inline back button, so a dialog-level
+  // back would double the control (two `g.back` tab stops on one screen).
+  it('renders no dialog-level back control on the preview step', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-change'
+    mockPreviewData.value = makePreview({ transition_type: 'upgrade' })
+
+    renderComponent()
+
+    expect(screen.queryByLabelText('Back')).toBeNull()
+  })
+
   it('preserves the quote when the payment method changes', async () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'personal-new'
-    mockPreviewData.value = { amount_due_cents: 1600, currency: 'usd' }
+    mockPreviewData.value = makePreview({
+      cost_today_cents: 1600,
+      cost_next_period_cents: 1600,
+      amount_due_cents: 1600
+    })
     renderComponent()
 
     await userEvent.click(screen.getByTestId('saved-method-btn'))
@@ -153,9 +216,35 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     expect(mockInvalidateQuote).not.toHaveBeenCalled()
   })
 
+  it('collects a new method when none is selected', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+    mockPreviewData.value = makePreview({ amount_due_cents: 1600, currency: 'usd' })
+    mockSavedPaymentMethods.value = [
+      { id: 'pm_first', type: 'card', last4: '1111', is_default: false }
+    ]
+    mockSelectedSavedPaymentMethodId.value = null
+
+    renderComponent()
+
+    expect(screen.getByTestId('saved-method-count')).toHaveTextContent('0')
+  })
+
+  it('does not initialize the payment element while embedded checkout is off', () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewVariant.value = 'personal-new'
+    mockPreviewData.value = makePreview({ amount_due_cents: 1600, currency: 'usd' })
+
+    renderComponent({ embeddedCheckoutEnabled: false })
+
+    expect(screen.getByTestId('payment-element-enabled')).toHaveTextContent(
+      'false'
+    )
+  })
+
   it('advances to team checkout from a team workspace', async () => {
     const user = userEvent.setup()
-    mockIsInPersonalWorkspace.value = false
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
@@ -167,7 +256,7 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
   it('advances to team checkout from a personal workspace (no reroute)', async () => {
     const user = userEvent.setup()
-    mockIsInPersonalWorkspace.value = true
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
@@ -213,4 +302,41 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
     expect(mockHandleSubscribeClick).not.toHaveBeenCalled()
   })
+
+  it.for(['team-change', 'personal-change'])(
+    'withholds the transition confirm until its preview arrives (%s)',
+    async (previewVariant) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = previewVariant
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+      mockPreviewData.value = null
+
+      renderComponent()
+
+      expect(screen.queryByTestId('transition-preview')).toBeNull()
+
+      mockPreviewData.value = makePreview({ amount_due_cents: 1600, currency: 'usd' })
+      await nextTick()
+
+      expect(screen.getByTestId('transition-preview')).toBeTruthy()
+    }
+  )
+
+  it.for([true, false])(
+    'leaves the confirm step its own header and back action (embedded: %s)',
+    async (embeddedCheckoutEnabled) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = 'team-new'
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+
+      renderComponent({ embeddedCheckoutEnabled })
+
+      expect(screen.queryByText('Choose your plan')).toBeNull()
+      expect(screen.getAllByRole('button', { name: 'Back' })).toHaveLength(1)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+
+      expect(mockHandleBackToPricing).toHaveBeenCalled()
+    }
+  )
 })

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SafeRichText from '@/components/common/SafeRichTextContent'
 import Button from '../ui/button/Button.vue'
 
 type Asset = {
@@ -28,9 +29,11 @@ defineProps<{
       >
         {{ heading }}
       </h2>
-      <p class="mx-auto mt-4 max-w-2xl text-base text-primary-comfy-canvas/70">
-        {{ subheading }}
-      </p>
+      <SafeRichText
+        as="p"
+        class="mx-auto mt-4 max-w-2xl text-base text-primary-comfy-canvas/70"
+        :html="subheading"
+      />
     </div>
 
     <ul

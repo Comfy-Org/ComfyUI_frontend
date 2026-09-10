@@ -1,0 +1,104 @@
+---
+# Creates the release a merged version bump never got.
+name: 'Release: Recover Tag'
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch whose package.json version has no tag (e.g. core/1.48)'
+        required: true
+        type: string
+
+concurrency:
+  group: release-recover-tag-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Resolve the untagged version
+        id: version
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+
+          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+            echo "::error title=Nothing to recover::v${VERSION} already exists, so ${BRANCH} is not missing its tag. Cut a new patch with release-version-bump.yaml instead."
+            exit 1
+          fi
+
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Recovering v${VERSION} on ${BRANCH}"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      # Same artifacts release-draft-create.yaml attaches, built the same way:
+      # a recovered release must be indistinguishable from an on-time one.
+      - name: Build project
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+          ENABLE_MINIFY: 'true'
+          USE_PROD_CONFIG: 'true'
+          IS_NIGHTLY: ${{ inputs.branch == 'main' }}
+        run: |
+          pnpm install --frozen-lockfile
+
+          DISTRIBUTION=desktop pnpm build
+          pnpm zipdist ./dist ./dist-desktop.zip
+
+          pnpm build
+          pnpm zipdist
+
+      - name: Create release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          files: |
+            dist.zip
+            dist-desktop.zip
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ inputs.branch }}
+          make_latest: >-
+            ${{ inputs.branch == 'main' &&
+                steps.version.outputs.is_prerelease == 'false' }}
+          draft: ${{ steps.version.outputs.is_prerelease == 'true' }}
+          prerelease: >-
+            ${{ steps.version.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+
+      - name: Summary
+        run: |
+          {
+            echo "## Recovered release"
+            echo
+            echo "- Branch: \`${{ inputs.branch }}\`"
+            echo "- Tag: \`v${{ steps.version.outputs.version }}\`"
+            echo
+            echo "Re-run \`release-weekly-comfyui.yaml\` to publish it to PyPI and open the ComfyUI pin PR."
+          } >> "$GITHUB_STEP_SUMMARY"

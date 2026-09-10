@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -39,7 +39,7 @@ const mockUploadCallbacks = vi.hoisted(() => ({
     | undefined
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       return mockRootGraph.value
@@ -47,7 +47,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(
       (event: string, handler: (event: CustomEvent) => void) => {
@@ -55,11 +55,12 @@ vi.mock('@/scripts/api', () => ({
       }
     ),
     apiURL: vi.fn((path: string) => path),
-    fetchApi: vi.fn()
+    fetchApi: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async () => {
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), async () => {
   const actual = await vi.importActual<typeof GraphTraversalUtil>(
     '@/utils/graphTraversalUtil'
   )
@@ -70,7 +71,7 @@ vi.mock('@/utils/graphTraversalUtil', async () => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   },
@@ -79,31 +80,36 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/useModelUpload', () => ({
-  useModelUpload: (
-    onUploadSuccess?: (
-      result: UploadModelSuccess
-    ) => Promise<unknown> | unknown,
-    uploadContext?: UploadModelDialogContext | UploadModelContextResolver
-  ) => {
-    mockUploadCallbacks.onUploadSuccess = onUploadSuccess
-    mockUploadContext.resolver =
-      typeof uploadContext === 'function' ? uploadContext : () => uploadContext
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useModelUpload'),
+  () => ({
+    useModelUpload: (
+      onUploadSuccess?: (
+        result: UploadModelSuccess
+      ) => Promise<unknown> | unknown,
+      uploadContext?: UploadModelDialogContext | UploadModelContextResolver
+    ) => {
+      mockUploadCallbacks.onUploadSuccess = onUploadSuccess
+      mockUploadContext.resolver =
+        typeof uploadContext === 'function'
+          ? uploadContext
+          : () => uploadContext
 
-    return {
-      isUploadButtonEnabled: { value: true },
-      showUploadDialog: mockShowUploadDialog
+      return {
+        isUploadButtonEnabled: { value: true },
+        showUploadDialog: mockShowUploadDialog
+      }
     }
-  }
-}))
+  })
+)
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: mockCopyToClipboard
   })
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+vi.mock(import('@/platform/missingModel/missingModelDownload'), async () => {
   const actual = await vi.importActual<typeof MissingModelDownload>(
     '@/platform/missingModel/missingModelDownload'
   )
@@ -157,8 +163,7 @@ function renderRow(
   directory: string | null = 'checkpoints',
   canCloudImport = true
 ) {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   render(MissingModelRow, {
     props: {
@@ -195,11 +200,14 @@ describe('MissingModelRow', () => {
     })
   })
 
-  it('does not prefetch metadata for non-allowlisted URLs outside cloud', () => {
+  it('does not offer or probe arbitrary localhost URLs outside cloud', () => {
     mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url = 'http://localhost:6379/model.safetensors'
 
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(model)
 
+    expect(screen.queryByTestId('missing-model-download')).toBeNull()
     expect(mockFetchModelMetadata).not.toHaveBeenCalled()
   })
 

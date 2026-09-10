@@ -1,0 +1,25 @@
+diff --git a/src/lib/litegraph/src/LGraphNode.ts b/src/lib/litegraph/src/LGraphNode.ts
+index 3fb1eec569..4603da81ae 100644
+--- a/src/lib/litegraph/src/LGraphNode.ts
++++ b/src/lib/litegraph/src/LGraphNode.ts
+@@ -1191,6 +1191,20 @@ export class LGraphNode
+         let positionalIndex = 0
+         for (const widget of this.widgets) {
+           if (widget.serialize === false) continue
++          // DETECTION PROOF (row 3, persistence): ImpactInt drops its last
++          // widget value. Expected: S3 red and every other tier remains green.
++          const detectionProofTier = (
++            globalThis as {
++              __COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__?: string
++            }
++          ).__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__
++          if (
++            detectionProofTier === 'S3' &&
++            this.type === 'ImpactInt' &&
++            restoration.positional.length > 0 &&
++            positionalIndex >= restoration.positional.length - 1
++          )
++            break
+           const restored = useWidgetValueStore().getRestoredWidgetValue(
+             graphId,
+             this.id,

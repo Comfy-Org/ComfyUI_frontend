@@ -46,9 +46,6 @@ export function clearNodePreviewCacheForValues(
  * paths.
  *
  * Skips subgraph wrapper nodes — only their interior nodes are inspected.
- * `markDeletedAssetsAsMissingMedia` appends promoted hosts at its own call
- * site, because a host owns a widget value but not the outputs a preview
- * would clear.
  */
 export function findNodesReferencingValues(
   rootGraph: LGraph | Subgraph,
@@ -58,7 +55,8 @@ export function findNodesReferencingValues(
   const matches: LGraphNode[] = []
   for (const node of collectAllNodes(rootGraph)) {
     if (!node.widgets?.length) continue
-    if (node.isSubgraphNode?.()) continue
+    if (typeof node.isSubgraphNode === 'function' && node.isSubgraphNode())
+      continue
     const referencesDeleted = node.widgets.some(
       (w) => typeof w.value === 'string' && deletedValues.has(w.value)
     )

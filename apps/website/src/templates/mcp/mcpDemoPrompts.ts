@@ -12,7 +12,7 @@ export type McpDemoPrompt = {
   stacked?: boolean
 }
 
-export const mcpDemoPrompts = [
+export const mcpDemoPrompts: readonly McpDemoPrompt[] = [
   {
     id: 'keyframe-board',
     promptKey: 'mcp.hero.demoPromptKeyframeBoard',
@@ -75,7 +75,7 @@ export const mcpDemoPrompts = [
     toolKey: 'mcp.hero.demoToolSetExtension',
     result: 'set_extension.png'
   }
-] as const satisfies readonly McpDemoPrompt[]
+]
 
 export function thumbUrls({ id, variants }: McpDemoPrompt): string[] {
   return variants

@@ -367,8 +367,8 @@
     "tooltip": "Remplace le panneau flottant de la file d’attente des tâches par une file d’attente équivalente intégrée dans le panneau latéral des ressources. Vous pouvez désactiver cette option pour revenir à la disposition du panneau flottant."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Afficher l’onglet des erreurs dans le panneau latéral",
-    "tooltip": "Lorsque cette option est activée, un onglet des erreurs s’affiche dans le panneau latéral droit pour visualiser rapidement les erreurs d’exécution du workflow."
+    "name": "Afficher l’onglet Problèmes dans le panneau latéral",
+    "tooltip": "Lorsqu’il est activé, l’onglet Problèmes s’affiche dans le panneau latéral droit pour indiquer les erreurs bloquantes et les ressources manquantes à configurer."
   },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",

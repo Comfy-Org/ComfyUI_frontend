@@ -41,11 +41,6 @@ export function useAbsolutePosition(
     { flush: 'post' }
   )
 
-  /**
-   * @note Do NOT convert style to a computed value, as it will cause lag when
-   * updating the style on different animation frames. Vue's computed value is
-   * evaluated asynchronously.
-   */
   const style = ref<CSSProperties>({})
 
   /**

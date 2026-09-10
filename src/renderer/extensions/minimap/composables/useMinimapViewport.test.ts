@@ -12,17 +12,12 @@ import {
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@vueuse/core')
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn()
+vi.mock(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  useRafFn: vi.fn()
 }))
 
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: {}
-  }))
-}))
-vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
+vi.mock(import('@/renderer/core/spatial/boundsCalculator'), () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),
   enforceMinimumBounds: vi.fn()
@@ -49,8 +44,8 @@ describe('useMinimapViewport', () => {
 
     mockGraph = {
       _nodes: [
-        { pos: [100, 100], size: [150, 80] },
-        { pos: [300, 200], size: [120, 60] }
+        { pos: [100, 100], renderingSize: [150, 80] },
+        { pos: [300, 200], renderingSize: [120, 60] }
       ]
     } as Partial<LGraph> as LGraph
 
@@ -97,7 +92,10 @@ describe('useMinimapViewport', () => {
 
     viewport.updateBounds()
 
-    expect(calculateNodeBounds).toHaveBeenCalledWith(mockGraph._nodes)
+    expect(calculateNodeBounds).toHaveBeenCalledWith([
+      { pos: [100, 100], size: [150, 80] },
+      { pos: [300, 200], size: [120, 60] }
+    ])
     expect(enforceMinimumBounds).toHaveBeenCalled()
   })
 

@@ -15,7 +15,7 @@ const HIDDEN_PAINTER_NUMBER_WIDGET_NAMES = ['width', 'height'] as const
 
 test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => window.app?.graph?.clear())
+    await comfyPage.page.evaluate(() => window.app?.graph.clear())
     await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
   })
 
@@ -23,8 +23,8 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
     test('Node enforces minimum size', async ({ comfyPage }) => {
       const size = await comfyPage.page.evaluate(() => {
         const graph = window.graph as TestGraphAccess | undefined
-        const node = graph?._nodes_by_id?.['1']
-        return node?.size as [number, number] | undefined
+        const node = graph?._nodes_by_id['1']
+        return node?.size
       })
       expect(size).toBeDefined()
       expect(size![0]).toBeGreaterThanOrEqual(450)
@@ -39,6 +39,24 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       for (const widgetName of HIDDEN_PAINTER_WIDGET_NAMES) {
         await expect(node.getByLabel(widgetName, { exact: true })).toBeHidden()
+      }
+
+      await comfyPage.page.evaluate(() => {
+        const painter = window.app!.graph.nodes.find(
+          (candidate) => candidate.type === 'Painter'
+        )
+        if (!painter) throw new Error('Painter node not found')
+        window.app!.canvas.selectNode(painter)
+      })
+      await comfyPage.actionbar.propertiesButton.click()
+      const parameters = comfyPage.menu.propertiesPanel.root
+      await expect(comfyPage.menu.propertiesPanel.panelTitle).toContainText(
+        'Painter'
+      )
+      for (const widgetName of HIDDEN_PAINTER_WIDGET_NAMES) {
+        await expect(
+          parameters.getByLabel(widgetName, { exact: true })
+        ).toBeHidden()
       }
     })
   })
@@ -654,7 +672,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
           () =>
             comfyPage.page.evaluate(() => {
               const graph = window.graph as TestGraphAccess | undefined
-              return graph?._nodes_by_id?.['1']?.properties?.painterTool as
+              return graph?._nodes_by_id['1']?.properties.painterTool as
                 | string
                 | undefined
             }),
@@ -687,8 +705,9 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
           () =>
             comfyPage.page.evaluate(() => {
               const graph = window.graph as TestGraphAccess | undefined
-              return graph?._nodes_by_id?.['1']?.properties
-                ?.painterBrushSize as number | undefined
+              return graph?._nodes_by_id['1']?.properties.painterBrushSize as
+                | number
+                | undefined
             }),
           { message: 'painterBrushSize property should update to 30' }
         )
@@ -719,9 +738,9 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess | undefined
-      const node = graph?._nodes_by_id?.['1']
+      const node = graph?._nodes_by_id['1']
       if (node) {
-        node.size = [200, 400]
+        node.setSize([200, 400])
         window.app!.canvas.setDirty(true, true)
       }
     })
@@ -795,7 +814,7 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-      await comfyPage.page.evaluate(() => window.app?.graph?.clear())
+      await comfyPage.page.evaluate(() => window.app?.graph.clear())
       await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
     })
 
@@ -804,7 +823,7 @@ test.describe(
     }) => {
       const painterNodes = await comfyPage.nodeOps.getNodeRefsByType('Painter')
       expect(painterNodes).toHaveLength(1)
-      const painterNode = painterNodes[0]!
+      const painterNode = painterNodes[0]
       const maskWidget = await painterNode.getWidgetByName('mask')
       const maskWidgetClientPosition = await maskWidget.getPosition()
       const widgetRowClientHeight = await comfyPage.page.evaluate(
@@ -839,7 +858,7 @@ test.describe(
     test.setTimeout(60_000)
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.page.evaluate(() => window.app?.graph?.clear())
+      await comfyPage.page.evaluate(() => window.app?.graph.clear())
       await comfyPage.workflow.loadWorkflow('widgets/painter_with_input')
     })
 

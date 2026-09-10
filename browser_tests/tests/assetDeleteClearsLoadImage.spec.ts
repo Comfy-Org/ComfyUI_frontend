@@ -41,13 +41,15 @@ type AssetMockApi = {
 const assetMockByPage = new WeakMap<Page, { deleteCalls: string[] }>()
 
 function filterByTags(assets: Asset[], url: URL): Asset[] {
-  const includeTags = parseTagParam(url.searchParams.get('include_tags'))
-  const excludeTags = parseTagParam(url.searchParams.get('exclude_tags'))
-  return assets.filter(
-    (asset) =>
-      includeTags.every((tag) => (asset.tags ?? []).includes(tag)) &&
-      excludeTags.every((tag) => !(asset.tags ?? []).includes(tag))
-  )
+  const anyTags = parseTagParam(url.searchParams.get('tags_any'))
+  const noneTags = parseTagParam(url.searchParams.get('tags_none'))
+  return assets.filter((asset) => {
+    const tags = asset.tags ?? []
+    const matchesAny =
+      anyTags.length === 0 || anyTags.some((tag) => tags.includes(tag))
+    const matchesNone = noneTags.every((tag) => !tags.includes(tag))
+    return matchesAny && matchesNone
+  })
 }
 
 function parseTagParam(value: string | null): string[] {
@@ -144,11 +146,13 @@ baseTest.describe(
 
         // Re-baseline the change tracker so the deletion-side mutation is the
         // only thing that can flip `isModified` later.
+        // `reset()` re-baselines `initialState`; only `updateModified()`
+        // recomputes `isModified` from it.
         await comfyPage.page.evaluate(() => {
           const tracker =
-            window.app?.extensionManager?.workflow?.activeWorkflow
-              ?.changeTracker
-          tracker?.reset?.()
+            window.app?.extensionManager.workflow?.activeWorkflow?.changeTracker
+          tracker?.reset()
+          tracker?.updateModified()
         })
         await expect
           .poll(() => comfyPage.workflow.isCurrentWorkflowModified())

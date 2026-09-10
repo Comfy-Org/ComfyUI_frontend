@@ -14,10 +14,10 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: hoisted
 }))
-vi.mock('./manualRefreshTracker', () => ({
+vi.mock(import('./manualRefreshTracker'), () => ({
   trackUserManualRefresh: vi.fn()
 }))
 
@@ -58,6 +58,12 @@ describe('initDatadogRum', () => {
         beforeSend: rumBeforeSend,
         sessionSampleRate: 100,
         sessionReplaySampleRate: 0,
+        trackFeatureFlagsForEvents: [
+          'action',
+          'vital',
+          'long_task',
+          'resource'
+        ],
         allowedTracingUrls: [expect.any(RegExp)]
       })
     }

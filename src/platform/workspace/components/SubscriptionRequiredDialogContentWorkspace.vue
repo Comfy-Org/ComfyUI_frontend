@@ -3,18 +3,6 @@
     class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
-      v-if="checkoutStep === 'preview'"
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      :disabled="isPolling"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
@@ -89,9 +77,8 @@
       :action-url="activeCheckoutActionUrl"
       :authentication-state
       :authentication-error
-      :can-retry-authentication
-      :is-authenticating
       :reconciliation-operation-id
+      :parked-checkout-recovery
       :quote-is-current
       :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
@@ -99,7 +86,6 @@
       @invalidate-quote="invalidateQuote"
       @restore-quote="restoreQuote"
       @back="handleBackToPricing"
-      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Subscription Preview Step - Plan Transition -->
@@ -115,8 +101,6 @@
       :force-reactivation="reactivationRequired"
       :authentication-state
       :authentication-error
-      :can-retry-authentication
-      :is-authenticating
       :reconciliation-operation-id
       :quote-is-current
       :is-applying-promotion-code
@@ -125,7 +109,6 @@
       @invalidate-quote="invalidateQuote"
       @restore-quote="restoreQuote"
       @back="handleBackToPricing"
-      @retry-authentication="retryPaymentAuthentication"
     />
 
     <!-- Success Step - subscribe/change-plan confirmation -->
@@ -183,15 +166,13 @@ const {
   activeCheckoutActionUrl,
   authenticationState,
   authenticationError,
-  canRetryAuthentication,
-  isAuthenticating,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
-  retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
   restoreQuote,

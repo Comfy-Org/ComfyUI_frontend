@@ -231,7 +231,9 @@ test.describe('Workflows sidebar', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.setup()
+    await expect(
+      comfyPage.page.getByRole('button', { name: '运行', exact: true })
+    ).toBeVisible()
 
     // Compare the exported workflow with the original
     delete downloadedContent.id
