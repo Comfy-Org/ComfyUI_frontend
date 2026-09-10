@@ -157,16 +157,19 @@ const handleNodeLabelEdit = async (
   newName: string
 ) => {
   const node = n as RenderedTreeExplorerNode<T>
-  const renamed = await errorHandling.wrapWithErrorHandlingAsync(async () => {
-    if (node.key === newFolderNode.value?.key) {
-      await handleFolderCreation(newName)
-    } else {
-      const result = await node.handleRename?.(newName)
-      if (result === false) return false
+  await errorHandling.wrapWithErrorHandlingAsync(
+    async () => {
+      if (node.key === newFolderNode.value?.key) {
+        await handleFolderCreation(newName)
+      } else {
+        await node.handleRename?.(newName)
+      }
+    },
+    node.handleError,
+    () => {
+      renameEditingNode.value = null
     }
-    return true
-  }, node.handleError)()
-  if (renamed) renameEditingNode.value = null
+  )()
 }
 provide(InjectKeyHandleEditLabelFunction, handleNodeLabelEdit)
 
