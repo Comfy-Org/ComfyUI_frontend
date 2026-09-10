@@ -41,9 +41,14 @@ test.describe(
       if (!node) return
 
       const before = await comfyPage.nodeOps.getSerializedGraph()
+      delete before.extra?.ds
       await node.centerOnNode()
       await expect
-        .poll(() => comfyPage.nodeOps.getSerializedGraph())
+        .poll(async () => {
+          const after = await comfyPage.nodeOps.getSerializedGraph()
+          delete after.extra?.ds
+          return after
+        })
         .toEqual(before)
     })
 
