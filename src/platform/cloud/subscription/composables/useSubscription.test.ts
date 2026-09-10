@@ -315,7 +315,7 @@ describe('useSubscription', () => {
 
       await fetchStatus()
 
-      expect(subscriptionStatus.value).toMatchObject({
+      expect(subscriptionStatus.value).toEqual({
         is_active: false,
         has_funds: true
       })
