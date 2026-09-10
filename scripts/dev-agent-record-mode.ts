@@ -73,6 +73,23 @@ async function assertTemporalCli(): Promise<void> {
   }
 }
 
+export function containerNamesPublishing(
+  dockerPsOutput: string,
+  image: string,
+  portNumber: number
+): string[] {
+  return dockerPsOutput
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .map((line) => line.split(' '))
+    .filter(
+      ([, imageName, ...ports]) =>
+        imageName.includes(image) &&
+        ports.join(' ').includes(`:${portNumber}->`)
+    )
+    .map(([name]) => name)
+}
+
 // Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
 async function containerFor(
   portNumber: number,
@@ -84,15 +101,7 @@ async function containerFor(
     '--format',
     '{{.Names}} {{.Image}} {{.Ports}}'
   ])
-  const names = stdout
-    .split('\n')
-    .map((line) => line.split(' '))
-    .filter(
-      ([, imageName, ...ports]) =>
-        imageName.includes(image) &&
-        ports.join(' ').includes(`:${portNumber}->`)
-    )
-    .map(([name]) => name)
+  const names = containerNamesPublishing(stdout, image, portNumber)
   if (names.length === 0) {
     throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
   }
