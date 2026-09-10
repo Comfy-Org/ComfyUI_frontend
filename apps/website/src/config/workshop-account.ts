@@ -7,11 +7,11 @@
  */
 import type { User } from 'firebase/auth'
 
-import type { SessionClient } from '@comfyorg/account/core'
+import type { SessionClient } from '@comfyorg/account/session'
 import {
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/core'
+} from '@comfyorg/account/session'
 
 import {
   captureAuthRefreshFailed,

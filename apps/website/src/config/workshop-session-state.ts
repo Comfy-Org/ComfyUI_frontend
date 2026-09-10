@@ -4,6 +4,9 @@
  * Workshop auth flag becomes true; a release-shape page does not download
  * or initialize it.
  *
+ * `settled` mirrors the client's own flag: false until Firebase has
+ * delivered the restored user (or none) at least once.
+ *
  * The identity listener and focus refresh keep displayed state warm. A
  * caller that needs a token must still await `ensureFresh()` immediately
  * before use — freshness is valid-on-read, guaranteed by the client, not by
@@ -12,7 +15,7 @@
 import type { User } from 'firebase/auth'
 import { computed, effectScope, readonly, ref, watch } from 'vue'
 
-import type { AccountCredential } from '@comfyorg/account/core'
+import type { AccountCredential } from '@comfyorg/account/session'
 
 import { useWorkshopAuthFlag } from '../scripts/posthog'
 import { workshopSessionClient } from './workshop-account'
@@ -20,11 +23,10 @@ import { workshopSessionClient } from './workshop-account'
 export type {
   AccountCredential as WorkshopSession,
   AccountUser as WorkshopSessionUser
-} from '@comfyorg/account/core'
+} from '@comfyorg/account/session'
 
 const user = ref<User | null>(null)
 const session = ref<AccountCredential | undefined>(undefined)
-/** True once Firebase has reported the restored user (or none) at least once. */
 const settled = ref(false)
 let started = false
 let generation = 0
@@ -47,16 +49,13 @@ async function begin(expectedGeneration: number): Promise<void> {
 
   stopSnapshot = workshopSessionClient.subscribe((snapshot) => {
     user.value = snapshot.user
+    settled.value = snapshot.settled
     session.value =
       snapshot.phase === 'authenticated' ? snapshot.session : undefined
   })
-  detachIdentity = workshopSessionClient.attachIdentity({
-    onUserChanged: (callback) =>
-      firebase.onWorkshopUserChanged((current) => {
-        settled.value = true
-        callback(current)
-      })
-  })
+  detachIdentity = workshopSessionClient.attachIdentity(
+    firebase.workshopIdentity
+  )
 
   const onFocus = () => void workshopSessionClient.ensureFresh()
   window.addEventListener('focus', onFocus)
