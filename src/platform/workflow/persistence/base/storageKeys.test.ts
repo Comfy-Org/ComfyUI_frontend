@@ -73,6 +73,18 @@ describe('storageKeys', () => {
       expect(readWorkspaceId()).toBeNull()
     })
 
+    it('returns null in cloud when the stored workspace is JSON null', () => {
+      setCurrentWorkspace(null)
+      expect(readWorkspaceId()).toBeNull()
+    })
+
+    it('returns null in cloud when sessionStorage cannot be read', () => {
+      vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+        throw new Error('sessionStorage unavailable')
+      })
+      expect(readWorkspaceId()).toBeNull()
+    })
+
     it('returns the team workspace id in cloud', () => {
       setCurrentWorkspace({ type: 'team', id: 'workspace-a' })
       expect(readWorkspaceId()).toBe('workspace-a')
