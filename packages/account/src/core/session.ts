@@ -257,9 +257,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   let identityEpoch = 0
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
 
-  let inFlight: Promise<SessionResult> | undefined
-  let inFlightUid: string | undefined
-  let inFlightForced = false
+  let inFlight:
+    | {
+        readonly promise: Promise<SessionResult>
+        readonly uid: string
+        readonly forced: boolean
+      }
+    | undefined
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
@@ -358,8 +362,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    */
   function abandonInFlight(): void {
     inFlight = undefined
-    inFlightUid = undefined
-    inFlightForced = false
   }
 
   function sharedMint(
@@ -369,20 +371,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): Promise<SessionResult> {
     if (
       inFlight !== undefined &&
-      inFlightUid === user.uid &&
-      (!forced || inFlightForced)
+      inFlight.uid === user.uid &&
+      (!forced || inFlight.forced)
     ) {
-      return inFlight
+      return inFlight.promise
     }
-    inFlightUid = user.uid
-    inFlightForced = forced
     const running = mint(user, options).finally(() => {
-      if (inFlight !== running) return
+      if (inFlight?.promise !== running) return
       inFlight = undefined
-      inFlightUid = undefined
-      inFlightForced = false
     })
-    inFlight = running
+    inFlight = { promise: running, uid: user.uid, forced }
     return running
   }
 
