@@ -777,7 +777,10 @@ describe('useWorkflowPersistenceV2', () => {
       workflow.path,
       `user-a:${destinationWorkspaceId}`
     )
-    expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
+    const payloadBeforeTransition = JSON.parse(
+      localStorage.getItem(sourcePayloadKey)!
+    )
+    expect(JSON.parse(payloadBeforeTransition.data)).toEqual({ initial: true })
 
     const cancelTransition = storageIO.prepareWorkflowWorkspaceTransition()
     sessionStorage.setItem(

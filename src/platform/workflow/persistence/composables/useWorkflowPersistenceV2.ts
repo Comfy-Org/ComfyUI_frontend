@@ -36,7 +36,6 @@ import {
   getStorageScope,
   getStorageWriteGate,
   prepareWorkflowLogoutTransition,
-  readIndex,
   registerWorkflowPersistenceFlush,
   setStorageIdentity
 } from '../base/storageIO'
@@ -80,7 +79,6 @@ export function useWorkflowPersistenceV2() {
       migrateV1toV2(scope, clientId)
       return
     }
-    if (readIndex(scope) !== null) return
     migrateV1toV2(workspaceId, clientId)
     migrateWorkspaceToScope(workspaceId, scope)
   }
@@ -177,6 +175,7 @@ export function useWorkflowPersistenceV2() {
   function releaseIdentityFence(): void {
     completeWorkflowLogoutTransition()
     ensureScopedStorage()
+    persistCurrentWorkflow()
   }
 
   onUserLogout(() => {

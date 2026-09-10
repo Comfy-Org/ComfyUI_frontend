@@ -16,7 +16,9 @@ import {
 } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
 
-const restorePointerKeys = [
+type RestorePointerKey = (workspaceId: string) => string
+
+const restorePointerKeys: RestorePointerKey[] = [
   StorageKeys.lastActivePath,
   StorageKeys.lastOpenPaths
 ]
@@ -30,24 +32,35 @@ export function migrateWorkspaceToScope(
 
   const draftKeys = getPayloadKeys(workspaceId)
   if (readIndex(scope) !== null) {
-    removeScopeArtifacts(workspaceId, draftKeys)
+    removeScopeArtifacts(workspaceId, draftKeys, restorePointerKeys)
     return
   }
 
+  const missingPointerKeys = restorePointerKeys.filter(
+    (keyFor) => localStorage.getItem(keyFor(scope)) === null
+  )
   const copied =
     draftKeys.every((draftKey) => copyPayload(workspaceId, scope, draftKey)) &&
-    restorePointerKeys.every((keyFor) =>
+    missingPointerKeys.every((keyFor) =>
       copyRestorePointer(keyFor, workspaceId, scope)
     ) &&
     writeIndex(scope, index)
 
-  removeScopeArtifacts(copied ? workspaceId : scope, draftKeys)
+  if (copied) {
+    removeScopeArtifacts(workspaceId, draftKeys, restorePointerKeys)
+    return
+  }
+  removeScopeArtifacts(scope, draftKeys, missingPointerKeys)
 }
 
-function removeScopeArtifacts(scope: string, draftKeys: string[]): void {
+function removeScopeArtifacts(
+  scope: string,
+  draftKeys: string[],
+  pointerKeys: RestorePointerKey[]
+): void {
   deletePayloads(scope, draftKeys)
   localStorage.removeItem(StorageKeys.draftIndex(scope))
-  for (const keyFor of restorePointerKeys) {
+  for (const keyFor of pointerKeys) {
     localStorage.removeItem(keyFor(scope))
   }
 }
