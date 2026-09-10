@@ -5,7 +5,7 @@ import type { WorkshopSession } from './workshop-session-state'
 
 const h = vi.hoisted(() => {
   const state = {
-    flag: undefined as { value: boolean } | undefined,
+    settled: undefined as { value: boolean } | undefined,
     setSession: undefined as
       | ((session: WorkshopSession | undefined) => void)
       | undefined,
@@ -23,29 +23,25 @@ const h = vi.hoisted(() => {
   return state
 })
 
-vi.mock('../scripts/posthog', async () => {
-  const { ref } = await import('vue')
-  const flag = ref(true)
-  h.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
-})
-
-vi.mock('./workshop-session-state', async () => {
+vi.mock<unknown>(import('./workshop-session-state'), async () => {
   const { computed, ref } = await import('vue')
   const session = ref<WorkshopSession | undefined>(undefined)
+  const settled = ref(true)
   h.setSession = (next) => {
     session.value = next
   }
+  h.settled = settled
   return {
     useWorkshopSession: () => ({
       session,
+      settled,
       signedIn: computed(() => session.value !== undefined),
       remint: vi.fn()
     })
   }
 })
 
-vi.mock('./workshop-account', () => ({
+vi.mock<unknown>(import('./workshop-account'), () => ({
   workshopBalanceReader: {
     getState: () => h.billingState,
     subscribe: (listener: (state: unknown) => void) => {
@@ -126,17 +122,17 @@ describe('useWorkshopCredits', () => {
     expect(h.refresh).toHaveBeenCalledExactlyOnceWith({ force: true })
   })
 
-  it('resets the client when the flag turns off', async () => {
+  it('resets the client when the session goes unsettled', async () => {
     const mod = await importFresh()
     mod.useWorkshopCredits()
     const callsBefore = h.reset.mock.calls.length
 
-    h.flag!.value = false
+    h.settled!.value = false
 
     await vi.waitFor(() =>
       expect(
         h.reset.mock.calls.length,
-        'flag-off must return the chip to unknown'
+        'an unsettled session must return the chip to unknown'
       ).toBeGreaterThan(callsBefore)
     )
   })
@@ -147,8 +143,8 @@ describe('useWorkshopCredits start()', () => {
     vi.resetModules()
   })
 
-  it('installs no focus listener while the flag is off', async () => {
-    h.flag!.value = false
+  it('installs no focus listener while the session is unsettled', async () => {
+    h.settled!.value = false
     const addSpy = vi.spyOn(window, 'addEventListener')
     const mod = await import('./workshop-credits')
 
@@ -156,23 +152,23 @@ describe('useWorkshopCredits start()', () => {
 
     expect(
       addSpy.mock.calls.some(([type]) => type === 'focus'),
-      'a flag-off page must install no credits listeners'
+      'an unsettled page must install no credits listeners'
     ).toBe(false)
     addSpy.mockRestore()
   })
 
-  it('arms the lifecycle when the flag turns on after mount', async () => {
-    h.flag!.value = false
+  it('arms the lifecycle when the session settles after mount', async () => {
+    h.settled!.value = false
     const addSpy = vi.spyOn(window, 'addEventListener')
     const mod = await import('./workshop-credits')
     mod.useWorkshopCredits()
 
-    h.flag!.value = true
+    h.settled!.value = true
 
     await vi.waitFor(() =>
       expect(
         addSpy.mock.calls.some(([type]) => type === 'focus'),
-        'a flag answered true after mount must still arm the lifecycle'
+        'a session that settles after mount must still arm the lifecycle'
       ).toBe(true)
     )
     addSpy.mockRestore()
@@ -199,7 +195,7 @@ describe('useWorkshopCredits start()', () => {
   })
 
   it('force-refreshes on focus while a session is live', async () => {
-    h.flag!.value = true
+    h.settled!.value = true
     const mod = await import('./workshop-credits')
     mod.useWorkshopCredits()
     h.setSession!(liveSession())
