@@ -31,10 +31,12 @@ describe('useBrowserTabTitle', () => {
     workflowStore = useWorkflowStore()
     workspaceStore = useWorkspaceStore()
     // reset execution store
-    Object.assign(executionStore, { isIdle: true })
-    Object.assign(executionStore, { executionProgress: 0 })
-    Object.assign(executionStore, { executingNode: null })
-    Object.assign(executionStore, { executingNodeProgress: 0 })
+    Object.assign(executionStore, {
+      isIdle: true,
+      executionProgress: 0,
+      executingNode: null,
+      executingNodeProgress: 0
+    })
     executionStore.nodeProgressStates = {}
 
     // reset setting and workflow stores
