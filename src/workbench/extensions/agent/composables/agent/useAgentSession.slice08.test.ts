@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -6,8 +5,10 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentMessages,
+  AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
   TurnId,
@@ -44,9 +45,23 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    getRunMode: vi.fn(
+      async (): Promise<AgentRunModePreference> => ({
+        mode: 'auto',
+        credit_limit: null
+      })
+    ),
+    putRunMode: vi.fn(
+      async (
+        preference: AgentRunModePreference
+      ): Promise<AgentRunModePreference> => preference
+    ),
     listCloudWorkflows: vi.fn(async () => []),
     cancelMessage: vi.fn(
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    ),
+    answerAsk: vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResult> => ({
@@ -92,7 +107,6 @@ function fakeEvents() {
 }
 
 function resetHarness() {
-  setActivePinia(createPinia())
   useAgentSession({ rest: fakeRest(), events: fakeEvents().source }).newChat()
   localStorage.clear()
 }
@@ -1532,7 +1546,13 @@ describe('thread resume (B17)', () => {
         {
           id: 'th-9',
           title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z'
+          created_at: '2026-07-07T00:00:00Z',
+          last_message_at: '2026-07-07T00:00:00Z',
+          updated_at: '2026-07-07T00:00:00Z',
+          message_count: 0,
+          preview: '',
+          status: 'active',
+          workflow_id: 'wf-9'
         }
       ]
     )
@@ -1777,14 +1797,12 @@ describe('08-fix1 receipts and pins', () => {
     expect(users).toHaveLength(2)
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(f3) failed sends across a remount keep their own prompts', async () => {
+  it('(f3) failed sends across a remount keep their own prompts', async () => {
     const { users } = await failedSendsAcrossRemount()
     expect(users.map((u) => u.text)).toEqual(['first text', 'second text'])
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(f3b) failed sends across a remount mint distinct ids', async () => {
+  it('(f3b) failed sends across a remount mint distinct ids', async () => {
     const { users } = await failedSendsAcrossRemount()
     expect(new Set(users.map((u) => u.id)).size).toBe(2)
   })
@@ -2029,9 +2047,8 @@ describe('08-fix1 receipts and pins', () => {
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
     await first.sendMessage('bind me')
+    first.newChat()
     first.stop()
-
-    setActivePinia(createPinia())
     localStorage.clear()
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()

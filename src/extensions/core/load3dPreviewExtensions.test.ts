@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 const {
@@ -9,7 +10,6 @@ const {
   onLoad3dReadyMock,
   configureForSaveMeshMock,
   getLoad3dMock,
-  toastAddAlertMock,
   getNodeByLocatorIdMock,
   nodeToLoad3dMapMock
 } = vi.hoisted(() => ({
@@ -18,7 +18,6 @@ const {
   onLoad3dReadyMock: vi.fn(),
   configureForSaveMeshMock: vi.fn(),
   getLoad3dMock: vi.fn(),
-  toastAddAlertMock: vi.fn(),
   getNodeByLocatorIdMock: vi.fn(),
   nodeToLoad3dMapMock: new Map()
 }))
@@ -61,9 +60,10 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: toastAddAlertMock })
-}))
+let toastAddAlertMock: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  toastAddAlertMock = useToastStore().addAlert
+})
 
 type ExtCreated = ComfyExtension & {
   nodeCreated: (node: LGraphNode) => Promise<void>

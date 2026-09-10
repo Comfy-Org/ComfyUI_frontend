@@ -1,22 +1,20 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { codeToHtml } from 'shiki'
 
 import { i18n } from '@/i18n'
 
 import CodeBlock from './CodeBlock.vue'
 
-vi.mock('shiki', () => ({
-  codeToHtml: vi.fn(async (code: string, options?: { lang: string }) => {
-    if (options?.lang === 'nope') throw new Error('unknown language')
+vi.mock(import('shiki'), () => ({
+  codeToHtml: vi.fn(async (code: string, options: { lang: string }) => {
+    if (options.lang === 'nope') throw new Error('unknown language')
     return `<pre class="shiki"><code><span>HL:${code}</span></code></pre>`
   })
 }))
 
 describe('CodeBlock', () => {
-  beforeEach(() => vi.mocked(codeToHtml).mockClear())
-
   it('renders plain code first and swaps to highlighted markup', async () => {
     render(CodeBlock, {
       props: { code: 'print("hi")', lang: 'python' },

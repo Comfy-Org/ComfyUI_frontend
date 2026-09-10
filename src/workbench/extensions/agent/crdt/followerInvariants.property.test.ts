@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { DocFrameTransport } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'

@@ -1,5 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, nextTick, computed } from 'vue'
+import type { Ref } from 'vue'
+import type { Mock } from 'vitest'
+import { storeToRefs } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
@@ -12,7 +18,15 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
-import { useBillingContext } from './useBillingContext'
+import { useBillingContext as useSharedBillingContext } from './useBillingContext'
+
+vi.mock(import('firebase/auth'))
+
+function useBillingContext() {
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(useSharedBillingContext)!
+}
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
@@ -20,21 +34,17 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   occupied_seats: 72,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY'
 }
 
 const {
-  mockIsPersonal,
-  mockBillingRail,
   mockPlans,
   mockFetchPlans,
   mockLegacyFetchStatus,
-  mockLegacyFetchBalance,
   mockLegacySubscribe,
   mockPurchaseCredits,
-  mockUpdateActiveWorkspace,
-  mockSetWorkspaceBillingRail,
   mockLegacyStatus,
   mockBillingStatus
 } = vi.hoisted(() => {
@@ -47,16 +57,11 @@ const {
     }
   }
   return {
-    mockIsPersonal: { value: true },
-    mockBillingRail: { value: undefined as BillingRail | undefined },
     mockPlans: { value: [] as Plan[] },
     mockFetchPlans: vi.fn(async () => undefined),
     mockLegacyFetchStatus: vi.fn(async () => undefined),
-    mockLegacyFetchBalance: vi.fn(async () => undefined),
     mockLegacySubscribe: vi.fn(async () => undefined),
     mockPurchaseCredits: vi.fn(),
-    mockUpdateActiveWorkspace: vi.fn(),
-    mockSetWorkspaceBillingRail: vi.fn(),
     mockLegacyStatus: {
       value: {
         is_active: true,
@@ -68,68 +73,47 @@ const {
   }
 })
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...(original as Record<string, unknown>),
-    createSharedComposable: (fn: (...args: unknown[]) => unknown) => fn
-  }
-})
+let mockIsPersonal: Ref<boolean>
+let mockBillingRail: Ref<BillingRail | null | undefined>
+let mockLegacyFetchBalance: Mock<
+  ReturnType<typeof useAuthStore>['fetchBalance']
+>
+let mockUpdateActiveWorkspace: Mock<
+  ReturnType<typeof useTeamWorkspaceStore>['updateActiveWorkspace']
+>
+let mockSetWorkspaceBillingRail: Mock<
+  ReturnType<typeof useTeamWorkspaceStore>['setWorkspaceBillingRail']
+>
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
-  const { ref } = await import('vue')
-  const billingRailRef = ref(mockBillingRail.value)
-  Object.defineProperty(mockBillingRail, 'value', {
-    get: () => billingRailRef.value,
-    set: (value: BillingRail | undefined) => {
-      billingRailRef.value = value
-    }
-  })
-  return {
-    useTeamWorkspaceStore: () => ({
-      get isInPersonalWorkspace() {
-        return mockIsPersonal.value
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscription'),
+  () => ({
+    useSubscription: () => ({
+      canAccessSubscriptionFeatures: { value: true },
+      subscriptionTier: { value: 'PRO' },
+      subscriptionDuration: { value: 'MONTHLY' },
+      subscriptionStatus: {
+        get value() {
+          return mockLegacyStatus.value
+        }
       },
-      get activeWorkspace() {
-        return mockIsPersonal.value
-          ? { id: 'personal-123', type: 'personal' }
-          : { id: 'team-456', type: 'team' }
+      isCancelled: {
+        get value() {
+          return Boolean(mockLegacyStatus.value.cancel_at)
+        }
       },
-      get activeWorkspaceBillingRail() {
-        return mockBillingRail.value
-      },
-      updateActiveWorkspace: mockUpdateActiveWorkspace,
-      setWorkspaceBillingRail: mockSetWorkspaceBillingRail
+      fetchStatus: mockLegacyFetchStatus,
+      manageSubscription: vi.fn(async () => undefined),
+      subscribe: mockLegacySubscribe,
+      showSubscriptionDialog: vi.fn()
     })
-  }
-})
-
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    subscriptionTier: { value: 'PRO' },
-    subscriptionDuration: { value: 'MONTHLY' },
-    subscriptionStatus: {
-      get value() {
-        return mockLegacyStatus.value
-      }
-    },
-    isCancelled: {
-      get value() {
-        return Boolean(mockLegacyStatus.value.cancel_at)
-      }
-    },
-    fetchStatus: mockLegacyFetchStatus,
-    manageSubscription: vi.fn(async () => undefined),
-    subscribe: mockLegacySubscribe,
-    showSubscriptionDialog: vi.fn()
   })
-}))
+)
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({
       show: vi.fn(),
@@ -138,33 +122,29 @@ vi.mock(
   })
 )
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     purchaseCredits: mockPurchaseCredits
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    balance: { amount_micros: 5000000 },
-    fetchBalance: mockLegacyFetchBalance
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  () => ({
+    useBillingPlans: () => ({
+      get plans() {
+        return mockPlans
+      },
+      currentPlanSlug: { value: null },
+      isLoading: { value: false },
+      error: { value: null },
+      fetchPlans: mockFetchPlans,
+      getPlanBySlug: vi.fn(() => null)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
-  useBillingPlans: () => ({
-    get plans() {
-      return mockPlans
-    },
-    currentPlanSlug: { value: null },
-    isLoading: { value: false },
-    error: { value: null },
-    fetchPlans: mockFetchPlans,
-    getPlanBySlug: vi.fn(() => null)
-  })
-}))
-
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingStatus: vi.fn(() =>
       Promise.resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
@@ -181,6 +161,29 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 
 describe('useBillingContext', () => {
   beforeEach(() => {
+    const workspaceStore = useTeamWorkspaceStore()
+    const refs = storeToRefs(workspaceStore)
+    mockIsPersonal = refs.isInPersonalWorkspace
+    mockBillingRail = refs.activeWorkspaceBillingRail
+    Object.assign(workspaceStore, {
+      activeWorkspace: computed(() =>
+        fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>({
+          id: mockIsPersonal.value ? 'personal-123' : 'team-456',
+          type: mockIsPersonal.value ? 'personal' : 'team'
+        })
+      )
+    })
+    const authStore = useAuthStore()
+    authStore.balance = { currency: 'usd', amount_micros: 5000000 }
+    mockLegacyFetchBalance = vi
+      .mocked(authStore.fetchBalance)
+      .mockResolvedValue(authStore.balance)
+    mockUpdateActiveWorkspace = vi
+      .mocked(workspaceStore.updateActiveWorkspace)
+      .mockImplementation(() => {})
+    mockSetWorkspaceBillingRail = vi.mocked(
+      workspaceStore.setWorkspaceBillingRail
+    )
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
@@ -197,6 +200,7 @@ describe('useBillingContext', () => {
       max_seats: 0,
       occupied_seats: 0,
       team_credit_stop: null,
+      scheduled_change: null,
       renewal_date: '2025-01-01T00:00:00Z'
     }
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
@@ -225,6 +229,7 @@ describe('useBillingContext', () => {
       tier: 'PRO',
       duration: 'MONTHLY',
       planSlug: null,
+      scheduledChange: null,
       renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
       isCancelled: false,

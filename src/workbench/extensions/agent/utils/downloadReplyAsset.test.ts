@@ -5,14 +5,14 @@ import { downloadReplyAsset } from './downloadReplyAsset'
 
 const fetchApi = vi.hoisted(() => vi.fn())
 const downloadBlob = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `http://localhost/api${route}`,
     fetchApi
   }
 }))
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob }))
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: vi.fn()
 }))

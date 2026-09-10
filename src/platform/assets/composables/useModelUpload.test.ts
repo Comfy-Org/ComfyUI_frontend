@@ -1,36 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const showDialog = vi.hoisted(() => vi.fn())
 const flags = vi.hoisted(() => ({
   privateModelsEnabled: false,
   modelUploadButtonEnabled: true
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
-}))
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags })
 }))
-vi.mock('@/platform/assets/components/UploadModelDialog.vue', () => ({
-  default: {}
-}))
-vi.mock('@/platform/assets/components/UploadModelDialogHeader.vue', () => ({
-  default: {}
-}))
-vi.mock('@/platform/assets/components/UploadModelUpgradeModal.vue', () => ({
-  default: {}
-}))
-vi.mock(
-  '@/platform/assets/components/UploadModelUpgradeModalHeader.vue',
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelDialog.vue'),
+  () => ({
+    default: {}
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelDialogHeader.vue'),
+  () => ({
+    default: {}
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelUpgradeModal.vue'),
+  () => ({
+    default: {}
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelUpgradeModalHeader.vue'),
   () => ({ default: {} })
 )
+
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useModelUpload } from './useModelUpload'
 
 describe('useModelUpload dialog sizing', () => {
   beforeEach(() => {
-    showDialog.mockClear()
     flags.privateModelsEnabled = false
   })
 
@@ -38,6 +44,7 @@ describe('useModelUpload dialog sizing', () => {
     'shrink-wraps upload content without exceeding the viewport (privateModels: %s)',
     (privateModelsEnabled) => {
       flags.privateModelsEnabled = privateModelsEnabled
+      const showDialog = vi.mocked(useDialogStore().showDialog)
 
       useModelUpload().showUploadDialog()
 

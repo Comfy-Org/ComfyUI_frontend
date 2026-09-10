@@ -1,6 +1,8 @@
 import { marked } from 'marked'
 import { describe, expect, it } from 'vitest'
 
+import { isImageResult } from '@/utils/resultItem'
+
 import {
   classifyAssetUrl,
   htmlReplyAssets,
@@ -127,6 +129,6 @@ describe('replyAssetResultItem', () => {
       kind: 'image'
     })
     expect(item.url).toBe('https://x/y?filename=a.png')
-    expect(item.isImage).toBe(true)
+    expect(isImageResult(item)).toBe(true)
   })
 })

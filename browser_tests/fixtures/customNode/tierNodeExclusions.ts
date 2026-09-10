@@ -78,7 +78,8 @@ export function tierNodeExclusionProblems(
   targets: readonly TierNodeExclusionTarget[],
   exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
-  const targetsByPack = groupBy(targets, (target) => target.pack.toLowerCase())
+  const targetsByPack: Partial<Record<string, TierNodeExclusionTarget[]>> =
+    groupBy(targets, (target) => target.pack.toLowerCase())
   const seen = new Set<string>()
   const problems: string[] = []
 

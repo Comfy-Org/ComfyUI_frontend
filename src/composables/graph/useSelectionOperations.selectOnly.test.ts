@@ -1,33 +1,26 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  useCanvasStore,
+  useTitleEditorStore
+} from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 
-const canvasStore = vi.hoisted(() => ({
-  selectedItems: new Set<unknown>(),
-  titleEditorTarget: null as unknown,
-  updateSelectedItems: vi.fn()
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => canvasStore,
-  useTitleEditorStore: () => canvasStore
-}))
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined as unknown }
 }))
 
 const prompt = vi.hoisted(() => vi.fn())
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ prompt })
 }))
 
 function stubCanvas(selectOnly: boolean) {
-  const selectedItem = { id: 1, title: 'Original' }
-  const selectedItems = new Set([selectedItem])
+  const selectedItem = new LGraphGroup('Original')
+  const selectedItems = new Set<LGraphGroup | LGraphNode>([selectedItem])
   const copyToClipboard = vi.fn()
   const deleteSelected = vi.fn(() => selectedItems.clear())
   const pasteFromClipboard = vi.fn()
@@ -41,7 +34,7 @@ function stubCanvas(selectOnly: boolean) {
     setDirty
   }
   ;(app as unknown as { canvas: unknown }).canvas = canvas
-  canvasStore.selectedItems = selectedItems
+  select(selectedItems)
   return {
     copyToClipboard,
     deleteSelected,
@@ -52,11 +45,14 @@ function stubCanvas(selectOnly: boolean) {
   }
 }
 
+function select(items: Iterable<LGraphGroup | LGraphNode>) {
+  useCanvasStore().selectedItems = [...items].map((item) => markRaw(item))
+}
+
 describe('useSelectionOperations selection-only guards', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    canvasStore.selectedItems = new Set()
-    canvasStore.titleEditorTarget = null
+    useCanvasStore().selectedItems = []
+    useTitleEditorStore().titleEditorTarget = null
   })
 
   // INV-CANVAS-01/03: remove `.fails` when select-only blocks paste.
@@ -78,7 +74,7 @@ describe('useSelectionOperations selection-only guards', () => {
     expect(copyToClipboard).not.toHaveBeenCalled()
     expect(pasteFromClipboard).not.toHaveBeenCalled()
     expect([...selectedItems]).toEqual([selectedItem])
-    expect(canvasStore.updateSelectedItems).not.toHaveBeenCalled()
+    expect(useCanvasStore().updateSelectedItems).not.toHaveBeenCalled()
   })
 
   it('does not delete while the canvas is picking-only', () => {
@@ -120,7 +116,7 @@ describe('useSelectionOperations selection-only guards', () => {
 
     expect(copyToClipboard).toHaveBeenCalledOnce()
     expect(selectedItems.size).toBe(0)
-    expect(canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
+    expect(useCanvasStore().updateSelectedItems).toHaveBeenCalledOnce()
     expect(pasteFromClipboard).toHaveBeenCalledWith({ connectInputs: false })
   })
 
@@ -138,21 +134,21 @@ describe('useSelectionOperations selection-only guards', () => {
   it.fails('does not open the node title editor while picking-only', async () => {
     stubCanvas(true)
     const node = new LGraphNode('Node')
-    canvasStore.selectedItems = new Set([node])
+    select([node])
 
     await useSelectionOperations().renameSelection()
 
-    expect(canvasStore.titleEditorTarget).toBeNull()
+    expect(useTitleEditorStore().titleEditorTarget).toBeNull()
   })
 
   it('opens the node title editor when the canvas is editable', async () => {
     stubCanvas(false)
     const node = new LGraphNode('Node')
-    canvasStore.selectedItems = new Set([node])
+    select([node])
 
     await useSelectionOperations().renameSelection()
 
-    expect(canvasStore.titleEditorTarget).toBe(node)
+    expect(useTitleEditorStore().titleEditorTarget).toBe(node)
   })
 
   it('renames normally when the canvas is editable', async () => {
