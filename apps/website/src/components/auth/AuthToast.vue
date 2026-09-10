@@ -13,7 +13,7 @@ const { messages } = useAuthToasts()
   <!-- Where the cloud app's toast lands on its login route (no canvas
        anchors there): top right, 1.25rem down and 0.75rem in. -->
   <div
-    class="pointer-events-none fixed top-5 right-3 z-10000 h-fit w-100 [word-break:break-word] whitespace-pre-line"
+    class="pointer-events-none fixed top-5 right-3 z-10000 h-fit w-[min(25rem,calc(100vw-1.5rem))] [word-break:break-word] whitespace-pre-line"
   >
     <TransitionGroup
       tag="div"
