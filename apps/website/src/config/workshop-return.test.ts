@@ -177,6 +177,21 @@ describe('stashWorkshopForm / popWorkshopForm', () => {
     spy.mockRestore()
     expect(popWorkshopForm('flux', fields)).toBeUndefined()
   })
+
+  it('clears a prior stash when the replacement write fails', () => {
+    stashWorkshopForm('flux', fields, { prompt: 'stale cat', steps: 99 })
+    const spy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+
+    stashWorkshopForm('flux', fields, { prompt: 'fresh dog' })
+    spy.mockRestore()
+
+    expect(
+      popWorkshopForm('flux', fields),
+      'a failed replacement must not leave the prior payload to restore as current'
+    ).toBeUndefined()
+  })
 })
 
 describe('requestedReturnPath', () => {
