@@ -8,6 +8,7 @@ import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSe
 import DeveloperPlatformSection from "../components/home/DeveloperPlatformSection.vue";
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
+import ModelCardsSection from "../components/home/ModelCardsSection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
@@ -64,6 +65,7 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
   <FeaturedWorkflowsSection client:load />
+  <ModelCardsSection client:load />
   {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
   <ProductShowcaseSection client:load />
   <IndustriesSection client:load />
