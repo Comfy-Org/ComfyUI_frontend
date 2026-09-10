@@ -195,6 +195,28 @@ describe('agentRunModeStore', () => {
     expect(store.creditLimit).toBe(20)
   })
 
+  it('ignores a save that completes after an identity reset', async () => {
+    let resolvePut!: (response: Response) => void
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+    )
+    const store = useAgentRunModeStore()
+
+    const save = store.save('auto_limited', 20)
+    store.reset()
+    resolvePut(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
+    await save
+
+    expect(store.mode).toBe('ask_approval')
+    expect(store.creditLimit).toBeNull()
+    expect(
+      JSON.parse(localStorage.getItem('Comfy.Agent.RunModePreference')!)
+    ).toEqual({ mode: 'ask_approval', credit_limit: null })
+  })
+
   it('keeps a valid local preference when the endpoint is unavailable', async () => {
     localStorage.setItem(
       'Comfy.Agent.RunModePreference',
