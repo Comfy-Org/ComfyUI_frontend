@@ -489,6 +489,14 @@ Vue Nodes. The fixture enables the renderer before boot and waits for the nodes.
 Never manually set `Comfy.VueNodes.Enabled`, including through `initialSettings`,
 or call `comfyPage.vueNodes.waitForNodes()` in tests.
 
+When renderer switching is the behavior under test, use
+`comfyPage.menu.topbar.setVueNodesEnabled(enabled)`. It clicks the Nodes 2.0
+switch and waits for the renderer. Keep `@vue-nodes` on these tests.
+For command-level transitions, use
+`comfyPage.command.executeCommand('Experimental.ToggleVueNodes')` and assert
+the resulting behavior. This also works when an overlay blocks the menu.
+Untagged tests start in classic mode, regardless of product defaults.
+
 Vue Node state is expressed via CSS classes:
 
 ```typescript

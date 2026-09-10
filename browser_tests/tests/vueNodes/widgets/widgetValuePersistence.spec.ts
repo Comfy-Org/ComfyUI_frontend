@@ -35,7 +35,6 @@ test.describe(
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
         .toContain('empty-widget-value')
-      await comfyPage.vueNodes.waitForNodes()
 
       await expect(
         comfyPage.vueNodes.getWidgetByName(

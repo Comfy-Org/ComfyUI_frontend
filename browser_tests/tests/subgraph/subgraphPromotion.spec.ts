@@ -204,7 +204,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.vueNodes.waitForNodes()
 
         const hostValue = 'promoted-value-rebind-test'
         const promotedTextarea = comfyPage.vueNodes
@@ -228,7 +227,6 @@ test.describe(
         await comfyPage.subgraph.rebindPromotedInput(interiorNodes[0], 'text')
 
         await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.vueNodes.waitForNodes()
 
         test.fail()
         await expect(promotedTextarea).toHaveValue(hostValue)
@@ -305,46 +303,49 @@ test.describe(
       })
     })
 
-    test.describe('Textarea Widget Context Menu in Subgraph (Vue Mode)', () => {
-      test.use({
-        initialSettings: {
-          'Comfy.UseNewMenu': 'Top',
-          'Comfy.VueNodes.Enabled': true
-        }
-      })
-
-      test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-text-widget'
-        )
-
-        await comfyPage.vueNodes.enterSubgraph('11')
-        await comfyPage.nextFrame()
-
-        const clipNode = comfyPage.vueNodes.getNodeLocator('10')
-        await expect(clipNode).toBeVisible()
-
-        await comfyPage.vueNodes.selectNode('10')
-        await comfyPage.nextFrame()
-
-        const textarea = clipNode.locator('textarea')
-        await expect(textarea).toBeVisible()
-        await textarea.dispatchEvent('contextmenu', {
-          bubbles: true,
-          cancelable: true,
-          button: 2
+    test.describe(
+      'Textarea Widget Context Menu in Subgraph (Vue Mode)',
+      { tag: '@vue-nodes' },
+      () => {
+        test.use({
+          initialSettings: {
+            'Comfy.UseNewMenu': 'Top'
+          }
         })
-        await comfyPage.nextFrame()
 
-        const promoteEntry = comfyPage.page
-          .locator('.p-contextmenu')
-          .locator('text=Promote Widget')
+        test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-text-widget'
+          )
 
-        await expect(promoteEntry.first()).toBeVisible()
-      })
-    })
+          await comfyPage.vueNodes.enterSubgraph('11')
+          await comfyPage.nextFrame()
+
+          const clipNode = comfyPage.vueNodes.getNodeLocator('10')
+          await expect(clipNode).toBeVisible()
+
+          await comfyPage.vueNodes.selectNode('10')
+          await comfyPage.nextFrame()
+
+          const textarea = clipNode.locator('textarea')
+          await expect(textarea).toBeVisible()
+          await textarea.dispatchEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            button: 2
+          })
+          await comfyPage.nextFrame()
+
+          const promoteEntry = comfyPage.page
+            .locator('.p-contextmenu')
+            .locator('text=Promote Widget')
+
+          await expect(promoteEntry.first()).toBeVisible()
+        })
+      }
+    )
 
     test.describe('Pseudo-Widget Promotion', () => {
       test('Promoted preview nodes render custom content in Vue mode', async ({
@@ -383,53 +384,56 @@ test.describe(
       })
     })
 
-    test.describe('Vue Mode - Promoted Preview Content', () => {
-      test.use({
-        initialSettings: {
-          'Comfy.UseNewMenu': 'Disabled',
-          'Comfy.VueNodes.Enabled': true
-        }
-      })
+    test.describe(
+      'Vue Mode - Promoted Preview Content',
+      { tag: '@vue-nodes' },
+      () => {
+        test.use({
+          initialSettings: {
+            'Comfy.UseNewMenu': 'Disabled'
+          }
+        })
 
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-preview-node'
-        )
-
-        const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('5')
-        await expect(subgraphVueNode).toBeVisible()
-
-        await expect
-          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
-          .toEqual(
-            expect.arrayContaining([
-              'filename_prefix',
-              expect.stringMatching(/^\$\$/)
-            ])
+        test.beforeEach(async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-preview-node'
           )
 
-        const loadImageNode = await comfyPage.nodeOps.getNodeRefById('11')
-        const loadImagePosition = await loadImageNode.getPosition()
-        await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-          dropPosition: loadImagePosition
+          const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('5')
+          await expect(subgraphVueNode).toBeVisible()
+
+          await expect
+            .poll(() => getPromotedWidgetNames(comfyPage, '5'))
+            .toEqual(
+              expect.arrayContaining([
+                'filename_prefix',
+                expect.stringMatching(/^\$\$/)
+              ])
+            )
+
+          const loadImageNode = await comfyPage.nodeOps.getNodeRefById('11')
+          const loadImagePosition = await loadImageNode.getPosition()
+          await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
+            dropPosition: loadImagePosition
+          })
+
+          await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+          const nodeBody = subgraphVueNode.getByTestId('node-body-5')
+          await expect(nodeBody).toBeVisible()
+          await expect(
+            nodeBody.locator('.lg-node-widgets > div').first()
+          ).toBeVisible()
+
+          await expect(nodeBody.locator('.image-preview img')).toHaveCount(1, {
+            timeout: 30_000
+          })
+          await expect(nodeBody.locator('.lg-node-widgets')).not.toContainText(
+            '$$canvas-image-preview'
+          )
         })
-
-        await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-
-        const nodeBody = subgraphVueNode.getByTestId('node-body-5')
-        await expect(nodeBody).toBeVisible()
-        await expect(
-          nodeBody.locator('.lg-node-widgets > div').first()
-        ).toBeVisible()
-
-        await expect(nodeBody.locator('.image-preview img')).toHaveCount(1, {
-          timeout: 30_000
-        })
-        await expect(nodeBody.locator('.lg-node-widgets')).not.toContainText(
-          '$$canvas-image-preview'
-        )
-      })
-    })
+      }
+    )
 
     test.describe(
       'Nested Promoted Widget Disabled State',

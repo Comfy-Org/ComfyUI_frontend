@@ -809,8 +809,6 @@ test.describe(
   'Painter legacy LiteGraph rendering',
   { tag: ['@widget', '@canvas'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': false } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => window.app?.graph.clear())
       await comfyPage.workflow.loadWorkflow('widgets/painter_widget')

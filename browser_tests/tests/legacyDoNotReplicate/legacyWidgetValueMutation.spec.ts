@@ -4,16 +4,13 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { BAD_DO_NOT_DO_THIS_LegacyApiHelper } from '@e2e/fixtures/helpers/BAD_DO_NOT_DO_THIS_LegacyApiHelper'
 import { toNodeId } from '@/types/nodeId'
 
-test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
-
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.workflow.loadWorkflow('widgets/image_crop_widget')
-  await comfyPage.vueNodes.waitForNodes()
 })
 
 test(
   'Programmatically setting widget value updates bounding box inputs',
-  { tag: '@ui' },
+  { tag: ['@ui', '@vue-nodes'] },
   async ({ comfyPage }) => {
     const newBounds = { x: 50, y: 100, width: 200, height: 300 }
     const legacyApi = new BAD_DO_NOT_DO_THIS_LegacyApiHelper(comfyPage.page)

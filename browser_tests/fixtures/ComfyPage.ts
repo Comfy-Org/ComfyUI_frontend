@@ -325,6 +325,7 @@ export class ComfyPage {
       {
         data: {
           'Comfy.UseNewMenu': 'Top',
+          'Comfy.VueNodes.Enabled': false,
           'Comfy.Graph.CanvasInfo': false,
           'Comfy.Graph.CanvasMenu': false,
           'Comfy.Canvas.SelectionToolbox': false,

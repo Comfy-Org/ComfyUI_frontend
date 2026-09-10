@@ -77,12 +77,10 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
   test.describe(
     'Nested subgraph pack preserves promoted widget values',
-    { tag: ['@widget'] },
+    { tag: ['@widget', '@vue-nodes'] },
     () => {
       const WORKFLOW = 'subgraphs/nested-pack-promoted-values'
       const HOST_NODE_ID = '57'
-
-      test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
 
       test('Promoted widget values persist after packing interior nodes into nested subgraph', async ({
         comfyPage
@@ -118,8 +116,7 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         }).toPass({ timeout: 5000 })
 
         await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
-
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
         const nodeAfter = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeAfter).toBeVisible()
@@ -154,11 +151,9 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
   test.describe(
     'Nested subgraph stale proxyWidgets',
-    { tag: ['@widget'] },
+    { tag: ['@widget', '@vue-nodes'] },
     () => {
       const WORKFLOW = 'subgraphs/nested-subgraph-stale-proxy-widgets'
-
-      test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
 
       test('Outer subgraph node has no stale proxyWidgets after nested packing', async ({
         comfyPage

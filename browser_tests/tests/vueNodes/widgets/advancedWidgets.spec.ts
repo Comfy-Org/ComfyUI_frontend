@@ -21,7 +21,6 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
       node.pos = [500, 200]
       window.app!.graph.add(node)
     })
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   function getNode(comfyPage: ComfyPage) {

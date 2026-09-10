@@ -170,10 +170,7 @@ test.describe('Node Interaction', () => {
   test.describe('Node Duplication', () => {
     test.use({
       initialSettings: {
-        'Comfy.UseNewMenu': 'Disabled',
-        // Pin this suite to the legacy canvas path so Alt+drag exercises
-        // LGraphCanvas, not the Vue node drag handler.
-        'Comfy.VueNodes.Enabled': false
+        'Comfy.UseNewMenu': 'Disabled'
       }
     })
 

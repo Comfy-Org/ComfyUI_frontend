@@ -64,13 +64,10 @@ async function assertSelectionEncompassesNodes(
 
 test.describe(
   'Selection bounding box (Vue mode)',
-  { tag: ['@canvas', '@node'] },
+  { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test.afterEach(async ({ comfyPage }) => {
@@ -104,7 +101,7 @@ test.describe(
           [targetId]: LAYOUTS[pos].target
         })
         await comfyPage.nextFrame()
-        await comfyPage.vueNodes.waitForNodes()
+
         await comfyPage.vueNodes.getNodeLocator(targetId).waitFor()
         await comfyPage.vueNodes.getNodeLocator(refId).waitFor()
 
@@ -125,13 +122,10 @@ test.describe(
 
 test.describe(
   'Selection bounding box (Vue mode) — collapsed node bypass toggle',
-  { tag: ['@canvas', '@node'] },
+  { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': true } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.vueNodes.waitForNodes()
     })
 
     test.afterEach(async ({ comfyPage }) => {
@@ -146,7 +140,6 @@ test.describe(
         [REGULAR_ID]: LAYOUTS['bottom-right'].target
       })
       await comfyPage.nextFrame()
-      await comfyPage.vueNodes.waitForNodes()
 
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
       await toggleBypass(comfyPage, nodeRef)
@@ -172,7 +165,6 @@ test.describe(
         [REGULAR_ID]: LAYOUTS['bottom-right'].target
       })
       await comfyPage.nextFrame()
-      await comfyPage.vueNodes.waitForNodes()
 
       const nodeRef = await comfyPage.nodeOps.getNodeRefById(REGULAR_ID)
       await nodeRef.toggleCollapse()
@@ -194,8 +186,6 @@ test.describe(
   'Selection bounding box (legacy mode)',
   { tag: ['@canvas', '@node'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.VueNodes.Enabled': false } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.nextFrame()

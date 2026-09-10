@@ -1056,10 +1056,8 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadWorkflow(
       'vueNodes/ksampler-denoise-widget-link'
     )
-    await comfyPage.vueNodes.waitForNodes(2)
     await comfyPage.workflow.waitForDraftPersisted()
     await comfyPage.workflow.reloadAndWaitForApp()
-    await comfyPage.vueNodes.waitForNodes(2)
 
     const ksampler = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')

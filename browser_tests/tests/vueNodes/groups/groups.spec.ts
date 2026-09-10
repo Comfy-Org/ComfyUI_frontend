@@ -229,7 +229,6 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.vueNodes.waitForNodes(1)
 
     await expect
       .poll(() =>

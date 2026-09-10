@@ -103,8 +103,8 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'shows pricing badge in VueNodes node header',
+      { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
@@ -117,8 +117,6 @@ testWithMockedObjectInfo.describe(
           window.app!.graph.add(node)
           return node!.id
         })
-
-        await comfyPage.vueNodes.waitForNodes(1)
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
@@ -139,8 +137,8 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'shows range pricing in VueNodes node header',
+      { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
@@ -153,8 +151,6 @@ testWithMockedObjectInfo.describe(
           window.app!.graph.add(node)
           return node!.id
         })
-
-        await comfyPage.vueNodes.waitForNodes(1)
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
@@ -171,8 +167,8 @@ testWithMockedObjectInfo.describe(
 
     testWithMockedObjectInfo(
       'shows list pricing in VueNodes node header',
+      { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
@@ -185,8 +181,6 @@ testWithMockedObjectInfo.describe(
           window.app!.graph.add(node)
           return node!.id
         })
-
-        await comfyPage.vueNodes.waitForNodes(1)
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
