@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+
 import type { Options } from './dev-agent-options'
 import {
   assertPortAvailable,
@@ -144,6 +146,20 @@ async function seedIdentity(command: string): Promise<void> {
   await execFileAsync(parts[0], [...parts.slice(1), sql])
 }
 
+export function isWidgetCatalog(value: unknown): value is WidgetCatalog {
+  if (typeof value !== 'object' || value === null) return false
+  const { types } = value as { types?: unknown }
+  if (typeof types !== 'object' || types === null || Array.isArray(types)) {
+    return false
+  }
+  return Object.values(types).every((entry) => {
+    const order = (entry as { widget_order?: unknown } | null)?.widget_order
+    return (
+      Array.isArray(order) && order.every((name) => typeof name === 'string')
+    )
+  })
+}
+
 // AGENT_CRDT_MODE=on fails closed without a catalog; the doc host takes its own per request.
 async function writeCatalog(fixture: string, dataDir: string): Promise<string> {
   const parsed: unknown = JSON.parse(await readFile(fixture, 'utf8'))
@@ -151,11 +167,14 @@ async function writeCatalog(fixture: string, dataDir: string): Promise<string> {
     typeof parsed === 'object' && parsed !== null && 'workflow' in parsed
       ? (parsed as { workflow?: { catalog?: unknown } }).workflow
       : undefined
-  if (!workflow?.catalog) {
-    throw new Error(`${fixture} has no workflow.catalog`)
+  const catalog = workflow?.catalog
+  if (!isWidgetCatalog(catalog)) {
+    throw new Error(
+      `${fixture} has no usable workflow.catalog; expected { types: { <class_type>: { widget_order: string[] } } }`
+    )
   }
   const path = resolve(dataDir, 'widget-catalog.json')
-  await writeFile(path, JSON.stringify(workflow.catalog))
+  await writeFile(path, JSON.stringify(catalog))
   return path
 }
 
