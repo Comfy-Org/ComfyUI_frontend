@@ -160,8 +160,10 @@ describe('useBillingPlans', () => {
         }
       })
       const useBillingPlans = await importUseBillingPlans()
-      const { fetchPlans, error, isLoading, plans } = useBillingPlans()
+      const { fetchPlans, error, isLoading, plans, teamCreditStops } =
+        useBillingPlans()
       await fetchPlans()
+      const cachedStops = teamCreditStops.value
 
       mockGetBillingPlans.mockRejectedValue(new Error('network down'))
 
@@ -170,6 +172,8 @@ describe('useBillingPlans', () => {
       expect(error.value).toBe('network down')
       expect(isLoading.value).toBe(false)
       expect(plans.value).toEqual([buildPlan()])
+      expect(teamCreditStops.value).toEqual(cachedStops)
+      expect(teamCreditStops.value?.stops).toHaveLength(1)
       expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'cloud_billing_plan_catalog_fallback',
         tags: {
