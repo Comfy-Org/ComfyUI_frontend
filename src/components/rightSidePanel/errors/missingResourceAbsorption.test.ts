@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
@@ -29,10 +27,6 @@ const liftedSourceNodeId = createNodeExecutionId([12, 5])
 if (!nodeId || !liftedHostNodeId || !liftedSourceNodeId) {
   throw new Error('Expected non-empty node execution IDs')
 }
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 function missingModel(
   overrides: Partial<MissingModelCandidate> = {}

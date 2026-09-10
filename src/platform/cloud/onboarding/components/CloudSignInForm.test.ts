@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/authStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
@@ -7,15 +8,6 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
-
-const loading = vi.hoisted(() => ({ value: false }))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    get loading() {
-      return loading.value
-    }
-  })
-}))
 
 const LOGIN_COPY = enMessages.auth.login
 
@@ -56,7 +48,7 @@ const submitButton = () =>
 
 beforeEach(() => {
   vi.useRealTimers()
-  loading.value = false
+  Object.assign(useAuthStore(), { loading: false })
 })
 
 describe('CloudSignInForm', () => {
@@ -177,7 +169,7 @@ describe('CloudSignInForm submit gating', () => {
 
 describe('CloudSignInForm in-flight state', () => {
   it('disables submit and marks it busy while an auth action runs', () => {
-    loading.value = true
+    Object.assign(useAuthStore(), { loading: true })
     renderRealForm()
 
     expect(submitButton()).toBeDisabled()
@@ -186,7 +178,7 @@ describe('CloudSignInForm in-flight state', () => {
 
   it('does not emit submit while loading', async () => {
     const user = userEvent.setup()
-    loading.value = true
+    Object.assign(useAuthStore(), { loading: true })
     const { emitted } = renderRealForm()
 
     await user.click(submitButton())
@@ -194,3 +186,10 @@ describe('CloudSignInForm in-flight state', () => {
     expect(emitted().submit).toBeUndefined()
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))

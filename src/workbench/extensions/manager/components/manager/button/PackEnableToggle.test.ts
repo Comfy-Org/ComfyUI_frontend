@@ -1,4 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -8,10 +7,12 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-vi.mock(import('es-toolkit/compat'), () => ({
+vi.mock(import('es-toolkit/compat'), async (importOriginal) => ({
+  ...(await importOriginal()),
   debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
 }))
 
@@ -71,38 +72,33 @@ const mockNodePack = {
   }
 }
 
-const mockIsPackEnabled = vi.fn()
-const mockEnablePack = vi.fn().mockResolvedValue(undefined)
-const mockDisablePack = vi.fn().mockResolvedValue(undefined)
-const mockGetConflictsForPackageByID = vi.fn()
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/stores/comfyManagerStore'),
-
-  () => ({
-    useComfyManagerStore: vi.fn(() => ({
-      isPackEnabled: mockIsPackEnabled,
-      enablePack: mockEnablePack,
-      disablePack: mockDisablePack,
-      installedPacks: {}
-    }))
-  })
-)
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/stores/conflictDetectionStore'),
-
-  () => ({
-    useConflictDetectionStore: vi.fn(() => ({
-      getConflictsForPackageByID: mockGetConflictsForPackageByID
-    }))
-  })
-)
+let mockIsPackEnabled: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackEnabled']>
+>
+let mockEnablePack: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['enablePack']>
+>
+let mockDisablePack: ReturnType<
+  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['disablePack']>
+>
+let mockGetConflictsForPackageByID: ReturnType<
+  typeof vi.mocked<
+    ReturnType<typeof useConflictDetectionStore>['getConflictsForPackageByID']
+  >
+>
 
 describe('PackEnableToggle', () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
+    const store = useComfyManagerStore()
+    mockIsPackEnabled = vi.mocked(store.isPackEnabled)
+    mockEnablePack = vi.mocked(store.enablePack)
+    mockDisablePack = vi.mocked(store.disablePack)
+    mockGetConflictsForPackageByID = vi.fn()
+    Object.assign(useConflictDetectionStore(), {
+      getConflictsForPackageByID: mockGetConflictsForPackageByID
+    })
     mockEnablePack.mockReset().mockResolvedValue(undefined)
     mockDisablePack.mockReset().mockResolvedValue(undefined)
     mockGetConflictsForPackageByID.mockReset().mockReturnValue(undefined)
@@ -114,7 +110,7 @@ describe('PackEnableToggle', () => {
     installedPacks = {}
   }: {
     props?: Record<string, unknown>
-    installedPacks?: Record<string, unknown>
+    installedPacks?: ReturnType<typeof useComfyManagerStore>['installedPacks']
   } = {}) {
     const i18n = createI18n({
       legacy: false,
@@ -122,14 +118,7 @@ describe('PackEnableToggle', () => {
       messages: { en: enMessages }
     })
 
-    vi.mocked(useComfyManagerStore).mockReturnValue({
-      isPackEnabled: mockIsPackEnabled,
-      enablePack: mockEnablePack,
-      disablePack: mockDisablePack,
-      installedPacks
-    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
-      typeof useComfyManagerStore
-    >)
+    useComfyManagerStore().installedPacks = installedPacks
 
     return render(PackEnableToggle, {
       props: {
@@ -137,7 +126,7 @@ describe('PackEnableToggle', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n]
+        plugins: [PrimeVue, i18n]
       }
     })
   }
@@ -273,7 +262,7 @@ describe('PackEnableToggle', () => {
     })
 
     it('should not show warning icon when package has no conflicts', () => {
-      mockGetConflictsForPackageByID.mockReturnValue(null)
+      mockGetConflictsForPackageByID.mockReturnValue(undefined)
 
       mockIsPackEnabled.mockReturnValue(true)
       const { container } = renderComponent()

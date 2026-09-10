@@ -26,6 +26,7 @@ import type {
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -410,6 +411,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    this.trackEvent(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
   }
 
   trackUserLoggedIn(): void {

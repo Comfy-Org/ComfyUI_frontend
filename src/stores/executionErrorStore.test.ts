@@ -1,6 +1,5 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -26,14 +25,6 @@ vi.mock(import('@/i18n'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
-}))
-
-const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
 }))
 
 vi.mock<unknown>(
@@ -626,7 +617,7 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -693,7 +684,7 @@ describe('surfaceMissingModels — silent option', () => {
 
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -823,8 +814,6 @@ describe('clearRunErrors', () => {
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
     executionErrorStore = useExecutionErrorStore()
     missingNodesStore = useMissingNodesErrorStore()
   })
@@ -876,10 +865,6 @@ describe('clearRunErrors', () => {
 })
 
 describe('added-node error scan coordination', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('keeps overlapping scans isolated by graph until every scan finishes', () => {
     const store = useExecutionErrorStore()
     const graphA = createTestRootGraph()
@@ -907,10 +892,6 @@ describe('added-node error scan coordination', () => {
 })
 
 describe('absorbed-error retirement on candidate resolution', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   const execId = createNodeExecutionId([1])
   if (!execId) {
     throw new Error('Expected a node execution ID')
@@ -1107,10 +1088,6 @@ describe('setActiveGraph', () => {
       'KSampler'
     )
   }
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   it('keeps each graph run errors separate and restores them on return', () => {
     const store = useExecutionErrorStore()

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
@@ -9,10 +7,6 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
 import { classifyPanelErrors } from './errorSeverityClassification'
 import type { ErrorSeverityInput } from './errorSeverityClassification'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 function classify(overrides: Partial<ErrorSeverityInput> = {}) {
   return classifyPanelErrors({
