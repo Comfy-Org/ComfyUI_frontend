@@ -2431,12 +2431,28 @@ export class LGraph
     return { subgraph, node: subgraphNode as SubgraphNode }
   }
 
+  /**
+   * Unpacks a subgraph node, replacing it with its contents.
+   *
+   * Validates every inner link before mutating the graph. If any link
+   * references a node that is not part of the subgraph, nothing is changed.
+   * @returns `true` if the subgraph was unpacked, `false` if it was left
+   * untouched because its links were malformed.
+   */
   unpackSubgraph(
     subgraphNode: SubgraphNode,
     options?: { skipMissingNodes?: boolean }
-  ) {
+  ): boolean {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const malformedLink = this._findMalformedSubgraphLink(subgraphNode)
+    if (malformedLink) {
+      console.error(
+        `Cannot unpack subgraph: link ${malformedLink.id} references a node that is not in the subgraph (origin ${malformedLink.origin_id}, target ${malformedLink.target_id})`
+      )
+      return false
+    }
 
     // Record state before unpacking for proper undo support
     this.beforeChange()
@@ -2447,6 +2463,33 @@ export class LGraph
       // Mark state change complete for proper undo support
       this.afterChange()
     }
+    return true
+  }
+
+  /**
+   * Finds the first inner link whose endpoints are not resolvable during
+   * unpacking. Endpoints on the subgraph IO boundary and unassigned
+   * endpoints are legitimately skipped by the unpack implementation and are
+   * not considered malformed.
+   */
+  private _findMalformedSubgraphLink(
+    subgraphNode: SubgraphNode
+  ): LLink | undefined {
+    const { subgraph } = subgraphNode
+    const innerNodeIds = new Set<NodeId>(subgraph.nodes.map((n) => n.id))
+
+    for (const link of subgraph.links.values()) {
+      const originOk =
+        link.origin_id === SUBGRAPH_INPUT_ID ||
+        link.origin_id === UNASSIGNED_NODE_ID ||
+        innerNodeIds.has(link.origin_id)
+      const targetOk =
+        link.target_id === SUBGRAPH_OUTPUT_ID ||
+        link.target_id === UNASSIGNED_NODE_ID ||
+        innerNodeIds.has(link.target_id)
+      if (!originOk || !targetOk) return link
+    }
+    return undefined
   }
 
   private _unpackSubgraphImpl(

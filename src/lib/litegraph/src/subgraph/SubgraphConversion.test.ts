@@ -17,6 +17,7 @@ import {
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import {
@@ -235,6 +236,43 @@ describe('SubgraphConversion', () => {
 
       expect(graph.reroutes.size).toBe(2)
       expect(graph.groups.length).toBe(1)
+    })
+    it('Should leave the graph untouched when a subgraph link is malformed', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerLink = innerNode1.connect(0, innerNode2, 0)
+      assert(innerLink)
+
+      // Simulate a corrupt workflow: link points at a node that is not in the subgraph.
+      innerLink.target_id = toNodeId(9999)
+
+      const before = JSON.stringify(graph.serialize())
+      const nodeCount = graph.nodes.length
+
+      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
+
+      expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
+      expect(graph.nodes.length).toBe(nodeCount)
+      expect(JSON.stringify(graph.serialize())).toBe(before)
+    })
+    it('Should report success when unpacking an intact subgraph', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      assert(innerNode1.connect(0, innerNode2, 0))
+
+      expect(graph.unpackSubgraph(subgraphNode)).toBe(true)
+      expect(graph.getNodeById(subgraphNode.id)).toBeNull()
+      expect(graph.nodes.length).toBe(2)
     })
     it('Should map reroutes onto split outputs', () => {
       const subgraph = createTestSubgraph({
