@@ -42,12 +42,10 @@ export function useGroupContextMenu() {
       group.recomputeInsideNodes()
       this.selectedItems.add(group)
       this.state.selectionChanged = true
-      if (this.graph) {
-        useSelectionStore().apply(graphScopeOf(this.graph), {
-          type: 'selection.add',
-          keys: [selectableKeyOf(group)]
-        })
-      }
+      useSelectionStore().apply(graphScopeOf(this.graph), {
+        type: 'selection.add',
+        keys: [selectableKeyOf(group)]
+      })
     }
     showNodeOptions(event)
   }
