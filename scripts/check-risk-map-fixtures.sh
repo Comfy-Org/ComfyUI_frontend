@@ -36,6 +36,18 @@ if [ -n "$shape" ]; then
   exit 1
 fi
 
+# A fixture pointed at a path that does not exist tests the glob, not the repo.
+untracked="$(jq -r '.cases[].path' "$fixtures" | while read -r path; do
+  git -C "$repo_root" ls-files --error-unmatch -- "$path" >/dev/null 2>&1 ||
+    echo "  $path"
+done)"
+
+if [ -n "$untracked" ]; then
+  echo "risk-map fixtures reference untracked paths:" >&2
+  echo "$untracked" >&2
+  exit 1
+fi
+
 # glob2re, matches and rank are copied verbatim from the same upstream pin. An
 # unrecognised tier ranks as the RISKIEST (3), never the safest: defaulting it
 # low would let a typo silently downgrade a grade.

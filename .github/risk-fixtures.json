@@ -42,16 +42,6 @@
       "classes": ["billing"]
     },
     {
-      "path": "src/services/cloud/subscriptionService.ts",
-      "tier": "R3",
-      "classes": ["billing", "core-infra"]
-    },
-    {
-      "path": "src/stores/workspace/pricingStore.ts",
-      "tier": "R3",
-      "classes": ["billing", "core-infra"]
-    },
-    {
       "path": "apps/website/src/data/pricingPlans.ts",
       "tier": "R3",
       "classes": ["billing", "website"]
@@ -65,11 +55,6 @@
       "path": "apps/website/src/components/pricing/PricingCard.vue",
       "tier": "R3",
       "classes": ["billing", "website"]
-    },
-    {
-      "path": "apps/website/src/components/HeroSection.vue",
-      "tier": "R2",
-      "classes": ["website"]
     },
     {
       "path": "apps/website/vercel.json",
@@ -92,24 +77,9 @@
       "classes": ["storybook", "website"]
     },
     {
-      "path": "apps/website/src/content/pricing.mdx",
-      "tier": "R2",
-      "classes": ["docs", "website"]
-    },
-    {
       "path": "browser_tests/tests/priceBadge.spec.ts",
       "tier": "R0",
       "classes": ["tests"]
-    },
-    {
-      "path": "src/locales/en/pricing.json",
-      "tier": "R0",
-      "classes": ["i18n-copy"]
-    },
-    {
-      "path": "docs/pricing-faq.md",
-      "tier": "R0",
-      "classes": ["docs"]
     },
     {
       "path": "src/components/ui/credit-slider/CreditSlider.test.ts",
@@ -175,6 +145,36 @@
       "path": "scripts/check-risk-map-fixtures.sh",
       "tier": "R3",
       "classes": ["build-config", "risk-map"]
+    },
+    {
+      "path": "apps/website/src/components/about/HeroSection.vue",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
+      "path": "apps/website/src/content/customers/en/golan-levin.mdx",
+      "tier": "R2",
+      "classes": ["docs", "website"]
+    },
+    {
+      "path": "docs/FEATURE_FLAGS.md",
+      "tier": "R0",
+      "classes": ["docs"]
+    },
+    {
+      "path": "src/locales/en/main.json",
+      "tier": "R0",
+      "classes": ["i18n-copy"]
+    },
+    {
+      "path": "src/services/dialogService.topUpCredits.test.ts",
+      "tier": "R3",
+      "classes": ["billing", "core-infra", "tests"]
+    },
+    {
+      "path": "src/platform/workspace/api/workspaceApiUrl.ts",
+      "tier": "R0",
+      "classes": []
     }
   ]
 }
