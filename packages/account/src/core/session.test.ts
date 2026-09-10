@@ -552,6 +552,40 @@ describe('identity epochs', () => {
       'the old fetch was minted from the signed-out identity and must never become the new session'
     ).toBe('new-jwt')
   })
+
+  it('makes a same-uid re-auth mint afresh instead of adopting the in-flight mint', async () => {
+    let releaseOld!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOld = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'new-jwt' }))
+      )
+    const { client } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() =>
+      expect(
+        fetchImpl,
+        'a same-uid re-auth must mint for itself, never adopt the prior in-flight mint'
+      ).toHaveBeenCalledTimes(2)
+    )
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    releaseOld(jsonResponse(200, mintBody({ token: 'old-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the pre-re-auth mint is from the prior identity event and must never win'
+    ).toBe('new-jwt')
+  })
 })
 
 describe('storage outage', () => {

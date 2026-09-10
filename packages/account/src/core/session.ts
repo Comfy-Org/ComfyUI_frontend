@@ -480,7 +480,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         if (!active) return
         identityEpoch += 1
         identitySettled = true
-        if (!next || next.uid !== currentUser?.uid) abandonInFlight()
+        // A same-uid re-auth must not adopt a mint started under the prior identity.
+        abandonInFlight()
         currentUser = next
         credential = undefined
         failure = undefined
