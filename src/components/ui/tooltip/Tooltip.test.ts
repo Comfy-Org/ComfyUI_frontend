@@ -1,7 +1,8 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import Tooltip from './Tooltip.vue'
 import { resetTooltipInputModality } from './tooltipInputModality'
@@ -9,7 +10,7 @@ import { resetTooltipInputModality } from './tooltipInputModality'
 const openDialogs: HTMLElement[] = []
 
 afterEach(() => {
-  for (const dialog of openDialogs.splice(0)) ZIndex.clear(dialog)
+  for (const dialog of openDialogs.splice(0)) zIndexManager.clear(dialog)
   resetTooltipInputModality()
 })
 
@@ -286,7 +287,7 @@ describe('Tooltip', () => {
 
   it('recomputes its modal lift each time it opens', async () => {
     const firstDialog = document.createElement('div')
-    ZIndex.set('modal', firstDialog, 2400)
+    zIndexManager.set('modal', firstDialog, 2400)
     openDialogs.push(firstDialog)
     const user = userEvent.setup()
     renderTooltip()
@@ -302,7 +303,7 @@ describe('Tooltip', () => {
     })
 
     const laterDialog = document.createElement('div')
-    ZIndex.set('modal', laterDialog, 2400)
+    zIndexManager.set('modal', laterDialog, 2400)
     openDialogs.push(laterDialog)
     await user.hover(trigger)
 

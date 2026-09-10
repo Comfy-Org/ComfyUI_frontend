@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import FormSelectButton from './FormSelectButton.vue'
@@ -13,9 +12,6 @@ describe('FormSelectButton Core Component', () => {
     props: Record<string, unknown> = {}
   ) => {
     return render(FormSelectButton, {
-      global: {
-        plugins: [PrimeVue]
-      },
       props: {
         modelValue,
         options: options as unknown as (
@@ -113,7 +109,6 @@ describe('FormSelectButton Core Component', () => {
       const options = ['first', 'second', 'third']
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'first',
           options: options as unknown as (
@@ -164,7 +159,6 @@ describe('FormSelectButton Core Component', () => {
       const options = [10, 20, 30]
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: '10',
           options: options as unknown as (
@@ -214,7 +208,6 @@ describe('FormSelectButton Core Component', () => {
       ]
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'apple_val',
           options: options as unknown as (
@@ -279,7 +272,7 @@ describe('FormSelectButton Core Component', () => {
     })
   })
 
-  describe('PrimeVue Compatibility', () => {
+  describe('object options', () => {
     it('uses custom optionLabel prop', () => {
       const options = [
         { title: 'First Item', value: 'first' },
@@ -315,7 +308,6 @@ describe('FormSelectButton Core Component', () => {
       ]
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'first_id',
           options: options as unknown as (
@@ -351,7 +343,6 @@ describe('FormSelectButton Core Component', () => {
       const options = ['option1', 'option2']
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'option1',
           options: options as unknown as (
@@ -607,7 +598,6 @@ describe('FormSelectButton Core Component', () => {
       const options = ['option1', 'option2']
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'option1',
           options: options as unknown as (

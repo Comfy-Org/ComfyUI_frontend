@@ -19,7 +19,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 </template>
 ```
 
-[Browse all PrimeIcons →](https://primevue.org/icons/#list)
+[Browse all PrimeIcons →](https://github.com/primefaces/primeicons)
 
 ### 2. Iconify Icons (Recommended)
 
@@ -357,7 +357,7 @@ See the [unplugin-icons documentation](https://github.com/unplugin/unplugin-icon
 
 ## Resources
 
-- [PrimeIcons List](https://primevue.org/icons/#list)
+- [PrimeIcons List](https://github.com/primefaces/primeicons)
 - [Iconify Icon Browser](https://icon-sets.iconify.design/)
 - [Lucide Icons](https://lucide.dev/icons/)
 - [unplugin-icons docs](https://github.com/unplugin/unplugin-icons)

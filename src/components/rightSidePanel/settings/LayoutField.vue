@@ -40,7 +40,7 @@ defineProps<{
 
         <i
           v-if="tooltip"
-          class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-primary"
+          class="relative top-px ml-0.5 icon-[lucide--info] size-3 group-hover:text-highlight"
         />
       </span>
     </Tooltip>

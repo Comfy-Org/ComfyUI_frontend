@@ -3,7 +3,6 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -156,7 +155,7 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           AsyncSearchInput: {
             template:
@@ -178,7 +177,7 @@ describe('TabErrors.vue', () => {
     seed(pinia)
     render(RightSidePanel, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           EditableText: true,
           TabErrors: true,

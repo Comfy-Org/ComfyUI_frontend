@@ -1,4 +1,4 @@
-/** Fill matches the social buttons; PrimeVue inputs need it set explicitly. */
+/** Fill matches the social buttons. */
 export const CLOUD_AUTH_FIELD_CLASS =
   'h-11 rounded-2xl bg-transparency-white-t8 px-4 text-primary-warm-white placeholder:text-transparency-white-t40 xl:h-12'
 
