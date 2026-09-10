@@ -133,6 +133,15 @@ describe('exportAgentConversation', () => {
     ).toThrow('does not belong to capture thread-1/message-1')
   })
 
+  it('refuses accepted ops whose recorded result carries no operation payload', () => {
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        tool_calls: [{ ...capture.tool_calls[0], result: { data: [] } }]
+      })
+    ).toThrow('tool call tool-1 accepted 1 op(s)')
+  })
+
   it('accepts a frame that omits the optional turn identity', () => {
     const conversation = exportAgentConversation({
       ...capture,

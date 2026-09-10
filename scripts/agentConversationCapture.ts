@@ -50,9 +50,14 @@ const zBackendCapture = z.object({
 export type AgentBackendCapture = z.input<typeof zBackendCapture>
 
 function operationsFromResult(toolCall: z.infer<typeof zToolCall>) {
+  if (toolCall.applied_op_ids.length === 0) return []
+
   const data = toolCall.result.data
-  if (typeof data !== 'object' || data === null || Array.isArray(data))
-    return []
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    throw new Error(
+      `tool call ${toolCall.tool_call_id} accepted ${toolCall.applied_op_ids.length} op(s), but its recorded result carries no operation payload`
+    )
+  }
 
   const result = data as Record<string, unknown>
   const candidates = Array.isArray(result.ops)
