@@ -5015,7 +5015,7 @@
       "accessDenied": "No tienes acceso a este espacio de trabajo",
       "invalidFirebaseToken": "La autenticación ha fallado. Por favor, intenta iniciar sesión de nuevo.",
       "notAuthenticated": "Debes iniciar sesión para acceder a los espacios de trabajo",
-      "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo",
+      "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo: {error}",
       "workspaceNotFound": "Espacio de trabajo no encontrado"
     },
     "initializationFailed": "No se pudo cargar tu espacio de trabajo",

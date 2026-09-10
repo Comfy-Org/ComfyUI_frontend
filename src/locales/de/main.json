@@ -5015,7 +5015,7 @@
       "accessDenied": "Sie haben keinen Zugriff auf diesen Workspace",
       "invalidFirebaseToken": "Authentifizierung fehlgeschlagen. Bitte versuchen Sie, sich erneut anzumelden.",
       "notAuthenticated": "Sie müssen angemeldet sein, um auf Workspaces zuzugreifen",
-      "tokenExchangeFailed": "Authentifizierung beim Workspace fehlgeschlagen",
+      "tokenExchangeFailed": "Authentifizierung beim Workspace fehlgeschlagen: {error}",
       "workspaceNotFound": "Workspace nicht gefunden"
     },
     "initializationFailed": "Ihr Workspace konnte nicht geladen werden",
