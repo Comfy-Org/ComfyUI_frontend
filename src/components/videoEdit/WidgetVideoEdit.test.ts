@@ -34,18 +34,18 @@ const mocks = vi.hoisted(() => {
   return mocks
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {},
     canvas: { graph: { getNodeById: () => hostNode } }
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: mocks.getNodeByLocatorId
 }))
 
-vi.mock('@/composables/video/useVideoSourceUrl', () => {
+vi.mock(import('@/composables/video/useVideoSourceUrl'), () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
   return {
@@ -56,7 +56,7 @@ vi.mock('@/composables/video/useVideoSourceUrl', () => {
   }
 })
 
-vi.mock('@/composables/video/useVideoFilmstrip', () => {
+vi.mock<unknown>(import('@/composables/video/useVideoFilmstrip'), () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
   return {

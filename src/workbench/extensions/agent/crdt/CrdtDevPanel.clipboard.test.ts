@@ -7,18 +7,18 @@ const { reportError, writeText } = vi.hoisted(() => ({
   writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal()),
   useClipboard: () => ({ copy: writeText })
 }))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => `/api${route}`,
     clientId: 'client-test-1',
@@ -26,11 +26,8 @@ vi.mock('@/scripts/api', () => ({
     api_base: ''
   }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
-}))
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({ extensions: [] })
 }))
 
 const status: AgentCrdtStatus = {

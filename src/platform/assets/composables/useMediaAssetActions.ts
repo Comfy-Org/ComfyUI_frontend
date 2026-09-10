@@ -24,7 +24,7 @@ import {
   getAssetStoredFilename
 } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetFileUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
@@ -144,8 +144,7 @@ export function useMediaAssetActions() {
 
   function downloadSingleAsset(asset: AssetItem) {
     const filename = getAssetDisplayName(asset)
-    const downloadUrl = asset.preview_url || getAssetUrl(asset)
-    downloadFile(downloadUrl, filename)
+    downloadFile(getAssetFileUrl(asset), filename)
   }
 
   async function expandAssetForDownload(

@@ -109,12 +109,6 @@ const options: {
     icon: 'icon-[lucide--zap]',
     title: 'agent.runModeAuto',
     description: 'agent.runModeAutoDescription'
-  },
-  {
-    mode: 'auto_limited',
-    icon: 'icon-[lucide--gauge]',
-    title: 'agent.runModeLimit',
-    description: 'agent.runModeLimitDescription'
   }
 ]
 </script>

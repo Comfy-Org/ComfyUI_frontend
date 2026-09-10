@@ -5,7 +5,9 @@ import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarT
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t, te } from '@/i18n'
+import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
 import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
@@ -74,20 +76,17 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       category: 'view-controls' as const,
       function: async () => {
         const settingStore = useSettingStore()
-        const commandStore = useCommandStore()
 
-        // The asset browser cannot function without the asset API, so the
-        // browser routing derives from both settings: with the API disabled
-        // the browser setting is inert and the tab always opens the sidebar
-        // tree, rather than prompt-correcting the combination.
+        // The asset browser cannot function without backend asset support, so
+        // the browser routing requires both the user preference and the server
+        // capability; without the capability the preference is inert and the
+        // tab opens the sidebar tree.
         if (
           tab.id === 'model-library' &&
           settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
-          settingStore.get('Comfy.Assets.UseAssetAPI')
+          useFeatureFlags().flags.assetsEnabled
         ) {
-          await commandStore.commands
-            .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
-            ?.function()
+          await openModelLibraryBrowser()
           return
         }
 

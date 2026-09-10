@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       (fn: () => Promise<void>, errorHandler?: (e: unknown) => void) =>
@@ -14,12 +14,6 @@ vi.mock('@/composables/useErrorHandling', () => ({
           else throw e
         }
       }
-  })
-}))
-
-vi.mock('@/platform/keybindings/keybindingStore', () => ({
-  useKeybindingStore: () => ({
-    getKeybindingByCommandId: () => null
   })
 }))
 
