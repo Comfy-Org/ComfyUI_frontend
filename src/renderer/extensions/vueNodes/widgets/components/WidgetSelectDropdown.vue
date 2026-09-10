@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef, toValue } from 'vue'
+import { computed, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
@@ -179,9 +179,6 @@ async function updateFiles(files: File[]) {
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="toValue(outputAssets.isLoading)"
-      :on-load-more="() => outputAssets.loadMore()"
-      :can-load-more="outputAssets.hasMore"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

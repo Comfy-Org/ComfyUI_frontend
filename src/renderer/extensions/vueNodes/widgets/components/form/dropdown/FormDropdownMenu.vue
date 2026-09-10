@@ -9,6 +9,7 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import type { PagedList } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
@@ -16,7 +17,7 @@ import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
+  items: readonly FormDropdownItem[] | PagedList<FormDropdownItem>
   isSelected: (item: FormDropdownItem, index: number) => boolean
   uploadable: boolean
   filterOptions: FilterOption[]
@@ -27,9 +28,6 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }
 
 const {
@@ -43,10 +41,7 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel,
-  loadingMore = false,
-  onLoadMore,
-  canLoadMore
+  candidateLabel
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
@@ -100,17 +95,6 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
-const pagedItems = {
-  hasMore: computed(() => canLoadMore),
-  invalidate: async () => undefined,
-  isLoading: computed(() => loadingMore),
-  items,
-  loadMore: async () => {
-    onLoadMore?.()
-  },
-  loadNew: async () => undefined
-}
-
 /**
  * The dropdown content is teleported to `document.body` by PrimeVue Popover,
  * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
@@ -158,7 +142,7 @@ const onWheel = (event: WheelEvent) => {
     />
     <VirtualGrid
       :key="layoutMode"
-      :items="pagedItems"
+      :items
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
@@ -187,16 +171,17 @@ const onWheel = (event: WheelEvent) => {
           />
         </div>
       </template>
+      <template #loading>
+        <div
+          class="flex items-center justify-center py-2"
+          data-testid="form-dropdown-loading-more"
+        >
+          <i
+            :aria-label="$t('g.loading')"
+            class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
+          />
+        </div>
+      </template>
     </VirtualGrid>
-    <div
-      v-if="loadingMore"
-      class="flex items-center justify-center py-2"
-      data-testid="form-dropdown-loading-more"
-    >
-      <i
-        :aria-label="$t('g.loading')"
-        class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
-      />
-    </div>
   </div>
 </template>

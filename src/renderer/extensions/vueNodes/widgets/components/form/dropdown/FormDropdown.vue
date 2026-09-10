@@ -7,7 +7,7 @@ import {
 } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -18,6 +18,8 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
@@ -29,9 +31,7 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
+  items: readonly FormDropdownItem[] | PagedList<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -48,9 +48,6 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -59,7 +56,7 @@ interface Props {
   isUploading?: boolean
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<FormDropdownItem[]>
 }
@@ -78,12 +75,18 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
-  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
 } = defineProps<Props>()
 
+function isArray(list: unknown): list is readonly unknown[] {
+  return Array.isArray(list)
+}
+
+const itemsList = computed<readonly FormDropdownItem[]>(() =>
+  isArray(items) ? items : toValue(items.items)
+)
 const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
 )
@@ -126,11 +129,11 @@ const isSingleSelect = computed(() => maxSelectable.value === 1)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
-const filteredItems = computedAsync(
-  async (onCancel) => {
+const filteredItems = computedAsync<readonly FormDropdownItem[]>(
+  async (onCancel): Promise<readonly FormDropdownItem[]> => {
     if (!isOpen.value) {
       displayedSearchQuery.value = ''
-      return items
+      return itemsList.value
     }
 
     const query = debouncedSearchQuery.value
@@ -141,13 +144,13 @@ const filteredItems = computedAsync(
       cleanupFn?.()
     })
 
-    const result = await searcher(query, items, (cb) => {
+    const result = await searcher(query, itemsList.value, (cb) => {
       cleanupFn = cb
     })
     if (!cancelled) displayedSearchQuery.value = query
     return result
   },
-  items,
+  itemsList.value,
   {
     evaluating: isFiltering
   }
@@ -164,11 +167,10 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
   )?.sorter
   return sorter || defaultSorter.value
 })
-const sortedItems = computed(() => {
+const sortedItems = computed((): readonly FormDropdownItem[] => {
   if (!isOpen.value) {
-    return items
+    return itemsList.value
   }
-
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 const isShowingCurrentSearchResults = computed(
@@ -294,7 +296,7 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = items
+  const sourceItems = isArray(items) ? items : toValue(items.items)
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
@@ -326,6 +328,12 @@ function showPicker() {
   triggerRef.value!.showPicker()
   closeDropdown()
 }
+const dropdownItems = computed(() =>
+  isArray(items)
+    ? sortedItems.value
+    : //FIXME update wrapped list typing and remove spread
+      new WrappedList(items, () => [...sortedItems.value])
+)
 </script>
 
 <template>
@@ -335,10 +343,8 @@ function showPicker() {
       :files
       :is-open
       :placeholder="placeholderText"
-      :items
-      :display-items
+      :selectedItems="itemsList.filter(internalIsSelected)"
       :max-selectable
-      :selected
       :uploadable
       :disabled
       :accept
@@ -377,14 +383,11 @@ function showPicker() {
         :show-base-model-filter
         :base-model-options
         :disabled
-        :items="sortedItems"
+        :items="dropdownItems"
         :candidate-index
         :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
-        :loading-more
-        :on-load-more
-        :can-load-more
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"

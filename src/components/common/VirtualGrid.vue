@@ -1,5 +1,6 @@
 <template>
-  <slot v-if="!itemsList.length && slots.placeholder" name="placeholder" />
+  <slot v-if="!isArray(items) && items.isLoading" name="loading" />
+  <slot v-else-if="!itemsList.length && slots.placeholder" name="placeholder" />
   <div
     v-else
     ref="container"
@@ -39,7 +40,8 @@ type GridState = {
 
 const slots = defineSlots<{
   item(props: { item: T; index: number }): unknown
-  placeholder(): unknown
+  loading?(): unknown
+  placeholder?(): unknown
 }>()
 
 const {
@@ -51,7 +53,7 @@ const {
   defaultItemWidth = 200,
   maxColumns = Infinity
 } = defineProps<{
-  items: T[] | PagedList<T>
+  items: readonly T[] | PagedList<T>
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number
@@ -60,8 +62,12 @@ const {
   maxColumns?: number
 }>()
 
+function isArray(list: unknown): list is readonly unknown[] {
+  return Array.isArray(list)
+}
+
 const itemsList = computed(() =>
-  Array.isArray(items) ? items : toValue(items.items)
+  isArray(items) ? items : toValue(items.items)
 )
 
 const itemHeight = ref(defaultItemHeight)
@@ -122,15 +128,15 @@ const bottomSpacerStyle = computed<CSSProperties>(() => ({
 
 const distance = 2 * defaultItemHeight * (1 + bufferRows)
 const infiniteScrollElement = computed(() =>
-  Array.isArray(items) ? container.value : undefined
+  isArray(items) ? container.value : undefined
 )
 useInfiniteScroll(
   infiniteScrollElement,
   async () => {
-    if (!Array.isArray(items)) await items.loadMore()
+    if (!isArray(items)) await items.loadMore()
   },
   {
-    canLoadMore: () => !Array.isArray(items) && toValue(items.hasMore),
+    canLoadMore: () => !isArray(items) && toValue(items.hasMore),
     distance
   }
 )
