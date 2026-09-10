@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyExtension } from '@/types/comfy'
+import { app } from '@/scripts/app'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const {
+  capture,
   registerExtensionMock,
   waitForLoad3dMock,
   onLoad3dReadyMock,
@@ -12,15 +15,21 @@ const {
   getLoad3dMock,
   getNodeByLocatorIdMock,
   nodeToLoad3dMapMock
-} = vi.hoisted(() => ({
-  registerExtensionMock: vi.fn(),
-  waitForLoad3dMock: vi.fn(),
-  onLoad3dReadyMock: vi.fn(),
-  configureForSaveMeshMock: vi.fn(),
-  getLoad3dMock: vi.fn(),
-  getNodeByLocatorIdMock: vi.fn(),
-  nodeToLoad3dMapMock: new Map()
-}))
+} = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  const capture = createExtensionCapture()
+  return {
+    capture,
+    registerExtensionMock: vi.fn(capture.registerExtension),
+    waitForLoad3dMock: vi.fn(),
+    onLoad3dReadyMock: vi.fn(),
+    configureForSaveMeshMock: vi.fn(),
+    getLoad3dMock: vi.fn(),
+    getNodeByLocatorIdMock: vi.fn(),
+    nodeToLoad3dMapMock: new Map<LGraphNode, FakeLoad3d>()
+  }
+})
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({ registerExtension: registerExtensionMock })
@@ -60,42 +69,12 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let toastAddAlertMock: ReturnType<typeof useToastStore>['addAlert']
-beforeEach(() => {
-  toastAddAlertMock = useToastStore().addAlert
-})
-
-type ExtCreated = ComfyExtension & {
-  nodeCreated: (node: LGraphNode) => Promise<void>
-  getNodeMenuItems: (node: LGraphNode) => unknown[]
-  onNodeOutputsUpdated: (
-    nodeOutputs: Record<string, Record<string, unknown>>
-  ) => void
-}
-
-async function loadExtensionsFresh(): Promise<{
-  splatExt: ExtCreated
-  pointCloudExt: ExtCreated
-  saveSplatExt: ExtCreated
-  savePointCloudExt: ExtCreated
-}> {
-  vi.resetModules()
-  registerExtensionMock.mockClear()
-  await import('@/extensions/core/load3dPreviewExtensions')
-  const extByName = (name: string): ExtCreated => {
-    const call = registerExtensionMock.mock.calls.find(
-      (c) => (c[0] as ExtCreated).name === name
-    )
-    if (!call) throw new Error(`Extension ${name} was not registered`)
-    return call[0] as ExtCreated
-  }
-  return {
-    splatExt: extByName('Comfy.PreviewGaussianSplat'),
-    pointCloudExt: extByName('Comfy.PreviewPointCloud'),
-    saveSplatExt: extByName('Comfy.SaveGaussianSplat'),
-    savePointCloudExt: extByName('Comfy.SavePointCloud')
-  }
-}
+await import('@/extensions/core/load3dPreviewExtensions')
+const splatExt = capture.getExtension('Comfy.PreviewGaussianSplat')
+const pointCloudExt = capture.getExtension('Comfy.PreviewPointCloud')
+const saveSplatExt = capture.getExtension('Comfy.SaveGaussianSplat')
+const savePointCloudExt = capture.getExtension('Comfy.SavePointCloud')
+const registeredExtensionCount = registerExtensionMock.mock.calls.length
 
 interface FakeLoad3d {
   whenLoadIdle: () => Promise<void>
@@ -163,11 +142,8 @@ function setupBaseMocks() {
 describe('load3dPreviewExtensions module registration', () => {
   beforeEach(setupBaseMocks)
 
-  it('registers preview and save extensions on import', async () => {
-    const { splatExt, pointCloudExt, saveSplatExt, savePointCloudExt } =
-      await loadExtensionsFresh()
-
-    expect(registerExtensionMock).toHaveBeenCalledTimes(4)
+  it('registers preview and save extensions on import', () => {
+    expect(registeredExtensionCount).toBe(4)
     expect(splatExt.name).toBe('Comfy.PreviewGaussianSplat')
     expect(pointCloudExt.name).toBe('Comfy.PreviewPointCloud')
     expect(saveSplatExt.name).toBe('Comfy.SaveGaussianSplat')
@@ -175,14 +151,13 @@ describe('load3dPreviewExtensions module registration', () => {
   })
 
   it('save extensions load the saved file from the output folder, not temp', async () => {
-    const { saveSplatExt, savePointCloudExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
 
     const splatNode = makePreviewNode({ comfyClass: 'SaveGaussianSplat' })
-    await saveSplatExt.nodeCreated(splatNode)
+    await saveSplatExt.nodeCreated!(splatNode, app)
     splatNode.onExecuted!({ result: ['3d/ComfyUI_00001_.ply'] })
 
     expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
@@ -192,7 +167,7 @@ describe('load3dPreviewExtensions module registration', () => {
     )
 
     const pcNode = makePreviewNode({ comfyClass: 'SavePointCloud' })
-    await savePointCloudExt.nodeCreated(pcNode)
+    await savePointCloudExt.nodeCreated!(pcNode, app)
     pcNode.onExecuted!({ result: ['3d/ComfyUI_00002_.ply'] })
 
     expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
@@ -203,13 +178,12 @@ describe('load3dPreviewExtensions module registration', () => {
   })
 
   it('restores persisted models from the output folder on nodeCreated, not temp', async () => {
-    const { saveSplatExt } = await loadExtensionsFresh()
     const node = makePreviewNode({
       comfyClass: 'SaveGaussianSplat',
       properties: { 'Last Time Model File': '3d/ComfyUI_00001_.ply' }
     })
 
-    await saveSplatExt.nodeCreated(node)
+    await saveSplatExt.nodeCreated!(node, app)
 
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
       'output',
@@ -223,24 +197,22 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   beforeEach(setupBaseMocks)
 
   it('skips nodes whose comfyClass is not PreviewGaussianSplat', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const node = makePreviewNode({ comfyClass: 'OtherNode' })
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
 
     expect(waitForLoad3dMock).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 
   it('triggers a model load against the output folder on execute', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
     const node = makePreviewNode()
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: ['scene.ply'] })
 
     expect(node.properties['Last Time Model File']).toBe('scene.ply')
@@ -252,7 +224,6 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   })
 
   it('persists backend-provided camera_info into node.properties so onLoad3dReady can restore it after remount', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
@@ -264,7 +235,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
       zoom: 1
     }
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: ['scene.ply', cameraState] })
 
     const cameraConfig = node.properties['Camera Config'] as
@@ -274,14 +245,13 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   })
 
   it('applies onExecuted results to the remounted instance, not the disposed closure', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const original = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(original)
     )
     const node = makePreviewNode()
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
 
     const remounted = makeLoad3dMock()
     nodeToLoad3dMapMock.set(node, remounted)
@@ -296,7 +266,6 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   })
 
   it('re-applies the model transform from result[2] on execute', async () => {
-    const { saveSplatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
@@ -304,7 +273,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     const node = makePreviewNode({ comfyClass: 'SaveGaussianSplat' })
     const transform = { position: { x: 1, y: 2, z: 3 } }
 
-    await saveSplatExt.nodeCreated(node)
+    await saveSplatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: ['scene.ply', undefined, [transform]] })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -312,7 +281,6 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   })
 
   it('syncs width/height widgets to load3d.setTargetSize and registers callbacks', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
@@ -334,7 +302,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
       ]
     })
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
 
     expect(load3d.setTargetSize).toHaveBeenCalledWith(800, 600)
     expect(typeof widthWidget.callback).toBe('function')
@@ -345,7 +313,6 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   })
 
   it("installs a sceneWidget.serializeValue that returns the viewer's current camera_info + model_3d_info", async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     const cameraState = { position: { x: 1, y: 2, z: 3 } }
     load3d.getCameraState = vi.fn(() => cameraState)
@@ -365,7 +332,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     })
     nodeToLoad3dMapMock.set(node, load3d)
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
 
     expect(typeof sceneWidget.serializeValue).toBe('function')
     const payload = (await sceneWidget.serializeValue!()) as {
@@ -377,13 +344,12 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
   })
 
   it('shows an error toast when onExecuted has no file path', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const node = makePreviewNode()
 
-    await splatExt.nodeCreated(node)
+    await splatExt.nodeCreated!(node, app)
     node.onExecuted!({ result: [] })
 
-    expect(toastAddAlertMock).toHaveBeenCalledWith(
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
       'toastMessages.unableToGetModelFilePath'
     )
   })
@@ -393,24 +359,22 @@ describe('Comfy.PreviewPointCloud.nodeCreated', () => {
   beforeEach(setupBaseMocks)
 
   it('skips nodes whose comfyClass is not PreviewPointCloud', async () => {
-    const { pointCloudExt } = await loadExtensionsFresh()
     const node = makePreviewNode({ comfyClass: 'OtherNode' })
 
-    await pointCloudExt.nodeCreated(node)
+    await pointCloudExt.nodeCreated!(node, app)
 
     expect(waitForLoad3dMock).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 
   it('triggers a model load against the output folder on execute', async () => {
-    const { pointCloudExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
     const node = makePreviewNode({ comfyClass: 'PreviewPointCloud' })
 
-    await pointCloudExt.nodeCreated(node)
+    await pointCloudExt.nodeCreated!(node, app)
     node.onExecuted!({ result: ['pointcloud.ply'] })
 
     expect(node.properties['Last Time Model File']).toBe('pointcloud.ply')
@@ -425,22 +389,22 @@ describe('Comfy.PreviewPointCloud.nodeCreated', () => {
 describe('Comfy.PreviewGaussianSplat.onNodeOutputsUpdated', () => {
   beforeEach(setupBaseMocks)
 
+  const nodeLocatorId = createNodeLocatorId(null, toNodeId(1))
+
   it('skips entries whose comfyClass is not PreviewGaussianSplat', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     getNodeByLocatorIdMock.mockReturnValue(makePreviewNode({ comfyClass: 'X' }))
 
-    splatExt.onNodeOutputsUpdated({
-      'node:1': { result: ['scene.ply'] }
+    splatExt.onNodeOutputsUpdated!({
+      [nodeLocatorId]: { result: ['scene.ply'] }
     })
 
     expect(waitForLoad3dMock).not.toHaveBeenCalled()
   })
 
   it('skips entries with no result file path', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     getNodeByLocatorIdMock.mockReturnValue(makePreviewNode())
 
-    splatExt.onNodeOutputsUpdated({ 'node:1': { result: [] } })
+    splatExt.onNodeOutputsUpdated!({ [nodeLocatorId]: { result: [] } })
 
     expect(waitForLoad3dMock).not.toHaveBeenCalled()
   })
@@ -450,20 +414,18 @@ describe('Comfy.PreviewGaussianSplat.getNodeMenuItems', () => {
   beforeEach(setupBaseMocks)
 
   it('returns [] for non-PreviewGaussianSplat nodes', async () => {
-    const { splatExt } = await loadExtensionsFresh()
-    const items = splatExt.getNodeMenuItems(
+    const items = splatExt.getNodeMenuItems!(
       makePreviewNode({ comfyClass: 'OtherNode' })
     )
     expect(items).toEqual([])
   })
 
   it('returns [] for splat models', async () => {
-    const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     load3d.isSplatModel = vi.fn(() => true)
     getLoad3dMock.mockReturnValue(load3d)
 
-    const items = splatExt.getNodeMenuItems(makePreviewNode())
+    const items = splatExt.getNodeMenuItems!(makePreviewNode())
     expect(items).toEqual([])
   })
 })
