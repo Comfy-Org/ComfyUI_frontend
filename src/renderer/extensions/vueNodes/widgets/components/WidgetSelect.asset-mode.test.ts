@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -61,7 +61,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [PrimeVue, getActivePinia()!, i18n],
         stubs
       }
     })
@@ -100,7 +100,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'ImageLoader'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [PrimeVue, getActivePinia()!, i18n],
         stubs: {
           WidgetSelectDefault: stubs.WidgetSelectDefault,
           WidgetWithControl: stubs.WidgetWithControl

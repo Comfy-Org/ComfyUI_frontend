@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -46,7 +44,6 @@ function createSourceNode(graph: LGraph) {
 
 describe('widget connection suppression', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
   })
 

@@ -1,13 +1,24 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
+const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
+vi.mock(import('@/scripts/app'), async (importOriginal) => {
+  const original = await importOriginal()
+  original.app.registerExtension = (extension) => {
+    registeredExtensions.push(extension)
+  }
+  return original
+})
+await import('./customWidgets')
+const extension = registeredExtensions.find(
+  (candidate) => candidate.name === 'Comfy.CustomWidgets'
+)
+if (!extension)
+  throw new Error('Comfy.CustomWidgets extension was not registered')
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboCopyPaste'
 
 class TestCustomComboNode extends LGraphNode {
@@ -27,24 +38,8 @@ function findWidget(node: LGraphNode, name: string) {
   return node.widgets?.find((widget) => widget.name === name)
 }
 
-function getCustomWidgetsExtension(): ComfyExtension {
-  const extension = useExtensionStore().extensions.find(
-    (candidate) => candidate.name === 'Comfy.CustomWidgets'
-  )
-
-  if (!extension) {
-    throw new Error('Comfy.CustomWidgets extension was not registered')
-  }
-
-  return extension
-}
-
 describe('CustomCombo copy/paste', () => {
   beforeAll(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    await import('./customWidgets')
-
-    const extension = getCustomWidgetsExtension()
     await extension.beforeRegisterNodeDef?.(
       TestCustomComboNode,
       { name: 'CustomCombo' } as ComfyNodeDef,

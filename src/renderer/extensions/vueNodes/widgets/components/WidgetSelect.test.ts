@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
@@ -55,7 +55,6 @@ const WidgetSelectDefaultStub = defineComponent({
 })
 
 const globalConfig = {
-  plugins: [createTestingPinia(), i18n],
   stubs: {
     WidgetSelectDropdown: WidgetSelectDropdownStub,
     WidgetSelectDefault: WidgetSelectDefaultStub,
@@ -107,7 +106,7 @@ describe('WidgetSelect Value Binding', () => {
         'onUpdate:modelValue': onModelUpdate,
         ...extraProps
       },
-      global: globalConfig
+      global: { ...globalConfig, plugins: [getActivePinia()!, i18n] }
     })
     return onModelUpdate
   }

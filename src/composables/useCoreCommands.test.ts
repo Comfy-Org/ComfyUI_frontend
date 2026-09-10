@@ -1,3 +1,4 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
@@ -8,7 +9,11 @@ import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type * as ModelStoreModule from '@/stores/modelStore'
+import { useModelStore } from '@/stores/modelStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { Mock } from 'vitest'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -40,7 +45,11 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     selectItems: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
-    canvas: { dispatchEvent: vi.fn() },
+    canvas: {
+      dispatchEvent: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    },
     read_only: false,
     ds: mockDs,
     setDirty: vi.fn()
@@ -68,19 +77,14 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     dispatchCustomEvent: vi.fn(),
     apiURL: vi.fn(() => 'http://localhost:8188'),
     addEventListener: vi.fn(),
+    addCustomEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+    removeCustomEventListener: vi.fn(),
     getServerFeature: vi.fn(() => false)
   }
 }))
 
-const mockModelStoreRefresh = vi.fn().mockResolvedValue(undefined)
-vi.mock<unknown>(import('@/stores/modelStore'), async (importOriginal) => {
-  const actual = await importOriginal<typeof ModelStoreModule>()
-  return {
-    ...actual,
-    useModelStore: () => ({ refresh: mockModelStoreRefresh })
-  }
-})
+let mockModelStoreRefresh: Mock<ReturnType<typeof useModelStore>['refresh']>
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
@@ -90,26 +94,11 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   }
 }))
 
-const mockMissingModelStoreRefresh = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
-)
-vi.mock<unknown>(import('@/platform/missingModel/missingModelStore'), () => ({
-  useMissingModelStore: () => ({
-    refreshMissingModels: mockMissingModelStoreRefresh
-  })
-}))
+let mockMissingModelStoreRefresh: Mock<
+  ReturnType<typeof useMissingModelStore>['refreshMissingModels']
+>
 
-vi.mock(import('@/platform/settings/settingStore'))
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: vi.fn(() => ({}))
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -153,17 +142,10 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: vi.fn(() => ({}))
-}))
-
-const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
-}))
+let mockToastAdd: ReturnType<typeof useToastStore>['add']
 
 const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get assetsEnabled() {
@@ -191,39 +173,8 @@ vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
 const mockChangeTracker = vi.hoisted(() => ({
   captureCanvasState: vi.fn()
 }))
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: {
-    changeTracker: mockChangeTracker
-  }
-}))
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: vi.fn(() => mockWorkflowStore)
-  })
-)
 
-vi.mock<unknown>(import('@/stores/subgraphStore'), () => ({
-  useSubgraphStore: vi.fn(() => ({}))
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: vi.fn(() => ({
-      getCanvas: () => app.canvas,
-      canvas: app.canvas
-    })),
-    useTitleEditorStore: vi.fn(() => ({
-      titleEditorTarget: null
-    }))
-  })
-)
-
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: vi.fn(() => ({}))
-}))
+let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({}))
@@ -260,10 +211,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     },
     showSubscriptionDialog: mockBillingState.showSubscriptionDialog
   }))
-}))
-
-vi.mock<unknown>(import('@/stores/queueSettingsStore'), () => ({
-  useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 }))
 }))
 
 describe('useCoreCommands', () => {
@@ -321,53 +268,29 @@ describe('useCoreCommands', () => {
 
   const mockSubgraph = createMockSubgraph()!
 
-  function createMockSettingStore(
-    getReturnValue: boolean
-  ): ReturnType<typeof useSettingStore> {
-    return fromPartial<ReturnType<typeof useSettingStore>>({
-      get: vi.fn().mockReturnValue(getReturnValue),
-      addSetting: vi.fn(),
-      load: vi.fn(),
-      set: vi.fn(),
-      setMany: vi.fn(),
-      exists: vi.fn(),
-      getDefaultValue: vi.fn(),
-      isReady: true,
-      isLoading: false,
-      error: undefined,
-      settingValues: {},
-      settingsById: {},
-      $id: 'setting',
-      $state: {
-        settingValues: {},
-        settingsById: {},
-        isReady: true,
-        isLoading: false,
-        error: undefined
-      },
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set()
-    })
-  }
-
   beforeEach(() => {
+    mockWorkflowStore = useWorkflowStore()
+    mockWorkflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof mockWorkflowStore.activeWorkflow>
+    >({ changeTracker: mockChangeTracker })
+    useCanvasStore().canvas = app.canvas
+    mockModelStoreRefresh = vi.mocked(useModelStore().refresh)
+    mockMissingModelStoreRefresh = vi.mocked(
+      useMissingModelStore().refreshMissingModels
+    )
+    mockToastAdd = useToastStore().add
     mockDistributionState.isCloud = false
     mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
-    mockModelStoreRefresh.mockResolvedValue(undefined)
+    mockModelStoreRefresh.mockResolvedValue(true)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
 
     // Reset app state
     app.canvas.subgraph = undefined
 
-    // Mock settings store
-    vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
+    useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
@@ -419,7 +342,7 @@ describe('useCoreCommands', () => {
 
     it('should respect confirmation setting', async () => {
       // Mock confirmation required
-      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
+      useSettingStore().settingValues['Comfy.ConfirmClear'] = true
 
       global.confirm = vi.fn().mockReturnValue(false) // User cancels
 
@@ -707,6 +630,7 @@ describe('useCoreCommands', () => {
       })
       mockModelStoreRefresh.mockImplementation(async () => {
         order.push('models')
+        return true
       })
       mockMissingModelStoreRefresh.mockImplementation(async () => {
         order.push('missing')

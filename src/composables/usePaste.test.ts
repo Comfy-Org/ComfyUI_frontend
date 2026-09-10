@@ -1,4 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
 import type {
   LGraphCanvas,
   LGraph,
@@ -7,12 +11,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import {
-  createNode,
-  isAudioNode,
-  isImageNode,
-  isVideoNode
-} from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/litegraphUtil'
 import {
   cloneDataTransfer,
   pasteAudioNode,
@@ -21,8 +20,10 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes,
-  usePaste
+  usePaste as usePasteImpl
 } from './usePaste'
+
+vi.mock(import('firebase/auth'))
 
 function createMockNode(): LGraphNode {
   return createMockLGraphNode({
@@ -70,55 +71,35 @@ const mockCanvas = {
   _deserializeItems: vi.fn()
 } as Partial<LGraphCanvas> as LGraphCanvas
 
-const mockCanvasStore = {
-  canvas: mockCanvas,
-  getCanvas: vi.fn(() => mockCanvas)
+let mockCanvasStore: ReturnType<typeof useCanvasStore>
+
+let mockWorkspaceStore: ReturnType<typeof useWorkspaceStore>
+let scope: EffectScope
+
+function usePaste() {
+  scope.run(usePasteImpl)
 }
 
-const mockWorkspaceStore = {
-  shiftDown: false
-}
+afterEach(() => scope.stop())
 
-vi.mock(import('@vueuse/core'), () => ({
-  useEventListener: vi.fn((target, event, handler) => {
-    target.addEventListener(event, handler)
-    return () => target.removeEventListener(event, handler)
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'),
-
-  () => ({
-    useCanvasStore: () => mockCanvasStore
-  })
-)
-
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => mockWorkspaceStore
-}))
+beforeEach(() => {
+  scope = effectScope()
+  mockWorkspaceStore = useWorkspaceStore()
+  mockCanvasStore = useCanvasStore()
+  mockCanvasStore.canvas = mockCanvas
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
     loadGraphData: vi.fn()
   }
 }))
 
-vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    LiteGraph: {
-      createNode: vi.fn()
-    }
-  })
-)
-
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  createNode: vi.fn(),
-  isAudioNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn()
+vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  createNode: vi.fn()
 }))
 
 vi.mock(
@@ -403,7 +384,7 @@ describe('pasteVideoNodes', () => {
 describe('usePaste', () => {
   beforeEach(() => {
     mockCanvas.current_node = null
-    mockWorkspaceStore.shiftDown = false
+    Object.assign(mockWorkspaceStore, { shiftDown: false })
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -450,7 +431,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isAudioNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'audio'
 
     usePaste()
 
@@ -489,7 +470,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isVideoNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'video'
 
     usePaste()
 
@@ -561,7 +542,7 @@ describe('usePaste', () => {
   })
 
   it('should ignore paste when shift is down', () => {
-    mockWorkspaceStore.shiftDown = true
+    Object.assign(mockWorkspaceStore, { shiftDown: true })
 
     usePaste()
 
@@ -580,7 +561,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'image'
 
     usePaste()
 
@@ -632,7 +613,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'image'
 
     usePaste()
 
