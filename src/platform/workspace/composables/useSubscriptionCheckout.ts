@@ -1268,8 +1268,10 @@ export function useSubscriptionCheckout(
     }
 
     let initialActionUrl: string | undefined
+    savePendingCheckout(response.billing_op_id, context)
     if (response.status === 'needs_payment_method') {
       if (!response.payment_method_url) {
+        // TODO: Confirm whether billing should recover or cancel an operation issued without a payment URL.
         const error = new Error(t('subscription.preview.stripeUnavailable'))
         console.error(error)
         trackSubscriptionFailure(context, error)
@@ -1288,7 +1290,6 @@ export function useSubscriptionCheckout(
         })
       }
     }
-    savePendingCheckout(response.billing_op_id, context)
     await advanceToSuccessOnOperation(
       response.billing_op_id,
       context,

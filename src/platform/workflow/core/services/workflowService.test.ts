@@ -469,6 +469,12 @@ describe('useWorkflowService', () => {
       expect(
         useSubgraphNavigationStore().endWorkflowNavigation
       ).toHaveBeenCalledWith(1)
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Failed to load workflow 'workflows/unavailable.json'"
+        }),
+        { errorType: 'workflow_load_failure' }
+      )
     })
 
     it('re-selecting the active workflow with no loads pending is a no-op', async () => {
