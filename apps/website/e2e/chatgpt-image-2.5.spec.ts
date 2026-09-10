@@ -53,7 +53,7 @@ test.describe('ChatGPT Images 2.5 launch page @smoke', () => {
         src: '/images/chatgpt-image-2.5/canyon-chase.webp'
       },
       {
-        name: 'Anime sunset landscape generated with ChatGPT Images 2.5',
+        name: 'Anime hero at a red horizon generated with ChatGPT Images 2.5',
         src: '/images/chatgpt-image-2.5/anime-horizon.webp'
       }
     ]
