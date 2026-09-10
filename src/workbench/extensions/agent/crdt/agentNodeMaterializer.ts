@@ -301,15 +301,6 @@ function materialize(
     cause: unknown,
     errorType = 'agent_node_materialize_add_failed'
   ) => {
-    // `add()` may throw after attaching (from `onAdded`); only then is there
-    // a live node to take back out.
-    //
-    // Taking it out is best-effort and `restore()` is not: `LGraph.remove()`
-    // runs `onRemoved()` uncaught, so an extension that throws on both halves
-    // of the lifecycle would otherwise escape here and strand the records this
-    // function deleted -- the store record gone and a partial adapter live,
-    // which is worse than either failure alone. Put the authoritative state
-    // back first and report the cleanup failure separately.
     let cleanupCause: unknown
     let cleanupFailed = false
     try {
@@ -319,6 +310,7 @@ function materialize(
       cleanupCause = error
       cleanupFailed = true
     }
+    nodeStore.deleteNode(scope, node._state)
     restore()
     reportError(cause, {
       errorType,
