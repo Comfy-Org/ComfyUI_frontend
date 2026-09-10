@@ -32,7 +32,13 @@ const DEFAULT_ENV_FILE = join(
 )
 
 export const zLangfuseEnv = z.object({
-  LANGFUSE_HOST: z.string().url(),
+  LANGFUSE_HOST: z
+    .string()
+    .url()
+    .refine((host) => {
+      const url = new URL(host)
+      return url.username === '' && url.password === ''
+    }, 'must not carry credentials'),
   LANGFUSE_PUBLIC_KEY: z.string().min(1),
   LANGFUSE_SECRET_KEY: z.string().min(1)
 })
@@ -188,7 +194,6 @@ function groupTurns(
   )
 }
 
-// Each tool span becomes its running and terminal frames; the turn's output becomes the text.
 function turnFrames(
   turn: TurnSpans,
   threadId: string,
@@ -466,7 +471,7 @@ export async function main(
   try {
     const rows = raw.turns.map((turn, index) =>
       readRows(
-        env.AGENT_PG_EXEC.split(' '),
+        env.AGENT_PG_EXEC.split(' ').filter(Boolean),
         sidecar(`rows.${index + 1}.json`),
         {
           threadId,

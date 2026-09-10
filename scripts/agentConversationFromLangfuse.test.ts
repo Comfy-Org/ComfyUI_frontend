@@ -1,4 +1,5 @@
 import {
+  existsSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -24,6 +25,7 @@ import {
   assertOpsApply,
   zAgentConversation
 } from '../browser_tests/fixtures/data/agent/agentConversation'
+import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 
 const THREAD = 'thread-1'
 const WORKFLOW = '6f1c2c1e-3b1c-4c88-9d9c-0d6e9b8e1a01'
@@ -371,6 +373,22 @@ describe('readEnvFile', () => {
     })
     writeFileSync(path, 'LANGFUSE_HOST=https://langfuse.example\n')
     expect(() => readEnvFile(path)).toThrow('LANGFUSE_PUBLIC_KEY')
+    writeFileSync(
+      path,
+      'LANGFUSE_HOST=https://user:hunter2@langfuse.example\nLANGFUSE_PUBLIC_KEY=pk-test\nLANGFUSE_SECRET_KEY=sk-test\n'
+    )
+    const refusal = (() => {
+      try {
+        readEnvFile(path)
+        return null
+      } catch (error) {
+        return error
+      }
+    })()
+    expect(refusal).toBeInstanceOf(RecordRefusal)
+    expect(refusal instanceof RecordRefusal && refusal.message).toBe(
+      `Langfuse env file ${path}: LANGFUSE_HOST must not carry credentials`
+    )
   })
 })
 
@@ -448,91 +466,99 @@ describe('fetchObservations', () => {
     ).catch((error: unknown) => error)
     expect(failure).toBeInstanceOf(LangfuseRequestError)
     expect(failure).not.toBeInstanceOf(RecordRefusal)
-    expect((failure as Error).message).toBe(
+    expect(failure instanceof LangfuseRequestError && failure.message).toBe(
       'Langfuse /api/public/observations returned 503 on page 1'
     )
   })
 })
 
 describe('main', () => {
-  const recording =
-    'browser_tests/fixtures/data/agent/conversations/agent-rec-text-only-answer.json'
+  const { workflow } = zAgentConversation.parse(
+    JSON.parse(
+      readFileSync(
+        'browser_tests/fixtures/data/agent/conversations/agent-rec-text-only-answer.json',
+        'utf8'
+      )
+    )
+  )
+  const T0 = '2026-09-04T10:00:00.000Z'
+  const T1 = '2026-09-04T10:00:01.000Z'
+  const T2 = '2026-09-04T10:00:02.000Z'
+  const T5 = '2026-09-04T10:00:05.000Z'
 
-  it('imports a text-only trace into a fixture the replay accepts', async () => {
+  const stage = (host = 'https://langfuse.example') => {
     const dir = mkdtempSync(join(tmpdir(), 'agent-langfuse-import-'))
     onTestFinished(() => rmSync(dir, { recursive: true, force: true }))
-    const { workflow } = zAgentConversation.parse(
-      JSON.parse(readFileSync(recording, 'utf8'))
-    )
     const seedPath = join(dir, 'seed.json')
     writeFileSync(seedPath, JSON.stringify({ workflow }))
-    writeFileSync(
-      join(dir, 'draft.json'),
-      JSON.stringify({
-        nodes: workflow.seed.nodes,
-        links: workflow.seed.links
-      })
-    )
     const rowsScript = join(dir, 'rows.cjs')
     writeFileSync(
       rowsScript,
-      "process.stdout.write(JSON.stringify({ source: 'postgres', parents: [], draft: require('./draft.json') }))\n"
+      "process.stdout.write(JSON.stringify(require('./rows.json')))\n"
     )
     const envPath = join(dir, 'langfuse.env')
     writeFileSync(
       envPath,
-      'LANGFUSE_HOST=https://langfuse.example\nLANGFUSE_PUBLIC_KEY=pk-test\nLANGFUSE_SECRET_KEY=sk-test\n'
+      `LANGFUSE_HOST=${host}\nLANGFUSE_PUBLIC_KEY=pk-test\nLANGFUSE_SECRET_KEY=sk-test\n`
     )
     vi.stubEnv('AGENT_CLOUD_SHA', 'abc1234')
     vi.stubEnv('AGENT_ATTEMPT', 'a1')
-    vi.stubEnv('AGENT_PG_EXEC', `${process.execPath} ${rowsScript}`)
+    vi.stubEnv('AGENT_PG_EXEC', `${process.execPath}  ${rowsScript}`)
     const stdout = vi
       .spyOn(process.stdout, 'write')
       .mockImplementation(() => true)
-    const outPath = join(dir, 'out', 'agent-lf-text-only.json')
-    const workDir = join(dir, 'work')
-    try {
-      await main(
-        [
-          'agent-lf-text-only',
-          seedPath,
-          '--trace',
-          'trace-1',
-          '--workflow',
-          workflow.id,
-          '--out',
-          outPath,
-          '--work',
-          workDir,
-          '--env-file',
-          envPath
-        ],
-        async (url) => {
-          expect(new URL(url).pathname).toBe('/api/public/observations')
-          return new Response(
-            JSON.stringify({
-              data: [
-                launchSpan('turn-1', '2026-09-04T09:59:59.000Z'),
-                turnRoot(
-                  'turn-1',
-                  '2026-09-04T10:00:00.000Z',
-                  '2026-09-04T10:00:05.000Z'
-                )
-              ],
-              meta: { totalPages: 1 }
-            }),
-            { status: 200 }
-          )
-        }
-      )
-    } finally {
+    onTestFinished(() => {
       stdout.mockRestore()
       vi.unstubAllEnvs()
+    })
+    const outPath = join(dir, 'out', 'agent-lf-example.json')
+    const workDir = join(dir, 'work')
+    return {
+      envPath,
+      workDir,
+      outPath,
+      argv: [
+        'agent-lf-example',
+        seedPath,
+        '--trace',
+        'trace-1',
+        '--workflow',
+        workflow.id,
+        '--out',
+        outPath,
+        '--work',
+        workDir,
+        '--env-file',
+        envPath
+      ],
+      rows: (dump: { parents: unknown[]; draft: unknown }) =>
+        writeFileSync(
+          join(dir, 'rows.json'),
+          JSON.stringify({ source: 'postgres', ...dump })
+        ),
+      page: (observations: Observation[]) => async (url: string) => {
+        expect(new URL(url).pathname).toBe('/api/public/observations')
+        return new Response(
+          JSON.stringify({ data: observations, meta: { totalPages: 1 } }),
+          { status: 200 }
+        )
+      },
+      written: () =>
+        zAgentConversation.parse(JSON.parse(readFileSync(outPath, 'utf8')))
     }
+  }
 
-    const conversation = zAgentConversation.parse(
-      JSON.parse(readFileSync(outPath, 'utf8'))
+  it('imports a text-only trace into a fixture the replay accepts', async () => {
+    const s = stage()
+    s.rows({
+      parents: [],
+      draft: { nodes: workflow.seed.nodes, links: workflow.seed.links }
+    })
+    await main(
+      s.argv,
+      s.page([launchSpan('turn-1', T0), turnRoot('turn-1', T0, T5)])
     )
+    const conversation = s.written()
     expect(() => assertOpsApply(conversation)).not.toThrow()
     expect(conversation.workflow.id).toBe(workflow.id)
     expect(conversation.turns.map((turn) => turn.message_id)).toEqual([
@@ -544,15 +570,86 @@ describe('main', () => {
         entry.kind === 'event' ? entry.event.type : entry.kind
       )
     ).toEqual(['agent_active_tab', 'agent_message_delta', 'agent_message_done'])
-    expect(readdirSync(workDir).sort()).toEqual([
-      'agent-lf-text-only.a1.raw.json',
-      'agent-lf-text-only.a1.receipt.json',
-      'agent-lf-text-only.a1.rows.1.json'
+    expect(readdirSync(s.workDir).sort()).toEqual([
+      'agent-lf-example.a1.raw.json',
+      'agent-lf-example.a1.receipt.json',
+      'agent-lf-example.a1.rows.1.json'
     ])
     for (const file of [
-      outPath,
-      ...readdirSync(workDir).map((name) => join(workDir, name))
+      s.outPath,
+      ...readdirSync(s.workDir).map((name) => join(s.workDir, name))
     ])
       expect(readFileSync(file, 'utf8')).not.toMatch(/pk-test|sk-test/)
+  })
+
+  it('imports a tool turn whose audit rows and draft agree with the op it applied', async () => {
+    const s = stage()
+    const op = {
+      op: 'set_widget' as const,
+      node_id: 3,
+      widget: 'steps',
+      value: 30,
+      old: 20
+    }
+    const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
+    host.apply([op])
+    s.rows({
+      parents: [
+        {
+          id: 'parent-1',
+          tool_call_id: 'call-1',
+          tool_name: 'apply_ops',
+          status: 'ok',
+          workflow_id: workflow.id,
+          result: { ok: true, data: { ops: [{ op_id: 'op-1', ...op }] } },
+          children: [{ op_id: 'op-1', status: 'ok' }]
+        }
+      ],
+      draft: host.projection()
+    })
+    await main(
+      s.argv,
+      s.page([
+        launchSpan('turn-1', T0),
+        turnRoot('turn-1', T0, T5),
+        roundSpan('turn-1'),
+        toolSpan('turn-1', 'call-1', true, T1, T2)
+      ])
+    )
+    const conversation = s.written()
+    expect(
+      conversation.turns[0].response.map((entry) =>
+        entry.kind === 'event' ? entry.event.type : entry.kind
+      )
+    ).toEqual([
+      'agent_active_tab',
+      'agent_tool_call',
+      'graph_ops',
+      'agent_tool_call',
+      'agent_message_delta',
+      'agent_message_done'
+    ])
+    expect(
+      conversation.turns[0].response.find((entry) => entry.kind === 'graph_ops')
+    ).toEqual({
+      kind: 'graph_ops',
+      ops: [op],
+      at_ms: Date.parse(T2) - Date.parse(T0)
+    })
+    expect(assertOpsApply(conversation).projection()).toEqual(host.projection())
+  })
+
+  it('refuses a Langfuse host that carries credentials before the network or the disk', async () => {
+    const s = stage('https://user:hunter2@langfuse.example')
+    const fetchImpl = vi.fn()
+    const failure = await main(s.argv, fetchImpl).catch(
+      (error: unknown) => error
+    )
+    expect(failure).toBeInstanceOf(RecordRefusal)
+    expect(failure instanceof RecordRefusal && failure.message).toBe(
+      `Langfuse env file ${s.envPath}: LANGFUSE_HOST must not carry credentials`
+    )
+    expect(fetchImpl).not.toHaveBeenCalled()
+    expect(existsSync(s.workDir)).toBe(false)
   })
 })
