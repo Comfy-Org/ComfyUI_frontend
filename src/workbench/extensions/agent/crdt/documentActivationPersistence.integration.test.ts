@@ -6,9 +6,7 @@ import {
   readStamps
 } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createActivationCoordinator } from '@/core/graph/document/activationCoordinator'
@@ -130,10 +128,6 @@ function loadedCoordinator() {
 }
 
 describe('document activation persistence (ADR-0024 seam)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   // Projection determinism over retained session state: the reload here
   // replays the session's committed Yjs update, so both sides of the equality
   // are projections of the same CRDT. It cannot see a loss that happens

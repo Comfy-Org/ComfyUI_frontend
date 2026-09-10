@@ -3,6 +3,7 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -326,6 +327,7 @@ function removeIncidentLinks(
 export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
+  const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
 
   function fail(message: string): false {
@@ -612,7 +614,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     context: RemoteMutationContext
   ): void {
     detachLinkSlots(scope, topology, context)
-    linkStore.deleteLink(scope, topology, context)
+    if (linkStore.deleteLink(scope, topology, context)) {
+      linkPresentationStore.take(scope, topology.id)
+    }
   }
 
   function deleteNode(
@@ -677,6 +681,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 label: widget.name
               },
               {},
+              undefined,
               context
             )
           }
@@ -703,6 +708,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 label: mutation.name
               },
               {},
+              undefined,
               context
             )
           } else {
@@ -715,14 +721,29 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             scope.rootGraphId,
             mutation.topology.id
           )
+          const presentation = existing
+            ? linkPresentationStore.getPresentation(scope, existing.id)
+            : undefined
           if (existing) removeLink(scope, existing, context)
           const occupant = linkStore.getInputSlotLink(
             scope,
             mutation.topology.targetNodeId,
             mutation.topology.targetSlot
           )
-          linkStore.replaceLink(scope, occupant, mutation.topology, context)
-          if (occupant) detachLinkSlots(scope, occupant, context)
+          const replacement = linkStore.replaceLink(
+            scope,
+            occupant,
+            mutation.topology,
+            context
+          )
+          if (!replacement) break
+          if (occupant) {
+            detachLinkSlots(scope, occupant, context)
+            linkPresentationStore.take(scope, occupant.id)
+          }
+          if (presentation) {
+            linkPresentationStore.patch(scope, replacement.id, presentation)
+          }
 
           const endpointNodes = new Map(
             nodeStore
@@ -781,6 +802,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           deps.layout.deleteNodes(scope, mutation.nodeIds, context)
           linkStore.clearOwner(scope, context)
+          linkPresentationStore.clearOwner(scope)
           nodeStore.clearOwner(scope, context)
           break
       }

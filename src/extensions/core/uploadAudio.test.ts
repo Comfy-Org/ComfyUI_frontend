@@ -2,15 +2,14 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
-  vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
-    mockRegisterExtension: vi.fn()
-  }))
+const { mockApiURL, mockFetchApi, mockRegisterExtension } = vi.hoisted(() => ({
+  mockApiURL: vi.fn((url: string) => `api:${url}`),
+  mockFetchApi: vi.fn(),
+  mockRegisterExtension: vi.fn()
+}))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
@@ -56,9 +55,10 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
+let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  mockAddAlert = useToastStore().addAlert
+})
 
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
   getResourceURL: (subfolder = '', filename = '', type = 'input') =>
@@ -78,12 +78,6 @@ vi.mock('@/scripts/app', () => ({
     registerExtension: mockRegisterExtension,
     rootGraph: { id: 'root' }
   }
-}))
-
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({
-    getWidget: vi.fn()
-  })
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
@@ -29,10 +27,6 @@ function graphScope(rootGraphId: UUID, owningGraphId: UUID): GraphScope {
 }
 
 describe('useNodeDataStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('re-runs consumers when membership changes', () => {
     const store = useNodeDataStore()
     const ids = computed(() =>
@@ -161,10 +155,6 @@ describe('useNodeDataStore', () => {
 })
 
 describe('nodeDataStore registration via LGraph', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function registeredState(graph: LGraph, node: LGraphNode) {
     return useNodeDataStore()
       .getGraphNodesFor(graph.id, graph.id)
@@ -243,7 +233,7 @@ describe('nodeDataStore registration via LGraph', () => {
     replacement.id = original.id
 
     expect(transferReplacementOwnership(original, replacement)).toBe(true)
-    expect(original.last_serialization?.type).toBe('missing/Node')
+    expect(original.last_serialization.type).toBe('missing/Node')
     expect(replacement.last_serialization).toBeUndefined()
     expect(
       registeredState(graph, replacement)?.lastSerialization

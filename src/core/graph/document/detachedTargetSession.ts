@@ -128,8 +128,8 @@ export function createDetachedTargetSession(
 
   function commitNext(port: TargetFrameApplyPort): CommitResult {
     if (needsResync) return { status: 'resync-required' }
+    if (queue.length === 0) return { status: 'idle' }
     const frame = queue[0]
-    if (!frame) return { status: 'idle' }
 
     const staged = new Y.Doc()
     Y.applyUpdate(staged, Y.encodeStateAsUpdate(committedDoc))
