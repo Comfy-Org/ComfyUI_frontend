@@ -29,22 +29,6 @@
     "
   >
     <Button
-      v-if="
-        checkoutStep === 'preview' &&
-        !isEmbeddedPaymentStep &&
-        !isEmbeddedConfirmStep
-      "
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      :disabled="isPolling"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
       size="icon"
       variant="muted-textonly"
       class="absolute top-6 right-4 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
