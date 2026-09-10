@@ -19,49 +19,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout trusted workflow revision
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.ref }}
+          persist-credentials: false
+
       - name: Checkout pull request
         uses: actions/checkout@v7
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          path: pull-request
           persist-credentials: false
 
       - name: Detect lockfile-only conflict
         id: conflict
-        env:
-          BASE_REPOSITORY: ${{ github.repository }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git remote add upstream "https://github.com/$BASE_REPOSITORY.git"
-          git fetch --no-tags upstream "$BASE_SHA"
-
-          set +e
-          git merge --no-commit --no-ff "$BASE_SHA"
-          merge_status=$?
-          set -e
-
-          if [ "$merge_status" -ne 0 ] && \
-             [ "$(git diff --name-only --diff-filter=U)" = 'pnpm-lock.yaml' ]; then
-            git checkout --theirs pnpm-lock.yaml
-            git add pnpm-lock.yaml
-            echo 'mode=merge' >> "$GITHUB_OUTPUT"
-          else
-            git merge --abort || true
-            git reset --hard HEAD
-            echo 'mode=repair' >> "$GITHUB_OUTPUT"
-          fi
+        uses: ./.github/actions/prepare-lockfile-merge
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          package_json_file: pull-request/package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: pull-request/.nvmrc
 
       - name: Repair lockfile
         run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+        working-directory: pull-request
 
       - name: Prepare repair artifact
         env:
@@ -71,7 +62,7 @@ jobs:
           MODE: ${{ steps.conflict.outputs.mode }}
         run: |
           mkdir "$ARTIFACT_DIR"
-          cp pnpm-lock.yaml "$ARTIFACT_DIR/pnpm-lock.yaml"
+          cp pull-request/pnpm-lock.yaml "$ARTIFACT_DIR/pnpm-lock.yaml"
           printf '%s\n' "$BASE_SHA" > "$ARTIFACT_DIR/base-sha"
           printf '%s\n' "$HEAD_SHA" > "$ARTIFACT_DIR/head-sha"
           printf '%s\n' "$MODE" > "$ARTIFACT_DIR/mode"

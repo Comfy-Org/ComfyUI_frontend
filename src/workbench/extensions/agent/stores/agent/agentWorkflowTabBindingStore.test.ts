@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -7,7 +6,6 @@ import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
   })
 
   it('resolves both directions after a bind', () => {
@@ -38,8 +36,8 @@ describe('agentWorkflowTabBindingStore', () => {
   it('T-18 / PM-664 / FE-1290 keeps sidebar context bound to the active workflow across reload', async () => {
     useAgentWorkflowTabBindingStore().bind('wf-1', 'workflows/a.json')
     await nextTick()
+    useAgentWorkflowTabBindingStore().$dispose()
 
-    setActivePinia(createPinia())
     const reloaded = useAgentWorkflowTabBindingStore()
 
     expect(reloaded.tabPathFor('wf-1')).toBe('workflows/a.json')
