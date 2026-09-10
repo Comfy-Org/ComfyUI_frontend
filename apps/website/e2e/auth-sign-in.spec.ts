@@ -3,6 +3,15 @@ import type { Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
+async function waitForHydration(page: Page, pathname: string) {
+  await page.waitForFunction(
+    (expectedPathname) =>
+      window.location.pathname === expectedPathname &&
+      !document.querySelector('astro-island[ssr]'),
+    pathname
+  )
+}
+
 /**
  * Answer PostHog's flag request with the Workshop auth flag on and the geo
  * edge with a non-China country; nothing else leaves the page.
@@ -80,6 +89,7 @@ test.describe('Sign-in page with the auth flag on', () => {
     page
   }) => {
     await page.goto('/login/?returnTo=%2Fworkshop%2F')
+    await waitForHydration(page, '/login/')
 
     await page.getByRole('link', { name: 'Sign up here' }).click()
     await expect(page).toHaveURL(/\/signup\/\?returnTo=%2Fworkshop%2F$/)
@@ -92,8 +102,13 @@ test.describe('Sign-in page with the auth flag on', () => {
     await expect(page).toHaveURL(
       /\/forgot-password\/\?returnTo=%2Fworkshop%2F$/
     )
-
-    await page.getByRole('link', { name: 'Back to login' }).click()
+    await waitForHydration(page, '/forgot-password/')
+    const backToLogin = page.getByRole('link', { name: 'Back to login' })
+    await expect(backToLogin).toHaveAttribute(
+      'href',
+      '/login/?returnTo=%2Fworkshop%2F'
+    )
+    await backToLogin.click()
     await expect(page).toHaveURL(/\/login\/\?returnTo=%2Fworkshop%2F$/)
   })
 })

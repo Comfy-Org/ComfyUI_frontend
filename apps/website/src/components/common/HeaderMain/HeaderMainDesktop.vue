@@ -5,6 +5,8 @@ import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuIt
 import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
 import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
 import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import {
@@ -24,10 +26,15 @@ const currentPath = useCurrentPath()
 
 function isNavItemActive(navItem: NavItem, path: string): boolean {
   if (navItem.href) return isHrefActive(navItem.href, path)
+  const onLeafPage = mainNavigation.some(
+    (item) => item.href && isHrefActive(item.href, path)
+  )
   return (
-    navItem.columns?.some((column) =>
+    !onLeafPage &&
+    (navItem.columns?.some((column) =>
       column.items.some((item) => isHrefActive(item.href, path))
-    ) ?? false
+    ) ??
+      false)
   )
 }
 </script>
@@ -44,8 +51,8 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
             :active="isNavItemActive(navItem, currentPath)"
           >
             <span class="inline-flex items-center gap-1">
-              <span class="ppformula-text-center">{{ navItem.label }}</span>
-              <span v-if="navItem.badge" class="hidden xl:inline-flex">
+              <span>{{ navItem.label }}</span>
+              <span v-if="navItem.badge" class="hidden 2xl:inline-flex">
                 <NewBadge :locale="locale" size="xxs" />
               </span>
             </span>
@@ -70,11 +77,19 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           v-else
           as-child
           :active="isNavItemActive(navItem, currentPath)"
-          :class="navigationMenuTriggerStyle()"
+          :class="
+            cn(navigationMenuTriggerStyle(), 'flex-row gap-1 whitespace-nowrap')
+          "
         >
-          <a :href="navItem.href" class="ppformula-text-center">{{
-            navItem.label
-          }}</a>
+          <a :href="navItem.href">
+            <span class="ppformula-text-center">{{ navItem.label }}</span>
+            <span
+              v-if="navItem.badge"
+              class="ppformula-text-center hidden 2xl:inline-flex"
+            >
+              <NewBadge :locale="locale" size="xxs" />
+            </span>
+          </a>
         </NavigationMenuLink>
       </NavigationMenuItem>
     </NavigationMenuList>

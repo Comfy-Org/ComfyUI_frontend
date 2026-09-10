@@ -54,7 +54,7 @@ const ctaButtons = [
         class="col-span-full row-span-full h-8"
       />
       <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
       >
         <img
           src="/icons/logo.svg"
@@ -90,8 +90,8 @@ const ctaButtons = [
         :aria-label="cta.ariaLabel"
       >
         <span>
-          <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
-          <span class="2xl:hidden">{{ cta.short }}</span>
+          <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
+          <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
       <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
