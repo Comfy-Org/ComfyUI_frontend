@@ -25,11 +25,15 @@ export function migrateWorkspaceToScope(
   workspaceId: string,
   scope: string
 ): void {
-  if (readIndex(scope) !== null) return
   const index = readIndex(workspaceId)
   if (index === null) return
 
   const draftKeys = getPayloadKeys(workspaceId)
+  if (readIndex(scope) !== null) {
+    removeScopeArtifacts(workspaceId, draftKeys)
+    return
+  }
+
   const copied =
     draftKeys.every((draftKey) => copyPayload(workspaceId, scope, draftKey)) &&
     restorePointerKeys.every((keyFor) =>
@@ -37,15 +41,14 @@ export function migrateWorkspaceToScope(
     ) &&
     writeIndex(scope, index)
 
-  if (!copied) {
-    deletePayloads(scope, draftKeys)
-    return
-  }
+  removeScopeArtifacts(copied ? workspaceId : scope, draftKeys)
+}
 
-  deletePayloads(workspaceId, draftKeys)
-  localStorage.removeItem(StorageKeys.draftIndex(workspaceId))
+function removeScopeArtifacts(scope: string, draftKeys: string[]): void {
+  deletePayloads(scope, draftKeys)
+  localStorage.removeItem(StorageKeys.draftIndex(scope))
   for (const keyFor of restorePointerKeys) {
-    localStorage.removeItem(keyFor(workspaceId))
+    localStorage.removeItem(keyFor(scope))
   }
 }
 
