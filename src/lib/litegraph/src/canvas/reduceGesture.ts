@@ -22,7 +22,7 @@ export type GestureState =
 
 export type GestureEvent =
   | { type: 'down'; position: GesturePoint; timeStamp: number }
-  | { type: 'move'; position: GesturePoint; timeStamp: number }
+  | { type: 'move'; position: GesturePoint }
   | { type: 'up'; position: GesturePoint }
   | { type: 'cancel' }
 
@@ -36,8 +36,6 @@ export type GestureEffect =
   | 'cancelDrag'
 
 export interface GesturePolicy {
-  /** Maximum press duration, in milliseconds, before movement starts a drag. */
-  clickBufferTime: number
   /** Maximum pointer travel, in pixels, for a press to remain a click. */
   clickDrift: number
   /** Maximum gap, in milliseconds, between two presses for a double click. */
@@ -94,10 +92,7 @@ export function reduceGesture(
     case 'pressed':
       switch (event.type) {
         case 'move':
-          if (
-            event.timeStamp - state.timeStamp <= policy.clickBufferTime &&
-            within(event.position, state.origin, policy.clickDrift)
-          )
+          if (within(event.position, state.origin, policy.clickDrift))
             return { state, effects: ['movePress'] }
           return {
             state: {
