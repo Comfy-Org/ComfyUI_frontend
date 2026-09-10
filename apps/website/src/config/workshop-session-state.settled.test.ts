@@ -56,7 +56,6 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
 beforeEach(() => {
   vi.resetModules()
   h.listeners.clear()
-  h.attachIdentity.mockClear()
 })
 
 describe('useWorkshopSession settled', () => {
@@ -64,6 +63,11 @@ describe('useWorkshopSession settled', () => {
     const mod = await import('./workshop-session-state')
     const s = mod.useWorkshopSession()
     await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
+    const { workshopIdentity } = await import('./workshop-firebase')
+    expect(
+      h.attachIdentity,
+      'the client gets the package identity itself, never a wrapper around it'
+    ).toHaveBeenCalledWith(workshopIdentity)
 
     expect(
       s.settled.value,
@@ -80,15 +84,5 @@ describe('useWorkshopSession settled', () => {
 
     h.flag!.value = false
     await vi.waitFor(() => expect(s.settled.value).toBe(false))
-  })
-
-  it('hands the client the package identity itself, never a wrapper', async () => {
-    const mod = await import('./workshop-session-state')
-    h.flag!.value = true
-    mod.useWorkshopSession()
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
-    const { workshopIdentity } = await import('./workshop-firebase')
-
-    expect(h.attachIdentity).toHaveBeenCalledWith(workshopIdentity)
   })
 })
