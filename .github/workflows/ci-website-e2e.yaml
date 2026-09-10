@@ -34,10 +34,9 @@ jobs:
     permissions:
       contents: read
     outputs:
-      test-outcome: ${{ steps.tests.outcome }}
+      functional-outcome: ${{ steps.e2e.outputs.functional-outcome }}
+      visual-outcome: ${{ steps.e2e.outputs.visual-outcome }}
       report-url: ${{ steps.deploy.outputs.url }}
-      screenshot-failures: ${{ steps.failures.outputs.screenshot }}
-      other-failures: ${{ steps.failures.outputs.other }}
       # Evaluated at job level (not from a step) — static expression.
       is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     steps:
@@ -56,9 +55,76 @@ jobs:
           PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
-      - name: Run Playwright tests
-        id: tests
-        run: pnpm --filter @comfyorg/website test:e2e
+      # Functional and visual run as separate Playwright invocations, in one
+      # script, so "did this block merge" reduces to a plain exit code with
+      # no per-test error-message parsing that can misclassify a real
+      # failure as screenshot-only. Both share ONE preview server we start
+      # and poll for ourselves — playwright.config.ts's webServer only skips
+      # spawning its own when PLAYWRIGHT_REUSE_SERVER=1, which is what lets
+      # a second `playwright test` invocation attach to the first one's
+      # server instead of failing to bind an already-occupied port.
+      - name: Run e2e tests
+        id: e2e
+        run: |
+          set +e
+          pnpm --filter @comfyorg/website preview &
+          PREVIEW_PID=$!
+
+          # Not bash's /dev/tcp: Debian/Ubuntu bash is built with that
+          # feature disabled, so it silently never connects on this image
+          # regardless of shell. Node is guaranteed present here already.
+          # A literal 127.0.0.1 probe got a clean, immediate, and permanent
+          # ECONNREFUSED here despite astro logging ready — this image binds
+          # the server to IPv6 loopback only, refusing IPv4 outright. Try
+          # both families instead of assuming either.
+          READY=0
+          LAST_ERR=""
+          for i in $(seq 1 30); do
+            LAST_ERR=$(node -e "
+              const net = require('net')
+              const tryHost = (host) => new Promise((resolve) => {
+                const s = net.connect(4321, host)
+                s.on('connect', () => { s.end(); resolve(true) })
+                s.on('error', (e) => resolve(e.message))
+              })
+              Promise.all([tryHost('127.0.0.1'), tryHost('::1')]).then((results) => {
+                if (results.some((r) => r === true)) process.exit(0)
+                console.error(results.join('; '))
+                process.exit(1)
+              })
+            " 2>&1) && { READY=1; break; }
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error::Preview server never became reachable on :4321 (last error: ${LAST_ERR})"
+            echo "functional-outcome=failure" >> "$GITHUB_OUTPUT"
+            echo "visual-outcome=skipped" >> "$GITHUB_OUTPUT"
+            kill "$PREVIEW_PID" 2>/dev/null
+            exit 1
+          fi
+
+          PLAYWRIGHT_REUSE_SERVER=1 \
+          PLAYWRIGHT_HTML_REPORT=playwright-report/functional \
+          PLAYWRIGHT_JSON_OUTPUT_NAME=results-functional.json \
+            pnpm --filter @comfyorg/website test:e2e:functional
+          FUNCTIONAL_EXIT=$?
+          echo "functional-outcome=$([ "$FUNCTIONAL_EXIT" -eq 0 ] && echo success || echo failure)" >> "$GITHUB_OUTPUT"
+
+          if [ "$FUNCTIONAL_EXIT" -ne 0 ]; then
+            echo "visual-outcome=skipped" >> "$GITHUB_OUTPUT"
+            kill "$PREVIEW_PID" 2>/dev/null
+            exit 1
+          fi
+
+          PLAYWRIGHT_REUSE_SERVER=1 \
+          PLAYWRIGHT_HTML_REPORT=playwright-report/visual \
+          PLAYWRIGHT_JSON_OUTPUT_NAME=results-visual.json \
+            pnpm --filter @comfyorg/website test:visual
+          VISUAL_EXIT=$?
+          echo "visual-outcome=$([ "$VISUAL_EXIT" -eq 0 ] && echo success || echo failure)" >> "$GITHUB_OUTPUT"
+
+          kill "$PREVIEW_PID" 2>/dev/null
+          exit "$VISUAL_EXIT"
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
@@ -67,16 +133,21 @@ jobs:
           name: website-playwright-report
           path: |
             apps/website/playwright-report/
-            apps/website/results.json
+            apps/website/results-functional.json
+            apps/website/results-visual.json
             apps/website/test-results/
           retention-days: 30
 
+      # Visual, not functional: it's the one a reviewer needs the interactive
+      # screenshot-diff viewer for. A functional failure is self-explanatory
+      # from the failed step's own log output.
       - name: Deploy report to Cloudflare
         id: deploy
         if: >-
           ${{
             always() &&
             !cancelled() &&
+            (steps.e2e.outputs.visual-outcome == 'success' || steps.e2e.outputs.visual-outcome == 'failure') &&
             (
               github.event_name != 'pull_request' ||
               github.event.pull_request.head.repo.fork == false
@@ -91,7 +162,7 @@ jobs:
           DEPLOY_OK=false
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
-            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report/visual \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
             [ $i -lt 3 ] && sleep 10
@@ -104,71 +175,36 @@ jobs:
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
-      - name: Categorize failures
-        id: failures
-        if: always() && !cancelled() && steps.tests.outcome != 'success'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('fs')
-            const report = JSON.parse(fs.readFileSync('apps/website/results.json', 'utf8'))
-
-            function isFailed(t) { return t.status === 'unexpected' || t.status === 'flaky' }
-            function isVisual(spec) {
-              return spec.file?.includes('visual') ||
-                spec.tests?.some(t => t.results?.some(r => r.error?.message?.includes('toHaveScreenshot')))
-            }
-            function specsOf(suite) {
-              return [
-                ...(suite.specs || []),
-                ...(suite.suites || []).flatMap(specsOf)
-              ]
-            }
-
-            // True:  Visual
-            // False: Other
-            const failed = specsOf(report)
-              .flatMap(spec => (spec.tests || [])
-              .filter(isFailed)
-              .map(() => isVisual(spec)))
-
-            const screenshotFailures = failed.filter(Boolean).length
-            core.setOutput('screenshot', screenshotFailures)
-            core.setOutput('other', failed.length - screenshotFailures)
-
       - name: Write job summary
         if: always() && !cancelled()
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          FUNCTIONAL_OUTCOME: ${{ steps.e2e.outputs.functional-outcome }}
+          VISUAL_OUTCOME: ${{ steps.e2e.outputs.visual-outcome }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
-          SCREENSHOT_FAILURES: ${{ steps.failures.outputs.screenshot }}
-          OTHER_FAILURES: ${{ steps.failures.outputs.other }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const functionalPassed = process.env.FUNCTIONAL_OUTCOME === 'success'
+            const visualOutcome = process.env.VISUAL_OUTCOME
+            const visualPassed = visualOutcome === 'success'
+            const visualFailed = visualOutcome === 'failure'
             const reportUrl = process.env.REPORT_URL
-            const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
-            const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
 
             const lines = ['## 🌐 Website E2E', '']
 
-            if (passed) {
+            if (functionalPassed && visualPassed) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (!functionalPassed) {
+              lines.push('> [!CAUTION]', '> Functional tests failed — this blocks merge.')
             } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
+              lines.push('> [!CAUTION]', '> Screenshot diffs found — this blocks merge. Use the "Update Website Screenshots" checkbox below to refresh expectations.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Functional tests', functionalPassed ? '✅ Passed' : '❌ Failed'],
+              ['Visual tests', visualPassed ? '✅ Passed' : visualFailed ? '❌ Failed' : '⏭️ Skipped'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
-              rows.push(
-                ['Screenshot diffs', String(screenshotFailures)],
-                ['Other failures', String(otherFailures)]
-              )
-            }
             lines.push(
               '',
               '| | |',
@@ -225,35 +261,32 @@ jobs:
         id: content
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
+          FUNCTIONAL_OUTCOME: ${{ needs.website-e2e.outputs.functional-outcome }}
+          VISUAL_OUTCOME: ${{ needs.website-e2e.outputs.visual-outcome }}
           REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
-          SCREENSHOT_FAILURES: ${{ needs.website-e2e.outputs.screenshot-failures }}
-          OTHER_FAILURES: ${{ needs.website-e2e.outputs.other-failures }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const functionalPassed = process.env.FUNCTIONAL_OUTCOME === 'success'
+            const visualOutcome = process.env.VISUAL_OUTCOME
+            const visualPassed = visualOutcome === 'success'
+            const visualFailed = visualOutcome === 'failure'
             const reportUrl = process.env.REPORT_URL
-            const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
-            const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
 
             const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
 
-            if (passed) {
+            if (functionalPassed && visualPassed) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (!functionalPassed) {
+              lines.push('> [!CAUTION]', '> Functional tests failed — this blocks merge.')
             } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
+              lines.push('> [!CAUTION]', '> Screenshot diffs found — this blocks merge.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Functional tests', functionalPassed ? '✅ Passed' : '❌ Failed'],
+              ['Visual tests', visualPassed ? '✅ Passed' : visualFailed ? '❌ Failed' : '⏭️ Skipped'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
-              rows.push(
-                ['Screenshot diffs', String(screenshotFailures)],
-                ['Other failures', String(otherFailures)]
-              )
-            }
             lines.push(
               '',
               '| | |',
@@ -261,16 +294,8 @@ jobs:
               ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
             )
 
-            if (screenshotFailures > 0) {
-              const s = screenshotFailures === 1 ? '' : 's'
-              lines.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
-            }
-            if (otherFailures > 0) {
-              lines.push(
-                '',
-                '> [!WARNING]',
-                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
-              )
+            if (visualFailed) {
+              lines.push('', '- [ ] Update website screenshots')
             }
 
             core.setOutput('section-content', lines.join('\n'))

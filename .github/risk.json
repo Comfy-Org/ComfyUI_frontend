@@ -234,7 +234,7 @@
     {
       "class": "website",
       "tier": "R2",
-      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money",
+      "why": "the marketing site is production and had no rule at all \u2014 but it is copy and layout, so it cannot corrupt a saved workflow or move money. A prior attempt to carve out a lower R1 tier for apps/website/src/content/** and src/i18n/** swept in real code (Zod schemas, i18n resolver logic), and the grader has no exclusion syntax to express that split safely against this blanket rule regardless \u2014 reverted pending a properly scoped follow-up.",
       "paths": ["apps/website/**"]
     },
     {
