@@ -6,6 +6,7 @@ import lintStaged from '../../lint-staged.config'
 
 const eslint = new ESLint()
 const filePath = 'apps/website/src/pages/lint-coverage.astro'
+await eslint.calculateConfigForFile(filePath)
 
 describe('website Astro linting', () => {
   it('checks canonical classes and Astro directives', async () => {

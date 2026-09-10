@@ -29,7 +29,7 @@ const baseRoutes = {
   agent: '/agent',
   platform: '/platform',
   platformComfyApi: '/platform/comfy-api',
-  platformModels: '/platform/models',
+  platformRouter: '/platform/router',
   platformBuilder: '/platform/builder',
   cli: '/cli',
   minimax: '/minimax-h3',
@@ -101,8 +101,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  // Auth surfaces render one page for every locale (copy localizes in the
+  // island); a /zh-CN twin does not exist and must not be advertised.
+  '/forgot-password',
+  '/login',
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
+  '/signup',
   '/workshop'
 ]
 

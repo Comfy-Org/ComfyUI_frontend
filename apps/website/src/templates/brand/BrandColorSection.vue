@@ -37,7 +37,7 @@ const liveMessage = computed(() =>
     <SectionHeader align="start" max-width="xl">
       {{ t('brand.colors.heading', locale) }}
       <template #subtitle>
-        <p class="mt-4 max-w-2xl text-sm leading-[1.45] text-primary-warm-gray">
+        <p class="mt-4 max-w-2xl text-sm/[1.45] text-primary-warm-gray">
           {{ t('brand.colors.subheading', locale) }}
         </p>
       </template>

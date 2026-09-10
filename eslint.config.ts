@@ -173,6 +173,8 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'apps/*/dist/**',
+      'apps/*/.astro/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
@@ -258,6 +260,9 @@ export default defineConfig([
       parserOptions: {
         projectService: false
       }
+    },
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }]
     }
   },
   // Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
