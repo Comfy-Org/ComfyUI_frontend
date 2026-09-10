@@ -8,37 +8,45 @@ claim deployment success. The live API-key smoke check below returned 402.
 ## Auth base
 
 The combined preview now builds on `maanil/auth-stack-combined` (#17283),
-commit `2d6e67afc26f775fe5d2395d83e571c102d777d0`, rather than the older
+commit `5cfd7b8765b71477aa8a62158c96e906720f2328`, rather than the older
 `throwaway/christian-closure-2026-09-09` snapshot. This is committed auth work,
 not a claim that its PR is merged or review-approved. The account package is
 unchanged from that base; Models uses its current `@comfyorg/account/session`
 entry instead of restoring the removed core barrel.
 
-The September 10 rebase preserves the assembled prototype/content/Router
+The earlier September 10 rebase preserved the assembled prototype/content/Router
 change as one preview commit. The previous head is retained locally at
 `backup/17263-before-auth-combined-20260910`. Sixteen conflicting screenshot
 baselines use the newer auth-base versions; this is not a screenshot update
 or a claim that the combined design matches every upstream visual baseline.
 
-Fresh rebase verification: 254 focused tests, website typecheck, uncached
+Earlier rebase verification: 254 focused tests, website typecheck, uncached
 Knip, both compile-flag build modes, three existing auth browser tests and
 the catalogue/five-model desktop/mobile browser probe pass. Browser probes
 made no generation requests. The disabled build still emits prototype
 `/models/` pages; the inherited release-gating gap is not fixed by this rebase.
 This combined preview must not be merged as a production release.
 
+The subsequent auth-base sync uses ordinary merge commits, without rewriting
+published preview history. It preserves Models discovery on the homepage and
+keeps the incoming release section at the bottom. The shared account package
+matches Maanil's latest base, including the module-local identity brand,
+workspace-target checks and preference for a fresh live credential over storage.
+Rob's packed content is unchanged by this sync.
+
 ## Run locally
 
-From `apps/website`:
+Use the repository's Node 26 runtime (at least 26.8.2). From `apps/website`:
 
 ```sh
-NODE_ENV=production WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 \
-  PUBLIC_WORKSHOP_ROUTER_RUN=1 pnpm build
-pnpm preview --host localhost --port 4321
+WORKSHOP_IN_BUILD=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 \
+  PUBLIC_WORKSHOP_ROUTER_RUN=1 PUBLIC_WORKSHOP_CLOUD_ENV=prod \
+  pnpm dev --host localhost --port 4321
 ```
 
-The existing server on port 4321 serves this worktree's dist. Rebuild it;
-do not accidentally test a server from another worktree.
+The current local server on port 4321 is a dev server for this worktree, not an
+old `dist` preview. Check `pnpm exec astro dev status` and the listening process's
+working directory before testing; do not assume any server on that port is ours.
 
 - [Models](http://localhost:4321/models/)
 - [FLUX 2 Pro](http://localhost:4321/models/bfl--flux-2-pro/)
@@ -48,13 +56,76 @@ do not accidentally test a server from another worktree.
 - [Incomplete MiniMax H3](http://localhost:4321/models/minimax--minimax-h3/)
 - [Local sign-in](http://localhost:4321/login/?returnTo=%2Fmodels%2Fbfl--flux-2-pro%2F)
 
-Default backend family is staging Cloud, staging Router and development
-Firebase. Keep the family consistent. The Run compile flag defaults off;
+The command above explicitly selects production Cloud, Router and Firebase so
+local sign-in reads the existing production account's balance. Without that
+override, the default family is staging Cloud, staging Router and development
+Firebase: the same email there does not establish a production balance. Keep the
+family consistent. Production Router requests can spend real credits; this auth
+diagnostic authorizes sign-in and balance reads only, not generation or purchase.
+The Run compile flag defaults off;
 the Vercel preview workflow sets it alongside Models and auth only for PRs with
-the `workshop` label. The production deploy job is unchanged. Ben confirmed local
-sign-in earlier. This work does not prove paid generation or live availability.
+the `workshop` label. The production deploy job is unchanged. Local production
+sign-in and balance are verified on the latest base as described below. This
+does not prove paid generation or every model's live availability.
 
-## Current coverage: verified intersection, not union
+### Latest local auth check — September 10
+
+All 309 shared-account tests and 141 focused website auth/session/balance tests
+pass against this base. The telemetry fixture now imports its fake identity
+after resetting modules, so it shares the session client's module-local brand;
+the production guard and the behavior assertions are unchanged. Website
+typechecking reports zero errors/warnings and seven existing hints.
+
+The first local check used staging plus the forced-on auth flag and reported
+zero credits despite a funded production account. That was not a production
+balance test. On September 10 the local server was restarted with the explicit
+production family; the served module confirms the `prod` override and production
+Firebase, Cloud and Router. After a fresh sign-in, the real browser diagnostics
+reported an authenticated session, the model gate reached `ready`, and two
+successful balance reads from `https://cloud.comfy.org` returned the same funded
+balance. Ben confirmed it works. No production auth or balance code change was
+needed for this issue; the local environment selection was wrong for this test.
+The balance/environment/header focused set passes 37 tests.
+
+No controllable browser was connected in the verification session; Ben performed
+the real sign-in, and the local dev server forwarded the diagnostic observations.
+This is not an automated browser-suite or paid-generation result. The temporary
+phase/balance logging was removed before publishing; no token or account
+identifier was logged. Payment CTA improvements and the model button's
+pending/error-state distinction remain deferred, not part of the balance fix.
+
+At auth-base head `5cfd7b8765`, GitHub's website unit job has four failures in
+`workshop-account.test.ts`: its pre-reset fake identity has a different
+module-local brand from the reloaded client. This preview carries the small test
+fixture fix described above; it must also reach the auth PR before its tests can
+pass. A successful local sign-in does not certify that broader PR as merge-ready.
+
+Read-only preflights from `http://localhost:4321` found:
+
+- `https://stagingcloud.comfy.org/api/auth/token`: 204, exact localhost origin,
+  explicit `Authorization` and `Content-Type` allowance.
+- `https://stagingapi.comfy.org/customers`: 204 and exact localhost origin, but
+  `Access-Control-Allow-Headers: *` only. The
+  [Fetch standard](https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name)
+  requires explicit allowance of `Authorization`; the wildcard does not cover
+  that header. This is a backend CORS issue for the bearer-authenticated customer
+  provisioning step, not proof that Firebase or workspace minting failed.
+
+Recheck the live response and actual browser behavior after a backend fix. An
+already-restored session does not exercise new sign-in's provisioning request.
+Do not bypass provisioning or change backend families to hide this failure.
+
+The paused local API-key/E2E draft is preserved separately in stash
+`4aa0ef4673cd237f2c388a1161c39b4c12f1a2d7`; it is not included in the auth sync
+or the running local auth check. Restore it deliberately when that work resumes.
+
+## Prior canonical-model coverage: verified intersection, not union
+
+The counts and one-page-per-model policy below describe the earlier identity
+audit. The later model/use-case split supersedes that page policy: 288 content
+records now produce 158 visible pages mapped to 114 Router identities. See
+[MODELS_CONTENT_FORMAT.md](MODELS_CONTENT_FORMAT.md) for the current content
+ownership, counts and remaining per-case parameter work.
 
 Ben confirmed this policy on September 9: offer only native Router identities
 with a verified, single-target join to Rob's content. One canonical model page
