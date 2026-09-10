@@ -510,6 +510,29 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('restores the latched schema error when the same workflow re-binds', async () => {
+    const { unmount, status, isTargetActive } = mountFollower('wf-1')
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+    bridge().lastSchemaError = {
+      message: 'meta.schema_version=3 is not schema v2'
+    }
+
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    expect(status().schemaError).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(status().connected).toBe(false)
+    expect(status().schemaError).toBe('meta.schema_version=3 is not schema v2')
+    unmount()
+  })
+
   it('falls back to a default message when a schema_version_mismatch detail has no string message', () => {
     const { unmount, status } = mountFollower('wf-1')
 

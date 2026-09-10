@@ -412,11 +412,18 @@ export function useAgentCrdtFollower(
       // holds no schema error (a fresh document passed the read-time guard)
       // and this same workflow was not permanently gated below.
       clearSubscribeRetry()
-      const stillUnreadable =
-        bridge.lastSchemaError !== null || isPermanentlyMismatched()
-      if (stillUnreadable) {
+      const latched = bridge.lastSchemaError
+      if (latched !== null || isPermanentlyMismatched()) {
         connected.value = false
         clearStaleProbe()
+        // Deactivating and re-binding the SAME workflow re-subscribes and lands
+        // here, but `bridge.unsubscribe()` kept the latched error for that
+        // lineage and the binding watch cleared the public one. Without this
+        // restore the panel settles at "disconnected, no reason" — the exact
+        // state this change exists to eliminate — and no further `schema_error`
+        // is coming, because #16925 latches the read gate until a `doc_reset`.
+        if (schemaError.value === null && latched !== null)
+          schemaError.value = readSchemaError(latched)
         return
       }
       connected.value = true
