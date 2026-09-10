@@ -2547,19 +2547,23 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
-      targetSlotName?: string
-      targetSlotId?: UUID
+      targetSlot?: { id: UUID } | { name: string; occurrence: number }
     })[] = []
     function getTargetSlotReference(
       targetNode: LGraphNode | null | undefined,
       targetSlotIndex: number
     ) {
       const targetSlot = targetNode?.inputs[targetSlotIndex]
+      if (!targetNode || !targetSlot) return
+      const targetSlotId = targetNode.isSubgraphNode()
+        ? targetNode.inputs[targetSlotIndex]?._subgraphSlot?.id
+        : undefined
+      if (targetSlotId) return { id: targetSlotId }
       return {
-        targetSlotName: targetSlot?.name,
-        targetSlotId: targetNode?.isSubgraphNode()
-          ? targetNode.inputs[targetSlotIndex]?._subgraphSlot?.id
-          : undefined
+        name: targetSlot.name,
+        occurrence: targetNode.inputs
+          .slice(0, targetSlotIndex)
+          .filter((input) => input.name === targetSlot.name).length
       }
     }
     for (const [, link] of subgraphNode.subgraph.links) {
@@ -2613,10 +2617,6 @@ export class LGraph
             scope,
             sublink.id
           )
-          const targetSlotReference = getTargetSlotReference(
-            this.getNodeById(sublink.target_id),
-            sublink.target_slot
-          )
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2626,7 +2626,10 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
-            ...targetSlotReference,
+            targetSlot: getTargetSlotReference(
+              this.getNodeById(sublink.target_id),
+              sublink.target_slot
+            ),
             ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
@@ -2647,10 +2650,6 @@ export class LGraph
       const restoredPresentation = outerLink
         ? getAgreedLinkPresentation([presentation, outerPresentation])
         : presentation
-      const targetSlotReference = getTargetSlotReference(
-        subgraphNode.subgraph.getNodeById(link.target_id),
-        link.target_slot
-      )
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2660,7 +2659,10 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
-        ...targetSlotReference,
+        targetSlot: getTargetSlotReference(
+          subgraphNode.subgraph.getNodeById(link.target_id),
+          link.target_slot
+        ),
         ...restoredPresentation
       })
     }
@@ -2692,16 +2694,20 @@ export class LGraph
       targetNode: LGraphNode,
       newLink: (typeof newLinks)[number]
     ) {
-      if (newLink.targetSlotId) {
+      const targetSlot = newLink.targetSlot
+      if (!targetSlot) return newLink.tslot
+      if ('id' in targetSlot) {
         return targetNode.isSubgraphNode()
           ? targetNode.inputs.findIndex(
-              (input) => input._subgraphSlot?.id === newLink.targetSlotId
+              (input) => input._subgraphSlot?.id === targetSlot.id
             )
           : -1
       }
-      return newLink.targetSlotName === undefined
-        ? newLink.tslot
-        : targetNode.findInputSlot(newLink.targetSlotName)
+      let occurrence = 0
+      return targetNode.inputs.findIndex((input) => {
+        if (input.name !== targetSlot.name) return false
+        return occurrence++ === targetSlot.occurrence
+      })
     }
 
     const linkIdMap = new Map<LinkId, LinkId[]>()
