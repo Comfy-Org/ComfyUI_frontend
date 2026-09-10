@@ -528,7 +528,9 @@ export function useSubscriptionCheckout(
           (await workspaceApi.getBillingStatus()).billing_status ===
           'payment_failed'
       } catch {
-        return null
+        // The probe failing means payment_failed was never ruled out, so the
+        // refusal must not be presented as settling.
+        return 'probe_failed'
       }
     }
     if (!requiresRecovery || !isCurrent()) return null
@@ -578,7 +580,8 @@ export function useSubscriptionCheckout(
         withCurrentPromotion(options)
       )
     } catch (previewError) {
-      if (!(await recoverOutstandingPayment(previewError))) {
+      const recovery = await recoverOutstandingPayment(previewError)
+      if (!recovery || recovery === 'probe_failed') {
         showSubscribeError(previewError)
       }
       return true
@@ -621,7 +624,7 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const recovery = await recoverOutstandingPayment(error)
       if (recovery === 'failed') resetToPricing()
-      if (recovery) return
+      if (recovery && recovery !== 'probe_failed') return
       // Treated the same as an incapable preview below.
     }
     if (
@@ -787,12 +790,14 @@ export function useSubscriptionCheckout(
       // Recovery runs first: TRANSITION_NOT_ALLOWED is ambiguous on its own,
       // and recoverOutstandingPayment holds the server-authoritative probe
       // (billing_status === 'payment_failed' → portal). Only when the probe
-      // rules that out does the refusal read as settling.
-      if (await recoverOutstandingPayment(error)) {
+      // rules that out does the refusal read as settling; a failed probe
+      // rules out nothing and falls through to the error toast.
+      const recovery = await recoverOutstandingPayment(error)
+      if (recovery && recovery !== 'probe_failed') {
         isPaymentSettling.value = false
         return
       }
-      if (isSettlingTransitionRefusal(error)) {
+      if (recovery !== 'probe_failed' && isSettlingTransitionRefusal(error)) {
         presentSettlingRefusal()
         return
       }
@@ -854,6 +859,7 @@ export function useSubscriptionCheckout(
 
       let response: PreviewSubscribeResponse | null = null
       let previewError: unknown
+      let settlingUnprovable = false
       try {
         response = await previewSubscribe(
           getTeamPlanSlug(payload.billingCycle),
@@ -869,7 +875,9 @@ export function useSubscriptionCheckout(
           resetToPricing()
           return
         }
-        if (recovery) {
+        if (recovery === 'probe_failed') {
+          settlingUnprovable = true
+        } else if (recovery) {
           isPaymentSettling.value = false
           return
         }
@@ -886,8 +894,9 @@ export function useSubscriptionCheckout(
         return
       }
       if (
-        isSettlingTransitionRefusal(previewError) ||
-        isSettlingRefusalReason(response?.reason)
+        !settlingUnprovable &&
+        (isSettlingTransitionRefusal(previewError) ||
+          isSettlingRefusalReason(response?.reason))
       ) {
         presentSettlingRefusal()
         checkoutStep.value = 'pricing'
@@ -913,6 +922,7 @@ export function useSubscriptionCheckout(
 
     let response: PreviewSubscribeResponse | null = null
     let previewError: unknown
+    let settlingUnprovable = false
     try {
       const planSlug = getTeamPlanSlug(payload.billingCycle)
       ;[response] = await Promise.all([
@@ -931,7 +941,9 @@ export function useSubscriptionCheckout(
         resetToPricing()
         return
       }
-      if (recovery) {
+      if (recovery === 'probe_failed') {
+        settlingUnprovable = true
+      } else if (recovery) {
         isPaymentSettling.value = false
         return
       }
@@ -953,8 +965,9 @@ export function useSubscriptionCheckout(
       return
     }
     if (
-      isSettlingTransitionRefusal(previewError) ||
-      isSettlingRefusalReason(response?.reason)
+      !settlingUnprovable &&
+      (isSettlingTransitionRefusal(previewError) ||
+        isSettlingRefusalReason(response?.reason))
     ) {
       presentSettlingRefusal()
       checkoutStep.value = 'pricing'

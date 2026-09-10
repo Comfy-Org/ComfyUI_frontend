@@ -1337,6 +1337,44 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.isPaymentSettling.value).toBe(false)
     })
 
+    it('surfaces the error instead of claiming settling when the probe fails', async () => {
+      const checkout = await setup()
+      mockGetBillingStatus.mockRejectedValueOnce(
+        new Error('status read failed')
+      )
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(false)
+      expect(mockOpen).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: SETTLING_MESSAGE })
+      )
+    })
+
+    it('keeps a team refusal out of the settling notice when the probe fails', async () => {
+      const checkout = await setup()
+      mockGetBillingStatus.mockRejectedValueOnce(
+        new Error('status read failed')
+      )
+      mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
+
+      await checkout.handleSubscribeTeamClick({
+        stop: teamStop,
+        billingCycle: 'monthly'
+      })
+
+      expect(checkout.isPaymentSettling.value).toBe(false)
+      expect(checkout.checkoutStep.value).toBe('pricing')
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
     it('falls back to a toast on hosts that do not render the notice', async () => {
       const checkout = await setup(undefined, 'personal', true, false)
       mockPreviewSubscribe.mockRejectedValueOnce(settlingError())
