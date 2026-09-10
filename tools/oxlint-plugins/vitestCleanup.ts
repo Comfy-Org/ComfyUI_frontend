@@ -79,6 +79,20 @@ interface CallExpression extends Node {
   readonly arguments: readonly Expression[]
 }
 
+interface FunctionExpression extends Node {
+  readonly type: 'ArrowFunctionExpression' | 'FunctionExpression'
+  readonly params: readonly Node[]
+}
+
+function isFunctionExpression(
+  node: Node | undefined
+): node is FunctionExpression {
+  return (
+    node?.type === 'ArrowFunctionExpression' ||
+    node?.type === 'FunctionExpression'
+  )
+}
+
 interface ScopeVariableDefinition {
   readonly type: string
   readonly node: Node & { readonly imported?: Identifier }
@@ -388,6 +402,29 @@ export const noModuleScopeVitestMocks = {
         context.report({
           node,
           message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
+        })
+      }
+    }
+  }
+}
+
+export const noImportActual = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        const factory = node.arguments[1]
+        const usesImportOriginal =
+          methodName === 'mock' &&
+          isFunctionExpression(factory) &&
+          factory.params.length > 0
+
+        if (methodName !== 'importActual' && !usesImportOriginal) return
+
+        context.report({
+          node,
+          message:
+            'Avoid importOriginal() and vi.importActual(). Import the module normally and use vi.spyOn(), vi.mock(..., { spy: true }), or a focused full mock.'
         })
       }
     }

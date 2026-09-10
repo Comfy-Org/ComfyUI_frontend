@@ -143,6 +143,7 @@
         "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
       ],
       "rules": {
+        "comfy/no-import-actual": "warn",
         "comfy/use-global-pinia": "error"
       }
     },
