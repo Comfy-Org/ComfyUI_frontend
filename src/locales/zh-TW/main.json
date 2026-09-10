@@ -75,6 +75,19 @@
     },
     "notHelpful": "沒有幫助",
     "openWorkflowTab": "開啟 {name}",
+    "paywall": {
+      "addCredits": "新增點數",
+      "body": {
+        "local": "您已用完點數餘額。新增點數以讓代理程式持續運作。",
+        "member": "此工作區已用盡所有點數。請要求工作區擁有者新增更多點數。",
+        "salesManaged": "此工作區透過您的 Comfy 帳戶團隊計費。請聯絡他們以新增點數。",
+        "subscribed": "此工作區已用盡每月點數及儲值餘額。新增點數以讓代理程式持續運作。",
+        "subscriptionRequired": "您已用盡可用點數。"
+      },
+      "subscribe": "訂閱",
+      "title": "點數不足",
+      "upgradePlan": "升級方案"
+    },
     "placeholder": "描述想法，使用 {'@'} 引用，\n提及圖表中的節點或拖曳加入資產",
     "ranToolCalls": "已執行 {count} 次工具呼叫 | 已執行 {count} 次工具呼叫",
     "ranToolCallsTimed": "已執行 {count} 次工具呼叫，耗時 {seconds} 秒 | 已執行 {count} 次工具呼叫，耗時 {seconds} 秒",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "編輯子圖小工具",
     "Exit Subgraph": "退出子圖",
     "Experimental: Browse Model Assets": "實驗性：瀏覽模型資源",
-    "Experimental: Enable AssetAPI": "實驗性：啟用 AssetAPI",
     "Experimental: Enable Nodes 2_0": "實驗性：啟用 Nodes 2.0",
     "Export": "匯出",
     "Export (API)": "匯出（API）",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "額外點數",
     "additionalCreditsInUse": "使用中",
     "additionalCreditsInfo": "關於額外點數",
-    "additionalCreditsTooltip": "您在方案之外加購的點數。月度點數用完後才會使用。每筆加購點數自購買日起一年內有效。",
+    "additionalCreditsTooltip": "您在方案之外加購的點數。方案點數用完後使用。每筆點數會在購買一年後到期。",
     "benefits": {
       "benefit1": "合作節點每月點數 — 需要時可隨時加值",
       "benefit1FreeTier": "每月更多點數，隨時加值",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "每月收費 {amount}。可隨時取消。",
       "changePaymentMethod": "變更",
       "commitment": "承諾期",
+      "completePayment": "完成付款",
       "completeVerification": "完成驗證",
       "confirm": "確認",
       "confirmChange": "確認變更",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "隱藏功能",
       "newMonthlySubscription": "新月度訂閱",
       "nextPaymentDue": "下次付款日為 {date}。可隨時取消。",
+      "parkedCheckoutDetail": "您先前的結帳仍在等待付款方式。完成付款以啟用此方案。",
       "payAndSubscribe": "付款並訂閱",
       "paymentMethod": "付款方式",
       "paymentPopupBlocked": "無法開啟付款頁面 — 請允許彈出視窗後再試一次。",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "專案與資產管理",
       "perkRolePermissions": "依角色分配權限",
       "perkSharedPool": "全體成員共享額度池",
-      "tagline": "自選每月額度訂閱。額度越高，折扣越多。",
+      "tagline": "自行選擇點數訂閱方案。訂閱的點數越多，折扣越高。",
       "unavailable": "此團隊方案目前無法使用。"
     },
     "teamPlanIncludes": "您的方案包含 {plan} 的所有內容，並額外提供：",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "美元／月／成員",
     "usdPerYear": "USD / 年",
     "usedAfterMonthly": "月度點數用完後使用",
+    "usedAfterYearly": "年度點數用完後使用",
     "videoEstimate": "可產生約 {count} 個 5 秒影片*",
     "videoEstimateExplanation": "此估算以 Wan 2.2 圖轉影範本的預設設定（5 秒、640x640、16fps、4 步採樣）為基礎。",
     "videoEstimateHelp": "查看更多此範本細節",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "包含內容：",
     "workspaceNotSubscribed": "此工作區尚未訂閱",
     "yearly": "每年",
+    "yearlyCredits": "每年點數",
     "yearlyCreditsLabel": "年度總點數",
+    "yearlyCreditsPerMemberLabel": "年度點數 / 成員",
+    "yearlyCreditsUsedUpTitle": "年度點數已用完。將於 {date} 補充",
+    "yearlyCreditsUsedUpTitleNoDate": "年度點數已用完",
+    "yearlyUsageProgress": "已使用 {used} / {total} 年度點數",
     "yourPlanIncludes": "您的方案包含："
   },
   "tabMenu": {

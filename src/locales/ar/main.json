@@ -75,6 +75,19 @@
     },
     "notHelpful": "غير مفيد",
     "openWorkflowTab": "فتح {name}",
+    "paywall": {
+      "addCredits": "إضافة أرصدة",
+      "body": {
+        "local": "استهلكت رصيدك من الأرصدة. أضف أرصدة للحفاظ على عمل الوكيل.",
+        "member": "استخدمت مساحة العمل هذه جميع أرصدتها. اطلب من مالك مساحة العمل إضافة المزيد.",
+        "salesManaged": "تتم فوترة مساحة العمل هذه عبر فريق حساب Comfy الخاص بك. تواصل معهم لإضافة أرصدة.",
+        "subscribed": "استخدمت مساحة العمل هذه أرصدتها الشهرية ورصيد الشحن الإضافي. أضف أرصدة للحفاظ على عمل الوكيل.",
+        "subscriptionRequired": "نفدت أرصدتك المتاحة."
+      },
+      "subscribe": "اشترك",
+      "title": "نفدت الأرصدة",
+      "upgradePlan": "ترقية الخطة"
+    },
     "placeholder": "صف الأفكار، استخدم {'@'} للإشارة،\nاذكر العُقد من الرسم البياني أو اسحب الأصول إلى الداخل",
     "ranToolCalls": "تم تشغيل {count} استدعاء للأداة | تم تشغيل {count} استدعاءات للأداة",
     "ranToolCallsTimed": "تم تشغيل {count} استدعاء للأداة لمدة {seconds} ثانية | تم تشغيل {count} استدعاءات للأداة لمدة {seconds} ثانية",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "تحرير عناصر واجهة المستخدم للرسم البياني الفرعي",
     "Exit Subgraph": "الخروج من الرسم الفرعي",
     "Experimental: Browse Model Assets": "تجريبي: استعراض أصول النماذج",
-    "Experimental: Enable AssetAPI": "تجريبي: تمكين AssetAPI",
     "Experimental: Enable Nodes 2_0": "تجريبي: تفعيل Nodes 2.0",
     "Export": "تصدير",
     "Export (API)": "تصدير (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "رصيد إضافي",
     "additionalCreditsInUse": "قيد الاستخدام",
     "additionalCreditsInfo": "حول الرصيد الإضافي",
-    "additionalCreditsTooltip": "الرصيد الذي تضيفه فوق خطتك. يُستخدم بعد نفاد الرصيد الشهري. كل رصيد ينتهي بعد سنة من الشراء.",
+    "additionalCreditsTooltip": "أرصدة تضيفها إلى جانب خطتك. تُستخدم بعد نفاد أرصدة خطتك. تنتهي صلاحية كل منها بعد عام من الشراء.",
     "benefits": {
       "benefit1": "رصيد شهري للعقد الشريكة - تجديد عند الحاجة",
       "benefit1FreeTier": "رصيد شهري أكثر، مع إمكانية الشحن في أي وقت",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "{amount} يتم تحصيلها كل شهر. يمكنك الإلغاء في أي وقت.",
       "changePaymentMethod": "تغيير",
       "commitment": "الالتزام",
+      "completePayment": "أكمل عملية الدفع",
       "completeVerification": "أكمل التحقق",
       "confirm": "تأكيد",
       "confirmChange": "تأكيد التغيير",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "إخفاء الميزات",
       "newMonthlySubscription": "اشتراك شهري جديد",
       "nextPaymentDue": "الدفع القادم مستحق في {date}. يمكنك الإلغاء في أي وقت.",
+      "parkedCheckoutDetail": "لا تزال عملية الدفع السابقة بانتظار طريقة دفع. أكمل عملية الدفع لتفعيل هذه الخطة.",
       "payAndSubscribe": "ادفع واشترك",
       "paymentMethod": "طريقة الدفع",
       "paymentPopupBlocked": "تعذر فتح صفحة الدفع — يرجى السماح بالنوافذ المنبثقة والمحاولة مرة أخرى.",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "إدارة المشاريع والأصول",
       "perkRolePermissions": "أذونات حسب الدور",
       "perkSharedPool": "رصيد مشترك لجميع الأعضاء",
-      "tagline": "اختر اشتراك الرصيد الشهري الخاص بك. احصل على خصم أكبر مع اشتراك رصيد أكبر.",
+      "tagline": "اختر اشتراك الأرصدة الخاص بك. احصل على خصم أكبر مع اشتراك أرصدة أكبر.",
       "unavailable": "خطة الفريق هذه غير متوفرة حالياً."
     },
     "teamPlanIncludes": "تشمل خطتك كل ما في {plan}، بالإضافة إلى:",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "دولار أمريكي / شهر / عضو",
     "usdPerYear": "دولار أمريكي / سنة",
     "usedAfterMonthly": "يتم استخدامه بعد نفاد الرصيد الشهري",
+    "usedAfterYearly": "تُستخدم بعد نفاد الأرصدة السنوية",
     "videoEstimate": "ينتج تقريبًا ~{count} فيديوهات ٥ ثوانٍ*",
     "videoEstimateExplanation": "هذه التقديرات مبنية على قالب Wan 2.2 لتحويل الصورة إلى فيديو باستخدام الإعدادات الافتراضية (5 ثوانٍ، 640x640، 16 إطار/ثانية، 4 خطوات أخذ عينات).",
     "videoEstimateHelp": "مزيد من التفاصيل حول هذا القالب",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "ما يتضمنه:",
     "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",
     "yearly": "سنوي",
+    "yearlyCredits": "أرصدة سنويًا",
     "yearlyCreditsLabel": "إجمالي الرصيد السنوي",
+    "yearlyCreditsPerMemberLabel": "الأرصدة السنوية / العضو",
+    "yearlyCreditsUsedUpTitle": "نفدت الأرصدة السنوية. تُجدَّد في {date}",
+    "yearlyCreditsUsedUpTitleNoDate": "نفدت الأرصدة السنوية",
+    "yearlyUsageProgress": "تم استخدام {used} من أصل {total} من الأرصدة السنوية",
     "yourPlanIncludes": "خطتك تشمل:"
   },
   "tabMenu": {
