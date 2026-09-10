@@ -27,7 +27,6 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 const CLOUD_WORKFLOW_MAX_PAGES = 5
-const AGENT_THREAD_MAX_PAGES = 20
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -166,11 +165,7 @@ export function createAgentRestClient() {
     const threads: AgentThreadSummary[] = []
     const seenCursors = new Set<string>()
     let cursor: string | undefined
-    for (
-      let pageNumber = 0;
-      pageNumber < AGENT_THREAD_MAX_PAGES;
-      pageNumber++
-    ) {
+    for (;;) {
       const after = cursor ? `?after=${encodeURIComponent(cursor)}` : ''
       const page = await request(
         `/agent/threads${after}`,
@@ -189,11 +184,6 @@ export function createAgentRestClient() {
       seenCursors.add(nextCursor)
       cursor = nextCursor
     }
-    throw new AgentApiError(
-      'Agent thread pagination exceeded the page limit',
-      502,
-      { maxPages: AGENT_THREAD_MAX_PAGES }
-    )
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {

@@ -93,7 +93,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function beginRefresh(): number {
-    return refreshGeneration
+    return ++refreshGeneration
   }
 
   function replaceAll(
