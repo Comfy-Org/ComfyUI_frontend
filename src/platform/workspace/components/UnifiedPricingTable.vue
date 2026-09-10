@@ -455,6 +455,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import {
   TIER_PRICING,
@@ -647,6 +648,20 @@ const footerNotice = computed<FooterNotice | null>(() => {
       links: [contactSupportLink()]
     }
   }
+  // Informational and lowest priority (DES-1023): a scheduled change is the
+  // user's own act, so it never outranks a refusal. The Stay-on link lands
+  // with the revert endpoint (BE-10873); until then the notice is link-less.
+  // Cancellation suppresses it, mirroring the settings banner: the ending
+  // is the message once cancel_at is set, and the change won't happen.
+  if (scheduledPlanChange.isDisplayable.value && !isCancelled.value) {
+    return {
+      message: t('subscription.scheduledChangeNotice', {
+        plan: scheduledPlanChange.planName.value,
+        date: scheduledPlanChange.formattedDate.value
+      }),
+      links: []
+    }
+  }
   return null
 })
 
@@ -797,6 +812,17 @@ const {
   subscriptionStatus,
   currentTeamCreditStop
 } = useBillingContext()
+
+const scheduledPlanChange = useScheduledPlanChange()
+
+const isScheduledDestination = (tierKey: CheckoutTierKey): boolean => {
+  const slug = scheduledPlanChange.scheduledChange.value?.plan_slug
+  if (!slug) return false
+  return (
+    getApiPlanForTier(tierKey, 'monthly')?.slug === slug ||
+    getApiPlanForTier(tierKey, 'yearly')?.slug === slug
+  )
+}
 
 const canSelectPersonalPlan = computed(
   () => !isTeamPlan.value || canDowngradeToPersonal.value
@@ -1032,6 +1058,16 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     return isCancelled.value
       ? t('subscription.resubscribeTo', { plan: planName })
       : t('subscription.currentPlan')
+  }
+
+  if (
+    scheduledPlanChange.isDisplayable.value &&
+    !isCancelled.value &&
+    isScheduledDestination(tier.key)
+  ) {
+    return t('subscription.scheduledForDate', {
+      date: scheduledPlanChange.formattedDate.value
+    })
   }
 
   return hasActivePaidPlan(currentAccountTier.value)

@@ -1,5 +1,5 @@
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
@@ -39,6 +39,7 @@ interface MockSubscription {
   tier: SubscriptionTier | null
   isCancelled?: boolean
   duration?: string
+  scheduledChange?: { plan_slug: string; effective_at: string }
 }
 
 interface MockTeamStop {
@@ -1124,6 +1125,104 @@ describe('UnifiedPricingTable footer notice pill', () => {
     mockDistributionTypes.isCloud = false
     mockCapabilityReadFailed.value = true
     mockCanManageSubscription.value = false
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+  })
+})
+
+describe('UnifiedPricingTable scheduled plan change', () => {
+  beforeEach(() => {
+    mockRawCanReactivate.value = true
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockCapabilityReadFailed.value = false
+    mockShouldUseWorkspaceBilling.value = true
+    mockSnapshotResolved.value = true
+    mockCanChangeSeats.value = null
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+    mockApiPlans.value = [
+      apiPlan('STANDARD', 'MONTHLY', 42_000),
+      apiPlan('CREATOR', 'MONTHLY', 74_000)
+    ]
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'MONTHLY',
+      scheduledChange: {
+        plan_slug: 'standard-monthly',
+        effective_at: '2026-08-03T00:00:00Z'
+      }
+    }
+  })
+
+  it('carries the scheduled-change notice in the footer slot, link-less', () => {
+    renderComponent()
+
+    const pill = screen.getByRole('status')
+    expect(pill.textContent).toContain('Your plan changes to Standard on')
+    expect(pill.textContent).toContain('2026')
+    expect(within(pill).queryByRole('button')).toBeNull()
+    expect(screen.queryByText(/Based on this template/)).toBeNull()
+  })
+
+  it('labels the destination card Scheduled for the change date', () => {
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Scheduled for Aug 3, 2026' })
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Change to Creator Yearly' })
+    ).toBeTruthy()
+  })
+
+  it('yields the footer slot to the settling notice', () => {
+    renderComponent({ isPaymentSettling: true })
+
+    expect(screen.getByRole('status').textContent).toContain(
+      'Finishing up your last payment attempt'
+    )
+  })
+
+  it('shows the notice on the team tab too', () => {
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByRole('status').textContent).toContain(
+      'Your plan changes to Standard on'
+    )
+    expect(screen.getByText(/For teams wanting to collaborate/)).toBeTruthy()
+  })
+
+  it('suppresses the scheduled state when the plan is cancelled', () => {
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'MONTHLY',
+      isCancelled: true,
+      scheduledChange: {
+        plan_slug: 'standard-monthly',
+        effective_at: '2026-08-03T00:00:00Z'
+      }
+    }
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
+  })
+
+  it('renders the normal fine print without a scheduled change', () => {
+    mockSubscription.value = { tier: 'CREATOR', duration: 'MONTHLY' }
 
     renderComponent()
 
