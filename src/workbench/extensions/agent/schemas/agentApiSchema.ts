@@ -20,7 +20,7 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
-export { zAgentAdmissionError, zAgentAnswerAccepted, zAgentCancelAccepted }
+export { zAgentAnswerAccepted, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
