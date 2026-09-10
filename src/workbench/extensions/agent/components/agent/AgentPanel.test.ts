@@ -1,6 +1,6 @@
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
@@ -95,8 +95,7 @@ describe('AgentPanel', () => {
 
   it('focuses the composer input body after a suggestion and clears on blur', async () => {
     const user = userEvent.setup()
-    const pinia = createPinia()
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     render(AgentPanel, {
       props: { entries: [], historyGroups },
       global: {
@@ -123,8 +122,7 @@ describe('AgentPanel', () => {
 
   it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
     const user = userEvent.setup()
-    const pinia = createPinia()
-    setActivePinia(pinia)
+    const pinia = getActivePinia()!
     const prompt = 'Generate a yellow duck with a hockey mask'
     const { emitted } = render(AgentPanel, {
       props: {

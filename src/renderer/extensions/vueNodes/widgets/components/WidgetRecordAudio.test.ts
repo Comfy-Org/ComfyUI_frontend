@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -113,7 +113,7 @@ const ButtonStub = defineComponent({
 function renderWidget(props: { readonly?: boolean; nodeId?: NodeId } = {}) {
   return render(WidgetRecordAudio, {
     global: {
-      plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],
+      plugins: [i18n, getActivePinia()!],
       stubs: { Button: ButtonStub }
     },
     props: { readonly: false, nodeId: toNodeId('n1'), ...props }

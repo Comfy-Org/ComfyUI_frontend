@@ -7,26 +7,42 @@ globs:
 
 ## Setup
 
-Use `createTestingPinia` from `@pinia/testing`, not `createPinia`:
+`vitest.setup.ts` creates a fresh active testing Pinia before each test with
+`stubActions: false` and disposes the active Pinia afterward to stop store
+watchers. Use real store composables inside tests or `beforeEach`. Do not mock
+their modules, mock Pinia, or create another Pinia instance.
+
+Set scenario state on the store. Actions already have spies, but execute their
+implementations unless you stub them:
 
 ```typescript
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 
-describe('MyStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
-  })
+import { useSettingStore } from '@/platform/settings/settingStore'
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+beforeEach(() => {
+  const settings = useSettingStore()
+  settings.settingValues['Comfy.WorkflowActions.SeenItems'] = []
+  vi.mocked(settings.set).mockResolvedValue()
 })
 ```
 
-**Why `stubActions: false`?** By default, testing pinia stubs all actions. Set to `false` when testing actual store behavior.
+Stub actions only when the test needs to isolate their effects. Keep the action
+under test real. Use `vi.mocked(store.action)` to access `.mock` or configure
+return values without changing the store's types.
+
+For component tests, configure the same Pinia instance that the component uses.
+Pass `getActivePinia()!` from `pinia` to the mount's `global.plugins` when it
+needs injection. Set scenario state directly or with `store.$patch()` rather
+than creating a Pinia with `initialState`. Stub individual actions to isolate
+their effects; keep actions under test real.
+
+`pnpm lint` enforces `comfy/use-global-pinia` in `.test` and `.spec` files and
+in `__test__`, `__tests__`, and `__fixtures__` directories, including files
+covered by the separate Oxlint audit. It rejects Pinia factory imports,
+namespace access to factories, Pinia module mocks, and replacements of store
+composables. Non-Pinia modules such as `layoutStore` and spies on real store
+actions remain allowed. Only the global setup owns Pinia creation and disposal.
 
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 
