@@ -11011,7 +11011,8 @@
     "display_name": "3D Yükle (Gelişmiş)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Görüntü alanının piksel cinsinden işleme yüksekliği."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Görüntü alanının piksel cinsinden işleme genişliği."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Yüklenen 3B model dosyası (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Sahnedeki her modelin yerleşimi: konum, döndürme ve ölçek (Y-yukarı dünya uzayı)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Görüntü alanı kamera bilgileri: konum, bakış hedefi, yakınlaştırma ve tür."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Görüntü alanının piksel cinsinden işleme genişliği."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Görüntü alanının piksel cinsinden işleme yüksekliği."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAI'nin GPT Görüntü uç noktası ile görüntüler oluşturur.",
-    "display_name": "OpenAI GPT Görüntü 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "boyut"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Microsoft'un MAI-Image-2.6 modelleriyle OpenRouter üzerinden görseller oluşturun veya düzenleyin: metinden görsele ya da yedi en-boy oranında, 1K veya 1.5K çözünürlükte en fazla beş referans görselle yönlendirilen düzenleme.",
+    "display_name": "OpenRouter Görseli",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Görseli oluşturmak için kullanılan OpenRouter görsel modeli."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "3D Önizleme (Gelişmiş)",
     "inputs": {
       "camera_info": {
-        "name": "kamera_bilgisi"
+        "name": "kamera_bilgisi",
+        "tooltip": "Görüntü alanı kamera bilgileri: konum, bakış hedefi, yakınlaştırma ve tür."
       },
       "height": {
-        "name": "yükseklik"
+        "name": "yükseklik",
+        "tooltip": "Görüntü alanının piksel cinsinden işleme yüksekliği."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "genişlik"
+        "name": "genişlik",
+        "tooltip": "Görüntü alanının piksel cinsinden işleme genişliği."
       }
     },
     "outputs": {
       "0": {
         "name": "model_dosyası",
-        "tooltip": null
+        "tooltip": "Önceki bir 3B düğümden gelen 3B model dosyası (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "kamera_bilgisi",
-        "tooltip": null
+        "tooltip": "Sahnedeki her modelin yerleşimi: konum, döndürme ve ölçek (Y-yukarı dünya uzayı)."
       },
       "2": {
         "name": "model_3d_bilgisi",
-        "tooltip": null
+        "tooltip": "Görüntü alanı kamera bilgileri: konum, bakış hedefi, yakınlaştırma ve tür."
       },
       "3": {
         "name": "genişlik",
-        "tooltip": null
+        "tooltip": "Görüntü alanının piksel cinsinden işleme genişliği."
       },
       "4": {
         "name": "yükseklik",
-        "tooltip": null
+        "tooltip": "Görüntü alanının piksel cinsinden işleme yüksekliği."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "3D Kaydet (Gelişmiş)",
     "inputs": {
       "camera_info": {
-        "name": "kamera bilgisi"
+        "name": "kamera bilgisi",
+        "tooltip": "Görüntü alanı kamera bilgileri: konum, bakış hedefi, yakınlaştırma ve tür."
       },
       "filename_prefix": {
         "name": "dosya adı ön eki"
       },
       "height": {
-        "name": "yükseklik"
+        "name": "yükseklik",
+        "tooltip": "Görüntü alanının piksel cinsinden işleme yüksekliği."
       },
       "model_3d": {
         "name": "3D model",
         "tooltip": "Yukarı akıştaki bir 3D düğümden gelen 3D model dosyası."
       },
       "model_3d_info": {
-        "name": "3D model bilgisi"
+        "name": "3D model bilgisi",
+        "tooltip": "Sahnedeki her modelin yerleşimi: konum, döndürme ve ölçek (Y-yukarı dünya uzayı)."
       },
       "viewport_state": {
         "name": "görünüm durumu"
       },
       "width": {
-        "name": "genişlik"
+        "name": "genişlik",
+        "tooltip": "Görüntü alanının piksel cinsinden işleme genişliği."
       }
     },
     "outputs": {
       "0": {
         "name": "3D model",
-        "tooltip": null
+        "tooltip": "Önceki bir 3B düğümden gelen 3B model dosyası (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "3D model bilgisi",
-        "tooltip": null
+        "tooltip": "Sahnedeki her modelin yerleşimi: konum, döndürme ve ölçek (Y-yukarı dünya uzayı)."
       },
       "2": {
         "name": "kamera bilgisi",
-        "tooltip": null
+        "tooltip": "Görüntü alanı kamera bilgileri: konum, bakış hedefi, yakınlaştırma ve tür."
       },
       "3": {
         "name": "genişlik",
-        "tooltip": null
+        "tooltip": "Görüntü alanının piksel cinsinden işleme genişliği."
       },
       "4": {
         "name": "yükseklik",
-        "tooltip": null
+        "tooltip": "Görüntü alanının piksel cinsinden işleme yüksekliği."
       }
     }
   },

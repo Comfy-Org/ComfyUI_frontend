@@ -30,7 +30,11 @@ describe('indexing policy', () => {
     '/zh-CN/booking-confirmation/',
     '/case-studies',
     '/zh-CN/videos/',
-    '/demos'
+    '/demos',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/zh-CN/login'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)
     expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(true)
