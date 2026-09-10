@@ -41,6 +41,63 @@ export const TIER_PRICING: Record<
   pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
 }
 
+export type PaidTierKey = Exclude<TierKey, 'free' | 'founder'>
+export type BillingCycleKey = 'monthly' | 'yearly'
+
+/**
+ * Coupon percent applied to the CYCLE price; must mirror the backend Stripe
+ * coupons exactly (cloud#8724) — the display promises what the coupon
+ * charges. Monthly is a flat 10% off list (no base coupon to stack on).
+ * Yearly's 6.25% compounds with the 20% yearly bundle to 25% off the monthly
+ * list. Values are identical across tiers today; keyed per tier to mirror the
+ * backend slots.
+ */
+export const EDU_DISCOUNT_PERCENTS: Record<
+  PaidTierKey,
+  Record<BillingCycleKey, number>
+> = {
+  standard: { monthly: 10, yearly: 6.25 },
+  creator: { monthly: 10, yearly: 6.25 },
+  pro: { monthly: 10, yearly: 6.25 }
+}
+
+/**
+ * Team EDU coupon percents by credit-stop volume discount (cloud#8724): each
+ * stop's own volume/annual coupon plus an incremental ~5 points, computed as
+ * `e = ceil2(5 / (100 - base))` so the composed discount never under-delivers
+ * 5 points. Values mirror the catalog table exactly (cent-for-cent match is
+ * not guaranteed for every stop — the composed discount can land a few cents
+ * better for the customer than a flat "+5" would, never worse). Keyed by the
+ * stop's own `discountPercentYearly` (its yearly volume/annual coupon).
+ */
+export const TEAM_EDU_COUPON_PERCENTS: Partial<
+  Record<number, Record<BillingCycleKey, number>>
+> = {
+  0: { monthly: 5.0, yearly: 5.0 },
+  5: { monthly: 5.13, yearly: 5.27 },
+  10: { monthly: 5.27, yearly: 5.56 },
+  15: { monthly: 5.41, yearly: 5.89 },
+  20: { monthly: 5.56, yearly: 6.25 }
+}
+
+/** Marketing max: total off the monthly list (yearly EDU = 25%), not a coupon percent. */
+export const EDU_MAX_DISCOUNT_PERCENT = 25
+
+/** Whole dollars render bare ($18); fractional prices always show cents ($31.50). */
+export function formatTierPriceValue(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2)
+}
+
+/** Display-only EDU price; the backend coupon applies the same cut at checkout. */
+export function applyEduDiscount(
+  price: number,
+  tierKey: PaidTierKey,
+  cycle: BillingCycleKey
+): number {
+  const percent = EDU_DISCOUNT_PERCENTS[tierKey][cycle]
+  return Math.round(price * (1 - percent / 100) * 100) / 100
+}
+
 const MONTHS_PER_YEAR = 12
 
 // Annual plans grant the whole year up front (catalog `*-annual` credit_grant

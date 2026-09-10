@@ -7,6 +7,20 @@ import { createI18n } from 'vue-i18n'
 
 import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDialogContentUnified.vue'
 
+const mockIsEduPricingActive = ref(false)
+const mockIsTeamEduPricingActive = ref(false)
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useEduPricing'),
+  () => ({
+    useEduPricing: () => ({
+      isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+      isTeamEduPricingActive: computed(() => mockIsTeamEduPricingActive.value),
+      needsEduVerification: computed(() => false)
+    })
+  })
+)
+
 const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
@@ -64,7 +78,11 @@ const i18n = createI18n({
   messages: {
     en: {
       g: { back: 'Back', close: 'Close' },
-      subscription: { descriptionWorkspace: 'Choose your plan' }
+      subscription: {
+        descriptionWorkspace: 'Choose your plan',
+        eduPromoHeader:
+          'Education discount: up to {percent}% off for verified students and educators'
+      }
     }
   }
 })
@@ -282,4 +300,29 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       expect(mockHandleBackToPricing).toHaveBeenCalled()
     }
   )
+})
+
+describe('SubscriptionRequiredDialogContentUnified EDU promo pill', () => {
+  beforeEach(() => {
+    mockCheckoutStep.value = 'pricing'
+    mockIsEduPricingActive.value = false
+    mockIsTeamEduPricingActive.value = false
+  })
+
+  it('hides the promo pill when neither surface is EDU-eligible', () => {
+    renderComponent()
+    expect(screen.queryByText(/Education discount/)).toBeNull()
+  })
+
+  it('shows the promo pill for a personal EDU customer', () => {
+    mockIsEduPricingActive.value = true
+    renderComponent()
+    expect(screen.getByText(/Education discount: up to 25%/)).toBeTruthy()
+  })
+
+  it('shows the promo pill for a (stubbed) team-eligible workspace', () => {
+    mockIsTeamEduPricingActive.value = true
+    renderComponent()
+    expect(screen.getByText(/Education discount: up to 25%/)).toBeTruthy()
+  })
 })

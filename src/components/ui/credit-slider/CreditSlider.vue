@@ -23,7 +23,8 @@ const {
   class: rootClass,
   stops = TEAM_PLAN_CREDIT_STOPS,
   defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX,
-  cycle = 'yearly'
+  cycle = 'yearly',
+  eduDiscountActive = false
 } = defineProps<{
   disabled?: boolean
   class?: HTMLAttributes['class']
@@ -45,6 +46,8 @@ const {
    * halved": yearly 0/5/10/15/20% → monthly 0/2.5/5/7.5/10%).
    */
   cycle?: 'monthly' | 'yearly'
+  /** Stacks the team EDU coupon (cloud#8724) on top of the stop's own discount. */
+  eduDiscountActive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -75,18 +78,24 @@ const selectedIndex = computed(() => {
 const current = computed<CreditStop>(() => stops[selectedIndex.value])
 
 // The discount applies to the monthly figure. Yearly uses the full
-// `discountPercentYearly`; monthly halves it (PRD: GA Team Billing). The card
-// shows the discounted monthly price, the struck pre-discount price, the
-// saving, and — for yearly — the annual total.
-const effectiveDiscountPercent = computed(() =>
-  cycle === 'monthly'
-    ? current.value.discountPercentYearly / 2
-    : current.value.discountPercentYearly
-)
+// `discountPercentYearly`; monthly halves it (PRD: GA Team Billing), and the
+// EDU coupon (cloud#8724) stacks on top when active. The card shows the
+// discounted monthly price, the struck pre-discount price, the saving, and —
+// for yearly — the annual total.
 const discountedMonthly = computed(() =>
-  getStopDiscountedMonthlyUsd(current.value, cycle)
+  getStopDiscountedMonthlyUsd(current.value, cycle, eduDiscountActive)
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
+// Derived from the same rounded dollar figures shown above so the percent
+// badge and the saved amount always agree.
+const effectiveDiscountPercent = computed(() =>
+  current.value.usd === 0
+    ? 0
+    : Math.round(
+        ((current.value.usd - discountedMonthly.value) / current.value.usd) *
+          10000
+      ) / 100
+)
 const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)
 
 /**

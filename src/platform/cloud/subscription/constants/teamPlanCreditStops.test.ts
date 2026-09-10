@@ -74,3 +74,43 @@ describe('getTeamPlanSlug', () => {
     expect(getTeamPlanSlug('yearly')).toBe('team_per_credit_annual')
   })
 })
+
+describe('getStopDiscountedMonthlyUsd with the team EDU coupon active', () => {
+  // cloud#8724 ladder: each stop's own volume/annual coupon composed with the
+  // catalog's team EDU coupon percent. The composed, rounded result lands
+  // exactly on "base + 5 points" for every DES-197 stop.
+  it.for([
+    [{ usd: 200, discountPercentYearly: 0 }, 'monthly', 190],
+    [{ usd: 200, discountPercentYearly: 0 }, 'yearly', 190],
+    [{ usd: 400, discountPercentYearly: 5 }, 'monthly', 370],
+    [{ usd: 400, discountPercentYearly: 5 }, 'yearly', 360],
+    [{ usd: 700, discountPercentYearly: 10 }, 'monthly', 630],
+    [{ usd: 700, discountPercentYearly: 10 }, 'yearly', 595],
+    [{ usd: 1_400, discountPercentYearly: 15 }, 'monthly', 1_225],
+    [{ usd: 1_400, discountPercentYearly: 15 }, 'yearly', 1_120],
+    [{ usd: 2_500, discountPercentYearly: 20 }, 'monthly', 2_125],
+    [{ usd: 2_500, discountPercentYearly: 20 }, 'yearly', 1_875]
+  ] as const)('discounts %s %s', (testCase) => {
+    const [stop, cycle, expected] = testCase
+    expect(getStopDiscountedMonthlyUsd(stop, cycle, true)).toBe(expected)
+  })
+
+  it('defaults to no EDU discount', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 700, discountPercentYearly: 10 },
+        'yearly'
+      )
+    ).toBe(630)
+  })
+
+  it('falls back to no EDU cut for a stop outside the fixed ladder', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 900, discountPercentYearly: 7 },
+        'yearly',
+        true
+      )
+    ).toBe(837)
+  })
+})

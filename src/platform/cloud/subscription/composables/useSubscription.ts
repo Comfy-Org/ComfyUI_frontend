@@ -18,6 +18,7 @@ import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata
 } from '@/platform/telemetry/types'
+import type { BillingStatusResponseWithEdu } from '@/platform/cloud/subscription/types/eduBillingStatus'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -43,7 +44,7 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
 function useSubscriptionInternal() {
-  const subscriptionStatus = ref<BillingStatusResponse | null>(null)
+  const subscriptionStatus = ref<BillingStatusResponseWithEdu | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
@@ -102,6 +103,10 @@ function useSubscriptionInternal() {
 
   const isYearlySubscription = computed(
     () => subscriptionDuration.value === 'ANNUAL'
+  )
+
+  const isEduCustomer = computed(
+    () => subscriptionStatus.value?.is_edu === true
   )
 
   const subscriptionTierName = computed(() => {
@@ -515,6 +520,7 @@ function useSubscriptionInternal() {
     isFreeTier,
     subscriptionDuration,
     isYearlySubscription,
+    isEduCustomer,
     subscriptionTierName,
     subscriptionStatus,
 

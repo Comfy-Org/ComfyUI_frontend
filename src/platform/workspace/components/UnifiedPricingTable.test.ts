@@ -77,6 +77,38 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
+const mockIsEduPricingActive = ref(false)
+const mockIsTeamEduPricingActive = ref(false)
+
+// EduVerifyCallout (rendered inside UnifiedPricingTable) reaches useAuthStore,
+// which touches real Firebase in this test's environment; stub its
+// dependencies directly rather than mocking firebase/auth.
+vi.mock<unknown>(import('@/composables/auth/useEmailVerification'), () => ({
+  useEmailVerification: () => ({
+    isSending: computed(() => false),
+    isSent: computed(() => false),
+    sendVerification: vi.fn(),
+    refreshVerification: vi.fn()
+  })
+}))
+
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
+  useAuthStore: () => ({
+    createCustomer: vi.fn()
+  })
+}))
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useEduPricing'),
+  () => ({
+    useEduPricing: () => ({
+      isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+      isTeamEduPricingActive: computed(() => mockIsTeamEduPricingActive.value),
+      needsEduVerification: computed(() => false)
+    })
+  })
+)
+
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock<unknown>(
@@ -129,6 +161,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockApiPlans.value = []
+  mockIsEduPricingActive.value = false
+  mockIsTeamEduPricingActive.value = false
 })
 
 describe('UnifiedPricingTable plan CTA labels', () => {
@@ -829,5 +863,135 @@ describe('UnifiedPricingTable plan-scope availability', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+describe('UnifiedPricingTable EDU pricing', () => {
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockDistributionTypes.isCloud = true
+    mockApiPlans.value = []
+    mockIsEduPricingActive.value = false
+    mockIsTeamEduPricingActive.value = false
+  })
+
+  // Display must match the coupon charge: monthly 10% off list, yearly 6.25% off
+  // the yearly price (= 25% off the monthly list). Yearly strikes the monthly list.
+  it.for([
+    ['standard', 'monthly', '$18', '$20'],
+    ['creator', 'monthly', '$31.50', '$35'],
+    ['pro', 'monthly', '$90', '$100'],
+    ['standard', 'yearly', '$15', '$20'],
+    ['creator', 'yearly', '$26.25', '$35'],
+    ['pro', 'yearly', '$75', '$100']
+  ] as const)(
+    'discounts %s %s against the struck monthly list',
+    async ([tierKey, cycle, price, struck]) => {
+      mockIsEduPricingActive.value = true
+      renderWithCycleToggle()
+
+      if (cycle === 'monthly') {
+        await userEvent.click(screen.getByTestId('cycle-monthly'))
+      }
+
+      const card = screen.getByTestId(`pricing-tier-${tierKey}`)
+      expect(card.textContent).toContain(price)
+      expect(card.textContent).toContain(struck)
+    }
+  )
+
+  it('keeps list prices when EDU is inactive', () => {
+    renderWithCycleToggle()
+
+    const card = screen.getByTestId('pricing-tier-standard')
+    expect(card.textContent).toContain('$16')
+    expect(card.textContent).toContain('$20')
+    expect(card.textContent).not.toContain('$15')
+  })
+
+  it('applies the discount to the API-derived price, not just the static fallback', () => {
+    mockIsEduPricingActive.value = true
+    mockApiPlans.value = [
+      { ...apiPlan('STANDARD', 'MONTHLY', 42_000), price_cents: 3000 },
+      { ...apiPlan('STANDARD', 'ANNUAL', 42_000), price_cents: 24_000 }
+    ]
+
+    renderComponent()
+
+    // API monthly-equiv $20 -> EDU $18.75, struck API monthly $30, annual total
+    // $240 -> EDU $225. All distinct from the static-fallback figures.
+    const card = screen.getByTestId('pricing-tier-standard')
+    expect(card.textContent).toContain('$18.75')
+    expect(card.textContent).toContain('$30')
+    expect(card.textContent).toContain('$225 Billed yearly')
+  })
+
+  it('shows the promo callout under the cycle toggle', () => {
+    renderComponent()
+    expect(screen.queryByTestId('edu-verify-callout')).toBeNull()
+  })
+
+  describe('team EDU pricing (stub)', () => {
+    const eduAwareSliderStub = {
+      props: ['eduDiscountActive'],
+      template:
+        '<div data-testid="team-slider" :data-edu-active="eduDiscountActive" />'
+    }
+
+    function renderWithTeamSlider(props: Record<string, unknown> = {}) {
+      return render(UnifiedPricingTable, {
+        props: { initialPlanMode: 'team', ...props },
+        global: {
+          plugins: [i18n],
+          components: { Button },
+          stubs: {
+            SelectButton: { template: '<div />' },
+            CreditSlider: eduAwareSliderStub
+          }
+        }
+      })
+    }
+
+    it('stays inactive while the backend team-eligibility field is unset', () => {
+      renderWithTeamSlider()
+
+      expect(screen.getByTestId('team-slider')).toHaveAttribute(
+        'data-edu-active',
+        'false'
+      )
+    })
+
+    it('activates the credit slider EDU coupon once the (stubbed) team marker is eligible', () => {
+      mockIsTeamEduPricingActive.value = true
+      renderWithTeamSlider()
+
+      expect(screen.getByTestId('team-slider')).toHaveAttribute(
+        'data-edu-active',
+        'true'
+      )
+    })
+
+    it('carries the stacked EDU discount into the subscribeTeam payload', async () => {
+      const user = userEvent.setup()
+      mockIsTeamEduPricingActive.value = true
+
+      const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+      // Default stop ($700, 10% yearly volume) + team EDU coupon -> $595.
+      await user.click(
+        screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+      )
+
+      const [teamPayload] = emitted().subscribeTeam[0] as [
+        { stop: { discountedUsd: number } }
+      ]
+      expect(teamPayload.stop.discountedUsd).toBe(595)
+    })
   })
 })

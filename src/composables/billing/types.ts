@@ -102,6 +102,16 @@ export interface BillingState {
   teamCreditStops: ComputedRef<TeamCreditStops | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
+  /** EDU discount eligibility for the current subscriber (cloud#8725/#8723). */
+  isEduCustomer: ComputedRef<boolean>
+  /**
+   * Team/workspace EDU discount eligibility ("at least one current member has
+   * is_edu = true"). Always false for legacy (no team concept) and, for now,
+   * always false for workspace billing too — the backend field this reads
+   * does not exist yet; it ships in a separate backend PR tracked alongside
+   * #8725/#8723.
+   */
+  isTeamEduEligible: ComputedRef<boolean>
   /** Effective member limit for the current workspace; zero is unlimited. */
   maxSeats: ComputedRef<number | null>
   /** Seats occupied in the current workspace. */
