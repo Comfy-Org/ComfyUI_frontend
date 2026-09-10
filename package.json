@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.55.2",
+  "version": "1.55.3",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -237,7 +237,7 @@
     "zod-to-json-schema": "catalog:"
   },
   "engines": {
-    "node": ">=25 <26",
+    "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
   "packageManager": "pnpm@11.13.1"
