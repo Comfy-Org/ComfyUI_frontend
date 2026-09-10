@@ -44,7 +44,7 @@ test.describe(
         .toBe(37)
     })
 
-    test('a custom draw renders as a canvas fallback regardless of connection', async ({
+    test('a connected custom draw is suppressed until its input disconnects', async ({
       comfyPage
     }) => {
       await comfyPage.nodeOps.clearGraph()
@@ -76,6 +76,36 @@ test.describe(
         'Connected custom draw',
         'steps'
       )
+      await expect(steps).toBeVisible()
+      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(0)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (candidate) => candidate.title === 'Connected custom draw'
+            )
+            const widget = node?.widgets?.find(
+              (candidate) => candidate.name === 'steps'
+            )
+            return widget &&
+              'drawCalls' in widget &&
+              typeof widget.drawCalls === 'number'
+              ? widget.drawCalls
+              : 0
+          })
+        )
+        .toBe(0)
+
+      await comfyPage.page.evaluate(() => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => candidate.title === 'Connected custom draw'
+        )
+        if (!node) throw new Error('Connected custom draw node not found')
+
+        node.disconnectInput(0)
+      })
+      await comfyPage.nextFrame()
+
       await expect(steps).toHaveCount(0)
       await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
       await expect
@@ -95,19 +125,6 @@ test.describe(
           })
         )
         .toBeGreaterThan(0)
-
-      await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph.nodes.find(
-          (candidate) => candidate.title === 'Connected custom draw'
-        )
-        if (!node) throw new Error('Connected custom draw node not found')
-
-        node.disconnectInput(0)
-      })
-      await comfyPage.nextFrame()
-
-      await expect(steps).toHaveCount(0)
-      await expect(node.locator('.lg-node-widget canvas')).toHaveCount(1)
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {

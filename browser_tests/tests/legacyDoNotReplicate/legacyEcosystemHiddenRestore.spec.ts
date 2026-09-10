@@ -55,7 +55,7 @@ test.describe(
       await expect(steps).toBeVisible()
     })
 
-    test('keeps widget.hidden undefined while its associated input is connected', async ({
+    test('keeps widget.hidden false while its associated input is connected', async ({
       comfyPage
     }) => {
       const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
@@ -85,14 +85,14 @@ test.describe(
 
         return {
           capturedValue,
-          hiddenIsUndefined: widget.hidden === undefined
+          hidden: widget.hidden
         }
       })
       await comfyPage.nextFrame()
 
       expect(connectedHidden).toEqual({
         capturedValue: false,
-        hiddenIsUndefined: true
+        hidden: false
       })
       await expect(steps).toBeVisible()
 

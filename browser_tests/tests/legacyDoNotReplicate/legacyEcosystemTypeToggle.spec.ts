@@ -11,11 +11,10 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
-    test('restoring an efficiency-nodes type toggle leaves a legacy fallback', async ({
+    test('restoring an efficiency-nodes type toggle restores its Vue control', async ({
       comfyPage
     }) => {
       const widget = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
-      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
       await expect(widget).toBeVisible()
 
       await comfyPage.page.evaluate(() => {
@@ -59,8 +58,8 @@ test.describe(
       })
       await comfyPage.nextFrame()
 
-      await expect(widget).toHaveCount(0)
-      await expect(node.locator('.lg-node-widget canvas')).toBeVisible()
+      await expect(widget).toBeVisible()
+      await expect(widget.getByRole('spinbutton')).toHaveValue('37')
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => {
