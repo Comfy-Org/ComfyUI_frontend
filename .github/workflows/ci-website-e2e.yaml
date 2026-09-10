@@ -34,25 +34,13 @@ jobs:
     permissions:
       contents: read
     outputs:
-      functional-outcome: ${{ steps.functional.outcome }}
-      visual-outcome: ${{ steps.visual.outcome }}
-      screenshots-updated: ${{ steps.commit-screenshots.outputs.has-changes }}
+      functional-outcome: ${{ steps.e2e.outputs.functional-outcome }}
+      visual-outcome: ${{ steps.e2e.outputs.visual-outcome }}
       report-url: ${{ steps.deploy.outputs.url }}
       # Evaluated at job level (not from a step) — static expression.
       is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          # The PR's actual branch tip, not GitHub's synthetic merge commit —
-          # so a later auto-update push (below) lands on the ref we just
-          # built and tested, not a ref that doesn't otherwise exist.
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
-          token: >-
-            ${{
-              (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
-              && secrets.PR_GH_TOKEN
-              || secrets.GITHUB_TOKEN
-            }}
 
       - name: Install pnpm
         run: corepack enable && corepack prepare
@@ -68,17 +56,56 @@ jobs:
           PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
-      # Functional and visual run as separate Playwright invocations (not one
-      # combined run classified after the fact) so "did this block merge"
-      # reduces to plain step pass/fail — no per-test error-message parsing
-      # that can misclassify a real failure as screenshot-only.
-      - name: Run functional e2e tests
-        id: functional
-        run: pnpm --filter @comfyorg/website test:e2e:functional
+      # Functional and visual run as separate Playwright invocations, in one
+      # script, so "did this block merge" reduces to a plain exit code with
+      # no per-test error-message parsing that can misclassify a real
+      # failure as screenshot-only. Both share ONE preview server we start
+      # and poll for ourselves — playwright.config.ts's webServer only skips
+      # spawning its own when PLAYWRIGHT_REUSE_SERVER=1, which is what lets
+      # a second `playwright test` invocation attach to the first one's
+      # server instead of failing to bind an already-occupied port.
+      - name: Run e2e tests
+        id: e2e
+        run: |
+          set +e
+          pnpm --filter @comfyorg/website preview &
+          PREVIEW_PID=$!
 
-      - name: Run visual e2e tests
-        id: visual
-        run: pnpm --filter @comfyorg/website test:visual
+          READY=0
+          for i in $(seq 1 30); do
+            (echo > /dev/tcp/127.0.0.1/4321) >/dev/null 2>&1 && { READY=1; break; }
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "::error::Preview server never became reachable on :4321"
+            echo "functional-outcome=failure" >> "$GITHUB_OUTPUT"
+            echo "visual-outcome=skipped" >> "$GITHUB_OUTPUT"
+            kill "$PREVIEW_PID" 2>/dev/null
+            exit 1
+          fi
+
+          PLAYWRIGHT_REUSE_SERVER=1 \
+          PLAYWRIGHT_HTML_REPORT=playwright-report/functional \
+          PLAYWRIGHT_JSON_OUTPUT_NAME=results-functional.json \
+            pnpm --filter @comfyorg/website test:e2e:functional
+          FUNCTIONAL_EXIT=$?
+          echo "functional-outcome=$([ "$FUNCTIONAL_EXIT" -eq 0 ] && echo success || echo failure)" >> "$GITHUB_OUTPUT"
+
+          if [ "$FUNCTIONAL_EXIT" -ne 0 ]; then
+            echo "visual-outcome=skipped" >> "$GITHUB_OUTPUT"
+            kill "$PREVIEW_PID" 2>/dev/null
+            exit 1
+          fi
+
+          PLAYWRIGHT_REUSE_SERVER=1 \
+          PLAYWRIGHT_HTML_REPORT=playwright-report/visual \
+          PLAYWRIGHT_JSON_OUTPUT_NAME=results-visual.json \
+            pnpm --filter @comfyorg/website test:visual
+          VISUAL_EXIT=$?
+          echo "visual-outcome=$([ "$VISUAL_EXIT" -eq 0 ] && echo success || echo failure)" >> "$GITHUB_OUTPUT"
+
+          kill "$PREVIEW_PID" 2>/dev/null
+          exit "$VISUAL_EXIT"
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
@@ -87,10 +114,14 @@ jobs:
           name: website-playwright-report
           path: |
             apps/website/playwright-report/
-            apps/website/results.json
+            apps/website/results-functional.json
+            apps/website/results-visual.json
             apps/website/test-results/
           retention-days: 30
 
+      # Visual, not functional: it's the one a reviewer needs the interactive
+      # screenshot-diff viewer for. A functional failure is self-explanatory
+      # from the failed step's own log output.
       - name: Deploy report to Cloudflare
         id: deploy
         if: >-
@@ -111,7 +142,7 @@ jobs:
           DEPLOY_OK=false
           for i in 1 2 3; do
             echo "Deployment attempt $i of 3..."
-            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
+            OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report/visual \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
             [ $i -lt 3 ] && sleep 10
@@ -124,58 +155,17 @@ jobs:
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
           echo "url=${URL}" >> $GITHUB_OUTPUT
 
-      # Reached only when visual failed and functional did not (a functional
-      # failure already stopped the job above). Mirrors the safety property
-      # pr-update-website-screenshots.yaml already relies on: this commits
-      # only if regenerating screenshots itself completes cleanly, so a page
-      # that's actually broken (crash, nav error) can't get its broken state
-      # committed as the new "expected" baseline — it just fails here too,
-      # leaving the run blocking with nothing auto-pushed.
-      - name: Auto-update screenshots
-        id: auto-update
-        if: >-
-          ${{
-            failure() &&
-            steps.visual.conclusion == 'failure' &&
-            github.event_name == 'pull_request' &&
-            github.event.pull_request.head.repo.fork == false
-          }}
-        continue-on-error: true
-        run: pnpm --filter @comfyorg/website test:visual:update
-
-      - name: Commit and push updated screenshots
-        id: commit-screenshots
-        if: always() && steps.auto-update.outcome == 'success'
-        run: |
-          git config --global --add safe.directory "$(pwd)"
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-
-          CHANGED=$(git status --porcelain=v1 --untracked-files=all -- apps/website/e2e/ | wc -l)
-          if [ "$CHANGED" -eq 0 ]; then
-            echo "No screenshot changes to commit"
-            echo "has-changes=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "has-changes=true" >> "$GITHUB_OUTPUT"
-          git add apps/website/e2e/
-          git commit -m "[automated] Update website screenshot expectations"
-          git push origin "HEAD:refs/heads/${{ github.head_ref }}"
-
       - name: Write job summary
         if: always() && !cancelled()
         uses: actions/github-script@v9
         env:
-          FUNCTIONAL_OUTCOME: ${{ steps.functional.outcome }}
-          VISUAL_OUTCOME: ${{ steps.visual.outcome }}
-          SCREENSHOTS_UPDATED: ${{ steps.commit-screenshots.outputs.has-changes }}
+          FUNCTIONAL_OUTCOME: ${{ steps.e2e.outputs.functional-outcome }}
+          VISUAL_OUTCOME: ${{ steps.e2e.outputs.visual-outcome }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
         with:
           script: |
             const functionalPassed = process.env.FUNCTIONAL_OUTCOME === 'success'
             const visualPassed = process.env.VISUAL_OUTCOME === 'success'
-            const screenshotsUpdated = process.env.SCREENSHOTS_UPDATED === 'true'
             const reportUrl = process.env.REPORT_URL
 
             const lines = ['## 🌐 Website E2E', '']
@@ -184,15 +174,13 @@ jobs:
               lines.push('> [!TIP]', '> All tests passed.')
             } else if (!functionalPassed) {
               lines.push('> [!CAUTION]', '> Functional tests failed — this blocks merge.')
-            } else if (screenshotsUpdated) {
-              lines.push('> [!WARNING]', '> Screenshot diffs found — pushed an automated commit with updated expectations. Review the new screenshots before approving.')
             } else {
-              lines.push('> [!CAUTION]', '> Screenshot diffs found and could not be auto-updated — this blocks merge.')
+              lines.push('> [!CAUTION]', '> Screenshot diffs found — this blocks merge. Use the "Update Website Screenshots" checkbox below to refresh expectations.')
             }
 
             const rows = [
               ['Functional tests', functionalPassed ? '✅ Passed' : '❌ Failed'],
-              ['Visual tests', visualPassed ? '✅ Passed' : (screenshotsUpdated ? '⚠️ Diffs found (auto-updated)' : '❌ Failed')],
+              ['Visual tests', visualPassed ? '✅ Passed' : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
             lines.push(
@@ -253,13 +241,11 @@ jobs:
         env:
           FUNCTIONAL_OUTCOME: ${{ needs.website-e2e.outputs.functional-outcome }}
           VISUAL_OUTCOME: ${{ needs.website-e2e.outputs.visual-outcome }}
-          SCREENSHOTS_UPDATED: ${{ needs.website-e2e.outputs.screenshots-updated }}
           REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
         with:
           script: |
             const functionalPassed = process.env.FUNCTIONAL_OUTCOME === 'success'
             const visualPassed = process.env.VISUAL_OUTCOME === 'success'
-            const screenshotsUpdated = process.env.SCREENSHOTS_UPDATED === 'true'
             const reportUrl = process.env.REPORT_URL
 
             const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
@@ -268,15 +254,13 @@ jobs:
               lines.push('> [!TIP]', '> All tests passed.')
             } else if (!functionalPassed) {
               lines.push('> [!CAUTION]', '> Functional tests failed — this blocks merge.')
-            } else if (screenshotsUpdated) {
-              lines.push('> [!WARNING]', '> Screenshot diffs found — pushed an automated commit with updated expectations. Review the new screenshots before approving.')
             } else {
-              lines.push('> [!CAUTION]', '> Screenshot diffs found and could not be auto-updated — this blocks merge.')
+              lines.push('> [!CAUTION]', '> Screenshot diffs found — this blocks merge.')
             }
 
             const rows = [
               ['Functional tests', functionalPassed ? '✅ Passed' : '❌ Failed'],
-              ['Visual tests', visualPassed ? '✅ Passed' : (screenshotsUpdated ? '⚠️ Diffs found (auto-updated)' : '❌ Failed')],
+              ['Visual tests', visualPassed ? '✅ Passed' : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
             lines.push(
@@ -286,7 +270,7 @@ jobs:
               ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
             )
 
-            if (!visualPassed && !screenshotsUpdated) {
+            if (!visualPassed) {
               lines.push('', '- [ ] Update website screenshots')
             }
 

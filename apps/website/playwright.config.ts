@@ -35,7 +35,12 @@ export default defineConfig({
   webServer: {
     command: 'pnpm preview',
     port: 4321,
-    reuseExistingServer: !process.env.CI
+    // CI runs functional and visual as two separate `playwright test`
+    // invocations against one preview server it starts itself — the second
+    // invocation must attach to that server rather than insist on its own
+    // (and fail immediately, since the port's already taken).
+    reuseExistingServer:
+      process.env.PLAYWRIGHT_REUSE_SERVER === '1' || !process.env.CI
   },
   projects: [
     {
