@@ -656,8 +656,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('[08-T7 regression] same-text history cannot collapse the stashed live turn on return', async () => {
+  async function sameTextHistoryStash() {
     const cancelMessage = vi.fn<
       (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
     >(async () => ({ status: 'cancelling' }))
@@ -672,39 +671,60 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'work'))
-
     await session.loadThread('th-2')
+    return { session, emit, cancelMessage }
+  }
+
+  async function sameTextHistoryReturn() {
+    const stashed = await sameTextHistoryStash()
+    stashed.emit(delta('msg-1', 'ing'))
+    await stashed.session.loadThread('th-1')
+    return stashed
+  }
+
+  it('[08-T7 guard] leaving a thread stashes the live turn without cancelling or leaking it', async () => {
+    const { session, emit, cancelMessage } = await sameTextHistoryStash()
+
     expect(cancelMessage).not.toHaveBeenCalled()
     expect(session.entries.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(false)
 
     emit(delta('msg-1', 'ing'))
     expect(session.entries.value).toHaveLength(0)
+  })
 
-    await session.loadThread('th-1')
+  it('[08-T7 guard] returning to the stashed thread resumes streaming', async () => {
+    const { session } = await sameTextHistoryReturn()
     expect(session.isStreaming.value).toBe(true)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('[08-T7 regression] same-text history cannot collapse the stashed live turn on return', async () => {
+    const { session } = await sameTextHistoryReturn()
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
       'assistant',
       'user',
       'assistant'
     ])
-    const resumed = session.entries.value.at(-1)
-    expect(resumed?.role).toBe('assistant')
-    if (resumed?.role === 'assistant')
-      expect(resumed.parts).toEqual([
-        { type: 'text', text: 'working', state: 'streaming' }
-      ])
+  })
 
+  it('[08-T7 regression] the resumed turn still carries the text streamed while away', async () => {
+    const { session } = await sameTextHistoryReturn()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'working', state: 'streaming' }]
+    })
+  })
+
+  it('[08-T7 regression] frames landing after a same-text return settle the resumed turn', async () => {
+    const { session, emit } = await sameTextHistoryReturn()
     emit(delta('msg-1', '!'))
     emit(done('msg-1'))
-    const assistant = session.entries.value.at(-1)
-    expect(assistant?.role).toBe('assistant')
-    if (assistant?.role === 'assistant')
-      expect(assistant.parts).toEqual([
-        { type: 'text', text: 'working!', state: 'done' }
-      ])
-    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'working!', state: 'done' }]
+    })
   })
 
   it('(l3) a turn that completes while away renders from history without duplication', async () => {
@@ -772,8 +792,7 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(l5) a done landing during the return hydrate still renders the full reply', async () => {
+  async function doneDuringReturnHydrate() {
     let resolveHistory: ((rows: AgentMessages) => void) | undefined
     const getMessages = vi.fn(
       (threadId: string): Promise<AgentMessages> =>
@@ -797,20 +816,31 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(done('msg-1'))
     resolveHistory?.([historyRow(1, 'user', 'turn-A', 'go')])
     await returning
+    return { session, emit }
+  }
 
+  it('(l5 guard) a done landing during the return hydrate leaves nothing streaming', async () => {
+    const { session } = await doneDuringReturnHydrate()
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('(l5) a done landing during the return hydrate still renders the full reply', async () => {
+    const { session } = await doneDuringReturnHydrate()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'the full reply', state: 'done' }]
+    })
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(l5b) a done landing during the return hydrate keeps history and the settled turn', async () => {
+    const { session } = await doneDuringReturnHydrate()
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
       'assistant',
       'user',
       'assistant'
     ])
-    const assistant = session.entries.value.at(-1)
-    expect(assistant?.role).toBe('assistant')
-    if (assistant?.role === 'assistant')
-      expect(assistant.parts).toEqual([
-        { type: 'text', text: 'the full reply', state: 'done' }
-      ])
   })
 
   it('(l6) a stale same-thread load resolving last cannot detach the resumed turn', async () => {
@@ -856,8 +886,7 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(l7) double-clicking the same history row keeps the turn attached', async () => {
+  async function doubleClickedHistoryRow() {
     const getMessages = vi.fn(
       async (threadId: string): Promise<AgentMessages> =>
         threadId === 'th-1' ? [historyRow(1, 'user', 'turn-A', 'go')] : []
@@ -871,22 +900,33 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(delta('msg-1', 'work'))
 
     await Promise.all([session.loadThread('th-1'), session.loadThread('th-1')])
+    return { session, emit }
+  }
+
+  it('(l7) double-clicking the same history row keeps the turn attached', async () => {
+    const { session } = await doubleClickedHistoryRow()
     expect(session.isStreaming.value).toBe(true)
+  })
+
+  it('(l7b) frames after a double-clicked history row still settle the attached turn', async () => {
+    const { session, emit } = await doubleClickedHistoryRow()
+    emit(delta('msg-1', 'ing'))
+    emit(done('msg-1'))
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'working', state: 'done' }]
+    })
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(l7c) double-clicking the same history row keeps history and the live turn distinct', async () => {
+    const { session } = await doubleClickedHistoryRow()
     expect(session.entries.value.map((e) => e.role)).toEqual([
       'user',
       'assistant',
       'user',
       'assistant'
     ])
-
-    emit(delta('msg-1', 'ing'))
-    emit(done('msg-1'))
-    const assistant = session.entries.value.at(-1)
-    expect(assistant?.role).toBe('assistant')
-    if (assistant?.role === 'assistant')
-      expect(assistant.parts).toEqual([
-        { type: 'text', text: 'working', state: 'done' }
-      ])
   })
 
   it('(l8) socket death settles background turns instead of leaving zombies', async () => {
@@ -1128,8 +1168,7 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(l16) a malformed done without thread identity cannot settle a background turn globally', async () => {
+  async function malformedDoneWithoutThreadIdentity() {
     const getMessages = vi.fn(
       async (threadId: string): Promise<AgentMessages> =>
         threadId === 'th-1'
@@ -1152,17 +1191,33 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(delta('msg-1', 'ated tail that never lands'))
 
     await session.loadThread('th-1')
+    return { session, emit }
+  }
+
+  it('(l16 guard) returning after a malformed done still hydrates the thread from history', async () => {
+    const { session } = await malformedDoneWithoutThreadIdentity()
+    expect(JSON.stringify(session.entries.value)).toContain('server truth')
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(l16) a malformed done without thread identity cannot settle a background turn globally', async () => {
+    const { session } = await malformedDoneWithoutThreadIdentity()
     expect(session.isStreaming.value).toBe(true)
-    const assistant = session.entries.value.at(-1)
-    expect(assistant?.role).toBe('assistant')
-    if (assistant?.role === 'assistant')
-      expect(assistant.parts).toEqual([
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(l16b) frames after a malformed done still append to the background turn', async () => {
+    const { session } = await malformedDoneWithoutThreadIdentity()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
         {
           type: 'text',
           text: 'truncated tail that never lands',
           state: 'streaming'
         }
-      ])
+      ]
+    })
   })
 
   it('(l17) remounting the panel refreshes a surviving thread from history', async () => {
@@ -1494,8 +1549,7 @@ describe('thread resume (B17)', () => {
 describe('08-fix1 receipts and pins', () => {
   beforeEach(resetHarness)
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(f1a) a loadThread whose history GET fails non-404 leaves identity and transcript coherent', async () => {
+  async function failedNonNotFoundLoad() {
     const getMessages = vi
       .fn<(threadId: string) => Promise<AgentMessages>>()
       .mockResolvedValueOnce([
@@ -1509,18 +1563,34 @@ describe('08-fix1 receipts and pins', () => {
     })
     session.start()
     await session.loadThread('th-a')
-    expect(session.entries.value.length).toBeGreaterThan(0)
+    const hydratedEntryCount = session.entries.value.length
 
     await session.loadThread('th-b')
+    return { session, hydratedEntryCount }
+  }
 
-    expect(session.threadId.value).toBeNull()
-    expect(session.entries.value).toEqual([])
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  it('(f1a guard) the first load hydrates and the failed load surfaces one notice', async () => {
+    const { session, hydratedEntryCount } = await failedNonNotFoundLoad()
+    expect(hydratedEntryCount).toBeGreaterThan(0)
     expect(session.notices.value).toHaveLength(1)
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(f1b) a turn stashed for the target thread survives the failed load and resumes on retry', async () => {
+  it.fails('(f1a) a loadThread whose history GET fails non-404 leaves identity coherent', async () => {
+    const { session } = await failedNonNotFoundLoad()
+    expect({
+      threadId: session.threadId.value,
+      persisted: localStorage.getItem('Comfy.Agent.ThreadId')
+    }).toEqual({ threadId: null, persisted: null })
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(f1a2) a loadThread whose history GET fails non-404 leaves the transcript coherent', async () => {
+    const { session } = await failedNonNotFoundLoad()
+    expect(session.entries.value).toEqual([])
+  })
+
+  async function stashedTurnAcrossFailedLoad() {
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
@@ -1540,21 +1610,42 @@ describe('08-fix1 receipts and pins', () => {
 
     await session.loadThread('th-a')
     await session.loadThread('th-b')
-    expect(session.threadId.value).toBeNull()
-    expect(session.isStreaming.value).toBe(false)
+    return { session, emit }
+  }
 
-    await session.loadThread('th-b')
-    const conversation = useAgentConversationStore()
-    expect(conversation.activeTurnId).toBe('msg-b')
-    expect(session.isStreaming.value).toBe(true)
-    const users = session.entries.value.flatMap((e) =>
-      e.role === 'user' ? [e.text] : []
-    )
-    expect(users).toEqual(['live turn'])
+  async function retriedStashedTurnLoad() {
+    const stashed = await stashedTurnAcrossFailedLoad()
+    await stashed.session.loadThread('th-b')
+    return stashed
+  }
+
+  it('(f1b guard) a failed load leaves nothing streaming', async () => {
+    const { session } = await stashedTurnAcrossFailedLoad()
+    expect(session.isStreaming.value).toBe(false)
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('[08-T4 regression] a localStorage failure cannot fail or orphan the accepted turn', async () => {
+  it.fails('(f1b0) a failed load of the stashed turn thread does not adopt that thread id', async () => {
+    const { session } = await stashedTurnAcrossFailedLoad()
+    expect(session.threadId.value).toBeNull()
+  })
+
+  it('(f1b) a turn stashed for the target thread resumes on retry', async () => {
+    const { session } = await retriedStashedTurnLoad()
+    expect({
+      activeTurnId: useAgentConversationStore().activeTurnId,
+      streaming: session.isStreaming.value
+    }).toEqual({ activeTurnId: 'msg-b', streaming: true })
+  })
+
+  it('(f1b2) a turn stashed for the target thread keeps its own prompt across the retry', async () => {
+    const { session } = await retriedStashedTurnLoad()
+    expect(
+      session.entries.value.flatMap((e) => (e.role === 'user' ? [e.text] : []))
+    ).toEqual(['live turn'])
+  })
+
+  async function sendUnderLocalStorageQuotaFailure() {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -1576,28 +1667,40 @@ describe('08-fix1 receipts and pins', () => {
     } finally {
       vi.unstubAllGlobals()
     }
-
-    expect(setItem).toHaveBeenCalledTimes(1)
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0][0]).toBe(
-      '[agent] failed to persist the thread id'
-    )
+    const warnings = warn.mock.calls.map((call) => call[0])
     warn.mockRestore()
-    expect(ok).toBe(true)
+    return { session, emit, rest, setItem, ok, warnings }
+  }
+
+  it('[08-T4 guard] the quota failure hits persistence once and the POST still goes out once', async () => {
+    const { rest, setItem, session } = await sendUnderLocalStorageQuotaFailure()
+    expect(setItem).toHaveBeenCalledTimes(1)
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
-    expect(session.notices.value).toEqual([])
     expect(session.isSending.value).toBe(false)
-    emit(delta('msg-1', 'reply landed'))
-    emit(done('msg-1'))
-    expect(JSON.stringify(session.entries.value)).toContain('reply landed')
-    const users = session.entries.value.flatMap((e) =>
-      e.role === 'user' ? [e.text] : []
-    )
-    expect(users).toEqual(['accepted'])
+    expect(session.notices.value).toEqual([])
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(f2b) a workflow.adopted throw after the ack cannot fail or orphan the accepted turn', async () => {
+  it.fails('[08-T4 regression] a localStorage failure cannot fail the accepted turn', async () => {
+    const { ok } = await sendUnderLocalStorageQuotaFailure()
+    expect(ok).toBe(true)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('[08-T4 regression] a localStorage failure cannot orphan the accepted turn', async () => {
+    const { session, emit } = await sendUnderLocalStorageQuotaFailure()
+    emit(delta('msg-1', 'reply landed'))
+    emit(done('msg-1'))
+    expect(JSON.stringify(session.entries.value)).toContain('reply landed')
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('[08-T4 regression] a localStorage failure is reported once on the console', async () => {
+    const { warnings } = await sendUnderLocalStorageQuotaFailure()
+    expect(warnings).toEqual(['[agent] failed to persist the thread id'])
+  })
+
+  async function sendWithThrowingAdoptedConsumer() {
     const adopted = vi.fn(() => {
       throw new Error('consumer exploded')
     })
@@ -1612,24 +1715,39 @@ describe('08-fix1 receipts and pins', () => {
 
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ok = await session.sendMessage('accepted')
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0][0]).toBe(
-      '[agent] workflow.adopted consumer threw'
-    )
+    const warnings = warn.mock.calls.map((call) => call[0])
     warn.mockRestore()
+    return { session, emit, adopted, ok, warnings }
+  }
 
-    expect(ok).toBe(true)
+  it('(f2b guard) the adopted consumer runs once and the ack still binds the workflow', async () => {
+    const { session, adopted } = await sendWithThrowingAdoptedConsumer()
     expect(adopted).toHaveBeenCalledTimes(1)
     expect(session.boundWorkflowId.value).toBe('wf-1')
     expect(session.isSending.value).toBe(false)
-    emit(delta('msg-1', 'reply landed'))
-    emit(done('msg-1'))
-    expect(JSON.stringify(session.entries.value)).toContain('reply landed')
-    expect(session.isStreaming.value).toBe(false)
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(f3) failed sends across a remount mint distinct ids and keep their own prompts', async () => {
+  it.fails('(f2b) a workflow.adopted throw after the ack cannot fail the accepted turn', async () => {
+    const { ok } = await sendWithThrowingAdoptedConsumer()
+    expect(ok).toBe(true)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(f2b2) a workflow.adopted throw after the ack cannot orphan the accepted turn', async () => {
+    const { session, emit } = await sendWithThrowingAdoptedConsumer()
+    emit(delta('msg-1', 'reply landed'))
+    emit(done('msg-1'))
+    expect(JSON.stringify(session.entries.value)).toContain('reply landed')
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(f2b3) a workflow.adopted throw is reported once on the console', async () => {
+    const { warnings } = await sendWithThrowingAdoptedConsumer()
+    expect(warnings).toEqual(['[agent] workflow.adopted consumer threw'])
+  })
+
+  async function failedSendsAcrossRemount() {
     const postMessage = vi
       .fn<
         (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
@@ -1645,10 +1763,29 @@ describe('08-fix1 receipts and pins', () => {
     second.start()
     await second.sendMessage('second text')
 
-    const users = second.entries.value.flatMap((e) =>
-      e.role === 'user' ? [{ id: e.id, text: e.text }] : []
-    )
+    return {
+      postMessage,
+      users: second.entries.value.flatMap((e) =>
+        e.role === 'user' ? [{ id: e.id, text: e.text }] : []
+      )
+    }
+  }
+
+  it('(f3 guard) both failed sends reach the wire and both are recorded', async () => {
+    const { postMessage, users } = await failedSendsAcrossRemount()
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(users).toHaveLength(2)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(f3) failed sends across a remount keep their own prompts', async () => {
+    const { users } = await failedSendsAcrossRemount()
     expect(users.map((u) => u.text)).toEqual(['first text', 'second text'])
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(f3b) failed sends across a remount mint distinct ids', async () => {
+    const { users } = await failedSendsAcrossRemount()
     expect(new Set(users.map((u) => u.id)).size).toBe(2)
   })
 
@@ -1823,8 +1960,7 @@ describe('08-fix1 receipts and pins', () => {
     expect(JSON.stringify(session.entries.value)).toBe(snapshot)
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(t3b) starting twice never ingests a frame more than once', async () => {
+  async function doubleStartedSession() {
     const rest = fakeRest()
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -1833,8 +1969,20 @@ describe('08-fix1 receipts and pins', () => {
     await session.sendMessage('question')
     emit(delta('msg-1', 'ONCE-TOKEN'))
 
-    const occurrences =
-      JSON.stringify(session.entries.value).match(/ONCE-TOKEN/g) ?? []
+    return {
+      occurrences:
+        JSON.stringify(session.entries.value).match(/ONCE-TOKEN/g) ?? []
+    }
+  }
+
+  it('(t3b guard) starting twice still ingests the frame', async () => {
+    const { occurrences } = await doubleStartedSession()
+    expect(occurrences.length).toBeGreaterThan(0)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(t3b) starting twice never ingests a frame more than once', async () => {
+    const { occurrences } = await doubleStartedSession()
     expect(occurrences).toHaveLength(1)
   })
 
@@ -1894,8 +2042,7 @@ describe('08-fix1 receipts and pins', () => {
 describe('08-fix2 receipts and pins', () => {
   beforeEach(resetHarness)
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(r2a) a loadThread whose target 404s leaves identity and transcript coherent', async () => {
+  async function notFoundTargetLoad() {
     const getMessages = vi
       .fn<(threadId: string) => Promise<AgentMessages>>()
       .mockResolvedValueOnce([
@@ -1909,13 +2056,23 @@ describe('08-fix2 receipts and pins', () => {
     })
     session.start()
     await session.loadThread('th-a')
-    expect(session.entries.value.length).toBeGreaterThan(0)
+    const hydratedEntryCount = session.entries.value.length
 
     await session.loadThread('th-b')
+    return { session, hydratedEntryCount }
+  }
 
+  it('(r2a guard) a 404 target load hydrates first, then drops the thread identity', async () => {
+    const { session, hydratedEntryCount } = await notFoundTargetLoad()
+    expect(hydratedEntryCount).toBeGreaterThan(0)
     expect(session.threadId.value).toBeNull()
-    expect(session.entries.value).toEqual([])
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r2a) a loadThread whose target 404s leaves the transcript coherent', async () => {
+    const { session } = await notFoundTargetLoad()
+    expect(session.entries.value).toEqual([])
   })
 
   it('[08-T2 regression] boot hydration never destroys an accepted in-flight turn', async () => {
@@ -1946,8 +2103,7 @@ describe('08-fix2 receipts and pins', () => {
     expect(session.notices.value).toHaveLength(1)
   })
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(r2c) a throwing workflow.current() surfaces sendFailed and never latches sending', async () => {
+  async function sendWithThrowingWorkflowCurrent() {
     let calls = 0
     const rest = fakeRest()
     const session = useAgentSession({
@@ -1964,25 +2120,50 @@ describe('08-fix2 receipts and pins', () => {
     })
     session.start()
 
-    const first = await session.sendMessage('doomed')
-    expect(first).toBe(false)
-    expect(session.isSending.value).toBe(false)
+    const first = await session.sendMessage('doomed').catch(() => 'threw')
+    return { session, rest, first }
+  }
+
+  it('(r2c guard) a throwing workflow.current() aborts the send before the wire', async () => {
+    const { rest } = await sendWithThrowingWorkflowCurrent()
     expect(rest.postMessage).not.toHaveBeenCalled()
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r2c) a throwing workflow.current() reports the send as failed instead of propagating', async () => {
+    const { first } = await sendWithThrowingWorkflowCurrent()
+    expect(first).toBe(false)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r2c2) a throwing workflow.current() surfaces sendFailed in the transcript', async () => {
+    const { session } = await sendWithThrowingWorkflowCurrent()
     expect(JSON.stringify(session.entries.value)).toContain(
       'Message failed to send'
     )
+  })
 
-    const second = await session.sendMessage('fine now')
-    expect(second).toBe(true)
-    expect(rest.postMessage).toHaveBeenCalledTimes(1)
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r2c3) a throwing workflow.current() never latches sending', async () => {
+    const { session } = await sendWithThrowingWorkflowCurrent()
+    expect(session.isSending.value).toBe(false)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r2c4) a send after a throwing workflow.current() recovers and reaches the wire', async () => {
+    const { session, rest } = await sendWithThrowingWorkflowCurrent()
+    const accepted = await session.sendMessage('fine now')
+    expect({
+      accepted,
+      posts: vi.mocked(rest.postMessage).mock.calls.length
+    }).toEqual({ accepted: true, posts: 1 })
   })
 })
 
 describe('08-fix3 receipts and pins', () => {
   beforeEach(resetHarness)
 
-  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('[08-T5 regression] a backgrounded accepted turn survives hydration and resumes with local metadata', async () => {
+  async function ackedTurnAcrossFailedHydrate(status: 404 | 500) {
     let rejectHistory!: (error: unknown) => void
     const getMessages = vi
       .fn<(threadId: string) => Promise<AgentMessages>>()
@@ -2011,117 +2192,159 @@ describe('08-fix3 receipts and pins', () => {
     const load = session.loadThread('th-b')
     await session.sendMessage('acked mid-load')
     emit(deltaIn('th-b', 'msg-b', 'partial'))
-    rejectHistory(new AgentApiError('gone', 404, undefined))
+    rejectHistory(
+      new AgentApiError(
+        status === 404 ? 'gone' : 'backend down',
+        status,
+        undefined
+      )
+    )
     await load
+    return { session, emit }
+  }
 
+  async function retriedAckedTurnLoad(status: 404 | 500) {
+    const failed = await ackedTurnAcrossFailedHydrate(status)
+    await failed.session.loadThread('th-b')
+    return failed
+  }
+
+  it('[08-T5 guard] a 404 hydrate drops the thread identity it could not load', async () => {
+    const { session } = await ackedTurnAcrossFailedHydrate(404)
     expect(session.threadId.value).toBeNull()
-    expect(session.entries.value).toEqual([])
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
-
-    await session.loadThread('th-b')
-    const conversation = useAgentConversationStore()
-    expect(conversation.activeTurnId).toBe('msg-b')
-    const users = session.entries.value.flatMap((e) =>
-      e.role === 'user' ? [e.text] : []
-    )
-    expect(users).toEqual(['acked mid-load'])
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(r3b) a send acked while the target load is in flight survives its 500 and resumes on retry', async () => {
-    let rejectHistory!: (error: unknown) => void
-    const getMessages = vi
-      .fn<(threadId: string) => Promise<AgentMessages>>()
-      .mockResolvedValueOnce([
-        historyRow(1, 'user', 'turn-a', 'thread A prompt'),
-        historyRow(2, 'assistant', 'turn-a', 'thread A reply')
-      ])
-      .mockImplementationOnce(
-        () =>
-          new Promise<AgentMessages>((_resolve, reject) => {
-            rejectHistory = reject
-          })
-      )
-      .mockResolvedValueOnce([])
-    const postMessage = vi
-      .fn<
-        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
-      >()
-      .mockResolvedValue({ thread_id: 'th-b', message_id: 'msg-b' })
-    const rest = fakeRest({ getMessages, postMessage })
-    const { source, emit } = fakeEvents()
-    const session = useAgentSession({ rest, events: source })
-    session.start()
-    await session.loadThread('th-a')
-
-    const load = session.loadThread('th-b')
-    await session.sendMessage('acked mid-load')
-    emit(deltaIn('th-b', 'msg-b', 'partial'))
-    rejectHistory(new AgentApiError('backend down', 500, undefined))
-    await load
-
-    expect(session.threadId.value).toBeNull()
+  it.fails('[08-T5 regression] a 404 hydrate leaves no stale transcript behind', async () => {
+    const { session } = await ackedTurnAcrossFailedHydrate(404)
     expect(session.entries.value).toEqual([])
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('[08-T5 regression] a backgrounded accepted turn survives a 404 hydrate and resumes on retry', async () => {
+    await retriedAckedTurnLoad(404)
+    expect(useAgentConversationStore().activeTurnId).toBe('msg-b')
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('[08-T5 regression] a backgrounded accepted turn resumes with its local metadata', async () => {
+    const { session } = await retriedAckedTurnLoad(404)
+    expect(
+      session.entries.value.flatMap((e) => (e.role === 'user' ? [e.text] : []))
+    ).toEqual(['acked mid-load'])
+  })
+
+  it('(r3b guard) a 500 hydrate surfaces exactly one notice', async () => {
+    const { session } = await ackedTurnAcrossFailedHydrate(500)
     expect(session.notices.value).toHaveLength(1)
-
-    await session.loadThread('th-b')
-    const conversation = useAgentConversationStore()
-    expect(conversation.activeTurnId).toBe('msg-b')
-    const users = session.entries.value.flatMap((e) =>
-      e.role === 'user' ? [e.text] : []
-    )
-    expect(users).toEqual(['acked mid-load'])
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(r3c) a throwing workflow.tabs() surfaces sendFailed and never latches sending', async () => {
+  it.fails('(r3b0) a 500 hydrate does not adopt the thread it could not load', async () => {
+    const { session } = await ackedTurnAcrossFailedHydrate(500)
+    expect(session.threadId.value).toBeNull()
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r3b1) a 500 hydrate leaves no stale transcript behind', async () => {
+    const { session } = await ackedTurnAcrossFailedHydrate(500)
+    expect(session.entries.value).toEqual([])
+  })
+
+  it('(r3b) a send acked while the target load is in flight survives its 500 and resumes on retry', async () => {
+    await retriedAckedTurnLoad(500)
+    expect(useAgentConversationStore().activeTurnId).toBe('msg-b')
+  })
+
+  it('(r3b2) a send acked mid-load keeps its prompt across the 500 and the retry', async () => {
+    const { session } = await retriedAckedTurnLoad(500)
+    expect(
+      session.entries.value.flatMap((e) => (e.role === 'user' ? [e.text] : []))
+    ).toEqual(['acked mid-load'])
+  })
+
+  async function sendWithThrowingWorkflowHook(
+    hook: 'tabs' | 'prepare'
+  ): Promise<{
+    session: ReturnType<typeof useAgentSession>
+    rest: AgentRestClient
+    first: boolean | 'threw'
+    second: boolean | 'threw'
+  }> {
     const rest = fakeRest()
+    const thrower = () => {
+      throw new Error(`${hook} exploded`)
+    }
     const session = useAgentSession({
       rest,
       events: fakeEvents().source,
       workflow: {
         current: () => undefined,
         adopted: vi.fn(),
-        tabs: () => {
-          throw new Error('tabs exploded')
-        }
+        ...(hook === 'tabs' ? { tabs: thrower } : { prepare: thrower })
       }
     })
     session.start()
 
-    expect(await session.sendMessage('doomed')).toBe(false)
-    expect(session.isSending.value).toBe(false)
-    expect(await session.sendMessage('doomed again')).toBe(false)
+    const first = await session
+      .sendMessage('doomed')
+      .catch((): 'threw' => 'threw')
+    const second = await session
+      .sendMessage('doomed again')
+      .catch((): 'threw' => 'threw')
+    return { session, rest, first, second }
+  }
+
+  it('(r3c guard) a throwing workflow.tabs() aborts the send before the wire', async () => {
+    const { rest } = await sendWithThrowingWorkflowHook('tabs')
     expect(rest.postMessage).not.toHaveBeenCalled()
-    const failures =
-      JSON.stringify(session.entries.value).match(/Message failed to send/g) ??
-      []
-    expect(failures).toHaveLength(2)
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
-  it.fails('(r3d) a synchronously-throwing prepare surfaces sendFailed and never latches sending', async () => {
-    const rest = fakeRest()
-    const session = useAgentSession({
-      rest,
-      events: fakeEvents().source,
-      workflow: {
-        current: () => undefined,
-        adopted: vi.fn(),
-        prepare: () => {
-          throw new Error('prepare exploded synchronously')
-        }
-      }
-    })
-    session.start()
+  it.fails('(r3c) a throwing workflow.tabs() reports the send as failed instead of propagating', async () => {
+    const { first } = await sendWithThrowingWorkflowHook('tabs')
+    expect(first).toBe(false)
+  })
 
-    expect(await session.sendMessage('doomed')).toBe(false)
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r3c2) a throwing workflow.tabs() never latches sending', async () => {
+    const { session } = await sendWithThrowingWorkflowHook('tabs')
     expect(session.isSending.value).toBe(false)
-    expect(await session.sendMessage('doomed again')).toBe(false)
-    expect(rest.postMessage).not.toHaveBeenCalled()
-    const failures =
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r3c3) each send blocked by a throwing workflow.tabs() records its own sendFailed', async () => {
+    const { session } = await sendWithThrowingWorkflowHook('tabs')
+    expect(
       JSON.stringify(session.entries.value).match(/Message failed to send/g) ??
-      []
-    expect(failures).toHaveLength(2)
+        []
+    ).toHaveLength(2)
+  })
+
+  it('(r3d guard) a synchronously-throwing prepare aborts the send before the wire', async () => {
+    const { rest } = await sendWithThrowingWorkflowHook('prepare')
+    expect(rest.postMessage).not.toHaveBeenCalled()
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r3d) a synchronously-throwing prepare reports the send as failed instead of propagating', async () => {
+    const { first } = await sendWithThrowingWorkflowHook('prepare')
+    expect(first).toBe(false)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r3d2) a synchronously-throwing prepare never latches sending', async () => {
+    const { session } = await sendWithThrowingWorkflowHook('prepare')
+    expect(session.isSending.value).toBe(false)
+  })
+
+  // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
+  it.fails('(r3d3) each send blocked by a throwing prepare records its own sendFailed', async () => {
+    const { session } = await sendWithThrowingWorkflowHook('prepare')
+    expect(
+      JSON.stringify(session.entries.value).match(/Message failed to send/g) ??
+        []
+    ).toHaveLength(2)
   })
 })
