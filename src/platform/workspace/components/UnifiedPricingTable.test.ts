@@ -717,17 +717,6 @@ describe('UnifiedPricingTable outside Cloud', () => {
   })
 })
 
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
-
 function renderWithCycleToggle(
   props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
 ) {
@@ -737,7 +726,6 @@ function renderWithCycleToggle(
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
         CreditSlider: { template: '<div />' }
       }
     }
