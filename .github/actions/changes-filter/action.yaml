@@ -8,7 +8,7 @@
 # required check is emitted whatever the verdict; a check GitHub never creates
 # leaves the queue waiting.
 #
-# Shared dependency files (root package.json, pnpm-lock.yaml,
+# Shared dependency files (.nvmrc, root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
 # output so a lockfile bump correctly invalidates each granular gate. They
 # are NOT folded into docs-changes.
