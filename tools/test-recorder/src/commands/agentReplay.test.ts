@@ -39,9 +39,12 @@ describe('agentReplayInvocation', () => {
     })
     expect(args.slice(-3)).toEqual([
       '-g',
-      'agent-rec-add-set-delete',
+      'agent-rec-add-set-delete(?![\\w-])',
       '--headed'
     ])
+    expect(new RegExp(args.at(-2)!).test('agent-rec-add-set-delete-2 >')).toBe(
+      false
+    )
     expect(env.PLAYWRIGHT_TEST_URL).toBe('http://127.0.0.1:6207')
     expect(env.RECORD_VIDEO).toBe('true')
   })
@@ -53,7 +56,7 @@ describe('runAgentReplay', () => {
     expect(runAgentReplay({ caseId: 'agent-rec-add-set-delete' }, run)).toBe(3)
     expect(run).toHaveBeenCalledWith(
       'pnpm',
-      expect.arrayContaining(['-g', 'agent-rec-add-set-delete']),
+      expect.arrayContaining(['-g', 'agent-rec-add-set-delete(?![\\w-])']),
       expect.objectContaining({
         env: expect.objectContaining({ DISTRIBUTION: 'cloud' })
       })
@@ -132,6 +135,26 @@ describe('agentReplayCli', () => {
     }
   )
 
+  it.for([['agent-rec'], ['agent-rec-c']])(
+    'refuses %s, which names no recording, before spawning',
+    async ([caseId]) => {
+      const run = vi.fn(() => ({ status: 0 }))
+      const err = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      await expect(
+        agentReplayCli(['--case', caseId], {
+          run,
+          cases: () => ['agent-rec-a', 'agent-rec-b']
+        })
+      ).resolves.toBe(1)
+      expect(run).not.toHaveBeenCalled()
+      expect(err).toHaveBeenCalledWith(
+        `no recording named ${caseId}; recordings: agent-rec-a, agent-rec-b\n`
+      )
+    }
+  )
+
   it('runs the flags without prompting, even on a terminal', async () => {
     const run = vi.fn(() => ({ status: 2 }))
     const select = vi.fn(async () => '')
@@ -139,13 +162,14 @@ describe('agentReplayCli', () => {
       agentReplayCli(['--case', 'agent-rec-a', '--video'], {
         run,
         interactive: true,
+        cases: () => ['agent-rec-a'],
         prompts: { select, confirm: async () => false }
       })
     ).resolves.toBe(2)
     expect(select).not.toHaveBeenCalled()
     expect(run).toHaveBeenCalledWith(
       'pnpm',
-      expect.arrayContaining(['-g', 'agent-rec-a']),
+      expect.arrayContaining(['-g', 'agent-rec-a(?![\\w-])']),
       expect.objectContaining({
         env: expect.objectContaining({ RECORD_VIDEO: 'true' })
       })
@@ -185,7 +209,7 @@ describe('agentReplayCli', () => {
     ).resolves.toBe(0)
     expect(run).toHaveBeenCalledWith(
       'pnpm',
-      expect.arrayContaining(['-g', 'agent-rec-b', '--headed']),
+      expect.arrayContaining(['-g', 'agent-rec-b(?![\\w-])', '--headed']),
       expect.anything()
     )
   })

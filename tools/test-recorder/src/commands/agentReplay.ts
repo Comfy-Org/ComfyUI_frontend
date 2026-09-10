@@ -38,7 +38,6 @@ to watch it; any flag, or a non-interactive stdin, runs without prompts.
   --help        show this help and run nothing
 `
 
-// Every recording the replay suite enumerates, by case id.
 export function listReplayCases(root: string = process.cwd()): string[] {
   return readdirSync(join(root, CONVERSATIONS_DIR))
     .filter((file) => file.endsWith('.json'))
@@ -46,7 +45,6 @@ export function listReplayCases(root: string = process.cwd()): string[] {
     .sort()
 }
 
-// The replay suite is every spec matching agentConversation under browser_tests/tests/agent.
 export function agentReplayInvocation(
   options: AgentReplayOptions
 ): AgentReplayInvocation {
@@ -57,7 +55,11 @@ export function agentReplayInvocation(
     'agentConversation',
     '--project=cloud'
   ]
-  if (options.caseId) args.push('-g', options.caseId)
+  if (options.caseId)
+    args.push(
+      '-g',
+      `${options.caseId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w-])`
+    )
   if (options.headed) args.push('--headed')
   // Video is the only local setting this command owns; PLAYWRIGHT_LOCAL would
   // switch it on for every run, so it is not set here.
@@ -74,7 +76,6 @@ type Prompts = {
   confirm: (opts: ConfirmOptions) => Promise<boolean | symbol>
 }
 
-// The interactive route: which recording, and whether to watch it.
 export async function promptAgentReplayOptions(
   cases: string[],
   prompts: Prompts = { select, confirm }
@@ -95,7 +96,6 @@ export async function promptAgentReplayOptions(
   return { caseId: caseId || undefined, headed }
 }
 
-// All the replay reads from the child: its exit status.
 type Runner = (
   command: string,
   args: string[],
@@ -127,7 +127,6 @@ export interface AgentReplayCliDeps {
 
 const VALUE_FLAGS = ['case', 'url'] as const
 
-// The subcommand's argv boundary: help and a missing value return before anything spawns.
 export async function agentReplayCli(
   argv: string[],
   deps: AgentReplayCliDeps = {}
@@ -139,13 +138,17 @@ export async function agentReplayCli(
     process.stderr.write(`--${missing} needs a value\n${AGENT_REPLAY_USAGE}`)
     return 1
   }
+  const cases = (deps.cases ?? listReplayCases)()
+  if (flags.case !== undefined && !cases.includes(flags.case)) {
+    process.stderr.write(
+      `no recording named ${flags.case}; recordings: ${cases.join(', ')}\n`
+    )
+    return 1
+  }
   const interactive =
     (deps.interactive ?? process.stdin.isTTY) && Object.keys(flags).length === 0
   const options = interactive
-    ? await promptAgentReplayOptions(
-        (deps.cases ?? listReplayCases)(),
-        deps.prompts
-      )
+    ? await promptAgentReplayOptions(cases, deps.prompts)
     : {
         caseId: flags.case,
         url: flags.url,
