@@ -364,7 +364,15 @@ app.registerExtension({
                 currentStream = await navigator.mediaDevices.getUserMedia({
                   audio: true
                 })
+              } catch (err) {
+                console.error('Error accessing microphone:', err)
+                useToastStore().addAlert(t('g.micPermissionDenied'))
+                useAudioService().stopAllTracks(currentStream)
+                currentStream = null
+                return
+              }
 
+              try {
                 mediaRecorder = new ExtendableMediaRecorder(currentStream, {
                   mimeType: 'audio/wav'
                 }) as unknown as MediaRecorder
@@ -424,25 +432,24 @@ app.registerExtension({
                   recordWidget.label = t('g.stopRecording')
                 }
               } catch (err) {
-                console.error('Error accessing microphone:', err)
-                useToastStore().addAlert(t('g.micPermissionDenied'))
+                reportError(err, {
+                  errorType: 'extensions_audio_recorder_start_failed',
+                  tags: {
+                    failure_kind: 'caught_unexpected',
+                    feature_area: 'assets',
+                    operation: 'execute',
+                    outcome: 'recovered'
+                  },
+                  level: 'error'
+                })
+                useToastStore().addAlert(t('g.recordingFailedToStart'))
 
                 if (mediaRecorder) {
-                  // getUserMedia already resolved, so this is not a permission failure.
-                  reportError(err, {
-                    errorType: 'extensions_audio_recorder_start_failed',
-                    tags: {
-                      failure_kind: 'caught_unexpected',
-                      feature_area: 'assets',
-                      operation: 'execute',
-                      outcome: 'recovered'
-                    },
-                    level: 'error'
-                  })
                   try {
                     mediaRecorder.stop()
                   } catch {}
                 }
+                mediaRecorder = null
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null
                 isRecording = false
