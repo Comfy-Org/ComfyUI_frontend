@@ -6,6 +6,36 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 map="$repo_root/.github/risk.json"
 fixtures="$repo_root/.github/risk-fixtures.json"
 
+# Mirrors read_map() in Comfy-Org/github-workflows scripts/pr-risk/grade-pr-risk.sh
+# at the workflows_ref pinned in .github/workflows/ci-pr-risk.yml (df10491).
+# Upstream exits 2 and labels every PR risk:ungraded when this trips, so a map
+# that fails here is not partially graded, it is not graded at all.
+shape="$(jq -r '
+  def known: ["R0", "R1", "R2", "R3"];
+  if type != "object" then "not a JSON object"
+  elif (.path_rules | type) != "array" then "path_rules is missing or not an array"
+  elif (.path_rules | length) == 0 then "path_rules is EMPTY"
+  elif ([.path_rules[] | select((.class | type) != "string" or (.paths | type) != "array" or (.paths | length) == 0)] | length) > 0
+    then "a path rule is missing a class or a non-empty paths list"
+  elif ([.path_rules[] | .tier | select(IN(known[]) | not)] | length) > 0
+    then "a path rule carries a tier outside \(known)"
+  elif (.provenance_tiers | type) != "object" then "provenance_tiers is missing or not an object"
+  elif ([.provenance_tiers | to_entries[] | select(.key | startswith("_") | not) | .value | select(IN(known[]) | not)] | length) > 0
+    then "provenance_tiers carries a tier outside \(known)"
+  elif ((["runbook", "agent-supervised", "human", "external"] - [.provenance_tiers | keys[]]) | length) > 0
+    then "provenance_tiers is missing a class: \(["runbook", "agent-supervised", "human", "external"] - [.provenance_tiers | keys[]])"
+  elif ((.reversibility // {}) | has("test_path_patterns")) and (((.reversibility // {}).test_path_patterns | type) != "array")
+    then "reversibility.test_path_patterns is present but not an array"
+  elif (.default_tier // "R0") as $d | ($d | IN(known[])) | not then "default_tier is outside \(known)"
+  elif [(.reversibility // {}) | .no_green_checks_tier, .no_test_touched_tier, .clean_tier | select(. != null and (IN(known[]) | not))] | length > 0
+    then "a reversibility tier is outside \(known)"
+  else empty end' "$map")"
+
+if [ -n "$shape" ]; then
+  echo "risk map unusable: $shape" >&2
+  exit 1
+fi
+
 jq -e --slurpfile map "$map" '
   def glob2re:
     gsub("(?<c>[.+?^$(){}|\\[\\]\\\\])"; "\\\(.c)")
