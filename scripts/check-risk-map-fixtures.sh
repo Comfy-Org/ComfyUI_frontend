@@ -63,13 +63,14 @@ jq -e --slurpfile map "$map" '
       | ($hits | map(.class) | unique) as $actual_classes
       | select(
           $actual_tier != $case.tier
-          or (($case.classes - $actual_classes) | length) > 0
+          or ($actual_classes | sort) != ($case.classes | sort)
         )
       | {
           path: $case.path,
           expected_tier: $case.tier,
           actual_tier: $actual_tier,
           missing_classes: ($case.classes - $actual_classes),
+          unexpected_classes: ($actual_classes - $case.classes),
           actual_classes: $actual_classes
         }
     ] as $failures

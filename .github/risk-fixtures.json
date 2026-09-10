@@ -44,22 +44,22 @@
     {
       "path": "src/services/cloud/subscriptionService.ts",
       "tier": "R3",
-      "classes": ["billing"]
+      "classes": ["billing", "core-infra"]
     },
     {
       "path": "src/stores/workspace/pricingStore.ts",
       "tier": "R3",
-      "classes": ["billing"]
+      "classes": ["billing", "core-infra"]
     },
     {
       "path": "apps/website/src/data/pricingPlans.ts",
       "tier": "R3",
-      "classes": ["billing"]
+      "classes": ["billing", "website"]
     },
     {
       "path": "apps/website/src/config/pricing.ts",
       "tier": "R3",
-      "classes": ["billing"]
+      "classes": ["billing", "website"]
     },
     {
       "path": "apps/website/src/components/pricing/PricingCard.vue",
