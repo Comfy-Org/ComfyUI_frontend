@@ -24,7 +24,6 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
     await comfyPage.nodeOps.clearGraph()
   })
 
@@ -89,7 +88,6 @@ cloudAppFixture.describe(
           private_models_enabled: true
         } satisfies RemoteConfig
         const settings = {
-          'Comfy.Assets.UseAssetAPI': true,
           'Comfy.TutorialCompleted': true
         }
         const assetsResponse = {
