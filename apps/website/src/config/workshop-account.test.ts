@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { User } from 'firebase/auth'
 
 import type { AccountUser, SessionClient } from '@comfyorg/account/session'
-import { createTestIdentity } from '@comfyorg/account/testing'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
@@ -106,7 +105,8 @@ describe('workshop session storage adapter', () => {
 })
 
 describe('auth refresh telemetry', () => {
-  function attachManualPort(client: SessionClient<User>) {
+  async function attachManualPort(client: SessionClient<User>) {
+    const { createTestIdentity } = await import('@comfyorg/account/testing')
     let deliver: ((user: User | null) => void) | undefined
     client.attachIdentity(
       createTestIdentity<User>({
@@ -123,7 +123,7 @@ describe('auth refresh telemetry', () => {
     vi.stubGlobal('fetch', okFetch())
     const { client, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = attachManualPort(client)
+    const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
 
@@ -135,7 +135,7 @@ describe('auth refresh telemetry', () => {
     vi.stubGlobal('fetch', okFetch())
     const { client, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = attachManualPort(client)
+    const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
     await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
@@ -154,7 +154,7 @@ describe('auth refresh telemetry', () => {
     vi.stubGlobal('fetch', statusFetch(403))
     const { client, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = attachManualPort(client)
+    const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
 
@@ -170,7 +170,7 @@ describe('auth refresh telemetry', () => {
     vi.stubGlobal('fetch', statusFetch(503))
     const { client, startTelemetry } = await importFresh()
     onTestFinished(startTelemetry())
-    const fire = attachManualPort(client)
+    const fire = await attachManualPort(client)
 
     fire(testFirebaseUser())
 
