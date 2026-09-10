@@ -52,7 +52,7 @@ describe('reduceGesture', () => {
       { type: 'up', position: nearby }
     ])
 
-    expect(effects).toEqual(['moveDrag', 'click'])
+    expect(effects).toEqual(['movePress', 'click'])
     expect(state).toEqual({
       phase: 'idle',
       lastClick: { position: origin, timeStamp: 10 }
@@ -66,7 +66,7 @@ describe('reduceGesture', () => {
       { type: 'move', position: far, timeStamp: 20 }
     ])
 
-    expect(effects).toEqual(['moveDrag', 'moveDrag', 'startDrag'])
+    expect(effects).toEqual(['movePress', 'moveDrag', 'startDrag'])
     expect(state.phase).toBe('dragging')
   })
 
