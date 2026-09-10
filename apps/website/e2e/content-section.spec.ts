@@ -55,7 +55,8 @@ test.describe(
       })
       const lastBadge = sidebarNav.getByRole('button').last()
 
-      await expect(lastBadge).toHaveAttribute('aria-pressed', 'true')
+      // Wait for the scroll-spy to activate the badge when navigating via hash
+      await expect(lastBadge).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 })
     })
   }
 )
