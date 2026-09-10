@@ -1,33 +1,35 @@
 <template>
   <div class="input-slider flex flex-row items-center gap-2">
     <Slider
-      :model-value="modelValue"
+      :model-value="[modelValue]"
       class="slider-part"
       :class="sliderClass"
       :min="min"
       :max="max"
       :step="step"
+      :disabled="disabled"
       v-bind="$attrs"
-      @update:model-value="(value) => updateValue(value as number)"
+      @update:model-value="(value) => updateValue(value?.[0] ?? modelValue)"
     />
-    <InputNumber
+    <FormattedNumberStepper
       :model-value="modelValue"
       class="input-part"
-      :max-fraction-digits="3"
+      :format-options="{ maximumFractionDigits: 3 }"
       :class="inputClass"
       :min="min"
       :max="max"
       :step="step"
-      :allow-empty="false"
+      :disabled="disabled"
       @update:model-value="updateValue"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import Slider from 'primevue/slider'
 import { ref, watch } from 'vue'
+
+import Slider from '@/components/ui/slider/Slider.vue'
+import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 
 const props = defineProps<{
   modelValue: number
@@ -36,6 +38,7 @@ const props = defineProps<{
   min?: number
   max?: number
   step?: number
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{

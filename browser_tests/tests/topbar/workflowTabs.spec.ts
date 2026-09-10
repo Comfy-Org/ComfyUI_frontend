@@ -31,9 +31,7 @@ test.describe('Workflow tabs', () => {
         'aria-pressed',
         'true'
       )
-      await expect(
-        comfyPage.page.locator('.workflow-tabs .p-togglebutton-checked')
-      ).toHaveCount(1)
+      await expect(topbar.getActiveTab()).toHaveCount(1)
     })
 
     test('keeps path-backed active identity after a tab switch', async ({

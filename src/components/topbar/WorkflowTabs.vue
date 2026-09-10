@@ -3,8 +3,8 @@
     ref="containerRef"
     :class="
       cn(
-        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden',
-        isDesktop && 'workflow-tabs-container-desktop'
+        'workflow-tabs-container flex h-full flex-auto flex-row overflow-hidden bg-comfy-menu-bg',
+        isDesktop ? 'max-w-[env(titlebar-area-width,100vw)]' : 'max-w-full'
       )
     "
   >
@@ -12,7 +12,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
+      class="overflow-arrow-left aspect-square h-full w-auto rounded-none px-2 disabled:opacity-25"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
@@ -25,40 +25,50 @@
         class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
         @wheel="handleWheel"
       >
-        <SelectButton
-          :class="cn('workflow-tabs bg-transparent', props.class)"
-          :model-value="selectedWorkflow"
-          :options
-          option-label="label"
-          data-key="value"
-          :allow-empty="false"
+        <ToggleGroup
+          :class="
+            cn('workflow-tabs flex h-full gap-0 bg-transparent', props.class)
+          "
+          :model-value="selectedWorkflow?.value"
+          type="single"
+          required
           @click="onWorkflowClick"
         >
-          <template #option="{ option, index }">
-            <WorkflowTab
-              :workflow-option="option"
-              :is-first="index === 0"
-              :is-last="index === options.length - 1"
-              :data-workflow-path="option.value"
-              @click.middle="onCloseWorkflow(option)"
-              @close-to-left="closeWorkflows(options.slice(0, index))"
-              @close-to-right="closeWorkflows(options.slice(index + 1))"
-              @close-others="
-                closeWorkflows([
-                  ...options.slice(index + 1),
-                  ...options.slice(0, index)
-                ])
-              "
-            />
-          </template>
-        </SelectButton>
+          <ToggleGroupItem
+            v-for="(option, index) in options"
+            :key="option.value"
+            :value="option.value"
+            class="workflow-tab-button group/tab relative h-full min-w-[90px] flex-[0_1_auto] rounded-none border-0 border-r border-solid border-interface-stroke bg-transparent p-0 font-[inherit] leading-[normal] font-medium first:border-l hover:bg-transparent data-[state=off]:text-text-muted data-[state=off]:opacity-75 data-[state=on]:border-b data-[state=on]:border-b-text-primary data-[state=on]:bg-transparent"
+          >
+            <span
+              class="relative inline-flex max-w-full items-center justify-center gap-2"
+            >
+              <WorkflowTab
+                class="max-w-full"
+                :workflow-option="option"
+                :is-first="index === 0"
+                :is-last="index === options.length - 1"
+                :data-workflow-path="option.value"
+                @click.middle="onCloseWorkflow(option)"
+                @close-to-left="closeWorkflows(options.slice(0, index))"
+                @close-to-right="closeWorkflows(options.slice(index + 1))"
+                @close-others="
+                  closeWorkflows([
+                    ...options.slice(index + 1),
+                    ...options.slice(0, index)
+                  ])
+                "
+              />
+            </span>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
     </div>
     <Button
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
+      class="overflow-arrow-right aspect-square h-full w-auto rounded-none px-2 disabled:opacity-25"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
@@ -113,20 +123,23 @@
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
     </div>
-    <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
+    <div
+      v-if="isDesktop"
+      class="window-actions-spacer app-drag min-w-[min(75px,env(titlebar-area-width,0)*9999)] flex-auto shrink-0"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
-import SelectButton from 'primevue/selectbutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -280,7 +293,7 @@ const ensureActiveTabVisible = async (
   if (!containerElement) return
 
   const activeTabElement = containerElement.querySelector(
-    '.p-togglebutton-checked'
+    '.workflow-tab-button[data-state="on"]'
   )
   if (!activeTabElement) return
 
@@ -322,84 +335,3 @@ whenever(showOverflowArrows, () => {
 
 onUpdated(checkOverflow)
 </script>
-
-<style scoped>
-.workflow-tabs-container {
-  background-color: var(--comfy-menu-bg);
-}
-
-:deep(.p-togglebutton) {
-  position: relative;
-  flex-shrink: 1;
-  border: 0;
-  border-right-style: solid;
-  border-right-width: 1px;
-  border-radius: 0;
-  background-color: transparent;
-  padding: 0;
-  border-right-color: var(--border-color);
-  min-width: 90px;
-}
-
-.overflow-arrow {
-  border-radius: 0;
-  padding-inline: calc(var(--spacing) * 2);
-}
-
-.overflow-arrow[disabled] {
-  opacity: 0.25;
-}
-
-:deep(.p-togglebutton > .p-togglebutton-content) {
-  max-width: 100%;
-}
-
-:deep(.workflow-tab) {
-  max-width: 100%;
-}
-
-:deep(.p-togglebutton::before) {
-  display: none;
-}
-
-:deep(.p-togglebutton:first-child) {
-  border-left-style: solid;
-  border-left-width: 1px;
-  border-left-color: var(--border-color);
-}
-
-:deep(.p-togglebutton:not(:first-child)) {
-  border-left-width: 0;
-}
-
-:deep(.p-togglebutton.p-togglebutton-checked) {
-  height: 100%;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  border-bottom-color: var(--p-button-text-primary-color);
-}
-
-:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  opacity: 0.75;
-}
-
-:deep(.workflow-tabs) {
-  display: flex;
-}
-
-:deep(.p-selectbutton) {
-  height: 100%;
-  border-radius: 0;
-}
-
-.workflow-tabs-container-desktop {
-  max-width: env(titlebar-area-width, 100vw);
-}
-
-.window-actions-spacer {
-  flex: auto;
-  /* If we are using custom titlebar, then we need to add a gap for the user to drag the window */
-  --window-actions-spacer-width: min(75px, env(titlebar-area-width, 0) * 9999);
-  min-width: var(--window-actions-spacer-width);
-}
-</style>
