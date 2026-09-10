@@ -12,8 +12,10 @@ const {
   mockIsCloud,
   mockGetCheckoutAttribution,
   mockLocalStorage,
-  mockReportError
+  mockReportError,
+  mockAttributionChunkFails
 } = vi.hoisted(() => ({
+  mockAttributionChunkFails: { value: false },
   mockTelemetry: {
     trackBeginCheckout: vi.fn(),
     trackBillingEvent: vi.fn()
@@ -85,7 +87,12 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/checkoutAttribution'),
   () => ({
-    getCheckoutAttribution: mockGetCheckoutAttribution
+    get getCheckoutAttribution() {
+      if (mockAttributionChunkFails.value) {
+        throw new Error('Failed to fetch dynamically imported module')
+      }
+      return mockGetCheckoutAttribution
+    }
   })
 )
 
@@ -228,6 +235,34 @@ describe('performSubscriptionCheckout', () => {
       checkout_attempt_id: expect.any(String)
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('reports a failed attribution chunk load as the module_load stage', async () => {
+    const checkoutUrl = 'https://checkout.stripe.com/test'
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: checkoutUrl })
+    } as Response)
+
+    mockAttributionChunkFails.value = true
+    try {
+      await performSubscriptionCheckout('pro', 'monthly')
+    } finally {
+      mockAttributionChunkFails.value = false
+    }
+
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'cloud_checkout_attribution_fallback',
+        context: { attribution_stage: 'module_load' }
+      })
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
+      expect.objectContaining({ body: JSON.stringify({}) })
+    )
   })
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {
