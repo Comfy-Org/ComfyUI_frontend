@@ -3,6 +3,7 @@ import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -17,6 +18,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
@@ -414,9 +416,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._setCursor(cursor)
   }
 
-  // Whether the canvas was previously being dragged prior to pressing space key.
-  // null if space key is not pressed.
-  private _previously_dragging_canvas: boolean | null = null
+  private _spaceKeyHeld: { draggingCanvas: boolean; readOnly: boolean } | null =
+    null
 
   // #region Legacy accessors
   /** @deprecated @inheritdoc {@link LGraphCanvasState.readOnly} */
@@ -593,7 +594,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   pause_rendering: boolean
   clear_background: boolean
   clear_background_color: string
-  render_only_selected: boolean
   show_info: boolean
   /** Additional text appended to the canvas info overlay (rendered by {@link renderInfo}). */
   info_text: string | undefined
@@ -977,7 +977,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.clear_background = true
     this.clear_background_color = '#222'
 
-    this.render_only_selected = true
     this.show_info = true
     this.allow_dragcanvas = true
     this.allow_dragnodes = true
@@ -3931,6 +3930,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   processKey(e: KeyboardEvent): void {
     this._shiftDown = e.shiftKey
 
+    if (e.type == 'keyup' && e.key === ' ') {
+      const held = this._spaceKeyHeld
+      this._spaceKeyHeld = null
+      if (held) {
+        this.read_only = held.readOnly
+        this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
+        if (
+          this.pointer.isDown &&
+          (this.isDragging || this.linkConnector.isConnecting)
+        ) {
+          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+          this._autoPan?.start()
+        }
+      }
+    }
+
     const { graph } = this
     if (!graph) return
 
@@ -3942,11 +3957,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // TODO: Switch
       if (e.key === ' ') {
         // space
+        this._spaceKeyHeld ??= {
+          draggingCanvas: this.dragging_canvas,
+          readOnly: this.read_only
+        }
         this.read_only = true
         this._autoPan?.stop()
-        if (this._previously_dragging_canvas === null) {
-          this._previously_dragging_canvas = this.dragging_canvas
-        }
         this.dragging_canvas =
           this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
@@ -3967,21 +3983,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         node.onKeyDown?.(e)
       }
     } else if (e.type == 'keyup') {
-      if (e.key === ' ') {
-        // space
-        this.read_only = false
-        this.dragging_canvas =
-          (this._previously_dragging_canvas ?? false) && this.pointer.isDown
-        this._previously_dragging_canvas = null
-        if (
-          this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
-        ) {
-          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
-          this._autoPan?.start()
-        }
-      }
-
       for (const node of Object.values(this.selected_nodes)) {
         node.onKeyUp?.(e)
       }
@@ -4023,8 +4024,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (const { link: linkId } of item.inputs) {
           if (linkId == null) continue
 
-          const link = this.graph?.links.get(linkId)?.asSerialisable()
-          if (link) serialisable.links.push(link)
+          const graph = this.graph
+          const link = graph?.links.get(linkId)
+          if (!graph || !link) continue
+
+          serialisable.links.push({
+            ...link.asSerialisable(),
+            ...useLinkPresentationStore().getPresentation(
+              graphScopeOf(graph),
+              linkId
+            )
+          })
         }
 
         // Find all unique referenced subgraphs
@@ -4260,7 +4270,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           targetSlotByLink.get(toLinkId(info.id)) ?? info.target_slot,
           afterRerouteId
         )
-        if (link) links.set(toLinkId(info.id), link)
+        if (link) {
+          transferLinkPresentation(
+            graphScopeOf(graph),
+            {
+              hidden: info.hidden === true,
+              label: typeof info.label === 'string' ? info.label : undefined
+            },
+            link.id
+          )
+          links.set(toLinkId(info.id), link)
+        }
       }
     }
 

@@ -48,13 +48,13 @@ export function getMainNavigation(locale: Locale): NavItem[] {
       label: t('nav.products', locale),
       badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/ltx-card.webp',
+        imageSrc: 'https://media.comfy.org/website/nav/minimax-card.webp',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
           label: t('nav.featuredProductsCta', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.ltx
+          href: routes.minimax
         }
       },
       columns: [
@@ -71,6 +71,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             {
               label: t('nav.comfyEnterprise', locale),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds', locale),
+              href: routes.managedBuilds,
+              badge: 'beta'
             }
           ]
         },
@@ -193,7 +198,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '/customers#hero-video'
+          href: routes.customerVideoBlackMath
         }
       },
       columns: [

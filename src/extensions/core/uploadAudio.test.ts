@@ -2,15 +2,18 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyExtension } from '@/types/comfy'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
-const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
-  vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
-    mockRegisterExtension: vi.fn()
-  }))
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
+})
+
+const { mockApiURL, mockFetchApi } = vi.hoisted(() => ({
+  mockApiURL: vi.fn((url: string) => `api:${url}`),
+  mockFetchApi: vi.fn()
+}))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
@@ -56,10 +59,6 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
-
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
   getResourceURL: (subfolder = '', filename = '', type = 'input') =>
     `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
@@ -75,15 +74,9 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    registerExtension: mockRegisterExtension,
+    registerExtension: extensions.registerExtension,
     rootGraph: { id: 'root' }
   }
-}))
-
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({
-    getWidget: vi.fn()
-  })
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
@@ -93,6 +86,8 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 vi.mock('@/services/audioService', () => ({
   useAudioService: () => ({})
 }))
+
+await import('./uploadAudio')
 
 function createFile(name = 'clip.mp3'): File {
   return new File(['audio'], name, { type: 'audio/mpeg' })
@@ -138,14 +133,7 @@ function createAudioNode() {
 }
 
 async function loadAudioUploadWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.UploadAudio')
-  if (!extension)
-    throw new Error('Comfy.UploadAudio extension was not registered')
+  const extension = extensions.getExtension('Comfy.UploadAudio')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
   return (widgets as Record<string, AudioUploadWidget>).AUDIOUPLOAD
 }
@@ -221,7 +209,9 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const result = await capturedDragDrop!([createFile()])
 
     expect(result).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadAlreadyInProgress'
+    )
     expect(mockFetchApi).not.toHaveBeenCalled()
   })
 
@@ -235,7 +225,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith('500 - Server Error')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith('500 - Server Error')
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -252,7 +242,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith(error)
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(error)
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -272,14 +262,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
 
 async function loadAudioUIWidget() {
-  vi.resetModules()
-  mockRegisterExtension.mockClear()
-  await import('./uploadAudio')
-  const extension = mockRegisterExtension.mock.calls
-    .map(([extension]) => extension as ComfyExtension)
-    .find((extension) => extension.name === 'Comfy.AudioWidget')
-  if (!extension)
-    throw new Error('Comfy.AudioWidget extension was not registered')
+  const extension = extensions.getExtension('Comfy.AudioWidget')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
   return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
 }

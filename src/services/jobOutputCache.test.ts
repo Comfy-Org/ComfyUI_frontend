@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
@@ -19,12 +19,12 @@ import {
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
+vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
   fetchJobDetail: vi.fn(),
   extractWorkflow: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getJobDetail: vi.fn(),
     getJobAssets: vi.fn(),
