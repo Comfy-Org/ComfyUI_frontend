@@ -8,7 +8,7 @@
   "exports": {
     "./session": "./src/core/index.ts",
     "./firebase": "./src/firebase/index.ts",
-    "./web": "./src/web/index.ts",
+    "./web": "./src/web/crossTabRefresh.ts",
     "./vue": "./src/vue/index.ts",
     "./testing": "./src/testing.ts",
     "./customerRecovery": "./src/core/customerRecovery.ts",
