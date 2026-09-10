@@ -1,7 +1,11 @@
+import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import { i18n } from '@/i18n'
+import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -12,14 +16,14 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
 let mockQueryParams: Record<string, string | string[] | undefined> = {}
 const mockRouterReplace = vi.fn()
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: vi.fn(() => ({
     query: mockQueryParams
   })),
@@ -32,75 +36,85 @@ const mockImportPublishedAssets = vi.fn()
 const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: mockIsLoggedIn
   })
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     mode: { value: 'graph' },
     isAppMode: { value: false }
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackShareLinkOpened: mockTrackShareLinkOpened
   })
 }))
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  SharedWorkflowLoadError: class extends Error {
-    readonly isRetryable: boolean
-    constructor(message: string, isRetryable: boolean) {
-      super(message)
-      this.name = 'SharedWorkflowLoadError'
-      this.isRetryable = isRetryable
-    }
-  },
-  useWorkflowShareService: () => ({
-    getSharedWorkflow: vi.fn(),
-    importPublishedAssets: mockImportPublishedAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {
+      readonly isRetryable: boolean
+      constructor(message: string, isRetryable: boolean) {
+        super(message)
+        this.name = 'SharedWorkflowLoadError'
+        this.isRetryable = isRetryable
+      }
+    },
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: vi.fn(),
+      importPublishedAssets: mockImportPublishedAssets
+    })
   })
-}))
+)
 
 const mockLoadGraphData = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: mockLoadGraphData
   }
 }))
 
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
-  })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key: string) => {
-      if (key === 'g.error') return 'Error'
-      if (key === 'shareWorkflow.loadFailed') {
-        return 'Failed to load shared workflow'
-      }
-      if (key === 'openSharedWorkflow.dialogTitle') {
-        return 'Open shared workflow'
-      }
-      if (key === 'openSharedWorkflow.importFailed') {
-        return 'Failed to import workflow assets'
-      }
-      return key
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
     })
   })
-}))
+)
+
+const apps: App<Element>[] = []
+
+function useSharedWorkflowUrlLoader() {
+  let result: ReturnType<typeof createSharedWorkflowUrlLoader> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createSharedWorkflowUrlLoader()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Shared workflow URL loader was not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
-const mockCloseDialog = vi.hoisted(() => vi.fn())
+
 const mockHideTemplateSelector = vi.hoisted(() => vi.fn())
 const mockDialogStack = vi.hoisted(
   () =>
@@ -110,27 +124,21 @@ const mockDialogStack = vi.hoisted(
       dialogComponentProps: Record<string, unknown>
     }>
 )
-const mockUpdateDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showLayoutDialog: mockShowLayoutDialog
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    dialogStack: mockDialogStack,
-    closeDialog: mockCloseDialog,
-    updateDialog: mockUpdateDialog
+vi.mock<unknown>(
+  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  () => ({
+    useWorkflowTemplateSelectorDialog: () => ({
+      hide: mockHideTemplateSelector
+    })
   })
-}))
-
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({
-    hide: mockHideTemplateSelector
-  })
-}))
+)
 
 function makePayload(
   overrides: Partial<SharedWorkflowPayload> = {}
@@ -192,13 +200,19 @@ function createDeferred() {
   return { promise, resolve }
 }
 
+beforeEach(() => {
+  Object.assign(useDialogStore(), { dialogStack: [] })
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.mocked(useDialogStore().updateDialog).mockReturnValue(false)
+})
+
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     mockQueryParams = {}
     mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
-    mockUpdateDialog.mockImplementation(
+    vi.mocked(useDialogStore().updateDialog).mockImplementation(
       (options: {
         key: string
         contentProps?: Record<string, unknown>
@@ -319,19 +333,19 @@ describe('useSharedWorkflowUrlLoader', () => {
     await Promise.resolve()
 
     expect(dialogInstance.contentProps.openingAction).toBe('copy-and-open')
-    expect(mockUpdateDialog).toHaveBeenCalledWith({
+    expect(useDialogStore().updateDialog).toHaveBeenCalledWith({
       key: 'open-shared-workflow',
       contentProps: { openingAction: 'copy-and-open' }
     })
     expect(dialogInstance.dialogComponentProps.closable).toBeUndefined()
     expect(dialogInstance.dialogComponentProps.closeOnEscape).toBeUndefined()
     expect(dialogInstance.dialogComponentProps.dismissableMask).toBeUndefined()
-    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
     graphLoad.resolve()
     await loadPromise
 
-    expect(mockCloseDialog).toHaveBeenLastCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenLastCalledWith({
       key: 'open-shared-workflow'
     })
   })

@@ -54,6 +54,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -75,10 +79,15 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
-import type { WorkflowTurnContext } from './composables/agent/useAgentSession'
+import type {
+  TurnOrigin,
+  WorkflowTurnContext
+} from './composables/agent/useAgentSession'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import type {
   DraftSnapshot,
   OpenTabsSnapshot
@@ -99,6 +108,28 @@ const CrdtDevPanel = defineAsyncComponent(
 
 const { t } = useI18n()
 const toast = useToastStore()
+const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { workspaceRole } = useWorkspaceUI()
+const { tier: subscriptionTier } = useBillingContext()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  isReady: billingCapabilitiesReady
+} = useBillingCapabilities()
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    role: workspaceRole.value,
+    tier: subscriptionTier.value,
+    // The initial false/false pair is not an authoritative sales-managed
+    // result while the shared capability source initializes in the background.
+    canTopUp: billingCapabilitiesReady.value
+      ? canTopUp.value
+      : workspaceRole.value === 'owner',
+    canSubscribeSelfServe: billingCapabilitiesReady.value
+      ? canSubscribeSelfServe.value
+      : workspaceRole.value === 'owner'
+  })
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -110,6 +141,10 @@ const userName = computed(
 const rest = createAgentRestClient()
 
 const events = createAgentEventSource(api)
+
+function onPaywallAction(action: AgentPaywallAction): void {
+  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+}
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -276,35 +311,61 @@ async function refreshCloudWorkflowIds(): Promise<void> {
   }
 }
 
-function openSavedTabsNamed(filename: string): ComfyWorkflow[] {
+function cloudWorkflowName(tab: ComfyWorkflow): string {
+  return tab.suffix === 'app.json' ? `${tab.filename}.app` : tab.filename
+}
+
+function openSavedTabsNamed(name: string): ComfyWorkflow[] {
   return workflowStore.openWorkflows.filter(
-    (tab) => !tab.isTemporary && tab.filename === filename
+    (tab) => !tab.isTemporary && cloudWorkflowName(tab) === name
   )
 }
 
 function cloudIdFor(tab: ComfyWorkflow): string | undefined {
+  const name = cloudWorkflowName(tab)
   const saved =
-    !tab.isTemporary && openSavedTabsNamed(tab.filename).length === 1
-      ? cloudIdsByName.get(tab.filename)
+    !tab.isTemporary && openSavedTabsNamed(name).length === 1
+      ? cloudIdsByName.get(name)
       : undefined
   return saved ?? bindingStore.workflowIdFor(tab.path)
 }
 
 const workflowDetached = ref(false)
 
-function activeWorkflowTurnContext(): WorkflowTurnContext | undefined {
-  if (workflowDetached.value) return undefined
-  const active = workflowStore.activeWorkflow
-  if (!active) return undefined
-  const bound = cloudIdFor(active)
-  return bound === undefined ? undefined : { id: bound, tabPath: active.path }
+// Resolves the tab a turn is attributed to. `null` (the send had no origin
+// tab) resolves to nothing rather than falling back to the active tab, so
+// re-attaching during prepare() cannot pull a later tab into this turn.
+function originWorkflow(origin?: TurnOrigin): ComfyWorkflow | undefined {
+  if (origin === null) return undefined
+  return (
+    (origin === undefined
+      ? workflowStore.activeWorkflow
+      : workflowStore.openWorkflows.find(
+          (workflow) => workflow.path === origin.tabPath
+        )) ?? undefined
+  )
 }
 
-function activeWorkflowDraft(): DraftSnapshot | undefined {
+function activeWorkflowTurnContext(
+  origin?: TurnOrigin
+): WorkflowTurnContext | undefined {
   if (workflowDetached.value) return undefined
-  const active = workflowStore.activeWorkflow
+  const active = originWorkflow(origin)
   if (!active) return undefined
-  active.changeTracker?.captureCanvasState()
+  const id = cloudIdFor(active)
+  if (id === undefined && !active.isTemporary && origin !== undefined)
+    return undefined
+  return id === undefined
+    ? { tabPath: active.path }
+    : { id, tabPath: active.path }
+}
+
+function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
+  if (workflowDetached.value) return undefined
+  const active = originWorkflow(origin)
+  if (!active) return undefined
+  if (active.path === workflowStore.activeWorkflow?.path)
+    active.changeTracker?.prepareForSave()
   const content = active.activeState
   if (!content) return undefined
   return { content }
@@ -341,15 +402,17 @@ function onClearWorkflow(): void {
   workflowDetached.value = true
 }
 
-function openTabsSnapshot(): OpenTabsSnapshot | undefined {
+function openTabsSnapshot(origin?: TurnOrigin): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
     const workflowId = cloudIdFor(tab)
     return workflowId === undefined
       ? []
-      : [{ workflow_id: workflowId, name: tab.filename }]
+      : [{ workflow_id: workflowId, name: cloudWorkflowName(tab) }]
   })
   if (openTabs.length === 0) return undefined
-  const active = workflowStore.activeWorkflow
+  // A turn with no origin tab still reports the open tabs (they are context,
+  // not attribution) but must not name a current_tab.
+  const active = originWorkflow(origin)
   return {
     open_tabs: openTabs,
     current_tab:
@@ -361,7 +424,15 @@ function onWorkflowAdopted(
   workflowId: string,
   sent: WorkflowTurnContext | undefined
 ): void {
-  if (sent !== undefined && sent.id === workflowId) {
+  if (sent === undefined) return
+  // An unbound tab adopts a workflow only when it was minted for this turn:
+  // an id that already resolves to an open tab belongs to that tab.
+  const adoptable =
+    sent.id === undefined
+      ? bindingStore.tabPathFor(workflowId) === undefined &&
+        boundTabFor(workflowId) === null
+      : sent.id === workflowId
+  if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
   }
@@ -383,7 +454,9 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
-  bindWorkflow
+  bindWorkflow,
+  answerAsk,
+  answeringAskIds
 } = useAgentSession({
   rest,
   events,
@@ -444,7 +517,14 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
 function resumedTurnTabPath(): string | null {
   if (workflowDetached.value) return null
   const bound = boundWorkflowId.value
-  if (bound === null) return activeWorkflowTurnContext()?.tabPath ?? null
+  if (bound === null) {
+    // An id-less context means the turn has no workflow at all: attributing
+    // it to whatever tab happens to be active lights the editing spinner on
+    // that tab and markModifieds it on completion. Only a context carrying a
+    // real workflow id may be attributed.
+    const context = activeWorkflowTurnContext()
+    return context?.id !== undefined ? context.tabPath : null
+  }
   const boundPath = bindingStore.tabPathFor(bound)
   if (boundPath !== undefined) return boundPath
   const context = activeWorkflowTurnContext()
@@ -503,6 +583,13 @@ let activeTabChain: Promise<void> = Promise.resolve()
 function enqueueActiveTab(data: AgentActiveTabData): void {
   const generation = ++activeTabGeneration
   activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+}
+
+function onOpenApprovalWorkflow(
+  workflowId: string,
+  workflowName?: string
+): void {
+  enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {
@@ -999,6 +1086,7 @@ function onPanelDrop(event: DragEvent): void {
       ref="panelRef"
       :entries
       :editable-turn-id="editableTurnId"
+      :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
@@ -1014,6 +1102,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
+      :paywall-presentation="paywallPresentation"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -1025,6 +1114,9 @@ function onPanelDrop(event: DragEvent): void {
       @focus-tag="onFocusSelectionTag"
       @mention-pick="onMentionPick"
       @feedback="onFeedback"
+      @answer-ask="answerAsk"
+      @open-workflow="onOpenApprovalWorkflow"
+      @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

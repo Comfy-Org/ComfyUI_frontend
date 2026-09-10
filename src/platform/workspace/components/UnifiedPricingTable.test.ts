@@ -2,13 +2,38 @@ import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json'
-import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingSubscriptionStatus,
+  Plan
+} from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+
+function apiPlan(
+  tier: Plan['tier'],
+  duration: Plan['duration'],
+  credits: number
+): Plan {
+  return {
+    availability: { available: true },
+    credits_cents: credits,
+    duration,
+    max_seats: 5,
+    price_cents: 2000,
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 2000,
+      total_credits_cents: credits
+    },
+    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    tier
+  }
+}
 
 interface MockSubscription {
   tier: SubscriptionTier | null
@@ -29,20 +54,20 @@ const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockIsTeamPlan = ref(false)
 const mockCanManageSubscription = ref(true)
 const mockCanDowngradeToPersonal = ref(true)
-const mockCanReactivatePlan = ref(true)
-// the raw server capability, kept separate so a test can prove the component
-// follows the derived policy rather than this value
+const mockCanChangeSeats = ref(true)
 const mockRawCanReactivate = ref(true)
+const mockSnapshotAuthoritative = ref(true)
 const mockPermissions = ref({
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canDowngradeToPersonal: true
 })
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
-    plans: ref([]),
+    plans: computed(() => mockApiPlans.value),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
     fetchPlans: vi.fn(),
     isTeamPlan: computed(() => mockIsTeamPlan.value),
@@ -52,23 +77,29 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-    canReactivate: computed(() => mockRawCanReactivate.value),
-    canChangeSeats: computed(() => mockCanManageSubscription.value),
-    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+      canReactivate: computed(() => mockRawCanReactivate.value),
+      canChangeSeats: computed(() => mockCanChangeSeats.value),
+      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
+      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => mockPermissions.value),
-    canReactivatePlan: computed(() => mockCanReactivatePlan.value)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => mockPermissions.value)
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -96,10 +127,15 @@ function renderComponent(props: Record<string, unknown> = {}) {
   })
 }
 
+beforeEach(() => {
+  mockApiPlans.value = []
+})
+
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
-    mockCanReactivatePlan.value = true
+    mockCanChangeSeats.value = true
     mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -229,8 +265,9 @@ describe('UnifiedPricingTable team plan CTA', () => {
   }
 
   beforeEach(() => {
-    mockCanReactivatePlan.value = true
+    mockCanChangeSeats.value = true
     mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -318,14 +355,17 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
-  it('disables Resubscribe when the workspace may not reactivate', () => {
+  it('disables Resubscribe when the server permits no lifecycle write', () => {
     mockSubscription.value = {
       tier: 'TEAM',
       duration: 'ANNUAL',
       isCancelled: true
     }
     mockCurrentTeamCreditStop.value = TEAM_STOP
-    mockCanReactivatePlan.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -391,8 +431,9 @@ describe('UnifiedPricingTable outside Cloud', () => {
   }
 
   beforeEach(() => {
-    mockCanReactivatePlan.value = true
+    mockCanChangeSeats.value = true
     mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -533,6 +574,255 @@ describe('UnifiedPricingTable outside Cloud', () => {
       canManageSubscriptionLifecycle: true,
       canDowngradeToPersonal: false
     }
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.queryByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeNull()
+  })
+})
+
+const cycleToggleStub = {
+  props: ['options'],
+  emits: ['update:modelValue'],
+  template: `<div><button
+      v-for="option in options"
+      :key="option.value"
+      :data-testid="'cycle-' + option.value"
+      @click="$emit('update:modelValue', option.value)"
+    >{{ option.label }}</button></div>`
+}
+
+function renderWithCycleToggle(
+  props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
+) {
+  return render(UnifiedPricingTable, {
+    props,
+    global: {
+      plugins: [i18n],
+      components: { Button },
+      stubs: {
+        SelectButton: cycleToggleStub,
+        CreditSlider: { template: '<div />' }
+      }
+    }
+  })
+}
+
+describe('UnifiedPricingTable credit allotment copy', () => {
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('shows the catalog grant in preference to twelve static months', () => {
+    mockApiPlans.value = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
+
+    renderComponent()
+
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('50,400')).toBeNull()
+    expect(screen.getByText(/~5,429/)).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
+  })
+
+  it('states the whole-year allotment for personal tiers on the yearly cycle', () => {
+    renderWithCycleToggle()
+
+    expect(screen.getAllByText('credits per year')).toHaveLength(3)
+    expect(screen.queryAllByText('monthly credits')).toHaveLength(0)
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('253,200')).toBeTruthy()
+    expect(screen.queryByText('4,200')).toBeNull()
+    expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
+  })
+
+  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getAllByText('monthly credits')).toHaveLength(3)
+    expect(screen.queryAllByText('credits per year')).toHaveLength(0)
+    expect(screen.getByText('4,200')).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getByText('Generates ~380 5s videos*')).toBeTruthy()
+  })
+
+  it('scales the team allotment with the billing cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('credits per year')).toBeTruthy()
+    expect(screen.getByText('1,772,400')).toBeTruthy()
+    expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getByText('monthly credits')).toBeTruthy()
+    expect(screen.getByText('147,700')).toBeTruthy()
+    expect(screen.getByText('Generates ~13,405 5s videos*')).toBeTruthy()
+  })
+})
+
+// INC-128. The server answers per workspace, not per plan card, so the table
+// must not decide which capability governs a card: a legacy-rail customer holds
+// a paid tier with no local subscription row, which reads as "change" here while
+// the server is in fact permitting a subscribe.
+describe('UnifiedPricingTable capability gating', () => {
+  beforeEach(() => {
+    mockCanChangeSeats.value = true
+    mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('keeps a paid plan actionable when only change-seats is withheld', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = { tier: 'PRO', duration: 'ANNUAL' }
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    const { emitted } = renderComponent()
+
+    const cta = screen.getByRole('button', { name: 'Change to Creator Yearly' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribe).toBeTruthy()
+  })
+
+  it('keeps the CTA live while the capability snapshot is unresolved', () => {
+    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
+    mockSnapshotAuthoritative.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('keeps the team CTA live while the capability snapshot is unresolved', () => {
+    mockSnapshotAuthoritative.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeEnabled()
+  })
+
+  // can_downgrade_to_personal governs leaving a team plan for a personal one, so
+  // it must not stand in for permission to buy the team plan.
+  it('does not let the downgrade capability alone enable the team CTA', () => {
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = true
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeDisabled()
+  })
+
+  it('blocks the CTA when a resolved snapshot permits no lifecycle write', () => {
+    mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    mockCanDowngradeToPersonal.value = false
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeDisabled()
+  })
+})
+
+describe('UnifiedPricingTable plan-scope availability', () => {
+  beforeEach(() => {
+    mockCanChangeSeats.value = true
+    mockRawCanReactivate.value = true
+    mockSnapshotAuthoritative.value = true
+    mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_700',
+      credits_monthly: 147_700,
+      stop_usd: 700
+    }
+    mockIsTeamPlan.value = true
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('keeps personal plans reachable on a team plan while the snapshot is unresolved', () => {
+    mockSnapshotAuthoritative.value = false
+    mockCanDowngradeToPersonal.value = false
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.getByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('keeps personal cards actionable when only the downgrade is permitted', () => {
+    mockCanManageSubscription.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.getByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('withholds personal plans when a resolved snapshot denies the downgrade', () => {
+    mockCanDowngradeToPersonal.value = false
 
     renderComponent({ initialPlanMode: 'personal' })
 

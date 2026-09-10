@@ -1,8 +1,8 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -11,16 +11,16 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
 // Mock downloadFile to avoid DOM errors
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 
-vi.mock('@/services/hdrViewerService', () => ({
+vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
 }))
 
 const mockTrackImageLoadFailed = vi.fn()
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackImageLoadFailed: mockTrackImageLoadFailed
   })
@@ -68,12 +68,7 @@ describe('ImagePreview', () => {
     return render(ImagePreview, {
       props: { ...defaultProps, ...props },
       global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,

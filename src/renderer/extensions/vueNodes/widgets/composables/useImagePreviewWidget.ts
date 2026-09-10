@@ -82,8 +82,6 @@ const renderPreview = (
   imgs: HTMLImageElement[],
   width: number
 ) => {
-  if (!node.size) return
-
   if (node.isUploading) {
     renderUploadSpinner(ctx, node, shiftY, computedHeight)
     return
@@ -246,7 +244,7 @@ const renderPreview = (
     return
   }
   // Draw individual
-  const img = imgs[imageIndex]
+  const img = imgs.at(imageIndex)
   if (!img) return
   let w = img.naturalWidth
   let h = img.naturalHeight

@@ -160,10 +160,15 @@ async function runPairsInIsolatedPages(
       await trackVisibleErrors(probe)
       await probe.goto(page.url())
       await probe.waitForFunction(
-        ([producerType, consumerType]) =>
-          window.app?.extensionManager !== undefined &&
-          window.LiteGraph?.registered_node_types[producerType] !== undefined &&
-          window.LiteGraph.registered_node_types[consumerType] !== undefined,
+        ([producerType, consumerType]) => {
+          const liteGraph = window.LiteGraph
+          return (
+            window.app?.extensionManager !== undefined &&
+            liteGraph !== undefined &&
+            producerType in liteGraph.registered_node_types &&
+            consumerType in liteGraph.registered_node_types
+          )
+        },
         [pair.producer.nodeType, pair.consumer.nodeType],
         { timeout: 60_000 }
       )
@@ -708,7 +713,7 @@ function evaluatePairsInPage(
         const serialized = graph.serialize()
         graph.configure(serialized)
         const restored = graph.getNodeById(consumer.id)
-        if (restored?.inputs?.[inIndex]?.link == null) {
+        if (restored?.inputs[inIndex]?.link == null) {
           report.push({
             key,
             outcome: 'ROUNDTRIP_LOST',
@@ -967,7 +972,7 @@ test('connectivity drags: one materialized in-pack link per applicable pack conn
                 const node = window.app!.graph.nodes.find(
                   (candidate) => String(candidate.id) === consumerId
                 )
-                return node?.inputs?.[Number(index)]?.link != null
+                return node?.inputs[Number(index)]?.link != null
               },
               [String(consumer.id), String(inIndex)] as const
             ),
