@@ -2496,6 +2496,50 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
+  it('tracks a failed ask answer, which leaves the running turn blocked', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('ask boom', 500, null))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetryState.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'ask_answer_failed',
+      failure_stage: 'post_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 409 stale ask answer as an error', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetryState.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'cancel')
+
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
+  })
+
   it('derives history-load retryability from the status, as request_failed does', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async () => {

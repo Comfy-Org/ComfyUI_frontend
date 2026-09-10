@@ -619,6 +619,9 @@ export type AgentErrorClass =
   | 'malformed_stream_event'
   | 'cancel_failed'
   | 'history_load_failed'
+  | 'ask_answer_failed'
+  | 'thread_list_load_failed'
+  | 'workflow_open_failed'
 export interface AgentErrorMetadata extends Record<string, unknown> {
   error_class: AgentErrorClass
   failure_stage: 'pre_acceptance' | 'post_acceptance'

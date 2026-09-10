@@ -1649,6 +1649,36 @@ describe('AgentPanelRoot history', () => {
     await nextTick()
   }
 
+  it('tracks a thread-list load the user is shown an overlay for', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/agent/threads')
+          ? new Response('{"error":"boom"}', {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' }
+            })
+          : new Response('[]', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
+      )
+    )
+    telemetry.trackAgentError.mockClear()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+        error_class: 'thread_list_load_failed',
+        failure_stage: 'pre_acceptance',
+        retryable: true,
+        turn_accepted: false,
+        ui_treatment: 'error_overlay'
+      })
+    )
+  })
+
   it('renames the current chat from the title menu on Enter', async () => {
     await renderWithActiveThread()
 
@@ -2706,6 +2736,27 @@ describe('AgentPanelRoot workflow binding', () => {
     ws.emit('agent_active_tab', { workflow_id: 'wf-a', thread_id: 'th-1' })
     await vi.waitFor(() =>
       expect(activity.editingTabPath).toBe('workflows/Unsaved Workflow.json')
+    )
+  })
+
+  it('tracks a tab activation the agent asked for but the FE could not open', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    workflowService.openWorkflow.mockRejectedValueOnce(new Error('open boom'))
+
+    await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith({
+        error_class: 'workflow_open_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'error_overlay'
+      })
     )
   })
 
