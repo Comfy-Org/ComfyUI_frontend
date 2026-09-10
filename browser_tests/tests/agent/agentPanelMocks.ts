@@ -1,4 +1,6 @@
 import type { Page, Route } from '@playwright/test'
+import { mint } from '@comfyorg/comfy-multi-player'
+import * as Y from 'yjs'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
@@ -8,6 +10,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { encodeBase64 } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -15,7 +18,74 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+
+export type AgentWireFrame =
+  | ReturnType<typeof agentWorkflowUpdates>['initial']
+  | ReturnType<typeof agentDocSubscribed>
+  | typeof SOCKET_READY_EVENT
+
+export const SOCKET_READY_EVENT = {
+  type: 'status',
+  data: { status: { exec_info: { queue_remaining: 0 } } }
+} as const
+
+export function agentDocSubscribed() {
+  return {
+    type: 'doc_subscribed' as const,
+    data: { v: 1 as const, workflow_id: WORKFLOW_ID, ok: true, seq: 1 }
+  }
+}
+
+export function agentWorkflowUpdates() {
+  const doc = mint(
+    {
+      nodes: [
+        {
+          id: 41,
+          type: 'AgentE2ENode',
+          title: 'Agent-created node',
+          pos: [160, 120],
+          size: [220, 100],
+          inputs: [],
+          outputs: []
+        }
+      ],
+      links: []
+    },
+    { types: {} }
+  )
+  const initialUpdate = Y.encodeStateAsUpdate(doc)
+  const initialStateVector = Y.encodeStateVector(doc)
+  doc.getMap('_e2e').set('reconnected', true)
+  const reconnectDelta = Y.encodeStateAsUpdate(doc, initialStateVector)
+  doc.destroy()
+  return {
+    initial: {
+      type: 'doc_update' as const,
+      data: {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        update_b64: encodeBase64(initialUpdate),
+        actor: 'agent:e2e:tab-a',
+        op_ids: ['agent-e2e-add-node']
+      }
+    },
+    initialStateVector: encodeBase64(initialStateVector),
+    reconnectDelta: {
+      type: 'doc_update' as const,
+      data: {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 2,
+        update_b64: encodeBase64(reconnectDelta),
+        actor: 'agent:e2e:tab-a',
+        op_ids: ['agent-e2e-reconnect-delta']
+      }
+    }
+  }
+}
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
@@ -169,9 +239,38 @@ async function mockAgentBoot(
       })
     )
   )
-  await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
+  await page.route('**/api/userdata**', (route) =>
+    route.fulfill(
+      jsonRoute(
+        route.request().method() === 'POST'
+          ? {
+              path: 'workflows/default.json',
+              size: 1024,
+              modified: Date.now()
+            }
+          : []
+      )
+    )
+  )
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  await page.route('**/api/object_info', (r) =>
+    r.fulfill(
+      jsonRoute({
+        AgentE2ENode: {
+          input: { required: {} },
+          output: [],
+          output_is_list: [],
+          output_name: [],
+          name: 'AgentE2ENode',
+          display_name: 'Agent E2E Node',
+          description: '',
+          category: 'testing',
+          output_node: false,
+          python_module: 'tests'
+        }
+      })
+    )
+  )
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/auth/session', (r) =>
@@ -200,6 +299,19 @@ async function mockAgentBoot(
             role: 'owner'
           }
         ]
+      })
+    )
+  )
+  await page.route('**/api/workflows?limit=100', (r) =>
+    r.fulfill(
+      jsonRoute({
+        data: [{ id: WORKFLOW_ID, name: 'default' }],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 1,
+          has_more: false
+        }
       })
     )
   )
