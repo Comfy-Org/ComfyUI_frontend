@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -78,8 +78,7 @@ const Harness = defineComponent({
 })
 
 function mountHarness() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
   const utils = render(Harness, { global: { plugins: [pinia, i18n] } })
   return { store: useAgentConversationStore(), ...utils }
 }
@@ -87,7 +86,6 @@ function mountHarness() {
 describe('ConversationView', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn()
-    setActivePinia(createPinia())
     intersectionCallbacks.length = 0
   })
 

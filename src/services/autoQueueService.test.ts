@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -47,12 +45,6 @@ function setupAndGetAutoQueueGraphChangedListener() {
 
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn,
-        stubActions: false
-      })
-    )
     const queueSettingsStore = useQueueSettingsStore()
     queueSettingsStore.mode = 'change'
     queueSettingsStore.batchCount = 2
