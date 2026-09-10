@@ -105,6 +105,21 @@ test.describe('Network isolation', { tag: '@smoke' }, () => {
     )
   })
 
+  test('mocks ajax.googleapis.com model-viewer on context', async ({
+    context
+  }) => {
+    const url =
+      'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js'
+    const isolated = await context.newPage()
+    expect(
+      await isolated.evaluate(
+        (target) => fetch(target).then((response) => response.text()),
+        url
+      )
+    ).toBe('')
+    await isolated.close()
+  })
+
   test('fails the owning test for an unmocked popup', async ({
     page,
     context
