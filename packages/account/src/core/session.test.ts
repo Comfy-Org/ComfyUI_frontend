@@ -702,6 +702,38 @@ describe('stale storage', () => {
     ).toBe('new-jwt')
     expect(JSON.parse(storage.read() ?? '{}').token).toBe('new-jwt')
   })
+
+  it('serves the live credential over a longer-lived stored record', async () => {
+    const storage = memoryStorage()
+    // The live mint is short-lived; the stored record (a rejected token whose
+    // write never cleared) outlives it. Expiry is not validity — live wins.
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonResponse(
+        200,
+        mintBody({
+          token: 'live-jwt',
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+        })
+      )
+    )
+    const { client } = makeClient({ fetchImpl, storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(client.getToken()).toBe('live-jwt'))
+
+    seedCache(storage, {
+      token: 'stale-jwt',
+      expiresAt: Date.now() + 90 * 60 * 1000
+    })
+    await client.ensureFresh()
+
+    expect(
+      client.getToken(),
+      'a longer-lived stored record must not override the authoritative live credential'
+    ).toBe('live-jwt')
+    expect(JSON.parse(storage.read() ?? '{}').token).toBe('live-jwt')
+  })
 })
 
 describe('exchange response contract', () => {
