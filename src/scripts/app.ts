@@ -1,6 +1,6 @@
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
-import { reactive, unref, shallowRef } from 'vue'
+import { reactive, shallowRef, unref, watch } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -78,6 +78,7 @@ import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -882,6 +883,19 @@ export class ComfyApp {
    * Handles updates from the API socket
    */
   private addApiUpdateHandlers() {
+    const syncApiNodeCredential = async () => {
+      const authStore = useAuthStore()
+      if (!authStore.currentUser) {
+        await api.syncApiNodeCredential(null)
+        return
+      }
+
+      const token = await authStore.getWorkspaceAuthToken()
+      // Preserve the last live credential during a transient refresh failure.
+      // A confirmed logout/account change clears it through the null path.
+      if (token) await api.syncApiNodeCredential(token)
+    }
+
     api.addEventListener('status', ({ detail }) => {
       this.ui.setStatus(detail)
     })
@@ -950,7 +964,21 @@ export class ComfyApp {
 
     api.addEventListener('feature_flags', () => {
       void useNodeReplacementStore().load()
+      void syncApiNodeCredential()
     })
+
+    const authStore = useAuthStore()
+    const workspaceAuthStore = useWorkspaceAuthStore()
+    watch(
+      [
+        () => authStore.tokenRefreshTrigger,
+        () => authStore.currentUser?.uid,
+        () => workspaceAuthStore.workspaceToken,
+        () => workspaceAuthStore.unifiedToken
+      ],
+      () => void syncApiNodeCredential(),
+      { flush: 'post' }
+    )
 
     void api.init()
   }
@@ -1772,7 +1800,8 @@ export class ComfyApp {
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
     const workspaceGenerationBeforeAuthentication =
       teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const initialComfyOrgAuthToken =
+      await useAuthStore().getWorkspaceAuthToken()
     const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     const executionWorkspaceGeneration =
       teamWorkspaceStore.workspaceTransitionGeneration
@@ -1781,19 +1810,18 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
     // An API-key session mints no workspace JWT: the key itself is the
     // execution credential and the server resolves its bound workspace. Only a
     // key-authenticated session may pass without a token — a Firebase session
     // whose token mint failed must still fail closed rather than fall back to
     // a stored key and charge the key's workspace.
+    const isFirebaseSessionExecution = !!useAuthStore().currentUser
     const isApiKeySessionExecution =
-      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
-    if (
-      executionWorkspaceId &&
-      !comfyOrgAuthToken &&
-      !isApiKeySessionExecution
-    ) {
+      !isFirebaseSessionExecution && useApiKeyAuthStore().isAuthenticated
+    const requiresExecutionToken =
+      isFirebaseSessionExecution ||
+      (!!executionWorkspaceId && !isApiKeySessionExecution)
+    if (requiresExecutionToken && !initialComfyOrgAuthToken) {
       useDialogService().showErrorDialog(
         new Error(t('toastMessages.userNotAuthenticated')),
         {
@@ -1894,15 +1922,57 @@ export class ComfyApp {
             break
           }
           try {
+            // Resolve the execution credential immediately before every
+            // submission. A batch can outlive the token selected when Queue was
+            // first clicked, so reusing that snapshot pins later prompts to a
+            // stale credential.
+            const comfyOrgAuthToken =
+              await useAuthStore().getWorkspaceAuthToken()
+            const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+            if (requiresExecutionToken && !comfyOrgAuthToken) {
+              useDialogService().showErrorDialog(
+                new Error(t('toastMessages.userNotAuthenticated')),
+                {
+                  title: t('errorDialog.promptExecutionError'),
+                  reportType: 'promptExecutionError'
+                }
+              )
+              queueResultOverride = false
+              break
+            }
+            if (
+              executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
+              executionWorkspaceGeneration !==
+                teamWorkspaceStore.workspaceTransitionGeneration
+            ) {
+              useDialogService().showErrorDialog(
+                new Error(t('errorDialog.workspaceChangedDuringExecution')),
+                {
+                  title: t('errorDialog.promptExecutionError'),
+                  reportType: 'promptExecutionError'
+                }
+              )
+              queueResultOverride = false
+              break
+            }
+
+            if (comfyOrgAuthToken) {
+              await api.syncApiNodeCredential(comfyOrgAuthToken)
+            }
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
-            const res = await api.queuePrompt(number, p, {
-              partialExecutionTargets: queueNodeIds,
-              previewMethod
-            })
+            const res = await (async () => {
+              try {
+                return await api.queuePrompt(number, p, {
+                  partialExecutionTargets: queueNodeIds,
+                  previewMethod
+                })
+              } finally {
+                delete api.authToken
+                delete api.apiKey
+              }
+            })()
             const responseReceivedAt = performance.now()
-            delete api.authToken
-            delete api.apiKey
             if (!res.prompt_id) {
               telemetry?.trackExecutionOutcome({
                 startTime,
