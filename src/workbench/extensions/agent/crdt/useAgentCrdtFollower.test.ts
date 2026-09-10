@@ -612,6 +612,23 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a doc_reset on the bound workflow refreshes the offline baseline', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(5_000)
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 7 })
+    vi.advanceTimersByTime(2_000)
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ offline_duration_ms: 2_000 })
+    )
+    unmount()
+  })
+
   it('clears only for an explicit reset and rebinds after replacement', () => {
     const { unmount, status } = mountFollower('wf-1')
     expect(adapterState.bind).toHaveBeenCalledTimes(1)

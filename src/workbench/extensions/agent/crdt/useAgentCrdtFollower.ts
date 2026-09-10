@@ -525,6 +525,7 @@ export function useAgentCrdtFollower(
       detail?.workflowId !== subscribedWorkflowId.value
     )
       return
+    markActivity()
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail.actor ?? 'agent-reset',
