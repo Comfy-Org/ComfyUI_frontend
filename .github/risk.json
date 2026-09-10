@@ -269,12 +269,8 @@
     {
       "class": "website",
       "tier": "R2",
-      "why": "Deployable marketing-site views and styles are production, but test, story, content, locale, and documentation files remain eligible for their R0 classes. Money-moving pricing data and purchase surfaces are classified separately as R3 billing paths.",
-      "paths": [
-        "apps/website/**/*.astro",
-        "apps/website/**/*.vue",
-        "apps/website/**/*.css"
-      ]
+      "why": "the marketing site is production and had no rule at all — but it is copy and layout, so it cannot corrupt a saved workflow or move money. Deliberately unscoped: the grader has no negation, so an R0 rule can never cancel an R2 one and \"everything deployable except tests\" is not expressible. An extension allow-list (.astro/.vue/.css) was tried and dropped 797 of 1278 files to the R0 default, including vercel.json, astro.config.ts, every route handler under src/pages and ~60 composables. Website tests, stories and mdx therefore ride along at R2; over-grading copy is cheaper than ungrading the Vercel redirect table.",
+      "paths": ["apps/website/**"]
     },
     {
       "class": "docs",

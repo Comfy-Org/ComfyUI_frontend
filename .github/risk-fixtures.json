@@ -87,19 +87,29 @@
       "classes": ["website"]
     },
     {
+      "path": "apps/website/vercel.json",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
+      "path": "apps/website/src/composables/useDownloadUrl.ts",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
       "path": "apps/website/src/config/pricing.test.ts",
-      "tier": "R0",
-      "classes": ["tests"]
+      "tier": "R2",
+      "classes": ["tests", "website"]
     },
     {
       "path": "apps/website/src/templates/drops/AnnouncementBanner.stories.ts",
-      "tier": "R0",
-      "classes": ["storybook"]
+      "tier": "R2",
+      "classes": ["storybook", "website"]
     },
     {
       "path": "apps/website/src/content/pricing.mdx",
-      "tier": "R0",
-      "classes": ["docs"]
+      "tier": "R2",
+      "classes": ["docs", "website"]
     },
     {
       "path": "browser_tests/tests/priceBadge.spec.ts",
