@@ -45,7 +45,8 @@ vi.mock<unknown>(import('./workshop-account'), () => ({
       settled: false
     }),
     getToken: vi.fn()
-  }
+  },
+  subscribeAuthRefreshTelemetry: () => () => undefined
 }))
 
 describe('useWorkshopSession initialization failure', () => {
