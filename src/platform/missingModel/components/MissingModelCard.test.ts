@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -124,12 +124,7 @@ function mountCard(
   onLocateModel?: (nodeId: string) => void,
   initialGatedRepoUrls: Record<string, string> = {}
 ) {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    initialState: {
-      missingModel: { gatedRepoUrls: initialGatedRepoUrls }
-    }
-  })
+  useMissingModelStore().gatedRepoUrls = initialGatedRepoUrls
   return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
@@ -137,7 +132,7 @@ function mountCard(
       ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [pinia, PrimeVue, i18n]
+      plugins: [getActivePinia()!, PrimeVue, i18n]
     }
   })
 }

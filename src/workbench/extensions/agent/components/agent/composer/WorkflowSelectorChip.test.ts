@@ -1,6 +1,6 @@
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -42,8 +42,7 @@ let pinia: Pinia
 
 beforeEach(() => {
   vi.useRealTimers()
-  pinia = createPinia()
-  setActivePinia(pinia)
+  pinia = getActivePinia()!
 })
 
 function renderChip(

@@ -1,7 +1,14 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, reactive } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
+
+vi.mock(import('firebase/auth'))
 
 // Mock i18n module
 vi.mock<unknown>(import('@/i18n'), () => ({
@@ -9,73 +16,33 @@ vi.mock<unknown>(import('@/i18n'), () => ({
     key === 'g.nodesRunning' ? 'nodes running' : fallback
 }))
 
-// Mock the execution store
-const executionStore = reactive<{
-  isIdle: boolean
-  executionProgress: number
-  executingNode: null | {
-    title?: string
-    type?: string
-  }
-  executingNodeProgress: number
-  nodeProgressStates: Record<string, unknown>
-}>({
-  isIdle: true,
-  executionProgress: 0,
-  executingNode: null,
-  executingNodeProgress: 0,
-  nodeProgressStates: {}
-})
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: () => executionStore
-}))
+let executionStore: ReturnType<typeof useExecutionStore>
 
-// Mock the setting store
-const settingStore = reactive({
-  get: vi.fn((_key: string) => 'Enabled')
-})
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => settingStore
-}))
+let settingStore: ReturnType<typeof useSettingStore>
 
-// Mock the workflow store
-const workflowStore = reactive<{
-  activeWorkflow: {
-    filename: string
-    isModified: boolean
-    isPersisted: boolean
-  } | null
-}>({
-  activeWorkflow: null
-})
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => workflowStore
-  })
-)
+let workflowStore: ReturnType<typeof useWorkflowStore>
 
-// Mock the workspace store
-const workspaceStore = reactive({
-  shiftDown: false
-})
-vi.mock<unknown>(import('@/stores/workspaceStore'), () => ({
-  useWorkspaceStore: () => workspaceStore
-}))
+let workspaceStore: ReturnType<typeof useWorkspaceStore>
 
 describe('useBrowserTabTitle', () => {
   beforeEach(() => {
+    executionStore = useExecutionStore()
+    settingStore = useSettingStore()
+    workflowStore = useWorkflowStore()
+    workspaceStore = useWorkspaceStore()
     // reset execution store
-    executionStore.isIdle = true
-    executionStore.executionProgress = 0
-    executionStore.executingNode = null
-    executionStore.executingNodeProgress = 0
+    Object.assign(executionStore, {
+      isIdle: true,
+      executionProgress: 0,
+      executingNode: null,
+      executingNodeProgress: 0
+    })
     executionStore.nodeProgressStates = {}
 
     // reset setting and workflow stores
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
     workflowStore.activeWorkflow = null
-    workspaceStore.shiftDown = false
+    Object.assign(workspaceStore, { shiftDown: false })
 
     // reset document title
     document.title = ''
@@ -90,11 +57,13 @@ describe('useBrowserTabTitle', () => {
 
   it('sets workflow name as title when workflow exists and menu enabled', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
-    workflowStore.activeWorkflow = {
+    workflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof workflowStore.activeWorkflow>
+    >({
       filename: 'myFlow',
       isModified: false,
       isPersisted: true
-    }
+    })
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
@@ -104,11 +73,13 @@ describe('useBrowserTabTitle', () => {
 
   it('adds asterisk for unsaved workflow', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
-    workflowStore.activeWorkflow = {
+    workflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof workflowStore.activeWorkflow>
+    >({
       filename: 'myFlow',
       isModified: true,
       isPersisted: true
-    }
+    })
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
@@ -122,11 +93,13 @@ describe('useBrowserTabTitle', () => {
       if (key === 'Comfy.UseNewMenu') return 'Enabled'
       return 'Enabled'
     })
-    workflowStore.activeWorkflow = {
+    workflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof workflowStore.activeWorkflow>
+    >({
       filename: 'myFlow',
       isModified: true,
       isPersisted: true
-    }
+    })
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
@@ -140,12 +113,14 @@ describe('useBrowserTabTitle', () => {
       if (key === 'Comfy.UseNewMenu') return 'Enabled'
       return 'Enabled'
     })
-    workspaceStore.shiftDown = true
-    workflowStore.activeWorkflow = {
+    Object.assign(workspaceStore, { shiftDown: true })
+    workflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof workflowStore.activeWorkflow>
+    >({
       filename: 'myFlow',
       isModified: true,
       isPersisted: true
-    }
+    })
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
@@ -155,11 +130,13 @@ describe('useBrowserTabTitle', () => {
 
   it('disables workflow title when menu disabled', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Disabled')
-    workflowStore.activeWorkflow = {
+    workflowStore.activeWorkflow = fromPartial<
+      NonNullable<typeof workflowStore.activeWorkflow>
+    >({
       filename: 'myFlow',
       isModified: false,
       isPersisted: true
-    }
+    })
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
@@ -168,8 +145,8 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('shows execution progress when not idle without workflow', async () => {
-    executionStore.isIdle = false
-    executionStore.executionProgress = 0.3
+    Object.assign(executionStore, { isIdle: false })
+    Object.assign(executionStore, { executionProgress: 0.3 })
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
@@ -178,13 +155,21 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('shows node execution title when executing a node using nodeProgressStates', async () => {
-    executionStore.isIdle = false
-    executionStore.executionProgress = 0.4
-    executionStore.executingNode = {
-      type: 'Foo'
-    }
+    Object.assign(executionStore, { isIdle: false })
+    Object.assign(executionStore, { executionProgress: 0.4 })
+    Object.assign(executionStore, {
+      executingNode: {
+        type: 'Foo'
+      }
+    })
     executionStore.nodeProgressStates = {
-      '1': { state: 'running', value: 5, max: 10, node: '1', prompt_id: 'test' }
+      '1': {
+        state: 'running',
+        value: 5,
+        max: 10,
+        node_id: '1',
+        prompt_id: 'test'
+      }
     }
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
@@ -194,17 +179,23 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('shows multiple nodes running when multiple nodes are executing', async () => {
-    executionStore.isIdle = false
-    executionStore.executionProgress = 0.4
+    Object.assign(executionStore, { isIdle: false })
+    Object.assign(executionStore, { executionProgress: 0.4 })
     executionStore.nodeProgressStates = {
       '1': {
         state: 'running',
         value: 5,
         max: 10,
-        node: '1',
+        node_id: '1',
         prompt_id: 'test'
       },
-      '2': { state: 'running', value: 8, max: 10, node: '2', prompt_id: 'test' }
+      '2': {
+        state: 'running',
+        value: 8,
+        max: 10,
+        node_id: '2',
+        prompt_id: 'test'
+      }
     }
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())

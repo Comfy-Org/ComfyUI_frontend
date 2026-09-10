@@ -121,6 +121,31 @@ const structuredData = shouldNoindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+
+    <!-- Preload the PP Formula faces used on first paint (body copy, headings,
+         and the narrow display face) so they're ready before CSS requests
+         them, avoiding a visible swap from the fallback font mid-load. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Regular.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Bold.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-NarrowSemibold.woff2"
+      crossorigin
+    />
     {
       !shouldNoindex && (
         <link

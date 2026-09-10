@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -13,7 +12,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
     vi.stubGlobal('devicePixelRatio', 2)
   })
 
