@@ -63,7 +63,6 @@ const zGraphOperation = z
     (op) => OP_ENVELOPE_KEYS.every((key) => !(key in op)),
     'a recorded op carries the semantic operation only; the wire envelope is minted at replay'
   )
-export type RecordedGraphOperation = z.infer<typeof zGraphOperation>
 
 // WorkflowJSON and WorkflowNode declare an index signature, so the schema
 // validates the guaranteed fields and keeps the rest.

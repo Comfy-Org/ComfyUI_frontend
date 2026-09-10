@@ -2,7 +2,8 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import { i18n } from '@/i18n'
+import { createI18n } from 'vue-i18n'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import type {
@@ -40,11 +41,18 @@ const CANCEL_TIMEOUT = 10_000
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved.
-const COMPOSER_LABEL = i18n.global.t('agent.placeholder')
+// The composer names itself with the rendered message, escapes resolved; the
+// app's own i18n module is a Vite build, so the fixture renders the message
+// with the same library over the same locale file.
+const COMPOSER_LABEL = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+}).global.t('agent.placeholder')
 const GROUP_LABEL = /^Ran (\d+) tool calls?/
 const FAILED_GLYPH = /lucide--circle-x/
-// Painted pixels may be antialiased against the grid; the marker centre is solid.
+// How far a sampled channel may sit from the link colour: the stroke is
+// antialiased against the grid, and the midpoint marker is solid.
 const COLOR_TOLERANCE = 48
 
 interface RecordedLink {
@@ -340,9 +348,10 @@ class AgentConversationHarness {
     return links.sort(byLinkKey)
   }
 
-  // Samples the background canvas at each link's painted midpoint for the
-  // colour the renderer gives that link. A link whose endpoints the map holds
-  // but whose wire nobody painted is returned.
+  // Samples the background canvas around each link's painted midpoint for the
+  // colour the renderer paints that link's type in. A link whose endpoints the
+  // map holds but whose midpoint carries no such pixel is returned; this is a
+  // colour-proximity sample, not a trace of the whole wire.
   private unpaintedLinks(): Promise<string[]> {
     return this.page.evaluate((tolerance: number) => {
       const app = window.app!
@@ -366,10 +375,10 @@ class AgentConversationHarness {
         return [0, 2, 4].map((at) => parseInt(wide.slice(at, at + 2), 16))
       }
       return [...app.graph.links.values()].flatMap((link) => {
+        // The palette seeds every data type with '' before it colours the
+        // ones it names, and the painter treats that as the default colour.
         const expected = channels(
-          (typeof link.color === 'string' ? link.color : undefined) ??
-            colors[String(link.type)] ??
-            canvas.default_link_color
+          colors[String(link.type)] || canvas.default_link_color
         )
         const [x, y] = canvas.ds.convertOffsetToCanvas(link._pos)
         const { data } = context.getImageData(
@@ -401,16 +410,13 @@ class AgentConversationHarness {
     before: PanelCounts
   ): Promise<void> {
     const expected = this.expectations[turn]
-    if (expected.text === '')
-      await expect(this.streams).toHaveCount(before.streams)
-    else
-      await expect
-        .poll(async () =>
-          collapse(
-            (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
-          )
+    await expect
+      .poll(async () =>
+        collapse(
+          (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
         )
-        .toBe(expected.text)
+      )
+      .toBe(expected.text)
 
     await expect(this.groups).toHaveCount(
       before.groups + expected.groups.length
