@@ -1,4 +1,4 @@
-import { onScopeDispose, toValue } from 'vue'
+import { nextTick, onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import {
@@ -6,27 +6,93 @@ import {
   isMiddleButtonHeld,
   isMiddlePointerInput
 } from '@/base/pointerUtils'
-import { useClickDragGuard } from '@/composables/useClickDragGuard'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type {
+  GestureEffect,
+  GestureEvent,
+  GestureState
+} from '@/lib/litegraph/src/canvas/reduceGesture'
+import {
+  idleGesture,
+  reduceGesture
+} from '@/lib/litegraph/src/canvas/reduceGesture'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+
+function canDrag(press: Press) {
+  return !press.selectOnly && !press.pinned
+}
+
+interface Press {
+  nodeId: NodeId
+  event: PointerEvent
+  selectOnly: boolean
+  pinned: boolean
+}
 
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {
+  const canvasStore = useCanvasStore()
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
-  // Use canvas interactions for proper wheel event handling and pointer event capture control
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
-  const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
-    useNodeEventHandlers()
+  const { bringNodeToFront } = useNodeZIndex()
   const agentNodeSelectionStore = useAgentNodeSelectionStore()
-  const isPinned = () => !!toValue(nodeStateRef).flags.pinned
+
+  let gesture: GestureState = idleGesture
+  let press: Press | null = null
+
+  const gesturePolicy = () => ({
+    clickDrift: CanvasPointer.maxClickDrift,
+    doubleClickTime: CanvasPointer.doubleClickTime
+  })
+
+  function dispatch(gestureEvent: GestureEvent, event: PointerEvent) {
+    const result = reduceGesture(gesture, gestureEvent, gesturePolicy())
+    gesture = result.state
+    for (const effect of result.effects) runEffect(effect, event)
+    if (gesture.phase === 'idle') press = null
+  }
+
+  function runEffect(effect: GestureEffect, event: PointerEvent) {
+    if (!press) return
+    const { canvas } = canvasStore
+    const node = canvasStore.currentGraph?.getNodeById(press.nodeId)
+    switch (effect) {
+      case 'click':
+      case 'doubleClick':
+        if (node) canvas?.processSelect(node, event)
+        return
+      case 'startDrag':
+        if (press.selectOnly) return
+        if (node) canvas?.processSelect(node, event, true)
+        if (press.pinned) return
+        layoutStore.isDraggingVueNodes.value = true
+        startDrag(press.event, press.nodeId)
+        return
+      case 'movePress':
+        return
+      case 'moveDrag':
+        if (canDrag(press)) handleDrag(event, press.nodeId)
+        return
+      case 'endDrag':
+        if (canDrag(press)) endDrag(event, press.nodeId)
+        layoutStore.isDraggingVueNodes.value = false
+        return
+      case 'cancelDrag':
+        layoutStore.isDraggingVueNodes.value = false
+        return
+    }
+  }
 
   const forwardMiddlePointerIfNeeded = (
     event: PointerEvent,
@@ -37,145 +103,80 @@ export function useNodePointerInteractions(
     return true
   }
 
-  let hasDraggingStarted = false
-
-  const dragGuard = useClickDragGuard(3)
+  function pressedNodeId(event: PointerEvent): NodeId {
+    const nodeId = toValue(nodeStateRef).id
+    if (!event.altKey) return nodeId
+    const node = canvasStore.currentGraph?.getNodeById(nodeId)
+    const clone = node && LGraphCanvas.cloneNodes([node])?.created[0]
+    if (!isLGraphNode(clone)) return nodeId
+    void nextTick(() => bringNodeToFront(clone.id))
+    return clone.id
+  }
 
   function onPointerdown(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
 
-    // Only start drag on left-click (button 0)
-    if (event.button !== 0) return
-
-    // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     if (!shouldHandleNodePointerEvents.value) {
       forwardEventToCanvas(event)
       return
     }
 
-    if (isPinned()) return
+    const selectOnly = agentNodeSelectionStore.isActive
+    const nodeId = selectOnly ? toValue(nodeStateRef).id : pressedNodeId(event)
+    const pinned = !!toValue(nodeStateRef).flags.pinned
+    if (!selectOnly && !pinned) bringNodeToFront(nodeId)
 
-    if (agentNodeSelectionStore.isActive) return
+    if (event.button !== 0) return
 
-    const nodeId = toValue(nodeStateRef).id
-
-    dragGuard.recordStart(event)
-
-    safeDragStart(event, nodeId)
+    press = { nodeId, event, selectOnly, pinned }
+    dispatch(
+      {
+        type: 'down',
+        position: { x: event.clientX, y: event.clientY },
+        timeStamp: event.timeStamp
+      },
+      event
+    )
   }
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
-
-    if (agentNodeSelectionStore.isActive) return
-
-    // Don't activate drag while resizing
-    if (layoutStore.isResizingVueNodes.value) return
-
-    if (isPinned()) return
-
-    const nodeId = toValue(nodeStateRef).id
-
-    const multiSelect = isMultiSelectKey(event)
-
-    const lmbDown = event.buttons & 1
-    if (
-      lmbDown &&
-      multiSelect &&
-      !layoutStore.isDraggingVueNodes.value &&
-      dragGuard.wasDragged(event)
-    ) {
-      layoutStore.isDraggingVueNodes.value = true
-      handleNodeSelect(event, nodeId)
-      safeDragStart(event, nodeId)
-      return
-    }
-    // Check if we should start dragging (pointer moved beyond threshold)
-    if (lmbDown && !layoutStore.isDraggingVueNodes.value) {
-      if (dragGuard.wasDragged(event)) {
-        layoutStore.isDraggingVueNodes.value = true
-        handleNodeSelect(event, nodeId)
-      }
-    }
-
-    if (layoutStore.isDraggingVueNodes.value) {
-      handleDrag(event, nodeId)
-    }
-  }
-
-  function cleanupDragState() {
-    layoutStore.isDraggingVueNodes.value = false
-  }
-
-  function safeDragStart(event: PointerEvent, nodeId: NodeId) {
-    try {
-      startDrag(event, nodeId)
-    } finally {
-      hasDraggingStarted = true
-    }
-  }
-
-  function safeDragEnd(event: PointerEvent) {
-    try {
-      endDrag(event, toValue(nodeStateRef).id)
-    } catch (error) {
-      console.error('Error during endDrag:', error)
-    } finally {
-      hasDraggingStarted = false
-      cleanupDragState()
-    }
+    if (!press) return
+    dispatch(
+      {
+        type: 'move',
+        position: { x: event.clientX, y: event.clientY }
+      },
+      event
+    )
   }
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
-    // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
-    const canHandlePointer = shouldHandleNodePointerEvents.value
-    if (!canHandlePointer) {
+    if (!shouldHandleNodePointerEvents.value) {
       forwardEventToCanvas(event)
-      if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
-        safeDragEnd(event)
-      }
+      dispatch({ type: 'cancel' }, event)
       return
     }
-    const wasDragging = layoutStore.isDraggingVueNodes.value
-
-    if (hasDraggingStarted || wasDragging) {
-      safeDragEnd(event)
-
-      if (wasDragging) {
-        return
-      }
-    }
-
-    // Skip selection handling for right-click (button 2) - context menu handles its own selection
-    if (event.button === 2) return
-
-    const multiSelect =
-      agentNodeSelectionStore.isActive || isMultiSelectKey(event)
-
-    toggleNodeSelectionAfterPointerUp(toValue(nodeStateRef).id, multiSelect)
+    if (!press || event.button !== 0) return
+    dispatch(
+      { type: 'up', position: { x: event.clientX, y: event.clientY } },
+      event
+    )
   }
 
   function onPointercancel(event: PointerEvent) {
-    if (!layoutStore.isDraggingVueNodes.value) return
-    safeDragEnd(event)
+    dispatch({ type: 'cancel' }, event)
   }
 
-  /**
-   * Handles right-click during drag operations
-   * Cancels the current drag to prevent context menu from appearing while dragging
-   */
   function onContextmenu(event: MouseEvent) {
-    if (!layoutStore.isDraggingVueNodes.value) return
-
+    if (gesture.phase !== 'dragging' || !press) return
     event.preventDefault()
-    // Simply cleanup state without calling endDrag to avoid synthetic event creation
-    cleanupDragState()
+    dispatch({ type: 'cancel' }, press.event)
   }
 
-  // Cleanup on unmount to prevent resource leaks
   onScopeDispose(() => {
-    cleanupDragState()
+    layoutStore.isDraggingVueNodes.value = false
   })
 
   const pointerHandlers = {
