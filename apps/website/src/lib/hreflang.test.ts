@@ -11,6 +11,7 @@ import { redirects } from '../config/redirects'
 import { routeOf } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
+  canonicalPath,
   hreflangAlternates,
   ogLocale,
   ogLocaleAlternate,
@@ -286,5 +287,43 @@ describe('a page whose own locale is held back', () => {
         (a) => a.hreflang
       )
     ).toEqual(['en', 'zh-CN', 'x-default'])
+  })
+})
+
+describe('canonicalPath', () => {
+  /**
+   * THE most dangerous line in the localization work.
+   *
+   * Deleting the Chinese page files makes every /zh-CN/ URL a rewritten
+   * fallback render, and Astro reports the ENGLISH pathname during those. A
+   * canonical built from that pathname told Google the English page was the
+   * original for a fully translated Chinese page. Shipped across all 47 files
+   * it would have de-indexed the entire Chinese site.
+   *
+   * The canonical must follow whether the page is PUBLISHED in its locale, not
+   * whatever path Astro happens to report.
+   */
+  it('points a published Chinese page at itself', () => {
+    expect(canonicalPath('/pricing/', 'zh-CN')).toBe('/zh-CN/pricing/')
+  })
+
+  it('still points a published Chinese page at itself when Astro reports the localized path', () => {
+    expect(canonicalPath('/zh-CN/pricing/', 'zh-CN')).toBe('/zh-CN/pricing/')
+  })
+
+  it('points a held-back Japanese page at the English original', () => {
+    expect(canonicalPath('/pricing/', 'ja')).toBe('/pricing/')
+  })
+
+  it('points the published Japanese home page at itself', () => {
+    expect(canonicalPath('/ja/', 'ja')).toBe('/ja/')
+  })
+
+  it('points a Chinese copy of an English-only route at English', () => {
+    expect(canonicalPath('/enterprise/', 'zh-CN')).toBe('/enterprise/')
+  })
+
+  it('leaves English alone', () => {
+    expect(canonicalPath('/pricing/', 'en')).toBe('/pricing/')
   })
 })
