@@ -7982,12 +7982,283 @@ Enterprise`
       '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
   },
   'platform.modelsHero.heading': {
-    en: '1000+ media AI models in one API.',
-    'zh-CN': '1000+ 媒体 AI 模型，尽在一个 API。'
+    en: 'Route frontier media models with one API.',
+    'zh-CN': '用一个 API，调用最前沿的媒体模型。'
   },
   'platform.modelsHero.subtitle': {
-    en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
-    'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
+    en: 'Supported open-source and commercial media models, verified providers, one developer surface. Choose the route, keep the controls, and inspect every run.',
+    'zh-CN':
+      '支持的开源与商业媒体模型、经过验证的提供商，统一的开发者界面。自主选择路由，保留原生控制项，并可检查每一次运行。'
+  },
+  'platform.router.hero.eyebrow': {
+    en: 'COMFY ROUTER · PRIVATE BETA',
+    'zh-CN': 'COMFY ROUTER · 私密测试'
+  },
+  'platform.router.hero.primaryCta': {
+    en: 'Request access',
+    'zh-CN': '申请访问'
+  },
+  'platform.router.hero.secondaryCta': {
+    en: 'Explore supported models',
+    'zh-CN': '浏览支持的模型'
+  },
+  'platform.router.proofStrip.ariaLabel': {
+    en: 'Partner providers',
+    'zh-CN': '合作提供商'
+  },
+  'platform.router.proofStrip.logos': {
+    en: 'Google · OpenAI · ByteDance',
+    'zh-CN': 'Google · OpenAI · ByteDance'
+  },
+  'platform.router.proofStrip.line': {
+    en: 'Built on the Comfy API infrastructure that already powers Partner Nodes in ComfyUI.',
+    'zh-CN':
+      '基于 Comfy API 基础设施构建，该基础设施已在为 ComfyUI 中的 Partner Nodes 提供支持。'
+  },
+  'platform.router.codeBlock.header': {
+    en: 'Choose the provider in one line.',
+    'zh-CN': '一行代码，选择提供商。'
+  },
+  'platform.router.section1.header': {
+    en: 'Integrate once. Add models as you go.',
+    'zh-CN': '集成一次，随时接入新模型。'
+  },
+  'platform.router.section1.body': {
+    en: 'Frontier media models are fragmented across companies and providers, each with its own SDK, credentials, job lifecycle, and failure modes. Build once through Comfy Router, and each new model is one line for your apps and agents.',
+    'zh-CN':
+      '前沿媒体模型分散在不同公司和提供商之间，各自拥有独立的 SDK、凭证、任务生命周期和失败模式。通过 Comfy Router 构建一次，之后每个新模型对你的应用和智能体来说都只是一行代码。'
+  },
+  'platform.router.section1.supporting': {
+    en: 'Supported open-source and commercial models on one surface, each with its native controls intact. No lowest-common-denominator schema.',
+    'zh-CN':
+      '在同一个界面上支持开源与商业模型，各自保留原生控制项，不做最小公分母式的统一 schema。'
+  },
+  'platform.router.section2.header': {
+    en: 'Switch providers. Keep your code.',
+    'zh-CN': '切换提供商，代码不变。'
+  },
+  'platform.router.section2.body': {
+    en: "Run a supported model on the verified provider that fits the job, whether you're optimizing for price, speed, capacity, concurrency, region, or a relationship you already have. Comfy never switches the route on you, and every job returns the model, provider, version, cost, and timing that ran.",
+    'zh-CN':
+      '在适合任务的、经过验证的提供商上运行受支持的模型，无论你优化的是价格、速度、容量、并发、区域，还是已有的合作关系。Comfy 不会替你切换路由，每个任务都会返回实际运行所用的模型、提供商、版本、费用和耗时。'
+  },
+  'platform.router.section3.header': {
+    en: "Ship a whole workflow when one model isn't enough.",
+    'zh-CN': '当一个模型不够用时，交付完整的工作流。'
+  },
+  'platform.router.section3.body': {
+    en: 'Some results take more than one model, plus nodes, preprocessing, post-processing, and creative logic chained together. The Comfy Developer Platform turns supported workflows into production API endpoints, so your team doesn’t rebuild the runtime or serving layer.',
+    'zh-CN':
+      '有些结果需要不止一个模型，还需要串联节点、前处理、后处理和创意逻辑。Comfy 开发者平台可将受支持的工作流转化为生产级 API 端点，团队无需自行搭建运行时或服务层。'
+  },
+  'platform.router.section3.supporting': {
+    en: 'Workflows can combine community, first-party, partner, and paid components, not only open-source ones.',
+    'zh-CN':
+      '工作流可以组合社区、官方、合作伙伴和付费组件，而不仅限于开源组件。'
+  },
+  'platform.router.section3.cta': {
+    en: 'Explore the Developer Platform',
+    'zh-CN': '探索开发者平台'
+  },
+  'platform.router.testimonial.eyebrow': {
+    en: 'SILVERSIDE × COMFY',
+    'zh-CN': 'SILVERSIDE × COMFY'
+  },
+  'platform.router.testimonial.header': {
+    en: 'Why Silverside builds on Comfy.',
+    'zh-CN': 'Silverside 为何选择基于 Comfy 构建。'
+  },
+  'platform.router.testimonial.quote': {
+    en: 'Comfy Router lets us ship against frontier media models without rewriting our stack every time a provider shifts. We choose the route, keep the native controls, and the run receipt makes debugging and cost tracking straightforward.',
+    'zh-CN':
+      'Comfy Router 让我们能够面向前沿媒体模型交付产品，而不必在每次提供商变化时重写整个技术栈。我们自主选择路由、保留原生控制项，运行回执也让调试和成本追踪变得简单直接。'
+  },
+  'platform.router.testimonial.attribution': {
+    en: 'Avery Chen, Head of Engineering, Silverside',
+    'zh-CN': 'Avery Chen，Silverside 工程负责人'
+  },
+  'platform.router.roadmap.eyebrow': {
+    en: 'ROADMAP',
+    'zh-CN': '路线图'
+  },
+  'platform.router.roadmap.header': {
+    en: 'Coming to the same API.',
+    'zh-CN': '即将登陆同一个 API。'
+  },
+  'platform.router.roadmap.body': {
+    en: "Explicit provider choice is the foundation. Each capability below lands on the same integration, so you won't rebuild when it ships.",
+    'zh-CN':
+      '显式选择提供商是基础。下面的每项能力都会落在同一套集成之上，发布时你无需重新构建。'
+  },
+  'platform.router.roadmap.1.title': {
+    en: 'Queue jobs instead of failing.',
+    'zh-CN': '排队等待，而非直接失败。'
+  },
+  'platform.router.roadmap.1.description': {
+    en: 'Submit a job and get a request ID back right away. Jobs wait in your workspace queue, run when a slot frees, and are billed only when they run.',
+    'zh-CN':
+      '提交任务后立即获得请求 ID。任务会在你的工作区队列中等待，有空闲名额时运行，并且只有在运行时才计费。'
+  },
+  'platform.router.roadmap.2.title': {
+    en: 'Add a backup provider.',
+    'zh-CN': '添加备用提供商。'
+  },
+  'platform.router.roadmap.2.description': {
+    en: 'Set an ordered list of providers. Comfy moves to the next one only when a retry is known to be safe, and returns the full attempt history.',
+    'zh-CN':
+      '设置一个有序的提供商列表。只有在重试被判定为安全时，Comfy 才会切换到下一个提供商，并返回完整的尝试历史。'
+  },
+  'platform.router.roadmap.3.title': {
+    en: 'Bring your own provider key.',
+    'zh-CN': '使用你自己的提供商密钥。'
+  },
+  'platform.router.roadmap.3.description': {
+    en: 'Connect your own provider account through a securely stored credential, not a raw key in every request. This rolls out provider by provider as each one is approved, and your provider’s charges still apply.',
+    'zh-CN':
+      '通过安全存储的凭证连接你自己的提供商账户，而不是在每个请求中传递明文密钥。该功能将按提供商逐步上线，且相应提供商的费用仍由你承担。'
+  },
+  'platform.router.roadmap.4.title': {
+    en: 'Route by requirement.',
+    'zh-CN': '按需求路由。'
+  },
+  'platform.router.roadmap.4.description': {
+    en: 'Choose the requirement, not just the endpoint. Named policies — reliable, fast_start, fast_finish, lowest_cost — come with the signals behind each one documented.',
+    'zh-CN':
+      '选择的是需求，而不仅仅是端点。命名策略——reliable、fast_start、fast_finish、lowest_cost——都会附带各自背后信号的文档说明。'
+  },
+  'platform.router.roadmap.5.title': {
+    en: 'Ask for an outcome.',
+    'zh-CN': '直接描述所需结果。'
+  },
+  'platform.router.roadmap.5.description': {
+    en: 'Request an upscale, a background removal, or an animation, and Comfy picks a compatible model, Partner Node, or workflow to do it.',
+    'zh-CN':
+      '请求放大、去背景或生成动画，Comfy 会自动选择合适的模型、Partner Node 或工作流来完成。'
+  },
+  'platform.routerFaq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+  'platform.routerFaq.1.q': {
+    en: 'Is Comfy Router "OpenRouter for media"?',
+    'zh-CN': 'Comfy Router 是"面向媒体的 OpenRouter"吗？'
+  },
+  'platform.routerFaq.1.a': {
+    en: "OpenRouter is built around language-model requests and text contracts. Comfy Router is a routing and execution layer built for generative media: large assets, model-specific creative controls, asynchronous jobs, and progress and delivery. Media isn't an extension of a text API, and this isn't an extension of a text router.",
+    'zh-CN':
+      'OpenRouter 是围绕语言模型请求和文本契约构建的。Comfy Router 则是专为生成式媒体打造的路由与执行层：大体积资产、特定于模型的创意控制项、异步任务，以及进度与交付。媒体不是文本 API 的延伸，Comfy Router 也不是文本路由器的延伸。'
+  },
+  'platform.routerFaq.2.q': {
+    en: 'Why not call fal, Replicate, or the model maker directly?',
+    'zh-CN': '为什么不直接调用 fal、Replicate 或模型厂商？'
+  },
+  'platform.routerFaq.2.a': {
+    en: 'If you need one model on one provider, call it directly. Comfy Router earns its place when you need more: models from several makers, a choice of provider for the same model, one job surface, and a route you can see. Router sits on top of providers like these, so the provider stays visible and selectable.',
+    'zh-CN':
+      '如果你只需要一个提供商上的一个模型，直接调用即可。当你需要更多时，Comfy Router 才真正体现价值：来自多家厂商的模型、同一模型下可选的提供商、统一的任务界面，以及可见的路由。Router 构建在这些提供商之上，提供商本身依然可见、可选。'
+  },
+  'platform.routerFaq.3.q': {
+    en: 'Why not build our own integration layer?',
+    'zh-CN': '为什么不自建集成层？'
+  },
+  'platform.routerFaq.3.a': {
+    en: 'You can, and your team will maintain every adapter, schema change, and provider quirk. Comfy Router gives you shared adapters, a maintained catalog, and visible routes, so your team works on the product instead of the plumbing.',
+    'zh-CN':
+      '当然可以，但你的团队将需要维护每一个适配器、每一次 schema 变更以及各家提供商的特殊之处。Comfy Router 提供共享适配器、持续维护的目录和可见的路由，让团队专注于产品本身，而不是底层管道。'
+  },
+  'platform.routerFaq.4.q': {
+    en: 'I already use ComfyUI. What does Comfy Router add?',
+    'zh-CN': '我已经在用 ComfyUI 了，Comfy Router 还能带来什么？'
+  },
+  'platform.routerFaq.4.a': {
+    en: 'More ways to run the models you use. Reach supported models across providers, choose where they run, and switch when price, speed, or availability changes.',
+    'zh-CN':
+      '为你已在使用的模型提供更多运行方式。跨提供商访问受支持的模型，自主选择运行位置，并在价格、速度或可用性发生变化时随时切换。'
+  },
+  'platform.routerFaq.5.q': {
+    en: 'Does Comfy pick the best provider for me?',
+    'zh-CN': 'Comfy 会替我选择最佳提供商吗？'
+  },
+  'platform.routerFaq.5.a': {
+    en: 'Not at launch. You choose a verified provider explicitly. "Best" depends on what you\'re optimizing for, such as cost, start time, finish time, or reliability, so routing policies will be named and explained when they ship.',
+    'zh-CN':
+      '发布之初不会。你需要显式选择一个经过验证的提供商。"最佳"取决于你的优化目标，例如成本、启动时间、完成时间或可靠性，因此路由策略会在发布时被命名并说明清楚。'
+  },
+  'platform.routerFaq.6.q': {
+    en: 'What happens if my provider is unavailable?',
+    'zh-CN': '如果我选择的提供商不可用会怎样？'
+  },
+  'platform.routerFaq.6.a': {
+    en: 'At launch, the request fails on the provider you chose, with no silent substitution. After ordered fallback ships, you can opt into a backup list, and Comfy moves to the next provider only when a retry is known to be safe.',
+    'zh-CN':
+      '发布之初，请求会在你所选的提供商上直接失败，不会有静默替换。有序回退功能上线后，你可以选择启用备用列表，Comfy 只会在重试被判定为安全时才切换到下一个提供商。'
+  },
+  'platform.routerFaq.7.q': {
+    en: 'Are inputs identical across providers?',
+    'zh-CN': '不同提供商之间的输入是完全一致的吗？'
+  },
+  'platform.routerFaq.7.a': {
+    en: 'Not always. Comfy keeps one contract per model and labels each provider’s version of it as exact, converted, lossy, or unsupported. Unsupported inputs are rejected before you’re billed, and identical outputs aren’t promised.',
+    'zh-CN':
+      '不一定。Comfy 为每个模型维护一份契约，并将各提供商的实现标注为精确、转换、有损或不支持。不支持的输入会在计费前被拒绝，且不承诺输出完全一致。'
+  },
+  'platform.routerFaq.8.q': {
+    en: 'Is Comfy Router open source?',
+    'zh-CN': 'Comfy Router 是开源的吗？'
+  },
+  'platform.routerFaq.8.a': {
+    en: 'No. It gives you access to open-source and commercial models, but model licensing is separate from the product.',
+    'zh-CN':
+      '不是。它让你能够访问开源与商业模型，但模型的授权许可与产品本身是分开的。'
+  },
+  'platform.routerFaq.9.q': {
+    en: 'Can I bring my own provider key?',
+    'zh-CN': '我可以使用自己的提供商密钥吗？'
+  },
+  'platform.routerFaq.9.a': {
+    en: 'BYOK is planned. It will use a securely stored credential reference rather than a raw key in every request, and it will roll out provider by provider as each one is approved. Provider charges and terms still apply.',
+    'zh-CN':
+      'BYOK（自带密钥）功能已在规划中。它将使用安全存储的凭证引用，而不是在每个请求中传递明文密钥，并会按提供商逐步上线。提供商自身的费用和条款仍然适用。'
+  },
+  'platform.routerFaq.10.q': {
+    en: 'What happens when I hit my concurrency limit?',
+    'zh-CN': '达到并发上限时会发生什么？'
+  },
+  'platform.routerFaq.10.a': {
+    en: 'At launch, a call over your workspace’s concurrency limit returns a 429 and can be retried. Once queueing ships, jobs wait in your queue and run when a slot frees up.',
+    'zh-CN':
+      '发布之初，超出工作区并发上限的调用会返回 429，可以重试。队列功能上线后，任务会在你的队列中等待，有空闲名额时运行。'
+  },
+  'platform.routerFaq.11.q': {
+    en: 'How long do you keep my inputs and outputs?',
+    'zh-CN': '我的输入和输出会被保留多久？'
+  },
+  'platform.routerFaq.11.a': {
+    en: 'Inputs are kept for 24 hours after upload and outputs for 24 hours after generation. Then they’re deleted.',
+    'zh-CN':
+      '输入在上传后保留 24 小时，输出在生成后保留 24 小时，之后会被删除。'
+  },
+  'platform.routerFaq.12.q': {
+    en: 'Can I call Comfy workflows too?',
+    'zh-CN': '我也可以调用 Comfy 工作流吗？'
+  },
+  'platform.routerFaq.12.a': {
+    en: 'Yes, through the Comfy Developer Platform, which turns supported workflows into production API endpoints. Workflows can combine open-source, commercial, partner, or paid components.',
+    'zh-CN':
+      '可以，通过 Comfy 开发者平台即可，它会将受支持的工作流转化为生产级 API 端点。工作流可以组合开源、商业、合作伙伴或付费组件。'
+  },
+  'platform.routerFaq.13.q': {
+    en: 'How is Comfy Router priced?',
+    'zh-CN': 'Comfy Router 如何计费？'
+  },
+  'platform.routerFaq.13.a': {
+    en: "Comfy Router runs on your existing Comfy credits, and each model's price is listed in the model catalog.",
+    'zh-CN':
+      'Comfy Router 使用你现有的 Comfy 积分计费，每个模型的价格都列在模型目录中。'
+  },
+  'platform.router.footer.header': {
+    en: 'Integrate once. Choose where each model runs.',
+    'zh-CN': '集成一次，自主选择每个模型的运行位置。'
   },
   'platform.builderHero.heading': {
     en: 'Share ComfyUI Builds with your team',
@@ -8006,47 +8277,6 @@ Enterprise`
     en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
     'zh-CN':
       '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
-  },
-  'platform.modelsGallery.ariaLabel': {
-    en: 'Sample outputs from partner models',
-    'zh-CN': '合作伙伴模型的示例输出'
-  },
-  'platform.modelsFeatures.heading': {
-    en: 'Built for production',
-    'zh-CN': '为生产环境而建'
-  },
-  'platform.modelsFeatures.1.title': {
-    en: 'Every frontier media model',
-    'zh-CN': '所有前沿媒体模型'
-  },
-  'platform.modelsFeatures.1.description': {
-    en: '1000+ models — Seedance, GPT Image 2, Nano Banana, Kling, Minimax, Flux, ElevenLabs, and more with day 0 access.',
-    'zh-CN':
-      '1000+ 模型——Seedance、GPT Image 2、Nano Banana、Kling、Minimax、Flux、ElevenLabs 等——首发日即可使用。'
-  },
-  'platform.modelsFeatures.3.title': {
-    en: 'One credit pool',
-    'zh-CN': '一个积分池'
-  },
-  'platform.modelsFeatures.3.description': {
-    en: 'Pay per use from one credit pool for your team. No subscription required.',
-    'zh-CN': '按用量付费，团队共用同一积分池。无需订阅。'
-  },
-  'platform.modelsFeatures.5.title': {
-    en: 'No setup',
-    'zh-CN': '无需配置'
-  },
-  'platform.modelsFeatures.5.description': {
-    en: 'Every model can be accessed via a simple API or SDK.',
-    'zh-CN': '每个模型都可通过简单的 API 或 SDK 访问。'
-  },
-  'platform.modelsFeatures.6.title': {
-    en: 'No data retention',
-    'zh-CN': '不保留数据'
-  },
-  'platform.modelsFeatures.6.description': {
-    en: 'You own your outputs. Your prompts and data are never retained.',
-    'zh-CN': '输出归你所有。你的提示词和数据永不保留。'
   },
   'platform.examples.heading': {
     en: 'Built on the Developer Platform',

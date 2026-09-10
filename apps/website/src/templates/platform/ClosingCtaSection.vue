@@ -5,6 +5,7 @@ import CtaCenter01 from '../../components/blocks/CtaCenter01.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { platformCtas } from './ctas'
+import type { PlatformCta } from './ctas'
 import ClosingCtaColumnField from './ClosingCtaColumnField.vue'
 import PlatformHeroBadge from './PlatformHeroBadge.vue'
 
@@ -15,6 +16,8 @@ const {
   headingAfterBadge,
   headingLead,
   primaryHref,
+  primaryCta: primaryCtaOverride,
+  secondaryCta: secondaryCtaOverride,
   subtitle
 } = defineProps<{
   badgeOnly?: boolean
@@ -22,14 +25,19 @@ const {
   headingLead?: string
   locale?: Locale
   primaryHref?: string
+  primaryCta?: PlatformCta
+  secondaryCta?: PlatformCta
   subtitle?: string
   visual?: 'columns' | 'shader'
 }>()
 
 const ctas = platformCtas(locale)
-const primaryCta = primaryHref
-  ? { label: ctas.getStarted.label, href: primaryHref }
-  : ctas.getStarted
+const primaryCta =
+  primaryCtaOverride ??
+  (primaryHref
+    ? { label: ctas.getStarted.label, href: primaryHref }
+    : ctas.getStarted)
+const secondaryCta = secondaryCtaOverride ?? ctas.docs
 const isMounted = ref(false)
 const TerminalAsciiShader = defineAsyncComponent(
   () => import('./TerminalAsciiShader.vue')
@@ -65,7 +73,7 @@ onMounted(() => {
       :subtitle
       :subtitle-class="badgeOnly ? 'mt-6' : undefined"
       :primary-cta="primaryCta"
-      :secondary-cta="ctas.docs"
+      :secondary-cta="secondaryCta"
     >
       <template #heading>
         <template v-if="visual === 'columns'">

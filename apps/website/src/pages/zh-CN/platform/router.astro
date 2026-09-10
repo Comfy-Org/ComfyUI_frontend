@@ -1,24 +1,69 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
+import FAQSection from '../../../components/common/FAQSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import ModelsApiFeaturesSection from '../../../templates/platform/ModelsApiFeaturesSection.vue'
-import ModelsApiGallery from '../../../templates/platform/ModelsApiGallery.vue'
 import ModelsApiHero from '../../../templates/platform/ModelsApiHero.vue'
+import RouterCodeSection from '../../../templates/platform/RouterCodeSection.vue'
+import RouterNarrativeSection from '../../../templates/platform/RouterNarrativeSection.vue'
+import RouterProofStripSection from '../../../templates/platform/RouterProofStripSection.vue'
+import RouterRoadmapSection from '../../../templates/platform/RouterRoadmapSection.vue'
+import RouterTestimonialSection from '../../../templates/platform/RouterTestimonialSection.vue'
+import { getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+
+const locale = 'zh-CN'
+const routes = getRoutes(locale)
 ---
 
 <BaseLayout
-  title={`${t('platform.products.models.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
-  description={t('platform.products.models.description', 'zh-CN')}
+  title={`${t('platform.products.models.title', locale)} · ${t('platform.meta.title', locale)}`}
+  description={t('platform.products.models.description', locale)}
 >
-  <ModelsApiHero locale="zh-CN" client:load />
-  <ModelsApiGallery locale="zh-CN" client:visible />
-  <ModelsApiFeaturesSection locale="zh-CN" />
+  <ModelsApiHero locale={locale} client:load />
+  <RouterProofStripSection locale={locale} />
+  <RouterCodeSection locale={locale} client:visible />
+  <RouterNarrativeSection
+    header={t('platform.router.section1.header', locale)}
+    body={t('platform.router.section1.body', locale)}
+    supporting={t('platform.router.section1.supporting', locale)}
+  />
+  <RouterNarrativeSection
+    header={t('platform.router.section2.header', locale)}
+    body={t('platform.router.section2.body', locale)}
+  />
+  <RouterNarrativeSection
+    header={t('platform.router.section3.header', locale)}
+    body={t('platform.router.section3.body', locale)}
+    supporting={t('platform.router.section3.supporting', locale)}
+    ctaLabel={t('platform.router.section3.cta', locale)}
+    ctaHref={routes.platform}
+  />
+  <!--
+    Silverside quote is unconfirmed per source doc — see
+    RouterTestimonialSection.vue for the hold note. Do not ship to
+    production before customer sign-off.
+  -->
+  <RouterTestimonialSection locale={locale} />
+  <RouterRoadmapSection locale={locale} />
+  <FAQSection
+    headingKey="platform.routerFaq.heading"
+    faqPrefix="platform.routerFaq"
+    faqCount={13}
+    locale={locale}
+  />
   <ClosingCtaSection
-    locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    locale={locale}
+    heading-after-badge={t('platform.router.footer.header', locale)}
+    primary-cta={{
+      label: t('platform.router.hero.primaryCta', locale),
+      href: routes.contact
+    }}
+    secondary-cta={{
+      label: t('platform.router.hero.secondaryCta', locale),
+      href: routes.models
+    }}
     client:visible
   />
-  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+  <ProductCardsSection locale={locale} label-key="products.labelProducts" />
 </BaseLayout>

@@ -58,3 +58,50 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
     ]
   }
 }
+
+// Comfy Router code block — provider chosen explicitly as a run argument
+// (services/comfy-api/docs/router-quickstart.mdx in Comfy-Org/cloud).
+const ROUTER_PROVIDERS = ['fal', 'replicate']
+
+export const routerCodeTabs: Record<string, CodeTab> = {
+  python: {
+    name: 'Python',
+    segments: [
+      'from comfy_sdk import Comfy\n\nclient = Comfy(api_key="comfyui-...")\n\nresult = client.models.subscribe(\n    "',
+      { values: MODELS, highlight: true },
+      '",\n    arguments={"prompt": "',
+      { values: PROMPTS },
+      '"},\n    provider="',
+      { values: ROUTER_PROVIDERS },
+      '",\n)\nresult.to_file("',
+      { values: OUTPUTS },
+      '")'
+    ]
+  },
+  typescript: {
+    name: 'TypeScript',
+    segments: [
+      "import { Comfy } from 'comfy-sdk'\n\nconst client = new Comfy({ apiKey: 'comfyui-...' })\n\nconst result = await client.models.subscribe('",
+      { values: MODELS, highlight: true },
+      "', {\n  arguments: { prompt: '",
+      { values: PROMPTS },
+      "' },\n  provider: '",
+      { values: ROUTER_PROVIDERS },
+      "',\n})\nawait result.toFile('",
+      { values: OUTPUTS },
+      "')"
+    ]
+  },
+  curl: {
+    name: 'cURL',
+    segments: [
+      'curl -X POST https://api.comfy.org/v1/models/',
+      { values: MODELS, highlight: true },
+      '/subscribe \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"arguments": {"prompt": "',
+      { values: PROMPTS },
+      '"}, "provider": "',
+      { values: ROUTER_PROVIDERS },
+      '"}\''
+    ]
+  }
+}
