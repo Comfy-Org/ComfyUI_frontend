@@ -97,7 +97,7 @@ export function reduceGesture(
             event.timeStamp - state.timeStamp <= policy.clickBufferTime &&
             within(event.position, state.origin, policy.clickDrift)
           )
-            return unchanged(state)
+            return { state, effects: ['moveDrag'] }
           return {
             state: {
               phase: 'dragging',
