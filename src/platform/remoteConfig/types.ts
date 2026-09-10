@@ -125,6 +125,7 @@ export type RemoteConfig = {
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  hosted_billing_web_enabled?: boolean
   unified_cloud_auth?: boolean
   billing_control_enabled?: boolean
   legacy_billing_migration_enabled?: boolean

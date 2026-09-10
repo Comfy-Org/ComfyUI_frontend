@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm typecheck && vite build",
-    "dev": "vite",
+    "dev": "vite --port 5174 --strictPort",
     "lint": "eslint src vite.config.ts vitest.config.ts && stylelint 'src/**/*.{css,vue}'",
     "preview": "vite preview",
     "test:coverage": "vitest run --coverage",
