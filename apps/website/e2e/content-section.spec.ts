@@ -55,6 +55,10 @@ test.describe(
       })
       const lastBadge = sidebarNav.getByRole('button').last()
 
+      await page.evaluate(() =>
+        window.scrollTo(0, document.documentElement.scrollHeight)
+      )
+
       await expect(lastBadge).toHaveAttribute('aria-pressed', 'true')
     })
   }
