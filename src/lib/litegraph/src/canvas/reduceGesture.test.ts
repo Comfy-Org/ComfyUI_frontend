@@ -11,7 +11,6 @@ import {
 } from '@/lib/litegraph/src/canvas/reduceGesture'
 
 const policy: GesturePolicy = {
-  clickBufferTime: 32,
   clickDrift: 6,
   doubleClickTime: 300
 }
@@ -37,7 +36,7 @@ function run(events: GestureEvent[], from: GestureState = idleGesture) {
 describe('reduceGesture', () => {
   it('ignores events other than down while idle', () => {
     const events: GestureEvent[] = [
-      { type: 'move', position: far, timeStamp: 0 },
+      { type: 'move', position: far },
       { type: 'up', position: far },
       { type: 'cancel' }
     ]
@@ -48,7 +47,7 @@ describe('reduceGesture', () => {
   it('release within the drift threshold is a click and is remembered', () => {
     const { state, effects } = run([
       down(10),
-      { type: 'move', position: nearby, timeStamp: 20 },
+      { type: 'move', position: nearby },
       { type: 'up', position: nearby }
     ])
 
@@ -62,22 +61,22 @@ describe('reduceGesture', () => {
   it('movement past the drift threshold starts and moves a drag, however slow', () => {
     const { state, effects } = run([
       down(0),
-      { type: 'move', position: nearby, timeStamp: 10 },
-      { type: 'move', position: far, timeStamp: 20 }
+      { type: 'move', position: nearby },
+      { type: 'move', position: far }
     ])
 
     expect(effects).toEqual(['movePress', 'startDrag', 'moveDrag'])
     expect(state.phase).toBe('dragging')
   })
 
-  it('movement after the click buffer starts a drag within the drift threshold', () => {
+  it('movement within the drift threshold stays pressed', () => {
     const { state, effects } = run([
       down(0),
-      { type: 'move', position: nearby, timeStamp: 33 }
+      { type: 'move', position: nearby }
     ])
 
-    expect(effects).toEqual(['startDrag', 'moveDrag'])
-    expect(state.phase).toBe('dragging')
+    expect(effects).toEqual(['movePress'])
+    expect(state.phase).toBe('pressed')
   })
 
   it('release while dragging ends the drag and keeps the click record', () => {
@@ -86,7 +85,7 @@ describe('reduceGesture', () => {
     const { state, effects } = run(
       [
         down(1000),
-        { type: 'move', position: far, timeStamp: 1010 },
+        { type: 'move', position: far },
         { type: 'up', position: far }
       ],
       remembered
@@ -135,11 +134,7 @@ describe('reduceGesture', () => {
     const remembered = run([down(0), { type: 'up', position: origin }]).state
 
     const { state, effects } = run(
-      [
-        down(50),
-        { type: 'move', position: far, timeStamp: 60 },
-        { type: 'cancel' }
-      ],
+      [down(50), { type: 'move', position: far }, { type: 'cancel' }],
       remembered
     )
 
