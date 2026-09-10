@@ -183,7 +183,7 @@ describe('launchCancellationFlow', () => {
         operation: 'load',
         outcome: 'recovered'
       },
-      context: { workspace_still_current: true },
+      context: { workspace_still_current: true, vendor_threw: true },
       level: 'warning'
     })
 
@@ -207,6 +207,24 @@ describe('launchCancellationFlow', () => {
     )
   })
 
+  it('reports the vendor fallback when Churnkey resolves without a session', async () => {
+    mocks.reportError.mockClear()
+    mocks.prepare.mockResolvedValueOnce(null)
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).toHaveBeenCalledOnce()
+    expect(mocks.reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: expect.objectContaining({ outcome: 'missing' }),
+        context: { workspace_still_current: true, vendor_threw: false }
+      })
+    )
+  })
+
   it('records an aborted fallback when the workspace changed mid-preparation', async () => {
     const preparationError = new Error('blocked by browser')
     mocks.reportError.mockClear()
@@ -223,7 +241,7 @@ describe('launchCancellationFlow', () => {
       preparationError,
       expect.objectContaining({
         tags: expect.objectContaining({ outcome: 'aborted' }),
-        context: { workspace_still_current: false }
+        context: { workspace_still_current: false, vendor_threw: true }
       })
     )
   })
