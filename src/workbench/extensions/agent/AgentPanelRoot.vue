@@ -47,6 +47,7 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -636,6 +637,11 @@ async function onAgentActiveTab(
     // A new agent workflow opens as an EMPTY tab: the host minted its doc
     // server-side (seed-at-bind), and the follower fills the canvas through
     // the ordinary subscribe catch-up - no snapshot fetch, no draft apply.
+    // Minting without data seeds the default template, whose nodes share ids
+    // with typical agent docs; the follower's reconcile keeps any template
+    // link it does not displace, so the tab must really be blank. It must
+    // also be a fresh tab: `createTemporary` would reuse and reset a
+    // same-named workflow the user owns outside `workflows/`.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
@@ -643,7 +649,10 @@ async function onAgentActiveTab(
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(agentTabFilename(data.name))
+    const tab = workflowStore.createNewTemporary(
+      agentTabFilename(data.name),
+      blankGraph
+    )
     tabActivity.setCreating(false)
     await workflowService.openWorkflow(tab)
     if (stale()) {

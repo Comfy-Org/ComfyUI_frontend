@@ -2608,6 +2608,9 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     const minted = workflowStore.getWorkflowByPath('workflows/Video test.json')
     expect(minted?.filename).toBe('Video test')
+    // Blank, not the default template: the follower reconciles onto whatever
+    // the tab holds and keeps template links it does not displace.
+    expect(minted?.activeState).toMatchObject({ nodes: [], links: [] })
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
@@ -2620,6 +2623,41 @@ describe('AgentPanelRoot workflow binding', () => {
       target: 'active_tab_open'
     })
   })
+  it('agent_active_tab leaves a same-named tab outside workflows/ untouched', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const blueprint = addTab('subgraphs/Video test.json', {
+      fullFilename: 'Video test.json',
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: '8a1f5b3c-2d4e-4f60-9a71-0b2c3d4e5f61',
+        nodes: [fromPartial<ComfyWorkflowJSON['nodes'][number]>({ id: 1 })],
+        links: []
+      })
+    })
+
+    await renderAndSend('work here')
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalled()
+    )
+    expect(blueprint.changeTracker.reset).not.toHaveBeenCalled()
+    expect(blueprint.activeState.nodes).toHaveLength(1)
+    expect(workflowService.openWorkflow).not.toHaveBeenCalledWith(blueprint)
+    expect(
+      workflowStore.getWorkflowByPath('workflows/Video test.json')
+    ).not.toBeNull()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
+      'workflows/Video test.json'
+    )
+  })
+
   it('agent_active_tab sanitizes slashes and falls back on empty names', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
