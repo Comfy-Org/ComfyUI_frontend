@@ -1009,6 +1009,35 @@ describe('useAuthStore', () => {
       expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
+    it('provisions with the completed credential, not whatever identity became current', async () => {
+      const completedUser = {
+        uid: 'completed-uid',
+        email: 'completed@example.com',
+        getIdToken: vi.fn().mockResolvedValue('completed-token'),
+        delete: vi.fn().mockResolvedValue(undefined)
+      } as Partial<User> as MockUser
+      const switchedInUser = {
+        uid: 'switched-uid',
+        getIdToken: vi.fn().mockResolvedValue('switched-token')
+      } as Partial<User> as MockUser
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: completedUser
+      } as Partial<UserCredential> as UserCredential)
+      // Auth has already switched to another user by the time provisioning runs.
+      authStateCallback(switchedInUser)
+
+      await store.register('completed@example.com', 'password')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer completed-token'
+          })
+        })
+      )
+    })
+
     it('rolls back the orphaned Firebase user when customer creation fails', async () => {
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
         user: mockUser
