@@ -184,9 +184,7 @@
             <span class="text-base-foreground">
               {{ discount.name || discount.code
               }}<template v-if="discount.amount_off_cents">
-                · −${{
-                  formatUsdFromCents({ cents: discount.amount_off_cents })
-                }}</template
+                · −{{ quoteMoney(discount.amount_off_cents) }}</template
               >
             </span>
           </div>
@@ -511,9 +509,14 @@ const exceedsMonthlyThreshold = computed(
     reactivationVariant.value !== 'downgrade' &&
     chargeCents.value > currentMonthlyPriceCents.value
 )
-const chargeDisplay = computed(
-  () => `$${formatUsdFromCents({ cents: chargeCents.value })}`
-)
+// Quote-denominated cents render in the quote's currency; the USD prefix is
+// only the fallback for legacy quotes that omit `currency`.
+function quoteMoney(cents: number): string {
+  return previewData.currency
+    ? formatQuoteMoney(cents, previewData.currency, locale.value)
+    : `$${formatUsdFromCents({ cents })}`
+}
+const chargeDisplay = computed(() => quoteMoney(chargeCents.value))
 
 const reactivationConfirmed = ref(false)
 // A checked box is consent to this exact preview. A replacement preview must
