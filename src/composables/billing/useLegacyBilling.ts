@@ -41,12 +41,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscriptionDuration,
     subscriptionStatus: legacySubscriptionStatus,
     isCancelled,
+    isEduCustomer,
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
     subscribe: legacySubscribe,
     subscribeDirect: legacySubscribeDirect,
     showSubscriptionDialog: legacyShowSubscriptionDialog
   } = useSubscription()
+
+  // Legacy (personal-only) billing has no team/workspace concept.
+  const isTeamEduEligible = computed(() => false)
 
   const authStore = useAuthStore()
   const authActions = useAuthActions()
@@ -237,6 +241,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    isEduCustomer,
+    isTeamEduEligible,
     maxSeats,
     occupiedSeats,
     isLoading,

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { IngestSubscriptionTier } from './tierPricing'
 import {
+  applyEduDiscount,
+  formatTierPriceValue,
   hasActivePaidPlan,
   isEnterprisePlanSlug,
   isSalesManagedTier,
@@ -101,5 +103,37 @@ describe('isSalesManagedTier', () => {
     expect(isSalesManagedTier('PRO')).toBe(false)
     expect(isSalesManagedTier('TEAM')).toBe(false)
     expect(isSalesManagedTier(null)).toBe(false)
+  })
+})
+
+describe('applyEduDiscount', () => {
+  // Display must match the coupon charge (cloud#8724): monthly 10% off list,
+  // yearly 6.25% off the yearly price (= 25% off the monthly list).
+  it.for([
+    ['standard', 'monthly', 20, 18],
+    ['creator', 'monthly', 35, 31.5],
+    ['pro', 'monthly', 100, 90],
+    // Yearly discounts the yearly list price (6.25% off), not the monthly one.
+    ['standard', 'yearly', 16, 15],
+    ['creator', 'yearly', 28, 26.25],
+    ['pro', 'yearly', 80, 75]
+  ] as const)('%s %s: %d -> %d', ([tierKey, cycle, price, expected]) => {
+    expect(applyEduDiscount(price, tierKey, cycle)).toBe(expected)
+  })
+
+  it('rounds discounted prices to cents deterministically', () => {
+    expect(applyEduDiscount(16, 'standard', 'yearly')).toBe(15)
+    expect(applyEduDiscount(35, 'creator', 'monthly')).toBe(31.5)
+    expect(applyEduDiscount(19.99, 'standard', 'monthly')).toBe(17.99)
+    // Half-cent rounds up: 0.15 * 0.9 = 0.135 -> 0.14.
+    expect(applyEduDiscount(0.15, 'standard', 'monthly')).toBe(0.14)
+  })
+})
+
+describe('formatTierPriceValue', () => {
+  it('renders whole dollars bare and fractional prices with cents', () => {
+    expect(formatTierPriceValue(18)).toBe('18')
+    expect(formatTierPriceValue(31.5)).toBe('31.50')
+    expect(formatTierPriceValue(26.25)).toBe('26.25')
   })
 })

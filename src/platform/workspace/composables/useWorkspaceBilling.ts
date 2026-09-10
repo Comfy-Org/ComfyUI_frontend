@@ -3,6 +3,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { BillingStatusResponseWithEdu } from '@/platform/cloud/subscription/types/eduBillingStatus'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
@@ -115,7 +116,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const statusData = shallowRef<BillingStatusResponseWithEdu | null>(null)
   const seatCapacity = shallowRef<{
     maxSeats: number
     occupiedSeats: number
@@ -161,6 +162,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }
   })
+
+  const isEduCustomer = computed(() => statusData.value?.is_edu === true)
+  // Stub: the team-eligibility field ships in a separate backend PR tracked
+  // alongside cloud#8725/#8723. Every real response omits it today, so this
+  // reads false — no other change needed once the field lands.
+  const isTeamEduEligible = computed(
+    () => statusData.value?.team_has_edu_member === true
+  )
 
   const billingStatus = computed(() => statusData.value?.billing_status ?? null)
   const subscriptionStatus = computed(
@@ -537,6 +546,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     currentPlanSlug,
     teamCreditStops,
     currentTeamCreditStop,
+    isEduCustomer,
+    isTeamEduEligible,
     maxSeats,
     occupiedSeats,
     isLoading,

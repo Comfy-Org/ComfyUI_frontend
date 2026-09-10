@@ -1,3 +1,5 @@
+import { TEAM_EDU_COUPON_PERCENTS } from '@/platform/cloud/subscription/constants/tierPricing'
+
 export interface CreditStop {
   /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Present for
    *  API-sourced stops; absent only for the hardcoded OSS / pre-deploy fallback. */
@@ -94,17 +96,24 @@ export function mapApiTeamCreditStops(
 
 /**
  * Discounted monthly price for a credit stop, applying the billing-cycle
- * discount (yearly = full `discountPercentYearly`; monthly halves it). Shared by
- * the slider display and the checkout confirm step so the two never drift, and
- * it reads the stop's own discount so backend-driven stops are honored.
+ * discount (yearly = full `discountPercentYearly`; monthly halves it) and,
+ * when `eduDiscountActive`, the team EDU coupon that stacks on top of it
+ * (cloud#8724, `TEAM_EDU_COUPON_PERCENTS` — composed multiplicatively, the
+ * same way the two Stripe coupons stack). Shared by the slider display and
+ * the checkout confirm step so the two never drift, and it reads the stop's
+ * own discount so backend-driven stops are honored.
  */
 export function getStopDiscountedMonthlyUsd(
   stop: Pick<CreditStop, 'usd' | 'discountPercentYearly'>,
-  cycle: 'monthly' | 'yearly'
+  cycle: 'monthly' | 'yearly',
+  eduDiscountActive = false
 ): number {
-  const percent =
+  const basePercent =
     cycle === 'monthly'
       ? stop.discountPercentYearly / 2
       : stop.discountPercentYearly
-  return Math.round(stop.usd * (1 - percent / 100))
+  const eduPercent = eduDiscountActive
+    ? (TEAM_EDU_COUPON_PERCENTS[stop.discountPercentYearly]?.[cycle] ?? 0)
+    : 0
+  return Math.round(stop.usd * (1 - basePercent / 100) * (1 - eduPercent / 100))
 }

@@ -45,7 +45,8 @@ export enum ServerFeatureFlag {
   CHURNKEY_APP_ID = 'churnkey_app_id',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
-  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled'
+  ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
+  EDU_PRICING_ENABLED = 'edu_pricing_enabled'
 }
 
 function reportFeatureFlagEvaluation<T>(flagKey: string, value: T): T {
@@ -292,6 +293,14 @@ export function useFeatureFlags() {
         false
       )
     },
+    /** EDU promo pricing display; the customer must also carry is_edu (cloud#8725). */
+    get eduPricingEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.EDU_PRICING_ENABLED,
+        remoteConfig.value.edu_pricing_enabled,
+        false
+      )
+    },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     }
@@ -348,6 +357,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
+      [ServerFeatureFlag.EDU_PRICING_ENABLED]: flags.eduPricingEnabled,
       assets: flags.assetsEnabled
     }
 

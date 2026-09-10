@@ -122,6 +122,7 @@ export type RemoteConfig = {
   }
   free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
+  edu_pricing_enabled?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
