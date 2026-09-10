@@ -2160,6 +2160,21 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     ])
   })
 
+  it('groups malformed frames under one Sentry issue, detail in context', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    const [error, options] = vi.mocked(reportError).mock.calls[0]
+    // ZodError.message is JSON.stringify(issues): reporting it as the error
+    // itself gives Sentry one group per field path.
+    expect((error as Error).message).toBe('Malformed agent stream event')
+    expect(options.tags?.event_type).toBe('agent_message_done')
+    expect(options.context?.issues).toEqual(expect.any(Array))
+  })
+
   it('reports a rejected send to the unified error sinks', async () => {
     const rest = fakeRest({
       postMessage: vi.fn(async () => {

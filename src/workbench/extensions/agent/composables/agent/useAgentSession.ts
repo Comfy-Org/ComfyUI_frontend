@@ -236,7 +236,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * the normalized class.
    */
   function trackMalformedStreamEvent(
-    cause: unknown,
+    cause: ZodError,
+    eventType: string,
     activeTurnId: TurnId | null,
     uiTreatment: AgentErrorMetadata['ui_treatment']
   ): void {
@@ -247,9 +248,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
       return
     malformedStreamReport = { turnId: activeTurnId, visible }
-    reportError(cause, {
+    reportError(new Error('Malformed agent stream event'), {
       errorType: 'agent_malformed_stream_event',
-      tags: { ui_treatment: uiTreatment }
+      tags: { ui_treatment: uiTreatment, event_type: eventType },
+      context: { issues: cause.issues }
     })
     trackAgentError(
       'malformed_stream_event',
@@ -612,7 +614,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           conversationStore.settleBackgroundTurn(messageId)
         }
       }
-      trackMalformedStreamEvent(parsed.error, activeTurnId, uiTreatment)
+      trackMalformedStreamEvent(parsed.error, type, activeTurnId, uiTreatment)
       console.warn('[agent] dropping malformed agent event', parsed.error)
       return
     }
