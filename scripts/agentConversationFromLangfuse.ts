@@ -200,6 +200,10 @@ function turnFrames(
     const toolCallId = attributeOf(tool, 'gen_ai.tool.call.id')!
     const toolName = attributeOf(tool, 'gen_ai.tool.name') ?? tool.name ?? ''
     const ok = attributeOf(tool, 'comfy.tool.ok')
+    if ((ok !== 'true' && ok !== 'false') || tool.endTime == null)
+      refuse(
+        `tool call ${toolCallId} (${toolName}) in turn ${turnId} has no terminal outcome: comfy.tool.ok=${ok ?? 'missing'}, endTime=${tool.endTime ?? 'missing'}`
+      )
     frames.push({
       type: 'agent_tool_call',
       data: {
@@ -216,9 +220,9 @@ function turnFrames(
         ...ids,
         tool_call_id: toolCallId,
         tool_name: toolName,
-        status: ok === 'false' ? 'error' : 'success'
+        status: ok === 'true' ? 'success' : 'error'
       },
-      at_ms: atMs(tool.endTime ?? tool.startTime)
+      at_ms: atMs(tool.endTime)
     })
   }
   const end = atMs(turn.root.endTime ?? turn.root.startTime)
@@ -262,6 +266,18 @@ export function captureFromObservations(
         body: { thread_id: options.threadId, message_id: turnId }
       }
     })
+    // Langfuse never sees the socket's tab frame, and the assembler binds through it.
+    if (index === 0)
+      frames.push({
+        type: 'agent_active_tab',
+        data: {
+          thread_id: options.threadId,
+          message_id: turnId,
+          workflow_id: options.workflowId,
+          name: options.seed.workflow.name
+        },
+        at_ms: atMs(turn.root.startTime)
+      })
     frames.push(...turnFrames(turn, options.threadId, turnId))
   }
   return {
@@ -286,6 +302,14 @@ export function captureFromObservations(
 
 export type Fetch = (url: string, init: RequestInit) => Promise<Response>
 
+// A transport or server failure: the run failed, the capture was not refused.
+export class LangfuseRequestError extends Error {
+  constructor(path: string, status: number, page: number) {
+    super(`Langfuse ${path} returned ${status} on page ${page}`)
+    this.name = 'LangfuseRequestError'
+  }
+}
+
 async function pages<T>(
   env: LangfuseEnv,
   path: string,
@@ -309,7 +333,7 @@ async function pages<T>(
       headers: { authorization: `Basic ${auth}` }
     })
     if (!response.ok)
-      refuse(`Langfuse ${path} returned ${response.status} on page ${page}`)
+      throw new LangfuseRequestError(path, response.status, page)
     const parsed = parseOrRefuse(
       schema,
       await response.json(),
@@ -375,7 +399,10 @@ function parseArgs(argv: string[]) {
   return { positional, flags, prompts }
 }
 
-export async function main(argv: string[]): Promise<void> {
+export async function main(
+  argv: string[],
+  fetchImpl: Fetch = (url, init) => fetch(url, init)
+): Promise<void> {
   const { positional, flags, prompts } = parseArgs(argv)
   const [caseId, seedPath] = positional
   const traceId = flags['--trace']
@@ -407,7 +434,11 @@ export async function main(argv: string[]): Promise<void> {
   const sidecar = (suffix: string): string =>
     join(workDir, `${caseId}.${attempt}.${suffix}`)
 
-  const observations = await fetchObservations(langfuse, { traceId, sessionId })
+  const observations = await fetchObservations(
+    langfuse,
+    { traceId, sessionId },
+    fetchImpl
+  )
   const threadIds = new Set(
     observations.flatMap((observation) => {
       const id = attributeOf(observation, 'comfy.thread_id')

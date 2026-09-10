@@ -1,16 +1,23 @@
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import { RecordRefusal } from './agentConversationAssemble'
 import type { Observation } from './agentConversationFromLangfuse'
 import {
+  LangfuseRequestError,
   attributeOf,
   captureFromObservations,
   fetchObservations,
+  main,
   readEnvFile
 } from './agentConversationFromLangfuse'
+import {
+  assertOpsApply,
+  zAgentConversation
+} from '../browser_tests/fixtures/data/agent/agentConversation'
 
 const THREAD = 'thread-1'
 const WORKFLOW = '6f1c2c1e-3b1c-4c88-9d9c-0d6e9b8e1a01'
@@ -139,6 +146,7 @@ describe('captureFromObservations', () => {
     expect(
       raw.frames.map((frame) => [frame.type, frame.data.status, frame.at_ms])
     ).toEqual([
+      ['agent_active_tab', undefined, Date.parse('2026-09-04T10:00:00.000Z')],
       ['agent_tool_call', 'running', Date.parse('2026-09-04T10:00:00.200Z')],
       ['agent_tool_call', 'success', Date.parse('2026-09-04T10:00:00.700Z')],
       [
@@ -148,13 +156,13 @@ describe('captureFromObservations', () => {
       ],
       ['agent_message_done', undefined, Date.parse('2026-09-04T10:00:01.000Z')]
     ])
-    expect(raw.frames[0].data).toMatchObject({
+    expect(raw.frames[1].data).toMatchObject({
       thread_id: THREAD,
       message_id: 'message-1',
       tool_call_id: 'tool-1',
       tool_name: 'apply_ops'
     })
-    expect(raw.frames[2].data.delta).toBe('Added a KSampler.')
+    expect(raw.frames[3].data.delta).toBe('Added a KSampler.')
     expect(raw.seed_workflow_id).toBe(WORKFLOW)
     expect(raw.seed_node_ids).toEqual([3])
   })
@@ -193,6 +201,72 @@ describe('captureFromObservations', () => {
     )
     expect(terminal?.data.status).toBe('error')
     expect(terminal?.data.message_id).toBe('message-2')
+  })
+
+  it('opens the thread with the tab frame the assembler binds the replay through', () => {
+    const raw = captureFromObservations(
+      [
+        launchSpan('turn-1', '2026-09-04T10:00:00.000Z'),
+        turnRoot(
+          'turn-1',
+          '2026-09-04T10:00:00.000Z',
+          '2026-09-04T10:00:05.000Z'
+        )
+      ],
+      options
+    )
+    expect(raw.frames[0]).toEqual({
+      type: 'agent_active_tab',
+      data: {
+        thread_id: THREAD,
+        message_id: 'turn-1',
+        workflow_id: WORKFLOW,
+        name: 'Text to image'
+      },
+      at_ms: Date.parse('2026-09-04T10:00:00.000Z')
+    })
+  })
+
+  it('refuses a tool span that carries no terminal outcome', () => {
+    const start = '2026-09-04T10:00:00.000Z'
+    const end = '2026-09-04T10:00:05.000Z'
+    const thread = (tool: Observation) => [
+      launchSpan('turn-1', start),
+      turnRoot('turn-1', start, end),
+      roundSpan('turn-1'),
+      tool
+    ]
+    const complete = toolSpan('turn-1', 'call-1', true, start, end)
+    for (const partial of [
+      { ...complete, endTime: null },
+      {
+        ...complete,
+        metadata: {
+          attributes: {
+            'gen_ai.tool.call.id': 'call-1',
+            'gen_ai.tool.name': 'apply_ops'
+          }
+        }
+      },
+      {
+        ...complete,
+        metadata: {
+          attributes: {
+            'gen_ai.tool.call.id': 'call-1',
+            'gen_ai.tool.name': 'apply_ops',
+            'comfy.tool.ok': 'maybe'
+          }
+        }
+      }
+    ])
+      expect(() => captureFromObservations(thread(partial), options)).toThrow(
+        'tool call call-1 (apply_ops) in turn turn-1 has no terminal outcome'
+      )
+    expect(
+      captureFromObservations(thread(complete), options).frames.filter(
+        (frame) => frame.type === 'agent_tool_call'
+      )
+    ).toHaveLength(2)
   })
 
   it('refuses a turn exported without its invoke_agent span', () => {
@@ -355,13 +429,122 @@ describe('fetchObservations', () => {
     ])
   })
 
-  it('refuses on a non-2xx page', async () => {
-    await expect(
-      fetchObservations(
-        env,
-        { traceId: 'trace-1' },
-        async () => new Response('nope', { status: 401 })
+  it('reports a non-2xx page as a request failure, not a capture refusal', async () => {
+    const fetchImpl = async () =>
+      new Response('upstream detail that must not be echoed', {
+        status: 503
+      })
+    const failure = await fetchObservations(
+      env,
+      { traceId: 'trace-1' },
+      fetchImpl
+    ).catch((error: unknown) => error)
+    expect(failure).toBeInstanceOf(LangfuseRequestError)
+    expect(failure).not.toBeInstanceOf(RecordRefusal)
+    expect((failure as Error).message).toBe(
+      'Langfuse /api/public/observations returned 503 on page 1'
+    )
+  })
+})
+
+describe('main', () => {
+  const recording =
+    'browser_tests/fixtures/data/agent/conversations/agent-rec-text-only-answer.json'
+
+  it('imports a text-only trace into a fixture the replay accepts', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'agent-langfuse-import-'))
+    const { workflow } = zAgentConversation.parse(
+      JSON.parse(readFileSync(recording, 'utf8'))
+    )
+    const seedPath = join(dir, 'seed.json')
+    writeFileSync(seedPath, JSON.stringify({ workflow }))
+    writeFileSync(
+      join(dir, 'draft.json'),
+      JSON.stringify({
+        nodes: workflow.seed.nodes,
+        links: workflow.seed.links
+      })
+    )
+    const rowsScript = join(dir, 'rows.cjs')
+    writeFileSync(
+      rowsScript,
+      "process.stdout.write(JSON.stringify({ source: 'postgres', parents: [], draft: require('./draft.json') }))\n"
+    )
+    const envPath = join(dir, 'langfuse.env')
+    writeFileSync(
+      envPath,
+      'LANGFUSE_HOST=https://langfuse.example\nLANGFUSE_PUBLIC_KEY=pk-test\nLANGFUSE_SECRET_KEY=sk-test\n'
+    )
+    vi.stubEnv('AGENT_CLOUD_SHA', 'abc1234')
+    vi.stubEnv('AGENT_ATTEMPT', 'a1')
+    vi.stubEnv('AGENT_PG_EXEC', `${process.execPath} ${rowsScript}`)
+    const stdout = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true)
+    const outPath = join(dir, 'out', 'agent-lf-text-only.json')
+    const workDir = join(dir, 'work')
+    try {
+      await main(
+        [
+          'agent-lf-text-only',
+          seedPath,
+          '--trace',
+          'trace-1',
+          '--workflow',
+          workflow.id,
+          '--out',
+          outPath,
+          '--work',
+          workDir,
+          '--env-file',
+          envPath
+        ],
+        async (url) => {
+          expect(new URL(url).pathname).toBe('/api/public/observations')
+          return new Response(
+            JSON.stringify({
+              data: [
+                launchSpan('turn-1', '2026-09-04T09:59:59.000Z'),
+                turnRoot(
+                  'turn-1',
+                  '2026-09-04T10:00:00.000Z',
+                  '2026-09-04T10:00:05.000Z'
+                )
+              ],
+              meta: { totalPages: 1 }
+            }),
+            { status: 200 }
+          )
+        }
       )
-    ).rejects.toThrow('returned 401')
+    } finally {
+      stdout.mockRestore()
+      vi.unstubAllEnvs()
+    }
+
+    const conversation = zAgentConversation.parse(
+      JSON.parse(readFileSync(outPath, 'utf8'))
+    )
+    expect(() => assertOpsApply(conversation)).not.toThrow()
+    expect(conversation.workflow.id).toBe(workflow.id)
+    expect(conversation.turns.map((turn) => turn.message_id)).toEqual([
+      'turn-1'
+    ])
+    expect(conversation.turns[0].request).toEqual({ content: 'Add a sampler' })
+    expect(
+      conversation.turns[0].response.map((entry) =>
+        entry.kind === 'event' ? entry.event.type : entry.kind
+      )
+    ).toEqual(['agent_active_tab', 'agent_message_delta', 'agent_message_done'])
+    expect(readdirSync(workDir).sort()).toEqual([
+      'agent-lf-text-only.a1.raw.json',
+      'agent-lf-text-only.a1.receipt.json',
+      'agent-lf-text-only.a1.rows.1.json'
+    ])
+    for (const file of [
+      outPath,
+      ...readdirSync(workDir).map((name) => join(workDir, name))
+    ])
+      expect(readFileSync(file, 'utf8')).not.toMatch(/pk-test|sk-test/)
   })
 })
