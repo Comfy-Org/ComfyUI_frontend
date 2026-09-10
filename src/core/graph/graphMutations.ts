@@ -380,12 +380,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
             return `node id ${key} belongs to graph ${incumbent.graphId}`
           }
-          if (mutation.kind === 'reconcileNode' && incumbent) {
+          if (
+            mutation.kind === 'reconcileNode' &&
+            incumbent?.type === node.state.type
+          ) {
             const { title, widgets_values } = mutation.payload
-            if (
-              Array.isArray(widgets_values) &&
-              incumbent.type === node.state.type
-            ) {
+            if (Array.isArray(widgets_values)) {
               const serializable = widgetStore
                 .getNodeWidgets(scope.rootGraphId, node.state.id)
                 .filter((widget) => widget.serialize !== false)
@@ -393,10 +393,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 widget.name = serializable[index]?.name ?? widget.name
               })
             }
-            if (
-              incumbent.type === node.state.type &&
-              (typeof title !== 'string' || !title)
-            )
+            if (typeof title !== 'string' || !title)
               node.state.title = incumbent.title
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
@@ -675,8 +672,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const { state, widgets } = mutation.node
           const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
-            const sameType = existing.type === state.type
-            if (sameType) {
+            if (existing.type === state.type) {
               state.inputs = reconcileInputSlots(existing, state)
               nodeStore.updateNode(scope, state.id, state, context)
             } else {

@@ -3351,42 +3351,39 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it.for([false, true])(
-    'subscribes once after binding and graph load (loading=%s)',
-    async (loading) => {
-      const tab = makeTab()
-      Object.assign(tab, { isTemporary: true })
-      mockMessagesEndpoint('wf-fresh')
-      const nodeSelectionStore = useAgentNodeSelectionStore()
-      if (loading) nodeSelectionStore.beginWorkflowLoad()
+  it.for([false, true])('waits for graph load: %s', async (loading) => {
+    const tab = makeTab()
+    Object.assign(tab, { isTemporary: true })
+    mockMessagesEndpoint('wf-fresh')
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    if (loading) nodeSelectionStore.beginWorkflowLoad()
 
-      await renderAndSend('build a graph')
+    await renderAndSend('build a graph')
 
-      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
-        tab.path
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
+      tab.path
+    )
+    expect(
+      socketSend.mock.calls.filter(([frame]) =>
+        String(frame).includes('doc_subscribe')
       )
-      expect(
-        socketSend.mock.calls.filter(([frame]) =>
-          String(frame).includes('doc_subscribe')
-        )
-      ).toHaveLength(loading ? 0 : 1)
+    ).toHaveLength(loading ? 0 : 1)
 
-      nodeSelectionStore.finishWorkflowLoad()
-      await nextTick()
+    nodeSelectionStore.finishWorkflowLoad()
+    await nextTick()
 
-      const subscribes = socketSend.mock.calls
-        .map(
-          ([frame]) =>
-            JSON.parse(String(frame)) as { type: string; data: unknown }
-        )
-        .filter(({ type }) => type === 'doc_subscribe')
-      expect(subscribes).toEqual([
-        expect.objectContaining({
-          data: expect.objectContaining({ workflow_id: 'wf-fresh' })
-        })
-      ])
-    }
-  )
+    const subscribes = socketSend.mock.calls
+      .map(
+        ([frame]) =>
+          JSON.parse(String(frame)) as { type: string; data: unknown }
+      )
+      .filter(({ type }) => type === 'doc_subscribe')
+    expect(subscribes).toEqual([
+      expect.objectContaining({
+        data: expect.objectContaining({ workflow_id: 'wf-fresh' })
+      })
+    ])
+  })
 
   it('does not subscribe a minted workflow after its tab is backgrounded', async () => {
     const origin = makeTab()

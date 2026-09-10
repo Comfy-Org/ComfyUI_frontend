@@ -1479,13 +1479,11 @@ export class LGraph
         : undefined
     const nodeStore = useNodeDataStore()
     const canonical = nodeStore.getNode(this.rootGraph.id, node.id)
-    const replacement =
-      options.preserveCanonicalState &&
-      canonical?.graphId === this.id &&
-      !nodeStore.ownsNode(graphScopeOf(this), node._state)
-        ? canonical
-        : undefined
-    const preserveReplacement = successor || replacement
+    const preserveReplacement =
+      successor ||
+      (options.preserveCanonicalState &&
+        canonical?.graphId === this.id &&
+        !nodeStore.ownsNode(graphScopeOf(this), node._state))
 
     // sure? - almost sure is wrong
     this.beforeChange()

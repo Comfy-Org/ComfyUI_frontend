@@ -960,29 +960,26 @@ describe('reconcileAgentAdapters', () => {
       ).toBeDefined()
     })
 
-    it.for([false, true])(
-      'retries a failed add (replacement: %s)',
-      (replacement) => {
-        const graph = new LGraph()
-        const scope = seedAgentAddedNode(graph, 1)
-        if (replacement) {
-          reconcileAgentAdapters(graph)
-          remoteMutations(scope).batch(REMOTE, (batch) =>
-            batch.reconcileNode(nodePayload(1, 'widget-node'))
-          )
-        }
-        const add = vi.spyOn(graph, 'add').mockImplementationOnce(() => {
-          throw new Error('transient')
-        })
-        expect(reconcileAgentAdapters(graph)).toEqual([])
-        expect(graph._nodes).toHaveLength(0)
-        expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
-        add.mockRestore()
-
-        expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
-        expect(graph._nodes).toHaveLength(1)
+    it.for([false, true])('retries add (replacement: %s)', (replacement) => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      if (replacement) {
+        reconcileAgentAdapters(graph)
+        remoteMutations(scope).batch(REMOTE, (batch) =>
+          batch.reconcileNode(nodePayload(1, 'widget-node'))
+        )
       }
-    )
+      const add = vi.spyOn(graph, 'add').mockImplementationOnce(() => {
+        throw new Error('transient')
+      })
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph._nodes).toHaveLength(0)
+      expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+      add.mockRestore()
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph._nodes).toHaveLength(1)
+    })
 
     it('keeps the attached node when configure() throws', () => {
       const graph = new LGraph()
@@ -1040,9 +1037,11 @@ describe('reconcileAgentAdapters', () => {
       graph.add(node)
       graph.add(upstream)
       upstream.addOutput('image', 'IMAGE')
+      const names = ['image_1', 'image_2', 'image_3']
+      const inputNames = names.map((name) => `0.${name}`)
       addAutogrow(node, {
         input: { required: { image: ['IMAGE', {}] } },
-        names: ['image_1', 'image_2', 'image_3']
+        names
       })
       node.addInput('obsolete', 'IMAGE')
       const firstLink = upstream.connect(0, node, 0)
@@ -1069,10 +1068,9 @@ describe('reconcileAgentAdapters', () => {
         expect(reconcileAgentAdapters(graph)).toEqual([])
         await settle()
 
-        expect(node.inputs.map(({ name }) => name)).toEqual([
-          '0.image_1',
-          '0.image_2'
-        ])
+        expect(node.inputs.map(({ name }) => name)).toEqual(
+          inputNames.slice(0, 2)
+        )
         expect(node.getInputLink(0)).toBe(firstLink)
         expect(node.widgets).toEqual([widget])
         expect(widget.value).toBe(7)
@@ -1085,11 +1083,7 @@ describe('reconcileAgentAdapters', () => {
       expect(node.inputs[1]).toBe(spare)
       const secondLink = upstream.connect(0, node, 1)
       if (!secondLink) throw new Error('Restored image connection failed')
-      expect(node.inputs.map(({ name }) => name)).toEqual([
-        '0.image_1',
-        '0.image_2',
-        '0.image_3'
-      ])
+      expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
       expect(node.getInputLink(0)).toBe(firstLink)
       expect(node.getInputLink(1)).toBe(secondLink)
       expect(node.getInputLink(2)).toBeNull()
@@ -1099,11 +1093,7 @@ describe('reconcileAgentAdapters', () => {
       if (!thirdLink) throw new Error('Final image connection failed')
       reconcileAgentAdapters(graph)
       reconcileAgentAdapters(graph)
-      expect(node.inputs.map(({ name }) => name)).toEqual([
-        '0.image_1',
-        '0.image_2',
-        '0.image_3'
-      ])
+      expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
       expect(node.getInputLink(2)).toBe(thirdLink)
       await settle()
       minted.length = 0
@@ -1166,89 +1156,86 @@ describe('reconcileAgentAdapters', () => {
       expect(minted).toEqual([])
     })
 
-    it.for([false, true])(
-      'restores authority and retries after repeated cleanup failures (replacement: %s)',
-      async (replacement) => {
-        let fails = true
-        class ReplacementNode extends WidgetNode {
-          override onAdded() {
-            if (fails) throw new Error('replacement add failed')
-          }
-
-          override onRemoved() {
-            if (fails) throw new Error('replacement cleanup failed')
-          }
-        }
-        LiteGraph.registerNodeType('replacement-node', ReplacementNode)
-        const scope = graphScopeOf(graph)
-        if (replacement) {
-          seedAgentAddedNode(graph, 1, 'widget-node')
-          reconcileAgentAdapters(graph)
-        }
-        const original = graph.getNodeById(toNodeId(1))
-        const payload = {
-          ...nodePayload(1, 'replacement-node'),
-          properties: { remoteValue: 7 },
-          widgets_values: { value: 7 }
-        }
-        const mutations = remoteMutations(scope)
-        if (replacement) {
-          mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
-        } else {
-          mutations.addNode(payload, REMOTE)
-        }
-        const nodeStore = useNodeDataStore()
-        const authoritative = nodeStore.getNode(scope.rootGraphId, toNodeId(1))
-        expect(authoritative).toBeDefined()
-
-        expect(reconcileAgentAdapters(graph)).toEqual([])
-        const partial = graph.getNodeById(toNodeId(1))!
-        if (replacement) expect(original?.graph).toBeNull()
-        expect(partial).not.toBe(original)
-        expect(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(
-          authoritative
-        )
-        expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
-        for (const errorType of [
-          'agent_node_materialize_add_failed',
-          'agent_node_materialize_rollback_failed'
-        ]) {
-          expect(reportError).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({ errorType })
-          )
+    it.for(['add', 'replace'])('restores %s authority', async (mode) => {
+      let fails = true
+      class ReplacementNode extends WidgetNode {
+        override onAdded() {
+          if (fails) throw new Error('replacement add failed')
         }
 
-        expect(reconcileAgentAdapters(graph)).toEqual([])
-        expect(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(
-          authoritative
-        )
-        expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
-        expect(graph._nodes).toEqual([partial])
-        expect(
-          useWidgetValueStore().getWidget(
-            widgetId(scope.rootGraphId, partial.id, 'value')
-          )?.value
-        ).toBe(7)
-
-        fails = false
-        expect(reconcileAgentAdapters(graph)).toEqual([partial.id])
-        const restored = graph.getNodeById(partial.id)!
-        expect(partial.graph).toBeNull()
-        expect(graph._nodes).toEqual([restored])
-        expect(restored).not.toBe(partial)
-        expect(restored.properties).toEqual(payload.properties)
-        expect(restored.widgets?.[0].value).toBe(7)
-        expect(nodeStore.ownsNode(scope, restored._state)).toBe(true)
-        expect(
-          layoutStore.getNodeLayout(scope.rootGraphId, restored.id)
-        ).toBeDefined()
-        expect(reconcileAgentAdapters(graph)).toEqual([])
-        expect(graph.getNodeById(restored.id)).toBe(restored)
-        await settle()
-        expect(minted).toEqual([])
+        override onRemoved() {
+          if (fails) throw new Error('replacement cleanup failed')
+        }
       }
-    )
+      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+      const scope = graphScopeOf(graph)
+      if (mode === 'replace') {
+        seedAgentAddedNode(graph, 1, 'widget-node')
+        reconcileAgentAdapters(graph)
+      }
+      const original = graph.getNodeById(toNodeId(1))
+      const payload = {
+        ...nodePayload(1, 'replacement-node'),
+        properties: { remoteValue: 7 },
+        widgets_values: { value: 7 }
+      }
+      const mutations = remoteMutations(scope)
+      if (mode === 'replace') {
+        mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
+      } else {
+        mutations.addNode(payload, REMOTE)
+      }
+      const nodeStore = useNodeDataStore()
+      const authoritative = nodeStore.getNode(scope.rootGraphId, toNodeId(1))
+      expect(authoritative).toBeDefined()
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      const partial = graph.getNodeById(toNodeId(1))!
+      if (mode === 'replace') expect(original?.graph).toBeNull()
+      expect(partial).not.toBe(original)
+      expect(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(
+        authoritative
+      )
+      expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
+      for (const errorType of [
+        'agent_node_materialize_add_failed',
+        'agent_node_materialize_rollback_failed'
+      ]) {
+        expect(reportError).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({ errorType })
+        )
+      }
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(
+        authoritative
+      )
+      expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
+      expect(graph._nodes).toEqual([partial])
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, partial.id, 'value')
+        )?.value
+      ).toBe(7)
+
+      fails = false
+      expect(reconcileAgentAdapters(graph)).toEqual([partial.id])
+      const restored = graph.getNodeById(partial.id)!
+      expect(partial.graph).toBeNull()
+      expect(graph._nodes).toEqual([restored])
+      expect(restored).not.toBe(partial)
+      expect(restored.properties).toEqual(payload.properties)
+      expect(restored.widgets?.[0].value).toBe(7)
+      expect(nodeStore.ownsNode(scope, restored._state)).toBe(true)
+      expect(
+        layoutStore.getNodeLayout(scope.rootGraphId, restored.id)
+      ).toBeDefined()
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      expect(graph.getNodeById(restored.id)).toBe(restored)
+      await settle()
+      expect(minted).toEqual([])
+    })
 
     it('still mints a later local widget edit on the materialized node', async () => {
       const scope = graphScopeOf(graph)

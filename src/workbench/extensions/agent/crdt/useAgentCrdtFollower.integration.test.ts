@@ -1,5 +1,6 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
+import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import * as Y from 'yjs'
@@ -30,6 +31,16 @@ function deliver(frame: { type: string; data: unknown }) {
   target.dispatchEvent(new CustomEvent(frame.type, { detail: frame.data }))
 }
 
+function deliverUpdate(host: Y.Doc, workflowId: string, seq = 1) {
+  deliver(
+    docUpdateFrame({
+      workflow_id: workflowId,
+      seq,
+      update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
+    })
+  )
+}
+
 function snapshot(
   workflowId: string,
   { nodes, links }: Pick<ReturnType<LGraph['serialize']>, 'nodes' | 'links'>
@@ -42,12 +53,7 @@ function snapshot(
     { types: { 'test/widgetNode': { widget_order: ['text_widget'] } } }
   )
   onTestFinished(() => host.destroy())
-  deliver(
-    docUpdateFrame({
-      workflow_id: workflowId,
-      update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
-  )
+  deliverUpdate(host, workflowId)
   return host
 }
 
@@ -97,7 +103,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       retained.pos = [123, 456]
       retained.widgets![0].value = 'local value'
       retained.connect(0, removed, 0)
-      const loaded = target.serialize()
+      const loaded = pick(target.serialize(), ['nodes', 'links'])
       graph.value = target
       await nextTick()
 
@@ -106,10 +112,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
 
       expect(target._nodes[0]).toBe(retained)
       expect(target._nodes[1]).toBe(removed)
-      expect(target.serialize()).toMatchObject({
-        nodes: loaded.nodes,
-        links: loaded.links
-      })
+      expect(target.serialize()).toMatchObject(loaded)
       const scope = graphScopeOf(target)
       expect(
         useNodeDataStore().getGraphNodesFor(
@@ -127,10 +130,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       )
       vi.advanceTimersByTime(500)
       deliver(docSubscribedFrame({ workflow_id: 'wf-b' }))
-      expect(target.serialize()).toMatchObject({
-        nodes: loaded.nodes,
-        links: loaded.links
-      })
+      expect(target.serialize()).toMatchObject(loaded)
 
       const authoritative =
         content === 'same'
@@ -157,13 +157,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
       if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
       widgets.set('text_widget', 'remote value')
-      deliver(
-        docUpdateFrame({
-          workflow_id: 'wf-b',
-          seq: 2,
-          update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-        })
-      )
+      deliverUpdate(host, 'wf-b', 2)
       expect(
         useWidgetValueStore().getWidget(
           widgetId(scope.rootGraphId, retained.id, 'text_widget')
@@ -216,13 +210,7 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
     if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
     widgets.set('text_widget', 'later value')
-    deliver(
-      docUpdateFrame({
-        workflow_id: 'wf-b',
-        seq: 2,
-        update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-      })
-    )
+    deliverUpdate(host, 'wf-b', 2)
     expect(live.widgets![0].value).toBe('later value')
   })
 
