@@ -111,6 +111,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { isImageResult, isVideoResult } from '@/utils/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -336,14 +338,15 @@ function getPreviewOutput(job: JobListItem) {
 
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
-  if (preview?.isImage || preview?.isVideo) {
-    return preview.previewUrl
+  if (preview && (isImageResult(preview) || isVideoResult(preview))) {
+    return resultItemPreviewUrl(preview)
   }
   return job.iconImageUrl
 }
 
 function isVideoPreviewJob(job: JobListItem) {
-  return job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
+  const preview = getPreviewOutput(job)
+  return job.state === 'completed' && !!preview && isVideoResult(preview)
 }
 
 function isPreviewableCompletedJob(job: JobListItem) {

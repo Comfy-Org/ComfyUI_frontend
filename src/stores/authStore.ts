@@ -511,7 +511,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const createCustomerResJson: CreateCustomerResponse =
       await createCustomerRes.json()
-    if (!createCustomerResJson?.id) {
+    if (!createCustomerResJson.id) {
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
           error: 'No customer ID returned'
@@ -662,7 +662,7 @@ export const useAuthStore = defineStore('auth', () => {
       const result = await action(auth)
 
       // Create customer if needed
-      if (options?.createCustomer) {
+      if (options.createCustomer) {
         const token = await getIdToken()
         if (!token) {
           throw new Error('Cannot create customer: User not authenticated')
