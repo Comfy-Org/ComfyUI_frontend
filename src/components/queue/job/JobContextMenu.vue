@@ -2,16 +2,8 @@
   <Popover
     ref="jobItemPopoverRef"
     :dismissable="false"
-    :close-on-escape="true"
-    unstyled
-    :pt="{
-      root: { class: 'absolute z-50' },
-      content: {
-        class: [
-          'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg font-inter'
-        ]
-      }
-    }"
+    align="start"
+    content-class="border-none bg-transparent p-0 pt-2 font-inter"
     @show="isVisible = true"
     @hide="onHide"
   >
@@ -47,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import { nextTick, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

@@ -35,6 +35,22 @@ test.describe(
       expect(sizeAfter.height).toBeCloseTo(size.height, 0)
     })
 
+    test('opens an interior widget context menu', async ({ comfyPage }) => {
+      await comfyPage.vueNodes.enterSubgraph()
+      const widget = comfyPage.vueNodes
+        .getNodeByTitle('KSampler')
+        .getByLabel('steps', { exact: true })
+
+      await widget.click({ button: 'right' })
+
+      await expect(
+        comfyPage.page.getByRole('menuitem', {
+          name: 'Promote Widget: steps',
+          exact: true
+        })
+      ).toBeVisible()
+    })
+
     test('retains a manual resize when an interior widget is promoted', async ({
       comfyPage
     }) => {

@@ -10,20 +10,15 @@
     >
       <i class="pi pi-ellipsis-h" />
     </Button>
-    <Menu
-      ref="menu"
-      :model="menuItems"
-      :popup="true"
-      class="max-h-[40vh] overflow-auto"
-    />
+    <Menu ref="menu" :model="menuItems" class="max-h-[40vh] overflow-auto" />
   </div>
 </template>
 
 <script setup lang="ts">
-import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 

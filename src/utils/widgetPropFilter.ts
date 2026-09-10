@@ -34,17 +34,6 @@ export const PANEL_EXCLUDED_PROPS = [
 //   'imageStyle'
 // ] as const
 
-export const GALLERIA_EXCLUDED_PROPS = [
-  ...STANDARD_EXCLUDED_PROPS,
-  'thumbnailsPosition',
-  'verticalThumbnailViewPortHeight',
-  'indicatorsPosition',
-  'maskClass',
-  'containerStyle',
-  'containerClass',
-  'galleriaClass'
-] as const
-
 export const BADGE_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,
   'badgeClass'

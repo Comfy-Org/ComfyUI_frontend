@@ -361,7 +361,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'

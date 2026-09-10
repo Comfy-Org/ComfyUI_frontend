@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
@@ -28,7 +27,6 @@ describe('TopbarBadge', () => {
     badge: Partial<TopbarBadgeType> = {},
     displayMode: 'full' | 'compact' | 'icon-only' = 'full'
   ) {
-    const user = userEvent.setup()
     const result = render(TopbarBadge, {
       global: {
         plugins: [PrimeVue, i18n],
@@ -39,7 +37,7 @@ describe('TopbarBadge', () => {
         displayMode
       }
     })
-    return { ...result, user }
+    return result
   }
 
   describe('full display mode', () => {
@@ -86,16 +84,17 @@ describe('TopbarBadge', () => {
       expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument()
     })
 
-    it('reveals full text when clicked', async () => {
-      const { user } = renderTopbarBadge(
+    it('reveals full text when activated', async () => {
+      renderTopbarBadge(
         {
           text: 'Full Text',
           label: 'ALERT'
         },
         'compact'
       )
+      const trigger = screen.getByRole('button', { name: 'ALERT' })
       expect(screen.queryByText('Full Text')).not.toBeInTheDocument()
-      await user.click(screen.getByText('ALERT'))
+      trigger.click()
       expect(await screen.findByText('Full Text')).toBeInTheDocument()
     })
   })

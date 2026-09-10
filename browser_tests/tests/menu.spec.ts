@@ -53,10 +53,8 @@ test.describe('Menu', { tag: '@ui' }, () => {
     test('@mobile Items fully visible on mobile screen width', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.openTopbarMenu()
-      const topLevelMenuItem = comfyPage.page
-        .locator('a.p-menubar-item-link')
-        .first()
+      const menu = await comfyPage.menu.topbar.openTopbarMenu()
+      const topLevelMenuItem = menu.getByRole('menuitem').first()
       await expect
         .poll(() =>
           topLevelMenuItem.evaluate((el) => el.scrollWidth > el.clientWidth)
@@ -72,28 +70,25 @@ test.describe('Menu', { tag: '@ui' }, () => {
       const menu = comfyPage.page.locator('.comfy-command-menu')
 
       // Navigate to View menu
-      const viewMenuItem = comfyPage.page.locator(
-        '.p-menubar-item-label:text-is("View")'
-      )
+      const viewMenuItem = menu.getByRole('menuitem', {
+        name: 'View',
+        exact: true
+      })
       await viewMenuItem.hover()
 
       // Wait for submenu to appear
-      const viewSubmenu = comfyPage.page
-        .locator('.p-tieredmenu-submenu:visible')
-        .first()
+      const viewSubmenu = comfyPage.page.locator('[role="menu"]:visible').last()
       await viewSubmenu.waitFor({ state: 'visible' })
 
       // Find Bottom Panel menu item
-      const bottomPanelMenuItem = viewSubmenu
-        .locator('.p-tieredmenu-item:has-text("Bottom Panel")')
-        .first()
-      const bottomPanelItem = bottomPanelMenuItem.locator(
-        '.p-menubar-item-label:text-is("Bottom Panel")'
-      )
+      const bottomPanelItem = viewSubmenu.getByRole('menuitem', {
+        name: 'Bottom Panel',
+        exact: true
+      })
       await bottomPanelItem.waitFor({ state: 'visible' })
 
       // Get checkmark icon element
-      const checkmark = bottomPanelMenuItem.locator('.pi-check')
+      const checkmark = bottomPanelItem.getByTestId('menu-item-indicator')
 
       // Check initial state of bottom panel (it's initially hidden)
       const { bottomPanel } = comfyPage
@@ -141,9 +136,10 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.menu.topbar.openTopbarMenu()
       const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('File')
       await workflowMenuItem.hover()
-      const exportTag = comfyPage.page.locator('.keybinding-tag', {
-        hasText: 'Ctrl + s'
-      })
+      const exportTag = comfyPage.menu.topbar
+        .getVisibleSubmenu()
+        .getByRole('menuitem', { name: 'Save', exact: true })
+        .getByText('Ctrl + s', { exact: true })
       await expect(exportTag).toHaveCount(1)
     })
 
@@ -201,9 +197,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(async () => {
         await expect(menu).toBeVisible()
         await expect(themeSubmenu).toBeVisible()
-        await expect(lightThemeItem.locator('.pi-check')).not.toHaveClass(
-          /invisible/
-        )
+        await expect(
+          lightThemeItem.getByTestId('menu-item-indicator')
+        ).not.toHaveClass(/invisible/)
       }).toPass({ timeout: 5000 })
 
       // Screenshot with light theme active
@@ -229,11 +225,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
         await expect(menu).toBeVisible()
         await expect(themeItems2.submenu).toBeVisible()
         await expect(
-          themeItems2.darkTheme.locator('.pi-check')
+          themeItems2.darkTheme.getByTestId('menu-item-indicator')
         ).not.toHaveClass(/invisible/)
-        await expect(themeItems2.lightTheme.locator('.pi-check')).toHaveClass(
-          /invisible/
-        )
+        await expect(
+          themeItems2.lightTheme.getByTestId('menu-item-indicator')
+        ).toHaveClass(/invisible/)
       }).toPass({ timeout: 5000 })
 
       // Screenshot with dark theme active

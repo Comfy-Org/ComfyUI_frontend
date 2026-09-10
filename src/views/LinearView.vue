@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
-import type { MaybeElement } from '@vueuse/core'
-import Splitter from 'primevue/splitter'
-import SplitterPanel from 'primevue/splitterpanel'
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 
@@ -13,6 +10,16 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import {
+  SplitterGroup,
+  SplitterPanel,
+  SplitterResizeHandle
+} from '@/components/ui/splitter'
+import {
+  getSplitterStorageKey,
+  loadSplitterSizes,
+  saveSplitterSizes
+} from '@/components/ui/splitter/persistence'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -22,7 +29,6 @@ import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBa
 import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
-import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
   BUILDER_MIN_SIZE,
   CENTER_PANEL_SIZE,
@@ -66,31 +72,55 @@ const hasRightPanel = computed(
     (sidebarOnLeft.value && !isBuilderMode.value && hasOutputs.value) ||
     (!sidebarOnLeft.value && activeTab.value)
 )
+const leftPanelVisible = computed(
+  () => hasLeftPanel.value && !(showRightBuilder.value && !activeTab.value)
+)
+const rightPanelVisible = computed(
+  () => hasRightPanel.value && !(showLeftBuilder.value && !activeTab.value)
+)
 
-function sidePanelMinSize(isBuilder: boolean, isHidden: boolean) {
+function sidePanelMinSize(isBuilder: boolean) {
   if (isBuilder) return BUILDER_MIN_SIZE
-  if (isHidden) return undefined
   return SIDEBAR_MIN_SIZE
 }
 
-// Remount splitter when panel structure changes so initializePanels()
-// properly sets flexBasis for the current set of panels.
-const splitterKey = computed(() => {
-  const left = hasLeftPanel.value ? 'L' : ''
-  const right = hasRightPanel.value ? 'R' : ''
-  return isArrangeMode.value ? 'arrange' : `app-${left}${right}`
-})
-
-const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
-const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
-
-const { onResizeEnd } = useStablePrimeVueSplitterSizer(
-  [
-    { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
-    { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
-  ],
-  [activeTab, splitterKey]
+const panelComposition = computed(() => [
+  ...(leftPanelVisible.value ? ['left'] : []),
+  'center',
+  ...(rightPanelVisible.value ? ['right'] : [])
+])
+const layoutMode = computed(() => (isArrangeMode.value ? 'arrange' : 'app'))
+const splitterKey = computed(
+  () => `${layoutMode.value}-${panelComposition.value.join('-')}`
 )
+const splitterStateKey = computed(() =>
+  getSplitterStorageKey('linear-view-splitter', [
+    layoutMode.value,
+    ...panelComposition.value
+  ])
+)
+const panelCount = computed(() => panelComposition.value.length)
+const savedPanelSizes = computed(() =>
+  loadSplitterSizes(splitterStateKey.value, panelCount.value)
+)
+const leftPanelDefaultSize = computed(
+  () => savedPanelSizes.value?.[0] ?? SIDE_PANEL_SIZE
+)
+const centerPanelDefaultSize = computed(() => {
+  const index = leftPanelVisible.value ? 1 : 0
+  const sidePanelCount = panelCount.value - 1
+  return (
+    savedPanelSizes.value?.[index] ??
+    CENTER_PANEL_SIZE - Math.max(0, sidePanelCount - 1) * SIDE_PANEL_SIZE
+  )
+})
+const rightPanelDefaultSize = computed(
+  () => savedPanelSizes.value?.[panelCount.value - 1] ?? SIDE_PANEL_SIZE
+)
+
+function saveSplitterLayout(sizes: number[]) {
+  saveSplitterSizes(splitterStateKey.value, sizes)
+}
 
 const bottomLeftRef = useTemplateRef('bottomLeftRef')
 const bottomRightRef = useTemplateRef('bottomRightRef')
@@ -127,22 +157,18 @@ function dragDrop(e: DragEvent) {
           force-connected
           hide-workspace-toggles
         />
-        <Splitter
+        <SplitterGroup
           :key="splitterKey"
           class="h-full flex-1 border-none bg-secondary-background"
-          @resizestart="$event.originalEvent.preventDefault()"
-          @resizeend="onResizeEnd"
+          @layout="saveSplitterLayout"
         >
           <SplitterPanel
-            v-if="hasLeftPanel"
-            ref="leftPanel"
-            :size="SIDE_PANEL_SIZE"
-            :min-size="
-              sidePanelMinSize(showLeftBuilder, showRightBuilder && !activeTab)
-            "
-            :style="
-              showRightBuilder && !activeTab ? { display: 'none' } : undefined
-            "
+            v-if="leftPanelVisible"
+            id="linear-left-panel"
+            data-testid="linear-left-panel"
+            :order="1"
+            :default-size="leftPanelDefaultSize"
+            :min-size="sidePanelMinSize(showLeftBuilder)"
             class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
           >
             <AppBuilder v-if="showLeftBuilder" />
@@ -159,11 +185,13 @@ function dragDrop(e: DragEvent) {
               :toast-to="unrefElement(bottomLeftRef) ?? undefined"
             />
           </SplitterPanel>
+          <SplitterResizeHandle v-if="leftPanelVisible" />
           <SplitterPanel
             id="linearCenterPanel"
             v-coachmark="COACH_IDS.outputs"
+            :order="2"
             data-testid="linear-center-panel"
-            :size="CENTER_PANEL_SIZE"
+            :default-size="centerPanelDefaultSize"
             class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
             @drop="dragDrop"
           >
@@ -180,16 +208,14 @@ function dragDrop(e: DragEvent) {
             <div ref="bottomLeftRef" class="absolute bottom-7 left-4 z-20" />
             <div ref="bottomRightRef" class="absolute right-4 bottom-7 z-20" />
           </SplitterPanel>
+          <SplitterResizeHandle v-if="rightPanelVisible" />
           <SplitterPanel
-            v-if="hasRightPanel"
-            ref="rightPanel"
-            :size="SIDE_PANEL_SIZE"
-            :min-size="
-              sidePanelMinSize(showRightBuilder, showLeftBuilder && !activeTab)
-            "
-            :style="
-              showLeftBuilder && !activeTab ? { display: 'none' } : undefined
-            "
+            v-if="rightPanelVisible"
+            id="linear-right-panel"
+            data-testid="linear-right-panel"
+            :order="3"
+            :default-size="rightPanelDefaultSize"
+            :min-size="sidePanelMinSize(showRightBuilder)"
             class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
           >
             <AppBuilder v-if="showRightBuilder" />
@@ -206,27 +232,9 @@ function dragDrop(e: DragEvent) {
               <ExtensionSlot :extension="activeTab" />
             </div>
           </SplitterPanel>
-        </Splitter>
+        </SplitterGroup>
       </div>
     </div>
     <component :is="DockedAgentPanel" v-if="agentDocked" />
   </div>
 </template>
-
-<style scoped>
-:deep(.p-splitter-gutter) {
-  pointer-events: auto;
-}
-
-:deep(.p-splitter-gutter:hover),
-:deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
-  transition: background-color 0.2s ease 300ms;
-  background-color: var(--p-primary-color);
-}
-
-/* Hide gutter next to hidden arrange panels */
-:deep(.arrange-panel[style*='display: none'] + .p-splitter-gutter),
-:deep(.p-splitter-gutter + .arrange-panel[style*='display: none']) {
-  display: none;
-}
-</style>

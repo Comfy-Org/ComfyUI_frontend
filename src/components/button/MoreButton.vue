@@ -20,24 +20,8 @@
 
     <Popover
       ref="popover"
-      append-to="body"
-      auto-z-index
-      dismissable
-      close-on-escape
-      unstyled
-      :base-z-index="1000"
-      :pt="{
-        root: {
-          class: cn('absolute z-50')
-        },
-        content: {
-          class: cn(
-            'mt-1 rounded-lg',
-            'bg-secondary-background text-base-foreground',
-            'shadow-lg'
-          )
-        }
-      }"
+      align="end"
+      content-class="bg-secondary-background"
       @show="
         () => {
           isOpen = true
@@ -62,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import Popover from '@/components/ui/popover/PopoverOverlay.vue'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
