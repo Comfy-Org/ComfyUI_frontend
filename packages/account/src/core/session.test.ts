@@ -442,6 +442,41 @@ describe('remint', () => {
     releaseForced(jsonResponse(200, mintBody({ token: 'forced-jwt' })))
     expect(await joinedForced).toEqual(await forced)
   })
+
+  it('does not republish or persist an older mint that lost to a forced remint', async () => {
+    let releaseOrdinary!: (response: Response) => void
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => (releaseOrdinary = resolve))
+      )
+      .mockImplementationOnce(async () =>
+        jsonResponse(200, mintBody({ token: 'forced-jwt' }))
+      )
+    const { client, storage } = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledOnce())
+    const forcedResult = await client.remint()
+    expect(forcedResult?.status === 'ok' && forcedResult.session.token).toBe(
+      'forced-jwt'
+    )
+    expect(client.getToken()).toBe('forced-jwt')
+
+    releaseOrdinary(jsonResponse(200, mintBody({ token: 'stale-jwt' })))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      client.getToken(),
+      'the older ordinary mint lost the race and must not republish its stale token'
+    ).toBe('forced-jwt')
+    expect(
+      JSON.parse(storage.read() ?? '{}').token,
+      'nor persist it over the winning remint'
+    ).toBe('forced-jwt')
+  })
 })
 
 describe('clearStoredCredential', () => {
