@@ -134,6 +134,43 @@ function frameContext(frame: TargetFrame): RemoteMutationContext {
 }
 
 /**
+ * A snapshot is authoritative for its own link set, so a slot may not carry a
+ * reference the snapshot does not contain — that reference would survive into
+ * the serialized document and outlive the link it names.
+ */
+function withKnownLinks(
+  payload: SemanticNodePayload,
+  knownLinkIds: ReadonlySet<number>
+): SemanticNodePayload {
+  const { inputs, outputs } = payload
+  return {
+    ...payload,
+    ...(Array.isArray(outputs) && {
+      outputs: outputs.map((slot) =>
+        isSlotRecord(slot) && Array.isArray(slot.links)
+          ? {
+              ...slot,
+              links: slot.links.filter(
+                (linkId) =>
+                  typeof linkId === 'number' && knownLinkIds.has(linkId)
+              )
+            }
+          : slot
+      )
+    }),
+    ...(Array.isArray(inputs) && {
+      inputs: inputs.map((slot) =>
+        isSlotRecord(slot) &&
+        typeof slot.link === 'number' &&
+        !knownLinkIds.has(slot.link)
+          ? { ...slot, link: null }
+          : slot
+      )
+    })
+  }
+}
+
+/**
  * Full-snapshot projection of a detached target session's staged document
  * into the ECS stores through the target's `GraphMutations` composite. One
  * atomic batch clears the scope and rebuilds it from the staged doc, so a
@@ -148,17 +185,18 @@ export function createTargetFrameApplyPort(
       const nodeIds = [...nodesMap(stagedDoc).keys()].sort((left, right) =>
         compareNodeIds(toNodeId(left), toNodeId(right))
       )
-      const linkIds = [...linksMap(stagedDoc).keys()].sort(compareLinkKeys)
+      const links = [...linksMap(stagedDoc).keys()]
+        .sort(compareLinkKeys)
+        .flatMap((id) => readSemanticLink(stagedDoc, id) ?? [])
+      const knownLinkIds = new Set(links.map(({ id }) => id))
       return mutations.batch(frameContext(frame), (batch) => {
         batch.clearSemanticGraph()
         for (const id of nodeIds) {
           const payload = readSemanticNode(stagedDoc, id)
-          if (payload) batch.reconcileNode(payload)
+          if (payload)
+            batch.reconcileNode(withKnownLinks(payload, knownLinkIds))
         }
-        for (const id of linkIds) {
-          const link = readSemanticLink(stagedDoc, id)
-          if (link) batch.connect(link)
-        }
+        for (const link of links) batch.connect(link)
       })
     }
   }
