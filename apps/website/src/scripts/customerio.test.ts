@@ -1,25 +1,40 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'
+
+// AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context].
+// The real signature resolves to a full AnalyticsBrowser, so the stub is
+// checked against the surface customerio.ts actually awaits.
+interface MockAnalytics {
+  identify: (...args: never[]) => Promise<unknown>
+  track: (...args: never[]) => Promise<unknown>
+}
+interface MockAnalyticsBrowser {
+  load: (...args: never[]) => Promise<readonly [MockAnalytics, unknown]>
+}
+
 const hoisted = vi.hoisted(() => ({
   sdkImported: vi.fn(),
   mockIdentify: vi.fn(async () => undefined),
   mockTrack: vi.fn(async () => undefined),
-  mockLoad: vi.fn(() =>
-    Promise.resolve([
-      { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
-      {}
-    ])
+  mockLoad: vi.fn(
+    (): Promise<readonly [MockAnalytics, unknown]> =>
+      Promise.resolve([
+        { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
+        {}
+      ])
   )
 }))
 
-vi.mock('@customerio/cdp-analytics-browser', () => {
+vi.mock(import('@customerio/cdp-analytics-browser'), () => {
   hoisted.sdkImported()
-  // AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context]
+  const analyticsBrowser = {
+    load: hoisted.mockLoad
+  } satisfies MockAnalyticsBrowser
   return {
-    AnalyticsBrowser: {
-      load: hoisted.mockLoad
-    }
+    AnalyticsBrowser:
+      analyticsBrowser as unknown as typeof CustomerioSdk.AnalyticsBrowser
   }
 })
 

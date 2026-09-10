@@ -12,11 +12,21 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
+import type {
+  AuthErrorMetadata,
+  AuthFlowAction,
+  AuthMethod
+} from '@comfyorg/account/telemetry'
+
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AppMode } from '@/utils/appMode'
 
-export type AuthMethod = 'email' | 'google' | 'github'
+export type { AuthMethod }
 
 export type PaymentIntentSource =
   | 'subscription_required'
@@ -52,22 +62,7 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
-export type AuthFlowAction =
-  | 'email_sign_in'
-  | 'email_sign_up'
-  | 'google_sign_in'
-  | 'google_sign_up'
-  | 'github_sign_in'
-  | 'github_sign_up'
-  | 'password_reset'
-
-/**
- * Metadata for failed authentication attempts
- */
-export interface AuthErrorMetadata {
-  error_code: string
-  auth_action: AuthFlowAction
-}
+export type { AuthErrorMetadata, AuthFlowAction }
 
 export type UnifiedAuthRetryFailureReason =
   | 'missing_bearer'
@@ -89,6 +84,8 @@ export type UnifiedAuthRefreshOutcome =
   | 'retry_scheduled'
   | 'retries_exhausted'
   | 'permanent_failure'
+  /** Retries ran out and the token reached its expiry; the session ended. */
+  | 'expired'
 
 /**
  * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
@@ -1165,14 +1162,14 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
  */
 export const TelemetryEvents = {
   // Authentication Flow
-  USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
-  USER_AUTH_COMPLETED: 'app:user_auth_completed',
-  USER_AUTH_FAILED: 'app:user_auth_failed',
+  USER_SIGN_UP_OPENED: AUTH_TELEMETRY_EVENT.signUpOpened,
+  USER_AUTH_COMPLETED: AUTH_TELEMETRY_EVENT.authCompleted,
+  USER_AUTH_FAILED: AUTH_TELEMETRY_EVENT.authFailed,
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
-  UNIFIED_AUTH_REFRESH_SUCCEEDED: 'auth.unified.refresh.succeeded',
-  UNIFIED_AUTH_REFRESH_FAILED: 'auth.unified.refresh.failed',
+  UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
