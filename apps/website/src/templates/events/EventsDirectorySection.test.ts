@@ -106,6 +106,33 @@ describe('EventsDirectorySection', () => {
     expect(screen.getByText('1 event')).toBeTruthy()
   })
 
+  it('reverses the list when sorting by oldest', async () => {
+    renderSection()
+
+    const titles = () =>
+      screen
+        .queryAllByTestId('events-directory-row')
+        .map((row) => within(row).getByRole('heading').textContent?.trim())
+
+    expect(titles()[0]).toBe('Paris Hack Night')
+
+    await userEvent.selectOptions(
+      screen.getByLabelText('Sort events'),
+      'oldest'
+    )
+    await nextTick()
+
+    expect(titles()[0]).toBe('Tokyo Meetup')
+
+    await userEvent.selectOptions(
+      screen.getByLabelText('Sort events'),
+      'latest'
+    )
+    await nextTick()
+
+    expect(titles()[0]).toBe('Paris Hack Night')
+  })
+
   it('keeps the filters across view switches', async () => {
     renderSection()
 

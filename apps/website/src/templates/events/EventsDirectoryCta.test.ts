@@ -45,9 +45,7 @@ describe('EventsDirectoryCta', () => {
 
     expect(screen.queryByRole('link')).toBeNull()
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Save the date' })
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'Save the date' }))
 
     expect(
       screen.getByRole('menuitem', { name: 'Google Calendar' })
