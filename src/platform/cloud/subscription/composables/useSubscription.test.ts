@@ -743,6 +743,38 @@ describe('useSubscription', () => {
       )
     })
 
+    it('reports a missing completion once per attempt across reloads', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-reload',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+
+      // A reload drops all composable state but keeps the stored attempt.
+      scope?.stop()
+      scope = effectScope()
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledOnce()
+    })
+
     it('separates an unreachable billing API from a missing completion', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,

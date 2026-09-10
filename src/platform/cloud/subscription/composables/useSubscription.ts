@@ -34,6 +34,8 @@ import {
   consumePendingSubscriptionCheckoutSuccess,
   getPendingSubscriptionCheckoutAttempt,
   hasPendingSubscriptionCheckoutAttempt,
+  hasReportedMissingCheckoutCompletion,
+  markMissingCheckoutCompletionReported,
   recordPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
@@ -139,7 +141,6 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryTimeout: number | null = null
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
-  let hasReportedPendingCheckoutRecoveryExhaustion = false
   let didLastRecoveryAttemptThrow = false
 
   const stopPendingCheckoutRecovery = () => {
@@ -149,7 +150,6 @@ function useSubscriptionInternal() {
 
     pendingCheckoutRecoveryTimeout = null
     pendingCheckoutRecoveryAttempt = 0
-    hasReportedPendingCheckoutRecoveryExhaustion = false
     didLastRecoveryAttemptThrow = false
   }
 
@@ -170,12 +170,8 @@ function useSubscriptionInternal() {
   }
 
   const reportMissingCheckoutCompletion = () => {
-    if (hasReportedPendingCheckoutRecoveryExhaustion) {
-      return
-    }
-
     const attempt = getPendingSubscriptionCheckoutAttempt()
-    if (!attempt) {
+    if (!attempt || hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
       return
     }
 
@@ -230,7 +226,7 @@ function useSubscriptionInternal() {
       checkout_type: attempt.checkout_type,
       duration_ms: attemptAgeMs
     })
-    hasReportedPendingCheckoutRecoveryExhaustion = true
+    markMissingCheckoutCompletionReported(attempt.attempt_id)
   }
 
   const schedulePendingCheckoutRecovery = () => {
