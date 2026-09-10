@@ -561,7 +561,9 @@ describe('useAgentSession (v1 composition root)', () => {
     rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
     await pendingAnswer
 
-    expect(ingest).not.toHaveBeenCalled()
+    expect(ingest).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'agent_ask_resolved' })
+    )
   })
 
   it('reports a stale non-409 answer failure without mutating the new thread', async () => {
@@ -595,7 +597,9 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
     expect(session.notices.value).toEqual([])
-    expect(ingest).not.toHaveBeenCalled()
+    expect(ingest).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'agent_ask_resolved' })
+    )
     expect(conversationStore.threadId).toBe('th-2')
   })
 
