@@ -3,7 +3,10 @@ import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { resolveCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
@@ -88,6 +91,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
   beforeEach(() => {
     sessionStorage.clear()
+    clearCheckoutJourney()
     mockCaptureCheckoutJourneyEvent.mockClear()
     resolveCheckoutJourney({
       actorUid: 'user-1',
@@ -169,6 +173,27 @@ describe('UnifiedStripePaymentSelector', () => {
       expect(phases.indexOf('payment_submit_attempted')).toBeLessThan(
         phases.indexOf('payment_submit_failed')
       )
+    })
+
+    it('labels a rejected submit() as a validation failure', async () => {
+      const user = userEvent.setup()
+      stripeMocks.submit.mockRejectedValue(new Error('network'))
+      renderSelector()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
+
+      await user.click(
+        screen.getByRole('button', { name: 'Pay and subscribe' })
+      )
+
+      await waitFor(() =>
+        expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+          expect.objectContaining({
+            phase: 'payment_submit_failed',
+            submit_phase: 'validation'
+          })
+        )
+      )
+      expect(stripeMocks.createConfirmationToken).not.toHaveBeenCalled()
     })
 
     it('does not leak an element event after unmount', async () => {

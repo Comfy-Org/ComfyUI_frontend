@@ -54,6 +54,11 @@ export interface CheckoutJourneyRecord {
   workspace_id: string
   entry_flow: CheckoutEntryFlow
   entry_source: CheckoutEntrySource
+  /**
+   * Stable key for the intended purchase within the flow (e.g. tier:cycle).
+   * A change of intent starts a new journey rather than resuming.
+   */
+  intent?: string
   assignment_status: CheckoutAssignmentStatus
   assigned_arm?: CheckoutJourneyArm
   ui_mode?: CheckoutUiMode
@@ -74,6 +79,8 @@ export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   entryFlow: CheckoutEntryFlow
   entrySource: CheckoutEntrySource
   assignment: CheckoutAssignment
+  /** Stable key for the intended purchase (e.g. tier:cycle); a change starts a new journey. */
+  intent?: string
   checkoutAttemptId?: string
 }
 
@@ -116,6 +123,7 @@ export function createCheckoutJourneyRecord(
     workspace_id: input.workspaceId,
     entry_flow: input.entryFlow,
     entry_source: input.entrySource,
+    ...(input.intent !== undefined && { intent: input.intent }),
     assignment_status: input.assignment.status,
     ...(input.assignment.status === 'resolved' && {
       assigned_arm: input.assignment.arm
@@ -129,15 +137,11 @@ export function createCheckoutJourneyRecord(
 export function toCheckoutJourneyContext(
   record: CheckoutJourneyRecord
 ): CheckoutJourneyContext {
-  return {
+  const base = {
     checkout_journey_id: record.journey_id,
     checkout_entered_at: record.entered_at,
-    assignment_status: record.assignment_status,
     entry_flow: record.entry_flow,
     entry_source: record.entry_source,
-    ...(record.assigned_arm !== undefined && {
-      assigned_arm: record.assigned_arm
-    }),
     ...(record.ui_mode !== undefined && { ui_mode: record.ui_mode }),
     ...(record.checkout_attempt_id !== undefined && {
       checkout_attempt_id: record.checkout_attempt_id
@@ -146,6 +150,15 @@ export function toCheckoutJourneyContext(
       billing_op_id: record.billing_op_id
     })
   }
+
+  return record.assignment_status === 'resolved' &&
+    record.assigned_arm !== undefined
+    ? {
+        ...base,
+        assignment_status: 'resolved',
+        assigned_arm: record.assigned_arm
+      }
+    : { ...base, assignment_status: 'unavailable' }
 }
 
 function isCheckoutJourneyExpired(
@@ -181,7 +194,8 @@ export function resolveCheckoutJourney(
     existing &&
     !isCheckoutJourneyExpired(existing, now) &&
     journeyMatchesIdentity(existing, input) &&
-    existing.entry_flow === input.entryFlow
+    existing.entry_flow === input.entryFlow &&
+    existing.intent === input.intent
   ) {
     return { record: existing, resumed: true }
   }
@@ -212,6 +226,7 @@ export function bindOperationToCheckoutJourney(
 }
 
 export function clearCheckoutJourney(): void {
+  inMemoryJourney = null
   const storage = getStorage()
   if (!storage) {
     return
@@ -231,6 +246,14 @@ function createJourneyId(): string {
 
   return `journey-${Date.now()}`
 }
+
+/**
+ * Session-scoped mirror so the journey stays consistent even when
+ * `sessionStorage` is unavailable (private mode, quota, disabled). Reload
+ * resilience still requires storage, but within a session the active journey
+ * never silently vanishes and `entered` is not re-emitted.
+ */
+let inMemoryJourney: CheckoutJourneyRecord | null = null
 
 type CheckoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
@@ -260,6 +283,7 @@ function isCheckoutStorage(value: unknown): value is CheckoutStorage {
 }
 
 function saveCheckoutJourney(record: CheckoutJourneyRecord): void {
+  inMemoryJourney = record
   const storage = getStorage()
   if (!storage) {
     return
@@ -273,6 +297,20 @@ function saveCheckoutJourney(record: CheckoutJourneyRecord): void {
 }
 
 function loadCheckoutJourney(): CheckoutJourneyRecord | null {
+  const record = readPersistedJourney() ?? inMemoryJourney
+  if (!record) {
+    return null
+  }
+
+  if (isCheckoutJourneyExpired(record, Date.now())) {
+    clearCheckoutJourney()
+    return null
+  }
+
+  return record
+}
+
+function readPersistedJourney(): CheckoutJourneyRecord | null {
   const storage = getStorage()
   if (!storage) {
     return null
@@ -320,6 +358,18 @@ function normalizeRecord(value: unknown): CheckoutJourneyRecord | null {
     return null
   }
 
+  const arm = candidate.assigned_arm
+  const hasValidArm = arm === 'control' || arm === 'treatment'
+  // Enforce the assignment invariant on persisted records: resolved must carry
+  // an arm, unavailable must not. A contradictory record is discarded rather
+  // than replayed as a fabricated assignment.
+  if (candidate.assignment_status === 'resolved' && !hasValidArm) {
+    return null
+  }
+  if (candidate.assignment_status === 'unavailable' && arm !== undefined) {
+    return null
+  }
+
   return {
     journey_id: candidate.journey_id,
     entered_at: candidate.entered_at,
@@ -328,11 +378,9 @@ function normalizeRecord(value: unknown): CheckoutJourneyRecord | null {
     workspace_id: candidate.workspace_id,
     entry_flow: toEntryFlow(candidate.entry_flow),
     entry_source: toEntrySource(candidate.entry_source),
+    ...(typeof candidate.intent === 'string' && { intent: candidate.intent }),
     assignment_status: candidate.assignment_status,
-    ...(candidate.assigned_arm === 'control' ||
-    candidate.assigned_arm === 'treatment'
-      ? { assigned_arm: candidate.assigned_arm }
-      : {}),
+    ...(hasValidArm ? { assigned_arm: arm } : {}),
     ...(candidate.ui_mode === 'embedded' ||
     candidate.ui_mode === 'hosted' ||
     candidate.ui_mode === 'unknown'

@@ -1028,23 +1028,29 @@ type CheckoutElementPhase = 'init' | 'mount' | 'update'
 type CheckoutSubmitPhase = 'validation' | 'token_creation'
 
 /**
- * Non-sensitive entry context frozen at journey creation and replayed on every
- * journey event. `assigned_arm` is omitted whenever `assignment_status` is
- * `unavailable`, so an unknown assignment never masquerades as a resolved
- * `control`.
+ * The frozen arm assignment. A resolved assignment always carries an arm; an
+ * unavailable one never does, so an unknown assignment cannot masquerade as a
+ * resolved `control`. Encoded as a discriminated union so the invariant is a
+ * compile-time guarantee rather than a convention.
  */
-export interface CheckoutJourneyContext {
+type CheckoutJourneyAssignment =
+  | { assignment_status: 'resolved'; assigned_arm: CheckoutJourneyArm }
+  | { assignment_status: 'unavailable'; assigned_arm?: never }
+
+/**
+ * Non-sensitive entry context frozen at journey creation and replayed on every
+ * journey event.
+ */
+export type CheckoutJourneyContext = {
   checkout_journey_id: string
   checkout_attempt_id?: string
   /** UTC ISO-8601 timestamp captured at common intent, preserved across reload. */
   checkout_entered_at: string
-  assignment_status: CheckoutAssignmentStatus
-  assigned_arm?: CheckoutJourneyArm
   ui_mode?: CheckoutUiMode
   entry_flow: CheckoutEntryFlow
   entry_source: CheckoutEntrySource
   billing_op_id?: string
-}
+} & CheckoutJourneyAssignment
 
 type CheckoutJourneyEntered = { phase: 'entered' }
 type CheckoutJourneyPreviewReady = {
