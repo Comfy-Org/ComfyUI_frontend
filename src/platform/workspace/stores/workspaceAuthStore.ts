@@ -3,6 +3,7 @@ import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
 import type {
   SessionErrorCode,
@@ -18,6 +19,7 @@ import {
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   TOKEN_REFRESH_BUFFER_MS,
@@ -298,6 +300,22 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  function retireLegacyToken(): void {
+    stopRefreshTimer()
+    workspaceToken.value = null
+    workspaceTokenExpiresAt.value = null
+    workspaceTokenOwnerUid.value = null
+    try {
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)
+    } catch {
+      console.warn(
+        'Failed to retire legacy workspace token from sessionStorage'
+      )
+    }
+  }
+
   // Actions
   function init(): void {
     initializeFromSession()
@@ -397,6 +415,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     })
 
     if (!response.ok) {
+      const { message } = await parseErrorResponse(response)
+
       if (response.status === 401) {
         throw new WorkspaceAuthError(
           t('workspaceAuth.errors.invalidFirebaseToken'),
@@ -417,7 +437,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
 
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed'),
+        t('workspaceAuth.errors.tokenExchangeFailed', { error: message }),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -427,7 +447,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     if (!parseResult.success) {
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed'),
+        t('workspaceAuth.errors.tokenExchangeFailed', {
+          error: fromZodError(parseResult.error).message
+        }),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -437,7 +459,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     if (isNaN(expiresAt)) {
       throw new WorkspaceAuthError(
-        t('workspaceAuth.errors.tokenExchangeFailed'),
+        t('workspaceAuth.errors.tokenExchangeFailed', {
+          error: 'Invalid expiry timestamp'
+        }),
         'TOKEN_EXCHANGE_FAILED'
       )
     }
@@ -848,6 +872,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       // Any successful mint re-arms the scheduler with a fresh retry budget;
       // this telemetry mirror must follow it or retry_count inflates.
       unifiedScheduledRetryCount = 0
+      // A unified mint retires the legacy token so a flag rollback cannot serve
+      // a stale legacy session under the workspace unified just minted.
+      retireLegacyToken()
       currentWorkspace.value = {
         ...snapshot.session.workspace,
         role: snapshot.session.role
@@ -877,13 +904,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  // The flag owns both ends: a rollback to the legacy rail must also stop
-  // the unified scheduler and cross-tab lease, or they keep rotating the
-  // cookie and refilling the slot the API callers no longer read.
+  // The flag owns both ends: enabling the rail must attach identity and mint
+  // the current target before consumers switch to it, or an already-signed-in
+  // session starts sending no auth header; a rollback must stop the unified
+  // scheduler and cross-tab lease, or they keep rotating the cookie and
+  // refilling the slot the API callers no longer read.
   watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {
-      if (enabled || !detachUnifiedIdentity) return
+      if (enabled) {
+        ensureUnifiedIdentityAttached()
+        void mintAtLogin()
+        return
+      }
+      if (!detachUnifiedIdentity) return
       detachUnifiedIdentity()
       detachUnifiedIdentity = undefined
       clearUnifiedContext()

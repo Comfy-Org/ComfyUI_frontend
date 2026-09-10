@@ -28,13 +28,30 @@ import {
 } from './exchange.js'
 import type { RefreshHost } from './refreshScheduler.js'
 import { createRefreshScheduler } from './refreshScheduler.js'
+import type {
+  AccountCredential,
+  AccountUser,
+  MintHandle,
+  RefreshSchedulerOptions,
+  SessionErrorCode,
+  SessionFailure,
+  SessionResult
+} from './sessionContracts.js'
+import { isPermanentSessionError } from './sessionContracts.js'
 
 export type { AccountIdentity } from './identity.js'
-
-export interface AccountUser {
-  readonly uid: string
-  getIdToken: () => Promise<string>
-}
+export type {
+  AccountCredential,
+  AccountUser,
+  CrossTabRefreshPort,
+  MintHandle,
+  RefreshSchedulerOptions,
+  SessionErrorCode,
+  SessionFailure,
+  SessionRefreshOutcome,
+  SessionResult
+} from './sessionContracts.js'
+export { isPermanentSessionError } from './sessionContracts.js'
 
 /** The generated contract for POST /api/auth/token, never a local copy of it. */
 const CachedCredentialSchema = CredentialResponseSchema.omit({
@@ -45,41 +62,6 @@ const CachedCredentialSchema = CredentialResponseSchema.omit({
   /** The workspace target the credential was minted for; absent = personal. */
   target: z.string().optional()
 })
-
-export interface AccountCredential {
-  readonly token: string
-  /** ms since epoch */
-  readonly expiresAt: number
-  readonly uid: string
-  readonly workspace: z.infer<typeof CredentialResponseSchema>['workspace']
-  readonly role: z.infer<typeof CredentialResponseSchema>['role']
-  readonly permissions: readonly string[]
-}
-
-/**
- * The production store's error taxonomy (`WorkspaceAuthError` codes),
- * emitted as codes only — the host localizes. TOKEN_EXCHANGE_FAILED also
- * covers unparseable bodies, network failures, aborts, and timeouts: a
- * request that produced no usable credential is one failure bucket in
- * production, not three.
- */
-export type SessionErrorCode =
-  | 'NOT_AUTHENTICATED'
-  | 'INVALID_FIREBASE_TOKEN'
-  | 'ACCESS_DENIED'
-  | 'WORKSPACE_NOT_FOUND'
-  | 'TOKEN_EXCHANGE_FAILED'
-
-const PERMANENT_ERROR_CODES: ReadonlySet<SessionErrorCode> = new Set([
-  'ACCESS_DENIED',
-  'WORKSPACE_NOT_FOUND',
-  'INVALID_FIREBASE_TOKEN',
-  'NOT_AUTHENTICATED'
-])
-
-export function isPermanentSessionError(code: SessionErrorCode): boolean {
-  return PERMANENT_ERROR_CODES.has(code)
-}
 
 /**
  * English source strings for the codes above, extracted verbatim from the
@@ -94,50 +76,10 @@ export const SESSION_ERROR_MESSAGES: Readonly<
   INVALID_FIREBASE_TOKEN: 'Authentication failed. Please try logging in again.',
   ACCESS_DENIED: 'You do not have access to this workspace',
   WORKSPACE_NOT_FOUND: 'Workspace not found',
-  TOKEN_EXCHANGE_FAILED: 'Failed to authenticate with workspace'
+  TOKEN_EXCHANGE_FAILED: 'Failed to authenticate with workspace: {error}'
 }
 
 export { SESSION_TELEMETRY_EVENT } from '../telemetry.js'
-
-export type SessionRefreshOutcome =
-  | 'succeeded'
-  | 'retry_scheduled'
-  | 'retries_exhausted'
-  | 'permanent_failure'
-  /** The credential reached its expiry after retries ran out; the client failed closed. */
-  | 'expired'
-
-export type SessionResult =
-  | { readonly status: 'ok'; readonly session: AccountCredential }
-  | {
-      readonly status: 'error'
-      readonly code: SessionErrorCode
-      /** Set only when the failure came from an HTTP response, not aborted/network. */
-      readonly httpStatus?: number
-    }
-
-export type SessionFailure = Extract<SessionResult, { status: 'error' }>
-
-/**
- * A started mint and the monotonic id it took. Later callers for the same
- * uid reuse one in-flight mint; a forced mint reuses an in-flight one only
- * when that one is also forced, so a 401 retry never resolves to a
- * non-forced mint still holding the stale token.
- */
-export interface MintHandle {
-  readonly mintId: number
-  readonly response: Promise<SessionResult>
-}
-
-/**
- * The identity boundary. An internal port, not a host adapter: real hosts
- * get their implementation from `@comfyorg/account/firebase`; tests brand a
- * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
- * the branded form.
- */
-export interface IdentityPort<TUser extends AccountUser = AccountUser> {
-  onUserChanged: (callback: (user: TUser | null) => void) => () => void
-}
 
 /**
  * Raw string storage for the credential cache. Hosts wrap their medium —
@@ -167,69 +109,6 @@ export interface SessionRequestOptions {
   readonly preserveCredentialOnTransientFailure?: boolean
 }
 
-/**
- * Cross-tab refresh coordination. One tab per (uid, workspace) key holds the
- * lease and performs the proactive refresh; the others adopt its published
- * credential and mint for themselves only when the leader goes quiet past
- * their jittered fallback. Real hosts wrap Web Locks + BroadcastChannel
- * (`createWebCrossTabRefreshPort` from `@comfyorg/account/web`); tests pass
- * fakes.
- */
-export interface CrossTabRefreshPort {
-  /**
-   * Queue for the key's lease. `onAcquired` fires if and when this tab
-   * becomes leader; the returned function abandons the request or releases
-   * held leadership.
-   */
-  requestLeadership: (key: string, onAcquired: () => void) => () => void
-  publishCredential: (key: string, credential: AccountCredential) => void
-  /** Messages cross a serialization boundary; the client validates them. */
-  onCredential: (
-    key: string,
-    callback: (message: unknown) => void
-  ) => () => void
-}
-
-/**
- * Opt-in proactive refresh, mirroring the cloud store's scheduled-refresh
- * semantics (its buffer, retry base, and retry cap are the defaults): arm at
- * expiry minus the buffer, retry transient failures with doubling backoff,
- * stop on sign-out, detach, or a permanent failure. Hosts whose consumers
- * read the token synchronously need this; valid-on-read hosts do not.
- */
-export interface RefreshSchedulerOptions {
-  readonly bufferMs?: number
-  readonly retryBaseMs?: number
-  readonly maxRetries?: number
-  /**
-   * Cross-tab coordination (opt-in): the leader tab refreshes and publishes;
-   * followers adopt the published credential and fall back to their own mint
-   * only after a bounded random hold past the refresh point.
-   */
-  readonly crossTab?: {
-    readonly port: CrossTabRefreshPort
-    /** Upper bound for the follower's random hold. Default 15s. */
-    readonly followerJitterMs?: number
-    /**
-     * Fires when this tab commits a sibling's credential. Adoption is a
-     * rotation the tab did not perform itself, so a host that reacts to
-     * rotations (cookie refresh, extension hooks) needs this signal.
-     */
-    readonly onCredentialAdopted?: (credential: AccountCredential) => void
-  }
-  /**
-   * Called with the outcome of every SCHEDULED refresh attempt (never a
-   * login or caller-initiated mint), so a host can feed its refresh
-   * telemetry without owning the scheduler. A permanent failure and an
-   * expiry carry the failure the client committed, so the host never has
-   * to read it back out of the snapshot.
-   */
-  readonly onScheduledOutcome?: (
-    outcome: SessionRefreshOutcome,
-    failure?: SessionFailure
-  ) => void
-}
-
 export interface SessionClientOptions extends SessionRequestOptions {
   readonly exchangeUrl: string
   readonly storage: CredentialStorage
@@ -238,35 +117,36 @@ export interface SessionClientOptions extends SessionRequestOptions {
 }
 
 /**
- * `settled` is false until the attached identity has delivered at least
- * once, so a host can tell "Firebase has not answered yet" from "nobody is
- * signed in" without wrapping the port.
+ * `pending` is the initial phase, before the attached identity has delivered
+ * even once, so a host can tell "Firebase has not answered yet" (pending)
+ * from "nobody is signed in" (a delivered null) without wrapping the port.
  */
 export type SessionSnapshot<TUser extends AccountUser = AccountUser> =
+  | {
+      readonly phase: 'pending'
+      readonly user: null
+      readonly session: undefined
+    }
   | {
       readonly phase: 'signed-out'
       readonly user: null
       readonly session: undefined
-      readonly settled: boolean
     }
   | {
       readonly phase: 'minting'
       readonly user: TUser
       readonly session: undefined
-      readonly settled: true
     }
   | {
       readonly phase: 'authenticated'
       readonly user: TUser
       readonly session: AccountCredential
-      readonly settled: true
     }
   | {
       readonly phase: 'error'
       readonly user: TUser
       readonly session: undefined
       readonly failure: SessionFailure
-      readonly settled: true
     }
 
 export interface AttachIdentityOptions {
@@ -369,10 +249,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   let invalidationEpoch = 0
   const listeners = new Set<(snapshot: SessionSnapshot<TUser>) => void>()
 
-  let inFlight: Promise<SessionResult> | undefined
-  let inFlightUid: string | undefined
-  let inFlightTarget: string | undefined
-  let inFlightForced = false
+  let inFlight:
+    | {
+        readonly promise: Promise<SessionResult>
+        readonly uid: string
+        readonly target: string | undefined
+        readonly forced: boolean
+        readonly mintId: number
+      }
+    | undefined
   /**
    * Monotonic id taken by every started mint; a commit is allowed only for
    * the newest one. Target-agnostic on purpose — a slower mint for the old
@@ -380,40 +265,20 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * cloud store's unifiedRefreshRequestId guard.
    */
   let mintSequence = 0
-  let inFlightMintId = 0
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
-      return {
-        phase: 'signed-out',
-        user: null,
-        session: undefined,
-        settled: identitySettled
-      }
+      return identitySettled
+        ? { phase: 'signed-out', user: null, session: undefined }
+        : { phase: 'pending', user: null, session: undefined }
     }
     if (credential) {
-      return {
-        phase: 'authenticated',
-        user: currentUser,
-        session: credential,
-        settled: true
-      }
+      return { phase: 'authenticated', user: currentUser, session: credential }
     }
     if (failure) {
-      return {
-        phase: 'error',
-        user: currentUser,
-        session: undefined,
-        failure,
-        settled: true
-      }
+      return { phase: 'error', user: currentUser, session: undefined, failure }
     }
-    return {
-      phase: 'minting',
-      user: currentUser,
-      session: undefined,
-      settled: true
-    }
+    return { phase: 'minting', user: currentUser, session: undefined }
   }
 
   function publish(): void {
@@ -442,6 +307,18 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     target: string | undefined
   ): void {
     safeWrite(JSON.stringify({ ...session, target }))
+  }
+
+  // The exchange echoes the requested workspace on success (a non-member 404s),
+  // so a scope mismatch is a backend regression to fail closed on — shared by
+  // the direct commit and the scheduled-refresh commit.
+  function targetMismatch(
+    session: AccountCredential,
+    target: string | undefined
+  ): SessionFailure | undefined {
+    return target !== undefined && session.workspace.id !== target
+      ? { status: 'error', code: 'ACCESS_DENIED' }
+      : undefined
   }
 
   function safeClear(): void {
@@ -486,12 +363,15 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     user: AccountUser,
     options: SessionRequestOptions
   ): Promise<SessionResult> {
+    const workspaceId = options.workspaceId ?? clientOptions.workspaceId
+    if (workspaceId === '') {
+      // An explicit empty id is an invalid selection, not personal; fail
+      // closed instead of silently minting a personal-scoped session.
+      return Promise.resolve({ status: 'error', code: 'WORKSPACE_NOT_FOUND' })
+    }
     return exchangeToken(user, {
       exchangeUrl,
-      body:
-        (options.workspaceId ?? clientOptions.workspaceId)
-          ? { workspace_id: options.workspaceId ?? clientOptions.workspaceId }
-          : {},
+      body: workspaceId ? { workspace_id: workspaceId } : {},
       fetchImpl:
         options.fetchImpl ?? clientOptions.fetchImpl ?? globalThis.fetch,
       signal: options.signal ?? clientOptions.signal,
@@ -508,9 +388,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    */
   function abandonInFlight(): void {
     inFlight = undefined
-    inFlightUid = undefined
-    inFlightTarget = undefined
-    inFlightForced = false
   }
 
   function sharedMint(
@@ -521,25 +398,18 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const target = options.workspaceId ?? clientOptions.workspaceId
     if (
       inFlight !== undefined &&
-      inFlightUid === user.uid &&
-      inFlightTarget === target &&
-      (!forced || inFlightForced)
+      inFlight.uid === user.uid &&
+      inFlight.target === target &&
+      (!forced || inFlight.forced)
     ) {
-      return { mintId: inFlightMintId, response: inFlight }
+      return { mintId: inFlight.mintId, response: inFlight.promise }
     }
-    inFlightUid = user.uid
-    inFlightTarget = target
-    inFlightForced = forced
     const mintId = ++mintSequence
-    inFlightMintId = mintId
     const running = mint(user, options).finally(() => {
-      if (inFlight !== running) return
+      if (inFlight?.promise !== running) return
       inFlight = undefined
-      inFlightUid = undefined
-      inFlightTarget = undefined
-      inFlightForced = false
     })
-    inFlight = running
+    inFlight = { promise: running, uid: user.uid, target, forced, mintId }
     return { mintId, response: running }
   }
 
@@ -549,23 +419,21 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
     const target = options.workspaceId ?? clientOptions.workspaceId
-    // The first FRESH credential wins, storage before memory: a stale stored
-    // record (a write that failed after a later mint) must not shadow the
-    // live one, and a host whose storage is blocked must not pay a full
-    // exchange on every read. Only a credential minted for this exact
-    // target counts: a target-less read must never adopt a team-scoped
-    // session, or the next scheduled refresh would quietly re-mint it as
-    // personal.
+    // The live credential is authoritative; storage is recovery state, not a
+    // competing source. Prefer a fresh in-memory credential for this exact
+    // target and consult storage only when memory has none — expiry must not
+    // override this (a rejected token can outlive its shorter-lived
+    // replacement), and a target-less read must never adopt a team session.
     const stored = readCached(user.uid)
     const fresh = [
-      stored !== undefined && stored.target === target
-        ? stored.credential
-        : undefined,
       credential?.uid === user.uid && credentialTarget === target
         ? credential
+        : undefined,
+      stored !== undefined && stored.target === target
+        ? stored.credential
         : undefined
     ].find(
-      (candidate) =>
+      (candidate): candidate is AccountCredential =>
         candidate !== undefined &&
         isCredentialFresh(candidate, now, freshMarginMs)
     )
@@ -604,10 +472,20 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
           mint: (user) =>
             sharedMint(user, { workspaceId: credentialTarget }, true),
           commitRefreshed: (session) => {
+            const mismatch = targetMismatch(session, credentialTarget)
+            if (mismatch) {
+              credential = undefined
+              credentialTarget = undefined
+              failure = mismatch
+              safeClear()
+              publish()
+              return mismatch
+            }
             credential = session
             failure = undefined
             persistCredential(session, credentialTarget)
             publish()
+            return undefined
           },
           commitPermanentFailure: (permanent) => {
             credential = undefined
@@ -710,8 +588,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return undefined
     }
     if (result.status === 'ok') {
+      const requestedTarget = options.workspaceId ?? clientOptions.workspaceId
+      const mismatch = targetMismatch(result.session, requestedTarget)
+      if (mismatch) {
+        credential = undefined
+        credentialTarget = undefined
+        failure = mismatch
+        scheduler?.stop()
+        safeClear()
+        publish()
+        return mismatch
+      }
       credential = result.session
-      credentialTarget = options.workspaceId ?? clientOptions.workspaceId
+      credentialTarget = requestedTarget
       failure = undefined
       persistCredential(result.session, credentialTarget)
       scheduler?.armAfterCommit(
@@ -727,6 +616,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     } else {
       credential = undefined
       failure = result
+      if (isPermanentSessionError(result.code)) {
+        // A caller-initiated permanent failure must retire the armed scheduler
+        // and target too, or its old timer could resurrect the dead session.
+        scheduler?.stop()
+        credentialTarget = undefined
+        safeClear()
+      }
     }
     publish()
     return result
@@ -746,7 +642,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         identityEpoch += 1
         scheduler?.stop()
         identitySettled = true
-        if (!next || next.uid !== currentUser?.uid) abandonInFlight()
+        // A same-uid re-auth must not adopt a mint started under the prior identity.
+        abandonInFlight()
         currentUser = next
         credential = undefined
         credentialTarget = undefined
@@ -799,9 +696,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       // A mint still running belongs to the scope being discarded; a caller
       // arriving after this must start its own rather than join it.
       inFlight = undefined
-      inFlightUid = undefined
-      inFlightTarget = undefined
-      inFlightForced = false
       credential = undefined
       credentialTarget = undefined
       failure = undefined

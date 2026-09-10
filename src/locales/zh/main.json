@@ -5015,7 +5015,7 @@
       "accessDenied": "您无权访问此工作区",
       "invalidFirebaseToken": "身份验证失败。请重新登录。",
       "notAuthenticated": "您必须登录才能访问工作区",
-      "tokenExchangeFailed": "与工作区认证失败",
+      "tokenExchangeFailed": "与工作区认证失败：{error}",
       "workspaceNotFound": "未找到工作区"
     },
     "initializationFailed": "无法加载您的工作区",
