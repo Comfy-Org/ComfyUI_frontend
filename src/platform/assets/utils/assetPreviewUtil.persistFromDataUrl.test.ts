@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const uploadAssetFromBase64 = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetAPIEnabled: () => true,
     uploadAssetFromBase64
@@ -10,16 +10,14 @@ vi.mock('@/platform/assets/services/assetService', () => ({
 const fetchApi = vi.hoisted(() =>
   vi.fn(async () => ({ ok: true, json: async () => ({ assets: [] }) }))
 )
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi,
     apiURL: (path: string) => path,
-    getServerFeature: () => true
+    getServerFeature: () => true,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn()
   }
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ setAssetPreview: vi.fn() })
 }))
 
 import { persistThumbnailFromDataUrl } from './assetPreviewUtil'

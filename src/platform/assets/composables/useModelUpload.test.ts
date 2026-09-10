@@ -1,35 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const showDialog = vi.hoisted(() => vi.fn())
 const flags = vi.hoisted(() => ({
   privateModelsEnabled: false,
   modelUploadButtonEnabled: true
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog })
-}))
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags })
 }))
-vi.mock('@/platform/assets/components/UploadModelDialog.vue', () => ({
-  default: {}
-}))
-vi.mock('@/platform/assets/components/UploadModelDialogHeader.vue', () => ({
-  default: {}
-}))
-vi.mock('@/platform/assets/components/UploadModelUpgradeModal.vue', () => ({
-  default: {}
-}))
-vi.mock(
-  '@/platform/assets/components/UploadModelUpgradeModalHeader.vue',
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelDialog.vue'),
+  () => ({ default: {} })
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelDialogHeader.vue'),
+  () => ({ default: {} })
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelUpgradeModal.vue'),
+  () => ({ default: {} })
+)
+vi.mock<unknown>(
+  import('@/platform/assets/components/UploadModelUpgradeModalHeader.vue'),
   () => ({ default: {} })
 )
 
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import { useDialogStore } from '@/stores/dialogStore'
 
 describe('useModelUpload', () => {
+  let showDialog: ReturnType<
+    typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
+  >
+
   beforeEach(() => {
+    showDialog = vi.mocked(useDialogStore().showDialog)
     showDialog.mockClear()
     flags.privateModelsEnabled = false
   })
@@ -45,7 +50,7 @@ describe('useModelUpload', () => {
       expect(args.key).toBe(
         privateModelsEnabled ? 'upload-model' : 'upload-model-upgrade'
       )
-      expect(args.dialogComponentProps.renderer).toBe('reka')
+      expect(args.dialogComponentProps?.renderer).toBe('reka')
     }
   )
 })
