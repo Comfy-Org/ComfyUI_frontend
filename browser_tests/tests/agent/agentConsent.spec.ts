@@ -214,7 +214,7 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await expect(dialog).toHaveCount(0)
   })
 
-  test('allows keyboard pause and stops autoplay for reduced motion', async ({
+  test('uses a minimal playback button and respects reduced motion', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
@@ -225,15 +225,25 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     const video = page
       .getByRole('dialog', { name: enMessages.agent.consent.title })
       .locator('video')
-    await expect(video).toHaveAttribute('controls', '')
+    const pause = page.getByRole('button', {
+      name: enMessages.g.pause,
+      exact: true
+    })
+    const play = page.getByRole('button', {
+      name: enMessages.g.play,
+      exact: true
+    })
+    await expect(pause).toBeVisible()
+    await expect(video).not.toHaveAttribute('controls')
     await expect
       .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
       .toBe(false)
-    await video.focus()
+    await pause.focus()
     await page.keyboard.press('Space')
     await expect
       .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
       .toBe(true)
+    await expect(play).toBeFocused()
     await page.keyboard.press('Space')
     await expect
       .poll(() => video.evaluate((element: HTMLVideoElement) => element.paused))
