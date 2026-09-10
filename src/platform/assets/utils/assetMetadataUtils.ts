@@ -157,7 +157,7 @@ export const MODEL_TYPE_TAG_PREFIX = 'model_type:'
  * @returns The model type string or null if not present
  */
 export function getAssetModelType(asset: AssetItem): string | null {
-  const typeTag = asset.tags?.find(
+  const typeTag = asset.tags.find(
     (tag) => tag && tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
   )
   return typeTag ?? null

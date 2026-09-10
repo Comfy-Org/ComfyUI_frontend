@@ -14,7 +14,9 @@ const TEMP_DIR = join('test-results', 'perf-temp')
 
 type MeasurementField = keyof PerfMeasurement
 
-const FIELD_FORMATTERS: Record<string, (m: PerfMeasurement) => string> = {
+const FIELD_FORMATTERS: Partial<
+  Record<MeasurementField, (m: PerfMeasurement) => string>
+> = {
   styleRecalcs: (m) => `${m.styleRecalcs} recalcs`,
   layouts: (m) => `${m.layouts} layouts`,
   taskDurationMs: (m) => `${m.taskDurationMs.toFixed(1)}ms task`,

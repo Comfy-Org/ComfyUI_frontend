@@ -1,3 +1,8 @@
+import type * as I18nModule from '@/i18n'
+import type { ComfyApp } from '@/scripts/app'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
@@ -24,25 +29,27 @@ const mockShowSmallLayoutDialog = vi.hoisted(() =>
     onResult?.(true)
   })
 )
-const mockSettingSet = vi.hoisted(() => vi.fn())
+const mockSettingSet = vi.hoisted(() =>
+  vi.fn<ReturnType<typeof useSettingStore>['set']>(async () => undefined)
+)
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockPersistUserKeybindings = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: mockApi
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: mockDownloadBlob
 }))
 
-vi.mock('@/scripts/utils', () => ({
+vi.mock(import('@/scripts/utils'), () => ({
   uploadFile: mockUploadFile
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     confirm: mockConfirm,
     prompt: mockPrompt,
@@ -50,20 +57,7 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    set: mockSettingSet,
-    get: vi.fn(() => 'default')
-  })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    add: mockToastAdd
-  })
-}))
-
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
       fn,
@@ -74,23 +68,27 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/platform/keybindings/keybindingService', () => ({
+vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     persistUserKeybindings: mockPersistUserKeybindings
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    showDialog: vi.fn(),
-    closeDialog: vi.fn(),
-    dialogStack: []
-  })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   t: (key: string) => key
 }))
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+  useDialogStore().dialogStack = []
+})
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().set).mockImplementation(mockSettingSet)
+  vi.mocked(useSettingStore().get).mockImplementation(() => 'default')
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+})
 
 describe('useKeybindingPresetService', () => {
   let store: ReturnType<typeof useKeybindingStore>
@@ -426,8 +424,9 @@ describe('useKeybindingPresetService', () => {
       expect(store.savedPresetData?.newBindings).toHaveLength(1)
       expect(store.savedPresetData?.newBindings[0].commandId).toBe('new.cmd')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(1)
-      const bindings = Object.values(store.getUserKeybindings())
-      expect(bindings[0].commandId).toBe('new.cmd')
+      expect(
+        store.getUserKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['new.cmd'])
     })
 
     it('applies unset bindings from preset', async () => {
@@ -450,9 +449,9 @@ describe('useKeybindingPresetService', () => {
       service.applyPreset(preset)
 
       expect(store.currentPresetName).toBe('vim')
-      const unset = Object.values(store.getUserUnsetKeybindings())
-      expect(unset).toHaveLength(1)
-      expect(unset[0].commandId).toBe('test.selectAll')
+      expect(
+        store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
+      ).toEqual(['test.selectAll'])
     })
   })
 
@@ -799,4 +798,9 @@ describe('useKeybindingPresetService', () => {
       )
     })
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

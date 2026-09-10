@@ -49,7 +49,7 @@ Why this sweep is mandatory: PR #15501 inverted the slot-mirror compatibility co
 `readonly` from `INodeInputSlot.link` / `INodeOutputSlot.links` and made legacy mirror writes
 take effect). Seven documents asserted the old contract; the diff updated exactly one. A
 documentation audit one day later then inserted the stale wording into an eighth place, including
-ADR 0008. A grep of the changed symbols over `docs/` would have caught every miss.
+ADR-ECS. A grep of the changed symbols over `docs/` would have caught every miss.
 
 ## ComfyUI_frontend Documentation
 
