@@ -485,7 +485,7 @@ describe('UnifiedPricingTable outside Cloud', () => {
     const { emitted } = renderComponent()
 
     const cta = screen.getByRole('button', {
-      name: 'Resubscribe to Creator Yearly'
+      name: 'Resume Creator Yearly'
     })
     expect(cta).toBeEnabled()
     await user.click(cta)

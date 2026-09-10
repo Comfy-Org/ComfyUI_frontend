@@ -10,23 +10,20 @@ import {
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { ComfyExtension } from '@/types/comfy'
 import { graphToPrompt } from '@/utils/executionUtil'
 
-const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
+})
 vi.mock(import('@/scripts/app'), async (importOriginal) => {
   const original = await importOriginal()
-  original.app.registerExtension = (extension) => {
-    registeredExtensions.push(extension)
-  }
+  original.app.registerExtension = extensions.registerExtension
   return original
 })
 await import('./customWidgets')
-const extension = registeredExtensions.find(
-  (candidate) => candidate.name === 'Comfy.CustomWidgets'
-)
-if (!extension)
-  throw new Error('Comfy.CustomWidgets extension was not registered')
+const extension = extensions.getExtension('Comfy.CustomWidgets')
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060
 // (FE-1456): once a Custom Combo node's `choice` widget is promoted through
 // a subgraph boundary (ADR-SUBGRAPH-PROMOTION-0009 link-only promotion), the hidden `index`
