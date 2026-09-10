@@ -27,7 +27,7 @@ function handleCopy() {
   <div
     :class="
       cn(
-        'bg-transparency-white-t4 border-primary-warm-gray flex gap-2 rounded-xl border px-4 py-3',
+        'bg-transparency-white-t4 flex gap-2 rounded-xl border border-primary-warm-gray px-4 py-3',
         multiline ? 'items-start' : 'items-center'
       )
     "
@@ -47,7 +47,7 @@ function handleCopy() {
       :aria-label="copied ? copiedLabel : copyLabel"
       :class="
         cn(
-          'text-primary-warm-gray shrink-0 cursor-pointer transition-colors hover:text-primary-comfy-canvas',
+          'shrink-0 cursor-pointer text-primary-warm-gray transition-colors hover:text-primary-comfy-canvas',
           multiline && 'mt-0.5'
         )
       "
