@@ -75,6 +75,19 @@
     },
     "notHelpful": "Nicht hilfreich",
     "openWorkflowTab": "{name} öffnen",
+    "paywall": {
+      "addCredits": "Credits hinzufügen",
+      "body": {
+        "local": "Sie haben Ihr Credit-Guthaben aufgebraucht. Fügen Sie Credits hinzu, damit der Agent weiterläuft.",
+        "member": "Dieser Workspace hat alle seine Credits verwendet. Bitten Sie den Inhaber Ihres Workspace, weitere Credits hinzuzufügen.",
+        "salesManaged": "Dieser Workspace wird über Ihr Comfy-Kontoteam abgerechnet. Wenden Sie sich an dieses Team, um Credits hinzuzufügen.",
+        "subscribed": "Dieser Workspace hat seine monatlichen Credits und sein Aufladeguthaben aufgebraucht. Fügen Sie Credits hinzu, damit der Agent weiterläuft.",
+        "subscriptionRequired": "Ihre verfügbaren Credits sind aufgebraucht."
+      },
+      "subscribe": "Abonnieren",
+      "title": "Keine Credits mehr",
+      "upgradePlan": "Plan upgraden"
+    },
     "placeholder": "Beschreiben Sie Ideen, {'@'} zum Referenzieren,\nerwähnen Sie Nodes aus dem Graphen oder ziehen Sie Assets hinein",
     "ranToolCalls": "Hat {count} Tool-Aufruf ausgeführt | Hat {count} Tool-Aufrufe ausgeführt",
     "ranToolCallsTimed": "Hat {count} Tool-Aufruf {seconds} Sekunden lang ausgeführt | Hat {count} Tool-Aufrufe {seconds} Sekunden lang ausgeführt",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "Subgraph-Widgets bearbeiten",
     "Exit Subgraph": "Subgraph verlassen",
     "Experimental: Browse Model Assets": "Experimentell: Model-Assets durchsuchen",
-    "Experimental: Enable AssetAPI": "Experimentell: AssetAPI aktivieren",
     "Experimental: Enable Nodes 2_0": "Experimentell: Nodes 2.0 aktivieren",
     "Export": "Exportieren",
     "Export (API)": "Exportieren (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "Zusätzliche Credits",
     "additionalCreditsInUse": "In Verwendung",
     "additionalCreditsInfo": "Über zusätzliche Credits",
-    "additionalCreditsTooltip": "Credits, die Sie zusätzlich zu Ihrem Plan hinzufügen. Werden verwendet, nachdem die monatlichen Credits aufgebraucht sind. Jeder zusätzliche Credit verfällt ein Jahr nach dem Kauf.",
+    "additionalCreditsTooltip": "Credits, die Sie zusätzlich zu Ihrem Plan hinzufügen. Sie werden verwendet, nachdem Ihre Plan-Credits aufgebraucht sind. Jeder verfällt ein Jahr nach dem Kauf.",
     "benefits": {
       "benefit1": "Monatliche Credits für Partner-Nodes — bei Bedarf aufladen",
       "benefit1FreeTier": "Monatliche Credits, jederzeit aufladen",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "{amount} werden monatlich berechnet. Jederzeit kündbar.",
       "changePaymentMethod": "Ändern",
       "commitment": "Bindung",
+      "completePayment": "Schließen Sie Ihre Zahlung ab",
       "completeVerification": "Verifizierung abschließen",
       "confirm": "Bestätigen",
       "confirmChange": "Änderung bestätigen",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "Funktionen ausblenden",
       "newMonthlySubscription": "Neues Monatsabonnement",
       "nextPaymentDue": "Nächste Zahlung fällig am {date}. Jederzeit kündbar.",
+      "parkedCheckoutDetail": "Ihr vorheriger Checkout wartet noch auf eine Zahlungsmethode. Schließen Sie Ihre Zahlung ab, um diesen Plan zu aktivieren.",
       "payAndSubscribe": "Zahlen und abonnieren",
       "paymentMethod": "Zahlungsmethode",
       "paymentPopupBlocked": "Die Zahlungsseite konnte nicht geöffnet werden – bitte erlauben Sie Pop-ups und versuchen Sie es erneut.",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "Projekt- & Asset-Management",
       "perkRolePermissions": "Rollenbasierte Berechtigungen",
       "perkSharedPool": "Gemeinsamer Credit-Pool für alle Mitglieder",
-      "tagline": "Wählen Sie Ihr eigenes monatliches Credit-Abonnement. Mit einem größeren Credit-Abonnement erhalten Sie einen höheren Rabatt.",
+      "tagline": "Wählen Sie Ihr eigenes Credit-Abonnement. Mit einem größeren Credit-Abonnement erhalten Sie einen höheren Rabatt.",
       "unavailable": "Dieser Team-Tarif ist derzeit nicht verfügbar."
     },
     "teamPlanIncludes": "Ihr Tarif umfasst alles aus {plan}, zusätzlich:",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "USD / Monat / Mitglied",
     "usdPerYear": "USD / Jahr",
     "usedAfterMonthly": "Wird nach Aufbrauch der monatlichen Credits verwendet",
+    "usedAfterYearly": "Wird verwendet, wenn die jährlichen Credits aufgebraucht sind",
     "videoEstimate": "Generiert ca. {count} 5-Sek.-Videos*",
     "videoEstimateExplanation": "Diese Schätzungen basieren auf der Vorlage Wan 2.2 Image-to-Video mit den Standardeinstellungen (5 Sek., 16 fps, 640x640, 4-Schritt-Sampling).",
     "videoEstimateHelp": "Weitere Details zu dieser Vorlage",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "Enthalten:",
     "workspaceNotSubscribed": "Dieser Workspace hat kein Abonnement",
     "yearly": "Jährlich",
+    "yearlyCredits": "Credits pro Jahr",
     "yearlyCreditsLabel": "Jährliche Credits insgesamt",
+    "yearlyCreditsPerMemberLabel": "Jährliche Credits / Mitglied",
+    "yearlyCreditsUsedUpTitle": "Jährliche Credits sind aufgebraucht. Werden am {date} aufgefüllt",
+    "yearlyCreditsUsedUpTitleNoDate": "Jährliche Credits sind aufgebraucht",
+    "yearlyUsageProgress": "{used} von {total} jährlichen Credits verwendet",
     "yourPlanIncludes": "Ihr Tarif umfasst:"
   },
   "tabMenu": {
