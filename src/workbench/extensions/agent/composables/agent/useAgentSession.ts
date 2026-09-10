@@ -16,7 +16,10 @@ import {
   toTurnId,
   zAgentAdmissionError
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
@@ -115,12 +118,14 @@ function isRetryableRequestFailure(error: unknown, accepted: boolean): boolean {
 }
 
 /**
- * `AgentRestClient` validates a response body only after `response.ok`, so a
- * schema failure out of `postMessage` means the server accepted the turn and
- * the FE could not read the ack — post-acceptance, and never safe to resend.
+ * `AgentRestClient` reads a response body only after `response.ok`, so any
+ * failure to read it out of `postMessage` — unparseable body or schema
+ * mismatch — means the server accepted the turn and the FE lost the ack.
  */
-function isResponseSchemaFailure(error: unknown): boolean {
-  return error instanceof ZodError
+function isUnreadableAckFailure(error: unknown): boolean {
+  return (
+    error instanceof ZodError || error instanceof AgentResponseUnreadableError
+  )
 }
 
 let sessionGeneration = 0
@@ -462,7 +467,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         return false
       }
-      const turnAccepted = accepted || isResponseSchemaFailure(error)
+      const turnAccepted = accepted || isUnreadableAckFailure(error)
       const message =
         error instanceof AgentApiError
           ? error.message

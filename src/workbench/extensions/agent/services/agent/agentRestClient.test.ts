@@ -7,7 +7,11 @@ const fetchApi = vi.hoisted(() =>
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
-import { AgentApiError, createAgentRestClient } from './agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError,
+  createAgentRestClient
+} from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
 function jsonResponse(
@@ -362,6 +366,22 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     expect(error).toBeInstanceOf(Error)
+    expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+
+  it('distinguishes a truncated 2xx body from a rejected request', async () => {
+    respond(
+      new Response('{"message_id":"m1","thread_', {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'hi' })
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
     expect(error).not.toBeInstanceOf(AgentApiError)
   })
 })

@@ -29,7 +29,10 @@ import {
   zAgentTurnAccepted,
   zAgentWsEvent
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
@@ -2268,6 +2271,29 @@ describe('app:agent_error telemetry (TEL-8)', () => {
         // 2xx with an unexpected body raises: the turn started, the ack did not
         // survive validation.
         return zAgentTurnAccepted.parse({ thread_id: 'th-1' })
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('treats an ack body the client could not read as an accepted turn', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentResponseUnreadableError(
+          '/agent/threads/new/messages',
+          new SyntaxError('Unexpected end of JSON input')
+        )
       })
     })
     const session = useAgentSession({ rest, events: fakeEvents().source })

@@ -46,6 +46,17 @@ export class AgentApiError extends Error {
   }
 }
 
+/**
+ * The server answered `2xx` and the body could not be read as JSON — a
+ * truncated or proxy-mangled response, not a rejected request.
+ */
+export class AgentResponseUnreadableError extends Error {
+  constructor(route: string, cause: unknown) {
+    super(`Unreadable agent response body from ${route}`, { cause })
+    this.name = 'AgentResponseUnreadableError'
+  }
+}
+
 interface OpenTabEntry {
   workflow_id: string
   name: string
@@ -122,7 +133,13 @@ export function createAgentRestClient() {
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
-    return schema.parse(await response.json())
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch (error) {
+      throw new AgentResponseUnreadableError(route, error)
+    }
+    return schema.parse(payload)
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {
