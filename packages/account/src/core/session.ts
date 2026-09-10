@@ -397,18 +397,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     options: SessionRequestOptions
   ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
-    // The first FRESH credential wins, storage before memory: a stale stored
-    // record (a write that failed after a later mint) must not shadow the
-    // live one, and a host whose storage is blocked must not pay a full
-    // exchange on every read.
+    // Newest fresh credential wins: a remint whose storage write failed must
+    // not be shadowed by the older stored record it replaced.
     const fresh = [
-      readCached(user.uid),
-      credential?.uid === user.uid ? credential : undefined
-    ].find(
-      (candidate) =>
-        candidate !== undefined &&
-        isCredentialFresh(candidate, now, freshMarginMs)
-    )
+      credential?.uid === user.uid ? credential : undefined,
+      readCached(user.uid)
+    ]
+      .filter(
+        (candidate): candidate is AccountCredential =>
+          candidate !== undefined &&
+          isCredentialFresh(candidate, now, freshMarginMs)
+      )
+      .sort((a, b) => b.expiresAt - a.expiresAt)
+      .at(0)
     if (fresh) {
       return {
         mintId: mintSequence,

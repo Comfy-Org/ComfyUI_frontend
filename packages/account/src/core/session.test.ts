@@ -680,6 +680,28 @@ describe('stale storage', () => {
       'a readable-but-stale record must not shadow the live credential and re-mint on every read'
     ).toHaveBeenCalledOnce()
   })
+
+  it('keeps the live credential when a fresh but older stored record would otherwise shadow it', async () => {
+    const storage = memoryStorage()
+    const fetchImpl = okFetch('new-jwt')
+    const { client } = makeClient({ fetchImpl, storage })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser('uid-1'))
+    await vi.waitFor(() => expect(client.getToken()).toBe('new-jwt'))
+
+    seedCache(storage, {
+      token: 'old-jwt',
+      expiresAt: Date.now() + 30 * 60 * 1000
+    })
+    await client.ensureFresh()
+
+    expect(
+      client.getToken(),
+      'a fresh-but-older stored write must not downgrade the live, newer credential'
+    ).toBe('new-jwt')
+    expect(JSON.parse(storage.read() ?? '{}').token).toBe('new-jwt')
+  })
 })
 
 describe('exchange response contract', () => {
