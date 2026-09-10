@@ -58,20 +58,20 @@ describe('TreeExplorer', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 
-  it('keeps the label editor open when renaming fails', async () => {
+  it('closes the label editor when renaming fails', async () => {
     const handleError = vi.fn()
     const handleRename = vi.fn().mockRejectedValue(new Error('rename failed'))
     await submitRename(handleRename, handleError)
 
     await waitFor(() => expect(handleError).toHaveBeenCalledOnce())
     await nextTick()
-    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 
-  it('keeps the label editor open when renaming is refused', async () => {
+  it('closes the label editor when renaming is refused', async () => {
     await submitRename(vi.fn().mockResolvedValue(false))
 
     await nextTick()
-    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 })
