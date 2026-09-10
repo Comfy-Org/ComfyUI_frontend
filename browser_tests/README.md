@@ -677,11 +677,12 @@ fix so the bug stays fixed:
 
 1. **Capture the conversation.** Reproduce the bug's turn against the
    cloud agent run locally in its non-standalone mode, with Postgres,
-   Redis and the doc host beside it: that is the only mode that writes
-   the per-op audit rows (`agent_tool_calls` parent and child rows) the
-   exporter reads. The same agent in standalone mode
-   (SQLite, no doc host) never writes them, so it can only
-   yield text-only or tool-error turns. Record it with the recorder
+   Redis and the doc host beside it. In that mode the agent writes the
+   per-op audit rows (`agent_tool_calls` parent and child rows) to
+   Postgres, which is what the exporter reads; the doc host is a separate
+   required service and writes none of them. The same agent in
+   standalone mode (SQLite, no doc host) never writes them, so it can
+   only yield text-only or tool-error turns. Record it with the recorder
    (`scripts/agentConversationRecord.ts`, landing in #16782; until it merges,
    record from that PR's branch), which writes the conversation JSON into
    `conversations/` marked `response_side: 'recorded'`. Never write
