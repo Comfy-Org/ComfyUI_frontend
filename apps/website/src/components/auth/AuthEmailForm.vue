@@ -2,13 +2,15 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef } from 'vue'
 
-import PasswordRules from '@comfyorg/account/PasswordRules.vue'
-import TurnstileWidget from '@comfyorg/account/TurnstileWidget.vue'
 import {
   TURNSTILE_MESSAGES,
-  isTurnstileEnabled,
-  useTurnstileGate
+  isTurnstileEnabled
 } from '@comfyorg/account/turnstile'
+import {
+  PasswordRules,
+  TurnstileWidget,
+  useTurnstileGate
+} from '@comfyorg/account/vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'

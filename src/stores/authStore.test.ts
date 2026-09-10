@@ -49,18 +49,6 @@ vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockTeamWorkspaceStore = vi.hoisted(() => ({
-  activeWorkspaceId: null as string | null,
-  resetForIdentityChange: vi.fn()
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => mockTeamWorkspaceStore
-  })
-)
-
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
   delete: Mock

@@ -5,9 +5,9 @@ import type {
   AccountUser,
   CredentialStorage,
   CrossTabRefreshPort,
-  IdentityPort,
   SessionClientOptions
 } from './session.js'
+import { createTestIdentity } from '../testing.js'
 import { createSessionClient } from './session.js'
 
 const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
@@ -55,12 +55,12 @@ function mintResponse(token: string) {
 
 function manualIdentity() {
   let deliver: ((user: AccountUser | null) => void) | undefined
-  const port: IdentityPort = {
+  const port = createTestIdentity<AccountUser>({
     onUserChanged: (callback) => {
       deliver = callback
       return () => undefined
     }
-  }
+  })
   return {
     port,
     fire: (user: AccountUser | null) => deliver?.(user)

@@ -16,9 +16,8 @@ import {
   watch
 } from 'vue'
 
-import { useRegionGate } from '@comfyorg/account/regionGate'
-import type { RegionGateStatus } from '@comfyorg/account/regionGate'
-import SocialAuthButtons from '@comfyorg/account/SocialAuthButtons.vue'
+import type { RegionGateStatus } from '@comfyorg/account/vue'
+import { SocialAuthButtons, useRegionGate } from '@comfyorg/account/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
 
@@ -198,8 +197,7 @@ async function completeSignIn(
       is_new_user:
         mode === 'signUp' ||
         (provider !== 'email' && firebase.isNewWorkshopUser(credential)),
-      user_id: credential.user.uid,
-      email: credential.user.email ?? undefined
+      user_id: credential.user.uid
     })
     dispatch({
       type: 'credentialSucceeded',

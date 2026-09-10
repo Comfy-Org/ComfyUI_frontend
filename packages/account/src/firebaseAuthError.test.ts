@@ -167,6 +167,24 @@ describe('authErrorMessage', () => {
     ).toBe(AUTH_ERROR_COPY['zh-CN'].signupBlocked)
   })
 
+  it.for(['auth/user-not-found', 'auth/wrong-password'] as const)(
+    'resolves %s to the invalid-credential line even when a host table distinguishes it',
+    (code) => {
+      const hostCopy = {
+        'auth/user-not-found': 'No account with this email',
+        'auth/wrong-password': 'Wrong password',
+        'auth/invalid-credential': 'Invalid login credentials.',
+        generic: 'host generic',
+        signupBlocked: 'host blocked'
+      }
+
+      expect(
+        authErrorMessage(classifyAuthError(firebaseError(code)), hostCopy),
+        'the collapse is the package rule, not a property of its own tables; a host table must not reopen the oracle'
+      ).toBe('Invalid login credentials.')
+    }
+  )
+
   it('gives the generic line for a non-Firebase failure', () => {
     expect(authErrorMessage(classifyAuthError(new Error('boom')))).toBe(
       AUTH_ERROR_MESSAGES.generic
@@ -175,17 +193,17 @@ describe('authErrorMessage', () => {
 
   it('resolves against a table the host brings instead of a shipped locale', () => {
     const hostCopy = {
-      'auth/wrong-password': 'host wrong password',
+      'auth/too-many-requests': 'host slow down',
       generic: 'host generic',
       signupBlocked: 'host blocked'
     }
 
     expect(
       authErrorMessage(
-        classifyAuthError(firebaseError('auth/wrong-password')),
+        classifyAuthError(firebaseError('auth/too-many-requests')),
         hostCopy
       )
-    ).toBe('host wrong password')
+    ).toBe('host slow down')
     expect(
       authErrorMessage(
         classifyAuthError(firebaseError('auth/some-new-code')),

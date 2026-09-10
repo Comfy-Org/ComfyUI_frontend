@@ -46,10 +46,11 @@ vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
+vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
   const { defineComponent, h, onMounted } = await import('vue')
   return {
-    default: defineComponent({
+    ...(await (importOriginal as () => Promise<object>)()),
+    TurnstileWidget: defineComponent({
       emits: ['update:token', 'update:unavailable'],
       setup(_, { emit, expose }) {
         expose({ reset: handles.turnstileReset })
@@ -366,8 +367,7 @@ describe('AuthSignIn', () => {
       expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
-        user_id: 'user-1',
-        email: 'user@example.com'
+        user_id: 'user-1'
       })
     )
   })
@@ -388,8 +388,7 @@ describe('AuthSignIn', () => {
       expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
-        user_id: 'user-1',
-        email: 'user@example.com'
+        user_id: 'user-1'
       })
     )
     expect(
@@ -412,8 +411,7 @@ describe('AuthSignIn', () => {
       expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
-        user_id: 'user-2',
-        email: undefined
+        user_id: 'user-2'
       })
     )
   })

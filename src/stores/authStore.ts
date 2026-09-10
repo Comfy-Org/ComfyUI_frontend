@@ -12,7 +12,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import { useFirebaseAuth } from 'vuefire'
 
-import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/core'
+import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account/customerRecovery'
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   signUpWithProvisioning,

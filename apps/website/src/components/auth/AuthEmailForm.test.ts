@@ -10,10 +10,11 @@ const widgetBehavior = vi.hoisted(() => ({
   mode: 'silent' as 'silent' | 'unavailable' | 'token',
   reset: vi.fn()
 }))
-vi.mock('@comfyorg/account/TurnstileWidget.vue', async () => {
+vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
   const { h, onMounted } = await import('vue')
   return {
-    default: defineComponent({
+    ...(await (importOriginal as () => Promise<object>)()),
+    TurnstileWidget: defineComponent({
       name: 'TurnstileWidgetStub',
       emits: ['update:token', 'update:unavailable'],
       setup(_, { emit, expose }) {

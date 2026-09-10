@@ -2,8 +2,9 @@
  * The credits balance behind the header chip.
  *
  * The authorized read (dedupe, the single 401 re-mint, superseded-identity
- * publish guards) lives in @comfyorg/account's billing client; this module
- * owns presentation and page lifecycle. Conversion goes through the shared
+ * publish guards) lives in the site's own balance reader, since billing
+ * stays outside @comfyorg/account in V1; this module owns presentation and
+ * page lifecycle. Conversion goes through the shared
  * creditsUtil rounding so this chip never disagrees with what
  * platform.comfy.org renders for the same balance. Refresh triggers: the
  * session appearing or changing (sign-in, re-mint) and window refocus,
@@ -11,11 +12,11 @@
  */
 import { computed, effectScope, ref, watch } from 'vue'
 
-import type { CreditsState } from '@comfyorg/account/core'
 import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { useWorkshopAuthFlag } from '../scripts/posthog'
-import { workshopBillingClient } from './workshop-account'
+import { workshopBalanceReader } from './workshop-account'
+import type { BalanceState as ReadState } from './workshop-balance'
 import { useWorkshopSession } from './workshop-session-state'
 
 /** Despite the field names, the balance endpoint returns cents. */
@@ -31,7 +32,7 @@ type BalanceState =
 const balance = ref<BalanceState>({ status: 'unknown' })
 let started = false
 
-function toBalanceState(state: CreditsState): BalanceState {
+function toBalanceState(state: ReadState): BalanceState {
   return state.status === 'ok'
     ? { status: 'ok', credits: balanceToCredits(state.cents) }
     : state
@@ -40,14 +41,14 @@ function toBalanceState(state: CreditsState): BalanceState {
 export function refreshWorkshopCredits(
   options: { readonly force?: boolean } = {}
 ): Promise<void> {
-  return workshopBillingClient.refresh(options)
+  return workshopBalanceReader.refresh(options)
 }
 
 let stopActive: (() => void) | undefined
 
 function begin(): void {
   const { session } = useWorkshopSession()
-  const stopClient = workshopBillingClient.subscribe((state) => {
+  const stopClient = workshopBalanceReader.subscribe((state) => {
     balance.value = toBalanceState(state)
   })
   const activeScope = effectScope(true)
@@ -56,7 +57,7 @@ function begin(): void {
       () => session.value?.token,
       (token) => {
         if (!token) {
-          workshopBillingClient.reset()
+          workshopBalanceReader.reset()
           return
         }
         // A rotated token means any read in flight is about to be discarded
@@ -93,7 +94,7 @@ function start(): void {
         stopActive?.()
         stopActive = undefined
         if (on) begin()
-        else workshopBillingClient.reset()
+        else workshopBalanceReader.reset()
       },
       { immediate: true }
     )
