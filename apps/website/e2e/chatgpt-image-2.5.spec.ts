@@ -34,27 +34,27 @@ test.describe('ChatGPT Images 2.5 launch page @smoke', () => {
     const galleryImages = [
       {
         name: 'Vaporwave architecture generated with ChatGPT Images 2.5',
-        src: '/images/chatgpt-image-2.5/vaporwave.webp'
+        src: 'https://media.comfy.org/website/chatgpt-image-2.5/vaporwave.webp'
       },
       {
         name: 'Aliens in a convenience store generated with ChatGPT Images 2.5',
-        src: '/images/chatgpt-image-2.5/alien-convenience-store.webp'
+        src: 'https://media.comfy.org/website/chatgpt-image-2.5/alien-convenience-store.webp'
       },
       {
         name: 'Goldfish in a glass bowl generated with ChatGPT Images 2.5',
-        src: '/images/chatgpt-image-2.5/goldfish.webp'
+        src: 'https://media.comfy.org/website/chatgpt-image-2.5/goldfish.webp'
       },
       {
         name: 'Flaming engine watercolor generated with ChatGPT Images 2.5',
-        src: '/images/chatgpt-image-2.5/flame-engine.webp'
+        src: 'https://media.comfy.org/website/chatgpt-image-2.5/flame-engine.webp'
       },
       {
         name: 'Canyon car chase generated with ChatGPT Images 2.5',
-        src: '/images/chatgpt-image-2.5/canyon-chase.webp'
+        src: 'https://media.comfy.org/website/chatgpt-image-2.5/canyon-chase.webp'
       },
       {
         name: 'Anime hero at a red horizon generated with ChatGPT Images 2.5',
-        src: '/images/chatgpt-image-2.5/anime-horizon.webp'
+        src: 'https://media.comfy.org/website/chatgpt-image-2.5/anime-horizon.webp'
       }
     ]
 

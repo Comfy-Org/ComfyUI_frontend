@@ -10,13 +10,12 @@ const chatgptImage25Links = {
     'https://docs.comfy.org/tutorials/partner-nodes/openai/gpt-image-2-5'
 } as const
 
-const mediaBase = '/images/chatgpt-image-2.5'
-const videoBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
+const mediaBase = 'https://media.comfy.org/website/chatgpt-image-2.5'
 
 const media = {
   hero: {
     kind: 'video',
-    src: `${videoBase}/hero.mp4`,
+    src: `${mediaBase}/hero.mp4`,
     posterSrc: `${mediaBase}/hero-poster.webp`
   },
   vaporwave: { kind: 'image', src: `${mediaBase}/vaporwave.webp` },
@@ -42,7 +41,7 @@ export const chatgptImage25Page: ModelLaunchPage = {
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
     mobileFallbackImageSrc: media.hero.posterSrc,
-    mobileVideoSrc: `${videoBase}/hero-mobile.mp4`,
+    mobileVideoSrc: `${mediaBase}/hero-mobile.mp4`,
     logoSrc: '/icons/ai-models/openai.svg',
     titleKey: 'chatgptImage25.hero.title',
     descriptionKey: 'chatgptImage25.hero.description',
