@@ -243,7 +243,12 @@ export const SuccessAllSet: Story = {
           cost_next_period_cents: 33_600,
           credits_today_cents: 0,
           credits_next_period_cents: 0,
-          new_plan: creatorAnnual
+          new_plan: creatorAnnual,
+          amount_due_cents: 26_880,
+          currency: 'usd',
+          promotion_code: 'COMFY20',
+          renewal_amount_cents: 33_600,
+          renewal_at: NEXT_YEAR
         } satisfies PreviewSubscribeResponse
       }),
       template: `${shell}<SubscriptionSuccessWorkspace tier-key="creator" :preview-data="previewData" /></div>`
