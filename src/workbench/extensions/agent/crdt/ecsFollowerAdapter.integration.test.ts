@@ -958,6 +958,65 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  // Replacing a node's whole widgets map is recorded in replacedWidgetMaps
+  // alone, so a pending-work predicate that omits it strands the frame.
+  it('drains a retained whole-widget-map replacement via retryPending', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            pos: [0, 0],
+            inputs: [],
+            outputs: [],
+            widgets_values: { seed: 1 }
+          }
+        ],
+        links: []
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    let activeScope: typeof scope | null = scope
+    const mutations = createGraphMutations({
+      getScope: () => activeScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    const seeded = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(seeded)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: seeded })
+    ).toBe(true)
+    const seedWidget = widgetId('root', toNodeId(1), 'seed')
+    expect(useWidgetValueStore().getWidget(seedWidget)?.value).toBe(1)
+
+    activeScope = null
+    const beforeReplace = Y.encodeStateVector(host)
+    const replacement = new Y.Map<unknown>()
+    replacement.set('seed', 42)
+    nodesMap(host).get('1')?.set('widgets', replacement)
+    const replaced = Y.encodeStateAsUpdate(host, beforeReplace)
+    follower.applyRemoteUpdate(replaced)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: replaced })
+    ).toBe(false)
+    expect(adapter.hasPending('wf')).toBe(true)
+
+    // No later frame arrives — only the scope comes back.
+    activeScope = scope
+    expect(adapter.retryPending('wf')).toBe(true)
+    expect(useWidgetValueStore().getWidget(seedWidget)?.value).toBe(42)
+    expect(adapter.hasPending('wf')).toBe(false)
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   // A prepare() rejection is deterministic: retaining it would re-include the
   // rejected action in every later batch and no frame for this target would
   // project again. Only a missing scope earns a retry.

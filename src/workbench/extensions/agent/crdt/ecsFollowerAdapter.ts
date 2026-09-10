@@ -176,6 +176,7 @@ export class EcsFollowerAdapter {
     return (
       session.nodeActions.size > 0 ||
       session.changedWidgets.size > 0 ||
+      session.replacedWidgetMaps.size > 0 ||
       session.changedLinks.size > 0
     )
   }
