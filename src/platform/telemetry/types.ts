@@ -1021,8 +1021,8 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
-export type CheckoutElementPhase = 'init' | 'mount' | 'update'
-export type CheckoutSubmitPhase = 'validation' | 'token_creation'
+type CheckoutElementPhase = 'init' | 'mount' | 'update'
+type CheckoutSubmitPhase = 'validation' | 'token_creation'
 
 /**
  * Non-sensitive entry context frozen at journey creation and replayed on every
@@ -1085,7 +1085,7 @@ export type CheckoutJourneyPhaseEvent =
   | CheckoutJourneySubmitted
   | CheckoutJourneyOperationLinked
 
-export type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
+type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
 
 export type CheckoutJourneyTelemetryEvent = CheckoutJourneyContext &
   CheckoutJourneyPhaseEvent
@@ -1136,7 +1136,7 @@ export function getCheckoutJourneyTelemetryEventPayload(
   }
 }
 
-export type CheckoutJourneyTelemetryEventPayload = ReturnType<
+type CheckoutJourneyTelemetryEventPayload = ReturnType<
   typeof getCheckoutJourneyTelemetryEventPayload
 >
 
