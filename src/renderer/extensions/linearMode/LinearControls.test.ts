@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import * as distributionModule from '@/platform/distribution/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -26,11 +27,7 @@ const distributionMock = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return distributionMock.isCloud
-  }
-}))
+vi.mock(import('@/platform/distribution/types'), { spy: true })
 
 vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
@@ -175,6 +172,9 @@ function clearMissingResource(resource: MissingResource) {
 describe('LinearControls', () => {
   beforeEach(() => {
     distributionMock.isCloud = true
+    vi.spyOn(distributionModule, 'isCloud', 'get').mockImplementation(
+      () => distributionMock.isCloud
+    )
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
   })
