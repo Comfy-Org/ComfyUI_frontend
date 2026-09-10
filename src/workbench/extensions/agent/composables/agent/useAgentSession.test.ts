@@ -1,3 +1,5 @@
+import type { AgentAdmissionError } from '@comfyorg/ingest-types'
+import { zAgentAdmissionError } from '@comfyorg/ingest-types/zod'
 import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
@@ -23,7 +25,10 @@ import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
-import { rememberAgentSessionMemory } from '../../services/agent/agentSessionMemory'
+import {
+  readAgentSessionMemory,
+  rememberAgentSessionMemory
+} from '../../services/agent/agentSessionMemory'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
@@ -182,6 +187,23 @@ const historyRow = (
   turn_id: turnId,
   content: { text }
 })
+
+type AgentAdmissionReason = AgentAdmissionError['error']['reason']
+
+function admissionError(
+  reason: AgentAdmissionReason,
+  message: string
+): AgentApiError {
+  const serviceUnavailable = reason === 'funds_unavailable'
+  const body = zAgentAdmissionError.parse({
+    error: {
+      message,
+      type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
+      reason
+    }
+  })
+  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
+}
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
@@ -507,6 +529,47 @@ describe('useAgentSession (v1 composition root)', () => {
         (part) => part.type === 'runApproval'
       )
     ).toBe(true)
+  })
+
+  it.for([
+    ['no_funds', 'paywall'],
+    ['manual_block', 'notice'],
+    ['funds_unavailable', 'notice']
+  ] as const)('preserves %s admission handling', async ([reason, partType]) => {
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi
+          .fn<AgentRestClient['postMessage']>()
+          .mockRejectedValue(admissionError(reason, `Denied: ${reason}`))
+      }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: partType }]
+    })
+  })
+
+  it('keeps local error IDs unique across remounts', async () => {
+    const rest = fakeRest({
+      postMessage: vi
+        .fn<AgentRestClient['postMessage']>()
+        .mockRejectedValue(new Error('offline'))
+    })
+    const first = useAgentSession({ rest, events: fakeEvents().source })
+    first.start()
+    await first.sendMessage('first')
+    const firstId = first.entries.value.at(-1)?.id
+    first.stop()
+    await Promise.resolve()
+
+    const second = useAgentSession({ rest, events: fakeEvents().source })
+    second.start()
+    await second.sendMessage('second')
+    expect(second.entries.value.at(-1)?.id).not.toBe(firstId)
   })
 
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {
@@ -856,7 +919,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.threadId.value).toBeNull()
     expect(session.entries.value).toEqual([])
     expect(session.isSending.value).toBe(false)
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(readAgentSessionMemory('user-b')).toBeNull()
   })
 
   it('does not post after the identity changes while workflow preparation is pending', async () => {
@@ -2089,7 +2152,7 @@ describe('thread resume (B17)', () => {
 
     expect(getMessages).not.toHaveBeenCalled()
     expect(session.threadId.value).toBeNull()
-    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+    expect(readAgentSessionMemory('user-b')).toBeNull()
   })
 
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {

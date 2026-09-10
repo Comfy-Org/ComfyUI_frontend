@@ -2,11 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import type { Ref } from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 
 import type { TurnId } from '../../schemas/agentApiSchema'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import {
   AGENT_THREAD_STORAGE_KEY,
@@ -14,22 +15,47 @@ import {
 } from './agentSessionMemory'
 import { registerAgentIdentityStateTracker } from './agentIdentityStateTracker'
 
-const auth = vi.hoisted(() => ({
-  user: null as unknown as Ref<null | { id: string }>
-}))
+const auth = vi.hoisted<{
+  source: Ref<null | { id: string }> | null
+  user: ComputedRef<null | { id: string }> | null
+}>(() => ({ source: null, user: null }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
-  const { ref } = await import('vue')
-  auth.user = ref<null | { id: string }>(null)
+vi.mock(import('@/composables/auth/useCurrentUser'), async (importOriginal) => {
+  const actual = await importOriginal()
+  const { computed, ref } = await import('vue')
+  const watchHandle = Object.assign(() => {}, {
+    stop: () => {},
+    pause: () => {},
+    resume: () => {}
+  })
+  auth.source = ref<null | { id: string }>(null)
+  auth.user = computed(() => auth.source?.value ?? null)
   return {
-    useCurrentUser: () => ({
-      resolvedUserInfo: auth.user
-    })
+    ...actual,
+    useCurrentUser: () =>
+      ({
+        loading: false,
+        isLoggedIn: computed(() => auth.user?.value !== null),
+        isApiKeyLogin: computed(() => false),
+        isEmailProvider: computed(() => false),
+        userDisplayName: computed(() => undefined),
+        userEmail: computed(() => undefined),
+        userPhotoUrl: computed(() => null),
+        providerName: computed(() => undefined),
+        providerIcon: computed(() => 'pi pi-user'),
+        resolvedUserInfo: auth.user!,
+        handleSignOut: async () => {},
+        handleSignIn: async () => {},
+        onUserResolved: () => watchHandle,
+        onTokenRefreshed: () => watchHandle,
+        onUserLogout: () => {}
+      }) satisfies ReturnType<typeof actual.useCurrentUser>
   }
 })
 
 function setUser(id: string | null): void {
-  auth.user.value = id === null ? null : { id }
+  if (auth.source === null) throw new Error('Auth ref is not initialized')
+  auth.source.value = id === null ? null : { id }
 }
 
 function seedUserState(userId: string = 'user-a'): void {
@@ -53,6 +79,12 @@ function seedUserState(userId: string = 'user-a'): void {
 
   useAgentWorkflowTabBindingStore().bind('workflow-a', 'workflows/a.json')
   rememberAgentSessionMemory('thread-a', userId)
+
+  const history = useAgentChatHistoryStore()
+  history.replaceAll([{ id: 'thread-a', title: 'Server title', updatedAt: 1 }])
+  history.setActive('thread-a')
+  history.rename('thread-a', 'Private title')
+  history.remove('deleted-thread')
 }
 
 describe('registerAgentIdentityStateTracker', () => {
@@ -89,6 +121,13 @@ describe('registerAgentIdentityStateTracker', () => {
     expect(useAgentConversationStore().threadId).toBeNull()
     expect(useAgentConversationStore().messages).toEqual([])
     expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
+    expect(useAgentChatHistoryStore().sessions).toEqual([])
+    expect(useAgentChatHistoryStore().activeId).toBeNull()
+    expect(useAgentChatHistoryStore().titleFor('thread-a')).toBeUndefined()
+    useAgentChatHistoryStore().replaceAll([
+      { id: 'deleted-thread', title: 'Visible again', updatedAt: 2 }
+    ])
+    expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
   })
 
   it('purges ownerless legacy state when the initial identity resolves', async () => {
@@ -127,6 +166,8 @@ describe('registerAgentIdentityStateTracker', () => {
     expect(useAgentConversationStore().messages).toEqual([])
     expect(useAgentComposerStore().draft).toBe('')
     expect(useAgentComposerStore().attachments).toEqual([])
+    expect(useAgentChatHistoryStore().sessions).toEqual([])
+    expect(useAgentChatHistoryStore().titleFor('thread-a')).toBeUndefined()
     expect(localStorage.getItem(AGENT_THREAD_STORAGE_KEY)).toBeNull()
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('workflow-a')

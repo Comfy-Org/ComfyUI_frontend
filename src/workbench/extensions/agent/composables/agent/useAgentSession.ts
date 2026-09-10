@@ -2,8 +2,14 @@ import { computed, ref, watch } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { createUuidv4 } from '@/utils/uuid'
+import { zAgentAdmissionError } from '@comfyorg/ingest-types/zod'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
-import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
+import {
+  isAgentEvent,
+  parseAgentWsEvent,
+  toTurnId
+} from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -95,6 +101,12 @@ let identityGeneration = 0
  */
 let rememberedWorkflowId: string | null = null
 
+function parseAdmissionError(error: unknown) {
+  if (!(error instanceof AgentApiError)) return undefined
+  const parsed = zAgentAdmissionError.safeParse(error.body)
+  return parsed.success ? parsed.data.error : undefined
+}
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
@@ -135,6 +147,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       identityGeneration++
       notices.value = []
       promptEditState.value = { phase: 'idle' }
+      answeringAskIds.value = new Set()
       sending.value = false
       stopRequestedWhileSending.value = false
       boundWorkflowId.value = null
@@ -143,9 +156,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
-    return `local-error-${++localErrorCount}` as TurnId
+    return toTurnId(`local-error-${createUuidv4()}`)
   }
 
   let unsubscribe: (() => void) | null = null
@@ -263,7 +275,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stopRequestedWhileSending.value = false
     const generation = loadGeneration
     const operationGeneration = identityGeneration
-    const isCurrentIdentity = () => operationGeneration === identityGeneration
+    const operationIdentity = deps.identity?.()
+    const isCurrentIdentity = () =>
+      operationGeneration === identityGeneration &&
+      deps.identity?.() === operationIdentity
     const threadAtSend = conversationStore.threadId ?? 'new'
     // Capture the originating tab identity before the first await: prepare()
     // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
@@ -334,7 +349,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const ack = await postTurn(threadAtSend)
       if (generation !== loadGeneration || !isCurrentIdentity()) return false
       conversationStore.setThreadId(ack.thread_id)
-      rememberAgentSessionMemory(ack.thread_id, deps.identity?.())
+      rememberAgentSessionMemory(ack.thread_id, operationIdentity)
       if (ack.workflow_id !== undefined) {
         // The ack does not say whether the server minted a workflow or echoed
         // the thread's existing one. The persisted binding store preserves
@@ -402,6 +417,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
   async function stopTurn(): Promise<void> {
+    const operationGeneration = identityGeneration
+    const isCurrentIdentity = () => operationGeneration === identityGeneration
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
@@ -413,6 +430,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       await rest.cancelMessage(threadId, turnId)
     } catch (error) {
+      if (!isCurrentIdentity()) return
       if (error instanceof AgentApiError) {
         if (error.status === 409) return
         promptEditState.value = { phase: 'idle' }
@@ -428,6 +446,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     selection: 'run' | 'cancel'
   ): Promise<void> {
+    const operationGeneration = identityGeneration
+    const isCurrentIdentity = () => operationGeneration === identityGeneration
     const currentThreadId = conversationStore.threadId
     const messageId = conversationStore.activeTurnId
     if (
@@ -441,6 +461,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
+      if (!isCurrentIdentity()) return
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
         conversationStore.ingest({

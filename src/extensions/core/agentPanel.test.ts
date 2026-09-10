@@ -56,7 +56,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/agentIdentityStateTracker',
+  import('@/workbench/extensions/agent/services/agent/agentIdentityStateTracker'),
   () => ({
     registerAgentIdentityStateTracker: vi.fn(() => () => {})
   })
