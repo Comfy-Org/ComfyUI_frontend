@@ -1,4 +1,5 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { consumePaymentReturn } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 
 /**
@@ -12,9 +13,11 @@ import { consumePaymentReturn } from '@/platform/cloud/subscription/utils/paymen
  */
 export function usePaymentReturnUrlLoader() {
   const billingContext = useBillingContext()
+  const { flags } = useFeatureFlags()
 
   async function loadPaymentReturnFromUrl() {
     if (!consumePaymentReturn()) return
+    if (!flags.embeddedCheckoutEnabled) return
     await billingContext.fetchStatus()
   }
 

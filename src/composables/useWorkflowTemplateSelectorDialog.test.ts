@@ -1,12 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const mockDialogService = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
 }))
 
-const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
+let mockDialogStore: ReturnType<typeof useDialogStore>
 
 const mockNewUserService = vi.hoisted(() => ({
   isNewUser: vi.fn()
@@ -16,24 +15,20 @@ const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => mockDialogService
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => mockDialogStore
-}))
-
-vi.mock('@/services/useNewUserService', () => ({
+vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => mockNewUserService
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mockTelemetry
 }))
 
-vi.mock(
-  '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue',
+vi.mock<unknown>(
+  import('@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'),
   () => ({
     default: { name: 'MockWorkflowTemplateSelectorDialog' }
   })
@@ -42,6 +37,10 @@ vi.mock(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
+  beforeEach(() => {
+    mockDialogStore = useDialogStore()
+  })
+
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
@@ -58,7 +57,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
-    it('defaults to "basics-getting-started" category for new users', () => {
+    it('defaults to "popular" category for new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(true)
 
       const dialog = useWorkflowTemplateSelectorDialog()
@@ -66,9 +65,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
 
       expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          props: expect.objectContaining({
-            initialCategory: 'basics-getting-started'
-          })
+          props: expect.objectContaining({ initialCategory: 'popular' })
         })
       )
     })

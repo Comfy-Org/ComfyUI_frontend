@@ -1,7 +1,9 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { t } from '@/i18n'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
@@ -10,7 +12,7 @@ import type {
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { app } from '../../scripts/app'
@@ -765,40 +767,74 @@ export class GroupNodeConfig {
     groupNodes: Record<string, GroupNodeWorkflowData>,
     missingNodeTypes: (
       | string
-      | { type: string; hint?: string; action?: unknown }
-    )[]
+      | {
+          type: string
+          nodeId?: string | number
+          hint?: string
+          action?: unknown
+        }
+    )[],
+    instanceIdsByGroup?: Map<string, (string | number)[]>
   ) {
     for (const g in groupNodes) {
       const groupData = groupNodes[g]
 
-      let hasMissing = false
-      for (const n of groupData.nodes) {
-        // Find missing node types
-        if (!n.type || !(n.type in LiteGraph.registered_node_types)) {
-          missingNodeTypes.push({
-            type: n.type ?? 'unknown',
-            hint: ` (In group node '${PREFIX}${SEPARATOR}${g}')`
-          })
+      const missingInnerTypes = [
+        ...new Set(
+          groupData.nodes
+            .filter(
+              (n) => !n.type || !(n.type in LiteGraph.registered_node_types)
+            )
+            .map((n) => n.type ?? 'unknown')
+        )
+      ]
 
-          missingNodeTypes.push({
-            type: `${PREFIX}${SEPARATOR}` + g,
-            action: {
-              text: 'Remove from workflow',
-              callback: (e: MouseEvent) => {
-                delete groupNodes[g]
-                const target = e.target as HTMLElement
-                target.textContent = 'Removed'
-                target.style.pointerEvents = 'none'
-                target.style.opacity = '0.7'
-              }
-            }
-          })
-
-          hasMissing = true
+      if (missingInnerTypes.length) {
+        const groupType = `${PREFIX}${SEPARATOR}${g}`
+        const registeredGroupType = LiteGraph.registered_node_types[
+          groupType
+        ] as LGraphNodeConstructor | undefined
+        if (registeredGroupType?.nodeData?.[GROUP]) {
+          LiteGraph.unregisterNodeType(groupType)
+          useNodeDefStore().removeNodeDef(groupType)
         }
+        const removeAction = {
+          text: 'Remove from workflow',
+          callback: (e?: MouseEvent) => {
+            delete groupNodes[g]
+            const target = e?.target as HTMLElement | undefined
+            if (!target) return
+            target.textContent = 'Removed'
+            target.style.pointerEvents = 'none'
+            target.style.opacity = '0.7'
+          }
+        }
+        if (instanceIdsByGroup) {
+          // One report per canvas instance so every entry is backed by a
+          // real node and can be retired when that node goes away. A group
+          // definition with no instances gets no report: there is no node
+          // to locate, and nothing that could ever retire the row.
+          for (const id of instanceIdsByGroup.get(g) ?? []) {
+            missingNodeTypes.push({
+              type: groupType,
+              nodeId: String(id),
+              hint: t('g.missingNodeTypesInGroup', {
+                types: missingInnerTypes.join(', ')
+              }),
+              action: removeAction
+            })
+          }
+        } else {
+          for (const missingType of missingInnerTypes) {
+            missingNodeTypes.push({
+              type: missingType,
+              hint: ` (In group node '${groupType}')`
+            })
+          }
+          missingNodeTypes.push({ type: groupType, action: removeAction })
+        }
+        continue
       }
-
-      if (hasMissing) continue
 
       const config = new GroupNodeConfig(g, groupData)
       await config.registerType()
@@ -816,7 +852,6 @@ export class GroupNodeConfig {
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
  *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export class GroupNodeHandler {
   node: LGraphNode
@@ -902,8 +937,10 @@ export class GroupNodeHandler {
 
       // Shift each node so the unpacked group appears at the group node position
       for (const newNode of newNodes) {
-        newNode.pos[0] -= (left ?? 0) - x
-        newNode.pos[1] -= (top ?? 0) - y
+        newNode.pos = [
+          newNode.pos[0] - ((left ?? 0) - x),
+          newNode.pos[1] - ((top ?? 0) - y)
+        ]
       }
 
       return { newNodes, selectedIds }
@@ -920,9 +957,7 @@ export class GroupNodeHandler {
         for (const innerInputName in map) {
           const groupSlotId = map[innerInputName]
           if (groupSlotId == null) continue
-          const slotLink = node.inputs?.[groupSlotId]?.link
-          if (slotLink == null) continue
-          const link = app.rootGraph.links[slotLink]
+          const link = node.getInputLink(groupSlotId)
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
           const innerInputId = newNode.findInputSlot(innerInputName)
@@ -939,14 +974,10 @@ export class GroupNodeHandler {
         groupOutputId < node.outputs?.length;
         groupOutputId++
       ) {
-        const output = node.outputs[groupOutputId]
-        if (!output.links) continue
-        const links = [...output.links]
-        for (const l of links) {
+        const links = outputLinks(app.rootGraph, node.id, groupOutputId)
+        for (const link of links) {
           const slot = newToOldOutputMap[groupOutputId]
           if (!slot) continue
-          const link = app.rootGraph.links[l]
-          if (!link) continue
           const targetNode = app.rootGraph.getNodeById(link.target_id)
           const selectedId = parseNodeId(selectedIds[slot.node.index ?? 0])
           const newNode = selectedId
@@ -1010,7 +1041,12 @@ function convertLoadedGroupNodes(): number {
     if (!node) return converted
     try {
       const handler = GroupNodeHandler.getHandler(node)
-      if (!handler) throw new Error('Missing handler for group node')
+      if (!handler) {
+        console.error('Missing handler for group node')
+        failed.add(node)
+        app.rootGraph.remove(node)
+        continue
+      }
       const innerNodes = handler.convertToNodes()
       for (const inner of innerNodes) inner.updateArea()
       app.rootGraph.convertToSubgraph(new Set(innerNodes))
@@ -1030,8 +1066,10 @@ function convertLoadedGroupNodes(): number {
   }
 }
 
-/** True while a workflow load is in progress, to defer stray paste conversions. */
-let isLoadingWorkflow = false
+const groupNodeReportIndices = new WeakMap<
+  Exclude<MissingNodeType, string>,
+  number
+>()
 
 const id = 'Comfy.GroupNode'
 
@@ -1048,24 +1086,55 @@ const ext: ComfyExtension = {
   },
   async beforeConfigureGraph(
     graphData: ComfyWorkflowJSON,
-    missingNodeTypes: string[]
+    missingNodeTypes: MissingNodeType[]
   ) {
-    isLoadingWorkflow = true
     const nodes = graphData?.extra?.groupNodes as
       | Record<string, GroupNodeWorkflowData>
       | undefined
     if (nodes) {
       replaceLegacySeparators(graphData.nodes)
-      await GroupNodeConfig.registerFromWorkflow(nodes, missingNodeTypes)
+      const instanceIndicesByGroup = new Map<string, number[]>()
+      const groupTypePrefix = `${PREFIX}${SEPARATOR}`
+      for (const [nodeIndex, n] of graphData.nodes.entries()) {
+        const type = String(n.type ?? '')
+        if (!type.startsWith(groupTypePrefix)) continue
+        const groupName = type.slice(groupTypePrefix.length)
+        const indices = instanceIndicesByGroup.get(groupName) ?? []
+        indices.push(nodeIndex)
+        instanceIndicesByGroup.set(groupName, indices)
+      }
+      const groupNodeReports: MissingNodeType[] = []
+      await GroupNodeConfig.registerFromWorkflow(
+        nodes,
+        groupNodeReports,
+        instanceIndicesByGroup
+      )
+      for (const report of groupNodeReports) {
+        if (typeof report === 'string' || report.nodeId == null) continue
+        const nodeIndex = Number(report.nodeId)
+        if (Number.isInteger(nodeIndex)) {
+          groupNodeReportIndices.set(report, nodeIndex)
+        }
+      }
+      missingNodeTypes.push(...groupNodeReports)
     }
   },
-  afterConfigureGraph() {
-    try {
-      if (convertLoadedGroupNodes() > 0) {
-        delete app.rootGraph.extra?.groupNodes
+  afterConfigureGraph(missingNodeTypes) {
+    for (let index = missingNodeTypes.length - 1; index >= 0; index--) {
+      const report = missingNodeTypes[index]
+      if (typeof report === 'string') continue
+      const nodeIndex = groupNodeReportIndices.get(report)
+      if (nodeIndex === undefined) continue
+      groupNodeReportIndices.delete(report)
+      const node = app.rootGraph.nodes[nodeIndex]
+      if (node) {
+        report.nodeId = String(node.id)
+      } else {
+        missingNodeTypes.splice(index, 1)
       }
-    } finally {
-      isLoadingWorkflow = false
+    }
+    if (convertLoadedGroupNodes() > 0) {
+      delete app.rootGraph.extra?.groupNodes
     }
   },
   nodeCreated(node: LGraphNode) {
@@ -1073,7 +1142,7 @@ const ext: ComfyExtension = {
     const handler = GroupNodeHandler.getHandler(node)
     // A stray group node created after load (e.g. paste) has no migration pass;
     // convert it to a subgraph once it has joined a graph.
-    if (!isLoadingWorkflow) {
+    if (!app.configuringGraph) {
       queueMicrotask(() => {
         const graph = node.graph
         if (graph && handler && GroupNodeHandler.isGroupNode(node)) {

@@ -53,9 +53,9 @@ describe('MediaVideoTop', () => {
     expect(container.querySelector('source')).not.toBeInTheDocument()
   })
 
-  it('emits playback events and hides paused overlay while playing', async () => {
+  it('shows native controls only while playing and hovered', async () => {
     const user = userEvent.setup()
-    const { container, emitted } = render(MediaVideoTop, {
+    const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
       }
@@ -63,21 +63,20 @@ describe('MediaVideoTop', () => {
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
-    expect(video).toBeInTheDocument()
 
     await fireEvent.play(video)
-    expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([true])
-
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.hover(container.firstElementChild!)
-    expect(video.controls).toBe(true)
-
-    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
-    await user.unhover(container.firstElementChild!)
     expect(video.controls).toBe(false)
 
+    await user.hover(video)
+    expect(video.controls).toBe(true)
+
     await fireEvent.pause(video)
-    expect(emitted()['videoPlayingStateChanged']?.at(-1)).toEqual([false])
+    expect(video.controls).toBe(false)
+
+    await fireEvent.play(video)
+    expect(video.controls).toBe(true)
+
+    await user.unhover(video)
     expect(video.controls).toBe(false)
   })
 
@@ -103,5 +102,65 @@ describe('MediaVideoTop', () => {
     await user.click(video)
 
     expect(playSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+  ])(
+    'does not start playback from a $modifier-click',
+    async ({ keyDown, keyUp }) => {
+      const user = userEvent.setup()
+      const { container } = render(MediaVideoTop, {
+        props: {
+          asset: createVideoAsset('https://example.com/thumb.jpg')
+        }
+      })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+      const video = container.querySelector('video')!
+      const playSpy = vi
+        .spyOn(video, 'play')
+        .mockImplementation(() => Promise.resolve())
+
+      Object.defineProperty(video, 'paused', {
+        value: true,
+        configurable: true
+      })
+
+      await user.keyboard(keyDown)
+      await user.click(video)
+      await user.keyboard(keyUp)
+
+      expect(playSpy).not.toHaveBeenCalled()
+    }
+  )
+
+  it('pauses playback from a subsequent click when native controls are disabled', async () => {
+    const user = userEvent.setup()
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg'),
+        showNativeControls: false
+      }
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    const pauseSpy = vi.spyOn(video, 'pause').mockImplementation(() => {})
+
+    Object.defineProperty(video, 'paused', {
+      value: false,
+      configurable: true
+    })
+
+    await fireEvent.play(video)
+    await user.hover(video)
+    expect(video.controls).toBe(false)
+
+    await user.click(video)
+
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
   })
 })

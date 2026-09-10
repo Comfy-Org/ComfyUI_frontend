@@ -17,7 +17,7 @@ const { mockSubscription } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     subscription: computed(() => mockSubscription.value)
   })
@@ -204,7 +204,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
       const { container } = renderComponent(
         makePreview({ transition_type: 'upgrade', cost_today_cents: 1500 })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       expect(
         screen.getByText('Reactivating your subscription')
@@ -260,7 +260,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       expect(bodyText).toContain('Your Creator was set to end on Aug 20, 2026')
       expect(bodyText).toContain('Switching to Standard reactivates it')
@@ -295,7 +295,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       expect(
         screen.getByText(
@@ -348,7 +348,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       // Not the annual-only title/copy: an annual→monthly switch doesn't
       // charge a full year.
@@ -545,7 +545,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm gating on load state', () => {
-    it('shows unavailable exact quote fields', () => {
+    it('prices a preview that carries no exact quote from the legacy costs', () => {
       mockSubscription.value = { isCancelled: false, endDate: null }
       renderComponent(
         makePreview({
@@ -558,15 +558,24 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
         })
       )
 
+      expect(screen.getByText('$15.00')).toBeInTheDocument()
       expect(
-        screen.getAllByText('subscription.preview.quoteUnavailable')
-      ).toHaveLength(2)
+        screen.queryByText('subscription.preview.quoteUnavailable')
+      ).toBeNull()
     })
 
     it('does not confirm without a current quote', async () => {
       const user = userEvent.setup()
       mockSubscription.value = { isCancelled: false, endDate: null }
-      const { emitted } = renderComponent(makePreview({}), false, false)
+      const { emitted } = render(SubscriptionTransitionPreviewWorkspace, {
+        props: {
+          previewData: makePreview({}),
+          forceReactivation: false,
+          quoteIsCurrent: false,
+          embeddedCheckoutEnabled: true
+        },
+        global: { plugins: [i18n] }
+      })
       const confirmButton = screen.getByRole('button', {
         name: 'Confirm upgrade'
       })
@@ -753,7 +762,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       // Not the activation date itself (which would misreport as "renews
       // today"); one month later instead.
@@ -785,7 +794,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       expect(bodyText).not.toContain('renew automatically on Mar')
       expect(bodyText).toContain('renew automatically on Feb 28, 2026')
@@ -815,7 +824,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       expect(bodyText).not.toContain('renew automatically on Mar')
       expect(bodyText).toContain('renew automatically on Feb 28, 2029')
@@ -845,7 +854,7 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
           }
         })
       )
-      const bodyText = container.textContent ?? ''
+      const bodyText = container.textContent
 
       expect(bodyText).not.toContain('renew automatically on May')
       expect(bodyText).toContain('renew automatically on Apr 30, 2026')

@@ -1,24 +1,20 @@
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
-// ---- Module Mocks ----
-
-const mockDataStore: Record<string, unknown> = {
-  sourceNode: null,
-  inputData: null,
-  outputData: null
-}
-
-vi.mock('@/stores/maskEditorDataStore', () => ({
-  useMaskEditorDataStore: vi.fn(() => mockDataStore)
-}))
+let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
 const CANVAS_SIZE = 4
 const CANVAS_BYTES = CANVAS_SIZE * CANVAS_SIZE * 4
@@ -70,27 +66,19 @@ function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
     toDataURL: vi.fn(() => 'data:image/png;base64,mock')
   })
   canvasPixels.set(canvas, pixels)
-  return canvas
+  return markRaw(canvas)
 }
 
-const mockEditorStore: Record<string, HTMLCanvasElement | null> = {
-  maskCanvas: null,
-  rgbCanvas: null,
-  imgCanvas: null
-}
+let mockEditorStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockEditorStore)
-}))
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((route: string) => `http://localhost:8188${route}`)
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: { setDirty: vi.fn() },
     nodeOutputs: {} as Record<string, unknown>,
@@ -100,16 +88,9 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-  }))
-}))
-
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
@@ -118,6 +99,8 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
+    mockDataStore = useMaskEditorDataStore()
+    mockEditorStore = useMaskEditorStore()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
 
@@ -131,15 +114,22 @@ describe('useMaskEditorSaver', () => {
       ],
       widgets_values: ['original.png [input]'],
       properties: { image: 'original.png [input]' },
-      graph: { setDirtyCanvas: vi.fn() }
+      graph: {
+        setDirtyCanvas: vi.fn(),
+        rootGraph: { id: 'maskeditor-saver-test' }
+      }
     })
+    useWidgetValueStore().registerWidget(
+      widgetId('maskeditor-saver-test', toNodeId(42), 'image'),
+      { type: 'string', value: 'original.png [input]', options: {} }
+    )
 
     mockDataStore.sourceNode = mockNode
     mockDataStore.inputData = {
       baseLayer: { image: {} as HTMLImageElement, url: 'base.png' },
       maskLayer: { image: {} as HTMLImageElement, url: 'mask.png' },
       sourceRef: { filename: 'original.png', subfolder: '', type: 'input' },
-      nodeId: 42
+      nodeId: toNodeId(42)
     }
     mockDataStore.outputData = null
 
@@ -200,6 +190,54 @@ describe('useMaskEditorSaver', () => {
     // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId('maskeditor-saver-test', toNodeId(42), 'image')
+      )?.value
+    ).toBe('clipspace-painted-masked-123.png [input]')
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png [input]'
+    )
+  })
+
+  it('replaces a stale clipspace image with the saved image', async () => {
+    mockNode.images = [
+      {
+        filename: 'pasted-before-edit.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ]
+
+    await useMaskEditorSaver().save()
+
+    expect(mockNode.images).toEqual([
+      {
+        filename: 'clipspace-painted-masked-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      }
+    ])
+  })
+
+  it('does not write server references after the source node is detached', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () => {
+      mockNode.graph = null
+      return {
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: 'clipspace-painted-masked-123.png',
+            subfolder: 'clipspace',
+            type: 'input'
+          })
+      } as Response
+    })
+
+    await useMaskEditorSaver().save()
+
+    expect(useNodeOutputStore().nodeOutputs['42']).toBeUndefined()
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
   })
 
   it('omits subfolder from the upload FormData under the unified contract', async () => {

@@ -1,3 +1,5 @@
+import { useDialogStore } from '@/stores/dialogStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +16,7 @@ const mocks = await vi.hoisted(async () => {
   return {
     nudgeArmed: ref(false),
     tourWasCompleted: ref(true),
-    openDialogs: ref<string[]>([]),
+
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
     }),
@@ -23,7 +25,7 @@ const mocks = await vi.hoisted(async () => {
   }
 })
 
-vi.mock('../tour/useFirstRunTourController', () => ({
+vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
     tourWasCompleted: mocks.tourWasCompleted,
@@ -31,19 +33,14 @@ vi.mock('../tour/useFirstRunTourController', () => ({
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    get dialogStack() {
-      return mocks.openDialogs.value
-    }
+vi.mock<unknown>(
+  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  () => ({
+    useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
   })
-}))
+)
 
-vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
-  useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackOnboardingTour: mocks.trackOnboardingTour })
 }))
 
@@ -67,7 +64,7 @@ describe('FirstRunTourNudge', () => {
   beforeEach(() => {
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
-    mocks.openDialogs.value = []
+    useDialogStore().dialogStack = []
   })
 
   it('shows a nudge that came due before it mounted', async () => {
@@ -87,13 +84,14 @@ describe('FirstRunTourNudge', () => {
       'a nudge armed before this mounted still has to appear'
     ).not.toBeNull()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
-      tour: 'firstRun'
+      tour: 'firstRun',
+      tour_completed: true
     })
   })
 
   it('waits out a dialog that is already open', async () => {
     mocks.nudgeArmed.value = true
-    mocks.openDialogs.value = ['some-dialog']
+    useDialogStore().dialogStack = [fromPartial({ key: 'some-dialog' })]
     renderNudge()
 
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
@@ -102,7 +100,7 @@ describe('FirstRunTourNudge', () => {
       'the nudge sits below the modal stack, so under a dialog it is invisible'
     ).toBeNull()
 
-    mocks.openDialogs.value = []
+    useDialogStore().dialogStack = []
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
     expect(
@@ -116,7 +114,7 @@ describe('FirstRunTourNudge', () => {
     renderNudge()
 
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS - 500)
-    mocks.openDialogs.value = ['some-dialog']
+    useDialogStore().dialogStack = [fromPartial({ key: 'some-dialog' })]
     await vi.advanceTimersByTimeAsync(500 + APPEAR_DELAY_MS)
 
     expect(
@@ -134,9 +132,9 @@ describe('FirstRunTourNudge', () => {
     renderNudge()
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
-    mocks.openDialogs.value = ['some-dialog']
+    useDialogStore().dialogStack = [fromPartial({ key: 'some-dialog' })]
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
-    mocks.openDialogs.value = []
+    useDialogStore().dialogStack = []
     await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
 
     const shown = mocks.trackOnboardingTour.mock.calls.filter(
@@ -223,7 +221,29 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.dismissNudge).toHaveBeenCalled()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
-      { tour: 'firstRun' }
+      { tour: 'firstRun', tour_completed: true }
+    )
+  })
+
+  it('separates a conversion from a completed tour from one that never ran', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.tourWasCompleted.value = false
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await user.click(screen.getByTestId('first-run-nudge-explore'))
+
+    // Both events carry it, so the funnel can be read end to end: without it
+    // a conversion from a finished tour and one from a tour that never
+    // started are indistinguishable.
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+      tour: 'firstRun',
+      tour_completed: false
+    })
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+      'explore_templates_clicked',
+      { tour: 'firstRun', tour_completed: false }
     )
   })
 })

@@ -19,6 +19,7 @@
         >
           {{ confirmTitle }}
         </h2>
+        <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
       <div
         v-if="isReactivating"
@@ -111,7 +112,7 @@
         <div class="flex items-center justify-between">
           <span class="text-base-foreground">{{ refillLabel }}</span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
             <span class="font-bold text-base-foreground tabular-nums">{{
               refillCredits
             }}</span>
@@ -140,7 +141,7 @@
             }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[comfy--credits] size-4 shrink-0 bg-credit" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
             <span class="font-bold text-base-foreground tabular-nums">{{
               refillCredits
             }}</span>
@@ -194,12 +195,12 @@
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
           <span class="font-bold text-base-foreground tabular-nums">
-            {{ exactAmountDue }}
+            {{ amountDueToday }}
           </span>
         </div>
         <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
       </div>
-      <div class="flex gap-2 pt-6">
+      <div v-if="embeddedCheckoutEnabled" class="flex gap-2 pt-6">
         <input
           v-model="promotionCode"
           :aria-label="$t('subscription.preview.promoCodePlaceholder')"
@@ -222,7 +223,7 @@
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8 pb-4">
       <div
-        v-if="reconciliationOperationId"
+        v-if="embeddedCheckoutEnabled && reconciliationOperationId"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4"
       >
         <p class="m-0 font-semibold text-base-foreground">
@@ -235,48 +236,20 @@
       </div>
 
       <div
-        v-if="authenticationState === 'failed_retryable'"
+        v-if="
+          embeddedCheckoutEnabled && authenticationState === 'failed_retryable'
+        "
         role="alert"
         class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
       >
         {{
           authenticationError ||
-          (canRetryAuthentication
-            ? $t('billingOperation.authenticationFailedDetail')
-            : $t('billingOperation.authenticationManagerRequired'))
+          $t('billingOperation.authenticationFailedDetail')
         }}
       </div>
 
       <Button
-        v-if="
-          (authenticationState === 'failed_retryable' ||
-            authenticationState === 'requires_action') &&
-          canRetryAuthentication
-        "
-        variant="inverted"
-        size="lg"
-        class="w-full rounded-lg"
-        :loading="isAuthenticating"
-        @click="$emit('retryAuthentication')"
-      >
-        {{
-          $t(
-            authenticationState === 'failed_retryable'
-              ? 'billingOperation.retryVerification'
-              : 'subscription.preview.completeVerification'
-          )
-        }}
-      </Button>
-
-      <Button
-        v-if="
-          actionUrl &&
-          !(
-            (authenticationState === 'failed_retryable' ||
-              authenticationState === 'requires_action') &&
-            canRetryAuthentication
-          )
-        "
+        v-if="actionUrl && authenticationState !== 'failed_retryable'"
         variant="inverted"
         size="lg"
         class="w-full rounded-lg"
@@ -291,7 +264,7 @@
         class="w-full rounded-lg"
         :loading="isLoading"
         :disabled="
-          confirmDisabled || !quoteIsCurrent || verificationRecoveryActive
+          confirmDisabled || !quoteIsUsable || verificationRecoveryActive
         "
         @click="$emit('confirm', confirmReactivation)"
       >
@@ -312,17 +285,24 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  getTierCredits,
+  toTierKey
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
-import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
+import {
+  formatAmountDueToday,
+  formatQuoteMoney,
+  formatRenewalAmount,
+  resolveRenewalDate
+} from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
-
-type PersonalTierKey = 'standard' | 'creator' | 'pro'
 
 const {
   previewData,
@@ -332,11 +312,10 @@ const {
   forceReactivation = false,
   authenticationState = null,
   authenticationError = null,
-  canRetryAuthentication = false,
-  isAuthenticating = false,
   reconciliationOperationId = null,
   quoteIsCurrent = false,
-  isApplyingPromotionCode = false
+  isApplyingPromotionCode = false,
+  embeddedCheckoutEnabled = false
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -349,11 +328,10 @@ const {
   forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
-  canRetryAuthentication?: boolean
-  isAuthenticating?: boolean
   reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
+  embeddedCheckoutEnabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -364,16 +342,17 @@ const emit = defineEmits<{
   applyPromotionCode: [code: string]
   invalidateQuote: []
   restoreQuote: []
-  retryAuthentication: []
 }>()
 
-const { locale, n, t } = useI18n()
+const { locale, n, t, te } = useI18n()
 const verificationRecoveryActive = computed(
   () =>
-    authenticationState === 'requires_action' ||
-    authenticationState === 'failed_retryable' ||
-    Boolean(reconciliationOperationId)
+    embeddedCheckoutEnabled &&
+    (authenticationState === 'requires_action' ||
+      authenticationState === 'failed_retryable' ||
+      Boolean(reconciliationOperationId))
 )
+const quoteIsUsable = computed(() => !embeddedCheckoutEnabled || quoteIsCurrent)
 const interactionLocked = computed(() => isLoading || isApplyingPromotionCode)
 
 const { subscription } = useBillingContext()
@@ -405,7 +384,14 @@ function openVerification() {
 }
 
 function formatTierName(tier: string): string {
-  return t(`subscription.tiers.${tier.toLowerCase()}.name`)
+  const nameKey = `subscription.tiers.${tier.toLowerCase()}.name`
+  if (te(nameKey)) return t(nameKey)
+  return tier
+    .toLowerCase()
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function isTeamTier(tier: string): boolean {
@@ -425,8 +411,11 @@ function moneyShort(usd: number): string {
   return `$${n(usd)}`
 }
 
+// Lowercasing the tier is not a catalog lookup: FOUNDERS_EDITION keys as
+// 'founder', and TEAM/ENTERPRISE/unrecognized tiers key as nothing at all.
 function tierMonthlyCredits(tier: string): number {
-  return getTierCredits(tier.toLowerCase() as PersonalTierKey) ?? 0
+  const tierKey = toTierKey(tier as IngestSubscriptionTier)
+  return tierKey ? (getTierCredits(tierKey) ?? 0) : 0
 }
 
 const isImmediate = computed(() => previewData.is_immediate)
@@ -450,7 +439,9 @@ const currentTierName = computed(() => {
 })
 
 const isCancelled = computed(
-  () => forceReactivation || (subscription.value?.isCancelled ?? false)
+  () =>
+    forceReactivation ||
+    (!embeddedCheckoutEnabled && (subscription.value?.isCancelled ?? false))
 )
 
 const reactivationVariant = computed<
@@ -639,29 +630,19 @@ const confirmCta = computed(() => {
     amount: chargeDisplay.value
   })
 })
-const exactAmountDue = computed(() =>
-  previewData.amount_due_cents === undefined
-    ? t('subscription.preview.quoteUnavailable')
-    : formatQuoteMoney(
-        previewData.amount_due_cents,
-        previewData.currency,
-        locale.value
-      )
+const amountDueToday = computed(
+  () =>
+    formatAmountDueToday(previewData, locale.value) ||
+    t('subscription.preview.quoteUnavailable')
 )
 const renewalTerms = computed(() => {
-  if (
-    previewData.renewal_amount_cents === undefined ||
-    !previewData.renewal_at
-  ) {
-    return t('subscription.preview.quoteUnavailable')
-  }
+  const amount = formatRenewalAmount(previewData, locale.value)
+  if (!amount) return t('subscription.preview.quoteUnavailable')
+  const renewsAt = resolveRenewalDate(previewData)
+  if (!renewsAt) return t('subscription.preview.renewsAtAmount', { amount })
   return t('subscription.preview.renewsAt', {
-    amount: formatQuoteMoney(
-      previewData.renewal_amount_cents,
-      previewData.currency,
-      locale.value
-    ),
-    date: formatDate(previewData.renewal_at)
+    amount,
+    date: formatDate(renewsAt)
   })
 })
 </script>

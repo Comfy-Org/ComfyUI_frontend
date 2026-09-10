@@ -38,15 +38,9 @@
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <!-- The embedded payment step titles itself ("Confirm your payment");
-         stacking "Choose a Plan" above it doubled the header and made this
-         step taller than the pricing table. -->
+    <!-- The confirm and success steps title themselves. -->
     <div
-      v-if="
-        !isEmbeddedPaymentStep &&
-        !isEmbeddedSuccessStep &&
-        !isEmbeddedConfirmStep
-      "
+      v-if="checkoutStep === 'pricing'"
       class="flex flex-col items-center gap-3"
     >
       <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
@@ -79,25 +73,23 @@
 
     <template v-if="checkoutStep === 'preview'">
       <SubscriptionTransitionPreviewWorkspace
-        v-if="previewVariant === 'team-change'"
-        :preview-data="previewData!"
+        v-if="previewVariant === 'team-change' && previewData"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @restore-quote="restoreQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -109,14 +101,14 @@
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleTeamSubscribe"
         @change-payment-method="selectSavedPaymentMethod(null)"
@@ -125,7 +117,6 @@
         @invalidate-quote="invalidateQuote"
         @restore-quote="restoreQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
@@ -137,14 +128,14 @@
         :action-url="activeCheckoutActionUrl"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleAddCreditCard"
         @change-payment-method="selectSavedPaymentMethod(null)"
@@ -153,28 +144,25 @@
         @invalidate-quote="invalidateQuote"
         @restore-quote="restoreQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
 
       <SubscriptionTransitionPreviewWorkspace
-        v-else-if="previewVariant === 'personal-change'"
-        :preview-data="previewData!"
+        v-else-if="previewVariant === 'personal-change' && previewData"
+        :preview-data="previewData"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
         :authentication-state
         :authentication-error
-        :can-retry-authentication
-        :is-authenticating
         :reconciliation-operation-id
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
+        :embedded-checkout-enabled
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
         @restore-quote="restoreQuote"
         @back="handleBackToPricing"
-        @retry-authentication="retryPaymentAuthentication"
       />
     </template>
 
@@ -206,9 +194,16 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason, initialPlanMode, initialCheckout } = defineProps<{
+const {
+  onClose,
+  reason,
+  embeddedCheckoutEnabled = false,
+  initialPlanMode,
+  initialCheckout
+} = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  embeddedCheckoutEnabled?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -217,9 +212,9 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const stripePaymentElementEnabled = Boolean(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-)
+const stripePaymentElementEnabled =
+  embeddedCheckoutEnabled &&
+  Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
 // The embedded-payment confirm step keeps the pricing table's dialog
 // dimensions so stepping between them reads as one dialog changing content,
@@ -244,9 +239,8 @@ const {
   activeCheckoutActionUrl,
   authenticationState,
   authenticationError,
-  canRetryAuthentication,
-  isAuthenticating,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
   isTeamCheckout,
   previewVariant,
@@ -259,15 +253,16 @@ const {
   handleTeamSubscribe,
   handleSubscriptionPayment,
   handleTeamSubscriptionPayment,
-  retryPaymentAuthentication,
   applyPromotionCode,
   invalidateQuote,
   restoreQuote,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason)
+} = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
 
 const savedMethodsForConfirm = computed(() =>
-  collectingNewPaymentMethod.value ? [] : savedPaymentMethods.value
+  collectingNewPaymentMethod.value || !selectedSavedPaymentMethodId.value
+    ? []
+    : savedPaymentMethods.value
 )
 const isEmbeddedPaymentStep = computed(
   () =>

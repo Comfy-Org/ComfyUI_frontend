@@ -11,12 +11,15 @@ import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPla
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -26,9 +29,14 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearPendingSubscriptionCheckoutIfTerminal,
+  savePendingSubscriptionCheckout
+} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
@@ -44,6 +52,7 @@ export type SubscriptionCheckoutSelection =
       planMode: 'team'
       stop: TeamPlanSelection
       billingCycle: BillingCycle
+      isChange?: boolean
     }
 
 interface SelectedTeamCheckout {
@@ -53,6 +62,7 @@ interface SelectedTeamCheckout {
 
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
+  embeddedCheckoutEnabled?: boolean
 }
 
 type SubscriptionPaymentOptions = Pick<
@@ -110,7 +120,10 @@ export function useSubscriptionCheckout(
     (e: 'close', subscribed: boolean): void
   },
   paymentIntentSource?: PaymentIntentSource,
-  { tierPlanType = 'personal' }: SubscriptionCheckoutOptions = {}
+  {
+    tierPlanType = 'personal',
+    embeddedCheckoutEnabled = false
+  }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
   const toast = useToast()
@@ -125,7 +138,9 @@ export function useSubscriptionCheckout(
     subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { permissions } = useWorkspaceUI()
+  const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
+    useBillingCapabilities()
+  const { permissions, canReactivatePlan } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -144,7 +159,8 @@ export function useSubscriptionCheckout(
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
   let promotionPreviewRequestId = 0
-  let checkoutMutationLocked = false
+  let checkoutMutationOwner = 0
+  let checkoutMutationSeq = 0
   let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   useEventListener(window, 'focus', () => {
@@ -173,17 +189,18 @@ export function useSubscriptionCheckout(
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )
+  // The server says whether the operation is parked; the client no longer
+  // guesses. Only awaiting_payment_method offers this recovery — an operation
+  // parked on an invoice needs authentication, which actionUrl already drives.
+  // A null phase is no claim, so the poll simply continues.
+  const parkedCheckoutRecovery = computed(
+    () => activeCheckoutOperation.value?.phase === 'awaiting_payment_method'
+  )
   const authenticationState = computed(
     () => activeCheckoutOperation.value?.authenticationState ?? null
   )
   const authenticationError = computed(
     () => activeCheckoutOperation.value?.errorMessage ?? null
-  )
-  const canRetryAuthentication = computed(
-    () => activeCheckoutOperation.value?.canRetryAuthentication ?? false
-  )
-  const isAuthenticating = computed(
-    () => activeCheckoutOperation.value?.isAuthenticating ?? false
   )
   const reconciliationOperationId = computed(() =>
     activeCheckoutOperation.value?.status === 'reconciliation_needed'
@@ -192,29 +209,38 @@ export function useSubscriptionCheckout(
   )
   // Busy from submit until the checkout presents a terminal step. A pending
   // operation only releases the confirm action while it is parked on the
-  // customer (a challenge to complete, a failed attempt to retry); the
-  // in-page challenge this tab drives keeps it busy, and a succeeded
-  // operation stays busy for the beat between settlement and the success
-  // step taking over — that beat reopened the pay button mid-checkout.
+  // customer (a challenge to complete, a failed attempt to retry, a checkout
+  // still awaiting a card); the in-page challenge this tab drives keeps it
+  // busy, and a succeeded operation stays busy for the beat between settlement
+  // and the success step taking over — that beat reopened the pay button
+  // mid-checkout. A parked checkout keeps polling either way: releasing the
+  // action is about who is being waited on, not whether we are still watching.
   const isPolling = computed(() => {
     const operation = activeCheckoutOperation.value
     if (!operation) return false
     if (operation.status === 'succeeded') return true
     if (operation.status !== 'pending') return false
     if (operation.isAuthenticating) return true
+    if (operation.phase === 'awaiting_payment_method') return false
     return (
       operation.authenticationState !== 'failed_retryable' &&
       operation.authenticationState !== 'requires_action'
     )
   })
-  function beginCheckoutMutation(): boolean {
-    if (checkoutMutationLocked) return false
-    checkoutMutationLocked = true
-    return true
+  // The lock is owned by one attempt at a time. An attempt that releases early
+  // (see advanceToSuccessOnOperation) still runs its own finally afterwards, by
+  // which point a newer attempt may hold the lock — releasing on a bare boolean
+  // there would hand a third attempt a lock it does not own and let two submits
+  // run concurrently. So a release only counts from the holder.
+  function beginCheckoutMutation(): number {
+    if (checkoutMutationOwner !== 0) return 0
+    checkoutMutationOwner = ++checkoutMutationSeq
+    return checkoutMutationOwner
   }
 
-  function finishCheckoutMutation() {
-    checkoutMutationLocked = false
+  function finishCheckoutMutation(token: number) {
+    if (token !== 0 && checkoutMutationOwner === token)
+      checkoutMutationOwner = 0
   }
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
@@ -236,8 +262,19 @@ export function useSubscriptionCheckout(
   function installPreview(preview: PreviewSubscribeResponse): boolean {
     if (!preview.allowed) return false
     previewData.value = preview
+    if (embeddedCheckoutEnabled) {
+      reactivationRequired.value =
+        preview.requires_reactivation_confirmation ?? true
+    }
     quoteIsCurrent.value = true
     return true
+  }
+
+  function requiresReactivationConfirmation(): boolean {
+    if (embeddedCheckoutEnabled) {
+      return previewData.value?.requires_reactivation_confirmation ?? true
+    }
+    return isSubscriptionCancelled() || reactivationRequired.value
   }
 
   // The transition workflows charge the subscription's existing default
@@ -272,14 +309,12 @@ export function useSubscriptionCheckout(
   }
 
   async function loadSavedPaymentMethods(): Promise<void> {
-    if (!shouldUseWorkspaceBilling.value) return
+    if (!embeddedCheckoutEnabled || !shouldUseWorkspaceBilling.value) return
     try {
       const methods = await workspaceApi.listSavedPaymentMethods()
       savedPaymentMethods.value = methods
       selectedSavedPaymentMethodId.value =
-        methods.find((method) => method.is_default)?.id ??
-        methods[0]?.id ??
-        null
+        methods.find((method) => method.is_default)?.id ?? null
     } catch {
       savedPaymentMethods.value = []
       selectedSavedPaymentMethodId.value = null
@@ -334,27 +369,43 @@ export function useSubscriptionCheckout(
     )
   }
 
+  function isUsableTeamPreview(
+    preview: PreviewSubscribeResponse | null | undefined,
+    checkoutType: SubscriptionCheckoutType
+  ): preview is PreviewSubscribeResponse & { allowed: true } {
+    if (isSubscriptionCancelled()) return isReactivationCapablePreview(preview)
+    return checkoutType === 'change'
+      ? isExistingPlanPreview(preview)
+      : Boolean(preview?.allowed)
+  }
+
   function reactivationMaterialSnapshot(
     preview: PreviewSubscribeResponse,
     ignoreTimeDerivedTodayValues = false
   ): string {
-    const planSnapshot = (
-      plan: PreviewSubscribeResponse['new_plan'] | undefined
-    ) =>
-      plan
-        ? [
-            plan.slug,
-            plan.tier,
-            plan.duration,
-            plan.price_cents,
-            plan.credits_cents,
-            plan.seat_summary?.seat_count,
-            plan.seat_summary?.total_cost_cents,
-            plan.seat_summary?.total_credits_cents,
-            plan.period_start,
-            plan.period_end
-          ]
-        : null
+    type RuntimePlan = Omit<
+      NonNullable<PreviewSubscribeResponse['new_plan']>,
+      'seat_summary'
+    > & {
+      seat_summary?: PreviewSubscribeResponse['new_plan']['seat_summary']
+    }
+
+    const planSnapshot = (plan: RuntimePlan | undefined) => {
+      if (!plan) return null
+      const { seat_summary: seatSummary } = plan
+      return [
+        plan.slug,
+        plan.tier,
+        plan.duration,
+        plan.price_cents,
+        plan.credits_cents,
+        seatSummary?.seat_count,
+        seatSummary?.total_cost_cents,
+        seatSummary?.total_credits_cents,
+        plan.period_start,
+        plan.period_end
+      ]
+    }
 
     return JSON.stringify([
       preview.allowed,
@@ -443,7 +494,10 @@ export function useSubscriptionCheckout(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
-    let requiresRecovery = hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED')
+    const hasPaymentRecoveryCode =
+      hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
+      hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
+    let requiresRecovery = hasPaymentRecoveryCode
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
         requiresRecovery =
@@ -481,7 +535,10 @@ export function useSubscriptionCheckout(
       return 'opened'
     } catch (portalError) {
       if (!isCurrent()) return null
-      showSubscribeError(portalError)
+      reportError(portalError, {
+        errorType: 'billing_portal_open_failure'
+      })
+      showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
       return 'failed'
     }
   }
@@ -530,16 +587,6 @@ export function useSubscriptionCheckout(
     return true
   }
 
-  // The reactivation guard below reads cached `subscription.isCancelled`. If
-  // the subscription was cancelled in another tab after this preview loaded,
-  // that cache is stale and the guard blocks a request the banner never
-  // actually disclosed as a reactivation. Refresh here, right before the
-  // guard, so a retry sees the real current transaction — but only install
-  // the refresh if it can actually feed the banner; one that can't (e.g. it
-  // comes back as a fresh subscribe) would leave every retry blocked on a
-  // screen that can never collect consent, so send the user back to pricing
-  // instead. Mirrors the fetchStatus() call useDowngradeToPersonal makes
-  // before its own reactivation guard.
   async function refreshPreviewOnReactivationBlock(
     planSlug: string,
     options?: PreviewSubscribeOptions
@@ -556,7 +603,10 @@ export function useSubscriptionCheckout(
       if (recovery) return
       // Treated the same as an incapable preview below.
     }
-    if (freshPreview && isReactivationCapablePreview(freshPreview)) {
+    if (
+      freshPreview?.requires_reactivation_confirmation !== false &&
+      isReactivationCapablePreview(freshPreview)
+    ) {
       installPreview(freshPreview)
       reactivationRequired.value = true
       notifyReactivationConfirmationRequired()
@@ -575,8 +625,17 @@ export function useSubscriptionCheckout(
     return (
       tierPlanType === 'team' ||
       !isTeamPlan.value ||
-      permissions.value.canDowngradeToPersonal
+      (isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
     )
+  }
+
+  function canPerformCheckout(checkoutType: SubscriptionCheckoutType): boolean {
+    if (!isCloud) return permissions.value.canManageSubscription
+    return checkoutType === 'change'
+      ? canChangeSeats.value
+      : canSubscribeSelfServe.value
   }
 
   async function showTeamToPersonalDowngrade(
@@ -641,8 +700,12 @@ export function useSubscriptionCheckout(
   }) {
     if (
       isSubscribing.value ||
-      !permissions.value.canManageSubscription ||
-      !canSelectTierPlan()
+      !canSelectTierPlan() ||
+      (isTeamPlan.value && tierPlanType !== 'team'
+        ? !(isCloud
+            ? canDowngradeToPersonal.value
+            : permissions.value.canDowngradeToPersonal)
+        : isCloud && !canSubscribeSelfServe.value && !canChangeSeats.value)
     ) {
       return
     }
@@ -671,10 +734,14 @@ export function useSubscriptionCheckout(
         return
       }
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
-      const [response] = await Promise.all([
-        previewSubscribe(planSlug),
-        loadSavedPaymentMethods()
-      ])
+      const response = embeddedCheckoutEnabled
+        ? (
+            await Promise.all([
+              previewSubscribe(planSlug),
+              loadSavedPaymentMethods()
+            ])
+          )[0]
+        : await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
         toast.add({
@@ -684,6 +751,9 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      const checkoutType =
+        response.transition_type === 'new_subscription' ? 'new' : 'change'
+      if (!canPerformCheckout(checkoutType)) return
 
       installPreview(response)
       checkoutStep.value = 'preview'
@@ -716,19 +786,76 @@ export function useSubscriptionCheckout(
     billingCycle: BillingCycle
     isChange?: boolean
   }) {
-    if (isSubscribing.value || !permissions.value.canManageSubscription) return
+    const checkoutType = payload.isChange ? 'change' : 'new'
+    if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
     const previewRequestId = ++teamPreviewRequestId
     promotionPreviewRequestId += 1
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
-      checkoutType: payload.isChange ? 'change' : 'new'
+      checkoutType
     }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
+
+    if (!embeddedCheckoutEnabled) {
+      const teamCreditStopId = payload.stop.id
+      if (!teamCreditStopId) {
+        toast.add({
+          severity: 'error',
+          summary: t('subscription.teamPlan.name'),
+          detail: t('subscription.teamPlan.unavailable')
+        })
+        resetToPricing()
+        return
+      }
+      isLoadingPreview.value = true
+
+      let response: PreviewSubscribeResponse | null = null
+      let previewError: unknown
+      try {
+        response = await previewSubscribe(
+          getTeamPlanSlug(payload.billingCycle),
+          { teamCreditStopId }
+        )
+      } catch (error) {
+        previewError = error
+        const recovery = await recoverOutstandingPayment(
+          error,
+          () => previewRequestId === teamPreviewRequestId
+        )
+        if (recovery === 'failed') {
+          resetToPricing()
+          return
+        }
+        if (recovery) return
+      } finally {
+        if (previewRequestId === teamPreviewRequestId) {
+          isLoadingPreview.value = false
+        }
+      }
+
+      if (previewRequestId !== teamPreviewRequestId) return
+      if (isUsableTeamPreview(response, checkoutType)) {
+        installPreview(response)
+        checkoutStep.value = 'preview'
+        return
+      }
+      toast.add({
+        severity: 'error',
+        summary: t('subscription.teamPlan.name'),
+        detail:
+          previewError instanceof Error
+            ? previewError.message
+            : response?.reason || t('subscription.subscribeFailed')
+      })
+      checkoutStep.value = 'pricing'
+      selectedTeamCheckout.value = null
+      return
+    }
 
     if (!payload.stop.id) return
     isLoadingPreview.value = true
@@ -739,8 +866,7 @@ export function useSubscriptionCheckout(
       const planSlug = getTeamPlanSlug(payload.billingCycle)
       ;[response] = await Promise.all([
         previewSubscribe(planSlug, {
-          teamCreditStopId: payload.stop.id,
-          billingCycle: payload.billingCycle
+          teamCreditStopId: payload.stop.id
         }),
         loadSavedPaymentMethods()
       ])
@@ -765,7 +891,8 @@ export function useSubscriptionCheckout(
 
     if (
       response?.allowed &&
-      (!isSubscriptionCancelled() || isReactivationCapablePreview(response))
+      (response.requires_reactivation_confirmation === false ||
+        isReactivationCapablePreview(response))
     ) {
       installPreview(response)
       checkoutStep.value = 'preview'
@@ -810,19 +937,20 @@ export function useSubscriptionCheckout(
     confirmationToken?: string,
     promotionCode?: string
   ) {
-    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
-    if (!beginCheckoutMutation()) return
+    if (!canSelectTierPlan()) return
+    const mutationToken = beginCheckoutMutation()
+    if (!mutationToken) return
 
     const tierKey = selectedTierKey.value
     if (!tierKey) {
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
 
     const billingCycle = selectedBillingCycle.value
     const planSlug = getApiPlanSlug(tierKey, billingCycle)
     if (!planSlug) {
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
     const checkoutType =
@@ -830,15 +958,16 @@ export function useSubscriptionCheckout(
       previewData.value.transition_type !== 'new_subscription'
         ? 'change'
         : 'new'
+    if (!canPerformCheckout(checkoutType)) {
+      finishCheckoutMutation(mutationToken)
+      return
+    }
 
     isSubscribing.value = true
     try {
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       await fetchStatus()
-      if (
-        !confirmReactivation &&
-        (isSubscriptionCancelled() || reactivationRequired.value)
-      ) {
+      if (!confirmReactivation && requiresReactivationConfirmation()) {
         await refreshPreviewOnReactivationBlock(planSlug)
         return
       }
@@ -847,19 +976,19 @@ export function useSubscriptionCheckout(
         cycle: billingCycle,
         checkoutType
       })
-      if (
-        confirmReactivation &&
-        (isSubscriptionCancelled() || reactivationRequired.value)
-      ) {
+      if (confirmReactivation && requiresReactivationConfirmation()) {
         await assertReactivationAmountUnchanged(planSlug)
       }
-      const quote = previewData.value
-      if (quote && !quoteIsCurrent.value) {
+      const quote = embeddedCheckoutEnabled ? previewData.value : null
+      if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
       const response = await subscribe(planSlug, {
-        ...buildPaymentOptions(quote, confirmationToken, promotionCode),
-        returnUrl: paymentReturnUrl(),
+        ...(embeddedCheckoutEnabled &&
+          buildPaymentOptions(quote, confirmationToken, promotionCode)),
+        returnUrl: embeddedCheckoutEnabled
+          ? paymentReturnUrl()
+          : `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
@@ -876,12 +1005,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response, {
-        tier: tierKey,
-        cycle: billingCycle,
-        checkoutType,
-        attemptStartedAt
-      })
+      await handleSubscribeResponse(
+        response,
+        {
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt
+        },
+        true,
+        mutationToken
+      )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
@@ -900,11 +1034,11 @@ export function useSubscriptionCheckout(
       activeCheckoutAttemptStartedAt = undefined
       if (await recoverOutstandingPayment(error)) return
       if (await refreshExpiredProrationQuote(error, planSlug)) return
-      if (await recoverStaleQuote(error)) return
+      if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
     }
   }
 
@@ -949,7 +1083,9 @@ export function useSubscriptionCheckout(
     showFailure = true,
     lockMutation = true
   ): Promise<boolean> {
-    if (lockMutation && !beginCheckoutMutation()) return false
+    if (!embeddedCheckoutEnabled) return false
+    const mutationToken = lockMutation ? beginCheckoutMutation() : 0
+    if (lockMutation && !mutationToken) return false
     isApplyingPromotionCode.value = true
     const requestId = ++promotionPreviewRequestId
     const normalizedInput = promotionCode.trim()
@@ -959,7 +1095,6 @@ export function useSubscriptionCheckout(
       planSlug = getTeamPlanSlug(selectedBillingCycle.value)
       options = {
         teamCreditStopId: selectedTeamCheckout.value.stop.id,
-        billingCycle: selectedBillingCycle.value,
         ...(normalizedInput && { promotionCode: normalizedInput })
       }
     } else if (selectedTierKey.value) {
@@ -969,12 +1104,12 @@ export function useSubscriptionCheckout(
       )
       options = normalizedInput ? { promotionCode: normalizedInput } : {}
     } else {
-      if (lockMutation) finishCheckoutMutation()
+      if (lockMutation) finishCheckoutMutation(mutationToken)
       isApplyingPromotionCode.value = false
       return false
     }
     if (!planSlug) {
-      if (lockMutation) finishCheckoutMutation()
+      if (lockMutation) finishCheckoutMutation(mutationToken)
       isApplyingPromotionCode.value = false
       return false
     }
@@ -995,7 +1130,7 @@ export function useSubscriptionCheckout(
       if (requestId === promotionPreviewRequestId) {
         isApplyingPromotionCode.value = false
       }
-      if (lockMutation) finishCheckoutMutation()
+      if (lockMutation) finishCheckoutMutation(mutationToken)
     }
   }
 
@@ -1086,7 +1221,9 @@ export function useSubscriptionCheckout(
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
     context: SubscriptionOutcomeContext,
-    shouldTrackSubscriptionSuccess = true
+    shouldTrackSubscriptionSuccess = true,
+    // 0 when the caller holds no lock; a release from a non-holder is a no-op.
+    mutationToken = 0
   ): Promise<void> {
     if (!response) {
       trackSubscriptionFailure(context, undefined, 'missing_checkout_response')
@@ -1134,6 +1271,8 @@ export function useSubscriptionCheckout(
       return
     }
 
+    savePendingCheckout(response.billing_op_id, context)
+
     let initialActionUrl: string | undefined
     if (response.status === 'needs_payment_method') {
       if (!response.payment_method_url) {
@@ -1154,8 +1293,48 @@ export function useSubscriptionCheckout(
     await advanceToSuccessOnOperation(
       response.billing_op_id,
       context,
-      initialActionUrl
+      initialActionUrl,
+      mutationToken
     )
+  }
+
+  function savePendingCheckout(
+    operationId: string,
+    context: SubscriptionOutcomeContext
+  ): void {
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const ownerUid = useAuthStore().userId
+    if (!workspaceId || !ownerUid) return
+    const attemptedAt = context.attemptStartedAt ?? Date.now()
+
+    if (context.tier === 'team') {
+      const teamCreditStopId = selectedTeamCheckout.value?.stop.id
+      if (!teamCreditStopId) return
+      savePendingSubscriptionCheckout({
+        operationId,
+        workspaceId,
+        ownerUid,
+        selection: {
+          planMode: 'team',
+          teamCreditStopId,
+          billingCycle: context.cycle
+        },
+        attemptedAt
+      })
+      return
+    }
+
+    savePendingSubscriptionCheckout({
+      operationId,
+      workspaceId,
+      ownerUid,
+      selection: {
+        planMode: 'personal',
+        tierKey: context.tier,
+        billingCycle: context.cycle
+      },
+      attemptedAt
+    })
   }
 
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
@@ -1164,7 +1343,8 @@ export function useSubscriptionCheckout(
   async function advanceToSuccessOnOperation(
     opId: string,
     context: SubscriptionOutcomeContext,
-    initialActionUrl?: string
+    initialActionUrl: string | undefined,
+    mutationToken: number
   ) {
     activeCheckoutOperationId.value = opId
     const metadata = {
@@ -1173,8 +1353,10 @@ export function useSubscriptionCheckout(
       checkoutType: context.checkoutType,
       paymentIntentSource,
       attemptStartedAt: context.attemptStartedAt,
-      suppressProcessingToast: true,
-      autoHandleRequiresAction: true
+      ...(embeddedCheckoutEnabled && {
+        suppressProcessingToast: true,
+        autoHandleRequiresAction: true
+      })
     }
     const terminalOperation = initialActionUrl
       ? billingOperationStore.startOperation(
@@ -1184,8 +1366,20 @@ export function useSubscriptionCheckout(
           initialActionUrl
         )
       : billingOperationStore.startOperation(opId, 'subscription', metadata)
+    // The submit is over once the operation is adopted: isPolling is the busy
+    // state from here, and it is already true because startOperation registers
+    // synchronously above. Holding either of these past this point kept the
+    // recovery prompt's own CTA and Back disabled for a checkout parked on the
+    // customer — and the lock made the CTA a no-op even once it looked live,
+    // because the click re-enters handleSubscription and fails the gate. For
+    // awaiting_payment_method the operation may not go terminal until the
+    // customer performs exactly that action, so waiting for the outer finally
+    // deadlocks the recovery. Releasing neither stops the poll; the outer
+    // finally still runs, and finishCheckoutMutation is idempotent.
     isSubscribing.value = false
+    finishCheckoutMutation(mutationToken)
     const operation = await terminalOperation
+    clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
     if (
       operation.status === 'succeeded' &&
       activeCheckoutOperationId.value === opId &&
@@ -1193,12 +1387,6 @@ export function useSubscriptionCheckout(
     ) {
       checkoutStep.value = 'success'
     }
-  }
-
-  async function retryPaymentAuthentication() {
-    const opId = activeCheckoutOperation.value?.opId
-    if (!opId) return
-    await billingOperationStore.retryPaymentAuthentication(opId)
   }
 
   async function handleTeamSubscription(
@@ -1209,20 +1397,22 @@ export function useSubscriptionCheckout(
     if (
       isLoadingPreview.value ||
       isSubscribing.value ||
-      !permissions.value.canManageSubscription
+      !selectedTeamCheckout.value ||
+      !canPerformCheckout(selectedTeamCheckout.value.checkoutType)
     ) {
       return
     }
-    if (!beginCheckoutMutation()) return
+    const mutationToken = beginCheckoutMutation()
+    if (!mutationToken) return
 
     const teamCheckout = selectedTeamCheckout.value
-    if (!teamCheckout?.stop.id) {
+    if (!teamCheckout.stop.id) {
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
         detail: t('subscription.teamPlan.unavailable')
       })
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
 
@@ -1233,13 +1423,9 @@ export function useSubscriptionCheckout(
     isSubscribing.value = true
     try {
       await fetchStatus()
-      if (
-        !confirmReactivation &&
-        (isSubscriptionCancelled() || reactivationRequired.value)
-      ) {
+      if (!confirmReactivation && requiresReactivationConfirmation()) {
         await refreshPreviewOnReactivationBlock(planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
         return
       }
@@ -1248,24 +1434,23 @@ export function useSubscriptionCheckout(
         cycle: billingCycle,
         checkoutType
       })
-      if (
-        confirmReactivation &&
-        (isSubscriptionCancelled() || reactivationRequired.value)
-      ) {
+      if (confirmReactivation && requiresReactivationConfirmation()) {
         await assertReactivationAmountUnchanged(planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
       }
-      const quote = previewData.value
-      if (quote && !quoteIsCurrent.value) {
+      const quote = embeddedCheckoutEnabled ? previewData.value : null
+      if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
       const response = await subscribe(planSlug, {
-        ...buildPaymentOptions(quote, confirmationToken, promotionCode),
+        ...(embeddedCheckoutEnabled &&
+          buildPaymentOptions(quote, confirmationToken, promotionCode)),
         teamCreditStopId: stop.id,
         billingCycle,
-        returnUrl: paymentReturnUrl(),
+        returnUrl: embeddedCheckoutEnabled
+          ? paymentReturnUrl()
+          : `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
         confirmReactivation,
         prorationAt: previewData.value?.is_immediate
@@ -1282,18 +1467,22 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response, {
-        tier: 'team',
-        cycle: billingCycle,
-        checkoutType,
-        attemptStartedAt
-      })
+      await handleSubscribeResponse(
+        response,
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt
+        },
+        true,
+        mutationToken
+      )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
         await refreshPreviewOnReactivationBlock(planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
         return
       }
@@ -1310,21 +1499,20 @@ export function useSubscriptionCheckout(
       if (await recoverOutstandingPayment(error)) return
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
-          teamCreditStopId: stop.id,
-          billingCycle
+          teamCreditStopId: stop.id
         })
       )
         return
-      if (await recoverStaleQuote(error)) return
+      if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
     }
   }
 
   async function handleResubscribe() {
-    if (!permissions.value.canManageSubscriptionLifecycle) return
+    if (!canReactivatePlan.value) return
 
     const source = 'pricing_dialog' as const
 
@@ -1418,9 +1606,8 @@ export function useSubscriptionCheckout(
     activeCheckoutActionUrl,
     authenticationState,
     authenticationError,
-    canRetryAuthentication,
-    isAuthenticating,
     reconciliationOperationId,
+    parkedCheckoutRecovery,
     isPolling,
     isTeamCheckout,
     previewVariant,
@@ -1433,7 +1620,6 @@ export function useSubscriptionCheckout(
     handleTeamSubscribe: handleTeamSubscription,
     handleSubscriptionPayment,
     handleTeamSubscriptionPayment,
-    retryPaymentAuthentication,
     applyPromotionCode,
     invalidateQuote,
     restoreQuote,

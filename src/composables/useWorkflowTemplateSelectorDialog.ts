@@ -6,7 +6,7 @@ import { useNewUserService } from '@/services/useNewUserService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-workflow-template-selector'
-const GETTING_STARTED_CATEGORY_ID = 'basics-getting-started'
+const POPULAR_CATEGORY_ID = 'popular'
 
 export const useWorkflowTemplateSelectorDialog = () => {
   const dialogService = useDialogService()
@@ -25,7 +25,7 @@ export const useWorkflowTemplateSelectorDialog = () => {
 
     const initialCategory =
       options?.initialCategory ??
-      (newUserService.isNewUser() ? GETTING_STARTED_CATEGORY_ID : 'all')
+      (newUserService.isNewUser() ? POPULAR_CATEGORY_ID : 'all')
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,

@@ -3,6 +3,7 @@ import posthog from 'posthog-js'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import type { Platform } from '@/composables/useDownloadUrl'
+import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -11,6 +12,46 @@ const POSTHOG_API_HOST =
   import.meta.env.PUBLIC_POSTHOG_API_HOST ?? 'https://t.comfy.org'
 const POSTHOG_UI_HOST =
   import.meta.env.PUBLIC_POSTHOG_UI_HOST ?? 'https://us.posthog.com'
+
+const ANALYTICS_EVENT = {
+  pageview: '$pageview',
+  downloadButtonClicked: 'website:download_button_clicked',
+  cliConnectionTabClicked: 'website:cli_connection_tab_clicked',
+  cliClientTabClicked: 'website:cli_client_tab_clicked',
+  mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
+  mcpClientTabClicked: 'website:mcp_client_tab_clicked'
+} as const
+
+export type CliClientId =
+  | 'claude-code'
+  | 'codex'
+  | 'cursor'
+  | 'gemini-cli'
+  | 'openclaw'
+  | 'hermes'
+  | 'terminal'
+  | 'ci'
+
+type AnalyticsEvent =
+  | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
+  | {
+      name: typeof ANALYTICS_EVENT.downloadButtonClicked
+      properties: { platform: Platform }
+    }
+  | {
+      name:
+        | typeof ANALYTICS_EVENT.cliConnectionTabClicked
+        | typeof ANALYTICS_EVENT.mcpConnectionTabClicked
+      properties: { connection: ConnectionId }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.cliClientTabClicked
+      properties: { client: CliClientId }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.mcpClientTabClicked
+      properties: { client: McpClientId }
+    }
 
 let initialized = false
 
@@ -32,29 +73,50 @@ export function initPostHog() {
   }
 }
 
-export function capturePageview() {
+function captureEvent(event: AnalyticsEvent): void {
   if (!initialized) return
   try {
-    posthog.capture('$pageview')
+    posthog.capture(event.name, event.properties)
   } catch (error) {
-    console.error('PostHog pageview capture failed', error)
+    console.error(`PostHog capture failed for ${event.name}`, error)
   }
 }
 
-export function captureDownloadClick(platform: Platform) {
-  if (!initialized) return
-  try {
-    posthog.capture('website:download_button_clicked', { platform })
-  } catch (error) {
-    console.error('PostHog download click capture failed', error)
-  }
+export function capturePageview(): void {
+  captureEvent({ name: ANALYTICS_EVENT.pageview })
 }
 
-export function captureMcpClientTabClick(client: string) {
-  if (!initialized) return
-  try {
-    posthog.capture('website:mcp_client_tab_clicked', { client })
-  } catch (error) {
-    console.error('PostHog MCP client tab capture failed', error)
-  }
+export function captureDownloadClick(platform: Platform): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.downloadButtonClicked,
+    properties: { platform }
+  })
+}
+
+export function captureCliConnectionTabClick(connection: ConnectionId): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.cliConnectionTabClicked,
+    properties: { connection }
+  })
+}
+
+export function captureCliClientTabClick(client: CliClientId): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.cliClientTabClicked,
+    properties: { client }
+  })
+}
+
+export function captureMcpConnectionTabClick(connection: ConnectionId): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.mcpConnectionTabClicked,
+    properties: { connection }
+  })
+}
+
+export function captureMcpClientTabClick(client: McpClientId): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.mcpClientTabClicked,
+    properties: { client }
+  })
 }

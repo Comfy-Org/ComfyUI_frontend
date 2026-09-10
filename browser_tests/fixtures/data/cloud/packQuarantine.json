@@ -1,0 +1,31 @@
+{
+  "ComfyUI-LivePortraitKJ": {
+    "class": "unfetchable-ref",
+    "evidence": "deployRef @4d9dc6205b79e50f81c0e6d245a2e0e5e53d5ecd returns HTTP 422 'No commit found'; a full clone across all 6 branches and 134 commits does not contain it. The first 12 characters match the repository's real HEAD (4d9dc6205b793ffd0fb319816136d9b8c0dbfdff) and then diverge, which is a short sha expanded wrongly rather than a force-push.",
+    "reason": "supported_nodes.yaml pins a commit that does not exist upstream",
+    "since": "2026-08-14",
+    "upstreamFix": "correct the sha in supported_nodes.yaml to 4d9dc6205b793ffd0fb319816136d9b8c0dbfdff"
+  },
+  "ComfyUI-SeedVR2_VideoUpscaler": {
+    "class": "requires-gpu-runner",
+    "evidence": "The suite reports \"not installed on this backend\": the files are on disk and pip succeeded, but ComfyUI never registers the pack because its import does not resolve without the hardware. A pack contributing zero nodes cannot be expressed as a node-count baseline.",
+    "reason": "installs cleanly but registers zero nodes on a CPU runner - the pack imports ensure_triton_compat, and Triton is GPU-only",
+    "since": "2026-08-15",
+    "upstreamFix": "add a GPU-backed shard and restore this pack to the tested population"
+  },
+  "comfyui_nvidia_rtx_nodes": {
+    "class": "requires-gpu-runner",
+    "evidence": "The suite reports \"not installed on this backend\": the files are on disk and pip succeeded, but ComfyUI never registers the pack because its import does not resolve without the hardware. A pack contributing zero nodes cannot be expressed as a node-count baseline.",
+    "reason": "installs cleanly but registers zero nodes on a CPU runner - the pack targets NVIDIA RTX hardware",
+    "since": "2026-08-15",
+    "upstreamFix": "add a GPU-backed shard and restore this pack to the tested population"
+  },
+  "radiance": {
+    "class": "unsatisfiable-requirement",
+    "evidence": "PyPI's Imath package tops out at 0.0.2, so pip cannot resolve it. The pin appears to name the C++ Imath library version. OpenEXR>=3.2.0, which this pack already requires on the line above, ships Imath.py inside its wheel - so the requirement is redundant, not merely unsatisfiable.",
+    "failurePattern": "Imath>=3.1.0",
+    "reason": "requirements.txt pins Imath>=3.1.0, which does not exist on PyPI",
+    "since": "2026-08-14",
+    "upstreamFix": "remove the Imath line from fxtdstudios/radiance requirements.txt"
+  }
+}

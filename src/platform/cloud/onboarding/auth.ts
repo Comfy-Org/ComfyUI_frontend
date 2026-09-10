@@ -1,6 +1,7 @@
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb } from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { toError } from '@/utils/errorUtil'
 
@@ -10,9 +11,6 @@ interface UserCloudStatus {
 
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
 
-/**
- * Helper function to capture API errors with Sentry
- */
 function captureApiError(
   error: Error,
   endpoint: string,
@@ -21,25 +19,15 @@ function captureApiError(
   operation?: string,
   extraContext?: Record<string, unknown>
 ) {
-  const tags: Record<string, string | number> = {
-    api_endpoint: endpoint,
-    error_type: errorType
-  }
-
-  if (httpStatus !== undefined) {
-    tags.http_status = httpStatus
-  }
-
-  if (operation) {
-    tags.operation = operation
-  }
-
-  const sentryOptions: Sentry.ExclusiveEventHintOrCaptureContext = {
-    tags,
-    extra: extraContext ? { ...extraContext } : undefined
-  }
-
-  Sentry.captureException(error, sentryOptions)
+  reportError(error, {
+    errorType,
+    tags: {
+      api_endpoint: endpoint,
+      http_status: httpStatus,
+      operation
+    },
+    context: extraContext
+  })
 }
 
 /**
@@ -104,7 +92,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
     if (!response.ok) {
       // Other non-ok (401/403/5xx): treat as completed so a transient failure
       // never bounces a working user to /cloud/survey.
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
         level: 'warning',
@@ -119,12 +107,10 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
     return !isEmpty(data.value)
   } catch (error) {
     // Network/parse failure: same fail-safe policy as a non-ok response.
-    Sentry.captureException(error, {
-      tags: {
-        api_endpoint: '/settings/{key}',
-        error_type: 'network_error'
-      },
-      extra: {
+    reportError(error, {
+      errorType: 'network_error',
+      tags: { api_endpoint: '/settings/{key}' },
+      context: {
         route_template: '/settings/{key}',
         route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`
       },
@@ -138,7 +124,7 @@ export async function submitSurvey(
   survey: Record<string, unknown>
 ): Promise<void> {
   try {
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'auth',
       message: 'Submitting survey',
       level: 'info',
@@ -174,7 +160,7 @@ export async function submitSurvey(
     }
 
     // Log successful survey submission
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'auth',
       message: 'Survey submitted successfully',
       level: 'info'

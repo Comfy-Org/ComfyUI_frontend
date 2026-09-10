@@ -6,7 +6,10 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  reloadSerializedGraph
+} from '@/utils/__tests__/litegraphTestUtils'
 import { renameWidget } from '@/utils/widgetUtil'
 
 /**
@@ -26,8 +29,6 @@ class ClipTextEncodeLikeNode extends LGraphNode {
   }
 }
 
-LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
-
 /**
  * Regression #13861: a renamed widget label reverted to its default on
  * save/reload, delete/undo, and copy/paste for normal (input-backed) nodes.
@@ -38,9 +39,21 @@ LiteGraph.registerNodeType('test/CLIPTextEncodeLike', ClipTextEncodeLikeNode)
  * — the channel the label round-trips through. These tests drive the real
  * `renameWidget` (never hand-setting `widget.label`) and assert the label
  * survives a real serialize -> configure round-trip.
+ *
+ * The reload tests must go through {@link reloadSerializedGraph}. A plain
+ * `new LGraph().configure(graph.serialize())` is vacuous here: `configure`
+ * re-adopts the payload's graph id, and `widgetValueStore` is keyed
+ * `graphId:nodeId:name`, so the reloaded node re-adopts the source graph's
+ * still-live widget state and the assertion passes without reading the JSON.
+ * Reintroducing this file's own root cause used to leave three of these five
+ * tests green.
  */
 describe('renameWidget label persistence via input lookup (regression #13861)', () => {
   beforeEach(() => {
+    LiteGraph.registerNodeType(
+      'test/CLIPTextEncodeLike',
+      ClipTextEncodeLikeNode
+    )
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
       NODE_SLOT_HEIGHT: 15,
@@ -72,7 +85,7 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
     const graph = new LGraph()
     const node = addClipNode(graph)
     const widget = node.widgets![0]
-    const input = node.inputs![0]
+    const input = node.inputs[0]
 
     // Preconditions that reproduced the bug: the in-graph widget has a truthy
     // widgetId, but the normal-node input carries none.
@@ -90,8 +103,10 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
     const node = addClipNode(graph)
     renameWidget(node.widgets![0], node, 'Positive Prompt')
 
-    const restored = new LGraph()
-    restored.configure(graph.serialize())
+    const restored = reloadSerializedGraph(
+      graph.serialize(),
+      () => new LGraph()
+    )
 
     const restoredNode = restored.getNodeById(node.id)!
     expect(restoredNode.widgets![0].label).toBe('Positive Prompt')
@@ -106,8 +121,7 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
     graph.remove(node)
     expect(graph.getNodeById(node.id)).toBeFalsy()
 
-    const restored = new LGraph()
-    restored.configure(undoSnapshot)
+    const restored = reloadSerializedGraph(undoSnapshot, () => new LGraph())
 
     expect(restored.getNodeById(node.id)!.widgets![0].label).toBe(
       'Positive Prompt'
@@ -116,16 +130,24 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
 
   test('clearing a rename reverts the label to its default after round-trip', () => {
     const graph = new LGraph()
-    const node = addClipNode(graph)
-    renameWidget(node.widgets![0], node, 'Positive Prompt')
-    renameWidget(node.widgets![0], node, '')
+    const cleared = addClipNode(graph)
+    renameWidget(cleared.widgets![0], cleared, 'Positive Prompt')
+    renameWidget(cleared.widgets![0], cleared, '')
 
-    expect(node.inputs![0].label).toBeUndefined()
+    const kept = addClipNode(graph)
+    renameWidget(kept.widgets![0], kept, 'Negative Prompt')
 
-    const restored = new LGraph()
-    restored.configure(graph.serialize())
+    expect(cleared.inputs[0].label).toBeUndefined()
 
-    expect(restored.getNodeById(node.id)!.widgets![0].label).toBeUndefined()
+    const restored = reloadSerializedGraph(
+      graph.serialize(),
+      () => new LGraph()
+    )
+
+    expect(restored.getNodeById(cleared.id)!.widgets![0].label).toBeUndefined()
+    expect(restored.getNodeById(kept.id)!.widgets![0].label).toBe(
+      'Negative Prompt'
+    )
   })
 
   test('label survives copy -> paste', () => {

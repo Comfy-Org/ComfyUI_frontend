@@ -1,24 +1,29 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import type * as VueUseModule from '@vueuse/core'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { until } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { SystemStats } from '@/types'
 
 // Mock the dependencies
-vi.mock('semver', () => ({
+vi.mock(import('semver'), () => ({
   compare: vi.fn(),
   valid: vi.fn(() => '1.0.0')
 }))
 
 const mockData = vi.hoisted(() => ({ isDesktop: true, isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isDesktop() {
     return mockData.isDesktop
   },
@@ -27,7 +32,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/updates/common/releaseService', () => {
+vi.mock(import('@/platform/updates/common/releaseService'), () => {
   const getReleases = vi.fn()
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -40,67 +45,34 @@ vi.mock('@/platform/updates/common/releaseService', () => {
   }
 })
 
-vi.mock('@/platform/settings/settingStore', () => {
-  const get = vi.fn((key: string) => {
-    if (key === 'Comfy.Notification.ShowVersionUpdates') return true
-    return null
-  })
-  const set = vi.fn()
-  const setMany = vi.fn()
-  return {
-    useSettingStore: () => ({ get, set, setMany })
-  }
-})
-
-const mockSystemStatsState = vi.hoisted(() => ({
-  systemStats: {
-    system: {
-      comfyui_version: '1.0.0',
-      argv: []
-    }
-  } satisfies {
-    system: Partial<SystemStats['system']>
-  },
-  isInitialized: true,
-  reset() {
-    this.systemStats = {
-      system: {
-        comfyui_version: '1.0.0',
-        argv: []
-      } satisfies Partial<SystemStats['system']>
-    }
-    this.isInitialized = true
-  }
-}))
-vi.mock('@/stores/systemStatsStore', () => {
-  const refetchSystemStats = vi.fn()
-  const getFormFactor = vi.fn(() => 'git-windows')
-  return {
-    useSystemStatsStore: () => ({
-      get systemStats() {
-        return mockSystemStatsState.systemStats
-      },
-      set systemStats(val) {
-        mockSystemStatsState.systemStats = val
-      },
-      get isInitialized() {
-        return mockSystemStatsState.isInitialized
-      },
-      set isInitialized(val) {
-        mockSystemStatsState.isInitialized = val
-      },
-      refetchSystemStats,
-      getFormFactor
-    })
-  }
-})
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUseModule>()),
   until: vi.fn(() => Promise.resolve()),
   useStorage: vi.fn(() => ({ value: {} })),
   createSharedComposable: vi.fn((fn) => fn)
 }))
 
+beforeEach(() => {
+  const get = vi.fn((key: string) => {
+    if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+    return null
+  })
+  vi.mocked(useSettingStore().get).mockImplementation(get)
+  vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
+  vi.mocked(useSettingStore().setMany).mockResolvedValue(undefined)
+  const getFormFactor = vi.fn(() => 'git-windows')
+  useSystemStatsStore().systemStats = fromPartial({
+    system: { comfyui_version: '1.0.0', argv: [] }
+  })
+  useSystemStatsStore().isInitialized = true
+  vi.mocked(useSystemStatsStore().refetchSystemStats).mockResolvedValue(null)
+  vi.mocked(useSystemStatsStore().getFormFactor).mockImplementation(
+    getFormFactor
+  )
+})
+
 describe('useReleaseStore', () => {
+  let activeTour: Ref<ReturnType<typeof useOnboardingTourStore>['activeTour']>
   const mockRelease = {
     id: 1,
     project: 'comfyui' as const,
@@ -111,8 +83,11 @@ describe('useReleaseStore', () => {
   }
 
   beforeEach(() => {
-    mockSystemStatsState.reset()
     mockData.isCloud = false
+    activeTour = ref(null)
+    vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
+      () => activeTour.value
+    )
   })
 
   describe('initial state', () => {
@@ -636,6 +611,43 @@ describe('useReleaseStore', () => {
       vi.mocked(compare).mockReturnValue(0) // versions are equal (latest version)
 
       store.releases = [mockRelease]
+
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('withholds the popup while the first-run tour is on screen', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+
+      activeTour.value = 'firstRun'
+      expect(store.shouldShowPopup).toBe(false)
+
+      activeTour.value = null
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('shows the popup during a tour it does not overlap', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+      activeTour.value = 'appMode'
 
       expect(store.shouldShowPopup).toBe(true)
     })

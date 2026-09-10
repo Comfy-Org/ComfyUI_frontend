@@ -59,6 +59,8 @@ export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
   undefined
 )
 
+export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
+
 export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
   'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
   undefined

@@ -25,6 +25,11 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.PR_GH_TOKEN || github.token }}
+          # Blobless full history: pnpm locale:check (lint-format-verify)
+          # fetches the English source blobs recorded in
+          # src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend

@@ -1,3 +1,4 @@
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { HubWorkflowDetail } from '@comfyorg/ingest-types'
@@ -7,19 +8,23 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,
+  get isGraphReady() {
+    return this.rootGraph !== null
+  },
   graphToPrompt: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
-const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
+    getServerFeature: (_name: string, defaultValue: unknown) => defaultValue,
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
@@ -27,12 +32,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    invalidateInputAssetsIncludingPublic:
-      mockInvalidateInputAssetsIncludingPublic
-  }
-}))
+beforeEach(() => {
+  vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockResolvedValue(
+    undefined
+  )
+})
 
 describe(useWorkflowShareService, () => {
   const mockShareableAssets: AssetInfo[] = [
@@ -385,7 +389,7 @@ describe(useWorkflowShareService, () => {
         share_id: 'share-id-1'
       })
     })
-    expect(mockInvalidateInputAssetsIncludingPublic).toHaveBeenCalledTimes(1)
+    expect(useAssetsStore().inputAssets.invalidate).toHaveBeenCalledOnce()
   })
 
   it('omits share_id from the payload when not provided', async () => {
@@ -422,7 +426,7 @@ describe(useWorkflowShareService, () => {
     await expect(
       service.importPublishedAssets(['bad-id'], 'share-id-1')
     ).rejects.toThrow('Failed to import assets: 400')
-    expect(mockInvalidateInputAssetsIncludingPublic).not.toHaveBeenCalled()
+    expect(useAssetsStore().inputAssets.invalidate).not.toHaveBeenCalled()
   })
 
   it('throws when shared workflow payload is invalid', async () => {

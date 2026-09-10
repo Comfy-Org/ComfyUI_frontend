@@ -9,6 +9,7 @@ import {
 } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { isSelectOnly } from '@/utils/litegraphUtil'
 
 /**
  * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
@@ -23,7 +24,7 @@ export function useSelectionOperations() {
 
   const copySelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
+    if (canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
         summary: t('g.nothingToCopy'),
@@ -47,12 +48,12 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const duplicateSelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
+    if (canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
         summary: t('g.nothingToDuplicate'),
@@ -73,12 +74,15 @@ export function useSelectionOperations() {
     canvas.pasteFromClipboard({ connectInputs: false })
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const deleteSelection = () => {
     const canvas = app.canvas
-    if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
+    // Picking nodes for the agent is not editing: deleting stays off until the
+    // mode ends.
+    if (isSelectOnly(canvas)) return
+    if (canvas.selectedItems.size === 0) {
       toastStore.add({
         severity: 'warn',
         summary: t('g.nothingToDelete'),
@@ -92,7 +96,7 @@ export function useSelectionOperations() {
     canvas.setDirty(true, true)
 
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const renameSelection = async () => {
@@ -122,7 +126,7 @@ export function useSelectionOperations() {
           const titledItem = item as { title: string }
           titledItem.title = newTitle
           app.canvas.setDirty(true, true)
-          workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+          workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
         }
       }
       return
@@ -145,7 +149,7 @@ export function useSelectionOperations() {
           }
         })
         app.canvas.setDirty(true, true)
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
       return
     }

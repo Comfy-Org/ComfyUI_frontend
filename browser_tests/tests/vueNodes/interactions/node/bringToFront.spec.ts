@@ -91,6 +91,12 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
+      const clipZ = await getNodeZIndex(comfyPage, 'CLIP Text Encode')
+      const allZIndexes = await comfyPage.vueNodes.nodes.evaluateAll((nodes) =>
+        nodes.map((node) => Number(getComputedStyle(node).zIndex))
+      )
+      expect(clipZ).toBe(Math.max(...allZIndexes))
+
       // Screenshot showing CLIP now on top
       await expect(comfyPage.canvas).toHaveScreenshot(
         'bring-to-front-overlapped-after.png'

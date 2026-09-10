@@ -5,8 +5,9 @@ import { computed, ref } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -57,7 +58,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
   )
 
   const activeMissingMediaGraphIds = computed<Set<string>>(() => {
-    if (!app.rootGraph) return new Set()
     return getActiveGraphNodeIds(
       app.rootGraph,
       canvasStore.currentGraph ?? app.rootGraph,
@@ -75,6 +75,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   function setMissingMedia(media: MissingMediaCandidate[]) {
     missingMediaCandidates.value = media.length ? media : null
+  }
+
+  function hasMissingMediaOnNode(nodeLocatorId: NodeLocatorId): boolean {
+    const executionId =
+      useWorkflowStore().nodeLocatorIdToNodeExecutionId(nodeLocatorId)
+    return executionId ? missingMediaNodeIds.value.has(executionId) : false
   }
 
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
@@ -121,11 +127,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       // Preserve candidates without a nodeId; they cannot belong to any
       // subgraph scope. The type marks nodeId as required, but defensive
       // handling matches the rest of the missing-media code.
-      if (m.nodeId == null) {
+      const nodeId: unknown = m.nodeId
+      if (nodeId == null) {
         remaining.push(m)
         continue
       }
-      if (!String(m.nodeId).startsWith(prefix)) {
+      if (!String(nodeId).startsWith(prefix)) {
         remaining.push(m)
       }
     }
@@ -161,6 +168,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaAncestorExecutionIds,
     activeMissingMediaGraphIds,
 
+    hasMissingMediaOnNode,
     setMissingMedia,
     addMissingMedia,
     removeMissingMediaByWidget,

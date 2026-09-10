@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     signInWithGoogle: vi.fn(),
     signInWithGithub: vi.fn(),
@@ -13,12 +13,15 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
-  usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
-}))
+vi.mock(
+  import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
+  () => ({
+    usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+  })
+)
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
-vi.mock('@/base/webviewDetection', () => ({
+vi.mock(import('@/base/webviewDetection'), () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 
@@ -27,14 +30,17 @@ const FREE_RUN_MESSAGES = {
     login: {
       cloudNewUser: 'New to Comfy?',
       cloudSignUp: 'Sign up here',
-      freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.'
+      freeRunsSuffix: 'to get {count} free run. | to get {count} free runs.',
+      insecureContextWarning: 'This connection is insecure'
     }
   }
 }
 
 async function renderLoginView(
   url = '/cloud/login',
-  messages: Partial<typeof FREE_RUN_MESSAGES> = {}
+  messages: {
+    auth?: { login?: Partial<typeof FREE_RUN_MESSAGES.auth.login> }
+  } = {}
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -56,7 +62,6 @@ async function renderLoginView(
         createI18n({ legacy: false, locale: 'en', messages: { en: messages } })
       ],
       stubs: {
-        Message: true,
         CloudSignInForm: { template: '<form data-testid="signin-form" />' }
       }
     }
@@ -105,6 +110,40 @@ describe('CloudLoginView', () => {
     expect(
       screen.queryByRole('button', { name: 'auth.login.loginWithGoogle' })
     ).not.toBeInTheDocument()
+  })
+
+  it.for([true, false])(
+    'renders the insecure-context warning only over plain HTTP (secure: %s)',
+    async (secure: boolean) => {
+      vi.stubGlobal('isSecureContext', secure)
+      const { unmount } = await renderLoginView('/cloud/login', {
+        auth: {
+          login: { insecureContextWarning: 'This connection is insecure' }
+        }
+      })
+
+      const warning = screen.queryByText('This connection is insecure')
+      if (secure) {
+        expect(warning).not.toBeInTheDocument()
+      } else {
+        expect(
+          warning,
+          'a self-hosted HTTP origin can have credentials intercepted, so the warning must render'
+        ).toBeInTheDocument()
+      }
+      unmount()
+    }
+  )
+
+  it('does not region-gate sign-in, because an existing account already completed sign-up', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderLoginView()
+
+    await user.click(
+      screen.getByRole('button', { name: 'auth.login.useEmailInstead' })
+    )
+
+    expect(screen.getByTestId('signin-form')).toBeInTheDocument()
   })
 
   it('shows the in-app browser notice only inside an embedded webview', async () => {

@@ -1,24 +1,29 @@
-import { describe, expect, it, vi } from 'vitest'
+import type * as DistributionModule from '@/platform/distribution/types'
+import type * as I18nModule from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: false
 }))
 
 const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(
+    () => mockShowErrorsTab.value
+  )
+})
 
 describe('missingNodesErrorStore', () => {
   describe('setMissingNodeTypes', () => {
@@ -234,6 +239,20 @@ describe('missingNodesErrorStore', () => {
 
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
       expect(store.missingNodesError?.nodeTypes[0]).toBe('StringNode')
+    })
+
+    it('matches numeric node IDs against string execution IDs', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: 1, isReplaceable: false },
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
     })
 
     it('keeps entries with different nodeIds', () => {
