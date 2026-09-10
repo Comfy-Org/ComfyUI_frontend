@@ -390,7 +390,7 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(mockToastStore.add).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'g.error',
-      detail: 'auth.errors.auth/user-not-found'
+      detail: 'auth.errors.auth/invalid-credential'
     })
   })
 
@@ -447,17 +447,33 @@ describe('useAuthActions auth flow error telemetry', () => {
 })
 
 describe('useAuthActions.reportError', () => {
-  it.for(firebaseCodesWithOwnMessage)(
-    'maps %s to its own message rather than the generic fallback',
+  it.for(
+    firebaseCodesWithOwnMessage.filter(
+      (code) => code !== 'auth/user-not-found' && code !== 'auth/wrong-password'
+    )
+  )('maps %s to its own message rather than the generic fallback', (code) => {
+    const { reportError } = useAuthActions()
+
+    reportError(new FirebaseError(code, 'raw firebase'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: `auth.errors.${code}` })
+    )
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it.for(['auth/user-not-found', 'auth/wrong-password'] as const)(
+    'maps %s to the invalid-credential line, so the toast cannot say whether the email has an account',
     (code) => {
       const { reportError } = useAuthActions()
 
       reportError(new FirebaseError(code, 'raw firebase'))
 
       expect(mockToastStore.add).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: `auth.errors.${code}` })
+        expect.objectContaining({
+          detail: 'auth.errors.auth/invalid-credential'
+        })
       )
-      expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
 

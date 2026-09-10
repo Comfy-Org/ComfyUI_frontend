@@ -2,7 +2,7 @@ import posthog from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { SessionRefreshOutcome } from '@comfyorg/account/core'
+import type { SessionRefreshOutcome } from '@comfyorg/account/session'
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT

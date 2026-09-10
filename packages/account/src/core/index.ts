@@ -2,7 +2,6 @@ export type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
-  IdentityPort,
   SessionClient,
   SessionClientOptions,
   SessionErrorCode,
@@ -19,16 +18,4 @@ export {
   isCredentialFresh,
   isPermanentSessionError
 } from './session.js'
-export type {
-  BillingClient,
-  BillingClientOptions,
-  CreditsState
-} from './credits.js'
-export { createBillingClient } from './credits.js'
-export type { CustomerRecoveryDeps } from './customerRecovery.js'
-export {
-  MISSING_CUSTOMER_MESSAGE,
-  fetchWithCustomerRecovery,
-  isCustomerEndpoint,
-  isMissingCustomerResponse
-} from './customerRecovery.js'
+export type { AccountIdentity } from './identity.js'

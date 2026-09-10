@@ -46,10 +46,11 @@ vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@comfyorg/account/TurnstileWidget.vue'), async () => {
+vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
   const { defineComponent, h, onMounted } = await import('vue')
   return {
-    default: defineComponent({
+    ...(await (importOriginal as () => Promise<object>)()),
+    TurnstileWidget: defineComponent({
       emits: ['update:token', 'update:unavailable'],
       setup(_, { emit, expose }) {
         expose({ reset: handles.turnstileReset })

@@ -231,6 +231,12 @@ export type AuthErrorCopy = Readonly<Record<string, string>> & {
  * in its vue-i18n strings). Unauthorized domains need the host's domain and
  * support address, so hosts call `unauthorizedDomainMessage` for that kind.
  */
+/** Resolved to the invalid-credential line whatever table is in play. */
+const ENUMERATION_NEUTRAL_CODES: ReadonlySet<string> = new Set([
+  'auth/user-not-found',
+  'auth/wrong-password'
+])
+
 export function authErrorMessage(
   classification: AuthErrorClassification,
   copySource: AuthCopyLocale | AuthErrorCopy = 'en'
@@ -242,6 +248,9 @@ export function authErrorMessage(
       return copy.signupBlocked
     case 'popup-dismissed':
     case 'auth':
+      if (ENUMERATION_NEUTRAL_CODES.has(classification.code)) {
+        return copy['auth/invalid-credential'] ?? copy.generic
+      }
       return copy[classification.code] ?? copy.generic
     case 'unauthorized-domain':
     case 'unknown':
