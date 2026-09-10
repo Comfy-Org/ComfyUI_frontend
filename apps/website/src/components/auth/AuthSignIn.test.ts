@@ -367,8 +367,7 @@ describe('AuthSignIn', () => {
       expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
         method: 'google',
         is_new_user: true,
-        user_id: 'user-1',
-        email: 'user@example.com'
+        user_id: 'user-1'
       })
     )
   })
@@ -389,8 +388,7 @@ describe('AuthSignIn', () => {
       expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
         method: 'email',
         is_new_user: false,
-        user_id: 'user-1',
-        email: 'user@example.com'
+        user_id: 'user-1'
       })
     )
     expect(
@@ -413,8 +411,7 @@ describe('AuthSignIn', () => {
       expect(handles.captureAuthCompleted).toHaveBeenCalledWith({
         method: 'github',
         is_new_user: true,
-        user_id: 'user-2',
-        email: undefined
+        user_id: 'user-2'
       })
     )
   })

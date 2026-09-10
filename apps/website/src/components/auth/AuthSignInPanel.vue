@@ -197,8 +197,7 @@ async function completeSignIn(
       is_new_user:
         mode === 'signUp' ||
         (provider !== 'email' && firebase.isNewWorkshopUser(credential)),
-      user_id: credential.user.uid,
-      email: credential.user.email ?? undefined
+      user_id: credential.user.uid
     })
     dispatch({
       type: 'credentialSucceeded',

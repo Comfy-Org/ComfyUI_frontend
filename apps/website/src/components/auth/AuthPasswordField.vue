@@ -44,13 +44,13 @@ const EYE_SLASH_PATH =
       :type="masked ? 'password' : 'text'"
       :autocomplete="autocomplete"
       :placeholder="placeholder"
-      :class="cn(AUTH_FIELD_CLASS, 'pr-10')"
+      :class="cn(AUTH_FIELD_CLASS, 'pr-12')"
       :aria-invalid="invalid"
       @input="emit('input')"
     />
     <button
       type="button"
-      class="absolute inset-e-3 top-1/2 -mt-2 size-4 cursor-pointer appearance-none border-none bg-transparent p-0 text-[#a1a1aa]"
+      class="absolute inset-e-1 top-1/2 -mt-5 flex size-10 cursor-pointer appearance-none items-center justify-center border-none bg-transparent p-0 text-[#a1a1aa]"
       :aria-label="masked ? showLabel : hideLabel"
       :aria-pressed="!masked"
       @click="masked = !masked"
