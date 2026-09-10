@@ -119,17 +119,10 @@ function clearPersistedDocId(): void {
   }
 }
 
-/**
- * Narrows an unknown event/frame `detail` down to its `code` field without
- * asserting the whole shape (r3911414923) — an `in` check only proves
- * `detail` is a non-null object, it does not prove `code` exists or is a
- * string, so both are checked explicitly.
- */
 function readEventCode(detail: unknown): string | null {
   if (typeof detail !== 'object' || detail === null) return null
   if (!('code' in detail)) return null
-  const code = (detail as { code: unknown }).code
-  return typeof code === 'string' ? code : null
+  return typeof detail.code === 'string' ? detail.code : null
 }
 
 // Known CRDT subscribe-refusal classifications. Anything outside this set
