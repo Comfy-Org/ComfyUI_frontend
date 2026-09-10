@@ -435,6 +435,19 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.writeIndex('user-a:ws-1', emptyIndex)).toBe(true)
     })
 
+    it('defers writes while the cloud workspace is unresolved', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      isolatedStorageIO.setStorageIdentity('user-a')
+
+      sessionStorage.clear()
+
+      expect(isolatedStorageIO.getStorageScope()).toBeNull()
+      expect(isolatedStorageIO.getStorageWriteGate()).toBe('deferred')
+      expect(isolatedStorageIO.writeIndex('user-a:ws-1', emptyIndex)).toBe(
+        false
+      )
+    })
+
     it('defers writes again once the identity is dropped', async () => {
       const isolatedStorageIO = await import('./storageIO')
       isolatedStorageIO.setStorageIdentity('user-a')

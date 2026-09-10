@@ -85,6 +85,34 @@ describe('storageKeys', () => {
     })
   })
 
+  describe('readWorkspaceId', () => {
+    it('returns null in cloud until a workspace is stored', async () => {
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBeNull()
+    })
+
+    it('returns null in cloud when the stored workspace is unreadable', async () => {
+      sessionStorage.setItem('Comfy.Workspace.Current', 'invalid-json')
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBeNull()
+    })
+
+    it('returns personal for the personal workspace type', async () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'personal', id: null })
+      )
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBe('personal')
+    })
+
+    it('returns personal outside cloud without reading sessionStorage', async () => {
+      mockDistributionTypes.isCloud = false
+      const { readWorkspaceId } = await import('./storageKeys')
+      expect(readWorkspaceId()).toBe('personal')
+    })
+  })
+
   describe('resolveStorageScope', () => {
     it('combines user and workspace in cloud', async () => {
       const { resolveStorageScope } = await import('./storageKeys')
@@ -94,6 +122,11 @@ describe('storageKeys', () => {
     it('returns null in cloud until the user is resolved', async () => {
       const { resolveStorageScope } = await import('./storageKeys')
       expect(resolveStorageScope(null, 'ws-1')).toBeNull()
+    })
+
+    it('returns null in cloud until the workspace is resolved', async () => {
+      const { resolveStorageScope } = await import('./storageKeys')
+      expect(resolveStorageScope('user-a', null)).toBeNull()
     })
 
     it('ignores identity outside cloud', async () => {
