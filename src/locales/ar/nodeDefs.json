@@ -11011,7 +11011,8 @@
     "display_name": "تحميل ثلاثي الأبعاد (متقدم)",
     "inputs": {
       "height": {
-        "name": "الارتفاع"
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "العرض"
+        "name": "العرض",
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       }
     },
     "outputs": {
       "0": {
         "name": "نموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "ملف نموذج ثلاثي الأبعاد محمّل (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "معلومات النموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "2": {
         "name": "معلومات الكاميرا",
-        "tooltip": null
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "3": {
         "name": "العرض",
-        "tooltip": null
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       },
       "4": {
         "name": "الارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "توليد الصور عبر نقطة نهاية GPT Image من OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "صورة OpenAI GPT 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "أنشئ الصور أو حررها عبر OpenRouter باستخدام نماذج MAI-Image-2.6 من Microsoft: من النص إلى الصورة، أو تحرير موجّه بالصور باستخدام ما يصل إلى خمس صور مرجعية، بسبع نسب أبعاد وبدقة 1K أو 1.5K.",
+    "display_name": "صورة OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج الصور من OpenRouter المستخدم لإنشاء الصورة."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "معاينة ثلاثية الأبعاد (متقدم)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       },
       "model_3d": {
         "name": "نموذج ثلاثي الأبعاد",
@@ -17404,29 +17438,30 @@
         "name": "حالة نافذة العرض"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "ملف نموذج ثلاثي الأبعاد (glb/obj/stl/etc.) من عقدة ثلاثية الأبعاد سابقة."
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "حفظ ثلاثي الأبعاد (متقدم)",
     "inputs": {
       "camera_info": {
-        "name": "معلومات الكاميرا"
+        "name": "معلومات الكاميرا",
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "filename_prefix": {
         "name": "بادئة اسم الملف"
       },
       "height": {
-        "name": "الارتفاع"
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       },
       "model_3d": {
         "name": "نموذج ثلاثي الأبعاد",
         "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد في الأعلى."
       },
       "model_3d_info": {
-        "name": "معلومات النموذج ثلاثي الأبعاد"
+        "name": "معلومات النموذج ثلاثي الأبعاد",
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "viewport_state": {
         "name": "حالة منفذ العرض"
       },
       "width": {
-        "name": "العرض"
+        "name": "العرض",
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       }
     },
     "outputs": {
       "0": {
         "name": "نموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "ملف نموذج ثلاثي الأبعاد (glb/obj/stl/etc.) من عقدة ثلاثية الأبعاد سابقة."
       },
       "1": {
         "name": "معلومات النموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "2": {
         "name": "معلومات الكاميرا",
-        "tooltip": null
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "3": {
         "name": "العرض",
-        "tooltip": null
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       },
       "4": {
         "name": "الارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       }
     }
   },

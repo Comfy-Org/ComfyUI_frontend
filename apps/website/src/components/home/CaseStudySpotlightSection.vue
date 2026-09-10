@@ -52,7 +52,7 @@ const routes = getRoutes(locale)
           >
             {{ t('caseStudy.heading', locale) }}
           </h2>
-          <p class="text-primary-warm-gray text-base">
+          <p class="text-base text-primary-warm-gray">
             {{ t('caseStudy.subheading', locale) }}
           </p>
         </div>

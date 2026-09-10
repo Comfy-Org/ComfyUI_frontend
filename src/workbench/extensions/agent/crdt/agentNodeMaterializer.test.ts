@@ -5,8 +5,6 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -201,7 +199,6 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)

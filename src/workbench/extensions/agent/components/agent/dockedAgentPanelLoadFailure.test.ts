@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import { createI18n } from 'vue-i18n'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -22,7 +21,6 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), () => {
 
 describe('DockedAgentPanel chunk-load failure', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })

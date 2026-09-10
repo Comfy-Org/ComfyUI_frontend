@@ -38,7 +38,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
       </a>
 
       <div
-        class="bg-transparency-white-t5 border-primary-warm-gray/20 overflow-hidden rounded-3xl border"
+        class="bg-transparency-white-t5 overflow-hidden rounded-3xl border border-primary-warm-gray/20"
       >
         <PackBanner
           :banner-url="pack.bannerUrl"
@@ -55,7 +55,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
               {{ pack.displayName }}
             </h1>
             <p
-              class="text-primary-warm-gray text-sm/relaxed md:text-base/relaxed"
+              class="text-sm/relaxed text-primary-warm-gray md:text-base/relaxed"
             >
               {{
                 pack.description ||
@@ -148,7 +148,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
             <section
               v-for="group in groupedNodes"
               :key="group.category"
-              class="border-primary-warm-gray/20 rounded-2xl border p-4"
+              class="rounded-2xl border border-primary-warm-gray/20 p-4"
             >
               <h3 class="text-base font-semibold text-primary-comfy-canvas">
                 {{ group.category }}
@@ -157,7 +157,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                 <li
                   v-for="node in group.nodes"
                   :key="node.name"
-                  class="border-primary-warm-gray/20 rounded-xl border p-3"
+                  class="rounded-xl border border-primary-warm-gray/20 p-3"
                   data-testid="cloud-node-pack-detail-node"
                 >
                   <div class="flex flex-wrap items-center gap-2">
@@ -189,7 +189,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                   </div>
                   <p
                     v-if="node.description"
-                    class="text-primary-warm-gray mt-2 text-sm/relaxed"
+                    class="mt-2 text-sm/relaxed text-primary-warm-gray"
                   >
                     {{ node.description }}
                   </p>

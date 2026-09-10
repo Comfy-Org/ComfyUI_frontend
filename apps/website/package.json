@@ -25,7 +25,9 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
+    "@comfyorg/account": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
@@ -36,6 +38,7 @@
     "ajv": "catalog:",
     "class-variance-authority": "catalog:",
     "cva": "catalog:",
+    "firebase": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
     "lottie-web": "catalog:",

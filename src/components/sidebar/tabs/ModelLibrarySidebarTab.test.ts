@@ -32,7 +32,8 @@ const {
   captureExpandedKeys,
   getExpandedKeys,
   mockStartDrag,
-  mockToggleNodeOnEvent
+  mockToggleNodeOnEvent,
+  featureFlagState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
   let capturedExpandedKeys: Record<string, boolean> = {}
@@ -49,7 +50,8 @@ const {
     },
     getExpandedKeys: () => capturedExpandedKeys,
     mockStartDrag: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn()
+    mockToggleNodeOnEvent: vi.fn(),
+    featureFlagState: { assetsEnabled: false }
   }
 })
 
@@ -65,6 +67,16 @@ const mockModel = fromPartial<ComfyModelDef>({
   directory: 'checkpoints',
   searchable: 'checkpoints/model.safetensors'
 })
+
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return featureFlagState.assetsEnabled
+      }
+    }
+  })
+}))
 
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
@@ -163,7 +175,7 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
     useAssetDownloadStore().lastCompletedDownload = null
-    useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = false
+    featureFlagState.assetsEnabled = false
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
     Object.assign(useModelStore(), { models: [mockModel] })
   })
@@ -320,10 +332,10 @@ describe('ModelLibrarySidebarTab', () => {
       const user = userEvent.setup()
       renderComponent()
       await nextTick()
-      for (let i = 0; i < 520; i++) {
-        Object.assign(useModelStore(), {
-          models: [
-            ...useModelStore().models,
+      Object.assign(useModelStore(), {
+        models: [
+          ...useModelStore().models,
+          ...Array.from({ length: 520 }, (_, i) =>
             fromPartial<ComfyModelDef>({
               key: `checkpoints/bulk-${i}.safetensors`,
               file_name: `bulk-${i}.safetensors`,
@@ -332,9 +344,9 @@ describe('ModelLibrarySidebarTab', () => {
               directory: 'checkpoints',
               searchable: `checkpoints/bulk-${i}.safetensors`
             })
-          ]
-        })
-      }
+          )
+        ]
+      })
 
       await user.type(screen.getByTestId('search-input'), 'bulk')
       await nextTick()
@@ -422,7 +434,7 @@ describe('ModelLibrarySidebarTab', () => {
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
+      featureFlagState.assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
       )
@@ -441,7 +453,7 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
+      featureFlagState.assetsEnabled = true
       renderComponent()
       await nextTick()
 
