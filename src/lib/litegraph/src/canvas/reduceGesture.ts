@@ -105,7 +105,7 @@ export function reduceGesture(
               origin: state.origin,
               lastClick: state.lastClick
             },
-            effects: ['moveDrag', 'startDrag']
+            effects: ['startDrag', 'moveDrag']
           }
         case 'up':
           if (!within(event.position, state.origin, policy.clickDrift))
