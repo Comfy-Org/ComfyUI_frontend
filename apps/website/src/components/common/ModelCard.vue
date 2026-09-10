@@ -44,16 +44,16 @@ const { modelName, capability, href, providerName, providerLogoSrc, media } =
       class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent"
       aria-hidden="true"
     />
+    <span
+      :aria-label="providerName"
+      role="img"
+      class="absolute top-5 right-5 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-black/30 px-2 backdrop-blur-sm"
+    >
+      <img :src="providerLogoSrc" alt="" class="max-h-5 max-w-20" />
+    </span>
     <div class="absolute inset-x-0 bottom-0 p-5 text-primary-comfy-canvas">
-      <span
-        :aria-label="providerName"
-        role="img"
-        class="mb-3 inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-black/30 px-2 backdrop-blur-sm"
-      >
-        <img :src="providerLogoSrc" alt="" class="max-h-5 max-w-20" />
-      </span>
-      <h2 class="text-2xl/tight font-light">{{ modelName }}</h2>
-      <h3 class="mt-1 text-sm font-bold tracking-wide uppercase">
+      <h2 class="text-sm font-light">{{ modelName }}</h2>
+      <h3 class="mt-1 text-2xl/tight font-bold tracking-wide uppercase">
         {{ capability }}
       </h3>
     </div>
