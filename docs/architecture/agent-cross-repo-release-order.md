@@ -3,7 +3,7 @@
 ## Glossary
 
 - **Dark deploy:** compatible code deployed while user exposure is disabled.
-- **Integrated receipt:** exact revisions, package version, flags, and browser-visible proof.
+- **Integration receipt:** exact revisions, package version, flags, and browser-visible proof.
 - **Consumer pin:** the exact shared-package version recorded in the manifest and lockfile.
 
 ## Release order
