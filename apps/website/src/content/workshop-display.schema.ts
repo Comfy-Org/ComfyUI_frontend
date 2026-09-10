@@ -51,11 +51,8 @@ const exampleSchema = z.object({
  * discard anything written into them by hand.
  *
  */
-export const workshopDisplaySchema = z.object({
-  /**
-   * Router model id, e.g. `bfl/flux-2-pro`. Doubles as the collection entry
-   * id, exactly as it does on `workshopModels`, so the two join on `id`.
-   */
+export const workshopDisplaySourceSchema = z.object({
+  /** Original content-pack model ID; the reviewed alias selects its Router ID. */
   id: z.string().regex(/^[^/]+\/[^/]+$/, 'expected "provider/model"'),
   displayName: z.string().trim().min(1).optional(),
 
@@ -93,5 +90,69 @@ export const workshopDisplaySchema = z.object({
   /** The content side wants a human to glance at this entry. */
   needsReview: z.boolean()
 })
+
+export type WorkshopDisplaySource = z.infer<typeof workshopDisplaySourceSchema>
+
+const contentSlug = z.string().regex(/^[a-z0-9][a-z0-9._-]*$/)
+
+export function workshopContentSlug(modelId: string, useCase: string): string {
+  return `${modelId.replace('/', '--')}--${useCase}`
+}
+
+export const workshopDisplaySchema = workshopDisplaySourceSchema
+  .omit({ id: true, useCases: true })
+  .extend({
+    id: contentSlug,
+    slug: contentSlug,
+    modelId: workshopDisplaySourceSchema.shape.id,
+    useCase: workshopUseCaseSchema,
+    withheldContent: z
+      .object({
+        media: workshopDisplaySourceSchema.shape.media,
+        examples: workshopDisplaySourceSchema.shape.examples,
+        reason: z.literal('shared-across-use-cases')
+      })
+      .optional()
+  })
+  .refine(
+    (entry) =>
+      entry.id === entry.slug &&
+      entry.slug === workshopContentSlug(entry.modelId, entry.useCase),
+    'Content id/slug must be model plus use case; modelId stays separate'
+  )
+  .refine(
+    (entry) => entry.examples.length <= (entry.media.samples?.length ?? 0),
+    'Examples and samples must remain paired by index'
+  )
+
+export const workshopDisplayEntriesSchema = z
+  .array(workshopDisplaySchema)
+  .superRefine((entries, context) => {
+    const slugs = new Set<string>()
+    const mediaUseCases = new Map<string, string>()
+    for (const [index, entry] of entries.entries()) {
+      if (slugs.has(entry.slug))
+        context.addIssue({
+          code: 'custom',
+          path: [index, 'slug'],
+          message: `Duplicate content slug: ${entry.slug}`
+        })
+      slugs.add(entry.slug)
+      for (const asset of [
+        entry.media.thumbnail,
+        ...(entry.media.samples ?? [])
+      ]) {
+        if (!asset) continue
+        const useCase = mediaUseCases.get(asset.url)
+        if (useCase && useCase !== entry.useCase)
+          context.addIssue({
+            code: 'custom',
+            path: [index, 'media'],
+            message: `Media is shared across use cases: ${asset.url}`
+          })
+        mediaUseCases.set(asset.url, entry.useCase)
+      }
+    }
+  })
 
 export type WorkshopDisplayEntry = z.infer<typeof workshopDisplaySchema>

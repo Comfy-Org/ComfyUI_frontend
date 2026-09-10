@@ -2,17 +2,23 @@ import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { workshopDisplaySchema } from '../src/content/workshop-display.schema'
-import type { WorkshopDisplayEntry } from '../src/content/workshop-display.schema'
+import {
+  workshopDisplayEntriesSchema,
+  workshopDisplaySourceSchema
+} from '../src/content/workshop-display.schema'
+import type {
+  WorkshopDisplayEntry,
+  WorkshopDisplaySource
+} from '../src/content/workshop-display.schema'
 import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
 import { workshopModelSchema } from '../src/content/workshop-models.schema'
 import { deriveWorkshopFields } from '../src/config/workshop-fields'
 import { workshopContract } from '../src/config/workshop-contract-catalog'
+import { splitWorkshopDisplay } from './workshop-display-use-cases'
 
 /**
  * The display overlay, packed the same way as the catalog: one JSON array,
- * one model per line, written by a script and read only by Zod and
- * `getCollection()`. See `generate-workshop-catalog.ts` for why.
+ * one model/use-case entry per line, validated by Zod before the runtime join.
  */
 const OVERLAY = resolve(
   import.meta.dirname,
@@ -120,7 +126,7 @@ function isImageRole(role: string): boolean {
 
 export function deriveWorkshopUseCases(
   model: WorkshopModelEntry
-): WorkshopDisplayEntry['useCases'] {
+): WorkshopDisplaySource['useCases'] {
   if (model.modality === 'audio' || model.modality === 'music') return ['audio']
   if (model.modality === '3d') return ['3d']
 
@@ -186,8 +192,19 @@ export function buildWorkshopDisplay(
   input: unknown,
   catalog: ReadonlyMap<string, WorkshopModelEntry>
 ): WorkshopDisplayEntry[] {
+  if (Array.isArray(input)) {
+    const entries = workshopDisplayEntriesSchema.parse(input)
+    for (const entry of entries)
+      if (!catalog.has(entry.modelId))
+        throw new Error(
+          `Display overlay names model absent from catalog: ${entry.modelId}`
+        )
+    return entries.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  }
   if (!isRecord(input)) {
-    throw new Error('Display overlay is not an object keyed by model id')
+    throw new Error(
+      'Display overlay must be content records or a legacy model map'
+    )
   }
 
   const overlay = Object.entries(input).map(([modelId, value]) => {
@@ -197,7 +214,7 @@ export function buildWorkshopDisplay(
         `Display overlay names model absent from catalog: ${modelId}`
       )
     }
-    const parsed = workshopDisplaySchema.safeParse(
+    const parsed = workshopDisplaySourceSchema.safeParse(
       project(modelId, value, catalogModel)
     )
     if (!parsed.success) {
@@ -224,7 +241,9 @@ export function buildWorkshopDisplay(
 
   // Sorted by model id, not by locale, so the committed file does not churn
   // with the generator host's locale.
-  return overlay.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  return splitWorkshopDisplay(overlay).sort((a, b) =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+  )
 }
 
 async function catalogModels(): Promise<Map<string, WorkshopModelEntry>> {

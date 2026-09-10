@@ -31,6 +31,9 @@ describe('WorkshopModelCard', () => {
     )
     expect(screen.queryByText(/credits|\$/)).toBeNull()
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
+    expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
+    expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
+    expect(screen.queryByLabelText('Flux')).toBeNull()
   })
 
   it.for([

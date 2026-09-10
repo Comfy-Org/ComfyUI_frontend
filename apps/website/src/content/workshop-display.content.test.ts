@@ -12,16 +12,14 @@ import {
 } from '../config/workshop-browse-content'
 import {
   WORKSHOP_USE_CASES,
-  workshopDisplaySchema
+  workshopDisplayEntriesSchema
 } from './workshop-display.schema'
 import { workshopModelSchema } from './workshop-models.schema'
 
 const here = import.meta.dirname
-const display = (
-  JSON.parse(
-    readFileSync(join(here, 'workshop-display.json'), 'utf8')
-  ) as unknown[]
-).map((entry) => workshopDisplaySchema.parse(entry))
+const display = workshopDisplayEntriesSchema.parse(
+  JSON.parse(readFileSync(join(here, 'workshop-display.json'), 'utf8'))
+)
 const catalog = (
   JSON.parse(
     readFileSync(join(here, 'workshop-models.json'), 'utf8')
@@ -29,7 +27,9 @@ const catalog = (
 ).map((entry) => workshopModelSchema.parse(entry))
 
 const modality = new Map(catalog.map((m) => [m.id, m.modality]))
-const displayById = new Map(display.map((entry) => [entry.id, entry]))
+function contentFor(modelId: string) {
+  return display.find((entry) => entry.modelId === modelId)
+}
 const catalogById = new Map(catalog.map((entry) => [entry.id, entry]))
 /** Outputs that are a single still frame. */
 const STILL = new Set(['image', 'svg', '3d'])
@@ -48,7 +48,7 @@ describe('the display overlay against the catalog', () => {
       const catalogEntry = catalogById.get(id)
       if (!catalogEntry) throw new Error('Missing renamed model')
       const detail = getRouterWorkshopModelDetail(catalogEntry.slug)
-      expect(displayById.get(id)?.displayName).toBe(name)
+      expect(contentFor(id)?.displayName).toBe(name)
       const alias = routerAliasById.get(id)
       if (!alias) {
         expect(detail).toBeUndefined()
@@ -57,7 +57,8 @@ describe('the display overlay against the catalog', () => {
       expect(detail?.name).toBe(name)
       const routerId = routerAliasById.get(id)?.routerId ?? id
       expect(detail?.routerId).toBe(routerId)
-      expect(detail?.href).toBe(`/models/${routerId.replace('/', '--')}/`)
+      expect(detail?.slug.startsWith(`${catalogEntry.slug}--`)).toBe(true)
+      expect(detail?.href).toBe(`/models/${detail?.slug}/`)
       if (detail?.execution) expect(detail.execution.id).toBe(routerId)
     }
   )
@@ -67,7 +68,7 @@ describe('the display overlay against the catalog', () => {
       const alias = routerAliasById.get(model.id)
       return (
         alias &&
-        !displayById.get(model.id)?.displayName &&
+        !contentFor(model.id)?.displayName &&
         routerContentById.get(alias.routerId)?.length === 1
       )
     })
@@ -80,24 +81,15 @@ describe('the display overlay against the catalog', () => {
   it('covers models the catalog actually has', () => {
     expect(display.length).toBeGreaterThan(0)
     const orphans = display
-      .map((entry) => entry.id)
+      .map((entry) => entry.modelId)
       .filter((id) => !modality.has(id))
 
     expect(orphans).toEqual([])
   })
 
-  it('assigns every model at least one supported use case', () => {
+  it('assigns each content record exactly one supported use case', () => {
     const supported = new Set<string>(WORKSHOP_USE_CASES)
-    const unclassified = display
-      .filter((entry) => entry.useCases.length === 0)
-      .map((entry) => entry.id)
-    const unknown = display.flatMap((entry) =>
-      entry.useCases
-        .filter((useCase) => !supported.has(useCase))
-        .map((useCase) => `${entry.id} ${useCase}`)
-    )
-
-    expect(unclassified).toEqual([])
+    const unknown = display.filter((entry) => !supported.has(entry.useCase))
     expect(unknown).toEqual([])
   })
 
@@ -115,11 +107,11 @@ describe('the display overlay against the catalog', () => {
   })
 
   it('keeps disclosure choices attached to fields rather than upload position', () => {
-    expect(displayById.get('bfl/flux-2-pro')?.advancedFields).toContain(
+    expect(contentFor('bfl/flux-2-pro')?.advancedFields).toContain(
       'prompt_upsampling'
     )
     const raw = catalogById.get('meshy/text-to-model')
-    const overlay = displayById.get('meshy/text-to-model')
+    const overlay = contentFor('meshy/text-to-model')
     if (!raw || !overlay) throw new Error('Missing source content')
     expect(
       fieldsForDefinition({
@@ -134,37 +126,43 @@ describe('the display overlay against the catalog', () => {
             (b.advancedIndex ?? Number.MAX_SAFE_INTEGER)
         )
         .map((field) => field.name)
-    ).toEqual(displayById.get('meshy/text-to-model')?.advancedFields)
+    ).toEqual(contentFor('meshy/text-to-model')?.advancedFields)
   })
 
   it('keeps multi-purpose models in each applicable use case', () => {
-    expect(displayById.get('byteplus/seedream-4')?.useCases).toEqual([
-      'generate-images',
-      'edit-images'
+    const entries = display.filter(
+      (entry) => entry.modelId === 'byteplus/seedream-4'
+    )
+    expect(entries.map((entry) => entry.useCase).sort()).toEqual([
+      'edit-images',
+      'generate-images'
     ])
-    expect(displayById.get('gemini/omni-1.1-flash')?.useCases).toEqual([
-      'generate-videos',
-      'edit-videos'
-    ])
+    expect(new Set(entries.map((entry) => entry.slug)).size).toBe(2)
+    expect(
+      entries.find((entry) => entry.useCase === 'edit-images')?.withheldContent
+        ?.media.thumbnail
+    ).toBeDefined()
+    expect(
+      entries.find((entry) => entry.useCase === 'generate-images')?.media
+        .thumbnail
+    ).toBeUndefined()
   })
 
   it('classifies required media by what the model does with it', () => {
-    expect(displayById.get('beeble/switchx-image-edit')?.useCases).toEqual([
-      'edit-images'
-    ])
-    expect(displayById.get('bfl/flux-3-image-to-video')?.useCases).toEqual([
+    expect(contentFor('beeble/switchx-image-edit')?.useCase).toBe('edit-images')
+    expect(contentFor('bfl/flux-3-image-to-video')?.useCase).toBe(
       'animate-images'
-    ])
-    expect(displayById.get('bfl/flux-3-video-continuation')?.useCases).toEqual([
+    )
+    expect(contentFor('bfl/flux-3-video-continuation')?.useCase).toBe(
       'edit-videos'
-    ])
+    )
   })
 
   it('never puts a moving thumbnail on a model that makes stills', () => {
     // This shipped once: generic filename tokens matched an animated preview
     // onto image models, so a still model advertised itself with a video.
     const wrong = display
-      .filter((entry) => STILL.has(modality.get(entry.id) ?? ''))
+      .filter((entry) => STILL.has(modality.get(entry.modelId) ?? ''))
       .filter((entry) => entry.media.thumbnail?.kind === 'video')
       .map((entry) => entry.id)
 
@@ -173,7 +171,7 @@ describe('the display overlay against the catalog', () => {
 
   it('never puts a moving sample on a model that makes stills', () => {
     const wrong = display
-      .filter((entry) => STILL.has(modality.get(entry.id) ?? ''))
+      .filter((entry) => STILL.has(modality.get(entry.modelId) ?? ''))
       .flatMap((entry) =>
         (entry.media.samples ?? [])
           .filter((sample) => sample.kind === 'video')

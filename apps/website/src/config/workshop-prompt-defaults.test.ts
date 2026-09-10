@@ -43,8 +43,13 @@ const model: WorkshopModelDetail = {
 
 function display(prompt: string) {
   return workshopDisplaySchema.parse({
-    id: model.routerId,
-    useCases: ['generate-images'],
+    id: 'demo--demo--generate-images',
+    slug: 'demo--demo--generate-images',
+    modelId: model.routerId,
+    useCase: 'generate-images',
+    media: {
+      samples: [{ url: 'https://example.com/output.png', kind: 'image' }]
+    },
     mediaConfidence: 'exact',
     needsReview: false,
     examples: [

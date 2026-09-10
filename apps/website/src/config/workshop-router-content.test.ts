@@ -10,7 +10,10 @@ import {
   validateForm
 } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { routerContentById } from './workshop-browse-content'
+import {
+  routerContentById,
+  routerContentBySlug
+} from './workshop-browse-content'
 import {
   fieldsForDefinition,
   usesRequestBodyEditor
@@ -18,6 +21,29 @@ import {
 import { resolveSchemaReference } from './workshop-router-openapi'
 
 describe('Router catalog form projection', () => {
+  it('keeps use-case URLs and examples separate while sharing the Router contract', () => {
+    const create = getRouterWorkshopModelDetail(
+      'byteplus--seedream-4-5--generate-images'
+    )
+    const edit = getRouterWorkshopModelDetail(
+      'byteplus--seedream-4-5--edit-images'
+    )
+    if (!create || !edit) throw new Error('Missing use-case record')
+    expect(create.routerId).toBe(edit.routerId)
+    expect(create.execution?.inputSchema).toEqual(edit.execution?.inputSchema)
+    expect(create.href).not.toBe(edit.href)
+    expect(create.useCases).toEqual(['generate-images'])
+    expect(edit.useCases).toEqual(['edit-images'])
+    expect(edit.examples).toEqual([])
+    expect(create.examples).not.toEqual([])
+    expect(
+      create.examples.every((example) => example.name.startsWith(create.slug))
+    ).toBe(true)
+    expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(create)
+    for (const model of [create, edit])
+      expect(routerContentBySlug.get(model.slug)?.overlay.slug).toBe(model.slug)
+  })
+
   it("starts a native request with Rob's prompt without importing legacy settings", async () => {
     const model = getRouterWorkshopModelDetail('bfl--flux-3-video')
     if (!model?.execution) throw new Error('Missing model')
@@ -144,6 +170,10 @@ describe('Router catalog form projection', () => {
       )) {
         const actual = fields.find((candidate) => candidate.name === field.name)
         const input = form.inputs?.[field.name]
+        if (input?.hidden) {
+          expect(actual).toBeUndefined()
+          continue
+        }
         expect(actual).toMatchObject({
           ...field,
           kind: field.kind === 'media' ? 'file' : field.kind,

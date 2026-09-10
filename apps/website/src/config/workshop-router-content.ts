@@ -5,7 +5,7 @@ import { formForContract } from './workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'
 import {
-  routerContentById,
+  routerContentBySlug,
   routerModelSlugAliases,
   routerWorkshopModels
 } from './workshop-browse-content'
@@ -18,7 +18,7 @@ function examplesFor(
   return samples.slice(0, 6).map((sample, index) => {
     const example = display.examples.at(index)
     return {
-      name: `${model.slug}-example-${index + 1}`,
+      name: `${display.slug}-example-${index + 1}`,
       title: example?.title ?? `Sample ${index + 1}`,
       description: example?.description ?? '',
       tags: model.tags,
@@ -32,19 +32,16 @@ function examplesFor(
 
 const detailBySlug = new Map(
   routerWorkshopModels.map((model) => {
-    const sources = routerContentById.get(model.routerId) ?? []
+    const source = routerContentBySlug.get(model.slug)
+    if (!source) throw new Error(`Missing content record: ${model.slug}`)
     const execution = model.incompleteReason
       ? undefined
       : workshopContract(model.routerId)
-    if (
-      execution &&
-      sources.some(({ alias }) => execution.sourceCommit !== alias.sourceCommit)
-    )
+    if (execution && execution.sourceCommit !== source.alias.sourceCommit)
       throw new Error(`Stale Router identity audit: ${model.routerId}`)
-    const samples = sources
-      .filter(({ alias }) => !alias.contentIssue)
-      .flatMap(({ entry, overlay }) => examplesFor(entry, overlay))
-      .slice(0, 6)
+    const samples = source.alias.contentIssue
+      ? []
+      : examplesFor(source.entry, source.overlay)
     const detail: WorkshopModelDetail = {
       ...model,
       ...(execution ? { execution, form: formForContract(execution) } : {}),
@@ -58,9 +55,7 @@ const detailBySlug = new Map(
         ...detail,
         defaults: workshopPromptDefaults(
           detail,
-          sources
-            .filter(({ alias }) => !alias.contentIssue)
-            .map(({ overlay }) => overlay)
+          source.alias.contentIssue ? [] : [source.overlay]
         )
       }
     ]

@@ -56,13 +56,35 @@ describe('partnerModelFor', () => {
   it('falls back to the generated join for a name-only template', () => {
     const tmpl = { ...template(['API']), name: 'api_bytedance_text_to_video' }
     expect(partnerModelFor(tmpl, workshopModels)?.slug).toBe(
-      'byteplus--seedance-1-0-lite-t2v-250428'
+      'byteplus--seedance-1-0-lite-text-to-video--generate-videos'
     )
   })
 
   it('has no join row for a workflow that disagreed on the medium', () => {
     const tmpl = { ...template(['API']), name: 'api_topaz_video_enhance' }
     expect(partnerModelFor(tmpl, workshopModels)).toBeUndefined()
+  })
+
+  it('links create and edit workflows to their own content pages for the same Router model', () => {
+    const create: WorkshopModel = {
+      ...model('Demo'),
+      slug: 'demo--generate-images',
+      useCases: ['generate-images']
+    }
+    const edit: WorkshopModel = {
+      ...model('Demo'),
+      slug: 'demo--edit-images',
+      useCases: ['edit-images']
+    }
+    expect(
+      partnerModelFor(template(['API', 'Text to Image'], ['Demo']), [
+        edit,
+        create
+      ])
+    ).toBe(create)
+    expect(
+      partnerModelFor(template(['API', 'Image Edit'], ['Demo']), [create, edit])
+    ).toBe(edit)
   })
 
   it('leaves a community workflow alone', () => {

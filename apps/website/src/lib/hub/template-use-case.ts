@@ -1,5 +1,5 @@
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
-import { useCaseFor } from '../../config/models-catalogue'
+import { useCaseFor, useCasesFor } from '../../config/models-catalogue'
 import { routerModelSlugAliases } from '../../config/workshop-browse-content'
 import templateModelJoin from '../../data/templateModelJoin.json'
 import type { HubTemplate } from './types'
@@ -56,10 +56,15 @@ export function partnerModelFor(
   const joined = sourceSlug
     ? (routerModelSlugAliases.get(sourceSlug) ?? sourceSlug)
     : undefined
+  const useCase = fromTags(template.tags, TASK_TAGS)
+  const candidates = useCase
+    ? models.filter((model) => useCasesFor(model).includes(useCase))
+    : models
+  const target = models.find((model) => model.slug === joined)
   return (
-    modelNamedBy(template, models) ??
+    modelNamedBy(template, candidates) ??
     (template.tags.includes('API')
-      ? models.find((model) => model.slug === joined)
+      ? candidates.find((model) => model.routerId === target?.routerId)
       : undefined)
   )
 }

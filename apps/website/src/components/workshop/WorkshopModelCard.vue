@@ -4,11 +4,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  ModalityFilter,
-  WorkshopModel
-} from '../../config/models-catalogue'
-import { modalityOf } from '../../config/models-catalogue'
+import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubTypeBadge from '../hub/HubTypeBadge.vue'
@@ -27,8 +23,6 @@ const {
   providerBadge?: boolean
 }>()
 
-const modality = computed(() => modalityOf(model))
-
 const providerName = computed(
   () => model.provider ?? t('workshop.card.partnerNode', locale)
 )
@@ -41,15 +35,6 @@ const taskLabel = computed(() => taskLabelFor(model, locale))
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
-
-const modalityTone: Record<Exclude<ModalityFilter, 'all'>, string> = {
-  image: 'from-primary-comfy-plum to-secondary-deep-plum',
-  video: 'from-secondary-mauve to-primary-comfy-plum',
-  audio: 'from-illustration-forest to-primary-comfy-ink-light',
-  '3d': 'from-primary-comfy-yellow/70 to-primary-comfy-ink-light',
-  text: 'from-secondary-cool-gray to-primary-comfy-ink-light',
-  other: 'from-primary-comfy-ink-light to-primary-comfy-ink'
-}
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
@@ -105,12 +90,8 @@ const pillClass =
       />
       <div
         v-else
-        :class="
-          cn(
-            'grid size-full place-items-center bg-linear-to-br',
-            modalityTone[modality]
-          )
-        "
+        class="grid size-full place-items-center bg-hub-surface-hover"
+        data-testid="model-media-placeholder"
       >
         <span
           class="font-formula text-7xl font-bold text-primary-warm-white/20 select-none"

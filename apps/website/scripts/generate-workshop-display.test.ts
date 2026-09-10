@@ -27,7 +27,9 @@ describe('Workshop display names', () => {
   it('imports the content name without renaming its catalog identity', () => {
     const [entry] = buildWorkshopDisplay({ [model.id]: drop }, catalog)
     expect(entry.displayName).toBe('Nano Banana Pro')
-    expect(entry.id).toBe('vertexai/gemini-3-pro-image')
+    expect(entry.modelId).toBe('vertexai/gemini-3-pro-image')
+    expect(entry.id).toBe('vertexai--gemini-3-pro-image--edit-images')
+    expect(entry.slug).toBe(entry.id)
     expect(model.displayName).toBe('Gemini 3 Pro Image')
   })
 
@@ -105,11 +107,6 @@ describe('Workshop display names', () => {
   )
 
   it('round-trips the packed overlay without losing editorial content', () => {
-    expect(
-      buildWorkshopDisplay(
-        Object.fromEntries(display.map((entry) => [entry.id, entry])),
-        catalog
-      )
-    ).toEqual(display)
+    expect(buildWorkshopDisplay(display, catalog)).toEqual(display)
   })
 })

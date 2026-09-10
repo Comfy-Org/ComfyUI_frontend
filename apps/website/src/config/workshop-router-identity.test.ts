@@ -86,7 +86,8 @@ describe('legacy content identity repairs', () => {
       const match = record.matches[0]
       expect(alias?.routerId).toBe(match.routerId)
       expect(detail?.routerId).toBe(match.routerId)
-      expect(detail?.href).toBe(`/models/${match.routerId.replace('/', '--')}/`)
+      expect(detail?.slug.startsWith(`${old.slug}--`)).toBe(true)
+      expect(detail?.href).toBe(`/models/${detail?.slug}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
       const contract = workshopContract(match.routerId)
       if (!contract) {
@@ -104,13 +105,19 @@ describe('legacy content identity repairs', () => {
     }
   )
 
-  it('publishes the verified intersection, never the union or duplicate cards', () => {
+  it('publishes only verified Router joins with one distinct card per content record', () => {
     const nativeIds = new Set(rawSnapshots.map((entry) => entry.id))
     const joinedIds = new Set(aliases.map((alias) => alias.routerId))
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
       joinedIds
     )
-    expect(workshopModels).toHaveLength(joinedIds.size)
+    const content = display.filter((entry) => aliasesById.has(entry.modelId))
+    expect(workshopModels.map((model) => model.slug).sort()).toEqual(
+      content.map((entry) => entry.slug).sort()
+    )
+    expect(new Set(workshopModels.map((model) => model.slug)).size).toBe(
+      content.length
+    )
     for (const model of workshopModels)
       expect(nativeIds.has(model.routerId)).toBe(true)
     for (const snapshot of rawSnapshots.filter(
@@ -127,35 +134,40 @@ describe('legacy content identity repairs', () => {
       (model) => model.routerId === 'bria/image-edit-erase'
     )
     expect(linked).toHaveLength(1)
-    expect(linked[0].slug).toBe('bria--image-edit-erase')
+    expect(linked[0].slug).toBe('bria--eraser--edit-images')
     expect(
       getRouterWorkshopModelDetail('bria--image-edit-erase')?.execution?.id
     ).toBe('bria/image-edit-erase')
   })
 
   it('keeps both real output categories when two tasks share one Router model', () => {
-    const beeble = workshopModels.find(
+    const beeble = workshopModels.filter(
       (model) => model.routerId === 'beeble/switchx'
     )
-    if (!beeble) throw new Error('Missing SwitchX')
-    expect(beeble.useCases).toEqual(
-      expect.arrayContaining(['edit-images', 'edit-videos'])
-    )
+    expect(beeble).toHaveLength(2)
+    expect(beeble.map((entry) => entry.useCases)).toEqual([
+      ['edit-images'],
+      ['edit-videos']
+    ])
+    expect(beeble[0].slug).not.toBe(beeble[1].slug)
+    expect(beeble[0].thumbnail?.url).not.toBe(beeble[1].thumbnail?.url)
     for (const modality of ['image', 'video'])
-      expect(
-        filterWorkshopModels([beeble], { modalities: [modality] })
-      ).toEqual([beeble])
-    expect(countByModality([beeble])).toMatchObject({
-      all: 1,
+      expect(filterWorkshopModels(beeble, { modalities: [modality] })).toEqual(
+        beeble.filter((model) => model.modality === modality)
+      )
+    expect(countByModality(beeble)).toMatchObject({
+      all: 2,
       image: 1,
       video: 1
     })
   })
 
   it('quarantines the incorrect Starfish media without deleting Rob’s source record', () => {
-    const original = display.find((entry) => entry.id === 'heygen/starfish-tts')
-    expect(original?.media.thumbnail).toBeDefined()
-    expect(original?.examples.length).toBeGreaterThan(0)
+    const original = display.find(
+      (entry) => entry.modelId === 'heygen/starfish-tts'
+    )
+    expect(original?.withheldContent?.media.thumbnail).toBeDefined()
+    expect(original?.withheldContent?.examples.length).toBeGreaterThan(0)
     const model = getRouterWorkshopModelDetail('heygen--starfish-tts')
     expect(model?.execution?.id).toBe('heygen/starfish')
     expect(model?.thumbnail).toBeUndefined()
