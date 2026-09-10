@@ -1,28 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent, nextTick, ref } from 'vue'
 
-import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
+import { i18n } from '@/i18n'
+import { useAssetBrowser as createAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
-
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string) => {
-    const translations: Record<string, string> = {
-      'assetBrowser.allModels': 'All Models',
-      'assetBrowser.imported': 'Imported',
-      'assetBrowser.byType': 'By type',
-      'assetBrowser.assets': 'Assets',
-      'assetBrowser.unknown': 'unknown'
-    }
-    return translations[key] || key
-  },
-  d: (date: Date) => date.toLocaleDateString()
-}))
 
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
@@ -34,6 +16,27 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
     }
   })
 }))
+
+const apps: App<Element>[] = []
+
+function useAssetBrowser(...args: Parameters<typeof createAssetBrowser>) {
+  let result: ReturnType<typeof createAssetBrowser> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createAssetBrowser(...args)
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Asset browser was not initialized')
+  return result
+}
+
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 describe('useAssetBrowser', () => {
   beforeEach(() => {

@@ -6,7 +6,6 @@ import { nextTick } from 'vue'
 import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import {
   createMockNodeDef,
-  setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -14,7 +13,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
-    setupTestPinia()
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
     settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}

@@ -314,6 +314,24 @@ describe('useSettingStore', () => {
       expect(result).toBe('regular-default')
     })
 
+    it.for([false, 0, ''])(
+      'should return a falsy versioned default (%j)',
+      (falsy) => {
+        const setting: SettingParams = {
+          id: 'test.setting',
+          name: 'Test Setting',
+          type: 'text',
+          defaultValue: 'regular-default',
+          defaultsByInstallVersion: {
+            '1.21.3': falsy
+          }
+        }
+        store.addSetting(setting)
+
+        expect(store.getDefaultValue('test.setting')).toBe(falsy)
+      }
+    )
+
     it('should handle function-based versioned defaults', () => {
       const setting: SettingParams = {
         id: 'test.setting',

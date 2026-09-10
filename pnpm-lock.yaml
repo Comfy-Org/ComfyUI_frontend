@@ -177,6 +177,9 @@ catalogs:
     ag-psd:
       specifier: ^31.0.2
       version: 31.0.2
+    ajv:
+      specifier: ^8.20.0
+      version: 8.20.0
     algoliasearch:
       specifier: ^5.21.0
       version: 5.56.0
@@ -947,6 +950,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      ajv:
+        specifier: 'catalog:'
+        version: 8.20.0
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

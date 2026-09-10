@@ -33,6 +33,7 @@
     "@lucide/vue": "catalog:",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
+    "ajv": "catalog:",
     "class-variance-authority": "catalog:",
     "cva": "catalog:",
     "gsap": "catalog:",

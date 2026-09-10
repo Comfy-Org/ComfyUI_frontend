@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -20,8 +18,6 @@ import {
   resolveNode
 } from './litegraphUtil'
 
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
 const mockBringNodeToFront = vi.fn()
 
 vi.mock(
@@ -31,10 +27,6 @@ vi.mock(
     useNodeZIndex: () => ({ bringNodeToFront: mockBringNodeToFront })
   })
 )
-
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ addAlert: vi.fn() })
-}))
 
 describe('resolveNode', () => {
   it('returns undefined when graph is null', () => {
