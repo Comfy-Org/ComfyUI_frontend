@@ -22,6 +22,12 @@
       class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
     >
       <div ref="paymentElementTarget" />
+      <div class="flex flex-col gap-3">
+        <h4 class="m-0 text-sm font-medium text-base-foreground">
+          {{ $t('subscription.preview.billingAddress') }}
+        </h4>
+        <div ref="addressElementTarget" />
+      </div>
       <div
         v-if="selectedMethodType === 'alipay'"
         class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
@@ -50,6 +56,7 @@
 <script setup lang="ts">
 import type {
   Stripe,
+  StripeAddressElement,
   StripeElements,
   StripePaymentElement
 } from '@stripe/stripe-js'
@@ -107,12 +114,14 @@ function emitPaymentJourneyPhase(phase: CheckoutJourneyPhaseEvent): void {
 }
 
 const paymentElementTarget = ref<HTMLDivElement>()
+const addressElementTarget = ref<HTMLDivElement>()
 const stripeElements = ref<StripeElements>()
 const configurationError = ref('')
 const isSubmitting = ref(false)
 const selectedMethodType = ref('')
 let stripe: Stripe | null = null
 let paymentElement: StripePaymentElement | undefined
+let addressElement: StripeAddressElement | undefined
 
 onMounted(async () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
@@ -240,6 +249,25 @@ onMounted(async () => {
   paymentElement.on('change', (event) => {
     selectedMethodType.value = event.value?.type ?? ''
   })
+
+  if (!addressElementTarget.value) return
+  // A full billing address feeds AVS to the issuer and Radar. In billing mode
+  // every field is required, and because the address shares this Elements
+  // group, createConfirmationToken folds it into the token's billing_details.
+  addressElement = stripeElements.value.create('address', { mode: 'billing' })
+  addressElement.mount(addressElementTarget.value)
+  addressElement.on('ready', () => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({ phase: 'payment_element_ready' })
+  })
+  addressElement.on('loaderror', (event) => {
+    if (isUnmounted) return
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_failed',
+      element_phase: 'mount',
+      ...(event.error?.code && { error_code: event.error.code })
+    })
+  })
 })
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
@@ -260,6 +288,7 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
 onBeforeUnmount(() => {
   isUnmounted = true
   paymentElement?.destroy()
+  addressElement?.destroy()
 })
 
 async function submit() {
