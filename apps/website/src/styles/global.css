@@ -2,7 +2,6 @@
 
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
-@import '@comfyorg/account/styles.css';
 @import 'tw-animate-css';
 
 /* PP Formula's native vertical metrics place the baseline too high, so caps
