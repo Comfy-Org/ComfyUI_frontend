@@ -20,6 +20,7 @@ describe('useSubscriptionCancellationWatcher', () => {
     has_funds: true,
     max_seats: 0,
     occupied_seats: 0,
+    scheduled_change: null,
     team_credit_stop: null,
     renewal_date: '2025-11-16'
   }

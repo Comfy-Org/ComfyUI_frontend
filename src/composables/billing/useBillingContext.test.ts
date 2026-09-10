@@ -19,6 +19,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   max_seats: 73,
   occupied_seats: 72,
   has_funds: true,
+  scheduled_change: null,
   team_credit_stop: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY'
@@ -193,6 +194,7 @@ describe('useBillingContext', () => {
       has_funds: true,
       max_seats: 0,
       occupied_seats: 0,
+      scheduled_change: null,
       team_credit_stop: null,
       renewal_date: '2025-01-01T00:00:00Z'
     }
@@ -248,6 +250,7 @@ describe('useBillingContext', () => {
       ...DEFAULT_BILLING_STATUS,
       billing_status: 'payment_failed',
       subscription_status: 'ended',
+      scheduled_change: null,
       team_credit_stop: {
         id: 'stop-1',
         credits_monthly: 1000,
@@ -560,6 +563,7 @@ describe('useBillingContext', () => {
         subscription_status: 'active',
         subscription_duration: 'ANNUAL',
         plan_slug: 'team_per_credit_annual',
+        scheduled_change: null,
         team_credit_stop: {
           id: 'team_700',
           credits_monthly: 147700,
@@ -670,6 +674,7 @@ describe('useBillingContext', () => {
         has_funds: true,
         subscription_tier: 'TEAM',
         plan_slug: 'team_per_credit_monthly',
+        scheduled_change: null,
         team_credit_stop: {
           id: 'team_700',
           credits_monthly: 700,
@@ -725,6 +730,7 @@ describe('useBillingContext', () => {
         has_funds: true,
         billing_status: 'paused',
         plan_slug: 'team_per_credit_monthly',
+        scheduled_change: null,
         team_credit_stop: {
           id: 'team_700',
           credits_monthly: 700,
