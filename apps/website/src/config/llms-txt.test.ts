@@ -11,7 +11,7 @@ import {
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
 import { isNoindexPathname } from './indexing'
-import { LOCALE_PREFIXES, LOCALIZED_CODES, localePrefix } from './locales'
+import { LOCALE_PREFIXES } from './locales'
 import { getRoutes } from './routes'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -149,10 +149,7 @@ describe('llms.txt', () => {
    * llms.txt as pointing at nothing.
    */
   const byLocalePrefix = new Map(
-    LOCALIZED_CODES.map((code) => [
-      localePrefix(code),
-      { static: staticPages, dynamic }
-    ])
+    LOCALE_PREFIXES.map((prefix) => [prefix, { static: staticPages, dynamic }])
   )
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
