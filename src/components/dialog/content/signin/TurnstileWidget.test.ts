@@ -3,10 +3,11 @@ import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+
 import TurnstileWidget from './TurnstileWidget.vue'
 
-const { lightTheme, sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
-  lightTheme: { value: true },
+const { sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
   sharedProps: { value: {} },
   sharedReset: vi.fn(),
   sharedEmit: {
@@ -48,16 +49,6 @@ vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: () => 'site-key'
 }))
 
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: {
-      get light_theme() {
-        return lightTheme.value
-      }
-    }
-  })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -74,7 +65,7 @@ const i18n = createI18n({
 })
 
 function renderWidget(isLightTheme: boolean) {
-  lightTheme.value = isLightTheme
+  useColorPaletteStore().activePaletteId = isLightTheme ? 'light' : 'dark'
   return render(TurnstileWidget, {
     global: { plugins: [i18n] }
   })
@@ -120,7 +111,7 @@ describe('TurnstileWidget app adapter', () => {
     const Host = defineComponent(
       () => () => h(TurnstileWidget, { ref: adapter })
     )
-    lightTheme.value = true
+    useColorPaletteStore().activePaletteId = 'light'
     render(Host, { global: { plugins: [i18n] } })
 
     adapter.value?.reset()
