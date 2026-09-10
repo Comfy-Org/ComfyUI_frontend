@@ -529,8 +529,7 @@ const defRegistries = new WeakMap<Comfy, ReturnType<typeof createDefRegistry>>()
 /**
  * Applies registered `defs.extend` callbacks to a node class being registered.
  * Called by the app from its legacy `beforeRegisterNodeDef` dispatch.
- *
- * @knipIgnoreUsedByStackedPR litegraphService calls this in the wiring PR
+
  */
 export function applyDefExtensions(
   nodeType: { prototype: object },
@@ -561,7 +560,6 @@ export function useComfyApi(
  * Drops the memoised instance, so a suite can build one against a graph it
  * controls. The conversion corpus runs every converted pack this way.
  *
- * @knipIgnoreUsedByStackedPR magicPatch/verify resets between packs
  */
 export function resetComfyApi(): void {
   singleton = undefined
@@ -575,8 +573,7 @@ export function resetComfyApi(): void {
  * `setup()` resolves — which is why packs historically could not touch the app
  * at module scope. Installing here removes that trap: `window.comfy` is usable
  * from the first line of an extension.
- *
- * @knipIgnoreUsedByStackedPR app.ts calls this in the wiring PR
+
  */
 export function installComfyApi(
   getGraph: () => LGraph | null | undefined,
