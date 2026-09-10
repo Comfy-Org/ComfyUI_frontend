@@ -90,7 +90,7 @@ const pillClass =
       />
       <div
         v-else
-        class="grid size-full place-items-center bg-hub-surface-hover"
+        class="bg-hub-surface-hover grid size-full place-items-center"
         data-testid="model-media-placeholder"
       >
         <span
@@ -125,7 +125,7 @@ const pillClass =
           aria-hidden="true"
         />
         <h3
-          class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm leading-[1.35] font-medium drop-shadow-md lg:text-base"
+          class="text-content-bright pointer-events-none absolute right-16 bottom-5 left-5 z-10 line-clamp-2 text-sm/[1.35] font-medium drop-shadow-md lg:text-base"
         >
           {{ model.name }}
         </h3>

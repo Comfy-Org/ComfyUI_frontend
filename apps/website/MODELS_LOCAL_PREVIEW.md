@@ -8,7 +8,7 @@ claim deployment success. The live API-key smoke check below returned 402.
 ## Auth base
 
 The combined preview now builds on `maanil/auth-stack-combined` (#17283),
-commit `f97c308495537bc864ab10a6abfc5023a40dcd6d`, rather than the older
+commit `957a2403112291d666a8a1fa8ba4bc98b3d98f19`, rather than the older
 `throwaway/christian-closure-2026-09-09` snapshot. This is committed auth work,
 not a claim that its PR is merged or review-approved. The account package is
 unchanged from that base; Models uses its current `@comfyorg/account/session`
@@ -39,6 +39,19 @@ content/use-case and input-presentation tests pass. Website typecheck reports
 zero errors/warnings and seven existing hints. The shared account package and
 upstream identity test fixture match the auth base exactly. This is not a fresh
 full-suite, browser-generation or deployment result.
+
+While deploying the schema/credit update, the auth base advanced again to
+`957a240311`. The preview follows it by an ordinary merge, including the
+dependency-neutral session-contracts extraction and main's website-lint coverage.
+Three CSS-only merge conflicts keep the preview's responsive navigation spacing
+and main's equivalent typography formatting. No shared account code is modified
+relative to that base. This sync does not merge either PR into main.
+Its new website-wide lint coverage also required small prototype logging/type
+cleanups, canonical Tailwind class formatting and Vue's input-update test helper;
+no lint rules were disabled. After this sync, 1,286 focused website tests,
+10 header tests, 38 field/media/card tests and 119 shared session-core tests pass.
+The enabled build still produces 2,001 HTML outputs. None of these tests makes
+a paid generation request.
 
 ## Schema refresh and insufficient-credit recovery
 

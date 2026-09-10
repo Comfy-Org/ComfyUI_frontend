@@ -43,7 +43,7 @@ describe('HeaderAccount', () => {
     mountAccount('new')
     await nextTick()
 
-    expect(screen.getByTestId('header-credits').textContent?.trim()).toBe('0')
+    expect(screen.getByTestId('header-credits').textContent.trim()).toBe('0')
 
     await user.click(screen.getByTestId('header-account'))
     await user.click(await screen.findByTestId('account-plan'))

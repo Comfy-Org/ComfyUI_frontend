@@ -4,17 +4,8 @@
  * max-width × 80vh, expanding at 3000px). Catches accidental reverts of the
  * Phase 4 renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
-
-let showDialog: ReturnType<
-  typeof vi.mocked<ReturnType<typeof useDialogStore>['showDialog']>
->
-let closeDialog: ReturnType<typeof useDialogStore>['closeDialog']
-beforeEach(() => {
-  showDialog = vi.mocked(useDialogStore().showDialog)
-  closeDialog = useDialogStore().closeDialog
-})
 
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
@@ -22,7 +13,7 @@ import { useManagerDialog } from '@/workbench/extensions/manager/composables/use
 describe('useManagerDialog', () => {
   it("show() opens the Reka renderer with size 'full' and Manager content sizing", () => {
     useManagerDialog().show()
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('global-manager')
     expect(args.dialogComponentProps!.renderer).toBe('reka')
     expect(args.dialogComponentProps!.size).toBe('full')
@@ -36,24 +27,26 @@ describe('useManagerDialog', () => {
 
   it('show() uses non-modal Reka so nested PrimeVue overlays keep focus and pointer events', () => {
     useManagerDialog().show()
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.dialogComponentProps!.modal).toBe(false)
   })
 
   it('show(initialTab) forwards initialTab to ManagerDialog props', () => {
     useManagerDialog().show(ManagerTab.UpdateAvailable)
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.props).toMatchObject({ initialTab: ManagerTab.UpdateAvailable })
   })
 
   it('show(initialTab, initialPackId) forwards initialPackId to ManagerDialog props', () => {
     useManagerDialog().show(ManagerTab.All, 'pack-123')
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.props).toMatchObject({ initialPackId: 'pack-123' })
   })
 
   it('hide() closes the global-manager dialog', () => {
     useManagerDialog().hide()
-    expect(closeDialog).toHaveBeenCalledWith({ key: 'global-manager' })
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+      key: 'global-manager'
+    })
   })
 })

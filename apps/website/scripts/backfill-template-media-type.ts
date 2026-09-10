@@ -82,7 +82,8 @@ writeFileSync(INDEX, `${JSON.stringify(index, null, 2)}\n`)
 const counts = new Map<string, number>()
 for (const entry of index)
   counts.set(entry.mediaType, (counts.get(entry.mediaType) ?? 0) + 1)
-console.log(
-  `Rewrote ${changed} of ${index.length} media types:`,
-  Object.fromEntries([...counts].sort())
+process.stdout.write(
+  `Rewrote ${changed} of ${index.length} media types: ${JSON.stringify(
+    Object.fromEntries([...counts].sort(([a], [b]) => a.localeCompare(b)))
+  )}\n`
 )

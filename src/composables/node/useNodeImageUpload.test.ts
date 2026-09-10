@@ -9,7 +9,6 @@ import { useNodeImageUpload } from './useNodeImageUpload'
 import type { Mock } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
 let mockInvalidateInputs: Mock<
   ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
 >
@@ -80,7 +79,6 @@ describe('useNodeImageUpload', () => {
   let onUploadError: () => void
 
   beforeEach(() => {
-    mockAddAlert = useToastStore().addAlert
     mockInvalidateInputs = vi
       .spyOn(useAssetsStore().inputAssets, 'invalidate')
       .mockResolvedValue(undefined)
@@ -189,7 +187,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadAlreadyInProgress'
+    )
 
     await first
   })

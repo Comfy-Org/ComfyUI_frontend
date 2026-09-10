@@ -140,12 +140,12 @@ const versions: Version[] = [...drafts.values()]
       ...(base.provider ? { provider: base.provider } : {}),
       ...(modality ? { modality } : {}),
       workflowCount: draft.templates.length,
-      ...(busiest?.thumbnails[0] ? { thumbnailUrl: busiest.thumbnails[0] } : {})
+      ...(busiest.thumbnails[0] ? { thumbnailUrl: busiest.thumbnails[0] } : {})
     }
   })
   .sort((a, b) => a.slug.localeCompare(b.slug))
 
 writeFileSync(OUTPUT, `${JSON.stringify(versions, null, 2)}\n`)
-console.log(
-  `Wrote ${versions.length} models the templates name but the catalogue was missing.`
+process.stdout.write(
+  `Wrote ${versions.length} models the templates name but the catalogue was missing.\n`
 )

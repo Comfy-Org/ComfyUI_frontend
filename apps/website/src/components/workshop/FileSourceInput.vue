@@ -124,7 +124,7 @@ function fileType(file: FileValue): string {
     :aria-label="field.label"
     :class="
       cn(
-        'flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed p-3 focus-within:ring-2 focus-within:ring-primary-comfy-yellow',
+        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed p-3 focus-within:ring-2',
         isOverDropZone && !disabled
           ? 'border-primary-comfy-yellow'
           : 'border-transparency-white-t20',
@@ -155,7 +155,7 @@ function fileType(file: FileValue): string {
         />
         <div
           v-else
-          class="flex items-center gap-3 rounded-xl bg-transparency-white-t4 p-3 text-sm text-primary-warm-white"
+          class="bg-transparency-white-t4 flex items-center gap-3 rounded-xl p-3 text-sm text-primary-warm-white"
         >
           <FileIcon
             class="size-8 shrink-0 text-primary-warm-gray"
@@ -176,7 +176,7 @@ function fileType(file: FileValue): string {
                 file.name
               )
             "
-            class="min-w-0 flex-1 cursor-pointer truncate text-left text-xs text-primary-warm-white underline underline-offset-4 focus-visible:outline-primary-comfy-yellow"
+            class="focus-visible:outline-primary-comfy-yellow min-w-0 flex-1 cursor-pointer truncate text-left text-xs text-primary-warm-white underline underline-offset-4"
             @click="replace(index)"
           >
             {{ file.name }}
@@ -190,7 +190,7 @@ function fileType(file: FileValue): string {
                 file.name
               )
             "
-            class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:outline-primary-comfy-yellow"
+            class="focus-visible:outline-primary-comfy-yellow flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white"
             @click="remove(index)"
           >
             <X class="size-4" aria-hidden="true" />
@@ -202,7 +202,7 @@ function fileType(file: FileValue): string {
       :for="`field-${field.name}`"
       :class="
         cn(
-          'flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-xs text-primary-warm-gray hover:bg-transparency-white-t4',
+          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-xs text-primary-warm-gray',
           disabled && 'pointer-events-none'
         )
       "
@@ -252,7 +252,7 @@ function fileType(file: FileValue): string {
       v-if="rejection"
       :id="`selection-error-${field.name}`"
       role="alert"
-      class="text-xs text-primary-comfy-red"
+      class="text-primary-comfy-red text-xs"
     >
       {{ t(rejection, locale).replace('{count}', String(limit)) }}
       {{

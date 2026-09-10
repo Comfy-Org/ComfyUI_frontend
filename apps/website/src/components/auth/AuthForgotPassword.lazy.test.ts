@@ -10,7 +10,7 @@ const h = vi.hoisted(() => ({
   firebaseEvaluated: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', async () => {
+vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return {
     useWorkshopAuthFlag: () => ref(true),
@@ -19,7 +19,7 @@ vi.mock('../../scripts/posthog', async () => {
   }
 })
 
-vi.mock('../../config/workshop-firebase', () => {
+vi.mock<unknown>(import('../../config/workshop-firebase'), () => {
   h.firebaseEvaluated()
   return { sendWorkshopPasswordReset: h.sendReset }
 })

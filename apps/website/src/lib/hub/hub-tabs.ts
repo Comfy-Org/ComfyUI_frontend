@@ -29,10 +29,10 @@ export interface FacetedTemplate {
 // Badges selected on one tab may have no option on the next; keep only the
 // ones that still match something so switching never leaves an empty grid
 // with an invisible filter.
-export function badgesAvailableIn<
-  B extends ScopedBadge,
-  T extends FacetedTemplate
->(badges: readonly B[], scopedTemplates: readonly T[]): B[] {
+export function badgesAvailableIn<B extends ScopedBadge>(
+  badges: readonly B[],
+  scopedTemplates: readonly FacetedTemplate[]
+): B[] {
   if (badges.length === 0) return [...badges]
   const available = new Map<string, Set<string>>([
     ['model', new Set(scopedTemplates.flatMap((t) => t.models ?? []))],

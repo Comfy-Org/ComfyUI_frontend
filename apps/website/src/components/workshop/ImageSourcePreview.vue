@@ -28,7 +28,7 @@ const failedSource = ref<string>()
     :src="source"
     :alt="name"
     referrerpolicy="no-referrer"
-    class="h-32 w-full rounded-xl bg-transparency-white-t4 object-contain"
+    class="bg-transparency-white-t4 h-32 w-full rounded-xl object-contain"
     @error="failedSource = source"
   />
   <p v-else-if="source" role="status" class="text-xs text-primary-warm-gray">

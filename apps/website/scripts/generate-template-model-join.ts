@@ -63,6 +63,10 @@ writeFileSync(
   `${JSON.stringify(sorted, null, 2)}\n`
 )
 
-console.log(`Joined ${Object.keys(sorted).length} workflows to a model.`)
-console.log(`Dropped ${rejected.length} rows that disagreed on the medium:`)
-for (const row of rejected) console.log(`  ${row}`)
+process.stdout.write(
+  `Joined ${Object.keys(sorted).length} workflows to a model.\n`
+)
+process.stdout.write(
+  `Dropped ${rejected.length} rows that disagreed on the medium:\n`
+)
+for (const row of rejected) process.stdout.write(`  ${row}\n`)

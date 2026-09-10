@@ -40,7 +40,7 @@ const labels: Record<Kind, TranslationKey> = {
       class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-hover:grid-cols-[1fr]"
     >
       <span class="overflow-hidden">
-        <span class="pl-1.5 text-2xs leading-none whitespace-nowrap">
+        <span class="pl-1.5 text-2xs/none whitespace-nowrap">
           {{ t(labels[kind], locale) }}
         </span>
       </span>

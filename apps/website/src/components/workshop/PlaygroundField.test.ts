@@ -274,7 +274,7 @@ describe('PlaygroundField', () => {
     }
     const values = mountField(field, defaultValues([field]))
     const slider = screen.getByRole('slider', { name: 'Creativity' })
-    await fireEvent.input(slider, { target: { value: '0.333' } })
+    await fireEvent.update(slider, '0.333')
     expect(values.value.creativity).toBe(0.333)
     expect(screen.queryByRole('alert')).toBeNull()
     const number = mountField({
