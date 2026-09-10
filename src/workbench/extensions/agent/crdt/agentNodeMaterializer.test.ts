@@ -1009,7 +1009,7 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('preserves a pre-existing definition across an agent document reset', () => {
+    it('preserves an uninstantiated pre-existing definition across an agent document reset', () => {
       const definition = createTestSubgraphData()
       const preExisting = graph.createSubgraph(definition)
       reconcileAgentAdapters(graph, [definition])
@@ -1018,6 +1018,34 @@ describe('reconcileAgentAdapters', () => {
 
       expect(graph.subgraphs.get(definition.id)).toBe(preExisting)
       expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+    })
+
+    /**
+     * Retirement only owns definitions this materializer created. A definition
+     * that was already registered when the agent first referenced it keeps its
+     * node-type registration through a reset; it leaves `graph.subgraphs` only
+     * when its last live instance is swept, under the same last-instance rule
+     * `LGraph.remove()` applies to a human deleting that instance by hand.
+     */
+    it('leaves a pre-existing definition to the last-instance rule when the reset sweeps its only host', () => {
+      const definition = createTestSubgraphData({
+        nodes: [interiorNode(7, 'retirement-probe')]
+      })
+      graph.createSubgraph(definition)
+      const { adapter, follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+
+      adapter.clearForReset('workflow', REMOTE)
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+      expect(interiorRemovals).toEqual([toNodeId(7)])
     })
 
     it('fires each interior removal lifecycle once per document reset', () => {
