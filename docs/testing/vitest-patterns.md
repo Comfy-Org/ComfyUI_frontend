@@ -58,14 +58,6 @@ Use a test-local `const store = useToastStore()` when several accesses become
 hard to read. Keep shared variables when they own a per-test resource, a
 reactive fixture, or a value that teardown must restore.
 
-Run `pnpm tsx scripts/audit-test-hook-aliases.ts` to inventory uninitialized
-`let` declarations assigned in hooks. The read-only report includes each
-location, name, and assigned expression. Its syntactic categories are review
-candidates, not lint violations: `direct-store-member` identifies direct
-`use…Store().member` aliases; `derived-value` includes properties of local store
-variables as well as legitimate snapshots. Inspect ownership before changing
-either category. `other` includes stores, spies, refs, and other fixtures.
-
 ### Capture import-time extension registration
 
 Use `createExtensionCapture` for tests that need registered extension hooks
