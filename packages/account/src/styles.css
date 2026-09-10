@@ -1,0 +1,3 @@
+/* Consumers @import this so Tailwind scans this package's components; @source
+   resolves relative to here, so './' points at this package's src anywhere. */
+@source './';
